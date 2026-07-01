@@ -30,11 +30,16 @@ agos-kernel/
 ├── bootstrapper/
 ├── contract-engine/
 ├── diagnostics/
-├── knowledge/              ← EXEC-000021
-├── models/                ← EXEC-000022
-├── decision-pipeline/     ← EXEC-000023
-├── execution-context/      ← EXEC-000024
-├── api/                   ← EXEC-000025
+├── knowledge/
+├── models/
+├── decision-pipeline/
+├── execution-context/
+├── api/
+├── runtime/               ← EXEC-000026
+├── scheduler/             ← EXEC-000027
+├── resource-manager/       ← EXEC-000028
+├── state-store/           ← EXEC-000029
+├── observability/          ← EXEC-000030
 ├── sdks/
 ├── main.py
 ├── test_integration.py
@@ -43,24 +48,23 @@ agos-kernel/
 
 ---
 
-## Public APIs
+## Runtime Layer
 
-| API | Description |
-|-----|-------------|
-| IKernelAPI | Kernel operations |
-| ICapabilityAPI | Capability operations |
-| IProviderAPI | Provider operations |
-| IMissionAPI | Mission operations |
-| IExecutionAPI | Execution operations |
-| IKnowledgeAPI | Knowledge operations |
+| Component | Description |
+|-----------|-------------|
+| Runtime | Runtime lifecycle management |
+| Scheduler | Mission queuing and dispatching |
+| Resource Manager | CPU, Memory, Execution tracking |
+| State Store | Persistent state with crash recovery |
+| Observability | Logging, Metrics, Tracing, Health |
 
 ---
 
 ## Version
 
 ```
-v1.0.0 - EXEC-000021 to EXEC-000025
-API SPECIFICATION v1.0 - FROZEN
+v1.0.0 - EXEC-000026 to EXEC-000030
+RUNTIME LAYER - COMPLETE
 ```
 
 ---
