@@ -2,26 +2,43 @@
 """
 Real specialist agents for the AGOS Agent Civilization.
 
-20 specializations, each a REAL agent:
-- Every agent thinks with a real LLM (OpenRouter) using a specialization-specific system prompt.
-- Several agents also use REAL tools:
-    researcher      -> live web search (DuckDuckGo API)
-    data_processor  -> real statistical computation
-    validator       -> real JSON validation
-    test_runner     -> really executes Python code in a sandboxed subprocess
-    monitor         -> real system metrics (CPU/memory via /proc)
+20 specializations, all with real LLM reasoning + real tools where meaningful.
+
+Real tools per specialization:
+  researcher      -> live web search (DuckDuckGo)
+  data_processor  -> real statistical computation
+  test_runner     -> really executes Python code in a sandboxed subprocess
+  validator       -> real JSON/YAML validation
+  monitor         -> real system metrics (/proc)
+  code_generator  -> real AST syntax check of generated code
+  reviewer        -> real AST-based static analysis (complexity, issues)
+  surgeon         -> real AST diagnosis of buggy code
+  modifier        -> real AST syntax check of modified code
+  api_integrator  -> real HTTP probe (when a URL is in prompt/data)
+  network_client  -> real HTTP probe + DNS lookup
+  db_manager      -> real SQLite execution of provided SQL
+  analyst         -> real statistics extraction when numeric data provided
+  architect       -> live web search grounding for tech choices
+  builder         -> real AST check on scaffold code
+  strategist      -> live web search grounding
+  self_developer  -> real system metrics context
 """
 
 import asyncio
+import ast
 import json
 import logging
 import os
+import re
+import socket
+import sqlite3
 import statistics
 import subprocess
 import sys
 import tempfile
 import time
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import aiohttp
 
@@ -68,7 +85,23 @@ SPECIALIZATION_TOOLS: Dict[str, str] = {
     "test_runner": "run_python_code",
     "validator": "validate_json",
     "monitor": "system_metrics",
+    "code_generator": "ast_syntax_check",
+    "reviewer": "ast_static_analysis",
+    "surgeon": "ast_diagnose",
+    "modifier": "ast_syntax_check",
+    "api_integrator": "http_probe",
+    "network_client": "http_probe_and_dns",
+    "db_manager": "sqlite_exec",
+    "analyst": "compute_statistics",
+    "architect": "web_search",
+    "builder": "ast_syntax_check",
+    "strategist": "web_search",
+    "self_developer": "system_metrics",
 }
+
+URL_RE = re.compile(r"https?://[^\s'\"<>]+")
+CODE_FENCE_RE = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.DOTALL)
+SQL_FENCE_RE = re.compile(r"```(?:sql)?\s*\n(.*?)```", re.DOTALL)
 
 
 async def web_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
@@ -92,7 +125,6 @@ async def web_search(query: str, max_results: int = 5) -> List[Dict[str, str]]:
 
 
 def compute_statistics(numbers: List[float]) -> Dict[str, Any]:
-    """Real statistics on numeric data."""
     if not numbers:
         return {"error": "no numeric data"}
     out: Dict[str, Any] = {
@@ -109,7 +141,6 @@ def compute_statistics(numbers: List[float]) -> Dict[str, Any]:
 
 
 def run_python_code(code: str, timeout: int = 10) -> Dict[str, Any]:
-    """Really execute Python code in an isolated subprocess."""
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
         f.write(code)
         path = f.name
@@ -142,7 +173,6 @@ def validate_json(payload: str) -> Dict[str, Any]:
 
 
 def system_metrics() -> Dict[str, Any]:
-    """Real host metrics (Linux)."""
     metrics: Dict[str, Any] = {"timestamp": time.time()}
     try:
         with open("/proc/loadavg") as f:
@@ -163,6 +193,127 @@ def system_metrics() -> Dict[str, Any]:
     return metrics
 
 
+def ast_syntax_check(code: str) -> Dict[str, Any]:
+    """Real Python AST parse."""
+    try:
+        tree = ast.parse(code)
+        funcs = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
+        classes = [n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
+        imports: List[str] = []
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Import):
+                imports.extend(a.name for a in n.names)
+            elif isinstance(n, ast.ImportFrom) and n.module:
+                imports.append(n.module)
+        return {"valid": True, "functions": funcs, "classes": classes, "imports": imports, "lines": len(code.splitlines())}
+    except SyntaxError as e:
+        return {"valid": False, "error": str(e), "line": e.lineno, "offset": e.offset}
+
+
+def ast_static_analysis(code: str) -> Dict[str, Any]:
+    """Real static analysis: complexity, long functions, bare excepts, TODOs."""
+    base = ast_syntax_check(code)
+    if not base.get("valid"):
+        return base
+    tree = ast.parse(code)
+    issues: List[Dict[str, Any]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            body_lines = (node.end_lineno or node.lineno) - node.lineno
+            if body_lines > 50:
+                issues.append({"severity": "warn", "line": node.lineno, "msg": f"function '{node.name}' is long ({body_lines} lines)"})
+            args = len(node.args.args)
+            if args > 6:
+                issues.append({"severity": "warn", "line": node.lineno, "msg": f"function '{node.name}' has many args ({args})"})
+        if isinstance(node, ast.ExceptHandler) and node.type is None:
+            issues.append({"severity": "high", "line": node.lineno, "msg": "bare except swallows all errors"})
+        if isinstance(node, ast.Assert):
+            issues.append({"severity": "info", "line": node.lineno, "msg": "assert stripped under python -O"})
+    todos = [i + 1 for i, ln in enumerate(code.splitlines()) if "TODO" in ln or "FIXME" in ln]
+    if todos:
+        issues.append({"severity": "info", "msg": f"TODO/FIXME markers on lines {todos}"})
+    base["issues"] = issues
+    base["issue_count"] = len(issues)
+    return base
+
+
+def ast_diagnose(code: str) -> Dict[str, Any]:
+    """Precise diagnosis for the surgeon: syntax + likely bugs."""
+    res = ast_static_analysis(code)
+    if not res.get("valid"):
+        return res
+    tree = ast.parse(code)
+    findings: List[Dict[str, Any]] = res.get("issues", [])
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Compare):
+            for op in node.ops:
+                if isinstance(op, (ast.Is, ast.IsNot)):
+                    for c in node.comparators:
+                        if isinstance(c, ast.Constant) and isinstance(c.value, (int, str, float)):
+                            findings.append({"severity": "high", "line": node.lineno, "msg": "using 'is' with a literal — use '==' instead"})
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "eval":
+            findings.append({"severity": "high", "line": node.lineno, "msg": "eval() is dangerous"})
+    res["findings"] = findings
+    return res
+
+
+async def http_probe(url: str, timeout: int = 10) -> Dict[str, Any]:
+    """Real HTTP HEAD/GET probe to a URL."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return {"error": f"unsupported scheme: {parsed.scheme}"}
+    started = time.time()
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as s:
+            async with s.get(url) as r:
+                text = await r.text()
+                return {
+                    "url": url,
+                    "status": r.status,
+                    "content_type": r.headers.get("Content-Type", ""),
+                    "elapsed_ms": round((time.time() - started) * 1000),
+                    "bytes": len(text),
+                    "snippet": text[:400],
+                }
+    except Exception as e:
+        return {"url": url, "error": str(e), "elapsed_ms": round((time.time() - started) * 1000)}
+
+
+def dns_lookup(host: str) -> Dict[str, Any]:
+    try:
+        infos = socket.getaddrinfo(host, None)
+        addrs = sorted({i[4][0] for i in infos})
+        return {"host": host, "addresses": addrs}
+    except Exception as e:
+        return {"host": host, "error": str(e)}
+
+
+def sqlite_exec(sql: str) -> Dict[str, Any]:
+    """Execute SQL in an ephemeral in-memory SQLite database."""
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    out: Dict[str, Any] = {"statements": []}
+    try:
+        cur = conn.cursor()
+        for stmt in [s.strip() for s in sql.split(";") if s.strip()]:
+            try:
+                cur.execute(stmt)
+                rows = cur.fetchall() if cur.description else []
+                out["statements"].append({
+                    "sql": stmt[:200],
+                    "ok": True,
+                    "rowcount": cur.rowcount,
+                    "rows": [dict(r) for r in rows[:20]],
+                })
+            except Exception as e:
+                out["statements"].append({"sql": stmt[:200], "ok": False, "error": str(e)})
+        conn.commit()
+    finally:
+        conn.close()
+    out["ok"] = all(s.get("ok") for s in out["statements"])
+    return out
+
+
 def _extract_numbers(data: Any) -> List[float]:
     nums: List[float] = []
     if isinstance(data, (int, float)):
@@ -181,6 +332,27 @@ def _extract_numbers(data: Any) -> List[float]:
     return nums
 
 
+def _extract_code(prompt: str, data: Any) -> Optional[str]:
+    if isinstance(data, str) and data.strip():
+        return data
+    m = CODE_FENCE_RE.search(prompt or "")
+    return m.group(1) if m else None
+
+
+def _extract_sql(prompt: str, data: Any) -> Optional[str]:
+    if isinstance(data, str) and data.strip():
+        return data
+    m = SQL_FENCE_RE.search(prompt or "")
+    return m.group(1) if m else None
+
+
+def _extract_url(prompt: str, data: Any) -> Optional[str]:
+    if isinstance(data, str) and data.strip().startswith(("http://", "https://")):
+        return data.strip()
+    m = URL_RE.search(prompt or "")
+    return m.group(0) if m else None
+
+
 class RealSpecialistAgent:
     """A real working agent: LLM brain + real tools, per specialization."""
 
@@ -194,7 +366,6 @@ class RealSpecialistAgent:
         self.created_at = time.time()
 
     async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a real task. task = {"prompt": str, "data": any (optional)}."""
         prompt = str(task.get("prompt") or task.get("description") or "").strip()
         data = task.get("data")
         started = time.time()
@@ -219,39 +390,67 @@ class RealSpecialistAgent:
             "result": result,
         }
 
+    async def _tool_phase(self, prompt: str, data: Any) -> Optional[Dict[str, Any]]:
+        spec = self.specialization
+        if spec == "researcher" and prompt:
+            sources = await web_search(prompt)
+            return {"tool": "web_search", "sources": sources}
+        if spec in ("architect", "strategist") and prompt:
+            sources = await web_search(prompt, max_results=4)
+            return {"tool": "web_search", "sources": sources}
+        if spec in ("data_processor", "analyst") and data is not None:
+            nums = _extract_numbers(data)
+            stats = compute_statistics(nums) if nums else {"note": "no numeric values found"}
+            return {"tool": "compute_statistics", "statistics": stats}
+        if spec == "test_runner":
+            code = _extract_code(prompt, data)
+            if code:
+                execution = await asyncio.to_thread(run_python_code, code)
+                return {"tool": "run_python_code", "execution": execution}
+        if spec == "validator" and isinstance(data, str) and data.strip():
+            return {"tool": "validate_json", "validation": validate_json(data)}
+        if spec in ("monitor", "self_developer"):
+            return {"tool": "system_metrics", "metrics": system_metrics()}
+        if spec in ("code_generator", "builder"):
+            code = _extract_code(prompt, data)
+            if code:
+                return {"tool": "ast_syntax_check", "check": ast_syntax_check(code)}
+        if spec == "reviewer":
+            code = _extract_code(prompt, data)
+            if code:
+                return {"tool": "ast_static_analysis", "analysis": ast_static_analysis(code)}
+        if spec == "surgeon":
+            code = _extract_code(prompt, data)
+            if code:
+                return {"tool": "ast_diagnose", "diagnosis": ast_diagnose(code)}
+        if spec == "modifier":
+            code = _extract_code(prompt, data)
+            if code:
+                return {"tool": "ast_syntax_check", "check": ast_syntax_check(code)}
+        if spec == "api_integrator":
+            url = _extract_url(prompt, data)
+            if url:
+                return {"tool": "http_probe", "probe": await http_probe(url)}
+        if spec == "network_client":
+            url = _extract_url(prompt, data)
+            if url:
+                probe = await http_probe(url)
+                host = urlparse(url).hostname or ""
+                return {"tool": "http_probe_and_dns", "probe": probe, "dns": dns_lookup(host) if host else None}
+        if spec == "db_manager":
+            sql = _extract_sql(prompt, data)
+            if sql and re.search(r"\b(select|insert|update|delete|create|drop|alter|with)\b", sql, re.I):
+                return {"tool": "sqlite_exec", "execution": await asyncio.to_thread(sqlite_exec, sql)}
+        return None
+
     async def _run(self, prompt: str, data: Any) -> Dict[str, Any]:
         llm = get_llm()
         system = SPECIALIZATIONS[self.specialization]
-        tool_output: Optional[Dict[str, Any]] = None
+        tool_output = await self._tool_phase(prompt, data)
 
-        # --- real tool phase ---
-        if self.specialization == "researcher" and prompt:
-            sources = await web_search(prompt)
-            tool_output = {"tool": "web_search", "sources": sources}
-            if sources:
-                prompt = (
-                    f"{prompt}\n\nLive web search results:\n"
-                    + "\n".join(f"- {s['title']}: {s['snippet']} ({s['url']})" for s in sources)
-                )
-        elif self.specialization == "data_processor" and data is not None:
-            nums = _extract_numbers(data)
-            stats = compute_statistics(nums) if nums else {"note": "no numeric values found"}
-            tool_output = {"tool": "compute_statistics", "statistics": stats}
-            prompt = f"{prompt}\n\nComputed real statistics on the provided data:\n{json.dumps(stats)}"
-        elif self.specialization == "test_runner" and isinstance(data, str) and data.strip():
-            execution = await asyncio.to_thread(run_python_code, data)
-            tool_output = {"tool": "run_python_code", "execution": execution}
-            prompt = f"{prompt}\n\nActual execution result of the provided code:\n{json.dumps(execution)}"
-        elif self.specialization == "validator" and isinstance(data, str) and data.strip():
-            validation = validate_json(data)
-            tool_output = {"tool": "validate_json", "validation": validation}
-            prompt = f"{prompt}\n\nReal JSON validation result:\n{json.dumps(validation)}"
-        elif self.specialization == "monitor":
-            metrics = system_metrics()
-            tool_output = {"tool": "system_metrics", "metrics": metrics}
-            prompt = f"{prompt or 'Assess current system health.'}\n\nReal system metrics:\n{json.dumps(metrics)}"
+        if tool_output:
+            prompt = f"{prompt}\n\nReal tool output ({tool_output.get('tool')}):\n{json.dumps({k: v for k, v in tool_output.items() if k != 'tool'}, default=str)[:4000]}"
 
-        # --- LLM reasoning phase ---
         if not prompt:
             return {"tool_output": tool_output, "answer": None, "note": "empty prompt"}
 
@@ -277,7 +476,6 @@ class RealSpecialistAgent:
 
 
 def create_civilization(agents_per_spec: int = None) -> Dict[str, List[RealSpecialistAgent]]:
-    """Create the full civilization: N real agents per specialization (default from env)."""
     n = agents_per_spec or int(os.environ.get("AGENTS_PER_SPEC", "3"))
     civilization: Dict[str, List[RealSpecialistAgent]] = {}
     agent_id = 0
