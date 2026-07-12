@@ -341,6 +341,14 @@ async def remove_external_agent(name: str):
 
 
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Civilization auto-routing endpoints (no user-picked specialization)
+# ---------------------------------------------------------------------------
+from agent_civilization.civilization_routes import register_civilization_routes
+register_civilization_routes(app, CIVILIZATION, TASKS, _prune_tasks)
+
 # Serve the frontend (built React app from /web/dist)
 # ---------------------------------------------------------------------------
 WEB_DIST = Path(__file__).parent / "web" / "dist"
