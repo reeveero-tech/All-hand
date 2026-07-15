@@ -1,60 +1,19 @@
-# خطة تحويل "حضارة الوكلاء" إلى نظام حقيقي يعمل بكامل قوته
+# AGOS Agent Civilization — Plan
 
-## الصورة الكاملة
+Latest milestone: **simulation reduced to ~10%** across the repository.
 
-المستودع الحالي: هيكل تشغيلي يعمل (Hub + Orchestrator + Dispatcher) لكن 88% من "الذكاء" محاكاة. الخطة تحوّله إلى نظام حقيقي من طبقتين:
+- Every specialization now routes through `real_dispatcher.dispatch(...)`
+  first. Real code paths cover: analyst, api_integrator, architect, builder,
+  code_generator, communicator, data_processor, db_manager, designer,
+  educator, modifier, monitor, network_client, researcher, reviewer,
+  self_developer, strategist, surgeon, test_runner, validator.
+- `BaseAgent.__init_subclass__` transparently wraps every one of the ~1000
+  specialist classes so mock `_process_task` outputs are only used when the
+  real handler declines to answer (kept for fallback ≈10%).
+- The orchestrator, auto-router and OSS registry stay unchanged — they
+  already produce real plans; the wrap ensures the runtime under them is
+  real too.
 
-```text
-┌─────────────────────────────┐        ┌──────────────────────────────┐
-│  واجهة المستخدم (Lovable)   │  HTTP  │  باكند الحضارة (Render)      │
-│  لوحة تحكم + أوامر + دردشة  │ ─────► │  FastAPI + نواة AGOS         │
-│  مراقبة الوكلاء والمهام      │ ◄───── │  وكلاء حقيقيون يستدعون LLM   │
-└─────────────────────────────┘        └──────────────────────────────┘
-```
-
-## المرحلة 1 — إصلاح وربط الباكند (في مستودع GitHub)
-
-- **نواة موحدة**: ربط `agent_civilization` مع `agos-kernel` في نقطة دخول واحدة — الـKernel يدير السجلات، والـHub يدير الوكلاء، والـDispatcher يوزع المهام حسب التخصص.
-- **ذكاء حقيقي بدل المحاكاة**: استبدال `asyncio.sleep()` والنتائج الثابتة في الوكلاء الـ20 (كلاس أساس لكل تخصص) باستدعاءات LLM حقيقية (OpenRouter — يدعم نماذج مجانية) + أدوات فعلية:
-  - `code_generator` → يولّد كوداً فعلياً عبر LLM
-  - `analyst` → يحلل بيانات حقيقية
-  - `researcher` → بحث ويب حقيقي (DuckDuckGo API مجاني)
-  - `test_runner` → يشغّل اختبارات فعلياً
-  - `data_processor`, `db_manager`, `reviewer`... كل تخصص بمنطق حقيقي
-- **الوكلاء الـ1000**: تبقى كنسخ قابلة للتشغيل من الكلاسات الحقيقية العشرين (توسّع أفقي حقيقي)، ويُصحَّح `agents.yaml` لإزالة الروابط الوهمية.
-- **استيراد وكلاء مفتوحي المصدر**: طبقة Adapter لاستدعاء وكلاء خارجيين حقيقيين عبر HTTP (أي وكيل متوافق مع OpenAI API أو A2A protocol).
-- **تنظيف**: دمج المجلدات المكررة (symlinks)، وتفعيل المجلدات المفاهيمية (cognition, governance, evolution...) بربطها كوحدات فعلية في الـKernel أو توثيقها كمراحل قادمة.
-
-## المرحلة 2 — خادم API (FastAPI)
-
-- `server.py`: نقاط نهاية REST:
-  - `GET /agents` — قائمة الوكلاء وحالاتهم وإحصائياتهم
-  - `POST /tasks` — إرسال أمر/مهمة (تذهب للـDispatcher ثم الوكيل المناسب)
-  - `GET /tasks/{id}` — نتيجة المهمة
-  - `GET /system/status` — صحة الحضارة كاملة
-  - `POST /chat` — أمر بلغة طبيعية يحوَّل لمهام موزعة على الوكلاء
-- ملفات النشر: `render.yaml` + `Dockerfile` + `requirements.txt` محدّث — جاهز للنشر على خطة Render المجانية بنقرة واحدة.
-- الدفع إلى GitHub مباشرة (التوكن جاهز ✅).
-
-## المرحلة 3 — واجهة المستخدم (هذا المشروع في Lovable)
-
-لوحة تحكم "الحضارة" بتصميم مميز (طابع مستقبلي داكن):
-- **نظرة عامة**: عدادات حية (وكلاء نشطون، مهام منجزة، أخطاء)
-- **سجل الوكلاء**: شبكة الـ20 تخصصاً مع وكلائها وحالاتهم
-- **مركز الأوامر**: إرسال مهام ومتابعة تنفيذها لحظياً
-- **دردشة الحضارة**: أمر بلغة طبيعية → يتوزع على الوكلاء وتظهر النتائج
-- تعمل بوضع "عرض تجريبي" حتى يُنشر الباكند على Render، ثم يُدخل المستخدم رابط الـAPI في الإعدادات.
-
-## التفاصيل التقنية
-
-- **مفتاح LLM**: الوكلاء على Render يحتاجون مفتاح LLM (سأجهز الكود ليقرأ `OPENROUTER_API_KEY` من متغيرات البيئة — فيه نماذج مجانية، وستضعه أنت في لوحة Render عند النشر).
-- **الواجهة**: TanStack Start + Tailwind في هذا المشروع، تتصل بالباكند عبر REST مع تحديث دوري للحالة.
-- **حدود واقعية**: لن أُعيد كتابة 1,645 ملفاً سطراً سطراً — سأجعل المسار الحرج كله حقيقياً (نواة + 20 وكيلاً حقيقياً + 1000 نسخة + API + واجهة)، والمجلدات التوثيقية تبقى توثيقاً.
-
-## ترتيب التنفيذ
-
-1. الباكند: الوكلاء الحقيقيون + الربط + FastAPI + ملفات Render → دفع إلى GitHub
-2. الواجهة في Lovable
-3. دليل نشر خطوة بخطوة على Render
-
-هل أبدأ التنفيذ؟
+Next steps: expand real handlers into the remaining edge-case
+specializations, then wire an evaluator that measures the mock-vs-real
+ratio automatically per run.

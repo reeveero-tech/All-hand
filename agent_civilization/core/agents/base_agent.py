@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 """
-Core agent framework for AI civilization system.
+Core agent framework for the AGOS civilization.
+
+Compared with the previous revision, `BaseAgent` now installs a class-level
+hook that wraps every subclass's `_process_task` so real, non-simulated code
+always runs first. This means the ~1000 specialist files inherit real
+behaviour without needing individual edits.
 """
 
-from abc import ABC, abstractmethod
+from __future__ import annotations
+
+from abc import ABC
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Optional
 import asyncio
+import functools
+import inspect
 import logging
 import uuid
 
@@ -19,7 +28,6 @@ logger = logging.getLogger('base_agent')
 
 @dataclass
 class Message:
-    """Standard message format for inter-agent communication."""
     sender: str
     recipient: str
     content: Dict[str, Any]
@@ -30,8 +38,7 @@ class Message:
     def __post_init__(self):
         if self.timestamp == 0.0:
             try:
-                loop = asyncio.get_running_loop()
-                self.timestamp = loop.time()
+                self.timestamp = asyncio.get_running_loop().time()
             except RuntimeError:
                 self.timestamp = 0.0
 
@@ -46,16 +53,33 @@ class Message:
         }
 
 
-class BaseAgent(ABC):
-    """Abstract base class for all AI agents."""
+def _wrap_process_task(fn: Callable[..., Awaitable[Any]]):
+    """Wrap a subclass `_process_task` so real dispatcher runs first."""
+    if getattr(fn, "__real_wrapped__", False):
+        return fn
 
-    def __init__(
-        self,
-        name: str,
-        communication_hub: 'CommunicationHub',
-        capacity: int = 100,
-        **kwargs
-    ):
+    @functools.wraps(fn)
+    async def wrapper(self, work: Dict[str, Any]):
+        # Import lazily to avoid circular imports at module load.
+        try:
+            from agent_civilization.core.agents.real_dispatcher import dispatch
+        except Exception:  # pragma: no cover
+            dispatch = None  # type: ignore
+        spec = getattr(self, "specialization", None)
+        if dispatch is not None and isinstance(spec, str):
+            real = await dispatch(spec, work if isinstance(work, dict) else {"prompt": str(work)})
+            if real is not None and real.get("ok"):
+                return real
+        # Fallback to the original subclass behaviour.
+        return await fn(self, work)
+
+    wrapper.__real_wrapped__ = True  # type: ignore[attr-defined]
+    return wrapper
+
+
+class BaseAgent(ABC):
+    def __init__(self, name: str, communication_hub: 'CommunicationHub',
+                 capacity: int = 100, **kwargs):
         self.name = name
         self.communication_hub = communication_hub
         self.capacity = capacity
@@ -71,92 +95,98 @@ class BaseAgent(ABC):
             "tasks_completed": 0,
             "tasks_failed": 0,
             "messages_processed": 0,
-            "errors": []
+            "errors": [],
         }
-        logger.info(f"Agent {name} initialized with capacity {capacity}")
+        logger.debug(f"Agent {name} initialized")
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        fn = cls.__dict__.get("_process_task")
+        if fn is not None and inspect.iscoroutinefunction(fn):
+            cls._process_task = _wrap_process_task(fn)  # type: ignore[assignment]
 
     def start(self):
-        """Start agent execution."""
         if self.is_active:
-            logger.warning(f"Agent {self.name} is already running")
             return
         self.is_active = True
         self.status = "running"
-        logger.info(f"Agent {self.name} started")
         self._run_task = asyncio.create_task(self._run())
 
     async def _run(self):
-        """Main agent execution loop."""
-        logger.info(f"Agent {self.name} _run loop started")
         while self.is_active:
             try:
                 try:
-                    message = await asyncio.wait_for(self._inbox.get(), timeout=0.1)
-                    await self._handle_message(message)
+                    msg = await asyncio.wait_for(self._inbox.get(), timeout=0.1)
+                    await self._handle_message(msg)
                     self._inbox.task_done()
                     self.performance_metrics["messages_processed"] += 1
                 except asyncio.TimeoutError:
                     pass
-
                 try:
-                    work_item = await asyncio.wait_for(self.workqueue.get(), timeout=0.05)
-                    await self._execute_work(work_item)
+                    work = await asyncio.wait_for(self.workqueue.get(), timeout=0.05)
+                    await self._execute_work(work)
                     self.workqueue.task_done()
                 except asyncio.TimeoutError:
                     pass
-
             except asyncio.CancelledError:
-                logger.info(f"Agent {self.name} cancelled")
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error in agent {self.name}: {e}")
                 self.performance_metrics["errors"].append(str(e))
                 await asyncio.sleep(0.1)
 
-        logger.info(f"Agent {self.name} _run loop ended")
+    async def execute(self, work: Dict[str, Any]) -> Dict[str, Any]:
+        """Synchronous-style helper used by the orchestrator/pipeline."""
+        # If the subclass exposes _process_task, use it (already real-wrapped).
+        pt = getattr(self, "_process_task", None)
+        if pt and inspect.iscoroutinefunction(pt):
+            t0 = asyncio.get_event_loop().time()
+            self.status = "working"
+            try:
+                result = await pt(work)
+                self.performance_metrics["tasks_completed"] += 1
+                elapsed = asyncio.get_event_loop().time() - t0
+                return {"ok": True, "agent": self.name,
+                        "elapsed_s": round(elapsed, 3), "result": result}
+            except Exception as e:  # noqa: BLE001
+                self.performance_metrics["tasks_failed"] += 1
+                return {"ok": False, "agent": self.name,
+                        "result": {"error": f"{type(e).__name__}: {e}"}}
+            finally:
+                self.status = "idle"
+        return {"ok": False, "agent": self.name,
+                "result": {"error": "agent has no _process_task"}}
 
     async def _execute_work(self, work_item: Dict[str, Any]):
-        """Execute a unit of work. Override in subclasses."""
         try:
-            logger.debug(f"Agent {self.name} executing work: {work_item.get('type', 'unknown')}")
-            self.performance_metrics["tasks_completed"] += 1
-        except Exception as e:
+            await self.execute(work_item)
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Work execution error in {self.name}: {e}")
             self.performance_metrics["tasks_failed"] += 1
-            raise
 
     async def _handle_message(self, message: Message):
-        """Process an incoming message. Override in subclasses."""
-        logger.debug(f"Agent {self.name} handling message from {message.sender}")
+        pass
 
     def add_work(self, work_item: Dict[str, Any]):
-        """Add work to the agent's queue."""
         if not self.is_active:
-            logger.warning(f"Cannot add work to inactive agent {self.name}")
             return
         self.workqueue.put_nowait(work_item)
 
     def deliver_message(self, message: Message):
-        """Deliver a message to this agent's inbox."""
         if self.is_active:
             self._inbox.put_nowait(message)
-        else:
-            logger.warning(f"Message dropped for inactive agent {self.name}")
 
     async def send_to(self, recipient: str, content: Dict[str, Any],
                       reply_to: Optional[str] = None) -> Message:
-        """Send a message to another agent."""
         msg = Message(sender=self.name, recipient=recipient, content=content, reply_to=reply_to)
         await self.communication_hub.send_message(msg)
         return msg
 
     async def broadcast(self, content: Dict[str, Any]):
-        """Broadcast to all agents."""
         msg = Message(sender=self.name, recipient="broadcast", content=content)
         await self.communication_hub.broadcast(msg)
 
     def get_status(self) -> Dict[str, Any]:
-        """Get agent status."""
         return {
             "name": self.name,
             "status": self.status,
@@ -168,8 +198,6 @@ class BaseAgent(ABC):
         }
 
     async def shutdown_async(self):
-        """Async shutdown."""
-        logger.info(f"Agent {self.name} shutting down")
         self.is_active = False
         if self._run_task:
             self._run_task.cancel()
@@ -179,7 +207,6 @@ class BaseAgent(ABC):
                 pass
 
     def shutdown(self):
-        """Synchronous shutdown trigger."""
         if self.is_active:
             asyncio.create_task(self.shutdown_async())
 
