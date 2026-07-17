@@ -68,9 +68,12 @@ def _wrap_process_task(fn: Callable[..., Awaitable[Any]]):
         spec = getattr(self, "specialization", None)
         if dispatch is not None and isinstance(spec, str):
             real = await dispatch(spec, work if isinstance(work, dict) else {"prompt": str(work)})
-            if real is not None and real.get("ok"):
+            if real is not None:
+                # The real dispatcher is authoritative even when it returns a
+                # validation/tool error. Falling back to generated template code
+                # would reintroduce simulated answers.
                 return real
-        # Fallback to the original subclass behaviour.
+        # Last-resort compatibility for legacy subclasses with unknown specs.
         return await fn(self, work)
 
     wrapper.__real_wrapped__ = True  # type: ignore[attr-defined]
@@ -165,7 +168,14 @@ class BaseAgent(ABC):
             self.performance_metrics["tasks_failed"] += 1
 
     async def _handle_message(self, message: Message):
-        pass
+        content = message.content or {}
+        action = content.get("action") or content.get("type")
+        if action in {"status_request", "status", "ping"}:
+            await self.send_to(message.sender, {"action": "status", "status": self.get_status()}, reply_to=message.message_id)
+        elif action == "task":
+            self.add_work({**content, "original_sender": message.sender})
+        else:
+            self.memory.setdefault("messages", []).append(message.to_dict())
 
     def add_work(self, work_item: Dict[str, Any]):
         if not self.is_active:

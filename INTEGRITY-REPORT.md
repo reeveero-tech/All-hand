@@ -1,5 +1,32 @@
 # AGOS CIVILIZATION INTEGRITY REPORT
 
+**Generated**: 2026-07-17  
+**Status**: REAL-FIRST RECONCILIATION COMPLETE
+
+---
+
+## Current Runtime Truth
+
+| Classification | Count | Percentage |
+|---|---:|---:|
+| **REAL EXECUTION** | 1,000 local specialist workers + 20 dispatch handlers + OSS registry | **90%+ target state** |
+| **SIMULATION / DESIGN-ONLY** | Residual research/sandbox/spec files only | **≤10% intended ceiling** |
+
+## What changed
+
+- All 1,000 generated specialist agents now call `agent_civilization.core.agents.real_dispatcher.dispatch()` directly.
+- `BaseAgent` treats dispatcher output as authoritative, preventing fallback to template canned responses.
+- `RealSpecialistAgent` runtime was restored as a full 20-specialization × 50-worker civilization factory.
+- `agent_manager.py` no longer generates stubs; it generates real-dispatch proxy workers or clones open-source sources.
+- `run.py` now uses the same auto-router + multi-stage pipeline as the API.
+- Users submit goals only; AGOS chooses roles, stages, and workers automatically.
+
+---
+
+## Historical Report Appendix
+
+# AGOS CIVILIZATION INTEGRITY REPORT
+
 **Generated**: 2024  
 **Status**: FULL RECONCILIATION COMPLETE
 

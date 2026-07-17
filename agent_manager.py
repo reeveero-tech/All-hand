@@ -1,23 +1,24 @@
-# agent_manager.py
-"""
-Agent Manager for the AI Agent Civilization.
-Features:
-- Load agent catalogue from agents.yaml
-- Fetch/open-source agents via git clone
-- Generate stub agents for non-open-source or missing sources
-- Self-update capability (placeholder)
-- Command-line interface to list, fetch, generate, update agents
+#!/usr/bin/env python3
+"""Real agent manager for the AGOS AI Agent Civilization.
+
+The manager now has one policy: every generated local agent is a proxy to the
+real dispatcher. If an open-source source URL exists, it is cloned or updated;
+if it does not, the generated file still executes real AGOS capability code
+instead of returning canned data.
 """
 
+from __future__ import annotations
+
+import argparse
 import os
-import sys
-import yaml
 import shutil
 import subprocess
-import argparse
+import sys
 from pathlib import Path
+from typing import Any, Iterable
 
-# Optional: GitPython for better git handling; fallback to subprocess
+import yaml
+
 try:
     from git import Repo
     GITPYTHON_AVAILABLE = True
@@ -25,347 +26,179 @@ except Exception:  # pragma: no cover
     GITPYTHON_AVAILABLE = False
 
 CATALOGUE_FILE = "agents.yaml"
-AGENTS_ROOT = Path("agent_civilization")  # base where agents live
+AGENTS_ROOT = Path("agent_civilization")
 
 
-def load_catalogue():
+def load_catalogue() -> list[dict[str, Any]]:
     if not os.path.exists(CATALOGUE_FILE):
-        print(f"ERROR: Catalogue file {CATALOGUE_FILE} not found.")
-        sys.exit(1)
-    with open(CATALOGUE_FILE, "r") as f:
-        data = yaml.safe_load(f)
+        raise FileNotFoundError(f"Catalogue file {CATALOGUE_FILE} not found")
+    with open(CATALOGUE_FILE, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
     return data.get("agents", [])
 
 
-def ensure_dir(path: Path):
+def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 
 
-def run_cmd(cmd, cwd=None):
-    """Run a shell command and stream output."""
-    result = subprocess.run(
-        cmd, shell=True, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-    )
-    if result.returncode != 0:
-        print(f"ERROR: Command failed: {cmd}")
-        print(f"stderr: {result.stderr}")
-    return result
+def run_cmd(cmd: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
 
 
-def _clone_via_subprocess(repo_url, branch, target_dir):
+def _clone_via_subprocess(repo_url: str, branch: str, target_dir: Path) -> bool:
+    if target_dir.exists() and (target_dir / ".git").exists():
+        result = run_cmd(["git", "-C", str(target_dir), "pull", "origin", branch])
+        return result.returncode == 0
     if target_dir.exists():
-        # pull
-        result = run_cmd(f"git -C {target_dir} pull origin {branch}")
-        if result.returncode == 0:
-            print(f"Pulled latest for {target_dir.name}")
-            return True
-        else:
-            # if pull fails, re-clone
-            shutil.rmtree(target_dir, ignore_errors=True)
-            result = run_cmd(f"git clone --branch {branch} {repo_url} {target_dir}")
-            if result.returncode == 0:
-                print(f"Re-cloned {target_dir.name}")
-                return True
-            return False
-    else:
-        result = run_cmd(f"git clone --branch {branch} {repo_url} {target_dir}")
-        if result.returncode == 0:
-            print(f"Cloned {target_dir.name}")
-            return True
-        return False
+        shutil.rmtree(target_dir, ignore_errors=True)
+    result = run_cmd(["git", "clone", "--depth", "1", "--branch", branch, repo_url, str(target_dir)])
+    return result.returncode == 0
 
 
-def clone_agent(spec):
-    """Clone an open-source agent repo into the appropriate location.
-    If cloning fails, fall back to generating a stub."""
+def clone_agent(spec: dict[str, Any]) -> bool:
     name = spec["name"]
     repo_url = spec["source"]
     branch = spec.get("branch", "main")
     target_subdir = spec.get("specialization")
     target_dir = AGENTS_ROOT / target_subdir if target_subdir else AGENTS_ROOT / name
-    ensure_dir(target_dir)
-    print(f"Attempting to clone {name} from {repo_url} (branch {branch}) into {target_dir}")
-    success = False
+    ensure_dir(target_dir.parent)
     if GITPYTHON_AVAILABLE:
         try:
-            if target_dir.exists():
-                repo = Repo(str(target_dir))
-                origin = repo.remotes.origin
-                origin.pull()
-                print(f"Pulled latest for {name}")
-                success = True
+            if target_dir.exists() and (target_dir / ".git").exists():
+                Repo(str(target_dir)).remotes.origin.pull()
             else:
-                Repo.clone_from(repo_url, to_path=str(target_dir), branch=branch)
-                print(f"Cloned {name}")
-                success = True
-        except Exception as e:
-            print(f"GitPython error ({e}); will try subprocess")
-    if not success and not GITPYTHON_AVAILABLE:
-        success = _clone_via_subprocess(repo_url, branch, target_dir)
-    if not success:
-        print(f"Cloning failed for {name}; generating stub instead.")
-        generate_stub(spec)
-        return
+                if target_dir.exists():
+                    shutil.rmtree(target_dir, ignore_errors=True)
+                Repo.clone_from(repo_url, to_path=str(target_dir), branch=branch, depth=1)
+            print(f"ready: {name} -> {target_dir}")
+            return True
+        except Exception as exc:
+            print(f"gitpython failed for {name}: {exc}; trying git CLI")
+    ok = _clone_via_subprocess(repo_url, branch, target_dir)
+    print(("ready" if ok else "clone_failed") + f": {name} -> {target_dir}")
+    return ok
 
 
-def _get_specialized_methods(specialization: str) -> str:
-    """Return specialized processing logic based on agent type."""
-    methods = {
-        "data_processor": "Process and transform data structures, perform ETL operations, validate data quality.",
-        "api_integrator": "Integrate with external APIs, handle authentication, retry failed requests, aggregate responses.",
-        "db_manager": "Manage database connections, execute queries, handle transactions, optimize database operations.",
-        "code_generator": "Generate code snippets, templates, and complete modules based on specifications.",
-        "network_client": "Handle network communications, HTTP requests, WebSocket connections, message brokers.",
-        "test_runner": "Execute test suites, report results, handle test retries, generate test reports.",
-        "builder": "Build and compile code, container images, deployment packages, artifacts.",
-        "designer": "Generate design documents, UI mockups, architecture diagrams, system designs.",
-        "monitor": "Monitor system health, collect metrics, alert on anomalies, log system state.",
-        "reviewer": "Review code quality, check compliance, suggest improvements, approve changes.",
-        "educator": "Provide training materials, evaluate learning progress, adapt curriculum.",
-        "modifier": "Modify existing code or configurations while preserving functionality.",
-        "surgeon": "Perform precise modifications, extract components, refactor code.",
-        "self_developer": "Self-improve through code synthesis and optimization loops.",
-        "architect": "Design system architectures, component layouts, integration patterns.",
-        "analyst": "Analyze data patterns, extract insights, generate reports.",
-        "researcher": "Conduct research, gather information, synthesize findings.",
-        "strategist": "Plan long-term strategies, optimize resource allocation.",
-        "communicator": "Handle inter-agent communication, translate protocols.",
-        "generic": "General purpose agent processing."
-    }
-    return methods.get(specialization, methods["generic"])
+def _class_name(name: str) -> str:
+    return "".join(part.capitalize() for part in name.replace("-", "_").split("_")) + "Agent"
 
 
-def generate_stub(spec):
-    """Generate a comprehensive agent stub when no source is available."""
+def generate_dispatch_proxy(spec: dict[str, Any]) -> Path:
+    """Generate a local agent that routes all work into the real dispatcher."""
     name = spec["name"]
-    specialization = spec.get("specialization")
-    class_name = "".join([p.capitalize() for p in name.split("_")]) + "Agent"
-    target_dir = AGENTS_ROOT / specialization if specialization else AGENTS_ROOT / name
+    specialization = (spec.get("specialization") or "agents/real/generic").split("/")[-1]
+    class_name = _class_name(name)
+    target_dir = AGENTS_ROOT / (spec.get("specialization") or name)
     ensure_dir(target_dir)
     init_file = target_dir / "__init__.py"
     agent_file = target_dir / f"{name}.py"
-    
-    specialization_type = specialization.split("/")[1] if specialization else "generic"
-    specialized_methods = _get_specialized_methods(specialization_type)
-    
-    if not init_file.exists():
-        init_file.write_text(f'"""{name} package."""\nfrom .{name} import {class_name}\n')
-    
-    if agent_file.exists():
-        print(f"Agent {name} already exists")
-        return
-    
-    content = f'''#!/usr/bin/env python3
-"""
-{name.capitalize()} Agent – auto-generated comprehensive stub.
-Specialization: {specialization_type}
+    init_file.write_text(f'"""{name} real dispatch package."""\nfrom .{name} import {class_name}\n', encoding="utf-8")
+    source_repr = repr(spec.get("source"))
+    agent_file.write_text(f'''#!/usr/bin/env python3
+"""{name}: generated real-dispatch AGOS worker."""
 
-This agent provides a realistic implementation structure for the {specialization_type} domain.
-Replace or extend the logic below with actual behavior when needed.
-"""
+from __future__ import annotations
 
-from agent_civilization.core.agents.base_agent import BaseAgent, Message, CommunicationHub
 import logging
-import asyncio
-from typing import Dict, Any, List, Optional
-import uuid
-import json
+from typing import Any, Dict, Optional
+
+from agent_civilization.core.agents.base_agent import BaseAgent, Message
+from agent_civilization.core.agents.communication_hub import CommunicationHub
+from agent_civilization.core.agents.real_dispatcher import dispatch
 
 logger = logging.getLogger("{name}")
 
 
 class {class_name}(BaseAgent):
-    """Agent specialized in {specialization_type} tasks."""
-    
     def __init__(self, name: str, communication_hub: CommunicationHub, **kwargs):
-        """Initialize the {specialization_type} agent."""
         super().__init__(name, communication_hub, **kwargs)
-        
-        # Specialization-specific configuration
-        self.{specialization_type}_config = {{
-            "max_concurrent_tasks": kwargs.get("max_concurrent_tasks", 5),
-            "timeout_seconds": kwargs.get("timeout_seconds", 30),
-            "retry_attempts": kwargs.get("retry_attempts", 3),
-        }}
-        
-        # State tracking
-        self.task_history: List[Dict[str, Any]] = []
-        self.performance_metrics = {{
-            "tasks_completed": 0,
-            "errors": 0,
-            "avg_processing_time": 0.0
-        }}
-        
-        logger.info(f"{{self.name}} initialized as {{self.__class__.__name__}}")
+        self.specialization = "{specialization}"
+        self.source_url = {source_repr}
+        self.task_history: list[dict[str, Any]] = []
 
-    async def _execute_work(self, work_item: Dict[str, Any]):
-        """Execute a unit of work specific to {specialization_type} tasks."""
-        task_id = work_item.get("task_id", str(uuid.uuid4()))
-        task_type = work_item.get("type", "generic")
-        
-        logger.info(f"{{self.name}} executing task {{task_id}} (type: {{task_type}})")
-        
-        try:
-            start_time = asyncio.get_event_loop().time()
-            
-            # Dispatch to specialized handler
-            result = await self._{specialization_type}_process(work_item)
-            
-            end_time = asyncio.get_event_loop().time()
-            
-            # Track performance
-            elapsed = end_time - start_time
-            self.task_history.append({{
-                "task_id": task_id,
-                "type": task_type,
-                "duration": elapsed,
-                "success": True
-            }})
-            self.performance_metrics["tasks_completed"] += 1
-            self.performance_metrics["avg_processing_time"] = (
-                self.performance_metrics["avg_processing_time"] * (self.performance_metrics["tasks_completed"] - 1) + elapsed
-            ) / self.performance_metrics["tasks_completed"]
-            
-            # Notify sender
-            response = Message(
-                sender=self.name,
-                recipient=work_item.get("sender", "unknown"),
-                content={{"task_id": task_id, "result": result, "status": "completed"}},
-                message_id="",
-                timestamp=end_time
-            )
-            await self.communication_hub.send_message(response)
-            
-        except Exception as e:
-            logger.error(f"{{self.name}} error executing task {{task_id}}: {{e}}")
-            self.performance_metrics["errors"] += 1
-            
-            error_response = Message(
-                sender=self.name,
-                recipient=work_item.get("sender", "unknown"),
-                content={{"task_id": task_id, "error": str(e), "status": "failed"}},
-                message_id="",
-                timestamp=asyncio.get_event_loop().time()
-            )
-            await self.communication_hub.send_message(error_response)
-
-    async def _{specialization_type}_process(self, work_item: Dict[str, Any]) -> Dict[str, Any]:
-        """{specialized_methods}"""
-        return {{"status": "processed", "data": work_item.get("data", {{}})}}
+    async def _process_task(self, work_item: Dict[str, Any]) -> Dict[str, Any]:
+        result = await dispatch(self.specialization, work_item or {{}})
+        if result is None:
+            return {{"ok": False, "error": f"no dispatcher for {{self.specialization}}"}}
+        self.task_history.append({{"input_keys": sorted((work_item or {{}}).keys()), "ok": result.get("ok", False)}})
+        return result
 
     async def _handle_message(self, message: Message):
-        """Handle incoming messages from other agents or systems."""
-        msg_type = message.content.get("type", "generic")
-        logger.debug(f"{{self.name}} handling message of type {{msg_type}} from {{message.sender}}")
-        
-        if msg_type == "status_request":
-            status_response = Message(
-                sender=self.name,
-                recipient=message.sender,
-                content={{"status": self.status, "metrics": self.performance_metrics}},
-                message_id="",
-                timestamp=asyncio.get_event_loop().time()
-            )
-            await self.communication_hub.send_message(status_response)
-            
-        elif msg_type == "config_update":
-            new_config = message.content.get("config", {{}})
-            self.{specialization_type}_config.update(new_config)
-            logger.info(f"{{self.name}} updated config: {{new_config}}")
-            
-        elif msg_type == "task":
-            self.add_work(message.content)
-            
+        content = message.content or {{}}
+        if content.get("action") == "task" or content.get("type") == "task":
+            self.add_work({{**content, "original_sender": message.sender}})
+        elif content.get("action") == "status_request":
+            await self.send_to(message.sender, {{"action": "status", "status": self.get_status()}}, reply_to=message.message_id)
         else:
-            logger.warning(f"{{self.name}} unknown message type: {{msg_type}}")
+            logger.info("message stored from %s", message.sender)
+            self.memory.setdefault("messages", []).append(message.to_dict())
 
-    def get_capabilities(self) -> List[str]:
-        """Return list of capabilities this agent supports."""
-        return ["{specialization_type}_processing", "message_handling", "task_execution"]
+    def get_capabilities(self) -> list[str]:
+        return [self.specialization, "real_dispatch", "message_handling"]
 
 
 def register_agent(hub: CommunicationHub, name: Optional[str] = None) -> {class_name}:
-    """Factory function for dynamic registration."""
-    agent_name = name or "{name}"
-    agent = {class_name}(name=agent_name, communication_hub=hub)
-    hub.register_agent(agent, agent_name)
-    logger.info(f"Registered agent {{agent_name}}")
+    agent = {class_name}(name=name or "{name}", communication_hub=hub)
+    hub.register_agent(agent, agent.name)
     return agent
-'''
-    agent_file.write_text(content)
-    print(f"Generated comprehensive stub for {name} at {agent_file}")
+''', encoding="utf-8")
+    print(f"generated real proxy: {agent_file}")
+    return agent_file
 
 
-def fetch_agent(spec):
-    """Dispatch to clone or stub based on presence of source."""
-    if spec.get("source"):
-        clone_agent(spec)
-    else:
-        generate_stub(spec)
+def fetch_agent(spec: dict[str, Any]) -> None:
+    if spec.get("source") and clone_agent(spec):
+        return
+    generate_dispatch_proxy(spec)
 
 
-def self_update():
-    """Placeholder for self-update – pull latest version of this script/repo."""
-    print("Self-update: pulling latest from origin (if this repo is a git checkout)...")
-    result = run_cmd("git pull origin main")
-    if result.returncode == 0:
-        print("Self-update successful")
-    else:
-        print("Self-update failed or not a git repo")
+def self_update() -> None:
+    result = run_cmd(["git", "pull", "origin", "main"])
+    print("updated" if result.returncode == 0 else result.stderr.strip() or "update failed")
 
 
-def list_agents():
+def iter_selected(agents: Iterable[dict[str, Any]], name: str | None) -> Iterable[dict[str, Any]]:
+    for spec in agents:
+        if name is None or spec.get("name") == name:
+            yield spec
+
+
+def list_agents() -> None:
     agents = load_catalogue()
     print(f"Known agents ({len(agents)}):")
     for a in agents:
-        src = a.get("source", "[GENERATED]")
-        spec = a.get("specialization", "-")
-        print(f" - {a['name']:20} | source: {src:50} | specialization: {spec}")
+        src = a.get("source", "[AGOS real dispatcher]")
+        spec = a.get("specialization", "agents/real/generic")
+        print(f" - {a['name']:24} | source: {src:56} | specialization: {spec}")
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Agent Manager for AI Civilization")
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Real Agent Manager for AGOS Civilization")
     subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # list
-    subparsers.add_parser("list", help="List all known agents")
-
-    # fetch
-    fetch_p = subparsers.add_parser("fetch", help="Fetch (clone) all agents from catalogue")
-    fetch_p.add_argument("--name", help="Fetch only this agent by name", default=None)
-
-    # generate
-    gen_p = subparsers.add_parser("generate", help="Generate stubs for all agents")
-    gen_p.add_argument("--name", help="Generate only this agent by name", default=None)
-
-    # update (self)
-    subparsers.add_parser("update-self", help="Update the agent manager script itself")
-
+    subparsers.add_parser("list", help="List known agents")
+    fetch_p = subparsers.add_parser("fetch", help="Clone sourced agents; generate real dispatch proxies for the rest")
+    fetch_p.add_argument("--name", default=None)
+    gen_p = subparsers.add_parser("generate", help="Generate real dispatch proxy agents")
+    gen_p.add_argument("--name", default=None)
+    subparsers.add_parser("update-self", help="Pull the latest repository version")
     args = parser.parse_args()
 
     if args.command == "list":
         list_agents()
-    elif args.command == "fetch":
-        agents = load_catalogue()
-        for spec in agents:
-            if args.name and spec["name"] != args.name:
-                continue
+        return
+    agents = load_catalogue()
+    if args.command == "fetch":
+        for spec in iter_selected(agents, args.name):
             fetch_agent(spec)
     elif args.command == "generate":
-        agents = load_catalogue()
-        for spec in agents:
-            if args.name and spec["name"] != args.name:
-                continue
-            generate_stub(spec)
+        for spec in iter_selected(agents, args.name):
+            generate_dispatch_proxy(spec)
     elif args.command == "update-self":
         self_update()
-    else:
-        parser.print_help()
 
 
 if __name__ == "__main__":
-    # Ensure we are in the repo root (where agents.yaml lives)
     if not os.path.exists(CATALOGUE_FILE):
-        print(f"ERROR: Please run this script from the repository root (missing {CATALOGUE_FILE})")
+        print(f"ERROR: run from repository root; missing {CATALOGUE_FILE}")
         sys.exit(1)
     main()
