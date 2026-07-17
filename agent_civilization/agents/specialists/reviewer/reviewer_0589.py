@@ -21,9 +21,12 @@ class ReviewerAgent0589(BaseAgent):
         logger.info(f"Agent {name} started")
 
     async def _process_task(self, work):
-        import asyncio; await asyncio.sleep(0.02)
-        return {"issues": ["style"], "score": 85}
-
+        from agent_civilization.core.agents.real_dispatcher import dispatch
+        payload = work if isinstance(work, dict) else {"prompt": str(work)}
+        result = await dispatch(self.specialization, payload)
+        if result is None:
+            return {"ok": False, "error": f"no real dispatcher for {self.specialization}"}
+        return result
     async def _execute_work(self, work: Dict[str, Any]):
         try:
             tid = work.get("task_id", "unknown")
