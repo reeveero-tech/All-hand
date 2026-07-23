@@ -25,7 +25,7 @@ import logging
 import os
 import time
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, utc
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -33,7 +33,7 @@ from collections import defaultdict
 
 from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
@@ -252,11 +252,137 @@ async def api_root(request: Request):
         "status": "alive",
         "specializations": list(SPECIALIZATIONS.keys()),
         "docs": "/docs",
+        "endpoints": {
+            "health": "/health",
+            "metrics": "/metrics",
+            "api_docs": "/docs",
+        },
         "security": {
             "authentication": "enabled" if ENABLE_AUTH else "disabled",
             "rate_limiting": "enabled",
         }
     }
+
+
+# ============================================================================
+# HEALTH & METRICS ENDPOINTS
+# ============================================================================
+
+@app.get("/health")
+async def health_check():
+    """
+    Comprehensive health check endpoint.
+    
+    Returns system health status including:
+    - API availability
+    - Civilization status
+    - Storage status
+    - Redis status (if configured)
+    """
+    try:
+        # Import health check components
+        from agos_kernel.infrastructure.health import get_health_registry, HealthStatus
+        
+        registry = get_health_registry()
+        system_health = await registry.get_system_health()
+        
+        status_code = 200 if system_health["status"] == "healthy" else 503
+        return system_health
+        
+    except ImportError:
+        # Fallback if infrastructure module not available
+        return {
+            "status": "healthy",
+            "uptime_seconds": round(time.time() - STARTED_AT, 2),
+            "checks": {
+                "api": {"status": "healthy", "message": "OK"},
+                "civilization": {"status": "healthy", "message": f"{len(SPECIALIZATIONS)} specializations"}
+            },
+            "summary": {"total": 1, "healthy": 1}
+        }
+
+
+@app.get("/health/live")
+async def liveness_probe():
+    """
+    Kubernetes liveness probe.
+    
+    Returns 200 if the application is running.
+    """
+    return {"status": "alive", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/health/ready")
+async def readiness_probe():
+    """
+    Kubernetes readiness probe.
+    
+    Returns 200 if the application is ready to accept traffic.
+    Checks:
+    - API is responsive
+    - Civilization is initialized
+    """
+    try:
+        # Check if civilization is initialized
+        if not CIVILIZATION:
+            return {"status": "not_ready", "reason": "Civilization not initialized"}
+        
+        # Check if agents are available
+        total_agents = sum(len(agents) for agents in CIVILIZATION.values())
+        if total_agents == 0:
+            return {"status": "not_ready", "reason": "No agents available"}
+        
+        return {
+            "status": "ready",
+            "agents": total_agents,
+            "specializations": len(SPECIALIZATIONS)
+        }
+        
+    except Exception as e:
+        return {"status": "not_ready", "reason": str(e)}
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    """
+    Prometheus metrics endpoint.
+    
+    Returns metrics in Prometheus text format for scraping.
+    """
+    try:
+        from agos_kernel.infrastructure.metrics import get_metrics
+        
+        metrics = get_metrics()
+        
+        # Add runtime metrics
+        metrics.set_gauge("uptime_seconds", time.time() - STARTED_AT)
+        metrics.set_gauge("queue_size", len(TASKS))
+        
+        # Agent counts
+        for spec, agents in CIVILIZATION.items():
+            active = sum(1 for a in agents if a.status == "idle")
+            metrics.set_gauge("agents_active", active, {"specialization": spec})
+        
+        return Response(
+            content=metrics.export_prometheus(),
+            media_type="text/plain; charset=utf-8"
+        )
+        
+    except ImportError:
+        # Fallback basic metrics
+        content = f"""# HELP agos_uptime_seconds System uptime in seconds
+# TYPE agos_uptime_seconds gauge
+agos_uptime_seconds {time.time() - STARTED_AT}
+
+# HELP agos_tasks_in_queue Current tasks in queue
+# TYPE agos_tasks_in_queue gauge
+agos_tasks_in_queue {len(TASKS)}
+
+# HELP agos_specializations Number of specializations
+# TYPE agos_specializations gauge
+agos_specializations {len(SPECIALIZATIONS)}
+"""
+        return Response(content=content, media_type="text/plain; charset=utf-8")
 
 
 @app.get("/api/system/status")
