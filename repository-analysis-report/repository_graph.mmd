@@ -1,0 +1,273 @@
+# AGOS Agent Civilization - Repository Graph
+
+**Generated:** 2026-07-23
+
+---
+
+## System Architecture Graph
+
+```mermaid
+graph TB
+    subgraph "Entry Points"
+        run["run.py"]
+        server["server.py"]
+    end
+
+    subgraph "API Layer"
+        api["FastAPI Server<br/>/api/*"]
+        chat["/api/chat<br/>LLM Routing"]
+        tasks["/api/tasks<br/>Task Management"]
+        events["/api/events/stream<br/>SSE"]
+    end
+
+    subgraph "Civilization System"
+        civ["Civilization<br/>1000 Agents"]
+        
+        subgraph "Specializations"
+            analyst["analyst (50)"]
+            builder["builder (50)"]
+            surgeon["surgeon (50)"]
+            researcher["researcher (50)"]
+            test["test_runner (50)"]
+            other["... (15 more)"]
+        end
+    end
+
+    subgraph "Kernel"
+        kernel["AGOS Kernel"]
+        
+        subgraph "Registries"
+            comp["Component Registry"]
+            cap["Capability Registry"]
+            prov["Provider Registry"]
+            wf["Workflow Registry"]
+            know["Knowledge Registry"]
+        end
+        
+        subgraph "Runtime"
+            session["Session"]
+            workspace["Workspace"]
+            resource["Resource"]
+        end
+    end
+
+    subgraph "Intelligence"
+        brain["Engineering Brain"]
+        memory["Memory"]
+        learning["Learning"]
+        experience["Experience"]
+    end
+
+    subgraph "Governance"
+        policy["Policies"]
+        audit["Audit"]
+    end
+
+    subgraph "Storage"
+        supabase["Supabase"]
+        memory_store["In-Memory"]
+    end
+
+    subgraph "External"
+        llm["LLM Provider<br/>(OpenRouter)"]
+        external["External Agents"]
+    end
+
+    run --> server
+    server --> api
+    api --> chat
+    api --> tasks
+    api --> events
+    
+    chat --> kernel
+    chat --> civ
+    
+    tasks --> kernel
+    tasks --> civ
+    
+    civ --> analyst
+    civ --> builder
+    civ --> surgeon
+    civ --> researcher
+    civ --> test
+    civ --> other
+    
+    civ --> supabase
+    civ --> memory_store
+    
+    analyst --> llm
+    builder --> llm
+    researcher --> llm
+    
+    kernel --> comp
+    kernel --> cap
+    kernel --> prov
+    kernel --> wf
+    kernel --> know
+    
+    kernel --> session
+    kernel --> workspace
+    kernel --> resource
+    
+    kernel --> brain
+    kernel --> memory
+    kernel --> learning
+    kernel --> experience
+    
+    kernel --> policy
+    kernel --> audit
+    
+    brain --> comp
+    memory --> memory_store
+    experience --> supabase
+```
+
+---
+
+## Task Execution Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant Router
+    participant Agent
+    participant Handler
+    participant Storage
+
+    User->>API: POST /api/chat
+    API->>Router: Route message
+    Router-->>API: specialization
+    
+    API->>Agent: Pick agent
+    Agent-->>API: agent instance
+    
+    API->>Agent: execute(work)
+    Agent->>Handler: dispatch(spec, work)
+    
+    alt LLM available
+        Handler->>LLM: complete()
+        LLM-->>Handler: result
+    end
+    
+    Handler-->>Agent: outcome
+    Agent-->>API: {ok, result, elapsed}
+    
+    API->>Storage: insert_task()
+    API-->>User: {task_id, outcome}
+```
+
+---
+
+## Agent Specialization Network
+
+```mermaid
+graph LR
+    subgraph "Development"
+        B["builder<br/>Build Actions"]
+        S["surgeon<br/>AST Diagnostics"]
+        T["test_runner<br/>Code Testing"]
+        C["code_generator<br/>Code Generation"]
+        M["modifier<br/>Code Transform"]
+        R["reviewer<br/>Code Review"]
+    end
+
+    subgraph "Analysis"
+        A["analyst<br/>Data Analysis"]
+        Re["researcher<br/>Web Research"]
+        Mo["monitor<br/>Runtime Metrics"]
+        V["validator<br/>Validation"]
+    end
+
+    subgraph "Communication"
+        Co["communicator<br/>Communication"]
+        E["educator<br/>Learning"]
+    end
+
+    subgraph "Infrastructure"
+        Ar["architect<br/>Architecture"]
+        D["designer<br/>Design Systems"]
+        AI["api_integrator<br/>API Integration"]
+        N["network_client<br/>Network Probes"]
+        St["strategist<br/>Planning"]
+        DP["data_processor<br/>Data Processing"]
+        DB["db_manager<br/>Database"]
+        SD["self_developer<br/>Self-Inspection"]
+    end
+```
+
+---
+
+## Kernel Component Registry
+
+```mermaid
+graph TB
+    subgraph "AGOS Kernel"
+        K["AGOSKernel"]
+        
+        K --> CR["Component Registry"]
+        K --> CAPR["Capability Registry"]
+        K --> PR["Provider Registry"]
+        K --> WR["Workflow Registry"]
+        K --> KR["Knowledge Registry"]
+        
+        K --> RT["Runtime Manager"]
+        K --> GOV["Governance"]
+        K --> INT["Intelligence"]
+        
+        RT --> S["Session"]
+        RT --> W["Workspace"]
+        RT --> RS["Resource"]
+        RT --> RC["Recovery"]
+        RT --> ST["State"]
+        
+        INT --> BR["Brain"]
+        INT --> MEM["Memory"]
+        INT --> LRN["Learning"]
+        INT --> EXP["Experience"]
+    end
+```
+
+---
+
+## Data Flow
+
+```mermaid
+flowchart LR
+    subgraph "Input"
+        Msg["User Message"]
+        Task["Task Request"]
+    end
+
+    subgraph "Processing"
+        Queue["Task Queue"]
+        Agent["Agent Pool"]
+        Handler["Handler"]
+    end
+
+    subgraph "Storage"
+        Mem["Memory"]
+        DB["Database"]
+    end
+
+    subgraph "Output"
+        Result["Result"]
+        Event["Event Stream"]
+    end
+
+    Msg -->|/api/chat| Queue
+    Task -->|/api/tasks| Queue
+    
+    Queue --> Agent
+    Agent --> Handler
+    
+    Handler --> Result
+    Handler --> Event
+    
+    Queue --> Mem
+    Handler --> DB
+```
+
+---
+
+*Report generated as part of comprehensive repository analysis*

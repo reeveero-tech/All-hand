@@ -1,0 +1,353 @@
+# AGOS Agent Civilization - Service Map
+
+**Generated:** 2026-07-23
+
+---
+
+## Service Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        User["User"]
+        ExternalAgent["External Agent"]
+    end
+
+    subgraph "API Gateway"
+        FastAPI["FastAPI Server<br/>:8000"]
+    end
+
+    subgraph "Business Logic"
+        Chat["Chat Service<br/>(LLM Routing)"]
+        Tasks["Task Service"]
+        Agents["Agent Service"]
+        Events["Event Service"]
+    end
+
+    subgraph "Agent Civilizations"
+        Dispatcher["Task Dispatcher"]
+        
+        subgraph "Specializations"
+            Spec1["analyst"]
+            Spec2["builder"]
+            Spec3["surgeon"]
+            Spec4["researcher"]
+            SpecN["... (16 more)"]
+        end
+    end
+
+    subgraph "Kernel"
+        Kernel["AGOS Kernel"]
+        Registry["Registries"]
+        Runtime["Runtime"]
+    end
+
+    subgraph "Storage"
+        Supabase["Supabase"]
+        Memory["In-Memory"]
+    end
+
+    subgraph "External"
+        LLM["LLM Provider"]
+        Web["Web"]
+    end
+
+    User --> FastAPI
+    ExternalAgent --> FastAPI
+    
+    FastAPI --> Chat
+    FastAPI --> Tasks
+    FastAPI --> Agents
+    FastAPI --> Events
+    
+    Chat --> LLM
+    Chat --> Dispatcher
+    
+    Tasks --> Dispatcher
+    Agents --> Dispatcher
+    
+    Dispatcher --> Spec1
+    Dispatcher --> Spec2
+    Dispatcher --> Spec3
+    Dispatcher --> Spec4
+    Dispatcher --> SpecN
+    
+    Kernel --> Registry
+    Kernel --> Runtime
+    
+    Tasks --> Supabase
+    Tasks --> Memory
+    
+    Events --> Memory
+    
+    Spec4 --> Web
+```
+
+---
+
+## Task Service Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant TaskService
+    participant Dispatcher
+    participant Agent
+    participant Storage
+
+    Client->>API: POST /api/tasks
+    API->>TaskService: create_task(req)
+    
+    TaskService->>TaskService: Validate
+    
+    TaskService->>Storage: insert_task()
+    
+    TaskService->>API: task_id
+    
+    API->>Client: 202 Accepted
+    
+    TaskService->>Dispatcher: dispatch(spec, work)
+    Dispatcher->>Agent: execute()
+    
+    alt LLM Required
+        Agent->>LLM: complete()
+        LLM-->>Agent: result
+    end
+    
+    Agent-->>Dispatcher: outcome
+    Dispatcher-->>TaskService: result
+    
+    TaskService->>Storage: update_task()
+    TaskService->>Storage: upsert_agent_stats()
+```
+
+---
+
+## Event Streaming Service
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant SSE
+    participant Queue
+    participant Producer
+
+    Client->>SSE: GET /api/events/stream
+    
+    loop Every Event
+        Producer->>Queue: put(event)
+    end
+    
+    loop Stream
+        SSE->>Queue: get() with timeout
+        Queue-->>SSE: event
+        SSE-->>Client: data: event
+    end
+    
+    loop Heartbeat
+        SSE-->>Client: data: heartbeat (30s)
+    end
+```
+
+---
+
+## Agent Specialization Services
+
+```mermaid
+graph LR
+    subgraph "Development Services"
+        BS["Builder Service"]
+        SG["Surgeon Service"]
+        TR["Test Runner Service"]
+        CG["Code Generator Service"]
+    end
+
+    subgraph "Analysis Services"
+        AN["Analyst Service"]
+        RS["Researcher Service"]
+        MN["Monitor Service"]
+        VD["Validator Service"]
+    end
+
+    subgraph "Communication Services"
+        CM["Communicator Service"]
+        ED["Educator Service"]
+    end
+
+    subgraph "Infrastructure Services"
+        AR["Architect Service"]
+        DS["Designer Service"]
+        AI["API Integrator Service"]
+        NC["Network Client Service"]
+        ST["Strategist Service"]
+        DP["Data Processor Service"]
+        DB["DB Manager Service"]
+        SD["Self Developer Service"]
+    end
+
+    subgraph "Shared"
+        Common["Common Tools"]
+    end
+
+    BS --> Common
+    SG --> Common
+    TR --> Common
+    AN --> Common
+    RS --> Common
+```
+
+---
+
+## Storage Services
+
+```mermaid
+graph TB
+    subgraph "Storage Abstraction"
+        Storage["get_storage()"]
+    end
+
+    subgraph "Supabase Storage"
+        SupabaseStore["SupabaseStore"]
+        supabase["Supabase Client"]
+        
+        subgraph "Tables"
+            Tasks["tasks"]
+            Events["events"]
+            AgentStats["agent_stats"]
+        end
+    end
+
+    subgraph "In-Memory Storage"
+        MemoryStore["MemoryStore"]
+        tasks["Dict[TASKS]"]
+        events["Queue[TASK_EVENTS]"]
+    end
+
+    Storage --> SupabaseStore
+    Storage --> MemoryStore
+    
+    SupabaseStore --> supabase
+    SupabaseStore --> Tasks
+    SupabaseStore --> Events
+    SupabaseStore --> AgentStats
+    
+    MemoryStore --> tasks
+    MemoryStore --> events
+```
+
+---
+
+## Kernel Services
+
+```mermaid
+graph TB
+    subgraph "AGOS Kernel"
+        Kernel["AGOSKernel"]
+    end
+
+    subgraph "Registry Services"
+        ComponentReg["Component Registry"]
+        CapabilityReg["Capability Registry"]
+        ProviderReg["Provider Registry"]
+        WorkflowReg["Workflow Registry"]
+        KnowledgeReg["Knowledge Registry"]
+    end
+
+    subgraph "Runtime Services"
+        SessionMgmt["Session Management"]
+        WorkspaceMgmt["Workspace Management"]
+        ResourceMgmt["Resource Management"]
+        Recovery["Recovery Service"]
+        StateMgmt["State Management"]
+    end
+
+    subgraph "Intelligence Services"
+        Brain["Engineering Brain"]
+        Memory["Memory Runtime"]
+        Learning["Learning Runtime"]
+        Experience["Experience Runtime"]
+    end
+
+    subgraph "Governance Services"
+        Policy["Policy Engine"]
+        Audit["Audit Logging"]
+    end
+
+    Kernel --> Registry
+    Kernel --> Runtime
+    Kernel --> Intelligence
+    Kernel --> Governance
+
+    Registry --> ComponentReg
+    Registry --> CapabilityReg
+    Registry --> ProviderReg
+    Registry --> WorkflowReg
+    Registry --> KnowledgeReg
+
+    Runtime --> SessionMgmt
+    Runtime --> WorkspaceMgmt
+    Runtime --> ResourceMgmt
+    Runtime --> Recovery
+    Runtime --> StateMgmt
+```
+
+---
+
+## External Service Integrations
+
+```mermaid
+graph LR
+    subgraph "AGOS"
+        Internal["Internal Services"]
+    end
+
+    subgraph "External Services"
+        LLM["LLM Provider<br/>(OpenRouter)"]
+        DB["Supabase<br/>(Database)"]
+        Web["Web<br/>(Research)"]
+        ExternalAgents["External Agents<br/>(OpenAI Compatible)"]
+    end
+
+    Internal --> LLM
+    Internal --> DB
+    Internal --> Web
+    Internal --> ExternalAgents
+```
+
+---
+
+## Deployment Services
+
+```mermaid
+graph TB
+    subgraph "Deployment Options"
+        Docker["Docker Container"]
+        Render["Render Cloud"]
+        Manual["Manual/Other"]
+    end
+
+    subgraph "Runtime"
+        Server["FastAPI Server"]
+        Kernel["AGOS Kernel"]
+    end
+
+    subgraph "External"
+        Supabase["Supabase"]
+        LLM["LLM Provider"]
+    end
+
+    Docker --> Server
+    Docker --> Kernel
+    Render --> Server
+    Render --> Kernel
+    Manual --> Server
+    Manual --> Kernel
+
+    Server --> Supabase
+    Kernel --> LLM
+```
+
+---
+
+*Report generated as part of comprehensive repository analysis*

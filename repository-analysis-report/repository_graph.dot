@@ -1,0 +1,116 @@
+// AGOS Agent Civilization - Repository Graph (Graphviz)
+// Generated: 2026-07-23
+
+digraph AGOS {
+    // Graph settings
+    rankdir=TB;
+    splines=ortho;
+    nodesep=0.5;
+    ranksep=0.8;
+    fontname="Helvetica";
+    fontsize=12;
+    
+    // Node styles
+    node [shape=box, style="rounded,filled", fontname="Helvetica"];
+    
+    // Entry Points
+    subgraph cluster_entry {
+        label="Entry Points";
+        style=dashed;
+        color=gray;
+        run [label="run.py", fillcolor=lightblue];
+        server [label="server.py", fillcolor=lightblue];
+    }
+    
+    // API Layer
+    subgraph cluster_api {
+        label="API Layer";
+        style=dashed;
+        color=gray;
+        api [label="FastAPI Server", fillcolor=lightyellow];
+        chat [label="/api/chat", fillcolor=lightyellow];
+        tasks [label="/api/tasks", fillcolor=lightyellow];
+        events [label="/api/events/stream", fillcolor=lightyellow];
+    }
+    
+    // Kernel
+    subgraph cluster_kernel {
+        label="AGOS Kernel";
+        style=dashed;
+        color=gray;
+        kernel [label="AGOS Kernel", fillcolor=lightgreen];
+        
+        registry [label="Registries", shape=ellipse, fillcolor=palegreen];
+        runtime [label="Runtime", shape=ellipse, fillcolor=palegreen];
+        brain [label="Brain", shape=ellipse, fillcolor=palegreen];
+        governance [label="Governance", shape=ellipse, fillcolor=palegreen];
+    }
+    
+    // Civilizations
+    subgraph cluster_civ {
+        label="Civilizations";
+        style=dashed;
+        color=gray;
+        civ [label="Civilization\n(1000 Agents)", fillcolor=lightpink];
+        
+        spec_development [label="Development\n(10 specs)", shape=ellipse, fillcolor=mistyrose];
+        spec_analysis [label="Analysis\n(4 specs)", shape=ellipse, fillcolor=mistyrose];
+        spec_comm [label="Communication\n(2 specs)", shape=ellipse, fillcolor=mistyrose];
+        spec_infra [label="Infrastructure\n(4 specs)", shape=ellipse, fillcolor=mistyrose];
+    }
+    
+    // Storage
+    subgraph cluster_storage {
+        label="Storage";
+        style=dashed;
+        color=gray;
+        supabase [label="Supabase", fillcolor=lightgray];
+        memory [label="In-Memory", fillcolor=lightgray];
+    }
+    
+    // External
+    subgraph cluster_external {
+        label="External";
+        style=dashed;
+        color=gray;
+        llm [label="LLM Provider", fillcolor=lavender];
+        external [label="External Agents", fillcolor=lavender];
+    }
+    
+    // Edges - Entry to API
+    run -> server;
+    server -> api;
+    
+    // Edges - API to routes
+    api -> chat;
+    api -> tasks;
+    api -> events;
+    
+    // Edges - API to Kernel/Civilization
+    chat -> kernel;
+    chat -> civ;
+    tasks -> kernel;
+    tasks -> civ;
+    
+    // Edges - Kernel internal
+    kernel -> registry;
+    kernel -> runtime;
+    kernel -> brain;
+    kernel -> governance;
+    
+    // Edges - Civilization to specializations
+    civ -> spec_development;
+    civ -> spec_analysis;
+    civ -> spec_comm;
+    civ -> spec_infra;
+    
+    // Edges - External dependencies
+    spec_development -> llm [style=dashed];
+    spec_analysis -> llm [style=dashed];
+    researcher -> external [style=dashed];
+    
+    // Edges - Storage
+    civ -> supabase;
+    civ -> memory;
+    kernel -> supabase [style=dashed];
+}
