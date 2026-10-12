@@ -76,6 +76,75 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
 
+  docker:
+    # R-040: verify the real Dockerfile builds and the container serves /health.
+    # Ubuntu runners provide Docker; the sandbox used for docs work does not.
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          set -o pipefail
+          docker build -t agos:r040-smoke . 2>&1 | tee "$GITHUB_WORKSPACE/docker_build.log"
+          echo "image_size=$(docker image inspect agos:r040-smoke --format '{{.Size}}')" | tee -a "$GITHUB_WORKSPACE/docker_build.log"
+
+      - name: Run container and verify /health
+        run: |
+          set -o pipefail
+          LOG="$GITHUB_WORKSPACE/docker_runtime.log"
+          : > "$LOG"
+          docker run -d --name agos-r040 -p 18000:8000 agos:r040-smoke
+          echo "container_started_at=$(date -u +%FT%TZ)" | tee -a "$LOG"
+          # Bounded startup wait: poll /health up to ~30s, fail fast on container exit.
+          ok=0
+          for i in $(seq 1 30); do
+            if ! docker inspect -f '{{.State.Running}}' agos-r040 | grep -q true; then
+              echo "container exited before answering; rc=container-failure" | tee -a "$LOG"
+              break
+            fi
+            code=$(curl -s -o /tmp/health_body.json -w '%{http_code}' http://localhost:18000/health || echo 000)
+            echo "attempt=$i http_code=$code" >> "$LOG"
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            sleep 1
+          done
+          docker logs agos-r040 > "$GITHUB_WORKSPACE/docker_container.log" 2>&1 || true
+          if [ "$ok" != "1" ]; then
+            echo "FAIL: /health did not return 200" | tee -a "$LOG"
+            exit 1
+          fi
+          # Assert the response is the health JSON, not a frontend fallback.
+          grep -q '"status"' /tmp/health_body.json || { echo "FAIL: /health body is not health JSON"; cat /tmp/health_body.json; exit 1; }
+          echo "health_body:" | tee -a "$LOG"
+          cat /tmp/health_body.json | tee -a "$LOG"
+          echo "PASS: /health returned 200 with health JSON" | tee -a "$LOG"
+
+      - name: Collect diagnostics
+        if: always()
+        run: |
+          docker ps -a | tee "$GITHUB_WORKSPACE/docker_ps.log" || true
+          docker inspect agos-r040 > "$GITHUB_WORKSPACE/docker_inspect.json" 2>&1 || true
+
+      - name: Upload evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-verification-logs
+          path: |
+            docker_build.log
+            docker_runtime.log
+            docker_container.log
+            docker_ps.log
+            docker_inspect.json
+          if-no-files-found: error
+
+      - name: Clean up
+        if: always()
+        run: |
+          docker rm -f agos-r040 || true
+          docker rmi agos:r040-smoke || true
+
   publish:
     runs-on: ubuntu-latest
     needs: build

@@ -1,0 +1,21 @@
+# R-040 build context hygiene: keep the `COPY . .` stage small and secret-free.
+# Never ignore files the Dockerfile needs: requirements.txt, server.py, run.py,
+# agent_civilization/, agos_kernel/, docs/, web/ (source), config files.
+.git
+.github
+.venv
+venv
+node_modules
+web/node_modules
+web/dist
+.output
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+.env
+.env.*
+*.log
+coverage.xml
+docker_*.log
+docker_*.json
