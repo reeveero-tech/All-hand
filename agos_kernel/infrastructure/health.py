@@ -244,10 +244,16 @@ async def check_api() -> Dict[str, Any]:
     return {"status": "healthy", "message": "API is responding"}
 
 async def check_civilization() -> Dict[str, Any]:
-    """Check civilization system."""
+    """Check civilization system.
+
+    The civilization map is not exported as a module attribute; the canonical
+    entry point is `create_civilization()` (see server.py). Build it lazily
+    here so health can run independently of the server.
+    """
     try:
-        from agent_civilization.agents.real import CIVILIZATION
-        agent_count = sum(len(agents) for agents in CIVILIZATION.values())
+        from agent_civilization.agents.real import create_civilization
+        civilization = create_civilization()
+        agent_count = sum(len(agents) for agents in civilization.values())
         return {
             "status": "healthy",
             "message": f"Civilization active with {agent_count} agents",

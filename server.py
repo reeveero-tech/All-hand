@@ -33,7 +33,7 @@ from collections import defaultdict
 
 from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse, Response
+from fastapi.responses import FileResponse, StreamingResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
@@ -87,13 +87,17 @@ if ALLOWED_ORIGINS == ["*"]:
 else:
     logger.info(f"CORS restricted to origins: {ALLOWED_ORIGINS}")
 
+# R-004(2): allow_credentials is only safe with an explicit allowlist, never with "*".
+_IS_WILDCARD = any(o.strip() == "*" for o in ALLOWED_ORIGINS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=not _IS_WILDCARD,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-API-Key"],
 )
+if _IS_WILDCARD:
+    logger.warning("CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set.")
 
 
 # ============================================================================
@@ -286,6 +290,10 @@ async def health_check():
         registry = get_health_registry()
         system_health = await registry.get_system_health()
         
+        # Fix R-004(4): if unhealthy, return 503 (previously always 200).
+        # 'degraded' still serves traffic (storage fallback), so 200 is correct there.
+        if system_health.get("status") == "unhealthy":
+            return JSONResponse(status_code=503, content=system_health)
         return system_health
         
     except ImportError:
@@ -445,6 +453,8 @@ async def list_specializations(request: Request):
 @app.post("/api/tasks", status_code=202)
 @rate_limit
 async def create_task(request: Request, req: TaskRequest, api_key: Optional[str] = Security(api_key_header)):
+    # R-004: actually enforce the API key (was received but not checked).
+    verify_api_key(api_key)
     if req.specialization not in SPECIALIZATIONS and req.specialization != "external":
         raise HTTPException(400, f"Unknown specialization '{req.specialization}'. Valid: {list(SPECIALIZATIONS)} + ['external']")
     task_id = uuid.uuid4().hex[:12]
@@ -527,6 +537,8 @@ ROUTER_SYSTEM = (
 @app.post("/api/chat")
 @rate_limit
 async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Security(api_key_header)):
+    # R-004: actually enforce the API key (was received but not checked).
+    verify_api_key(api_key)
     """Natural-language command: route to the best specialist and execute."""
     llm = get_llm()
     spec = "communicator"
@@ -583,8 +595,8 @@ async def register_external_agent(
     api_key: Optional[str] = Security(api_key_header)
 ):
     """Register an external agent (requires admin API key for auth)."""
-    if not ENABLE_AUTH:
-        raise HTTPException(401, "External agent registration requires authentication")
+    # R-004: validate the key value, not just whether auth is enabled.
+    verify_api_key(api_key)
     
     if not req.url.startswith(("http://", "https://")):
         raise HTTPException(400, "url must be http(s)")
@@ -604,8 +616,8 @@ async def remove_external_agent(
     api_key: Optional[str] = Security(api_key_header)
 ):
     """Remove an external agent (requires admin API key for auth)."""
-    if not ENABLE_AUTH:
-        raise HTTPException(401, "External agent removal requires authentication")
+    # R-004: validate the key value, not just whether auth is enabled.
+    verify_api_key(api_key)
     
     for i, a in enumerate(EXTERNAL_AGENTS):
         if a.name == name:
@@ -623,7 +635,7 @@ async def remove_external_agent(
 # ---------------------------------------------------------------------------
 try:
     from agent_civilization.civilization_routes import register_civilization_routes
-    register_civilization_routes(app, CIVILIZATION, TASKS, _prune_tasks)
+    register_civilization_routes(app, CIVILIZATION, TASKS, _prune_tasks, verify_api_key)
     logger.info("Civilization routes registered successfully")
 except ImportError as e:
     logger.warning(f"Civilization routes not available: {e}")
