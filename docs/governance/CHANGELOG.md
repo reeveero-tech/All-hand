@@ -142,3 +142,17 @@ pytest 75/75؛ ruff صفر أخطاء؛ بناء الجذر و`web/` ناجح.
 
 ### النتيجة
 AST صفر استيراد حي؛ pytest 75/75؛ ruff صفر أخطاء؛ بناء الجذر و`web/` ناجح (دليل M3/logs/06).
+
+## 2026-10-12 — M3/10: R-031b — حذف المجموعة الفائتة (cloud_* + سكربتات + agents.yaml)
+
+### مُحذف (D-025)
+- 5 دلائل: `cloud_collaboration/`, `cloud_execution/`, `cloud_experience/`, `cloud_session/`, `cloud_workspace/` (مجموعة PRODUCT-000076..080؛ وحدات مستقلة بلا استيرادات متبادلة).
+- 4 سكربتات: `agent_manager.py`, `auto_fetch_agents.py`, `generate_real_agents.py`, `generate_agents_catalogue.py` (مولدات كتابة فقط؛ بعضها يحتاج مكتبات ليست في `requirements.txt` فلم يعمل في CI أو Docker قط).
+- `agents.yaml` (4,001 سطراً، 1,000 مدخل مولَّد؛ مستهلكاه الوحيدان هما السكربتان المحذوفان).
+- وسم أمان: `pre-R031b-cloud-scripts`.
+
+### أُغلق
+Q-003، Q-006، D-006 (كامل)، Q-004 (جزئياً — بقي R-032 لمصير ملفات `specialists/` نفسها).
+
+### النتيجة
+AST صفر استيراد حي؛ pytest 75/75؛ ruff صفر أخطاء؛ بناء الجذر و`web/` ناجح؛ صفر مرجع متبقٍ في الكود والإعدادات (دليل M3/logs/07).

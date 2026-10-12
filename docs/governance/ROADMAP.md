@@ -239,8 +239,8 @@
 - المخاطر: وجود مستهلك غير مرصود (سكربتات، Docker، render.yaml) — يُفحص قبل كل حذف.
 - دليل التحقق: grep استيراد + سجلات الاختبار.
 
-### R-031b — المجموعة الفائتة عن جرد M0 (5 دلائل cloud_* + 4 سكربتات جذرية)
-- الحالة: **ready** (اكتُشفت أثناء تحديث الحالة بعد R-031)
+### R-031b — المجموعة الفائتة عن جرد M0 (5 دلائل cloud_* + 4 سكربتات جذرية + agents.yaml)
+- الحالة: **done** (دفعة M3/10؛ D-025)
 - الهدف: حسم مصير 5 دلائل لم تُدرج في جرد M0: `cloud_collaboration/`, `cloud_execution/`, `cloud_experience/`, `cloud_session/`, `cloud_workspace/` (مجموعة PRODUCT-000076..080، commit 31bbcb5). و4 سكربتات جذرية كانت معروفة سابقاً ومرتبطة بأسئلة قائمة (`agent_manager.py`, `auto_fetch_agents.py` — Q-006؛ `generate_real_agents.py`, `generate_agents_catalogue.py` — D-015) لكن لم يُوثق قرارها بعد. ملاحظة: `consolidation/`, `constitution/`, `sdk/`, `seos/` ليست اكتشافاً — هي من أصل الـ39 وتخص R-031.
 - النطاق: حذف أو أرشفة مع وسم أمان + فحص AST + فحص إعدادات التشغيل.
 - معيار القبول: قرار موثق + دليل تحقق + pytest 75/75 وruff وبناء web/ والجذر خضراء بعدها.
