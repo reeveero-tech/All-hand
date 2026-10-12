@@ -97,14 +97,14 @@ class MetricsCollector:
             name="http_requests_total",
             description="Total HTTP requests",
             metric_type=MetricType.COUNTER,
-            labels=["method", "endpoint", "status"],
+            labels=None,
         )
         
         self.register(
             name="http_request_duration_seconds",
             description="HTTP request duration in seconds",
             metric_type=MetricType.HISTOGRAM,
-            labels=["method", "endpoint"],
+            labels=None,
             buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
         )
         
@@ -113,14 +113,14 @@ class MetricsCollector:
             name="tasks_total",
             description="Total tasks processed",
             metric_type=MetricType.COUNTER,
-            labels=["specialization", "status"],
+            labels=None,
         )
         
         self.register(
             name="task_duration_seconds",
             description="Task execution duration in seconds",
             metric_type=MetricType.HISTOGRAM,
-            labels=["specialization"],
+            labels=None,
             buckets=[0.1, 0.5, 1, 2, 5, 10, 30, 60, 120],
         )
         
@@ -129,14 +129,14 @@ class MetricsCollector:
             name="agents_active",
             description="Number of active agents",
             metric_type=MetricType.GAUGE,
-            labels=["specialization"],
+            labels=None,
         )
         
         self.register(
             name="agent_tasks_total",
             description="Total tasks per agent",
             metric_type=MetricType.COUNTER,
-            labels=["agent_name", "specialization"],
+            labels=None,
         )
         
         # Queue metrics
@@ -157,7 +157,7 @@ class MetricsCollector:
             name="memory_usage_bytes",
             description="Memory usage in bytes",
             metric_type=MetricType.GAUGE,
-            labels=["type"],
+            labels=None,
         )
         
         # Error metrics
@@ -165,7 +165,7 @@ class MetricsCollector:
             name="errors_total",
             description="Total errors",
             metric_type=MetricType.COUNTER,
-            labels=["type", "component"],
+            labels=None,
         )
         
         # Circuit breaker metrics
@@ -173,7 +173,7 @@ class MetricsCollector:
             name="circuit_breaker_state",
             description="Circuit breaker state (0=closed, 1=open, 2=half_open)",
             metric_type=MetricType.GAUGE,
-            labels=["name"],
+            labels=None,
         )
     
     def register(
@@ -203,6 +203,11 @@ class MetricsCollector:
         """Increment a counter metric."""
         key = self._make_key(name, labels)
         self._counters[key] += value
+        
+        full_name = f"{self.namespace}_{name}"
+        if full_name not in self._metrics:
+            # Auto-register counter (mirrors set_gauge behavior)
+            self.register(name=name, description=name, metric_type=MetricType.COUNTER, labels=labels)
     
     def set_gauge(
         self,

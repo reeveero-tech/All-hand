@@ -25,7 +25,7 @@ import logging
 import os
 import time
 import uuid
-from datetime import datetime, timedelta, utc
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -309,7 +309,7 @@ async def liveness_probe():
     
     Returns 200 if the application is running.
     """
-    return {"status": "alive", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "alive", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
 @app.get("/health/ready")

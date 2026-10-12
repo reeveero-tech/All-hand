@@ -403,7 +403,7 @@ class RedisQueue:
     async def get_queue_size(self) -> int:
         """Get current queue size."""
         if self._use_fallback:
-            return len(self._fallback_queue)
+            return self._fallback_queue.qsize()
         
         try:
             return await self._redis.zcard(self.queue_name)
