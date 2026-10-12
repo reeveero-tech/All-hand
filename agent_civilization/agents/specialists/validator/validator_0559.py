@@ -4,8 +4,8 @@ ValidatorAgent0559 - Validates inputs and outputs
 Agent ID: 559
 """
 
-import asyncio, logging
-from typing import Dict, Any, List
+import logging
+from typing import Dict, Any
 from agent_civilization.core.agents.base_agent import BaseAgent, Message
 from agent_civilization.core.agents.communication_hub import CommunicationHub
 

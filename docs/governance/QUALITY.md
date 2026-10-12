@@ -71,3 +71,8 @@
 
 - `pytest tests/`: **84/84 ناجح** (78 + 6 جديدة في `tests/test_real_dispatch_audit.py` — حماية من انحدار القياس).
 - سكربت القياس `scripts/run_r051_audit.py` مشمول في فحص ruff (صفر أخطاء).
+
+## تحديث R-032a (M5/3)
+
+- `pytest tests/`: **141/141 ناجح** (117 + 24 جديدة في `tests/test_specialists_package.py` — حماية واجهة حزمة specialists).
+- **أُزيل استثناء `agent_civilization/agents/specialists` من فحص ruff في CI**: الحزمة كانت تحمل 3,020 خطأ F401/F403 كامناً؛ أُصلحت (إعادة تصدير صريحة + `__all__` + إزالة استيرادات غير مستخدمة) وصار فحص CI يغطيها (صفر أخطاء — دليل `../audit/M5/logs/09`).
