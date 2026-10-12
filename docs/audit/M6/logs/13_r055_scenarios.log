@@ -1,0 +1,58 @@
+
+=== السيناريو: 1: برمجي — مراجعة واختبار كود ===
+الهدف: review and test this code: print(1+1)
+التخصص الأساسي: code_generator
+عدد المراحل: 5
+  ✓ understand@analyst (analyst_0000) 0.000s
+     n=4 mean=1.000 sd=0.000 trend=flat
+  ✓ plan@architect (architect_0010) 0.000s
+     5-layer architecture with 1 core actions
+  ✓ execute@code_generator (code_generator_0020) 0.000s
+     parsed OK: 0 funcs, 0 classes
+  ✓ review@reviewer (reviewer_0070) 0.000s
+     reviewed 1 loc, 0 comments
+  ✓ test@test_runner (test_runner_0090) 0.013s
+     exit=0
+النتيجة النهائية: exit=0
+الزمن الكلي: 0.013s
+
+=== السيناريو: 2: تحليلي — تحليل بيانات ===
+الهدف: analyze the data for trends
+التخصص الأساسي: analyst
+عدد المراحل: 4
+  ✓ understand@analyst (analyst_0000) 0.000s
+     n=5 mean=3.000 sd=1.414 trend=up
+  ✓ plan@strategist (strategist_0080) 0.000s
+     6 prioritised objectives
+  ✓ execute@analyst (analyst_0000) 0.000s
+     n=5 mean=3.000 sd=1.414 trend=up
+  ✓ validate@validator (validator_0095) 0.000s
+     valid python object
+النتيجة النهائية: valid python object
+الزمن الكلي: 0.000s
+
+=== السيناريو: 3: بناء معماري — هيكل مشروع ===
+الهدف: build a Python project structure
+التخصص الأساسي: code_generator
+عدد المراحل: 5
+  ✓ understand@analyst (analyst_0000) 0.000s
+     text analysis: 21 words
+  ✓ plan@architect (architect_0010) 0.000s
+     5-layer architecture with 2 core actions
+  ✓ execute@code_generator (code_generator_0020) 0.000s
+     parsed OK: 0 funcs, 0 classes
+  ✓ review@reviewer (reviewer_0070) 0.000s
+     reviewed 1 loc, 0 comments
+  ✓ test@test_runner (test_runner_0090) 0.010s
+     exit=0
+النتيجة النهائية: exit=0
+الزمن الكلي: 0.011s
+
+==================================================
+كل المراحل ناجحة: True
+كل النتائج النهائية موجودة: True
+✓ السيناريوهات الثلاثة ناجحة
+scenario rc=0
+
+--- تقرير إضافي (الفحص المباشر) ---
+exit_code=0

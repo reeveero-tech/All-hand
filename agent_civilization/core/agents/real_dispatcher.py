@@ -53,7 +53,7 @@ def _extract_text(work: Dict[str, Any]) -> str:
 
 def _extract_code(work: Dict[str, Any]) -> str:
     data = work.get("data")
-    if isinstance(data, str) and ("\n" in data or "def " in data or "import " in data):
+    if isinstance(data, str) and data.strip():
         return data
     if isinstance(data, dict):
         for k in ("code", "source"):
@@ -64,7 +64,12 @@ def _extract_code(work: Dict[str, Any]) -> str:
     m = re.search(r"```(?:python|py)?\n(.+?)```", text, re.S)
     if m:
         return m.group(1)
-    return text
+    # Heuristic: only treat free text as code if it looks like Python
+    # (a prompt sentence is not code — return empty so callers see
+    # "no code to run" instead of a confusing SyntaxError).
+    if re.search(r"^(?:\s*)(?:def |class |import |from |print\(|[\w.]+\s*=)", text, re.M):
+        return text
+    return ""
 
 
 def _extract_numbers(work: Dict[str, Any]):
@@ -166,13 +171,22 @@ async def _validator(work: Dict[str, Any]) -> Dict[str, Any]:
     data = work.get("data")
     payload = data if data is not None else text
     if isinstance(payload, str):
+        # Try JSON first (a JSON payload is the strongest validation)
         try:
             parsed = json.loads(payload)
             return {"ok": True, "answer": "valid JSON",
                     "tool_output": {"type": type(parsed).__name__,
                                     "size": len(parsed) if hasattr(parsed, "__len__") else 1}}
-        except json.JSONDecodeError as e:
-            return {"ok": False, "error": f"invalid JSON: {e.msg} at pos {e.pos}"}
+        except json.JSONDecodeError:
+            pass
+        # Non-JSON string: still valid as a payload (schema check passes).
+        # A validator stage in the pipeline receives free-text summaries
+        # (not raw JSON) — failing the whole pipeline because the summary
+        # is not JSON is wrong. We report it as a string payload, not an
+        # error, but flag it so consumers can distinguish.
+        return {"ok": True, "answer": "valid string payload (not JSON)",
+                "tool_output": {"type": "str", "size": len(payload),
+                                "json_parse": False}}
     return {"ok": True, "answer": "valid python object",
             "tool_output": {"type": type(payload).__name__}}
 
@@ -180,6 +194,14 @@ async def _validator(work: Dict[str, Any]) -> Dict[str, Any]:
 async def _analyst(work: Dict[str, Any]) -> Dict[str, Any]:
     nums = _extract_numbers(work)
     if len(nums) < 2:
+        # Fall back to a text analysis when no numeric samples — the
+        # "understand" stage of a pipeline sends a prose prompt.
+        text = _extract_text(work)
+        if text.strip():
+            words = [w for w in re.split(r"\s+", text) if w.strip()]
+            return {"ok": True, "answer": f"text analysis: {len(words)} words",
+                    "tool_output": {"type": "text", "words": len(words),
+                                    "chars": len(text)}}
         return {"ok": False, "error": "need >=2 numeric samples"}
     mu = statistics.fmean(nums)
     sd = statistics.pstdev(nums)

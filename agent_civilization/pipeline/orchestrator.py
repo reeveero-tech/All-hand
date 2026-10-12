@@ -59,11 +59,13 @@ async def execute_plan(plan: Dict[str, Any], civilization: Dict[str, list], data
             res = await agent.execute({
                 "task_id": f"stage-{uuid.uuid4().hex[:8]}",
                 "prompt": prompt,
-                "data": data if stage["name"] == "execute" else None,
+                "data": data,
             })
             elapsed = time.time() - t0
             output_text = ""
+            stage_ok = True
             if isinstance(res, dict):
+                stage_ok = bool(res.get("ok"))
                 r = res.get("result") if "result" in res else res
                 if isinstance(r, dict):
                     output_text = r.get("answer") or r.get("tool_output") or r.get("error") or ""
@@ -74,7 +76,7 @@ async def execute_plan(plan: Dict[str, Any], civilization: Dict[str, list], data
             stage_results.append({
                 **stage,
                 "agent": agent.name,
-                "ok": True,
+                "ok": stage_ok,
                 "output": output_text,
                 "elapsed_s": round(elapsed, 3),
             })

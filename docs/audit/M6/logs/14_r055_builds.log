@@ -1,0 +1,6 @@
+dist/assets/index-DGWuZoTX.js   164.19 kB │ gzip: 52.21 kB
+✓ built in 879ms
+web rc=0
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+root rc=0

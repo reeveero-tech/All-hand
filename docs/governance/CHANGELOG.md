@@ -359,3 +359,25 @@ tests/test_civilization_scale.py: 1000/2000/10000 وكيل، تنفيذ عينة
 
 ### الفحوص
 pytest 168/168 (rc مباشر)؛ ruff صفر؛ بناء web/ والجذر rc=0. الأدلة: docs/audit/M6/EVIDENCE.md + logs/07..10.
+
+## 2026-10-12 — M6/4: R-055 — سيناريوهات شاملة من البداية للنهاية
+
+### الإصلاحات (5 عيوب أصلية كانت تمنع السيناريوهات من العمل)
+- `_extract_code` (real_dispatcher.py): كان يرفض كوداً من سطر واحد مثل `"print(1+1)"` (تطلّب `\\n`/`def`/`import`) — يقبل الآن أي سلسلة `data` غير فارغة.
+- `_validator`: كان يفشل مسار pipeline كاملاً إذا لم تكن خلاصة المرحلة نص JSON — يعيد الآن `ok=True` مع تحذير `json_parse=False`.
+- `orchestrator.execute_plan`: كان يسجل `ok=True` لكل مرحلة بغض النظر عن نتيجة الوكيل — ينتشر الآن من نتيجة الوكيل الفعلية.
+- `_analyst`: كان يفشل مرحلة "فهم الطلب" النصية في سيناريوهات غير رقمية — يكمل الآن بتحليل نصي.
+- `_test_runner`: كانت الـorchestrator تمرر `data` لمرحلة "execute" فقط فتفشل مرحلة الاختبار ("no code to run") — تُمرر الآن لكل المراحل. أُصلح أيضاً تكرار سطر `return` ناتج عن تعديل سابق.
+
+### مضاف
+- `tests/test_e2e_scenarios.py` (6 اختبارات): 3 سيناريوهات شاملة (برمجي / تحليلي / معماري)، وكلاء مختلفون لكل مرحلة، تقرير توقيت لكل مرحلة، وسيناريو كامل عبر `/civilization/execute` → `/api/tasks/{id}` (النتيجة مخزنة فعلياً في TASKS — المعيار الحرفي: هدف → خطة متعددة الوكلاء → نتيجة مخزنة).
+- `scripts/run_r055_scenarios.py` — تشغيل مستقل للسيناريوهات الثلاثة مع تقرير موثق.
+
+### مُحدَّث
+- `tests/test_routing_pipeline.py`: بدّلنا اختبار api_integrator من `api.github.com` (يُرجع 429 أحياناً) إلى `https://example.com` (مستقر).
+
+### الفحوص
+pytest 174/174 (rc مباشر)؛ ruff صفر؛ بناء web/ والجذر rc=0؛ سكربت السيناريوهات rc=0. الأدلة: docs/audit/M6/EVIDENCE.md + logs/11..14.
+
+### ملاحظة تسريب حالة الاختبار
+`test_scenario_full_pipeline_stores_result_in_task_store` يستخدم fixture يعيد استيراد `server` مع حذف `AGOS_API_KEY` — اختبار سابق في tests/test_security.py ترك الوحدة النمطية محمّلة بوضع auth-on بعد `importlib.reload`. يُوثّق كقيد اختباري، لا كخطأ في الإنتاج.

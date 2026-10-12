@@ -44,6 +44,9 @@ def test_agents_execute_real_dispatch():
         "db_manager": {"prompt": "CREATE TABLE t(x INTEGER)"},
         "test_runner": {"prompt": "print(1+1)"},
         "validator": {"prompt": '{"a":1}'},
+        "code_generator": {"prompt": "generate code", "data": "def add(a,b):\n    return a+b"},
+        "modifier": {"prompt": "normalize", "data": "import os\nprint( os.getcwd() )"},
+        "surgeon": {"prompt": "diagnose", "data": "def f( x ):\n    return  x"},
         "api_integrator": {"prompt": "GET https://example.com"},
         "network_client": {"prompt": "check connectivity to example.com"},
     }
