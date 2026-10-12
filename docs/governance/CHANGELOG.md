@@ -20,3 +20,60 @@
 
 ### لم يُغيَّر
 - لا تغيير تطبيقي على أي كود أو إعدادات. `git diff` عن `be480820` يحتوي `docs/` + وصل README/SECURITY الجذريين فقط (تغيير توثيقي).
+## 2026-10-12 — M1: إصلاح الانحدار الحرج + بوابة الجودة
+
+### مُصلَح
+- `server.py:28` — استيراد `utc` المكسور؛ `datetime.utcnow()` → `datetime.now(timezone.utc)` (R-001).
+- `CircuitBreaker.__init__` يقبل معاملات الحقول مباشرة بدلاً من `__init_subclass__` (R-003a).
+- `timeout<=0` يعني "لا إعادة تعيين تلقائي" (R-003b).
+- `get_queue_size()` يرجع `qsize()` بدلاً من إشارة `_sleep_once` (R-003c).
+- `error_box()` لا يخفي نوع الاستثناء (R-003d).
+- pytest: 61/61 (كان 34/34 ناجح و9 فاشل و18 خطأ).
+
+## 2026-10-12 — M1: بوابة الجودة CI
+
+### مُضاف
+- `.github/workflows/ci.yml` موجهة للمسارات الحية فقط (`server.py`, `agent_civilization/` باست `specialists/`, `agos_kernel/`, `tests/`, `web/`): ruff (F,E722) وpytest 61 اختباراً وnpm build.
+- 36 خطأ lint قاتل مُصلَح في المسارات الحية (R-002).
+- `publish` job يتطلب `[publish]` في رسالة الدمج (R-030، D-011).
+
+## 2026-10-12 — M1: خط الأساس الأمني
+
+### مُصلَح
+- `verify_api_key` يُفرض على `/api/tasks`, `/api/chat`, `/api/agents/external*`, `/civilization/*` (R-004).
+- CORS: `allow_credentials=False` عند `allowed_origins=["*"]`.
+- `/health` يرجع 503 فقط عند `unhealthy` (D-012).
+
+### مُضاف
+- `tests/test_security.py` (8 اختبارات)؛ pytest 69/69.
+
+## 2026-10-12 — M2: حسم الاستخدام والملكية (قرارات موثقة، لا حذف)
+
+### مُضاف
+- جرد 39 دليلاً غير حي في الجذر في ARCHITECTURE (R-010، D-014، PR #31).
+- جرد `specialists/` 1,000 proxy + 21 `__init__.py` في ARCHITECTURE (R-011، D-015، PR #32).
+- جدول مقارنة `agos-kernel/` مقابل `agos_kernel/` (R-012، D-016، PR #33).
+- استكمال `src/lib/lovable-error-reporting.ts`, `src/lib/error-capture.ts`, `src/lib/error-page.ts` — ثلاث وحدات مفقودة كانت تكسر بناء الجذر (R-013، D-017، PR #34). `.gitignore` يستبعد `.output/`, `.wrangler/`, `src/routeTree.gen.ts`.
+- `package-lock.json` للجذر ولـ`web/` (كانت مفقودة).
+
+## 2026-10-12 — M3/1: اختبارات `/civilization/*` + إصلاح تراجع registry
+
+### مُصلَح
+- `agent_civilization/civilization_routes.py` — تراجع المسار (دالة داخل دالة بلا return) جعل الاستجابة `null`؛ دُمج المنطق في دالة واحدة (D-018).
+
+### مُضاف
+- `tests/test_civilization_routes.py` (6 اختبارات): registry, plan, execute, 400 عند رسالة فارغة، فرض المصادقة. pytest 75/75.
+
+## 2026-10-12 — M3/2: مخطط Supabase SQL
+
+### مُضاف
+- `docs/sql/001_init.sql` — `tasks`, `agent_stats`, `events` مع فهارس القراءة (R-022، D-019، PR #36). الأنواع استنتاجية من بايثون ولم تُتحقق ضد قاعدة حية.
+
+## 2026-10-12 — M3/3: بوابة الحوكمة CI (R-020)
+
+### مُضاف
+- `.github/workflows/governance-gate.yml` — يفشل PR إذا لم يُحدَّث ROADMAP وPROJECT_STATE وCHANGELOG في نفس الدفعة، وأدلة `docs/audit/` عند تغيير الكود، وAPI.md/DATA_MODEL.md/QUALITY.md حسب نوع التغيير (D-020).
+- `docs/audit/M3/logs/gate_test_harness.sh` + سجلات حالة إيجابية وسلبية.
+
+### ملاحظة
+البوابة غير مفروضة دون حماية فروع (Q-015). لم يُغيَّر أي إعداد في المستودع.
