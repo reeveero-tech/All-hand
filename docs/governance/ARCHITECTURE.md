@@ -97,6 +97,10 @@ POST /civilization/execute → auto_route → tasks_store (dict فقط؛ لا ا
 
 القرار الثاني (دفعة M3/R-031 #2، 2026-10-12): **حُذف 21 دليلاً** المتبقية (فيها كود py لكن بدون مستهلك حي: صفر استيراد دقيق في المسارات الحية، صفر استيراد بين الدلائل نفسها، صفر مرجع في إعدادات التشغيل)، مع وسم أمان `pre-R031-docs-batch2`. بهذا اكتملت جرد R-010/39 دليلاً. المرجع الأمني: الدلائل تعود بـ`git checkout pre-R031-docs-batch2 -- <دليل>`.
 
+### المجموعة الفائتة عن جرد M0 (R-031b — اكتُشفت في تحديث الحالة بعد R-031)
+
+فحص أعمق بعد حذف الـ39 كشف 9 دلائل و4 سكربتات جذرية لم تكن في جدول M0: `cloud_collaboration/`, `cloud_execution/`, `cloud_experience/`, `cloud_session/`, `cloud_workspace/` (مجموعة PRODUCT-000076..080)، `consolidation/`, `constitution/`, `sdk/`, `seos/`، و`agent_manager.py`, `auto_fetch_agents.py`, `generate_real_agents.py`, `generate_agents_catalogue.py`. AST يؤكد صفر استيراد حي للجميع. القرار مؤجل إلى R-031b (منسق مع R-032 لأن بعض السكربتات يولّد ملفات `specialists/`).
+
 | الدليل | ملفات متتبعة | مستورد في كود حي؟ | القرار |
 |---|---|---|---|
 | ~~agos-canon~~ | 6 | لا | قرار مؤجل (M3: حذف/فصل/أرشفة) |
