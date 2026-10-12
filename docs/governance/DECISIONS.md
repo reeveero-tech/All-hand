@@ -85,3 +85,9 @@
 - **السياق**: البوابة workflow فقط؛ فرضها يتطلب إعداد حماية فرع على `main` (إعداد مستودع بصلاحية المالك).
 - **القرار**: نُفّذ الـ workflow وحده في هذه الدفعة ووُصف بأنه غير مفروض. لم يُغيَّر أي إعداد في المستودع. تفعيل require-status-checks خطوة منفصلة موثقة في OPEN_QUESTIONS (Q-015).
 - **التاريخ**: 2026-10-12 — دفعة M3/3.
+
+## D-021: أول دفعة حذف في R-031 (13 دليلاً صافي التوثيق)
+- **السياق**: 13 دليلاً من جرد R-010 (39 دليلاً) هي توثيق خالص: صفر ملفات py، صفر استيراد في المسارات الحية، صفر مرجع في إعدادات التشغيل (CI/Docker/render/npm) — الحذف منخفض المخاطر.
+- **القرار**: الحذف في دفعة واحدة مع وسم أمان `pre-R031-docs-batch1` (يمكن الرجوع). الدلائل: knowledge-base, repository-analysis-report, agos-canon, agos-enterprise, agos-factory, agos-intelligence, aie-intelligence, ari-research, cgp-genome, sdl-loop, spec-formal, sprint-000, execution-program, rpp-pipeline.
+- **التحقق**: pytest 75/75 وruff صفر أخطاء بعدها (دليل M3/logs/03).
+- **التاريخ**: 2026-10-12 — دفعة M3/5.
