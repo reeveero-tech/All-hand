@@ -52,7 +52,9 @@ def test_top_level_package_imports_all_specs():
     import agent_civilization.agents.specialists as top
     for spec in SPECS:
         assert getattr(top, spec) is not None
-    assert sorted(top.__all__) == sorted(SPECS)
+    # __all__ = 20 حزمة + 1000 صنف (R-032c: star-import يجب أن يعيد الأصناف كما قبل R-032a)
+    assert set(SPECS) <= set(top.__all__)
+    assert len(top.__all__) == 20 + 1000
 
 
 def test_total_exported_classes_is_1000():
@@ -89,3 +91,14 @@ async def test_sample_agent_from_every_spec_package():
         cls = getattr(pkg, pkg.__all__[0])
         agent = cls(name=cls.__name__.lower(), hub=hub, agent_id=1)
         assert agent.specialization
+
+
+def test_star_import_from_root_brings_classes():
+    """R-032c: `from ...specialists import *` يعيد الأصناف والحزم (الواجهة التاريخية قبل R-032a)."""
+    ns = {}
+    exec("from agent_civilization.agents.specialists import *", ns)
+    assert "AnalystAgent0015" in ns
+    assert "SurgeonAgent0992" in ns
+    assert "analyst" in ns
+    class_names = [n for n in ns if n.endswith(tuple("0123456789")) and "Agent" in n]
+    assert len(class_names) == 1000
