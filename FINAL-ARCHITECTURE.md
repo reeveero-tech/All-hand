@@ -1,4 +1,5 @@
 # AGOS FINAL ARCHITECTURE STATE
+> ⚠️ **وثيقة تاريخية — وسمها R-056 (2026-10-12)**: يصف `agos-kernel/` الملف المفرد الذي حُذف في R-033 (وسم `pre-R033-agos-kernel-removal`). أي إشارة إلى "FULLY IMPLEMENTED" في تاريخ 2024 تشير إلى بنية سابقة، لا الحالية. راجع `docs/governance/ARCHITECTURE.md`.
 
 **Date**: 2024  
 **Status**: ✅ FULLY IMPLEMENTED  

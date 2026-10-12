@@ -1,4 +1,5 @@
 # AGOS Digital Civilization - Complete Map
+> ⚠️ **وثيقة تاريخية — وسمها R-056 (2026-10-12)**: يصف `agos-kernel/` و`agos-canon/` التي حُذفت في R-031/R-033 (دفعات M3). البنية الفعلية الآن: `agent_civilization/` + `agos_kernel/` — راجع `docs/governance/ARCHITECTURE.md`. مخطط الأدوار ("نواة/وزارات/مواطنون") استعارة مفاهيمية، لا بنية كود.
 
 **Version:** 1.0  
 **Generated:** 2026-07-23  

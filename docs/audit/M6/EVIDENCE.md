@@ -155,3 +155,33 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 - السيناريوهات تعمل على كامل 20 تخصصاً حقيقياً لكن كل سيناريو يستخدم 4–5 وكلاء فقط من التخصصات المناسبة للهدف (تحدد بمطابقة intent في `auto_router.py`).
 - اختبار `api_integrator` سابقاً (اختبار مستقل وليس جزءاً من سيناريوهات R-055) كان يستخدم api.github.com الذي أرجع 429 مرة واحدة؛ بُدل إلى `https://example.com` (مستقر).
 - السيناريو الكامل (POST /civilization/execute) يعتمد على `AGOS_API_KEY` غير معيّن — في الإنتاج مع مفتاح، يتطلب تمرير `X-API-Key` (موثق في tests/test_security.py). هذا ليس عيباً في R-055.
+
+---
+
+## R-056 (M6/5) — مصالحة الادعاءات التوثيقية (2026-10-12)
+
+**البند**: R-056. **الترتيب**: دفعة M6/5.
+
+**النطاق**: 4 وثائق جذرية قديمة (INTEGRITY-REPORT.md، CIVILIZATION_MAP.md، FINAL-ARCHITECTURE.md، IMPLEMENTATION_PLAN.md). README وDEPLOY حُسما سابقاً في R-041.
+
+### الادعاءات المصححة
+| الملف | الادعاء القديم | التصحيح |
+|---|---|---|
+| INTEGRITY-REPORT.md | "90%+ real execution" | غير مقيس — استُبدل بقياسات R-051 (20/20 تخصص ينفذ مهمة حقيقية) وR-053 (1,000 وكيل 0.002s؛ 1,000 مهمة ~1.04s نجاح 1000/1000) |
+| INTEGRITY-REPORT.md | specialists = "real-dispatch proxy workers" | مؤكد (R-032a/b/c) |
+| CIVILIZATION_MAP.md | يصف agos-kernel/ وagos-canon/ | محذوفان في R-031/R-033 |
+| FINAL-ARCHITECTURE.md | يصف agos-kernel/ المفرد | محذوف في R-033 (وسم `pre-R033-agos-kernel-removal`) |
+| IMPLEMENTATION_PLAN.md | Redis queue | غير موجود كاعتماد (بديل ذاكرة داخلية) |
+| IMPLEMENTATION_PLAN.md | Circuit breakers | موجود فعلاً في `agos_kernel/infrastructure/circuit_breaker.py` |
+
+### القرار
+**الإصلاح (الوسم التاريخي)** لا الحذف — قاعدة المالك: بين حذف/أرشفة/إصلاح اختر الإصلاح. أُضيفت لافتة "وثيقة تاريخية — وسمها R-056" لكل ملف مع التصحيح داخلها.
+
+### الفحوص (أكواد مأخوذة مباشرة)
+- `pytest tests/ -q`: 174 passed، rc=0.
+- `ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts`: صفر أخطاء، rc=0.
+- فحص المستهلكين: `grep -rln 'agent_civilization.agents.specialists' --include=*.py .` → اختبار واحد فقط (`tests/test_specialists_package.py`) — لا مستهلك كود حي. لا حاجة لتغيير بنية.
+
+### السجلات
+- `logs/15_r056_pytest.log` — نتيجة pytest (rc=0).
+- `logs/16_r056_ruff.log` — ruff صفر أخطاء.

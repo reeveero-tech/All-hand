@@ -381,3 +381,17 @@ pytest 174/174 (rc مباشر)؛ ruff صفر؛ بناء web/ والجذر rc=0؛
 
 ### ملاحظة تسريب حالة الاختبار
 `test_scenario_full_pipeline_stores_result_in_task_store` يستخدم fixture يعيد استيراد `server` مع حذف `AGOS_API_KEY` — اختبار سابق في tests/test_security.py ترك الوحدة النمطية محمّلة بوضع auth-on بعد `importlib.reload`. يُوثّق كقيد اختباري، لا كخطأ في الإنتاج.
+
+## 2026-10-12 — M6/5: R-056 — مصالحة الادعاءات التوثيقية
+
+### مُصلَح (وسم تاريخي)
+- `INTEGRITY-REPORT.md` — ادعاء "90%+ real execution" مُعلّق (غير مقيس): المقيس فعلياً R-051 (20/20 تخصص ينفذ مهمة نموذجية عبر real_dispatcher) وR-053 (1,000 وكيل في 0.002s؛ 1,000 مهمة متزامنة ~1.04s نجاح 1000/1000). وصف specialists كـ"real-dispatch proxy workers" مؤكد (R-032a/b/c).
+- `CIVILIZATION_MAP.md` — يصف `agos-kernel/` و`agos-canon/` المحذوفين في R-031/R-033.
+- `FINAL-ARCHITECTURE.md` — يصف `agos-kernel/` المفرد المحذوف في R-033.
+- `IMPLEMENTATION_PLAN.md` — خطة تاريخية: تدّعي Redis queue (غير موجود كاعتماد) وCircuit breakers (موجود فعلاً في `agos_kernel/infrastructure/circuit_breaker.py`).
+
+### قرار
+- الإصلاح (الوسم التاريخي) لا الحذف — قاعدة المالك: بين حذف/أرشفة/إصلاح اختر الإصلاح. الوثائق التاريخية تحمل قيمة سياقية.
+
+### الفحوص
+pytest 174/174 (rc مباشر)؛ ruff صفر (المسارات الحية). الأدلة: docs/audit/M6/EVIDENCE.md + logs/15..16.
