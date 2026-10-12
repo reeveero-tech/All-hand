@@ -12,3 +12,6 @@ web/node_modules/
 dist/
 build/
 .DS_Store
+.output/
+.wrangler/
+src/routeTree.gen.ts
