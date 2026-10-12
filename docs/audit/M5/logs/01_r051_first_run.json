@@ -1,0 +1,156 @@
+{
+  "run_at": "2026-10-12T18:32:55+0000",
+  "coverage_self_report": {
+    "real_specializations": [
+      "analyst",
+      "api_integrator",
+      "architect",
+      "builder",
+      "code_generator",
+      "communicator",
+      "data_processor",
+      "db_manager",
+      "designer",
+      "educator",
+      "modifier",
+      "monitor",
+      "network_client",
+      "researcher",
+      "reviewer",
+      "self_developer",
+      "strategist",
+      "surgeon",
+      "test_runner",
+      "validator"
+    ],
+    "count": 20
+  },
+  "rows": [
+    {
+      "specialization": "analyst",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"n\": 10, \"mean\": 5.5, \"stdev\": 2.8722813232690143, \"min\": 1.0, \"max\": 10.0, \"outliers\": [], \"trend\": \"up\"}"
+    },
+    {
+      "specialization": "api_integrator",
+      "status": "real",
+      "elapsed_ms": 149.7,
+      "detail": "{\"status\": 200, \"content_type\": \"application/json; charset=utf-8\", \"latency_ms\": 148.52, \"bytes\": 5996, \"sample\": {\"id\": 81598961, \"node_id\": \"MDEwOlJlcG9zaXRvc"
+    },
+    {
+      "specialization": "architect",
+      "status": "real",
+      "elapsed_ms": 1.1,
+      "detail": "{\"layers\": [{\"layer\": \"data\", \"concern\": \"persistence\"}, {\"layer\": \"domain\", \"concern\": \"business rules\"}, {\"layer\": \"service\", \"concern\": \"orchestration\"}, {\"l"
+    },
+    {
+      "specialization": "builder",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"actions\": [], \"estimated_steps\": 1}"
+    },
+    {
+      "specialization": "code_generator",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"parsed\": true, \"functions\": [\"add\"], \"classes\": [], \"lines\": 3}"
+    },
+    {
+      "specialization": "communicator",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"positive\": 0, \"negative\": 0, \"score\": 0.0, \"label\": \"neutral\"}"
+    },
+    {
+      "specialization": "data_processor",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"n\": 6, \"sum\": 21.0, \"median\": 3.5, \"p25\": 2.0, \"p75\": 4.0, \"variance\": 2.9166666666666665}"
+    },
+    {
+      "specialization": "db_manager",
+      "status": "real",
+      "elapsed_ms": 0.5,
+      "detail": "{\"columns\": [\"x\"], \"rows\": [[1]]}"
+    },
+    {
+      "specialization": "designer",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"palette\": [\"#19e4bd\", \"#2d806b\", \"#ed3c36\", \"#4fd84d\", \"#0bf220\"], \"typography_scale\": [12, 14, 16, 20, 24, 32, 48]}"
+    },
+    {
+      "specialization": "educator",
+      "status": "real",
+      "elapsed_ms": 0.2,
+      "detail": "{\"key_points\": [\"explain recursion\"], \"reading_time_min\": 0.01}"
+    },
+    {
+      "specialization": "modifier",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"changed\": false, \"new_lines\": 2, \"diff_bytes\": 0}"
+    },
+    {
+      "specialization": "monitor",
+      "status": "real",
+      "elapsed_ms": 0.2,
+      "detail": "{\"pid\": 5568, \"user_cpu_s\": 0.085, \"sys_cpu_s\": 0.008, \"max_rss_kb\": 32176, \"loadavg\": [0.0, 0.00634765625, 0.0]}"
+    },
+    {
+      "specialization": "network_client",
+      "status": "real",
+      "elapsed_ms": 4.7,
+      "detail": "{\"host\": \"github.com\", \"ip\": \"140.82.114.3\", \"resolve_ms\": 4.52}"
+    },
+    {
+      "specialization": "researcher",
+      "status": "real",
+      "elapsed_ms": 87.0,
+      "detail": "{\"abstract\": \"Python is a high-level, general-purpose programming language that emphasizes code readability, simplicity, and ease-of-writing with the use of sig"
+    },
+    {
+      "specialization": "reviewer",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"loc\": 3, \"comments\": 0, \"comment_ratio\": 0.0}"
+    },
+    {
+      "specialization": "self_developer",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"real_specializations\": [\"analyst\", \"api_integrator\", \"architect\", \"builder\", \"code_generator\", \"communicator\", \"data_processor\", \"db_manager\", \"designer\", \"ed"
+    },
+    {
+      "specialization": "strategist",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"roadmap\": [{\"step\": 1, \"goal\": \"plan\", \"weight\": 1.0}]}"
+    },
+    {
+      "specialization": "surgeon",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"issues\": []}"
+    },
+    {
+      "specialization": "test_runner",
+      "status": "real",
+      "elapsed_ms": 11.5,
+      "detail": "{\"stdout\": \"\", \"stderr\": \"\"}"
+    },
+    {
+      "specialization": "validator",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"type\": \"dict\"}"
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "real": 20,
+    "simulated": 0,
+    "failed": 0
+  }
+}
