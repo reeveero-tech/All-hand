@@ -142,3 +142,13 @@ from datetime import datetime, timedelta, utc
 | `npm run build` في الجذر | **فشل** (rc=1) | log 09 |
 | `import server` | **فشل** على 3.12/3.14 | log 01 |
 | Docker build | **لم يُنفَّذ** (Docker غير متوفر) | — |
+
+## ملحق ما بعد النشر: التحقق من CI عن بُعد (2026-10-12)
+
+بعد دفع الفرع وفتح PR #27، تحقق CI عن بُعد من نفس المدونة (`AGOS Kernel CI/CD` عند `38241748944`):
+
+- `quality`: فشل — 8,961 خطأ ruff (يطابق log 06 محلياً).
+- `test`: فشل — 145 جمعاً + 4 أخطاء جمع (يطابق log 05 محلياً: `cannot import name 'AGOSKernel' from 'core'`، `No module named 'platform.runtime'`، إلخ).
+- `build` و`publish`: skipping (كما كان).
+- **كل دفعة `push` السابقة في سجل CI (53 من أصل 54) فشلت أيضاً** — هذا فشل تاريخي في `main`، وليس فشلاً أحدثته دفعة M0.
+- `main` غير محمي (لا حماية فرع) — فشل CI لا يمنع الدمج.
