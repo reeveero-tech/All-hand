@@ -91,3 +91,11 @@
 
 ### ملاحظة أمانة
 قراءة نص خطأ البوابة السلبية (PR #38) تعذرت بسبب تجاوز حد معدل واجهة GitHub؛ المُتحقق فقط أن فحص `governance` فشل بينما quality/test/build نجحت.
+
+## 2026-10-12 — M3/5: أول دفعة حذف في R-031
+
+### مُحذف
+13 دليلاً جذرياً صافي التوثيق (D-021): knowledge-base (120 ملفاً، 1.3M)، repository-analysis-report (25)، agos-canon (6)، agos-enterprise، agos-factory، agos-intelligence، aie-intelligence (5)، ari-research (5)، cgp-genome، sdl-loop، spec-formal (2)، sprint-000، execution-program، rpp-pipeline. وسم أمان `pre-R031-docs-batch1`.
+
+### النتيجة
+pytest 75/75؛ ruff (F,E722) صفر أخطاء؛ صفر مرجع متبقٍ في إعدادات التشغيل.

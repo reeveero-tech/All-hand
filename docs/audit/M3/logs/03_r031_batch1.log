@@ -1,0 +1,10 @@
+# R-031 batch 1 verification
+Mon Oct 12 14:38:31 UTC 2026
+--- deleted 13 dirs (pure docs, py=0): knowledge-base repository-analysis-report agos-canon agos-enterprise agos-factory agos-intelligence aie-intelligence ari-research cgp-genome sdl-loop spec-formal sprint-000 execution-program rpp-pipeline
+--- safety tag pre-R031-docs-batch1 pushed
+--- pytest
+============================== 75 passed in 0.76s ==============================
+--- ruff
+All checks passed!
+--- remaining live config refs to deleted dirs (must be empty or unrelated):
+(empty = safe)
