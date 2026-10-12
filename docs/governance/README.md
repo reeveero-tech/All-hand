@@ -1,6 +1,6 @@
 # وثائق الحوكمة
 
-> **آخر تحديث**: 2026-10-12 — M0 في حالة review
+> **آخر تحديث**: 2026-10-12 — M1/M2 منجزة، M3 تقريباً منجزة
 
 ## الفهرس
 
@@ -21,6 +21,7 @@
 | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) | الأسئلة المفتوحة |
 | [GOVERNANCE_GATE.md](GOVERNANCE_GATE.md) | قاعدة الدفعة الذرية |
 | [CHANGELOG.md](CHANGELOG.md) | سجل التغييرات |
+| [HANDOFF_PROMPT.md](HANDOFF_PROMPT.md) | أمر التسليم الواحد لأي وكيل/مهندس جديد |
 
 ## الأدلة
 
