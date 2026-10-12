@@ -149,3 +149,18 @@ POST /civilization/execute → auto_route → tasks_store (dict فقط؛ لا ا
 - البحث: صفر استيراد لـ`agents.specialists` في المسارات الحية (`server.py`, `run.py`, `real_agents.py`, `orchestrator.py`, `routing/`).
 
 **القرار (D-015)**: لا يُحذف شيء في M2. القرار الفردي (حذف، أو توليد عند الحاجة، أو توصيل بمسار التشغيل) مؤجل إلى M3. أي حذف مستقبلي يتطلب تحديث هذا الجرد و`generate_real_agents.py` معاً.
+
+
+## جرد ازدواج `agos-kernel/` مقابل `agos_kernel/` (R-012 — قرار موثق)
+
+حقيقتان مختلفتان تماماً، لا ازدواج أكيد:
+
+| الجانب | `agos_kernel/` (حية) | `agos-kernel/` (غير حية) |
+|---|---|---|
+| الملفات المتتبعة | 9 ملفات Python | 523 مدخلاً (469 ملفاً) |
+| المحتوى | `infrastructure/` + `agent_production/` | 146 مدخلاً: `core/`, `engine/`, `domains/`, `events/`, `governance/`, ... واختبارات خاصة |
+| من يستورده | `server.py` (مسار التشغيل الفعلي) | لا كود حي (فحص الاستيراد: صفر) |
+| CI | (كانت) هدف `pytest agos-kernel/` — اختباراته فاشلة تاريخياً (4 أخطاء جمع) | — |
+| pyproject | — | يعرّف حزمة `agos-kernel` مع `[tool.setuptools.packages.find] include = ["agos_kernel*"]` لكن **لا يوجد دليل `agos_kernel` داخل `agos-kernel/`** — الحزمة غير قابلة للبناء عملياً |
+
+**القرار (D-016)**: `agos_kernel/` هي الحية ويجب أن تبقى. `agos-kernel/` غير مستوردة في أي كود حي، واختباراتها فاشلة تاريخياً (4 أخطاء جمع: `cannot import name 'AGOSKernel' from 'core'`، `No module named 'platform.runtime'`)، وبناءها كحزمة PyPI غير صالح (لا حزمة مطابقة داخلها). قرار الحذف/الفصل/الأرشفة مؤجل إلى M3. **إزالة `agos-kernel/` من هدف CI تمت في R-002** (دفعة M1/2) — البوابة الآن تستهدف `tests/` الحية.
