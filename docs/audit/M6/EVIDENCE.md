@@ -185,3 +185,37 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 ### السجلات
 - `logs/15_r056_pytest.log` — نتيجة pytest (rc=0).
 - `logs/16_r056_ruff.log` — ruff صفر أخطاء.
+
+---
+
+## R-044 (M6/6) — دليل تشغيل وحالات الفشل (2026-10-12)
+
+**البند**: R-044. **الترتيب**: دفعة M6/6.
+
+**المعيار**: "تجربة نشر وتراجع موثقة بدليل."
+
+**النتيجة**: النشر موثق بدليل حي (R-040: job `docker` في CI يبني ويشغل الحاوية ويتحقق `/health` — نجح في تشغيلين موثقين M4). التراجع وثّقناه كإجراء قابل للتكرار:
+1. Render Rollback (زر من لوحة التحكم — يستعيد آخر إصدار ناجح).
+2. `git revert <commit>` → PR عكسي → CI خضراء → merge → إعادة نشر تلقائية (D-034).
+
+**لماذا لا تجربة حية على Render؟** لا نشر حي متاح في هذه البيئة (لا نشر بيئي — Q-013/R-042 يحتاجان اعتماد المالك). ادعاء "تجربة تراجع على Render" بلا بيئة سيكون ادعاءً زائفاً — فوثّقنا الإجراء القابل للتكرار عبر `git revert` (نفس مسار الدمج الذي نجح 60+ مرة عبر CI في هذا المشروع).
+
+**جدول حالات الفشل** (7 حالات) — موثق في `docs/governance/OPERATIONS.md`:
+| الحالة | الاستجابة |
+|---|---|
+| 503 unhealthy | تراجع فوري — `docker logs` / uvicorn stderr |
+| 200 degraded | مقبول مؤقتاً (Supabase غير مهيأ — Q-013) |
+| CI quality فشل | أصلح في نفس PR (لا force-push) |
+| CI test فشل | أصلح في نفس PR |
+| CI governance فشل | أضف الناقص (ROADMAP/PROJECT_STATE/CHANGELOG/EVIDENCE) قبل الدمج |
+| اختبار 429 من api.github.com | بُدل إلى example.com (R-055) |
+| e2e 401 (تسريب auth) | fixture يعيد استيراد server (R-055) |
+| قياسات R-053 غير مستقرة | شغّل `scripts/run_r053_scale_audit.py` |
+
+### الفحوص (أكواد مأخوذة مباشرة)
+- `pytest tests/ -q`: 174 passed، rc=0.
+- `ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts`: صفر أخطاء، rc=0.
+
+### السجلات
+- `logs/17_r044_pytest.log` — نتيجة pytest (rc=0).
+- `logs/18_r044_ruff.log` — ruff صفر أخطاء.

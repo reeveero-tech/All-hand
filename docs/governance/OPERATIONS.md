@@ -68,3 +68,36 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 1. لا `docker-compose.yml` ولا `Makefile`.
 2. `DEPLOY.md` لم يُدقق في M0 — يحتاج مراجعة وتحديثاً.
 3. لا مراقبة خارج المقاييس المدمجة.
+
+## استجابة الحوادث (Incident Response) — R-044
+
+### النشر والتراجع (Documented — 2026-10-12)
+
+**النشر (Deploy)**:
+1. كل تغيير يمر عبر PR → CI (quality/test/build/docker/governance) → merge إلى main.
+2. البنية التحتية النشرية: Render (`render.yaml`) — `startCommand=uvicorn server:app`.
+3. للتحقق من صحة النشر: `curl $BASE_URL/health` (200 + `status`) و`curl $BASE_URL/api/system/status`.
+
+**التراجع (Rollback)**:
+- Render: من لوحة التحكم → service → **Rollback** (يعيد آخر إصدار ناجح — تُخزن الإصدارات في Render).
+- البديل اليدوي (بديل عام — مطلوب صلاحية الكتابة إلى المستودع): 
+  1. `git revert <commit>` (لا `reset --hard` — محفوظة كأمر تشغيلي في `docs/governance/DECISIONS.md` D-034).
+  2. PR العكسي → CI خضراء → merge → إعادة نشر تلقائية.
+- Docker: تبديل الوسم في السجل (image tag) — لا يوجد سجل صور خارجي في CI الحالي (Q-013).
+
+### حالات الفشل الموثقة (Failure Modes)
+
+| الحالة | العَرَض | التشخيص | الاستجابة |
+|---|---|---|---|
+| `/health` يعيد 503 (unhealthy) | خادم لا يبدأ أو وحدة نسيّة | `docker logs` / `uvicorn` stderr | تراجع فوري — لا تعديل تشغيلي حي |
+| `/health` يعيد 200 مع degraded | الذاكرة البديلة (Supabase غير مهيأ) | `SUPABASE_URL`/`SUPABASE_ANON_KEY` | مقبول مؤقتاً — Q-013 |
+| فشل CI في `quality` | أخطاء ruff (استيراد غير مستخدم/استثناء عريض) | `ruff check --select F,E722 <files>` | أصلح في نفس PR — لا force-push (D-034) |
+| فشل CI في `test` | فشل اختبار (انظر `docs/audit/M6/logs/11_r055_pytest.log` لنموذج) | `pytest tests/ -q` | أصلح في نفس PR |
+| فشل CI في `governance` | دفعة ناقصة ROADMAP/PROJECT_STATE/CHANGELOG/EVIDENCE | راجع `GOVERNANCE_GATE.md` | أضف الناقص في نفس PR قبل الدمج |
+| 429 من api.github.com في اختبار api_integrator | تسريب اختبار خارجي | `grep api.github.com tests/` | بُدل إلى `https://example.com` (R-055) |
+| اختبار e2e فشل بـ401 | تسريب حالة (اختبار سابق حمّل `server` بوضع auth-on) | راجع `tests/test_e2e_scenarios.py::test_scenario_full_pipeline_stores_result_in_task_store` | fixture يعيد استيراد `server` مع حذف `AGOS_API_KEY` (R-055) |
+| القياسات تتوقف | 1000 وكيل/1000 مهمة غير مستقرين | `python3 scripts/run_r053_scale_audit.py` | راجع R-053 |
+
+### حدود المسؤولية (Owner's Line)
+- حماية الفرع `main` (R-024) — مطلوب إعداد المالك (Q-015).
+- Supabase live (R-042) — مطلوب اعتماد المالك (Q-013).
