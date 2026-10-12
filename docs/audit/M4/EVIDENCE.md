@@ -34,7 +34,7 @@
 5. سجلات الحاوية و`docker ps` و`docker inspect` تُجمع دائماً (نجاحاً أو فشلاً)
    وتُرفع كـ artifact باسم `docker-verification-logs` من كل تشغيل.
 
-## أدلة التشغيل عن بُعد (تُستكمل بعد أول تشغيل لـ PR هذه الدفعة)
+## أدلة التشغيل عن بُعد (تحققت — تشغيلان ناجحان على رأسي PR #48)
 
 | البند | الحالة | الدليل |
 |---|---|---|
@@ -45,7 +45,10 @@
 ### قراءة صادقة للنتيجة
 جسم `/health`: `status: degraded` — تخزين الذاكرة بدل Supabase (لا بيانات اعتماد في CI)، 1000 وكيل نشط، وuvicorn سجّل `GET /health 200`. `degraded` سلوك متوقع وموثق (D-012: degraded يعني 200 لأن بدائل الذاكرة تعمل؛ unhealthy وحده يعني 503).
 
-التشغيل: https://github.com/reeveero-tech/All-hand/actions/runs/38285632672 (job `docker`، pass، 17 ثانية، على رأس فرع هذا الـ PR). الأصل: artifact `docker-verification-logs`. السجلات الخمسة (`05`..`09`) مُرتكزة من ذلك الـ artifact.
+التشغيل الأول: https://github.com/reeveero-tech/All-hand/actions/runs/38285632672 (job `docker`، pass، 17 ثانية، head_sha `f02ed61286010da5dfb5bd6fd470c2337709c820`). التشغيل النهائي على رأس PR بعد إرساء الأدلة: https://github.com/reeveero-tech/All-hand/actions/runs/38285911497 (pass، head_sha `13fc37d6e4f1d8f4eea7bda75510acf671a9c160`). الأصل: artifact `docker-verification-logs`. السجلات الخمسة (`05`..`09`) مُرتكزة من التشغيل الأول؛ التشغيل النهائي أعاد كل الفحوص (quality/test/build/docker/governance) خضراء على الرأس النهائي.
+
+### تصحيح منهجية (سجل 10)
+أكواد الخروج في السجلات المحلية `01..03` التُقطت أصلًا بعد pipe (tail)؛ أُعيد القياس في `logs/11..13` بأخذ rc من الفحص نفسه (كلها 0). لا تغيير في النتائج — 75/75 وصفر أخطاء وبناء ناجح.
 
 ## حد معروف (للأمانة)
 

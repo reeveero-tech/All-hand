@@ -1,0 +1,15 @@
+
+> agos-civilization-web@3.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 37 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.76 kB │ gzip:  0.45 kB
+dist/assets/index-CVWjJx84.css   11.84 kB │ gzip:  2.94 kB
+dist/assets/index-DGWuZoTX.js   164.19 kB │ gzip: 52.21 kB
+✓ built in 904ms
+
+exit_code=0
