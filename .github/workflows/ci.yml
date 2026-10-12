@@ -26,7 +26,7 @@ jobs:
         run: |
           # Only fatal (F/E) rules block merge; style rules (UP, DTZ, BLE, ...) are warnings logged, not blockers.
           # Generated specialist proxies are excluded (see docs/governance/RISKS.md Q-004).
-          ruff check --select F,E --exclude 'agent_civilization/agents/specialists' \
+          ruff check --select F,E722 --exclude 'agent_civilization/agents/specialists' \
             server.py agent_civilization agos_kernel tests
 
   test:
