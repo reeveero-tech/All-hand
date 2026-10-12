@@ -1,6 +1,6 @@
 # التشغيل والنشر (OPERATIONS)
 
-> **آخر تحديث**: 2026-10-12
+> **آخر تحديث**: 2026-10-12 — بعد دفعة M4/1 (R-040)
 
 ## البناء والتشغيل المحلي
 
@@ -26,7 +26,8 @@ npm install && npm run build   # يفشل: lovable-error-reporting مفقود (r
 
 ### Docker (من `Dockerfile`)
 - مراحل: `node:20-slim` لبناء `web/` ثم `python:3.12-slim` للتشغيل؛ يُخدم `web/dist` عبر `server.py`.
-- **تنبيه**: `python:3.12-slim` + خطأ `utc` → الاستيراد يفشل وقت التشغيل. **بناء الصورة لم يُنفَّذ في بيئة التدقيق** (Docker غير متوفر) — فشل التشغيل استدلال.
+- **`.dockerignore`** (جديد في R-040): يمنع دخول `.git` و`node_modules` و`web/dist` والأسرار (`.env*`) في سياق `COPY . .` — كانت تغيب قبله فكان سياق البناء يشمل كل ملفات العمل.
+- **التحقق (R-040، `in_progress`)**: job `docker` في CI تبني الصورة وتشغلها وتتحقق من `/health` (HTTP 200 + جسم JSON يحوي `status`)، مع جمع السجلات ورفعها كـ artifact. الأدلة تُرتكز في `docs/audit/M4/logs/05..06` بعد أول تشغيل. بيئة التحرير المحلية بلا Docker (دليل `docs/audit/M4/logs/04`).
 
 ### Render (من `render.yaml`)
 - `PYTHON_VERSION=3.12.0`، `startCommand=uvicorn server:app`، `healthCheckPath=/api/system/status`.
@@ -34,9 +35,8 @@ npm install && npm run build   # يفشل: lovable-error-reporting مفقود (r
 - يحدد `AGENTS_PER_SPEC=3` (لا يُقرأ من الكود — الافتراضي في `create_civilization` هو 50) — راجع Q-013 في OPEN_QUESTIONS.
 
 ### CI (`ci.yml`)
-- أهدافه (تاريخي، قبل R-002): lint/typing/اختبارات/بناء/نشر على `agos-kernel/` فقط. الحالي: انظر QUALITY (quality/test/build/publish على المسارات الحية؛ `agos-kernel/` حُذف في R-033).
-- إعادة تنفيذ محلي فاشل (4 أخطاء جمع + 8,961 خطأ ruff). حالة التشغيل عن بُعد غير مُتحقرة.
-- `publish` يرفع إلى PyPI عند push لـ main مشروطاً بنجاح الوظائف السابقة (تفشل حالياً) — راجع RISK-009.
+- الوظائف: quality (ruff F/E722 على المسارات الحية) + test (pytest tests/) + build (web/) + docker (R-040: بناء الصورة وتشغيلها والتحقق من `/health`) + publish (معطل إلا بـ`[publish]` — D-011).
+- `publish` يرفع إلى PyPI عند push لـ main مشروطاً بنجاح الوظائف السابقة ووسم `[publish]` في رسالة الدمج (D-011) — راجع RISK-009.
 
 ## متغيرات البيئة (المرصودة في الكود)
 

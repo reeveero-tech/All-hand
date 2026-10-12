@@ -1,0 +1,2 @@
+CONTAINER ID   IMAGE             COMMAND                  CREATED        STATUS        PORTS                                           NAMES
+2d9b6469b08d   agos:r040-smoke   "sh -c 'uvicorn serv…"   1 second ago   Up 1 second   0.0.0.0:18000->8000/tcp, [::]:18000->8000/tcp   agos-r040

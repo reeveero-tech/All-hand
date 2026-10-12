@@ -1,0 +1,12 @@
+2026-10-12 — R-040 بيئة العمل المحلية (توثيق صادق)
+
+- Docker غير متوفر في بيئة التحرير المحلية (docker: command not found).
+- python 3.14.3 — pytest احتاج تثبيت pytest-asyncio يدوياً (غائب من بيئة التحرير؛
+  موجود في خطوات CI: pip install pytest pytest-asyncio ...). الفشل الأول
+  (17 failed, 58 passed) كان فشل بيئة لا فشل مستودع؛ بعد التثبيت: 75/75.
+- node 20.20.2، npm 10.8.2. بناء web/ والجذر ناجحان (rc=0).
+- النتيجة: التحقق من Docker (بناء + تشغيل + /health) يُنفذ في job `docker`
+  الجديدة في CI (ubuntu-latest يوفر Docker). الأدلة تُجلب من artifact
+  "docker-verification-logs" وتُحفظ في docs/audit/M4/logs/ بعد التشغيل.
+
+exit_code=0 (كل الفحوص المحلية المتاحة)

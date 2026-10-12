@@ -1,0 +1,252 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 467B 0.0s done
+#1 DONE 0.0s
+
+#2 [auth] library/python:pull token for registry-1.docker.io
+#2 DONE 0.0s
+
+#3 [auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/node:20-slim
+#4 DONE 0.6s
+
+#5 [internal] load metadata for docker.io/library/python:3.12-slim
+#5 DONE 0.6s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 448B done
+#6 DONE 0.0s
+
+#7 [stage-1 1/6] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+#7 resolve docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 done
+#7 ...
+
+#8 [internal] load build context
+#8 transferring context: 4.15MB 0.1s done
+#8 DONE 0.1s
+
+#7 [stage-1 1/6] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+#7 sha256:2b4f19dae3a777dfc3b76730bda1e82e1f66ab2a2686fa93ca78edbfb4f04ffe 1.75kB / 1.75kB done
+#7 sha256:df18428df8a0f9189c84e7424d214b4c50092af1f9dca5842a00c41c39bda316 5.66kB / 5.66kB done
+#7 sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 10.49MB / 29.84MB 0.2s
+#7 sha256:75b6a36c64a1cf3520fc4b4aae4739d5caa8a6a05c27835a920a61784c9c32f8 1.29MB / 1.29MB 0.2s done
+#7 sha256:6912e23eb44595b44dc6d9882b34f305ad6f6e9667cec70b13e5dbc4f8cd97f4 0B / 12.12MB 0.2s
+#7 sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 10.37kB / 10.37kB done
+#7 sha256:bbc5a12237474ec0b23b5051260d56d6436a24d70d9cad961adebe7a037ed813 0B / 249B 0.2s
+#7 sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 29.84MB / 29.84MB 0.4s
+#7 sha256:6912e23eb44595b44dc6d9882b34f305ad6f6e9667cec70b13e5dbc4f8cd97f4 12.12MB / 12.12MB 0.4s
+#7 sha256:bbc5a12237474ec0b23b5051260d56d6436a24d70d9cad961adebe7a037ed813 249B / 249B 0.2s done
+#7 sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 29.84MB / 29.84MB 0.6s done
+#7 sha256:6912e23eb44595b44dc6d9882b34f305ad6f6e9667cec70b13e5dbc4f8cd97f4 12.12MB / 12.12MB 0.4s done
+#7 extracting sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e
+#7 extracting sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 0.7s done
+#7 extracting sha256:75b6a36c64a1cf3520fc4b4aae4739d5caa8a6a05c27835a920a61784c9c32f8 0.1s done
+#7 extracting sha256:6912e23eb44595b44dc6d9882b34f305ad6f6e9667cec70b13e5dbc4f8cd97f4 0.1s
+#7 ...
+
+#9 [frontend-build 1/6] FROM docker.io/library/node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+#9 resolve docker.io/library/node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 done
+#9 sha256:9da6b4e352d0d5c94963eba1832408f5b7b08839cd8be9b6610c05de5118c704 6.88kB / 6.88kB done
+#9 sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 6.49kB / 6.49kB done
+#9 sha256:3d0f05455dea2c82e2f76e7e2543964c30f6b7d673fc1a83286736d44fe4c41c 1.93kB / 1.93kB done
+#9 sha256:ff86ea2e5edce334d19a34fbc65d1a511aa1fc823dba1110422f991aa56b44d4 28.24MB / 28.24MB 0.6s done
+#9 sha256:e54aec64c365815cd7b91e718f00ac6e625562b1de09036b38614621b42c7582 3.31kB / 3.31kB 0.6s done
+#9 sha256:804d4d68057cbb26cbcde9a735148ebc6589911bad32cf9dbddb5b0ba878bf1f 41.42MB / 41.42MB 1.0s done
+#9 sha256:64cfb949317c9824fd081d55c59a7225bfe1f650c6395ba42d7ed0ccf51993d2 1.71MB / 1.71MB 1.0s done
+#9 sha256:3c02fd806613748139b8b8a14a69ae3518a1b0e863c57c35aada3b92ed87fb31 447B / 447B 0.7s done
+#9 extracting sha256:ff86ea2e5edce334d19a34fbc65d1a511aa1fc823dba1110422f991aa56b44d4 0.8s done
+#9 extracting sha256:e54aec64c365815cd7b91e718f00ac6e625562b1de09036b38614621b42c7582 done
+#9 extracting sha256:804d4d68057cbb26cbcde9a735148ebc6589911bad32cf9dbddb5b0ba878bf1f 0.8s done
+#9 extracting sha256:64cfb949317c9824fd081d55c59a7225bfe1f650c6395ba42d7ed0ccf51993d2 0.0s done
+#9 extracting sha256:3c02fd806613748139b8b8a14a69ae3518a1b0e863c57c35aada3b92ed87fb31 done
+#9 DONE 3.6s
+
+#7 [stage-1 1/6] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+#7 ...
+
+#10 [frontend-build 2/6] WORKDIR /app/web
+#10 DONE 0.1s
+
+#11 [frontend-build 3/6] COPY web/package.json web/package-lock.json* ./
+#11 DONE 0.0s
+
+#7 [stage-1 1/6] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+#7 extracting sha256:6912e23eb44595b44dc6d9882b34f305ad6f6e9667cec70b13e5dbc4f8cd97f4 0.4s done
+#7 extracting sha256:bbc5a12237474ec0b23b5051260d56d6436a24d70d9cad961adebe7a037ed813
+#7 extracting sha256:bbc5a12237474ec0b23b5051260d56d6436a24d70d9cad961adebe7a037ed813 done
+#7 DONE 3.7s
+
+#12 [stage-1 2/6] WORKDIR /app
+#12 DONE 0.0s
+
+#13 [stage-1 3/6] COPY requirements.txt .
+#13 DONE 0.0s
+
+#14 [stage-1 4/6] RUN pip install --no-cache-dir -r requirements.txt
+#14 1.237 Collecting PyYAML (from -r requirements.txt (line 1))
+#14 1.290   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+#14 1.619 Collecting aiohttp (from -r requirements.txt (line 2))
+#14 1.630   Downloading aiohttp-3.14.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.3 kB)
+#14 1.663 Collecting fastapi (from -r requirements.txt (line 3))
+#14 1.673   Downloading fastapi-0.143.0-py3-none-any.whl.metadata (26 kB)
+#14 1.734 Collecting pydantic (from -r requirements.txt (line 5))
+#14 1.744   Downloading pydantic-2.14.1-py3-none-any.whl.metadata (133 kB)
+#14 1.773 Collecting python-multipart (from -r requirements.txt (line 6))
+#14 1.783   Downloading python_multipart-0.0.32-py3-none-any.whl.metadata (2.1 kB)
+#14 1.804 Collecting uvicorn[standard] (from -r requirements.txt (line 4))
+#14 1.814   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+#14 1.831 Collecting aiohappyeyeballs>=2.5.0 (from aiohttp->-r requirements.txt (line 2))
+#14 1.847   Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl.metadata (5.9 kB)
+#14 ...
+
+#15 [frontend-build 4/6] RUN npm ci || npm install
+#15 1.568 
+#15 1.568 added 63 packages, and audited 64 packages in 1s
+#15 1.568 
+#15 1.568 7 packages are looking for funding
+#15 1.568   run `npm fund` for details
+#15 1.576 
+#15 1.576 2 vulnerabilities (1 moderate, 1 high)
+#15 1.576 
+#15 1.576 To address all issues (including breaking changes), run:
+#15 1.576   npm audit fix --force
+#15 1.576 
+#15 1.576 Run `npm audit` for details.
+#15 1.576 npm notice
+#15 1.576 npm notice New major version of npm available! 10.8.2 -> 12.2.0
+#15 1.576 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+#15 1.576 npm notice To update run: npm install -g npm@12.2.0
+#15 1.576 npm notice
+#15 DONE 2.0s
+
+#16 [frontend-build 5/6] COPY web/ ./
+#16 DONE 0.0s
+
+#14 [stage-1 4/6] RUN pip install --no-cache-dir -r requirements.txt
+#14 1.860 Collecting aiosignal>=1.4.0 (from aiohttp->-r requirements.txt (line 2))
+#14 1.870   Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+#14 1.893 Collecting attrs>=17.3.0 (from aiohttp->-r requirements.txt (line 2))
+#14 1.909   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+#14 1.947 Collecting frozenlist>=1.1.1 (from aiohttp->-r requirements.txt (line 2))
+#14 1.958   Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+#14 2.127 Collecting multidict<8.0,>=4.5 (from aiohttp->-r requirements.txt (line 2))
+#14 2.137   Downloading multidict-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (6.2 kB)
+#14 2.192 Collecting propcache>=0.2.0 (from aiohttp->-r requirements.txt (line 2))
+#14 2.204   Downloading propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (25 kB)
+#14 2.231 Collecting typing_extensions>=4.4 (from aiohttp->-r requirements.txt (line 2))
+#14 2.241   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#14 2.422 Collecting yarl<2.0,>=1.25.1 (from aiohttp->-r requirements.txt (line 2))
+#14 2.432   Downloading yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (111 kB)
+#14 2.469 Collecting starlette>=0.46.0 (from fastapi->-r requirements.txt (line 3))
+#14 2.480   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+#14 2.507 Collecting typing-inspection>=0.4.2 (from fastapi->-r requirements.txt (line 3))
+#14 2.518   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+#14 2.530 Collecting annotated-doc>=0.0.2 (from fastapi->-r requirements.txt (line 3))
+#14 2.540   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+#14 2.559 Collecting opentelemetry-api>=1.44.0 (from fastapi->-r requirements.txt (line 3))
+#14 2.569   Downloading opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
+#14 2.587 Collecting click>=7.0 (from uvicorn[standard]->-r requirements.txt (line 4))
+#14 2.599   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#14 2.612 Collecting h11>=0.8 (from uvicorn[standard]->-r requirements.txt (line 4))
+#14 2.622   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+#14 2.655 Collecting httptools>=0.8.0 (from uvicorn[standard]->-r requirements.txt (line 4))
+#14 2.665   Downloading httptools-0.9.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (3.5 kB)
+#14 2.683 Collecting python-dotenv>=0.13 (from uvicorn[standard]->-r requirements.txt (line 4))
+#14 2.694   Downloading python_dotenv-1.2.4-py3-none-any.whl.metadata (29 kB)
+#14 2.723 Collecting uvloop>=0.15.1 (from uvicorn[standard]->-r requirements.txt (line 4))
+#14 2.733   Downloading uvloop-0.23.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.1 kB)
+#14 2.783 Collecting watchfiles>=0.20 (from uvicorn[standard]->-r requirements.txt (line 4))
+#14 ...
+
+#17 [frontend-build 6/6] RUN npm run build
+#17 0.162 
+#17 0.162 > agos-civilization-web@3.0.0 build
+#17 0.162 > vite build
+#17 0.162 
+#17 0.298 vite v5.4.21 building for production...
+#17 0.345 transforming...
+#17 0.856 ✓ 37 modules transformed.
+#17 0.924 rendering chunks...
+#17 0.929 computing gzip size...
+#17 0.933 dist/index.html                   0.76 kB │ gzip:  0.45 kB
+#17 0.933 dist/assets/index-CVWjJx84.css   11.84 kB │ gzip:  2.94 kB
+#17 0.933 dist/assets/index-DGWuZoTX.js   164.19 kB │ gzip: 52.21 kB
+#17 0.934 ✓ built in 611ms
+#17 DONE 1.0s
+
+#14 [stage-1 4/6] RUN pip install --no-cache-dir -r requirements.txt
+#14 2.794   Downloading watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
+#14 2.901 Collecting websockets>=13.0 (from uvicorn[standard]->-r requirements.txt (line 4))
+#14 2.912   Downloading websockets-17.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.3 kB)
+#14 2.925 Collecting annotated-types>=0.6.0 (from pydantic->-r requirements.txt (line 5))
+#14 2.935   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+#14 3.270 Collecting pydantic-core==2.50.1 (from pydantic->-r requirements.txt (line 5))
+#14 3.281   Downloading pydantic_core-2.50.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.5 kB)
+#14 3.309 Collecting anyio<5,>=4.0.0 (from starlette>=0.46.0->fastapi->-r requirements.txt (line 3))
+#14 3.319   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+#14 3.342 Collecting idna>=2.0 (from yarl<2.0,>=1.25.1->aiohttp->-r requirements.txt (line 2))
+#14 3.353   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+#14 3.374 Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+#14 3.402    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 31.8 MB/s eta 0:00:00
+#14 3.412 Downloading aiohttp-3.14.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.9 MB)
+#14 3.431    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.9/1.9 MB 92.2 MB/s eta 0:00:00
+#14 3.441 Downloading fastapi-0.143.0-py3-none-any.whl (144 kB)
+#14 3.452 Downloading pydantic-2.14.1-py3-none-any.whl (488 kB)
+#14 3.462 Downloading pydantic_core-2.50.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+#14 3.473    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 192.4 MB/s eta 0:00:00
+#14 3.483 Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
+#14 3.495 Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+#14 3.504 Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+#14 3.514 Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+#14 3.524 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#14 3.534 Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+#14 3.544 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#14 3.553 Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (242 kB)
+#14 3.564 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#14 3.574 Downloading httptools-0.9.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (552 kB)
+#14 3.575    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 552.8/552.8 kB 1.4 GB/s eta 0:00:00
+#14 3.585 Downloading multidict-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (483 kB)
+#14 3.596 Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+#14 3.606 Downloading propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (250 kB)
+#14 3.616 Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+#14 3.626 Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+#14 3.636 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#14 3.646 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+#14 3.656 Downloading uvloop-0.23.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.5 MB)
+#14 3.669    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 379.1 MB/s eta 0:00:00
+#14 3.679 Downloading watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (458 kB)
+#14 3.689 Downloading websockets-17.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
+#14 3.700 Downloading yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (117 kB)
+#14 3.710 Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+#14 3.720 Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+#14 3.730 Downloading idna-3.20-py3-none-any.whl (69 kB)
+#14 3.777 Installing collected packages: websockets, uvloop, typing_extensions, PyYAML, python-multipart, python-dotenv, propcache, multidict, idna, httptools, h11, frozenlist, click, attrs, annotated-types, annotated-doc, aiohappyeyeballs, yarl, uvicorn, typing-inspection, pydantic-core, opentelemetry-api, anyio, aiosignal, watchfiles, starlette, pydantic, aiohttp, fastapi
+#14 4.703 Successfully installed PyYAML-6.0.3 aiohappyeyeballs-2.7.1 aiohttp-3.14.5 aiosignal-1.4.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 click-8.5.0 fastapi-0.143.0 frozenlist-1.8.0 h11-0.16.0 httptools-0.9.0 idna-3.20 multidict-7.1.0 opentelemetry-api-1.45.1 propcache-0.5.4 pydantic-2.14.1 pydantic-core-2.50.1 python-dotenv-1.2.4 python-multipart-0.0.32 starlette-1.7.0 typing-inspection-0.4.4 typing_extensions-4.16.0 uvicorn-0.54.0 uvloop-0.23.0 watchfiles-1.3.0 websockets-17.2 yarl-1.25.1
+#14 4.704 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#14 4.774 
+#14 4.774 [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+#14 4.774 [notice] To update, run: pip install --upgrade pip
+#14 DONE 5.2s
+
+#18 [stage-1 5/6] COPY . .
+#18 DONE 0.1s
+
+#19 [stage-1 6/6] COPY --from=frontend-build /app/web/dist /app/web/dist
+#19 DONE 0.0s
+
+#20 exporting to image
+#20 exporting layers
+#20 exporting layers 1.0s done
+#20 writing image sha256:0a8a6e372922f6324b90331f6520fe7348a02a23a98ec853a2a57bc80ebb04a8 done
+#20 naming to docker.io/library/agos:r040-smoke done
+#20 DONE 1.0s
+image_size=185364831
+
+# سياق التشغيل (أُضيف عند الأرشفة)
+- التشغيل: https://github.com/reeveero-tech/All-hand/actions/runs/38285632672 (job docker، PR #48)
+- SHA المفحوص: رأس فرع m4/r040-docker-verify عند فتح PR #48
+- النتيجة: pass (17s). حجم الصورة: 185,364,831 بايت (~177MB).
+- الأصل: artifact docker-verification-logs من التشغيل المذكور.

@@ -1,0 +1,10 @@
+container_started_at=2026-10-12T17:40:01Z
+attempt=1 http_code=000000
+attempt=2 http_code=200
+health_body:
+{"status":"degraded","uptime_seconds":0.0,"checks":{"api":{"component":"api","status":"healthy","message":"API is responding","duration_ms":0.04,"timestamp":"2026-10-12T17:40:02.400647","details":{"status":"healthy","message":"API is responding"}},"civilization":{"component":"civilization","status":"healthy","message":"Civilization active with 1000 agents","duration_ms":0.75,"timestamp":"2026-10-12T17:40:02.401406","details":{"status":"healthy","message":"Civilization active with 1000 agents","agent_count":1000}},"storage":{"component":"storage","status":"degraded","message":"Using in-memory storage","duration_ms":0.01,"timestamp":"2026-10-12T17:40:02.401419","details":{"status":"degraded","message":"Using in-memory storage","supabase_configured":false}},"redis":{"component":"redis","status":"healthy","message":"Redis connected: False","duration_ms":0.1,"timestamp":"2026-10-12T17:40:02.401522","details":{"status":"healthy","message":"Redis connected: False","connected":false,"using_fallback":true,"queue_size":0,"total_tasks":0,"completed":0,"failed":0}}},"summary":{"total":4,"healthy":3,"degraded":1,"unhealthy":0,"unknown":0}}PASS: /health returned 200 with health JSON
+
+# سياق التشغيل (أُضيف عند الأرشفة)
+- التشغيل: https://github.com/reeveero-tech/All-hand/actions/runs/38285632672 (job docker، PR #48)
+- النتيجة: الحاوية بدأت و/health رد 200 في المحاولة الثانية (أول محاولة كانت قبل اكتمال بدء uvicorn).
+- جسم الاستجابة: status=degraded (تخزين الذاكرة بدل Supabase — لا بيانات اعتماد في CI؛ سلوك متوقع ومتوثق في D-012: degraded يعني 200 صحيحاً).
