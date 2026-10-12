@@ -1,0 +1,7 @@
+# R-031c verification (M3/12)
+Mon Oct 12 17:02:24 UTC 2026
+--- deleted: 3 dangling symlinks (execution_program, knowledge_base, rie_sprint1 -> execution-program, knowledge-base, rie-sprint1 — targets removed in R-031 batch 1) + agos_system_registry_report.json (generated audit report, no consumer)
+--- symlinks were created in commit 22a78f4 'feat: add symlinks for hyphenated module names'
+--- AST: no live imports of any of the 4
+--- pytest:
+============================== 75 passed in 0.73s ==============================
