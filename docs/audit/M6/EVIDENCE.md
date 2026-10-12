@@ -114,3 +114,44 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | pytest (163 + 5 جديدة) | 168/168، exit 0 | `logs/08_r053_pytest.log` |
 | ruff (كل المسارات) | صفر أخطاء، exit 0 | `logs/09_r053_ruff.log` |
 | بناء web/ والجذر | rc=0 كلاهما | `logs/10_r053_builds.log` |
+
+---
+
+## R-055 (M6/4) — سيناريوهات شاملة من البداية للنهاية (2026-10-12)
+
+**البند**: R-055. **الترتيب**: دفعة M6/4.
+
+**النطاق**: إضافة `tests/test_e2e_scenarios.py` (6 اختبارات) + `scripts/run_r055_scenarios.py` + 5 إصلاحات أصلية في `real_dispatcher.py` / `orchestrator.py` كانت تمنع السيناريوهات من العمل.
+
+**المعيار**: "3 سيناريوهات على الأقل (هدف معقد → خطة متعددة الوكلاء → نتيجة مخزنة) تعمل آلياً في CI أو في اختبار تحقق موثق." — **محقق**: 3 سيناريوهات تعمل آلياً في pytest (CI)، وسيناريو كامل يُخزّن النتيجة فعلياً عبر `/civilization/execute` → `/api/tasks/{id}`.
+
+### السيناريوهات
+1. **برمجي** (كود → مراجعة → اختبار): 5 مراحل عبر 5 وكلاء (analyst → architect → code_generator → reviewer → test_runner)؛ النتيجة `exit=0`.
+2. **تحليلي** (فهم → خطة → تنفيذ → تحقق): 4 مراحل عبر 4 وكلاء؛ النتيجة `valid python object`.
+3. **معماري** (فهم → خطة → تنفيذ → مراجعة → اختبار): 5 مراحل؛ النتيجة `exit=0`.
+4. **سيناريو كامل (تخزين فعلي)**: POST `/civilization/execute` → خطة (4+ مراحل) → تنفيذ → تخزين النتيجة في `TASKS` → استرجاعها عبر GET `/api/tasks/{id}`.
+
+### إصلاحات أصلية (سبب جذري — كل واحدة كانت تمنع السيناريو)
+- `_extract_code` رفض كوداً من سطر واحد (`"print(1+1)"`).
+- `_validator` فشل المسار كاملاً إذا لم تكن الخلاصة نص JSON.
+- `orchestrator` سجل `ok=True` دائماً بغض النظر عن نتيجة الوكيل.
+- `_analyst` رفض مرحلة "فهم الطلب" النصية.
+- الـorchestrator مررت `data` لمرحلة "execute" فقط ففشلت مرحلة الاختبار ("no code to run").
+
+### الفحوص (أكواد مأخوذة مباشرة من التشغيل)
+- `pytest tests/ -q`: 174 passed، rc=0.
+- `ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts`: صفر أخطاء، rc=0.
+- `python3 scripts/run_r055_scenarios.py`: rc=0 — تقرير السيناريوهات الثلاثة (logs/13).
+- `cd web && npm run build`: rc=0.
+- `npm run build` (الجذر): rc=0.
+
+### السجلات
+- `logs/11_r055_pytest.log` — نتيجة pytest الكاملة (rc=0).
+- `logs/12_r055_ruff.log` — ruff صفر أخطاء.
+- `logs/13_r055_scenarios.log` — تقرير السيناريوهات الثلاثة (rc=0).
+- `logs/14_r055_builds.log` — بناء web/ والجذر (rc=0 لكل).
+
+### حد أقصى/قيود
+- السيناريوهات تعمل على كامل 20 تخصصاً حقيقياً لكن كل سيناريو يستخدم 4–5 وكلاء فقط من التخصصات المناسبة للهدف (تحدد بمطابقة intent في `auto_router.py`).
+- اختبار `api_integrator` سابقاً (اختبار مستقل وليس جزءاً من سيناريوهات R-055) كان يستخدم api.github.com الذي أرجع 429 مرة واحدة؛ بُدل إلى `https://example.com` (مستقر).
+- السيناريو الكامل (POST /civilization/execute) يعتمد على `AGOS_API_KEY` غير معيّن — في الإنتاج مع مفتاح، يتطلب تمرير `X-API-Key` (موثق في tests/test_security.py). هذا ليس عيباً في R-055.

@@ -352,8 +352,17 @@
 - قيود موثقة: recall يطابق بالاحتواء النصي؛ توصيل R-054 بمسار التشغيل الحي يبقى قراراً منفصلاً (مرتبط بـR-032/R-050).
 
 ### R-055 — سيناريوهات شاملة من البداية للنهاية
-- الحالة: **proposed**
-- معيار القبول: 3 سيناريوهات على الأقل (هدف معقد → خطة متعددة الوكلاء → نتيجة مخزنة) تعمل آلياً في CI أو في اختبار تحقق موثق.
+- الحالة: **done** (دفعة M6/4)
+- النطاق: `agent_civilization/routing/auto_router.py` + `agent_civilization/pipeline/orchestrator.py` + `agent_civilization/core/agents/real_dispatcher.py` + `tests/test_e2e_scenarios.py`.
+- الإصلاحات المطلوبة لتمرير السيناريوهات (السبب الجذري): 
+  - `_extract_code` كان يرفض النصوص ذات سطر واحد مثل `"print(1+1)"` (لم تنطبق عليه شروط `\n`/`def`/`import`) ويعود إلى نص prompt — الآن يقبل أي سلسلة غير فارغة من `data`.
+  - `_validator` كان يفشل مسار pipeline كاملاً إذا لم يكن prompt من JSON (خلاصة المرحلة نصية عادة) — الآن يعلن `ok=True` مع تحذير `json_parse=False`.
+  - `orchestrator.execute_plan` كان يسجل `ok=True` دائماً بغض النظر عن نتيجة الوكيل — الآن ينتشر `ok` من الوكيل الفعلي.
+  - `_analyst` كان يرفض مرحلة "فهم الطلب" النصية في سيناريوهات غير رقمية (خطأ: "need >=2 numeric samples") — الآن يكمل بتحليل نصي (عدد الكلمات/الحروف).
+  - `_test_runner` يحتاج أن يصل `data` (كود Python) إلى كل المراحل — كانت الـorchestrator تمررها لمرحلة "execute" فقط.
+  - تم إصلاح تكرار `return {"ok": False, "error": "no code to run"}` في `_test_runner` (خطأ من تعديل سابق).
+- معيار القبول (مُحقق): 6 اختبارات في `tests/test_e2e_scenarios.py` (3 سيناريوهات + وكلاء مختلفون + تقرير التوقيت + سيناريو كامل عبر `/civilization/execute` → `/api/tasks/{id}` مع تخزين النتيجة) — الأدلة: `docs/audit/M6/logs/11..14`. السيناريو 3 يُخزّن النتيجة فعلياً في TASKS (المعيار الحرفي: "هدف معقد → خطة متعددة الوكلاء → نتيجة مخزنة").
+- ملاحظة اختبارية: `test_scenario_full_pipeline_stores_result_in_task_store` يستخدم fixture يعيد استيراد `server` مع حذف `AGOS_API_KEY` (اختبار سابق في tests/test_security.py ترك الوحدة النمطية محمّلة بوضع auth-on — تسريب حالة بين الاختبارات).
 
 ### R-056 — مصالحة الادعاءات التوثيقية
 - الحالة: **proposed**

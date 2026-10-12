@@ -118,7 +118,7 @@ async def test_execute_plan_missing_specialization_fails_gracefully():
 
 REPRESENTATIVE_TASKS = {
     "analyst": {"data": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
-    "api_integrator": {"prompt": "GET https://api.github.com/repos/python/cpython"},
+    "api_integrator": {"prompt": "GET https://example.com"},
     "architect": {"data": ["web ui", "api", "db"]},
     "builder": {"data": ["app.py", "utils.py", "tests/test_app.py"]},
     "code_generator": {"data": "def add(a,b):\n    return a+b\n"},
