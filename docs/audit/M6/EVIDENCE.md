@@ -219,3 +219,41 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 ### السجلات
 - `logs/17_r044_pytest.log` — نتيجة pytest (rc=0).
 - `logs/18_r044_ruff.log` — ruff صفر أخطاء.
+
+---
+
+## R-045 (M6/7) — صلابة أمنية إضافية (فحوص التبعيات في CI) (2026-10-12)
+
+**البند**: R-045. **الترتيب**: دفعة M6/7.
+
+**المعيار**: "فحوص التبعيات في CI وصفر ثغرات حرجة/عالية غير مبرَّرة."
+
+### ما تم
+- CI job `audit` جديد (`.github/workflows/ci.yml`) — يعتمد على quality+test، يمنع الدمج عند:
+  - أي ثغرة معروفة في `requirements.txt` (pip-audit — rc مانع).
+  - أي ثغرة critical/high في تبعيات **الإنتاج** فقط لـweb/ (`npm audit --omit=dev --audit-level=critical`).
+- `npm audit` الكامل (يشمل dev) معلوماتي (`continue-on-error: true`) — تبعيات dev لا تصل إلى الإنتاج.
+- قسم جديد في `docs/governance/SECURITY.md` يوثق القياسات الحالية + مبرر الثغرتين dev + تدوير المفاتيح (مسؤولية المضيف) + حدود المدخلات (rate limit + MAX_TASKS_KEPT موجودة أصلاً).
+
+### القياسات (أكواد مأخوذة مباشرة — 2026-10-12)
+| الفحص | النتيجة | rc |
+|---|---|---|
+| `pip-audit -r requirements.txt` | صفر ثغرات معروفة | 0 |
+| `npm audit --omit=dev` (web/) | صفر ثغرات (react/react-dom نظيفة) | 0 |
+| `npm audit` (كامل — معلوماتي) | ثغرتان dev فقط: esbuild moderate (CVSS 5.3) + vite high (عبر esbuild) | معلوماتي |
+
+### الثغرتان dev — المبرر (موثق في SECURITY.md)
+- `esbuild <=0.24.2` (GHSA-67mh-4wv8-2f99): يؤثر على خادم تطوير Vite — أي موقع يستطيع إرسال طلبات إلى dev server المكشوف. لا يصل إلى بناء الإنتاج (`npm run build` لا يشغل خادم).
+- `vite <=6.4.2` (GHSA-4w7w-66w2-5vf9): نفس السياق (path traversal في .map أثناء معالجة deps المحسنة — dev server).
+- **لماذا الإصلاح مؤجل**: `npm audit fix --force` يرفع vite إلى 8.x (تغيير رئيسي في أداة البناء) — يحتاج دفعة اختبار مستقلة، خارج نطاق R-045 (فحص التبعيات). موثق كبند مستقل إن طلبه المالك.
+
+### تدوير المفاتيح (موثق — مسؤولية المالك)
+`AGOS_API_KEY`، `SUPABASE_ANON_KEY`، `OPENROUTER_API_KEY` — تُدار من لوحة المضيف (Render sync:false)؛ لا تدوير آلي داخلي.
+
+### الفحوص (أكواد مأخوذة مباشرة)
+- `pytest tests/ -q`: 174 passed، rc=0.
+- `ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts`: صفر أخطاء، rc=0.
+
+### السجلات
+- `logs/19_r045_pip_audit.log` — pip-audit: صفر ثغرات (rc=0).
+- `logs/20_r045_npm_audit.log` — npm audit --omit=dev: صفر؛ npm audit الكامل: ثغرتا dev موثقتان.

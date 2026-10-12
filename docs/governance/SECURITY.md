@@ -64,3 +64,13 @@
 4. إصلاح رمز حالة `/health`.
 5. فحص أسرار شامل (gitleaks/trufflehog) في CI.
 6. تحديث `SECURITY.md` الجذري وإزالة التعارض.
+
+## فحوص التبعيات (R-045 — 2026-10-12)
+
+- **CI job `audit`** (.github/workflows/ci.yml): يُشغّل `pip-audit -r requirements.txt` و`npm audit --omit=dev --audit-level=critical` في كل PR. الحاجب (blocking) على: صفر ثغرات حرجة/عالية في تبعيات الإنتاج.
+- **المسار الموثق وقت إضافة R-045**: `pip-audit -r requirements.txt` → صفر ثغرات معروفة (راجع logs/19). `npm audit --omit=dev` في web/ → صفر ثغرات (react/react-dom نظيفة — logs/20). المسار الكامل `npm audit` (يشمل vite/esbuild للتطوير) يُظهر ثغرتين (moderate/high) في تبعيات dev فقط — غير مانعة للإنتاج:
+  - `esbuild <=0.24.2` (GHSA-67mh-4wv8-2f99, moderate, CVSS 5.3): يؤثر على خادم تطوير Vite فقط (dev server) — لا يصل إلى بناء الإنتاج (`npm run build` يستخدم نفس الإصدار لكن الثغرة تتطلب تشغيل خادم تطوير مكشوف).
+  - `vite <=6.4.2` (GHSA-4w7w-66w2-5vf9, high عبر esbuild): نفس السياق — dev server only.
+  - **الإصلاح المتاح**: `npm audit fix --force` (يرفع vite إلى 8.x — تغيير رئيسي). مؤجل عمداً: (1) لا يؤثر على الإنتاج، (2) تغيير رئيسي في أداة البناء يحتاج دفعة اختبار مستقلة، (3) غير داخل نطاق R-045 (فحص التبعيات) — يُدرج كبند مستقل إن طلب المالك.
+- **حدود حجم المدخلات**: `MAX_TASKS_KEPT` (server.py) يمنع تجميع المهام بلا حدود؛ Rate limit يحد الطلبات (100/60 ثانية افتراضياً — AGOS_RATE_LIMIT_*)؛ `AGOS_API_KEY` اختياري (R-004).
+- **تدوير المفاتيح**: `AGOS_API_KEY` و`SUPABASE_ANON_KEY` و`OPENROUTER_API_KEY` تُدار من لوحة المضيف (Render sync:false) — لا تدوير آلي داخلي؛ يُترك للمالك (المسؤولية موثقة في R-045/OPERATIONS).

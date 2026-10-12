@@ -146,6 +146,49 @@ jobs:
           docker rm -f agos-r040 || true
           docker rmi agos:r040-smoke || true
 
+  audit:
+    # R-045: dependency vulnerability audit in CI (pip-audit + npm audit).
+    # Blocking on critical/high; moderate/low reported but non-blocking (dev-only deps).
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Python dependency audit (requirements.txt)
+        run: |
+          set -o pipefail
+          pip-audit -r requirements.txt 2>&1 | tee "$GITHUB_WORKSPACE/pip_audit.log"
+          # pip-audit exits 1 if vulnerabilities found — already blocking.
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Web dependency audit (production deps only)
+        working-directory: web/
+        run: |
+          npm install --no-audit --no-fund
+          npm audit --omit=dev --audit-level=critical
+          # Blocking on critical/high in PRODUCTION deps only (react/react-dom).
+          # Dev-only (vite/esbuild) is non-blocking — see docs/governance/SECURITY.md R-045.
+
+      - name: Web dependency audit (full — report only)
+        working-directory: web/
+        continue-on-error: true
+        run: |
+          npm audit --audit-level=critical 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log"
+          # Full audit (including dev deps) is informational — dev-only vulnerabilities
+          # do not reach production. Documented in docs/governance/SECURITY.md R-045.
+
   publish:
     runs-on: ubuntu-latest
     needs: build

@@ -1,6 +1,6 @@
 # حالة المشروع (PROJECT_STATE)
 
-> **آخر تحديث**: 2026-10-12 — بعد دفعة M6/6 (R-044: دليل تشغيل وحالات الفشل)
+> **آخر تحديث**: 2026-10-12 — بعد دفعة M6/7 (R-045: صلابة أمنية إضافية — CI audit job)
 > **مرجع الكود**: `d960065...` (فرع `main`، بعد دمج PR #57؛ دفعة R-053 مبنية عليه)
 
 ## ملخص سريع لمن يتسلم المشروع لأول مرة
@@ -80,7 +80,8 @@
 11. **R-055** ✓ done (M6/4): سيناريوهات شاملة من البداية للنهاية — 6 اختبارات في `tests/test_e2e_scenarios.py` (3 سيناريوهات + وكلاء مختلفون لكل مرحلة + تقرير توقيت + سيناريو كامل عبر `/civilization/execute` → `/api/tasks/{id}` مع تخزين النتيجة في TASKS). أصلح 5 عيوب أصلية في `auto_router`/`orchestrator`/`real_dispatcher` كانت تمنع السيناريوهات من العمل (انظر ROADMAP). الأدلة: `docs/audit/M6/EVIDENCE.md` + logs/11..14.
 12. **R-056** ✓ done (M6/5): مصالحة الادعاءات التوثيقية — وُسمت الأربع وثائق الجذرية القديمة (INTEGRITY-REPORT، CIVILIZATION_MAP، FINAL-ARCHITECTURE، IMPLEMENTATION_PLAN) بلافتة تاريخية مع تصحيح الادعاءات غير المقاسة ("90%+ real execution" → إحالة إلى قياسات R-051/R-053). الأدلة: `docs/audit/M6/EVIDENCE.md` + logs/15..16.
 13. **R-044** ✓ done (M6/6): دليل تشغيل وحالات الفشل — أقسام جديدة في `docs/governance/OPERATIONS.md` (نشر/تراجع عبر `git revert` أو Render Rollback — D-034؛ جدول 7 حالات فشل مع تشخيص واستجابة؛ حدود مسؤولية المالك). الأدلة: `docs/audit/M6/EVIDENCE.md` + logs/17..18.
-14. **التالي** (وفق الترتيب): R-045 (صلابة أمنية إضافية — فحوص تبعيات pip-audit/npm audit في CI) ثم M6 wrap-up.
+14. **R-045** ✓ done (M6/7): صلابة أمنية إضافية — CI job `audit` جديد (pip-audit مانع + npm audit --omit=dev مانع لتبعيات الإنتاج + npm audit الكامل معلوماتي). تبعيات الإنتاج صفر ثغرات (pip-audit صفر — logs/19؛ npm --omit=dev صفر — logs/20)؛ ثغرتا dev فقط (esbuild/vite) موثقتان ومبررتان (dev-server فقط) والإصلاح مؤجل بقرار موثق. الأدلة: `docs/audit/M6/EVIDENCE.md` + logs/19..20.
+15. **التالي**: M6 wrap-up — مراجعة كل بنود M6، تحديث PROJECT_STATE/ROADMAP للتسليم.
 4. البنود `blocked` (R-024 حماية الفرع، R-042 Supabase، R-050 تعريف المالك) لا توقف البقية — الغموض موثق في OPEN_QUESTIONS وR-032 قراره مرتبط بـR-050/R-051.
 
 ## ملاحظة بنية (بعد R-033)
