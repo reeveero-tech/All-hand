@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/all-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 84 items
+
+tests/test_agent_production.py ........................                  [ 28%]
+tests/test_agents_per_spec.py ...                                        [ 32%]
+tests/test_api.py ..................                                     [ 53%]
+tests/test_civilization_routes.py ......                                 [ 60%]
+tests/test_infrastructure.py ...................                         [ 83%]
+tests/test_real_dispatch_audit.py ......                                 [ 90%]
+tests/test_security.py ........                                          [100%]
+
+============================== 84 passed in 2.67s ==============================
