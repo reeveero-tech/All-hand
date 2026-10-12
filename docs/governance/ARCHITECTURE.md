@@ -170,3 +170,13 @@ POST /civilization/execute → auto_route → tasks_store (dict فقط؛ لا ا
 | pyproject | — | يعرّف حزمة `agos-kernel` مع `[tool.setuptools.packages.find] include = ["agos_kernel*"]` لكن **لا يوجد دليل `agos_kernel` داخل `agos-kernel/`** — الحزمة غير قابلة للبناء عملياً |
 
 **القرار (D-016)**: `agos_kernel/` هي الحية ويجب أن تبقى. `agos-kernel/` غير مستوردة في أي كود حي، واختباراتها فاشلة تاريخياً (4 أخطاء جمع: `cannot import name 'AGOSKernel' from 'core'`، `No module named 'platform.runtime'`)، وبناءها كحزمة PyPI غير صالح (لا حزمة مطابقة داخلها). قرار الحذف/الفصل/الأرشفة مؤجل إلى M3. **إزالة `agos-kernel/` من هدف CI تمت في R-002** (دفعة M1/2) — البوابة الآن تستهدف `tests/` الحية.
+
+## قرار مصير `agos-kernel/` (R-033 — D-026، دفعة M3/11)
+
+حُذف `agos-kernel/` (515 ملفاً، 469 ملف py، 30 ملف اختبار، 5.0MB) من `main` بعد أرشفته في فرع دائم `archive/agos-kernel-v1` (يشير إلى `ceead7d`) ووسم `pre-R033-agos-kernel-removal`. الاسترجاع: `git checkout archive/agos-kernel-v1 -- agos-kernel`.
+
+الأسباب المُتحقق منها: (1) صفر استيراد حي وصفر مرجع في CI/Docker/render/npm (R-012)؛ (2) اختباراته فاشلة تاريخياً؛ (3) `pyproject.toml` الخاص به يطلب حزمة `agos_kernel*` غير موجودة داخله؛ (4) عيب بنيوي مُعاد إنتاجه: الدليل `agos-kernel/platform/` يحجب وحدة `platform` من المكتبة القياسية، فيفشل `import platform` نفسه عند تشغيل أي أمر من داخل `agos-kernel/` (ويفشل pytest عبر ddtrace لهذا السبب). لم أختبر هل يكفي إعادة تسمية هذا الدليل وحده لتشغيل الحزمة؛ لم يكن ذلك مطلوباً لأن البند الحاكم هو غياب أي مستهلك.
+
+كما حُذف `push_to_github.sh` (سكربت تاريخي لمرة واحدة يشير فقط إلى `agos-kernel/finalization`، مسار مطلق `/workspace`، غير مستدعى من أي مكان).
+
+`agos_kernel/` (الشرطة السفلية، 9 ملفات) هي الحية ولم تُمس.
