@@ -1,0 +1,20 @@
+# R-031 batch 2 verification
+Mon Oct 12 14:44:57 UTC 2026
+--- deleted 21 dirs (py files present but no live/config/dir-to-dir consumers): civilization cloud cognition cognitive domain ecosystem enterprise evolution execution fabric foundation governance intelligence meta observatory orchestration products research resource rie rie-sprint1
+--- note: 'governance' and 'resource' partial-word matches were false positives; 'resource' import in real_dispatcher.py is the Python stdlib module, not the root dir
+--- safety tag pre-R031-docs-batch2 pushed
+--- pytest
+============================== 75 passed in 0.72s ==============================
+--- ruff
+All checks passed!
+--- root npm build
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+--- web npm build
+✓ built in 826ms
+--- remaining refs to deleted dirs in live config:
+./agent_civilization/registry/oss_agents.py
+./agent_civilization/civilization_routes.py
+./docs/audit/M3/logs/gate_test_harness.sh
+./generate_real_agents.py
+./.github/workflows/governance-gate.yml
+(empty = safe)

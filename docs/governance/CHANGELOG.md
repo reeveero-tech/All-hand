@@ -99,3 +99,14 @@
 
 ### النتيجة
 pytest 75/75؛ ruff (F,E722) صفر أخطاء؛ صفر مرجع متبقٍ في إعدادات التشغيل.
+
+## 2026-10-12 — M3/6: إكمال R-031 (حذف 21 دليلاً متبقياً)
+
+### مُحذف
+21 دليلاً جذرياً (D-022): civilization, cloud, cognition, cognitive, domain, ecosystem, enterprise, evolution, execution, fabric, foundation, governance, intelligence, meta, observatory, orchestration, products, research, resource, rie, rie-sprint1. وسم أمان `pre-R031-docs-batch2`. بهذا اكتمل جرد R-010 (39 دليلاً).
+
+### الفحص
+AST (لا grep): صفر استيراد دقيق في المسارات الحية؛ صفر استيراد بين الدلائل؛ صفر مرجع في إعدادات التشغيل. التطابقات الجزئية كانت إنذارات كاذبة (اسم خدمة، وحدة stdlib `resource`، مسارات API حية).
+
+### النتيجة
+pytest 75/75؛ ruff صفر أخطاء؛ بناء الجذر و`web/` ناجح.
