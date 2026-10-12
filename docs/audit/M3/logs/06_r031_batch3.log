@@ -1,0 +1,18 @@
+# R-031 batch 3 verification (final)
+Mon Oct 12 15:20:56 UTC 2026
+--- deleted 4 dirs: consolidation, constitution, sdk, seos (safety tag pre-R031-docs-batch3)
+--- AST exact import check: none
+--- pytest
+============================== 75 passed in 0.80s ==============================
+--- ruff
+All checks passed!
+--- root npm build
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+--- web npm build
+✓ built in 844ms
+--- remaining tracked refs to the 4 deleted dirs in config (must be empty):
+(empty = safe)
+--- git show 71f650d (the M3/8 commit) name-status for the 4 dirs (proves they were tracked):
+040000 tree 01dbed357b518a34e0dab9527b5fc5f6d790438c	consolidation
+040000 tree 0d08b3f959a7ca7d64f30bc7258193b76fcc01a4	constitution
+040000 tree 3a5052119d6726a3805648dfed0058986fa53991	sdk
