@@ -325,3 +325,23 @@ pytest 153/153 (rc مباشر)؛ ruff صفر. الأدلة: `docs/audit/M6/EVIDE
 
 ### الفحوص
 pytest 154/154؛ ruff صفر؛ أدلة logs/16..18.
+
+## 2026-10-12 — M6/2: R-054 — الذاكرة والتعلم والتواصل (إصلاح + اختبارات سلوكية)
+
+### الإصلاح (داخل agos_kernel/agent_production فقط — لا توصيل في server.py)
+- `DynamicAgent` يقبل `learning_runtime` و`memory_system` اختيارياً (توافق رجعي: لا شيء يتغير عند غيابهما).
+- `execute` يستدعي `_recall_context` (الذاكرة قبل التنفيذ) ثم `_select_approach` (النهج المتعلم قبل التنفيذ) ثم `_execute_task`.
+- `_execute_task` الافتراضي يستهلك `approach` و`context.memories` فعلياً: "detailed" يضم الذاكرة في النتيجة، "concise" يعيد نتيجة مختصرة، default كما كان.
+- `_record_experience` يسجل تلقائياً إلى learning_runtime (النهج المستخدم فعلاً + المدة + النجاح الفعلي).
+- `evolve()` يورث نفس learning_runtime وmemory_system.
+- `AgentFactory.create_agent` يقبل ويمرر الاعتمادين.
+
+### الاختبارات السلوكية (9 جديدة)
+الذاكرة (تمييزي: نفس المهمة قبل/بعد)، التعلم (تمييزي: default → concise)، التسجيل التلقائي، evolve يورث الاعتمادين، تواصل CommunicationHub (رسالة للمستلم المحدد، بث للجميع، فشل لغير المسجل).
+
+### قيود موثقة
+- recall يطابق بالاحتواء النصي (ليس دلالياً).
+- توصيل R-054 بمسار التشغيل الحي يبقى قراراً منفصلاً (مرتبط بـR-032/R-050).
+
+### الفحوص
+pytest 163/163 (rc مباشر)؛ ruff صفر؛ بناء web/ والجذر rc=0؛ إثبات سلوكي من 4 حالات (logs/06). الأدلة: `docs/audit/M6/EVIDENCE.md`.

@@ -1,0 +1,28 @@
+# إثبات سلوكي (مباشر) — R-054: التأثير على مهمة لاحقة
+
+## الحالة 1: تعطيل الذاكرة والتعلم (baseline)
+prompt: "AGOS platform overview", type: analysis
+result: {'message': 'Task executed by learner', 'task': 'AGOS platform overview'}
+→ مسار التنفيذ الافتراضي. لا ذاكرة ولا نهج متعلم.
+
+## الحالة 2: تفعيل الذاكرة فقط (learning runtime فارغ)
+(مخزنة ذاكرة: "AGOS platform overview: 1000 specialists civilization", importance=0.9)
+result: {'message': 'Task executed by learner', 'task': 'AGOS platform overview'}
+→ get_best_approach = None → approach يبقى default → النتيجة الافتراضية.
+
+## الحالة 3: تفعيل التعلم فقط (لا ذاكرة)
+learning: default failed once (sr=0.5), concise succeeded (sr=1.0)
+result: {'message': 'done: learner', 'task': 'AGOS overview', 'detail': 'brief'}
+→ النهج المتعلم "concise" استُخدم فعلاً؛ شكل النتيجة تغيّر.
+
+## الحالة 4: الذاكرة + التعلم معاً
+(ذاكرة مخزنة + learning يقول detailed)
+result: {'message': 'Task executed by learner (approach=detailed)',
+        'task': 'AGOS', 'memory_used': 'AGOS platform overview: 1000 specialists civilization',
+        'detail': 'full'}
+→ النهج المتعلم "detailed" استُخدم + الذاكرة المسترجعة تظهر في النتيجة.
+
+## المسار الموثّق (كود المستودع، ليس منطق اختبار مؤلفاً)
+DynamicAgent.execute → _recall_context (memory_system.recall) → _select_approach
+(learning_runtime.get_best_approach) → _execute_task يستهلك approach + context →
+_record_experience → learning_runtime.record_task (تلقائي).

@@ -15,6 +15,9 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
+from .learning_runtime import LearningRuntime
+from .memory_system import MemorySystem
+
 logger = logging.getLogger("agos.agent_production")
 
 
@@ -76,12 +79,16 @@ class DynamicAgent:
     
     _id_counter = 0
     
-    def __init__(self, config: AgentConfig):
+    def __init__(self, config: AgentConfig,
+                 learning_runtime: Optional["LearningRuntime"] = None,
+                 memory_system: Optional["MemorySystem"] = None):
         """
         Initialize a dynamic agent.
         
         Args:
             config: Agent configuration
+            learning_runtime: Optional LearningRuntime to record task outcomes (R-054)
+            memory_system: Optional MemorySystem to consult before execution (R-054)
         """
         self.id = f"agent_{DynamicAgent._id_counter:06d}"
         DynamicAgent._id_counter += 1
@@ -97,6 +104,10 @@ class DynamicAgent:
         self._status = "idle"
         self._current_task = None
         self._experience: List[Dict[str, Any]] = []
+        
+        # R-054: الذاكرة والتعلم
+        self._learning_runtime = learning_runtime
+        self._memory_system = memory_system
         
         logger.info(f"Dynamic agent created: {self.id} ({config.name})")
     
@@ -139,6 +150,16 @@ class DynamicAgent:
         self.task_count += 1
         
         try:
+            # R-054: استرجاع الذاكرة قبل التنفيذ (يفشل بصمت إن لم تُهيّأ)
+            context = await self._recall_context(task)
+            if context:
+                task = {**task, "context": context}
+            
+            # R-054: اختيار النهج من التعلم قبل التنفيذ (يفشل بصمت إن لم يُهيّأ)
+            approach = self._select_approach(task)
+            if approach:
+                task = {**task, "approach": approach}
+            
             # Execute task based on capabilities
             result = await self._execute_task(task)
             
@@ -168,10 +189,31 @@ class DynamicAgent:
         
         Override this method for custom agent behavior.
         """
+        approach = task.get("approach", "default")
+        prompt = task.get("prompt", "")
+        
+        # R-054: النهج يغيّر شكل النتيجة فعلياً (behavioral consumer)
+        if approach == "detailed":
+            memories = (task.get("context") or {}).get("memories", [])
+            memory_text = "; ".join(m.get("content", "") for m in memories) if memories else "no prior memories"
+            return {
+                "message": f"Task executed by {self.name} (approach={approach})",
+                "task": prompt,
+                "memory_used": memory_text,
+                "detail": "full",
+            }
+        
+        if approach == "concise":
+            return {
+                "message": f"done: {self.name}",
+                "task": prompt,
+                "detail": "brief",
+            }
+        
         # Default implementation - can be overridden
         return {
             "message": f"Task executed by {self.name}",
-            "task": task.get("prompt", ""),
+            "task": prompt,
         }
     
     def _record_experience(
@@ -191,6 +233,56 @@ class DynamicAgent:
         # Keep only last 100 experiences
         if len(self._experience) > 100:
             self._experience = self._experience[-100:]
+        
+        # R-054: تسجيل النتيجة إلى learning_runtime (إن مُهيّأ)
+        # المسار الموثّق: _execute_task → _record_experience → learning_runtime
+        if self._learning_runtime is not None and self._current_task is not None:
+            try:
+                self._learning_runtime.record_task(
+                    agent_id=self.id,
+                    task_type=task.get("type", "unknown"),
+                    approach=task.get("approach", "default"),
+                    success=success,
+                    duration_ms=(datetime.utcnow() - self.last_active).total_seconds() * 1000.0,
+                )
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"learning_runtime record_task failed for {self.name}: {e}")
+    
+    async def _recall_context(self, task: Dict[str, Any]) -> Dict[str, Any]:
+        """R-054: استرجاع الذكريات ذات الصلة بمهمة (مِن memory_system إن مُهيّأ)."""
+        if not self._memory_system:
+            return {}
+        prompt = task.get("prompt", "") or ""
+        if not prompt:
+            return {}
+        try:
+            memories = await self._memory_system.recall(context=prompt, limit=5)
+            if not memories:
+                return {}
+            return {
+                "memories": [
+                    {
+                        "memory_id": m.memory_id,
+                        "content": m.content,
+                        "importance": m.importance,
+                    }
+                    for m in memories
+                ],
+            }
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"recall_context failed for {self.name}: {e}")
+            return {}
+    
+    def _select_approach(self, task: Dict[str, Any]) -> Optional[str]:
+        """R-054: اختيار النهج المتعلم (من learning_runtime إن مُهيّأ)."""
+        if not self._learning_runtime:
+            return None
+        task_type = task.get("type", "unknown")
+        try:
+            return self._learning_runtime.get_best_approach(task_type)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"select_approach failed for {self.name}: {e}")
+            return None
     
     def _summarize_result(self, result: Dict[str, Any]) -> str:
         """Create a summary of the result for experience storage."""
@@ -233,7 +325,9 @@ class DynamicAgent:
             generation=self.config.generation + 1,
         )
         
-        evolved = DynamicAgent(evolved_config)
+        evolved = DynamicAgent(evolved_config,
+                               learning_runtime=self._learning_runtime,
+                               memory_system=self._memory_system)
         evolved._experience = self._experience.copy()
         
         logger.info(f"Agent evolved: {self.id} -> {evolved.id}")
@@ -274,6 +368,8 @@ class AgentFactory:
         agent_type: AgentType = AgentType.DYNAMIC,
         capabilities: Optional[AgentCapabilities] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        learning_runtime: Optional["LearningRuntime"] = None,
+        memory_system: Optional["MemorySystem"] = None,
     ) -> DynamicAgent:
         """
         Create a new dynamic agent.
@@ -283,6 +379,8 @@ class AgentFactory:
             agent_type: Type of agent
             capabilities: Agent capabilities
             metadata: Additional metadata
+            learning_runtime: Optional LearningRuntime (R-054)
+            memory_system: Optional MemorySystem (R-054)
             
         Returns:
             New DynamicAgent instance
@@ -294,7 +392,7 @@ class AgentFactory:
             metadata=metadata or {},
         )
         
-        agent = DynamicAgent(config)
+        agent = DynamicAgent(config, learning_runtime=learning_runtime, memory_system=memory_system)
         
         # Register agent
         self._agents[agent.id] = agent

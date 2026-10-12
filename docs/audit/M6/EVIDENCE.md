@@ -38,3 +38,48 @@
 |---|---|---|
 | pytest (143 + 10 جديدة) | 153/153، exit 0 | `logs/01_r043_pytest.log` |
 | ruff (كل المسارات) | صفر أخطاء، exit 0 | `logs/02_r043_ruff.log` |
+
+---
+
+## R-054 (M6/2) — الذاكرة والتعلم والتواصل بين الوكلاء (إصلاح + اختبارات سلوكية)
+
+**الحاجة**: `agent_production` كان مُعرّفاً لكن بلا أي مستهلك حي (صفر استيراد من server.py
+أو agent_civilization) — عيوب RISKS/R-010 مستمرة. المعيار: "اختبارات سلوكية تثبت أن الذاكرة
+والتعلم يؤثران على نتيجة مهمة لاحقة (وليس مجرد استيراد)".
+
+**الإصلاح (داخل agent_production فقط — لا توصيل في server.py)**:
+- `DynamicAgent.__init__` يقبل `learning_runtime` و`memory_system` اختيارياً (توافق رجعي).
+- `DynamicAgent.execute` يستدعي `_recall_context` (memory recall قبل التنفيذ) ثم
+  `_select_approach` (learning best approach) ثم `_execute_task`.
+- `_execute_task` (السلوك الافتراضي) يستهلك `task["approach"]` و`task["context"]["memories"]`
+  فعلياً: النهج "detailed" يضم الذاكرة المسترجعة في النتيجة؛ "concise" يعيد نتيجة مختصرة؛
+  default يعيد الرسالة الأصلية.
+- `_record_experience` يسجل تلقائياً إلى learning_runtime (عقد النتيجة: النهج المستخدم
+  فعلاً + المدة + النجاح الفعلي — لا يسجل فشلاً كنجاح).
+- `evolve()` يورث نفس learning_runtime وmemory_system.
+- `AgentFactory.create_agent` يقبل ويمرر الاعتمادين.
+
+**الاختبارات السلوكية** (`tests/test_memory_learning_comm.py`، 9 اختبارات):
+- الذاكرة: `test_memory_changes_task_result` — نفس المهمة تعطي "no prior memories" ثم
+  المحتوى المسترجع فعلاً (تمييزي: `test_memory_disabled_does_not_change_result`).
+- التعلم: `test_learning_changes_task_result` — default → concise (نهج متعلم يُستخدم فعلاً
+  ويغيّر شكل النتيجة). `test_learning_disabled_does_not_change_result` تمييزي.
+- التسجيل: `test_agent_records_experience_to_learning_runtime` — الوكيل يسجل تنفيذه
+  تلقائياً (المسار الموثّق). `test_agent_evolve_inherits_memory_and_learning`.
+- التواصل: `test_hub_delivers_message_to_specific_recipient` (وصول للمستلم المحدد دون
+  المرسل)، `test_hub_broadcast_reaches_all_registered_agents` (وصول البث للجميع)،
+  `test_hub_send_to_unregistered_fails` (فشل واضح لغير المسجل).
+
+**قيود موثقة (صدقاً)**:
+- الواجهة البرمجية ل`_execute_task` الافتراضية تستهلك النهج والذاكرة — لكن هي **سلوك
+  افتراضي قابل للتجاوز**؛ أي مستهلك مستقبلي يلغي تجاوزه قد يفقد هذه الحماية (خارج النطاق
+  — قرار الربط بمسار التشغيل مرتبط بـR-032/R-050).
+- `recall()` يطابق بالاحتواء النصي (substring) — ليست دلالياً؛ الاسترجاع يتطلب أن يحتوي
+  محتوى الذاكرة على نص المهمة أو جزءاً منه. القيد موثق.
+
+| الفحص | النتيجة | الدليل |
+|---|---|---|
+| pytest (154 + 9 جديدة) | 163/163، exit 0 | `logs/03_r054_pytest.log` |
+| ruff (كل المسارات) | صفر أخطاء، exit 0 | `logs/04_r054_ruff.log` |
+| بناء web/ والجذر | rc=0 كلاهما | `logs/05_r054_builds.log` |
+| إثبات سلوكي (4 حالات) | مُوثق بالكامل | `logs/06_r054_behavioral_proof.log` |
