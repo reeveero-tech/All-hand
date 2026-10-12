@@ -11,16 +11,16 @@ services:
         sync: false
       - key: LLM_MODEL
         value: meta-llama/llama-3.3-70b-instruct:free
-      # R-041: actually read by server.py since this batch (D-029). Value 3 is
-      # the pre-existing conservative choice; its resource-fit is unverified.
+      # R-041: يُقرأ فعلاً في server.py منذ هذه الدفعة (D-029). القيمة 3 خيار
+      # محافظ قائم سابقاً؛ ملاءمته للموارد غير مقيسة.
       - key: AGENTS_PER_SPEC
         value: "3"
-      # Consumed by the Render platform, not by application code (Q-007).
+      # يستهلكه Render (المنصة) لا كود التطبيق (Q-007).
       - key: PYTHON_VERSION
         value: "3.12.0"
-      # R-041: auth/CORS deploy entries (sync:false = operator-supplied in the
-      # Render dashboard; no secret is stored in this file). Leaving
-      # AGOS_API_KEY unset keeps the server in open mode (R-004 behavior).
+      # R-041: مدخلا المصادقة/CORS للنشر (sync:false = يدخل المشغّل قيمهما في
+      # لوحة Render؛ لا سر يُخزن في هذا الملف). ترك AGOS_API_KEY فارغاً
+      # يبقي الخادم في الوضع المفتوح (سلوك R-004).
       - key: AGOS_API_KEY
         sync: false
       - key: AGOS_ALLOWED_ORIGINS
@@ -29,7 +29,7 @@ services:
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
-      # Backend fallbacks read by supabase_store.py (not used by web/).
+      # بدائل خلفية يقرأها supabase_store.py (واجهة web/ لا تقرأها).
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY

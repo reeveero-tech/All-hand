@@ -11,7 +11,7 @@
 3. Render سيقرأ `render.yaml` تلقائياً وينشئ الخدمة
 4. أدخل قيمة `OPENROUTER_API_KEY` (اختياري — يفعّل التوجيه بالـLLM):
    - أنشئ مفتاحاً مجانياً من [openrouter.ai/keys](https://openrouter.ai/keys)
-   - النموذج الافتراضي `meta-llama/llama-3.3-70b-instruct:free` مجاني بالكامل
+   - النموذج الافتراضي المعلن في الكود هو `meta-llama/llama-3.3-70b-instruct:free`
 5. لتشغيل المصادقة: أدخل `AGOS_API_KEY` في لوحة Render (مدخل موجود في
    `render.yaml` كـ`sync: false`). تركه فارغاً = وضع مفتوح (سلوك R-004).
 6. انتظر اكتمال النشر — رابطك سيكون مثل: `https://agos-civilization.onrender.com`
@@ -52,7 +52,7 @@ curl https://YOUR-APP.onrender.com/health
 | `OPENROUTER_API_KEY` | مفتاح LLM (للذكاء الحقيقي) | — |
 | `LLM_MODEL` | النموذج المستخدم | `meta-llama/llama-3.3-70b-instruct:free` |
 | `AGOS_API_KEY` | مفتاح المصادقة (فارغ = وضع مفتوح) | — |
-| `AGOS_ALLOWED_ORIGINS` | قائمة CORS (فارغ = `*` بلا credentials) | `*` |
+| `AGOS_ALLOWED_ORIGINS` | قائمة CORS (غير مضبوط = `*` بلا credentials) | `*` |
 | `AGOS_RATE_LIMIT_REQUESTS` / `AGOS_RATE_LIMIT_WINDOW` | تحديد معدل الطلبات | `100` / `60` |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | تخزين دائم (فارغ = ذاكرة مؤقتة، حالة `degraded`) | — |
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | بدائل خلفية يقرأها `supabase_store.py` (الواجهة لا تقرأها) | — |

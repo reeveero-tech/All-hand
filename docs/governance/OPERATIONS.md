@@ -13,8 +13,9 @@ cd web && npm install && npm run build
 ### الخادم
 ```bash
 pip install -r requirements.txt
-python -c "import server"   # يفشل حالياً على 3.12/3.14 (خطأ utc — R-001)
+python -c "import server"   # ينجح (R-001 أصلح استيراد utc)
 uvicorn server:app --host 0.0.0.0 --port 8000
+# AGENTS_PER_SPEC=3 uvicorn server:app   # 60 وكيلاً بدل 1000 (R-041)
 ```
 
 ### واجهة الجذر (TanStack)

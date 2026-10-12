@@ -154,14 +154,14 @@ def rate_limit(func: Callable) -> Callable:
 # CIVILIZATION INITIALIZATION
 # ============================================================================
 
-# R-041 (D-029): make AGENTS_PER_SPEC a real setting (render.yaml sets it to 3).
-# Previously the variable existed only in deploy config and was never read —
-# create_civilization() was always called with its hardcoded default (50).
+# R-041 (D-029): جعل AGENTS_PER_SPEC إعداداً فعلياً (render.yaml يضبطه 3).
+# سابقاً كان المتغير موجوداً في إعدادات النشر فقط ولا يقرؤه الكود — كان
+# create_civilization() يُستدعى دائماً بالافتراضي المكتوب (50).
 def _agents_per_spec() -> int:
-    """Read AGENTS_PER_SPEC from the environment with validation.
+    """قراءة AGENTS_PER_SPEC من البيئة مع تحقق الصلاحية.
 
-    Defaults to 50 (1000 agents across 20 specializations). Invalid values
-    raise a clear startup error instead of being silently ignored.
+    الافتراضي 50 (1000 وكيل على 20 تخصصاً). القيم غير الصالحة ترفع خطأ بدء
+    واضحاً بدل تجاهلها بصمت.
     """
     raw = os.getenv("AGENTS_PER_SPEC", "")
     if not raw:

@@ -40,7 +40,7 @@ All-hand/ (الجذر — 55 دليلاً، 1,981 ملفاً متتبعاً)
 ### 2. `agent_civilization/` (نواة الوكلاء)
 - **29 ملفاً خارج `specialists/`** (~2,670 LOC). سلسلة الاستيراد المثبتة من `server.py` تمر عبر `agents/real/` و`core/` و`routing/` و`pipeline/` و`storage/`؛ الملفات الـ29 ليست كلها مثبتة الاستخدام وقت التشغيل — المثبت هو سلسلة الاستيراد فقط.
 - ملفات `specialists/` (1,000 وكيل proxy) تستدعي `real_dispatcher.dispatch` فعلاً (تأكيداً لتقرير INTEGRITY) لكن لم يُكتشف كود يُنشئها أو يستوردها وقت التشغيل.
-- **الوكلاء**: `create_civilization(agents_per_spec=50)` ينشئ 1,000 `RealSpecialistAgent` (20 تخصصاً × 50).
+- **الوكلاء**: `server.py` يقرأ `AGENTS_PER_SPEC` (R-041؛ افتراضي 50) ويمرره إلى `create_civilization(agents_per_spec)` → 1,000 `RealSpecialistAgent` افتراضياً (20 تخصصاً × 50)؛ 60 وكيلاً عند ضبط 3. القيم غير الصالحة (صفر/سالب/نص) تُرفض برسالة بدء واضحة.
 - **التوجيه**: `auto_route(message)` يختار التخصص (بـ OpenRouter LLM إن توفر مفتاح، وإلا توجيه محلي).
 - **التنفيذ**: `execute_plan(plan, civilization, data)`.
 - **التخزين**: `SupabaseStorage` عبر REST على جداول `tasks`، `events`، `agent_stats`؛ العمليات تفشل بصمت عند غياب الإعداد، و`server.py` يعوض بمنطق الذاكرة لكل مسار على حدة.

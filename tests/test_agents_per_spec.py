@@ -1,10 +1,9 @@
-"""R-041: integration test for the AGENTS_PER_SPEC wiring.
+"""R-041: اختبار توصيل AGENTS_PER_SPEC.
 
-The advisor rule for this item: test the actual wiring, not just the helper.
-A separate Python process imports the server module with different values of
-AGENTS_PER_SPEC and asserts the resulting civilization size. Subprocesses are
-used because `server` builds module-level state (CIVILIZATION) at import time
-and should not be reloaded inside a pytest session.
+القاعدة: اختبار التوصيل الفعلي لا الدالة المساعدة فقط. عملية Python
+مستقلة تستورد وحدة الخادم بقيم مختلفة من AGENTS_PER_SPEC وتتأكد من حجم
+الحضارة الناتج. تُستخدم عمليات مستقلة لأن `server` يبني حالة على مستوى
+الوحدة (CIVILIZATION) وقت الاستيراد ولا ينبغي إعادة تحميله داخل جلسة pytest.
 """
 
 import json
@@ -26,6 +25,7 @@ print(json.dumps({"specializations": specs, "total_agents": total,
 
 
 def _run_server_probe(env_value):
+    """تشغيل مسبار استيراد الخادم بقيمة متغير محددة."""
     env = dict(os.environ)
     env.pop("AGENTS_PER_SPEC", None)
     if env_value is not None:

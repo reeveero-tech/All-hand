@@ -23,7 +23,7 @@
 - الواجهة `web/` لا ترسل `X-API-Key` (قيد موثق لـ R-043) — تفعيل المصادقة يكسر استدعاءات الواجهة الحالية حتى يُحل.
 
 ### CORS
-- افتراضي `"*"` مع `allow_credentials=True` و`allow_methods` تشمل PUT/DELETE. تحذير يُسجل عند الإقلاع. قابلية الاستغلال الفعلية غير مقيسة.
+- الافتراضي `AGOS_ALLOWED_ORIGINS` غير مضبوط = `["*"]`، ومعه تُعطّل بيانات الاعتماد (R-004: credentials header معطلة عند `*`؛ تُفعّل فقط مع قائمة صريحة). تحذير يُسجل عند الإقلاع.
 
 ### Rate limiting
 - `@rate_limit` decorator؛ تخزين `request_counts: Dict[str, List[datetime]]` في ذاكرة العملية (غير مشترك بين العمليات/العقد). مفتاح العميل `request.client.host`.

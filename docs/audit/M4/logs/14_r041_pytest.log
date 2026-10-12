@@ -86,4 +86,9 @@ tests/test_security.py::test_health_returns_200_when_healthy PASSED      [ 97%]
 tests/test_security.py::test_health_allows_credentials_with_allowlist PASSED [ 98%]
 tests/test_security.py::test_health_disable_credentials_with_wildcard PASSED [100%]
 
-============================== 78 passed in 2.68s ==============================
+============================== 78 passed in 2.74s ==============================
+
+exit_code=0 (من الفحص مباشرة)
+# تحديث دفعة M4/3 بعد المراجعة: أُعيد تشغيل الفحص بعد تعريب التعليقات
+# (server.py وtests وrender.yaml و.env.example) — 78/78 ناجح.
+============================== 78 passed in 2.76s ==============================
