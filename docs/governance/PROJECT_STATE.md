@@ -75,3 +75,6 @@
 
 ## ملاحظة بنية (بعد R-033)
 الجذر الآن: `agent_civilization/`, `agos_kernel/`, `docs/`, `public/`, `src/`, `tests/`, `web/`, `run.py`, `server.py` + ملفات توثيق قديمة (`README`, `DEPLOY`, `INTEGRITY-REPORT`, `CIVILIZATION_MAP`, `FINAL-ARCHITECTURE`, `IMPLEMENTATION_PLAN`, `SECURITY`) بعضها يصف بنية محذوفة وينتظر R-056 (مصالحة الادعاءات التوثيقية). المتبقي المباشر: R-032 (`specialists/`)، ثم M4.
+
+## ملاحظة إضافية (M3/12 — R-031c)
+حُذفت 3 روابط رمزية معلقة (`execution_program`, `knowledge_base`, `rie_sprint1` — أنشئت في 22a78f4 كأسماء بديلة لأهداف حُذفت في R-031/دفعة 1) و`agos_system_registry_report.json` (تقرير مولد بلا مستهلك). الدرس: فحص الجذر يجب أن يشمل الروابط الرمزية لا الدلائل فقط.
