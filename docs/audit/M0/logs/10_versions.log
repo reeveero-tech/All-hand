@@ -1,0 +1,21 @@
+# command: python --version; python3.12 --version; node --version; npm --version; which docker || echo 'docker: not available'
+# cwd: (worktree at be480820) 
+# returncode: 0
+# timed_out: False
+# duration_s: 0.12
+# python: 3.14.3
+
+--- STDOUT ---
+Python 3.14.3
+Python 3.12.13
+v20.20.2
+10.8.2
+docker: not available
+
+--- STDERR ---
+
+--- SEPARATE LATER VERIFICATION (different session command, same audit environment) ---
+# command: ruff --version; pytest --version
+# returncode: 0
+ruff 0.17.0
+pytest 9.1.1

@@ -1,0 +1,275 @@
+# command: python -m pytest agos-kernel/ --collect-only -q -p no:cacheprovider
+# cwd: (worktree at be480820) 
+# returncode: 2
+# timed_out: False
+# duration_s: 2.45
+# python: 3.14.3
+
+--- STDOUT ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /tmp/wt/agos-kernel
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 145 items / 4 errors
+
+<Package agos-kernel>
+  <Package core>
+    <Package tests>
+      <Module test_golden_compatibility.py>
+        <Class TestPythonCompatibility>
+          <Function test_python_version_compatible>
+          <Function test_core_modules_python3_syntax>
+        <Class TestAPCompatibility>
+          <Function test_kernel_has_version>
+        <Class TestDependencyCompatibility>
+          <Function test_kernel_uses_only_standard_library_or_declared>
+      <Module test_golden_contracts.py>
+        <Class TestKernelContracts>
+          <Function test_contracts_directory_exists>
+          <Function test_contract_files_are_valid_json>
+          <Function test_contract_manifest_integrity>
+          <Function test_no_contract_mutation>
+        <Class TestContractBackwardCompatibility>
+          <Function test_contract_version_exists>
+      <Module test_golden_events.py>
+        <Class TestKernelEvents>
+          <Function test_events_directory_exists>
+          <Function test_event_files_are_valid_json>
+          <Function test_event_manifest_integrity>
+          <Function test_events_are_immutable>
+        <Class TestEventCompleteness>
+          <Function test_all_events_have_required_fields>
+      <Module test_golden_performance.py>
+        <Class TestKernelPerformance>
+          <Function test_kernel_imports_quickly>
+          <Function test_contract_files_load_quickly>
+          <Function test_event_files_load_quickly>
+        <Class TestPerformanceBaselines>
+          <Function test_no_performance_regression>
+      <Module test_golden_recovery.py>
+        <Class TestRecoveryCapabilities>
+          <Function test_kernel_has_state_snapshots>
+          <Function test_kernel_has_checkpoint_mechanism>
+          <Function test_kernel_state_is_recoverable>
+        <Class TestKernelResilience>
+          <Function test_kernel_has_error_boundaries>
+          <Function test_kernel_logs_errors>
+      <Module test_golden_registry.py>
+        <Class TestKernelRegistry>
+          <Function test_registry_directory_exists>
+          <Function test_registry_has_required_components>
+        <Class TestRegistryIntegrity>
+          <Function test_registry_entries_are_valid>
+          <Function test_registry_has_version>
+      <Module test_golden_runtime.py>
+        <Class TestKernelRuntime>
+          <Function test_runtime_directory_exists>
+          <Function test_runtime_has_main_entry>
+          <Function test_runtime_modules_are_importable>
+          <Function test_runtime_core_modules>
+        <Class TestRuntimeIntegrity>
+          <Function test_runtime_has_no_circular_imports_in_core>
+          <Function test_runtime_starts_cleanly>
+      <Module test_golden_security.py>
+        <Class TestKernelSecurity>
+          <Function test_no_hardcoded_secrets>
+          <Function test_no_eval_usage>
+          <Function test_no_exec_usage>
+          <Function test_no_sql_injection_patterns>
+        <Class TestSecurityBestPractices>
+          <Function test_imports_are_safe>
+          <Function test_file_permissions_are_restricted>
+      <Module test_golden_serialization.py>
+        <Class TestSerialization>
+          <Function test_kernel_contracts_are_json_serializable>
+          <Function test_kernel_events_are_json_serializable>
+          <Function test_kernel_lock_file_is_valid>
+        <Class TestSerializationStability>
+          <Function test_contract_structure_is_stable>
+          <Function test_event_structure_is_stable>
+  <Module test_adapter_template_policy.py>
+    <Function test_adapters>
+    <Function test_templates>
+    <Function test_policies>
+  <Module test_agent_model_tool.py>
+    <Function test_agent_packs>
+    <Function test_model_packs>
+    <Function test_tool_packs>
+  <Module test_capability_program.py>
+    <Function test_capabilities>
+    <Function test_providers>
+    <Function test_skills>
+  <Module test_certification_benchmark_audit.py>
+    <Function test_certifications>
+    <Function test_benchmarks>
+    <Function test_audits>
+  <Module test_civilization.py>
+    <Function test_mission_compiler>
+    <Function test_execution_graph>
+    <Function test_parallel_executor>
+    <Function test_verification>
+    <Function test_approval>
+    <Function test_collaboration>
+    <Function test_organization>
+    <Function test_governance>
+    <Function test_trust>
+    <Function test_civilization>
+  <Module test_civilization_marketplace_connector.py>
+    <Function test_civilization_packs>
+    <Function test_marketplace>
+    <Function test_connectors>
+  <Module test_domain_knowledge_workflow.py>
+    <Function test_domains>
+    <Function test_knowledge>
+    <Function test_workflows>
+  <Module test_execution_implementation.py>
+    <Coroutine test_execution_engine>
+    <Coroutine test_skills>
+    <Coroutine test_providers>
+    <Coroutine test_adapters>
+    <Coroutine test_integration>
+  <Module test_expansion.py>
+    <Function test_capabilities_21_60>
+    <Function test_providers_16_40>
+    <Function test_skills_41_100>
+  <Module test_intelligence.py>
+    <Function test_repository_analysis>
+    <Function test_code_analysis>
+    <Function test_architecture_analysis>
+    <Function test_capability_discovery>
+    <Function test_provider_discovery>
+    <Function test_project_dna>
+    <Function test_knowledge_extraction>
+    <Function test_query_engine>
+  <Module test_knowledge_brain.py>
+    <Function test_knowledge>
+    <Function test_memory>
+    <Function test_learning>
+    <Function test_experience>
+    <Function test_recommendation>
+    <Function test_benchmark>
+    <Function test_optimization>
+    <Function test_brain>
+    <Function test_core>
+  <Module test_language_framework_cloud.py>
+    <Function test_language_packs>
+    <Function test_framework_packs>
+    <Function test_cloud_packs>
+  <Module test_runtime.py>
+    <Function test_workspace>
+    <Function test_session>
+    <Function test_artifact>
+    <Function test_environment>
+    <Function test_resource>
+    <Function test_scheduler>
+    <Function test_queue>
+    <Function test_state>
+    <Function test_recovery>
+    <Function test_platform>
+  <Package tests>
+    <Module test_kernel.py>
+      <UnitTestCase TestAGOSKernel>
+        <TestCaseFunction test_get_state>
+        <TestCaseFunction test_health_check>
+        <TestCaseFunction test_kernel_creation>
+        <TestCaseFunction test_kernel_initialization>
+        <TestCaseFunction test_kernel_shutdown>
+        <TestCaseFunction test_kernel_start>
+      <UnitTestCase TestKernelEvents>
+        <TestCaseFunction test_event_subscription>
+        <TestCaseFunction test_event_unsubscription>
+      <UnitTestCase TestKernelExecution>
+        <TestCaseFunction test_execute_unknown_workflow>
+        <TestCaseFunction test_execution_log>
+    <Module test_registry.py>
+      <UnitTestCase TestComponentRegistry>
+        <TestCaseFunction test_activate_all>
+        <TestCaseFunction test_list_all>
+        <TestCaseFunction test_register_component>
+        <TestCaseFunction test_singleton>
+        <TestCaseFunction test_unregister_component>
+      <UnitTestCase TestCapabilityRegistry>
+        <TestCaseFunction test_list_all>
+        <TestCaseFunction test_register_capability>
+        <TestCaseFunction test_singleton>
+      <UnitTestCase TestKnowledgeRegistry>
+        <TestCaseFunction test_add_knowledge>
+        <TestCaseFunction test_search>
+        <TestCaseFunction test_singleton>
+      <UnitTestCase TestWorkflowRegistry>
+        <TestCaseFunction test_register_workflow>
+        <TestCaseFunction test_singleton>
+    <Module test_workflows.py>
+      <UnitTestCase TestPipeline>
+        <TestCaseFunction test_add_step>
+        <TestCaseFunction test_pipeline_creation>
+        <TestCaseFunction test_pipeline_run>
+        <TestCaseFunction test_pipeline_with_condition>
+      <UnitTestCase TestExecutor>
+        <TestCaseFunction test_execute_success>
+        <TestCaseFunction test_execute_with_error>
+        <TestCaseFunction test_execute_with_retry>
+        <TestCaseFunction test_executor_creation>
+      <UnitTestCase TestMonitor>
+        <TestCaseFunction test_get_health>
+        <TestCaseFunction test_get_metrics>
+        <TestCaseFunction test_monitor_creation>
+        <TestCaseFunction test_record_execution>
+
+==================================== ERRORS ====================================
+_____________________ ERROR collecting test_integration.py _____________________
+ImportError while importing test module '/tmp/wt/agos-kernel/test_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos-kernel/test_integration.py:29: in <module>
+    from core import AGOSKernel
+E   ImportError: cannot import name 'AGOSKernel' from 'core' (/tmp/wt/agos-kernel/core/__init__.py)
+______________________ ERROR collecting test_platform.py _______________________
+ImportError while importing test module '/tmp/wt/agos-kernel/test_platform.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos-kernel/test_platform.py:15: in <module>
+    from platform import get_platform
+E   ImportError: cannot import name 'get_platform' from 'platform' (/usr/local/lib/python3.14/platform.py)
+_________________________ ERROR collecting test_v2.py __________________________
+ImportError while importing test module '/tmp/wt/agos-kernel/test_v2.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos-kernel/test_v2.py:13: in <module>
+    from v2 import get_platform_v2
+agos-kernel/v2/__init__.py:2: in <module>
+    from .runtime import CivilizationPlatformV2, get_platform_v2
+agos-kernel/v2/runtime.py:9: in <module>
+    from platform.runtime import CivilizationPlatform
+E   ModuleNotFoundError: No module named 'platform.runtime'; 'platform' is not a package
+_____________________ ERROR collecting test_validation.py ______________________
+ImportError while importing test module '/tmp/wt/agos-kernel/test_validation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos-kernel/test_validation.py:33: in <module>
+    from core import AGOSKernel
+E   ImportError: cannot import name 'AGOSKernel' from 'core' (/tmp/wt/agos-kernel/core/__init__.py)
+=========================== short test summary info ============================
+ERROR agos-kernel/test_integration.py
+ERROR agos-kernel/test_platform.py
+ERROR agos-kernel/test_v2.py
+ERROR agos-kernel/test_validation.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 4 errors during collection !!!!!!!!!!!!!!!!!!!!
+==================== 145 tests collected, 4 errors in 0.70s ====================
+
+--- STDERR ---
+

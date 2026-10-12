@@ -1,0 +1,82 @@
+# command: python -m pytest tests/test_infrastructure.py -o addopts='--tb=short -q' -p no:cacheprovider
+# cwd: (worktree at be480820) 
+# returncode: 1
+# timed_out: False
+# duration_s: 1.73
+# python: 3.14.3
+
+--- STDOUT ---
+FFFFFF....F..F...F.                                                      [100%]
+=================================== FAILURES ===================================
+______________________ test_circuit_breaker_closed_state _______________________
+tests/test_infrastructure.py:16: in test_circuit_breaker_closed_state
+    breaker = CircuitBreaker("test", failure_threshold=3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+------------------------------ Captured log call -------------------------------
+WARNING  agos.infrastructure.redis:redis_queue.py:30 Redis not available. Using in-memory fallback.
+__________________ test_circuit_breaker_opens_after_failures ___________________
+tests/test_infrastructure.py:27: in test_circuit_breaker_opens_after_failures
+    breaker = CircuitBreaker("test", failure_threshold=3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+_____________________ test_circuit_breaker_records_success _____________________
+tests/test_infrastructure.py:42: in test_circuit_breaker_records_success
+    breaker = CircuitBreaker("test", failure_threshold=3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+________________________ test_circuit_breaker_half_open ________________________
+tests/test_infrastructure.py:56: in test_circuit_breaker_half_open
+    breaker = CircuitBreaker("test", failure_threshold=1, timeout=0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+______________________ test_circuit_breaker_allow_request ______________________
+tests/test_infrastructure.py:73: in test_circuit_breaker_allow_request
+    breaker = CircuitBreaker("test", failure_threshold=1, timeout=0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+________________________ test_circuit_breaker_get_stats ________________________
+tests/test_infrastructure.py:90: in test_circuit_breaker_get_stats
+    breaker = CircuitBreaker("test", failure_threshold=3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+________________________ test_metrics_export_prometheus ________________________
+tests/test_infrastructure.py:154: in test_metrics_export_prometheus
+    output = metrics.export_prometheus()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos_kernel/infrastructure/metrics.py:300: in export_prometheus
+    key = self._make_key(name.replace(f"{self.namespace}_", ""), metric.labels)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos_kernel/infrastructure/metrics.py:243: in _make_key
+    label_str = ",".join(f"{k}={v}" for k, v in sorted(labels.items()))
+                                                       ^^^^^^^^^^^^
+E   AttributeError: 'list' object has no attribute 'items'
+_________________________ test_health_check_exception __________________________
+tests/test_infrastructure.py:204: in test_health_check_exception
+    assert "ValueError" in result.message
+E   AssertionError: assert 'ValueError' in 'Error: Test error'
+E    +  where 'Error: Test error' = HealthCheckResult(component='test', status=<HealthStatus.UNHEALTHY: 'unhealthy'>, message='Error: Test error', duratio...027894973754882812, timestamp=datetime.datetime(2026, 10, 12, 8, 22, 10, 512231), details={'error_type': 'ValueError'}).message
+______________________________ test_task_priority ______________________________
+tests/test_infrastructure.py:291: in test_task_priority
+    size = await queue.get_queue_size()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos_kernel/infrastructure/redis_queue.py:406: in get_queue_size
+    return len(self._fallback_queue)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: object of type 'Queue' has no len()
+------------------------------ Captured log call -------------------------------
+WARNING  agos.infrastructure.redis:redis_queue.py:148 Redis not available, using in-memory fallback
+=========================== short test summary info ============================
+FAILED tests/test_infrastructure.py::test_circuit_breaker_closed_state - Type...
+FAILED tests/test_infrastructure.py::test_circuit_breaker_opens_after_failures
+FAILED tests/test_infrastructure.py::test_circuit_breaker_records_success - T...
+FAILED tests/test_infrastructure.py::test_circuit_breaker_half_open - TypeErr...
+FAILED tests/test_infrastructure.py::test_circuit_breaker_allow_request - Typ...
+FAILED tests/test_infrastructure.py::test_circuit_breaker_get_stats - TypeErr...
+FAILED tests/test_infrastructure.py::test_metrics_export_prometheus - Attribu...
+FAILED tests/test_infrastructure.py::test_health_check_exception - AssertionE...
+FAILED tests/test_infrastructure.py::test_task_priority - TypeError: object o...
+9 failed, 10 passed in 0.18s
+
+--- STDERR ---
+

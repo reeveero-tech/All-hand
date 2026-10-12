@@ -47,3 +47,16 @@ addressable civilization scale.
 Use `render.yaml` for a free Render web service or run the Dockerfile on any
 container host. Set `OPENROUTER_API_KEY` in the host environment for LLM-backed
 reasoning.
+
+## الحوكمة (إلزامية)
+
+يتبع هذا المستودع **قاعدة الدفعة الذرية**: لا يُدفع أو يُدمج أي تغيير — كوداً أو إعدادات أو بيانات أو قراراً أو تحليلاً أو توثيقاً — إلا إذا حدّثت الدفعة نفسُها حالة المشروع وخارطة الطريق والوثائق المتأثرة.
+راجع [docs/governance/](docs/governance/) — ابدأ بـ
+[PROJECT_CHARTER.md](docs/governance/PROJECT_CHARTER.md) و
+[PROJECT_STATE.md](docs/governance/PROJECT_STATE.md) و
+[ROADMAP.md](docs/governance/ROADMAP.md).
+
+دليل التحقق وسجلات التنفيذ المحفوظة في
+[docs/audit/](docs/audit/M0/).
+
+للإفصاحات الأمنية راجع [SECURITY.md](SECURITY.md)؛ أما الوضع الأمني المقيس حالياً فموثق في [docs/governance/SECURITY.md](docs/governance/SECURITY.md).

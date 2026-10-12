@@ -1,0 +1,9 @@
+python (default): 3.14.3
+python3.12: 3.12.13
+node: v20.20.2
+npm: available
+pytest: 9.1.1
+pytest-asyncio: 1.4.0
+ruff: 0.17.0
+docker: NOT AVAILABLE in audit sandbox
+OS: Linux
