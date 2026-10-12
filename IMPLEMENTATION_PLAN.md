@@ -1,4 +1,5 @@
 # AGOS Digital Civilization Platform - Implementation Plan
+> ⚠️ **وثيقة تاريخية — وسمها R-056 (2026-10-12)**: خطة تاريخية (2026-07-23). "Phase 3: Infrastructure" تدّعي Redis queue / Circuit breakers — CircuitBreaker موجود فعلياً في `agos_kernel/infrastructure/circuit_breaker.py`، و"Redis queue" غير موجود كاعتماد (بديل ذاكرة داخلية فقط — راجع `docs/governance/OPERATIONS.md`). الحوكمة الفعلية الآن في `docs/governance/ROADMAP.md` (R-000..R-060).
 
 **Version:** 1.0  
 **Created:** 2026-07-23  

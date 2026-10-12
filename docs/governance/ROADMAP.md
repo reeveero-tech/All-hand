@@ -365,8 +365,15 @@
 - ملاحظة اختبارية: `test_scenario_full_pipeline_stores_result_in_task_store` يستخدم fixture يعيد استيراد `server` مع حذف `AGOS_API_KEY` (اختبار سابق في tests/test_security.py ترك الوحدة النمطية محمّلة بوضع auth-on — تسريب حالة بين الاختبارات).
 
 ### R-056 — مصالحة الادعاءات التوثيقية
-- الحالة: **proposed**
-- النطاق: INTEGRITY-REPORT وDEPLOY وREADME الجذري والوثائق القديمة: تحديثها بالقياسات أو وسمها تاريخية.
+- الحالة: **done** (دفعة M6/5)
+- النطاق: INTEGRITY-REPORT وCIVILIZATION_MAP وFINAL-ARCHITECTURE وIMPLEMENTATION_PLAN الجذرية (README وDEPLOY حُسما في R-041).
+- ما تم: وسم الأربع وثائق القديمة بلافتة "وثيقة تاريخية — وسمها R-056" مع تصحيح الادعاءات غير المدعومة:
+  - INTEGRITY-REPORT: ادعاء "90%+ real execution" مُعلّق — المقيس فعلياً بعد R-051 (كل تخصص من الـ20 ينفذ مهمة نموذجية عبر real_dispatcher حقيقية — 20/20) وR-053 (1,000 وكيل في 0.002s؛ 1,000 مهمة متزامنة ~1.04s نجاح 1000/1000). وصف specialists كـ"real-dispatch proxy workers" **مؤكد** (R-032a/b/c).
+  - CIVILIZATION_MAP: يصف `agos-kernel/` و`agos-canon/` التي حُذفت في R-031/R-033.
+  - FINAL-ARCHITECTURE: يصف `agos-kernel/` الملف المفرد المحذوف في R-033.
+  - IMPLEMENTATION_PLAN: خطة تاريخية — "Phase 3" تدّعي Redis queue (غير موجود كاعتماد) وCircuit breakers (موجود فعلاً في `agos_kernel/infrastructure/circuit_breaker.py`).
+- معيار القبول (مُحقق): كل ادعاء توثيقي جذري غير مدعوم إما صُحح بالقياسات أو وُسم تاريخياً مع بديل. الأدلة: `docs/audit/M6/EVIDENCE.md` + logs/15..16.
+- قرار الحذف مقابل الإصلاح: **الإصلاح** (الوسم التاريخي) لا الحذف — قاعدة المالك: إذا كان الاختيار بين حذف/أرشفة/إصلاح فاختر الإصلاح حتى لو كان مكلفاً. الوثائق التاريخية تحمل قيمة سياقية ولا تُحذف؛ يُكتفى بوسمها لتفادي تضليل القارئ.
 
 ## M6 — التحسين المستمر
 - R-060: تحديث التبعيات وفحص أمني دوري (مجدول).

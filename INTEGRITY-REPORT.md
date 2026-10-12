@@ -1,7 +1,20 @@
 # AGOS CIVILIZATION INTEGRITY REPORT
 
+> ⚠️ **وثيقة تاريخية — راجعها R-056 (2026-10-12)**: هذا التقرير وُلد في 2026-07-17 قبل
+> إعادة هيكلة الحوكمة. **ادعاء "90%+ real execution" غير مقيس** — المقيس فعلياً بعد R-051
+> (أشهر 2026-10-12): كل تخصص من الـ20 ينفذ مهمة نموذجية عبر `real_dispatcher` حقيقية
+> (20/20)، والـ1,000 وكيل هي استدعاءات وكيل حقيقية وليست نصوص قوالب. لكن "90%+" رقم
+> تسويقي — انظر `docs/audit/M5/logs/` (R-051) و`docs/audit/M6/logs/07` (R-053). القياس
+> الفعلي: `create_civilization(50)` × 20 تخصص = 1,000 وكيل في 0.002s؛ 1,000 مهمة متزامنة
+> في ~1.04s نجاح 1000/1000. راجع `docs/governance/ARCHITECTURE.md` للحقيقة المعمارية الحالية.
+>
+> الجزء الأول من هذه الوثيقة ("Current Runtime Truth") صحيح جزئياً: وصف
+> `specialists/` بأنها "real-dispatch proxy workers" **مؤكد** (كل ملف يستدعي
+> `real_dispatcher.dispatch` — راجع R-032a/b/c في D-032). أرقام النسب المئوية أدناه
+> (90%/≤10%) **غير مقيسة** ولا يُعتد بها.
+
 **Generated**: 2026-07-17  
-**Status**: REAL-FIRST RECONCILIATION COMPLETE
+**Status**: HISTORICAL — reconciled by R-056
 
 ---
 
