@@ -1,0 +1,58 @@
+name: Governance Gate
+
+# R-020: enforce the atomic-batch rule on PRs targeting main.
+# A PR that changes code/config/data must, in the SAME PR diff, also touch
+# the corresponding governance docs (ROADMAP, PROJECT_STATE, CHANGELOG,
+# and the specific docs implied by the change). Docs-only PRs still need
+# ROADMAP/PROJECT_STATE/CHANGELOG updates (they name the work item).
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Atomic batch check
+        run: |
+          set -uo pipefail
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+          echo "changed files:"; echo "$CHANGED"
+
+          # Always required whenever ANYTHING changes in the PR (docs-only included):
+          # the work item must be visible in ROADMAP/PROJECT_STATE/CHANGELOG.
+          MANDATORY=(docs/governance/ROADMAP.md docs/governance/PROJECT_STATE.md docs/governance/CHANGELOG.md)
+          MISSING=()
+          for f in "${MANDATORY[@]}"; do
+            if ! grep -qxF "$f" <<< "$CHANGED"; then MISSING+=("$f"); fi
+          done
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "::error::Atomic batch rule violated: these mandatory docs must be updated in the same PR: ${MISSING[*]}"
+            exit 1
+          fi
+
+          # Conditional rules keyed on the kind of change:
+          CODE_RE='^(server\.py|run\.py|agent_civilization/|agos_kernel/|src/|web/|tests/)'
+          if grep -Eq "$CODE_RE" <<< "$CHANGED"; then
+            grep -qxE 'docs/audit/.+' <<< "$CHANGED" \
+              || { echo "::error::Code changed without evidence in docs/audit/"; exit 1; }
+          fi
+          if grep -Eq '^server\.py|agent_civilization/civilization_routes\.py' <<< "$CHANGED"; then
+            grep -qxF 'docs/governance/API.md' <<< "$CHANGED" \
+              || { echo "::error::API changed without docs/governance/API.md"; exit 1; }
+          fi
+          if grep -Eq 'agent_civilization/storage/' <<< "$CHANGED"; then
+            grep -qxF 'docs/governance/DATA_MODEL.md' <<< "$CHANGED" \
+              || { echo "::error::Storage changed without docs/governance/DATA_MODEL.md"; exit 1; }
+          fi
+          if grep -Eq '^\.github/workflows/' <<< "$CHANGED"; then
+            grep -qxF 'docs/governance/QUALITY.md' <<< "$CHANGED" \
+              || { echo "::error::CI changed without docs/governance/QUALITY.md"; exit 1; }
+          fi
+
+          echo "Governance gate passed."
