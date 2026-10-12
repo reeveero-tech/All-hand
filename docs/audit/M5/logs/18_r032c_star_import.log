@@ -1,0 +1,7 @@
+# تحقق star-import من الجذري — R-032c
+# الأمر: exec("from agent_civilization.agents.specialists import *", ns)
+# النتيجة: الأصناف والحزم كلاهما في ns — AnalystAgent0015: True، analyst: True، 1000 صنف.
+
+star → AnalystAgent0015: True
+star → analyst pkg: True
+star → SurgeonAgent0992: True
