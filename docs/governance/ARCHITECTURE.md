@@ -99,7 +99,7 @@ POST /civilization/execute → auto_route → tasks_store (dict فقط؛ لا ا
 
 ### المجموعة الفائتة عن جرد M0 (R-031b — اكتُشفت في تحديث الحالة بعد R-031)
 
-فحص أعمق بعد حذف 39 دليلاً (ثلاث دفعات) كشف 5 دلائل لم تكن في جدول M0: `cloud_collaboration/`, `cloud_execution/`, `cloud_experience/`, `cloud_session/`, `cloud_workspace/` (مجموعة PRODUCT-000076..080، commit 31bbcb5). كما أن 4 سكربتات جذرية (`agent_manager.py`, `auto_fetch_agents.py` — Q-006 معروفان سابقاً؛ `generate_real_agents.py`, `generate_agents_catalogue.py` — D-015) بلا قرار موثق رغم معرفتها السابقة. فحص AST على المسارات الحية لم يجد استيرادات ثابتة لأي منها (دليل M3/logs/05). القرار في R-031b (منسق مع R-032 لأن بعض السكربتات يولّد ملفات `specialists/`). ملاحظة تصحيح: `consolidation/`, `constitution/`, `sdk/`, `seos/` لم تكن اكتشافاً — كانت من أصل الـ39 وحُذفت في الدفعة الثالثة (M3/9).
+**القرار (D-025، دفعة M3/10)**: حُذفت المجموعة كاملة مع وسم أمان `pre-R031b-cloud-scripts`: 5 دلائل `cloud_*` (وحدات مستقلة تماماً بلا استيرادات متبادلة ولا مستهلك حي؛ مجموعة PRODUCT-000076..080)، و4 سكربتات جذرية (`agent_manager.py`, `auto_fetch_agents.py`, `generate_real_agents.py`, `generate_agents_catalogue.py` — مولدات كتابة فقط، غير مستوردة من أي كود حي؛ `auto_fetch_agents` يحتاج `requests` و`agent_manager` يحتاج `GitPython` وكلاهما ليس في `requirements.txt` فلم يعملا في CI ولا Docker قط)، و`agents.yaml` (4,001 سطراً، 1,000 مدخل، يُقرأ من السكربتات الأربعة المحذوفة فقط؛ أسماء مداخله تطابق ملفات `specialists/` الـ1,000). الاسترجاع: `git checkout pre-R031b-cloud-scripts -- <المسار>`. القرار مُنسّق مع R-032: بقاء `specialists/` مرتبطاً بـ`real_dispatcher` يُحسم هناك، و`agents.yaml` حُذف لأن مستهلكيه الوحيدين حُذفا معه.
 
 | الدليل | ملفات متتبعة | مستورد في كود حي؟ | القرار |
 |---|---|---|---|
