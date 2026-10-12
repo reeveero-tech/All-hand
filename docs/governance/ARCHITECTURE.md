@@ -138,3 +138,14 @@ POST /civilization/execute → auto_route → tasks_store (dict فقط؛ لا ا
 | sprint-000 | 1 | لا | قرار مؤجل (M3: حذف/فصل/أرشفة) |
 
 > **ملاحظة**: `src/` و`public/` و`web/` و`docs/` و`.github/` مستثناة لأنها مسارات حية أو معالجة في بنودها. `agos-kernel/` معالج في R-012.
+
+
+## جرد ملفات `specialists/` (R-011 — قرار موثق)
+
+- العدد: 1,000 ملف وكيل proxy + 21 `__init__.py` (إجمالي 1,021 ملفاً متتبعاً) تحت `agent_civilization/agents/specialists/`.
+- المولّد: `generate_real_agents.py` (سكربت مستقل في الجذر، لا يستدعيه كود حي ولا CI).
+- ما تفعله: كل ملف يعرّف صنفاً يرث `BaseAgent` ويستدعي `real_dispatcher.dispatch` — أي أن INTEGRITY-REPORT محق في كونها "real-dispatch proxy workers".
+- ما لا تفعله: لا يستوردها أي كود حي. المسار الحي (`server.py` → `create_civilization()` → `RealSpecialistAgent`) لا يمر عبر `specialists/` إطلاقاً؛ `RealSpecialistAgent` لا يرث `BaseAgent`.
+- البحث: صفر استيراد لـ`agents.specialists` في المسارات الحية (`server.py`, `run.py`, `real_agents.py`, `orchestrator.py`, `routing/`).
+
+**القرار (D-015)**: لا يُحذف شيء في M2. القرار الفردي (حذف، أو توليد عند الحاجة، أو توصيل بمسار التشغيل) مؤجل إلى M3. أي حذف مستقبلي يتطلب تحديث هذا الجرد و`generate_real_agents.py` معاً.
