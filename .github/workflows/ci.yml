@@ -58,7 +58,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          # No pip cache: build job does not install Python deps (R-012 pending)
       
       - name: Build server artifacts
         run: |
