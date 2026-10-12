@@ -412,3 +412,20 @@ pytest 174/174 (rc مباشر)؛ ruff صفر (المسارات الحية). ال
 
 ### الفحوص
 pytest 174/174 (rc مباشر)؛ ruff صفر. الأدلة: docs/audit/M6/EVIDENCE.md + logs/17..18.
+
+## 2026-10-12 — M6/7: R-045 — صلابة أمنية إضافية (فحوص التبعيات في CI)
+
+### مضاف
+- CI job `audit` في `.github/workflows/ci.yml` (needs: quality+test، قبل publish):
+  - `pip-audit -r requirements.txt` — مانع (يكسر CI عند أي ثغرة معروفة).
+  - `npm audit --omit=dev --audit-level=critical` (في web/) — مانع لتبعيات الإنتاج فقط.
+  - `npm audit` الكامل (يشمل dev) — معلوماتي (`continue-on-error`).
+- `docs/governance/SECURITY.md`: قسم فحوص التبعيات (R-045) — القياسات الحالية، مبرر الثغرتين dev فقط، تدوير المفاتيح، حدود المدخلات.
+
+### القياسات (2026-10-12)
+- `pip-audit -r requirements.txt`: **صفر ثغرات معروفة** (rc=0).
+- `npm audit --omit=dev` (web/): **صفر ثغرات** (react/react-dom نظيفة).
+- `npm audit` الكامل: ثغرتان dev فقط — esbuild (moderate, CVSS 5.3) وvite (high عبر esbuild): تؤثر على خادم تطوير Vite فقط. الإصلاح `npm audit fix --force` (vite 8.x) مؤجل عمداً (تغيير رئيسي في أداة البناء — خارج نطاق R-045).
+
+### الفحوص
+pytest 174/174 (rc مباشر)؛ ruff صفر. الأدلة: docs/audit/M6/EVIDENCE.md + logs/19..20.
