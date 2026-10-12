@@ -9,12 +9,11 @@ Features:
 - Agent evolution recommendations
 """
 
-import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("agos.agent_production.learning")
 

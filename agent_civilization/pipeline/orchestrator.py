@@ -14,7 +14,6 @@ orchestrator is intentionally thin — it is the coordinator, not a simulator.
 
 from __future__ import annotations
 
-import asyncio
 import time
 import uuid
 from typing import Any, Dict, List, Optional

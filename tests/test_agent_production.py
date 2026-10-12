@@ -5,7 +5,6 @@ Tests agent factory, learning runtime, and memory system.
 """
 
 import pytest
-from datetime import datetime, timedelta
 
 # Test Dynamic Agent
 def test_dynamic_agent_creation():
@@ -59,7 +58,7 @@ def test_dynamic_agent_success_tracking():
         # Failed task
         try:
             raise ValueError("test")
-        except:
+        except Exception:
             pass
     
     asyncio.run(run())
@@ -263,7 +262,7 @@ def test_learning_runtime_evolution_recommendation():
 @pytest.mark.asyncio
 async def test_memory_system_initialization():
     """Test memory system initialization."""
-    from agos_kernel.agent_production.memory_system import MemorySystem, MemoryType
+    from agos_kernel.agent_production.memory_system import MemorySystem
     
     memory = MemorySystem(max_entries=100)
     
@@ -358,7 +357,7 @@ async def test_memory_system_recall():
 @pytest.mark.asyncio
 async def test_memory_system_learn_from_task():
     """Test learning from tasks."""
-    from agos_kernel.agent_production.memory_system import MemorySystem, MemoryType
+    from agos_kernel.agent_production.memory_system import MemorySystem
     
     memory = MemorySystem()
     

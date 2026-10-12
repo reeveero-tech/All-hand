@@ -11,12 +11,10 @@ Features:
 - State persistence
 """
 
-import asyncio
 import logging
 import os
-import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
@@ -311,7 +309,7 @@ def circuit_breaker(
                 result = await func(*args, **kwargs)
                 breaker.record_success()
                 return result
-            except Exception as e:
+            except Exception:
                 breaker.record_failure()
                 raise
         

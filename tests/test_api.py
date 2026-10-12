@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client():
     """Create test client."""
-    import sys
     import os
     
     # Mock the environment
