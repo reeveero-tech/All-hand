@@ -54,3 +54,10 @@
 3. لا اختبارات واجهة `web/`.
 4. CI لا يشغل `tests/` (R-002).
 5. اختبارات `agos-kernel/` الكاملة انتهت بمهلة في بيئة التدقيق — تجربة غير مكتملة.
+
+## بوابة الحوكمة (R-020)
+
+- `.github/workflows/governance-gate.yml` يعمل على كل PR إلى `main`.
+- يفشل إذا لم يُحدَّث في نفس الـ PR: ROADMAP وPROJECT_STATE وCHANGELOG (دائماً، بما فيها التوثيق الخالص)، وأدلة `docs/audit/` عند تغيير الكود، وAPI.md عند تغيير `server.py` أو مسارات civilization، وDATA_MODEL.md عند تغيير التخزين، وQUALITY.md عند تغيير workflows.
+- الحد المعروف: يفحص دفعة الـ PR مجمّعة لا كل commit، ولا يفرض شيئاً دون حماية فروع.
+- اختبار محلي: `docs/audit/M3/logs/gate_test_harness.sh` (حالتان إيجابيتان وأربع سلبيات).
