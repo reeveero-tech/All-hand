@@ -1,0 +1,23 @@
+# R-031 correction verification (M3/8)
+Mon Oct 12 15:17:32 UTC 2026
+--- command: git show a88402f --format='' --name-status | grep ^D | awk -F/ '{print $1}' | sed 's/^D\t//' | sort -u | wc -l
+--- result: 14 dirs deleted in batch 1 (M3/5):
+agos-canon agos-enterprise agos-factory agos-intelligence aie-intelligence ari-research cgp-genome execution-program knowledge-base repository-analysis-report rpp-pipeline sdl-loop spec-formal sprint-000 
+--- command: git show ba3024d --format='' --name-status | grep ^D | awk -F/ '{print $1}' | sed 's/^D\t//' | sort -u | wc -l
+--- result: 21 dirs deleted in batch 2 (M3/6):
+civilization cloud cognition cognitive domain ecosystem enterprise evolution execution fabric foundation governance intelligence meta observatory orchestration products research resource rie rie-sprint1 
+--- total deleted = 35 of 39. Remaining 4 of the M0 39-dir inventory, verified still tracked and present:
+consolidation/README.md
+consolidation/__init__.py
+constitution/README.md
+constitution/__init__.py
+constitution/constitution.py
+--- AST check of the 4 remaining (import none expected):
+EXACT IMPORTS: none
+--- cloud_* (5 dirs) confirmed NOT in the M0 39-row table (checked git show 42ca86a:docs/governance/ARCHITECTURE.md):
+| cloud | 6 | لا | قرار مؤجل (M3: حذف/فصل/أرشفة) |
+| consolidation | 2 | لا | قرار مؤجل (M3: حذف/فصل/أرشفة) |
+| constitution | 3 | لا | قرار مؤجل (M3: حذف/فصل/أرشفة) |
+| sdk | 1 | لا | قرار مؤجل (M3: حذف/فصل/أرشفة) |
+| seos | 6 | لا | قرار مؤجل (M3: حذف/فصل/أرشفة) |
+(only 'cloud' row exists; cloud_collaboration etc are absent)
