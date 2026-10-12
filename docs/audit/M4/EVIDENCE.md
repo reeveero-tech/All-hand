@@ -38,13 +38,14 @@
 
 | البند | الحالة | الدليل |
 |---|---|---|
-| بناء الصورة | تُوثَّق بعد أول تشغيل | `logs/05_docker_build_ci.log` |
-| تشغيل الحاوية | تُوثَّق بعد أول تشغيل | `logs/06_docker_runtime_ci.log` |
-| استجابة `/health` | تُوثَّق بعد أول تشغيل | ضمن `logs/06` |
+| بناء الصورة | نجح (الصورة ~177MB) | `logs/05_docker_build_ci.log` |
+| تشغيل الحاوية | نجح (`docker ps` يظهرها Up) | `logs/09_docker_ps_ci.log`، `logs/08_docker_inspect_ci.json` |
+| استجابة `/health` | نجح: HTTP 200 في المحاولة الثانية (الأولى قبل اكتمال بدء uvicorn) | `logs/06_docker_runtime_ci.log` |
 
-سيُحدَّث هذا الملف في نفس فرع الـ PR بعد أول تشغيل (خطوة 4-5 من التسلسل
-الموثق في DECISIONS D-028): تُنزَّل الأدلة من الـ artifact وتُرتكز هنا مع SHA
-المفحوص ورابط التشغيل.
+### قراءة صادقة للنتيجة
+جسم `/health`: `status: degraded` — تخزين الذاكرة بدل Supabase (لا بيانات اعتماد في CI)، 1000 وكيل نشط، وuvicorn سجّل `GET /health 200`. `degraded` سلوك متوقع وموثق (D-012: degraded يعني 200 لأن بدائل الذاكرة تعمل؛ unhealthy وحده يعني 503).
+
+التشغيل: https://github.com/reeveero-tech/All-hand/actions/runs/38285632672 (job `docker`، pass، 17 ثانية، على رأس فرع هذا الـ PR). الأصل: artifact `docker-verification-logs`. السجلات الخمسة (`05`..`09`) مُرتكزة من ذلك الـ artifact.
 
 ## حد معروف (للأمانة)
 

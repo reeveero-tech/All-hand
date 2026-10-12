@@ -1,0 +1,15 @@
+2026-10-12 17:40:01,700 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:86
+2026-10-12 17:40:01,700 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:100
+2026-10-12 17:40:01,701 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:164
+2026-10-12 17:40:01,701 - agos.server - INFO - External agents loaded: 0 - <module>:166
+2026-10-12 17:40:01,729 - agos.server - INFO - Civilization routes registered successfully - <module>:639
+INFO:     Started server process [7]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-10-12 17:40:02,392 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-12 17:40:02,400 - agos.infrastructure.health - INFO - HealthCheckRegistry initialized - __init__:170
+2026-10-12 17:40:02,401 - agos.infrastructure.redis - INFO - RedisQueue initialized with URL: redis://localhost:6379 - __init__:142
+2026-10-12 17:40:02,401 - agos.infrastructure.redis - INFO - Using Redis: False, Fallback: True - __init__:143
+2026-10-12 17:40:02,401 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+INFO:     172.17.0.1:46086 - "GET /health HTTP/1.1" 200 OK
