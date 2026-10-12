@@ -11,14 +11,25 @@ services:
         sync: false
       - key: LLM_MODEL
         value: meta-llama/llama-3.3-70b-instruct:free
+      # R-041: actually read by server.py since this batch (D-029). Value 3 is
+      # the pre-existing conservative choice; its resource-fit is unverified.
       - key: AGENTS_PER_SPEC
         value: "3"
+      # Consumed by the Render platform, not by application code (Q-007).
       - key: PYTHON_VERSION
         value: "3.12.0"
+      # R-041: auth/CORS deploy entries (sync:false = operator-supplied in the
+      # Render dashboard; no secret is stored in this file). Leaving
+      # AGOS_API_KEY unset keeps the server in open mode (R-004 behavior).
+      - key: AGOS_API_KEY
+        sync: false
+      - key: AGOS_ALLOWED_ORIGINS
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
+      # Backend fallbacks read by supabase_store.py (not used by web/).
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY

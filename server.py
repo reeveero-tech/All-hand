@@ -154,7 +154,33 @@ def rate_limit(func: Callable) -> Callable:
 # CIVILIZATION INITIALIZATION
 # ============================================================================
 
-CIVILIZATION = create_civilization()
+# R-041 (D-029): make AGENTS_PER_SPEC a real setting (render.yaml sets it to 3).
+# Previously the variable existed only in deploy config and was never read —
+# create_civilization() was always called with its hardcoded default (50).
+def _agents_per_spec() -> int:
+    """Read AGENTS_PER_SPEC from the environment with validation.
+
+    Defaults to 50 (1000 agents across 20 specializations). Invalid values
+    raise a clear startup error instead of being silently ignored.
+    """
+    raw = os.getenv("AGENTS_PER_SPEC", "")
+    if not raw:
+        return 50
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"AGENTS_PER_SPEC must be an integer, got {raw!r}"
+        ) from exc
+    if value < 1:
+        raise RuntimeError(
+            f"AGENTS_PER_SPEC must be a positive integer, got {value}"
+        )
+    return value
+
+
+AGENTS_PER_SPEC = _agents_per_spec()
+CIVILIZATION = create_civilization(AGENTS_PER_SPEC)
 EXTERNAL_AGENTS: List[ExternalAgentAdapter] = load_external_agents_from_env()
 TASKS: Dict[str, Dict[str, Any]] = {}
 TASK_EVENTS: asyncio.Queue = asyncio.Queue()
