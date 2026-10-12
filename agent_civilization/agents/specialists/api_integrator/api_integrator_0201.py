@@ -4,8 +4,8 @@ ApiIntegratorAgent0201 - Handles HTTP requests and web services
 Agent ID: 201
 """
 
-import asyncio, logging
-from typing import Dict, Any, List
+import logging
+from typing import Dict, Any
 from agent_civilization.core.agents.base_agent import BaseAgent, Message
 from agent_civilization.core.agents.communication_hub import CommunicationHub
 
