@@ -76,3 +76,12 @@
 
 - `pytest tests/`: **141/141 ناجح** (117 + 24 جديدة في `tests/test_specialists_package.py` — حماية واجهة حزمة specialists).
 - **أُزيل استثناء `agent_civilization/agents/specialists` من فحص ruff في CI**: الحزمة كانت تحمل 3,020 خطأ F401/F403 كامناً؛ أُصلحت (إعادة تصدير صريحة + `__all__` + إزالة استيرادات غير مستخدمة) وصار فحص CI يغطيها (صفر أخطاء — دليل `../audit/M5/logs/09`).
+
+## تحديث R-045 (M6/7)
+
+- **CI job `audit` جديد** (`.github/workflows/ci.yml` — needs quality+test، قبل publish):
+  - `pip-audit -r requirements.txt` — مانع (يكسر CI عند أي ثغرة معروفة في تبعيات Python).
+  - `npm audit --omit=dev --audit-level=critical` (web/) — مانع لثغرات critical/high في تبعيات **الإنتاج** فقط (react/react-dom).
+  - `npm audit` الكامل — معلوماتي (`continue-on-error: true`) لأن تبعيات dev (vite/esbuild) لا تصل إلى الإنتاج.
+- القياسات الحالية: pip-audit صفر ثغرات (logs/19)؛ npm --omit=dev صفر (logs/20)؛ الثغرتان dev (esbuild/vite) موثقتان ومبررتان في SECURITY.md.
+- الاختبارات: `pytest tests/`: **174/174 ناجح** (بعد R-055).
