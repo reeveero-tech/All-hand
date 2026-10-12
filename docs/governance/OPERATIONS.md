@@ -13,13 +13,14 @@ cd web && npm install && npm run build
 ### الخادم
 ```bash
 pip install -r requirements.txt
-python -c "import server"   # يفشل حالياً على 3.12/3.14 (خطأ utc — R-001)
+python -c "import server"   # ينجح (R-001 أصلح استيراد utc)
 uvicorn server:app --host 0.0.0.0 --port 8000
+# AGENTS_PER_SPEC=3 uvicorn server:app   # 60 وكيلاً بدل 1000 (R-041)
 ```
 
 ### واجهة الجذر (TanStack)
 ```bash
-npm install && npm run build   # يفشل: lovable-error-reporting مفقود (rc=1)
+npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 ```
 
 ## النشر
@@ -29,10 +30,11 @@ npm install && npm run build   # يفشل: lovable-error-reporting مفقود (r
 - **`.dockerignore`** (جديد في R-040): يمنع دخول `.git` و`node_modules` و`web/dist` والأسرار (`.env*`) في سياق `COPY . .` — كانت تغيب قبله فكان سياق البناء يشمل كل ملفات العمل.
 - **التحقق (R-040، ✓ done — دفعة M4/1)**: job `docker` في CI تبني الصورة وتشغلها وتتحقق من `/health` (HTTP 200 + جسم JSON يحوي `status`)، مع جمع السجلات ورفعها كـ artifact. تحققت في تشغيلين: الأول (run 38285632672) على رأس `f02ed61` والثاني/النهائي (run 38285911497) على رأس `13fc37d` — كلاهما نجح. الأدلة مُرتكزة في `docs/audit/M4/logs/05..09`. بيئة التحرير المحلية بلا Docker (دليل `docs/audit/M4/logs/04`).
 
-### Render (من `render.yaml`)
-- `PYTHON_VERSION=3.12.0`، `startCommand=uvicorn server:app`، `healthCheckPath=/api/system/status`.
-- **تنبيه**: نفس استنتاج `utc` أعلاه.
-- يحدد `AGENTS_PER_SPEC=3` (لا يُقرأ من الكود — الافتراضي في `create_civilization` هو 50) — راجع Q-013 في OPEN_QUESTIONS.
+### Render (من `render.yaml` — محدث R-041)
+- `PYTHON_VERSION=3.12.0` (يستهلكه Render لا كود التطبيق — Q-007)، `startCommand=uvicorn server:app`، `healthCheckPath=/api/system/status`.
+- `AGENTS_PER_SPEC=3`: **يُقرأ من الكود منذ R-041** (كان متغيراً ميتاً في الإعدادات). ملاءمة القيمة 3 للموارد لم تُقس — Q-013.
+- مدخلا `AGOS_API_KEY` و`AGOS_ALLOWED_ORIGINS` أُضيفا كـ`sync: false` (المشغّل يدخل القيم في لوحة Render؛ لا سر في المستودع).
+- `VITE_SUPABASE_*` بدائل خلفية يقرأها `supabase_store.py`؛ الواجهة `web/` لا تقرأها.
 
 ### CI (`ci.yml`)
 - الوظائف: quality (ruff F/E722 على المسارات الحية) + test (pytest tests/) + build (web/) + docker (R-040: بناء الصورة وتشغيلها والتحقق من `/health`) + publish (معطل إلا بـ`[publish]` — D-011).
@@ -55,7 +57,7 @@ npm install && npm run build   # يفشل: lovable-error-reporting مفقود (r
 | `METRICS_NAMESPACE` | agos_kernel/infrastructure/metrics.py | `agos` |
 | `CIRCUIT_BREAKER_*` (4 متغيرات) | agos_kernel/infrastructure | 5/3/60/3 |
 
-**غير مُوثق في `.env.example`**: `CIRCUIT_BREAKER_*`، `AGENTS_PER_SPEC`.
+**محدث R-041**: كل متغيرات `.env.example` موثقة ومقروءة في الكود (بما فيها `CIRCUIT_BREAKER_*` و`AGENTS_PER_SPEC` و`REDIS_URL` و`METRICS_NAMESPACE` و`VITE_API_BASE`).
 
 ## الفحوصات
 

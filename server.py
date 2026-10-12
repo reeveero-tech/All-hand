@@ -154,7 +154,33 @@ def rate_limit(func: Callable) -> Callable:
 # CIVILIZATION INITIALIZATION
 # ============================================================================
 
-CIVILIZATION = create_civilization()
+# R-041 (D-029): جعل AGENTS_PER_SPEC إعداداً فعلياً (render.yaml يضبطه 3).
+# سابقاً كان المتغير موجوداً في إعدادات النشر فقط ولا يقرؤه الكود — كان
+# create_civilization() يُستدعى دائماً بالافتراضي المكتوب (50).
+def _agents_per_spec() -> int:
+    """قراءة AGENTS_PER_SPEC من البيئة مع تحقق الصلاحية.
+
+    الافتراضي 50 (1000 وكيل على 20 تخصصاً). القيم غير الصالحة ترفع خطأ بدء
+    واضحاً بدل تجاهلها بصمت.
+    """
+    raw = os.getenv("AGENTS_PER_SPEC", "")
+    if not raw:
+        return 50
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"AGENTS_PER_SPEC must be an integer, got {raw!r}"
+        ) from exc
+    if value < 1:
+        raise RuntimeError(
+            f"AGENTS_PER_SPEC must be a positive integer, got {value}"
+        )
+    return value
+
+
+AGENTS_PER_SPEC = _agents_per_spec()
+CIVILIZATION = create_civilization(AGENTS_PER_SPEC)
 EXTERNAL_AGENTS: List[ExternalAgentAdapter] = load_external_agents_from_env()
 TASKS: Dict[str, Dict[str, Any]] = {}
 TASK_EVENTS: asyncio.Queue = asyncio.Queue()

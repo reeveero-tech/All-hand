@@ -1,0 +1,7 @@
+2026-10-12 17:52:28,862 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:86
+2026-10-12 17:52:28,862 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:100
+2026-10-12 17:52:28,863 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:190
+2026-10-12 17:52:28,863 - agos.server - INFO - External agents loaded: 0 - <module>:192
+2026-10-12 17:52:28,886 - agos.server - INFO - Civilization routes registered successfully - <module>:665
+2026-10-12 17:52:28,912 - httpx2 - INFO - HTTP Request: GET http://testserver/docs "HTTP/1.1 200 OK" - _send_single_request:1085
+/docs: 200
