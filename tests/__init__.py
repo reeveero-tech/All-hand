@@ -8,7 +8,6 @@ Comprehensive tests covering:
 - Integration tests
 """
 
-import pytest
 import sys
 import os
 

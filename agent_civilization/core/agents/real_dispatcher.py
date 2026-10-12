@@ -23,7 +23,6 @@ import ast
 import asyncio
 import io
 import json
-import math
 import re
 import socket
 import sqlite3

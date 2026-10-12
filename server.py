@@ -281,12 +281,11 @@ async def health_check():
     """
     try:
         # Import health check components
-        from agos_kernel.infrastructure.health import get_health_registry, HealthStatus
+        from agos_kernel.infrastructure.health import get_health_registry
         
         registry = get_health_registry()
         system_health = await registry.get_system_health()
         
-        status_code = 200 if system_health["status"] == "healthy" else 503
         return system_health
         
     except ImportError:

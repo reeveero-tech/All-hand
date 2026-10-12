@@ -3,7 +3,6 @@
 Data Worker Agent - a real working agent that processes tasks using LLM + tools.
 """
 
-import asyncio
 import logging
 from typing import Any, Dict
 

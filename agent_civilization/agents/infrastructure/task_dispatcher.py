@@ -5,7 +5,7 @@ Task Dispatcher Agent - distributes work based on agent capabilities.
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from agent_civilization.core.agents.base_agent import BaseAgent, Message
 from agent_civilization.core.agents.communication_hub import CommunicationHub

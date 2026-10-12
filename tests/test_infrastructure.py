@@ -22,7 +22,7 @@ def test_circuit_breaker_closed_state():
 
 def test_circuit_breaker_opens_after_failures():
     """Test circuit breaker opens after threshold failures."""
-    from agos_kernel.infrastructure.circuit_breaker import CircuitBreaker, CircuitState
+    from agos_kernel.infrastructure.circuit_breaker import CircuitBreaker
     
     breaker = CircuitBreaker("test", failure_threshold=3)
     
@@ -37,7 +37,7 @@ def test_circuit_breaker_opens_after_failures():
 
 def test_circuit_breaker_records_success():
     """Test circuit breaker records success."""
-    from agos_kernel.infrastructure.circuit_breaker import CircuitBreaker, CircuitState
+    from agos_kernel.infrastructure.circuit_breaker import CircuitBreaker
     
     breaker = CircuitBreaker("test", failure_threshold=3)
     
@@ -69,7 +69,7 @@ def test_circuit_breaker_half_open():
 
 def test_circuit_breaker_allow_request():
     """Test circuit breaker allows requests appropriately."""
-    from agos_kernel.infrastructure.circuit_breaker import CircuitBreaker, CircuitState
+    from agos_kernel.infrastructure.circuit_breaker import CircuitBreaker
     
     breaker = CircuitBreaker("test", failure_threshold=1, timeout=0)
     
@@ -122,7 +122,7 @@ def test_metrics_counter_increment():
 
 def test_metrics_gauge_set():
     """Test gauge set."""
-    from agos_kernel.infrastructure.metrics import MetricsCollector, MetricType
+    from agos_kernel.infrastructure.metrics import MetricsCollector
     
     metrics = MetricsCollector(namespace="test")
     
