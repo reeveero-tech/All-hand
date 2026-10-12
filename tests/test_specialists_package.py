@@ -31,6 +31,23 @@ def test_package_exports_all_classes(spec):
         assert cls.__name__ == name
 
 
+def test_top_level_direct_class_import():
+    """الواجهة التاريخية: استيراد صنف وكيل مباشرة من جذري الحزمة (انكسر في R-032a؛ أُصلح في R-032b)."""
+    from agent_civilization.agents.specialists import AnalystAgent0015, SurgeonAgent0992
+    assert AnalystAgent0015.__name__ == "AnalystAgent0015"
+    assert SurgeonAgent0992.__name__ == "SurgeonAgent0992"
+
+
+def test_top_level_all_1000_classes_accessible():
+    import agent_civilization.agents.specialists as top
+    total = 0
+    for spec in SPECS:
+        for name in _pkg(spec).__all__:
+            assert getattr(top, name) is not None, f"{name} غير متاح من الجذري"
+            total += 1
+    assert total == 1000
+
+
 def test_top_level_package_imports_all_specs():
     import agent_civilization.agents.specialists as top
     for spec in SPECS:
