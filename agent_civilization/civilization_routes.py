@@ -45,7 +45,6 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
     @app.get("/civilization/registry")
     async def registry_route(api_key: Optional[str] = Security(api_key_header)):
         _guard(api_key)
-    async def registry():
         return {
             "count": len(AGENTS),
             "total_addressable": total_agents(sum(len(v) for v in civilization.values())),
