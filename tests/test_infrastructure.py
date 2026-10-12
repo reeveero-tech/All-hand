@@ -53,14 +53,15 @@ def test_circuit_breaker_half_open():
     """Test circuit breaker transitions to half-open."""
     from agos_kernel.infrastructure.circuit_breaker import CircuitBreaker, CircuitState
     
-    breaker = CircuitBreaker("test", failure_threshold=1, timeout=0)
+    # timeout=1 so the circuit opens and stays open; then age the failure time to pass the threshold.
+    breaker = CircuitBreaker("test", failure_threshold=1, timeout=1)
     
     # Open the circuit
     breaker._record_failure()
     assert breaker.is_open
     
-    # Wait for timeout
-    breaker._last_failure_time = datetime.utcnow() - timedelta(seconds=1)
+    # Simulate timeout having elapsed
+    breaker._last_failure_time = datetime.utcnow() - timedelta(seconds=2)
     
     # Should transition to half-open
     assert breaker.state == CircuitState.HALF_OPEN

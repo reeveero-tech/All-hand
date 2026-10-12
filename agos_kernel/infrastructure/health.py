@@ -139,7 +139,7 @@ class HealthCheck:
             self._last_result = HealthCheckResult(
                 component=self.name,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Error: {str(e)}",
+                message=f"Error: {type(e).__name__}: {str(e)}",
                 duration_ms=duration_ms,
                 details={"error_type": type(e).__name__},
             )

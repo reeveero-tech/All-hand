@@ -77,8 +77,22 @@ class CircuitBreaker:
     _half_open_requests: int = field(default=0, init=False)
     _last_state_change: datetime = field(default_factory=datetime.utcnow, init=False)
     
-    def __post_init__(self):
-        """Initialize logging."""
+    def __init__(self, name: str, **kwargs):
+        """Support legacy kwargs (failure_threshold, timeout, etc.) as config overrides."""
+        legacy = {"failure_threshold": "failure_threshold", "success_threshold": "success_threshold", "timeout": "timeout", "half_open_requests": "half_open_requests"}
+        overrides = {k: v for k, v in kwargs.items() if k in legacy}
+        unknown = {k: v for k, v in kwargs.items() if k not in legacy}
+        if unknown:
+            raise TypeError(f"unexpected kwargs: {list(unknown)}")
+        cfg = CircuitBreakerConfig(**overrides) if overrides else CircuitBreakerConfig()
+        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "config", cfg)
+        object.__setattr__(self, "_state", CircuitState.CLOSED)
+        object.__setattr__(self, "_failure_count", 0)
+        object.__setattr__(self, "_success_count", 0)
+        object.__setattr__(self, "_last_failure_time", None)
+        object.__setattr__(self, "_half_open_requests", 0)
+        object.__setattr__(self, "_last_state_change", datetime.utcnow())
         self.logger = logging.getLogger(f"agos.circuit_breaker.{self.name}")
     
     @property
@@ -108,6 +122,9 @@ class CircuitBreaker:
         """Check if enough time has passed to attempt reset."""
         if self._last_failure_time is None:
             return True
+        if self.config.timeout <= 0:
+            # Non-positive timeout: never auto-reset from OPEN.
+            return False
         elapsed = datetime.utcnow() - self._last_failure_time
         return elapsed.total_seconds() >= self.config.timeout
     
