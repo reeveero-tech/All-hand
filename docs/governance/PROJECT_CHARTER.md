@@ -32,7 +32,7 @@
 
 ### خارج النطاق (غير مرتبط بمسار التشغيل المُتحقق منه)
 
-- `agos-kernel/` (dash) — لم يُتحقق من استخدامه في مسار تشغيل Docker. راجع `OPEN_QUESTIONS` Q-001.
+- `agos-kernel/` (dash) — حُذف من main في R-033 (D-026) وأُرشف في `archive/agos-kernel-v1`؛ لم يكن مستخدماً في أي مسار تشغيل.
 - `src/` + root `package.json` (TanStack TS) — فشل البناء (`lovable-error-reporting` مفقود). راجع Q-002.
 - المجلدات الجذرية غير المستوردة (`foundation`, `rie`, `meta`, `research`, `intelligence`, `evolution`, `enterprise`, `ecosystem`, `domain`, `cognition`, `seos`, `products`, `cloud`, `civilization`, `consolidation`, `constitution`, `execution`, `execution-program`, `knowledge-base`, `rie-sprint1`, `sdk`, `sdks`, `sdl-loop`, `spec-formal`, `sprint-000`, إلخ) — **لم يُتحقق من استخدامها** في مسار التشغيل؛ راجع Q-003.
 - `agent_civilization/agents/specialists/` — 1,021 ملف Python (21 `__init__.py` + 1,000 ملف وكيل stub)؛ **لم يُتحقق من استيرادها** من أي ملف حي؛ راجع Q-004.

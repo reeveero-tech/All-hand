@@ -1,8 +1,0 @@
-{
-  "contract_requirements": 16,
-  "runtime_components": 11,
-  "lifecycle_stages": 16,
-  "execution_modes": 8,
-  "responsibilities": 12,
-  "forbidden_patterns": 4
-}

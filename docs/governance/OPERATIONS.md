@@ -34,7 +34,7 @@ npm install && npm run build   # يفشل: lovable-error-reporting مفقود (r
 - يحدد `AGENTS_PER_SPEC=3` (لا يُقرأ من الكود — الافتراضي في `create_civilization` هو 50) — راجع Q-013 في OPEN_QUESTIONS.
 
 ### CI (`ci.yml`)
-- أهدافه: lint/typing/اختبارات/بناء/نشر على `agos-kernel/` فقط.
+- أهدافه (تاريخي، قبل R-002): lint/typing/اختبارات/بناء/نشر على `agos-kernel/` فقط. الحالي: انظر QUALITY (quality/test/build/publish على المسارات الحية؛ `agos-kernel/` حُذف في R-033).
 - إعادة تنفيذ محلي فاشل (4 أخطاء جمع + 8,961 خطأ ruff). حالة التشغيل عن بُعد غير مُتحقرة.
 - `publish` يرفع إلى PyPI عند push لـ main مشروطاً بنجاح الوظائف السابقة (تفشل حالياً) — راجع RISK-009.
 

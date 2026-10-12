@@ -61,3 +61,5 @@
 - يفشل إذا لم يُحدَّث في نفس الـ PR: ROADMAP وPROJECT_STATE وCHANGELOG (دائماً، بما فيها التوثيق الخالص)، وأدلة `docs/audit/` عند تغيير الكود، وAPI.md عند تغيير `server.py` أو مسارات civilization، وDATA_MODEL.md عند تغيير التخزين، وQUALITY.md عند تغيير workflows.
 - الحد المعروف: يفحص دفعة الـ PR مجمّعة لا كل commit، ولا يفرض شيئاً دون حماية فروع.
 - اختبار محلي: `docs/audit/M3/logs/gate_test_harness.sh` (حالتان إيجابيتان وأربع سلبيات).
+
+> تحديث M3/11: الأرقام التاريخية أعلاه عن `agos-kernel/` (8,961 خطأ ruff، 4 أخطاء جمع، انتهاء المهلة) تخص دليلاً حُذف من main في R-033 (D-026) ومحفوظ في `archive/agos-kernel-v1`. لا يغطي أي هدف CI حالياً.

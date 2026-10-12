@@ -1,7 +1,7 @@
 # حالة المشروع (PROJECT_STATE)
 
-> **آخر تحديث**: 2026-10-12 — بعد R-031 (39/39) وR-031b (cloud_* + سكربتات + agents.yaml)
-> **مرجع الكود**: `cfc76d6...` (فرع `main`، بعد دمج PR #44؛ شجرة هذه الدفعة مبنية عليه)
+> **آخر تحديث**: 2026-10-12 — بعد R-031 وR-031b وR-033 (حذف `agos-kernel/` بعد أرشفته)
+> **مرجع الكود**: `ceead7d...` (فرع `main`، بعد دمج PR #45؛ شجرة هذه الدفعة مبنية عليه)
 
 ## ملخص سريع لمن يتسلم المشروع لأول مرة
 
@@ -68,7 +68,10 @@
 
 ## الخطوة التالية
 
-1. **R-033** (`proposed`): مصير `agos-kernel/` — أرشفة أو حذف أو إصلاح.
+1. **R-033** ✓ done (D-026): `agos-kernel/` أُرشف في `archive/agos-kernel-v1` وحُذف من main.
 2. **R-032** (`proposed`): مصير `specialists/` (1,000 ملف؛ مولّدها حُذف في R-031b فالخيارات صارت: حذف كامل أو توصيل).
 3. **R-040** (`proposed`): Docker بناء وتشغيل — أول بند في M4.
 4. البنود `blocked` (R-024 حماية الفرع، R-042 Supabase، R-050 تعريف المالك) لا توقف البقية — دوّن الغموض في OPEN_QUESTIONS واستمر.
+
+## ملاحظة بنية (بعد R-033)
+الجذر الآن: `agent_civilization/`, `agos_kernel/`, `docs/`, `public/`, `src/`, `tests/`, `web/`, `run.py`, `server.py` + ملفات توثيق قديمة (`README`, `DEPLOY`, `INTEGRITY-REPORT`, `CIVILIZATION_MAP`, `FINAL-ARCHITECTURE`, `IMPLEMENTATION_PLAN`, `SECURITY`) بعضها يصف بنية محذوفة وينتظر R-056 (مصالحة الادعاءات التوثيقية). المتبقي المباشر: R-032 (`specialists/`)، ثم M4.

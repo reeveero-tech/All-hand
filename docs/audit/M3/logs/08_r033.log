@@ -1,0 +1,17 @@
+# R-033 verification (M3/11)
+Mon Oct 12 16:43:09 UTC 2026
+--- decision: archive to branch archive/agos-kernel-v1 (pushed, points at ceead7d) + safety tag pre-R033-agos-kernel-removal (pushed) + delete from main
+--- root cause (new finding, RISK-011 extended): agos-kernel/platform/ shadows Python stdlib 'platform' — reproduced: cd agos-kernel && python -c 'import platform' fails with ImportError/AttributeError. Any use of agos-kernel from repo root (pytest, PYTHONPATH) breaks stdlib imports. This is a latent structural bug, not fixable by a rename alone (113 subdirs, at least 'platform' affected).
+--- also deleted: push_to_github.sh (one-off historical script referencing agos-kernel/finalization only; not in CI; hardcoded /workspace path)
+--- verification after deletion:
+  pytest:
+============================== 75 passed in 0.80s ==============================
+  ruff:
+All checks passed!
+  root npm build:
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+  web npm build:
+✓ built in 969ms
+--- remaining refs to agos-kernel in live code/config (must be empty):
+(empty = safe)
+--- recovery: git checkout archive/agos-kernel-v1 -- agos-kernel  (or tag pre-R033-agos-kernel-removal)
