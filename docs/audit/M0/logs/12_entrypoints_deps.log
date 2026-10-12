@@ -1,0 +1,64 @@
+# Rebuilt from actual command execution at the original SHA (worktree at be480820)
+
+
+===== env vars (grep os.getenv|os.environ in live-path files) =====
+# command: grep -rn 'os.getenv\|os.environ' server.py run.py agent_civilization/ agos_kernel/ --include='*.py'
+# returncode: 0
+
+server.py:62:API_KEY = os.getenv("AGOS_API_KEY", "")  # Optional API key
+server.py:63:ALLOWED_ORIGINS = os.getenv("AGOS_ALLOWED_ORIGINS", "*").split(",")  # Default: all origins
+server.py:67:RATE_LIMIT_REQUESTS = int(os.getenv("AGOS_RATE_LIMIT_REQUESTS", "100"))
+server.py:68:RATE_LIMIT_WINDOW = int(os.getenv("AGOS_RATE_LIMIT_WINDOW", "60"))  # seconds
+server.py:654:    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+agent_civilization/core/llm.py:16:DEFAULT_MODEL = os.environ.get("LLM_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
+agent_civilization/core/llm.py:23:        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
+agent_civilization/storage/supabase_store.py:19:SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL", "")
+agent_civilization/storage/supabase_store.py:20:SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("VITE_SUPABASE_ANON_KEY", "")
+agent_civilization/agents/external_adapter.py:86:    raw = os.environ.get("EXTERNAL_AGENTS", "")
+agos_kernel/infrastructure/redis_queue.py:128:        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
+agos_kernel/infrastructure/circuit_breaker.py:47:            failure_threshold=int(os.getenv("CIRCUIT_BREAKER_FAILURES", "5")),
+agos_kernel/infrastructure/circuit_breaker.py:48:            success_threshold=int(os.getenv("CIRCUIT_BREAKER_SUCCESSES", "3")),
+agos_kernel/infrastructure/circuit_breaker.py:49:            timeout=int(os.getenv("CIRCUIT_BREAKER_TIMEOUT", "60")),
+agos_kernel/infrastructure/circuit_breaker.py:50:            half_open_requests=int(os.getenv("CIRCUIT_BREAKER_HALF_OPEN", "3")),
+agos_kernel/infrastructure/metrics.py:361:            namespace=os.getenv("METRICS_NAMESPACE", "agos")
+
+
+===== entrypoints (executable py files at root + main/run scripts) =====
+# command: ls *.py; ls agos-kernel/main.py agos-kernel/run_kernel.py 2>/dev/null
+# returncode: 0
+
+agent_manager.py
+auto_fetch_agents.py
+generate_agents_catalogue.py
+generate_real_agents.py
+run.py
+server.py
+agos-kernel/main.py
+agos-kernel/run_kernel.py
+
+
+===== requirements.txt (verbatim) =====
+# command: cat requirements.txt
+# returncode: 0
+
+PyYAML
+aiohttp
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+
+===== web deps =====
+# command: python3 -c "import json; d=json.load(open('web/package.json')); print(d.get('dependencies'), d.get('devDependencies'))"
+# returncode: 0
+
+{'react': '^18.3.1', 'react-dom': '^18.3.1'} {'@vitejs/plugin-react': '^4.3.4', 'vite': '^5.4.21'}
+
+
+===== root package.json deps (top-level summary) =====
+# command: python3 -c "import json; d=json.load(open('package.json')); print('deps:', list(d.get('dependencies',{}).keys())); print('devDeps:', list(d.get('devDependencies',{}).keys()))"
+# returncode: 0
+
+deps: ['@hookform/resolvers', '@radix-ui/react-accordion', '@radix-ui/react-alert-dialog', '@radix-ui/react-aspect-ratio', '@radix-ui/react-avatar', '@radix-ui/react-checkbox', '@radix-ui/react-collapsible', '@radix-ui/react-context-menu', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-hover-card', '@radix-ui/react-label', '@radix-ui/react-menubar', '@radix-ui/react-navigation-menu', '@radix-ui/react-popover', '@radix-ui/react-progress', '@radix-ui/react-radio-group', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-separator', '@radix-ui/react-slider', '@radix-ui/react-slot', '@radix-ui/react-switch', '@radix-ui/react-tabs', '@radix-ui/react-toggle', '@radix-ui/react-toggle-group', '@radix-ui/react-tooltip', '@tailwindcss/vite', '@tanstack/react-query', '@tanstack/react-router', '@tanstack/react-start', '@tanstack/router-plugin', 'class-variance-authority', 'clsx', 'cmdk', 'date-fns', 'embla-carousel-react', 'input-otp', 'lucide-react', 'react', 'react-day-picker', 'react-dom', 'react-hook-form', 'react-resizable-panels', 'recharts', 'sonner', 'tailwind-merge', 'tailwindcss', 'tw-animate-css', 'vaul', 'vite-tsconfig-paths', 'zod']
+devDeps: ['@eslint/js', '@lovable.dev/vite-tanstack-config', '@types/node', '@types/react', '@types/react-dom', '@vitejs/plugin-react', 'eslint', 'eslint-config-prettier', 'eslint-plugin-prettier', 'eslint-plugin-react-hooks', 'eslint-plugin-react-refresh', 'globals', 'nitro', 'prettier', 'typescript', 'typescript-eslint', 'vite']

@@ -1,0 +1,12 @@
+# command: python -m pytest agos-kernel/ -o addopts='' --continue-on-collection-errors -q -p no:cacheprovider
+# cwd: (worktree at be480820) 
+# returncode: None
+# timed_out: True
+# duration_s: 120.1
+# python: 3.14.3
+
+--- STDOUT ---
+..F.Fs.ssFs.ss.ss.FFFsFFsssFF.F.s.....Esssss............................ [ 49%]
+.........EEEEEE.............FEEEEEEEE.......FFFF......F....F.F.FF.....
+--- STDERR ---
+

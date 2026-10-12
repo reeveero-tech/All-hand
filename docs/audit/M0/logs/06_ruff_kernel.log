@@ -1,0 +1,86 @@
+# command: ruff check agos-kernel/ --no-cache
+# cwd: (worktree at be480820)
+# returncode: 1   # (a separate `--statistics | tail -30` run is shown below for the error-type summary; its own rc was masked by the tail pipe)
+# timed_out: False
+# ruff: 0.17.0
+# python: 3.14.3
+
+--- STDOUT (tail of raw run, full stdout is huge; the error count is on the last line) ---
+e`
+    |
+303 | # Global pipeline instance
+    - _pipeline: Optional[Pipeline] = None
+304 + _pipeline: Pipeline | None = None
+305 |
+    |
+
+UP045 [*] Use `X | None` for type annotations
+   --> agos-kernel/workflows/pipeline.py:315:39
+    |
+315 | def create_pipeline(name: str, steps: Optional[List[PipelineStep]] = None) -> Pipeline:
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+316 |     """Create a new pipeline."""
+317 |     config = PipelineConfig(name=name)
+    |
+help: Convert to `X | None`
+    |
+314 |
+    - def create_pipeline(name: str, steps: Optional[List[PipelineStep]] = None) -> Pipeline:
+315 + def create_pipeline(name: str, steps: List[PipelineStep] | None = None) -> Pipeline:
+316 |     """Create a new pipeline."""
+    |
+
+UP006 [*] Use `list` instead of `List` for type annotation
+   --> agos-kernel/workflows/pipeline.py:315:48
+    |
+315 | def create_pipeline(name: str, steps: Optional[List[PipelineStep]] = None) -> Pipeline:
+    |                                                ^^^^
+316 |     """Create a new pipeline."""
+317 |     config = PipelineConfig(name=name)
+    |
+help: Replace with `list`
+    |
+314 |
+    - def create_pipeline(name: str, steps: Optional[List[PipelineStep]] = None) -> Pipeline:
+315 + def create_pipeline(name: str, steps: Optional[list[PipelineStep]] = None) -> Pipeline:
+316 |     """Create a new pipeline."""
+    |
+
+Found 8961 errors.
+[*] 7200 fixable with `--fix` (187 unsafe fixes available with `--fix --unsafe-fixes`).
+
+--- STDERR ---
+
+
+--- SUMMARY RUN: ruff check agos-kernel/ --no-cache --statistics | tail -30 (exit code masked by pipe; counts below) ---
+  49	RUF012  	[ ] mutable-class-default
+  47	EXE001  	[ ] shebang-not-executable
+  41	PIE790  	[*] unnecessary-placeholder
+  39	PLW1510 	[ ] subprocess-run-without-check
+  37	F811    	[-] redefined-while-unused
+  23	SIM102  	[ ] collapsible-if
+  13	SIM118  	[-] in-dict-keys
+  13	ASYNC221	[ ] run-process-in-async-function
+  12	SIM103  	[ ] needless-bool
+  12	C414    	[ ] unnecessary-double-cast-or-process
+   9	F821    	[ ] undefined-name
+   7	TRY002  	[ ] raise-vanilla-class
+   6	PERF102 	[ ] incorrect-dict-iterator
+   6	PIE810  	[ ] multiple-starts-ends-with
+   4	ASYNC230	[ ] blocking-open-call-in-async-function
+   4	SIM114  	[*] if-with-same-arms
+   3	RUF059  	[ ] unused-unpacked-variable
+   2	RUF010  	[*] explicit-f-string-type-conversion
+   2	F601    	[ ] multi-value-repeated-key-literal
+   2	C401    	[ ] unnecessary-generator-set
+   2	C403    	[ ] unnecessary-list-comprehension-set
+   2	RUF007  	[ ] zip-instead-of-pairwise
+   1	PLC0206 	[ ] dict-index-missing-items
+   1	SIM101  	[ ] duplicate-isinstance-call
+   1	B033    	[*] duplicate-value
+   1	S102    	[ ] exec-builtin
+   1	PLR1730 	[*] if-stmt-min-max
+   1	RUF015  	[ ] unnecessary-iterable-allocation-for-first-element
+Found 8961 errors.
+[*] 7200 fixable with `--fix` (187 unsafe fixes available with `--fix --unsafe-fixes`).
+

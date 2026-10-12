@@ -1,0 +1,48 @@
+# command: git ls-tree -r --name-only HEAD
+# cwd: (worktree at be480820)
+# returncode: 0
+# python: 3.14.3
+
+--- STDOUT: full list (1981 files) summary ---
+# top-level directory counts (from the same listing):
+  1050 agent_civilization
+   523 agos-kernel
+   120 knowledge-base
+    25 repository-analysis-report
+    15 src
+    12 cognitive
+    12 execution
+    12 foundation
+    12 rie
+    12 web
+     9 agos_kernel
+     8 meta
+     7 cognition
+     7 domain
+     7 ecosystem
+     7 enterprise
+     7 evolution
+     7 fabric
+     7 intelligence
+     7 research
+     6 agos-canon
+     6 civilization
+     6 cloud
+     6 products
+     6 rie-sprint1
+     6 seos
+     5 aie-intelligence
+     5 ari-research
+     5 governance
+     4 tests
+     3 constitution
+     3 observatory
+     2 agos-factory
+     2 cloud_experience
+     2 consolidation
+     2 spec-formal
+     1 .env.example
+     1 .github
+     1 .gitignore
+     1 .lovable
+# total files: 1981

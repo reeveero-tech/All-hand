@@ -1,0 +1,17 @@
+# command: python -c 'import server'
+# cwd: (worktree at be480820) 
+# returncode: 1
+# timed_out: False
+# duration_s: 0.06
+# python: 3.14.3
+
+--- STDOUT ---
+
+--- STDERR ---
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import server
+  File "/tmp/wt/server.py", line 28, in <module>
+    from datetime import datetime, timedelta, utc
+ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+

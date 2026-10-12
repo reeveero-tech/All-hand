@@ -1,0 +1,209 @@
+# command: python -m pytest tests/ -o addopts='--tb=short -q' -p no:cacheprovider
+# cwd: (worktree at be480820) 
+# returncode: 1
+# timed_out: False
+# duration_s: 2.34
+# python: 3.14.3
+
+--- STDOUT ---
+........................EEEEEEEEEEEEEEEEEEFFFFFF....F..F...F.            [100%]
+==================================== ERRORS ====================================
+_______________________ ERROR at setup of test_api_root ________________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+______________________ ERROR at setup of test_api_health _______________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+_____________________ ERROR at setup of test_api_liveness ______________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+_____________________ ERROR at setup of test_api_readiness _____________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+______________________ ERROR at setup of test_api_metrics ______________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+___________________ ERROR at setup of test_api_system_status ___________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+_______________ ERROR at setup of test_api_list_specializations ________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+____________________ ERROR at setup of test_api_list_agents ____________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+________________ ERROR at setup of test_api_list_agents_filter _________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+____________________ ERROR at setup of test_api_create_task ____________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+________ ERROR at setup of test_api_create_task_invalid_specialization _________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+_____________ ERROR at setup of test_api_create_task_empty_prompt ______________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+_____________________ ERROR at setup of test_api_get_task ______________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+________________ ERROR at setup of test_api_get_task_not_found _________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+____________________ ERROR at setup of test_api_list_tasks _____________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+_______________________ ERROR at setup of test_api_chat ________________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+______________________ ERROR at setup of test_api_events _______________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+___________________ ERROR at setup of test_api_cors_headers ____________________
+tests/test_api.py:21: in client
+    from server import app
+server.py:28: in <module>
+    from datetime import datetime, timedelta, utc
+E   ImportError: cannot import name 'utc' from 'datetime' (/usr/local/lib/python3.14/datetime.py). Did you mean: 'UTC'?
+=================================== FAILURES ===================================
+______________________ test_circuit_breaker_closed_state _______________________
+tests/test_infrastructure.py:16: in test_circuit_breaker_closed_state
+    breaker = CircuitBreaker("test", failure_threshold=3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+------------------------------ Captured log call -------------------------------
+WARNING  agos.infrastructure.redis:redis_queue.py:30 Redis not available. Using in-memory fallback.
+__________________ test_circuit_breaker_opens_after_failures ___________________
+tests/test_infrastructure.py:27: in test_circuit_breaker_opens_after_failures
+    breaker = CircuitBreaker("test", failure_threshold=3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+_____________________ test_circuit_breaker_records_success _____________________
+tests/test_infrastructure.py:42: in test_circuit_breaker_records_success
+    breaker = CircuitBreaker("test", failure_threshold=3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+________________________ test_circuit_breaker_half_open ________________________
+tests/test_infrastructure.py:56: in test_circuit_breaker_half_open
+    breaker = CircuitBreaker("test", failure_threshold=1, timeout=0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+______________________ test_circuit_breaker_allow_request ______________________
+tests/test_infrastructure.py:73: in test_circuit_breaker_allow_request
+    breaker = CircuitBreaker("test", failure_threshold=1, timeout=0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+________________________ test_circuit_breaker_get_stats ________________________
+tests/test_infrastructure.py:90: in test_circuit_breaker_get_stats
+    breaker = CircuitBreaker("test", failure_threshold=3)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CircuitBreaker.__init__() got an unexpected keyword argument 'failure_threshold'
+________________________ test_metrics_export_prometheus ________________________
+tests/test_infrastructure.py:154: in test_metrics_export_prometheus
+    output = metrics.export_prometheus()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos_kernel/infrastructure/metrics.py:300: in export_prometheus
+    key = self._make_key(name.replace(f"{self.namespace}_", ""), metric.labels)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos_kernel/infrastructure/metrics.py:243: in _make_key
+    label_str = ",".join(f"{k}={v}" for k, v in sorted(labels.items()))
+                                                       ^^^^^^^^^^^^
+E   AttributeError: 'list' object has no attribute 'items'
+_________________________ test_health_check_exception __________________________
+tests/test_infrastructure.py:204: in test_health_check_exception
+    assert "ValueError" in result.message
+E   AssertionError: assert 'ValueError' in 'Error: Test error'
+E    +  where 'Error: Test error' = HealthCheckResult(component='test', status=<HealthStatus.UNHEALTHY: 'unhealthy'>, message='Error: Test error', duratio....025272369384765625, timestamp=datetime.datetime(2026, 10, 12, 8, 22, 8, 685815), details={'error_type': 'ValueError'}).message
+______________________________ test_task_priority ______________________________
+tests/test_infrastructure.py:291: in test_task_priority
+    size = await queue.get_queue_size()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos_kernel/infrastructure/redis_queue.py:406: in get_queue_size
+    return len(self._fallback_queue)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: object of type 'Queue' has no len()
+------------------------------ Captured log call -------------------------------
+WARNING  agos.infrastructure.redis:redis_queue.py:148 Redis not available, using in-memory fallback
+=========================== short test summary info ============================
+FAILED tests/test_infrastructure.py::test_circuit_breaker_closed_state - Type...
+FAILED tests/test_infrastructure.py::test_circuit_breaker_opens_after_failures
+FAILED tests/test_infrastructure.py::test_circuit_breaker_records_success - T...
+FAILED tests/test_infrastructure.py::test_circuit_breaker_half_open - TypeErr...
+FAILED tests/test_infrastructure.py::test_circuit_breaker_allow_request - Typ...
+FAILED tests/test_infrastructure.py::test_circuit_breaker_get_stats - TypeErr...
+FAILED tests/test_infrastructure.py::test_metrics_export_prometheus - Attribu...
+FAILED tests/test_infrastructure.py::test_health_check_exception - AssertionE...
+FAILED tests/test_infrastructure.py::test_task_priority - TypeError: object o...
+ERROR tests/test_api.py::test_api_root - ImportError: cannot import name 'utc...
+ERROR tests/test_api.py::test_api_health - ImportError: cannot import name 'u...
+ERROR tests/test_api.py::test_api_liveness - ImportError: cannot import name ...
+ERROR tests/test_api.py::test_api_readiness - ImportError: cannot import name...
+ERROR tests/test_api.py::test_api_metrics - ImportError: cannot import name '...
+ERROR tests/test_api.py::test_api_system_status - ImportError: cannot import ...
+ERROR tests/test_api.py::test_api_list_specializations - ImportError: cannot ...
+ERROR tests/test_api.py::test_api_list_agents - ImportError: cannot import na...
+ERROR tests/test_api.py::test_api_list_agents_filter - ImportError: cannot im...
+ERROR tests/test_api.py::test_api_create_task - ImportError: cannot import na...
+ERROR tests/test_api.py::test_api_create_task_invalid_specialization - Import...
+ERROR tests/test_api.py::test_api_create_task_empty_prompt - ImportError: can...
+ERROR tests/test_api.py::test_api_get_task - ImportError: cannot import name ...
+ERROR tests/test_api.py::test_api_get_task_not_found - ImportError: cannot im...
+ERROR tests/test_api.py::test_api_list_tasks - ImportError: cannot import nam...
+ERROR tests/test_api.py::test_api_chat - ImportError: cannot import name 'utc...
+ERROR tests/test_api.py::test_api_events - ImportError: cannot import name 'u...
+ERROR tests/test_api.py::test_api_cors_headers - ImportError: cannot import n...
+9 failed, 34 passed, 18 errors in 0.72s
+
+--- STDERR ---
+

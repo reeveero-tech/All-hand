@@ -1,0 +1,45 @@
+# command: ruff check server.py agent_civilization/ agos_kernel/ tests/ --exclude agent_civilization/agents/specialists --no-cache
+# cwd: (worktree at be480820)
+# returncode: 1
+# timed_out: False
+# ruff: 0.17.0
+# python: 3.14.3
+
+--- STDOUT (tail) ---
+)
+    |
+help: Remove unused import: `agos_kernel.infrastructure.metrics.MetricType`
+    |
+123 |     """Test gauge set."""
+    -     from agos_kernel.infrastructure.metrics import MetricsCollector, MetricType
+124 +     from agos_kernel.infrastructure.metrics import MetricsCollector
+125 |     
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+   --> tests/test_infrastructure.py:210:5
+    |
+208 | async def test_health_check_registry():
+209 |     """Test health check registry."""
+210 |     from agos_kernel.infrastructure.health import HealthCheck, HealthCheckRegistry, HealthStatus
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+211 |     
+212 |     async def check1():
+    |
+help: Organize imports
+    |
+209 |     """Test health check registry."""
+    -     from agos_kernel.infrastructure.health import HealthCheck, HealthCheckRegistry, HealthStatus
+210 +     from agos_kernel.infrastructure.health import (
+211 +         HealthCheck,
+212 +         HealthCheckRegistry,
+213 +         HealthStatus,
+214 +     )
+215 |     
+    |
+
+Found 525 errors.
+[*] 395 fixable with `--fix` (10 unsafe fixes available with `--fix --unsafe-fixes`).
+
+--- STDERR ---
+
