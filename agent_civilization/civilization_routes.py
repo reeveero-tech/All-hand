@@ -15,7 +15,8 @@ import time
 import uuid
 from typing import Any, Optional
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Security
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 
 from agent_civilization.registry import AGENTS, as_list, total_agents
@@ -28,10 +29,22 @@ class ExecuteRequest(BaseModel):
     data: Optional[Any] = None
 
 
-def register_civilization_routes(app, civilization, tasks_store, prune_tasks):
-    """Attach civilization routes to an existing FastAPI app."""
+def register_civilization_routes(app, civilization, tasks_store, prune_tasks, verify_api_key=None):
+    """Attach civilization routes to an existing FastAPI app.
+
+    When `verify_api_key` is provided (the server's own helper), the routes
+    enforce the API key exactly like the /api routes (R-004).
+    """
+    api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+    def _guard(api_key):
+        if verify_api_key is not None:
+            return verify_api_key(api_key)
+        return None
 
     @app.get("/civilization/registry")
+    async def registry_route(api_key: Optional[str] = Security(api_key_header)):
+        _guard(api_key)
     async def registry():
         return {
             "count": len(AGENTS),
@@ -40,12 +53,14 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks):
         }
 
     @app.post("/civilization/plan")
-    async def preview_plan(req: ExecuteRequest):
+    async def preview_plan(req: ExecuteRequest, api_key: Optional[str] = Security(api_key_header)):
+        _guard(api_key)
         plan = auto_route(req.message)
         return {"plan": plan}
 
     @app.post("/civilization/execute")
-    async def execute(req: ExecuteRequest):
+    async def execute(req: ExecuteRequest, api_key: Optional[str] = Security(api_key_header)):
+        _guard(api_key)
         if not req.message.strip():
             raise HTTPException(400, "message is required")
         plan = auto_route(req.message)
