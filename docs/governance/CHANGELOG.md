@@ -537,3 +537,14 @@ pytest 184/184؛ ruff صفر؛ بناء web/ والجذر rc=0. الأدلة: do
 
 ### الفحوص
 خط أساس مُعاد التحقق (pytest 184/184، ruff صفر، البناءان rc=0، CI أخضر). الأدلة: `docs/audit/M7/logs/11..12`.
+
+## 2026-10-13 — M6/1: R-060 — دورة تبعيات وأمان (تحديثات آمنة فقط)
+
+### ما تم
+- فحص قبل التحديث: pip-audit صفر ثغرات؛ npm audit --omit=dev (الجذر وweb/) صفر؛ npm audit الكامل صفر في الجذر، وثغرتا dev فقط في web/ (نفس ثغري R-045).
+- تحديثات آمنة مُطبقة: (1) `requirements.txt`: pydantic مقيد بـ`>=2.12,<3`؛ (2) `web/package-lock.json`: تحديثات minor (electron-to-chromium، postcss، nanoid)؛ (3) `package-lock.json` (الجذر): إعادة تنظيم dev-only لتبعية ajv (لا تغيير إنتاج)؛ (4) pydantic مُحدَّث فعلياً إلى 2.14.1 في بيئة الفحص.
+- ثغرتا dev المتبقيتان في web/ (vite/esbuild) موثقتان مع مبرر التأجيل (قرار R-045 الأصلي — الإصلاح يتطلب vite 8.x تغييراً رئيسياً).
+- لا تحديثات رئيسية (major) أُجريت — الالتزام بمعيار R-060.
+
+### الفحوص
+pytest 184/184 (rc=0)؛ ruff صفر (rc=0)؛ بناء web/ rc=0؛ بناء الجذر rc=0؛ pip-audit صفر؛ npm audit --omit=dev صفر. الأدلة: `docs/audit/M6/logs/21..22`.
