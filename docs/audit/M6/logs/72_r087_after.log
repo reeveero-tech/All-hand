@@ -1,0 +1,13 @@
+== R-087 AFTER: PR #96 commit 55a7fe8, CI run 38468523421 + governance run 38468523392 2026-10-13T21:18:38Z
+  quality [success]: lines=212 node20_warnings=0 actions=actions/checkout@v7 actions/setup-python@v7  
+  test [success]: lines=585 node20_warnings=0 actions=actions/checkout@v7 actions/setup-python@v7  230 passed, 3 skipped, 3 deselected in 18.13s 
+  network [success]: lines=345 node20_warnings=0 actions=actions/checkout@v7 actions/setup-python@v7  
+  build [success]: lines=742 node20_warnings=0 actions=actions/checkout@v7 actions/setup-node@v7 actions/setup-python@v7  
+  storage [success]: lines=600 node20_warnings=0 actions=actions/checkout@v7 actions/setup-python@v7 actions/upload-artifact@v7  
+  audit [success]: lines=398 node20_warnings=0 actions=actions/checkout@v7 actions/setup-node@v7 actions/setup-python@v7  
+  docker [success]: lines=504 node20_warnings=0 actions=actions/checkout@v7 actions/upload-artifact@v7  
+  publish: skipped
+  governance [success]: lines=292 node20_warnings=0 actions=actions/checkout@v7  
+-- artifacts of run 38468523421 (upload-artifact@v7) vs last main push run 38468221513 (@v4)
+  run 38468221513: docker-verification-logs 8189B, r042-storage-verification-log 1767B
+  run 38468523421: r042-storage-verification-log 1769B, docker-verification-logs 8209B

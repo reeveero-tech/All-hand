@@ -815,3 +815,12 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | quality، test، network، docker، build، storage، audit | ubuntu-24.04 (20261004) عبر `ubuntu-latest` | ubuntu-26.04 (20260901.588) / 7/7 نجاح |
 | test | 230 + 3 + 3 | 230 + 3 + 3 (Python 3.11.16) |
 | publish | — | غير مُجرّب (`[publish]` فقط) |
+
+## الدورة الخامسة — R-087 Actions Node 24 (2026-10-14)
+
+| فحص | قبل (logs/71) | بعد (logs/72) |
+|---|---|---|
+| إصدارات Actions | checkout@v4، setup-node@v4، setup-python@v5، upload-artifact@v4 | كلها @v7 (`node24`) |
+| تنبيه "Node.js 20 is deprecated" | 6/6 jobs المجلوبة | 0/8 |
+| jobs | 7/7 نجاح | 8/8 نجاح (مع governance) |
+| artifacts | docker 8189B، r042 1767B | docker 8209B، r042 1769B |
