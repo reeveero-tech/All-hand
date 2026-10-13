@@ -116,3 +116,7 @@
 ## تحديث R-078 — كشف المفتاح العام عند البدء (RISK-018)
 - قبل (logs/49): مفتاح عام (JWT anon في `SUPABASE_ANON_KEY` أو `SUPABASE_SERVICE_KEY`، أو `sb_publishable_`) → `/health` storage `healthy`، بلا أي تحذير.
 - بعد (logs/50، المسبار نفسه `scripts/run_r078_key_probe.py`): الحالات العامة الثلاث → `degraded` + تحذير بدء + `supabase_key.kind=public`؛ المفتاحان السريان → `healthy` بلا تحذير. **قيمة المفتاح لم تظهر في أي سجل أو رد** (فحص صريح في المسبار و3 اختبارات).
+
+## تحديث R-079 (دورة M6 الرابعة/1، 2026-10-13)
+- pip-audit صفر؛ npm audit إنتاج وكامل صفر في الجذر وweb/ (logs/55). لا تحديث ضمن النطاقات؛ لا ترقية رئيسية.
+- Python بأحدث متوافق في venv نظيف (starlette 1.8.0، pydantic 2.14.1): 216 + 3 + 3 (logs/56).
