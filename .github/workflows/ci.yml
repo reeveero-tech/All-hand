@@ -177,7 +177,7 @@ jobs:
         working-directory: web/
         run: |
           npm install --no-audit --no-fund
-          npm audit --omit=dev --audit-level=critical
+          npm audit --omit=dev --audit-level=high
           # Blocking on critical/high in PRODUCTION deps only (react/react-dom).
           # Dev-only (vite/esbuild) is non-blocking — see docs/governance/SECURITY.md R-045.
 
@@ -185,7 +185,7 @@ jobs:
         working-directory: web/
         continue-on-error: true
         run: |
-          npm audit --audit-level=critical 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log"
+          npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log"
           # Full audit (including dev deps) is informational — dev-only vulnerabilities
           # do not reach production. Documented in docs/governance/SECURITY.md R-045.
 

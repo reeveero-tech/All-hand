@@ -1,0 +1,150 @@
+=== R-065 — تصحيحات دقيقة متبقية من مراجعة R-064 ===
+DATE: 2026-10-13T02:54:45Z
+MAIN SHA: 8528dd0655b930f6c1c5079cdd8fc98fd01bb1be
+
+## Full outputs saved (not just tail-3)
+--- pytest ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/agos
+configfile: pytest.ini
+plugins: platformdirs-4.13.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 184 items
+
+tests/test_agent_production.py ........................                  [ 13%]
+tests/test_agents_per_spec.py ...                                        [ 14%]
+tests/test_api.py ..................                                     [ 24%]
+tests/test_civilization_routes.py ......                                 [ 27%]
+tests/test_civilization_scale.py .....                                   [ 30%]
+tests/test_e2e_scenarios.py .......                                      [ 34%]
+tests/test_infrastructure.py ...................                         [ 44%]
+tests/test_memory_learning_comm.py .........                             [ 49%]
+tests/test_real_dispatch_audit.py ......                                 [ 52%]
+tests/test_routing_pipeline.py .................................         [ 70%]
+tests/test_security.py ........                                          [ 75%]
+tests/test_specialist_runtime.py .........                               [ 79%]
+tests/test_specialists_package.py ...........................            [ 94%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+============================= 184 passed in 3.79s ==============================
+PYTEST_RC=0
+
+--- ruff ---
+All checks passed!
+RUFF_RC=0
+
+--- web build (full) ---
+
+> agos-civilization-web@3.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 37 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.76 kB │ gzip:  0.45 kB
+dist/assets/index-CVWjJx84.css   11.84 kB │ gzip:  2.94 kB
+dist/assets/index-DGWuZoTX.js   164.19 kB │ gzip: 52.21 kB
+✓ built in 887ms
+WEB_BUILD_RC=0
+
+--- root build (full) ---
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useBaseQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useBaseQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+✓ built in 280ms
+[nitro] ℹ Using auto generated worker name: reeveero-tech-all-hand
+ℹ Generated .output/server/wrangler.json
+ℹ Generated .wrangler/deploy/config.json
+ℹ Generated .output/public/_headers
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+ROOT_BUILD_RC=0
+
+--- pip-audit ---
+No known vulnerabilities found
+PIP_AUDIT_RC=0
+
+--- npm audit --omit=dev root (with --audit-level=high) ---
+found 0 vulnerabilities
+NPM_ROOT_RC=0
+
+--- npm audit --omit=dev web/ (with --audit-level=high) ---
+found 0 vulnerabilities
+NPM_WEB_RC=0
+
+--- R-053 scale audit (with new exit code) ---
+============================================================
+R-053: قياس حدود العدد المستهدف من الوكلاء
+============================================================
+
+[1] إنشاء العدد المستهدف (50/تخصص = 1000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS بعد الإنشاء: 27.8 MB
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 1.121s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 41.5 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 41.5 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~1.12s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+SCALE_RC=0
+
+--- Script exit code on partial failure (mock test) ---
+FAILED: 5 task(s) did not succeed
+============================================================
+R-053: قياس حدود العدد المستهدف من الوكلاء
+============================================================
+
+[1] إنشاء العدد المستهدف (50/تخصص = 5 وكيل)
+    زمن الإنشاء: 0.001s
+    ذروة RSS بعد الإنشاء: 29.2 MB
+
+[2] تنفيذ متزامن (5 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 0.000s
+    نجاح: 0/5
+    ذروة RSS بعد التنفيذ: 29.2 MB
+
+[3] هامش التوسع (100/تخصص = 5 وكيل)
+    زمن الإنشاء: 0.001s
+    ذروة RSS: 29.2 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~0.00s، نجاح 0/5
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.001s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+partial-failure rc: 1 (PASS)
+MOCK_RC=0
