@@ -238,3 +238,11 @@
 - **الكلفة المقبولة**: ترقية الصورة لاحقاً يدوية — تُراجع في دورات M6 (R-079/R-084 نمط: تنبيهات CI).
 - **العكس**: `sed -i 's/runs-on: ubuntu-26.04/runs-on: ubuntu-latest/'` على `.github/workflows/*.yml`.
 - **التاريخ**: 2026-10-13 — دفعة M6/25.
+
+## D-042: `web/` وطور بناء Docker على Node 22 (R-089) — يعكس اختيار R-076
+- **السياق**: R-076 نقل الجذر إلى Node 22 وأبقى `web/` وDocker على Node 20 عمداً (vite 8 يدعم ‎^20.19؛ أصغر نطاق). Node 20 انتهى دعمه 2026-04-30 ([nodejs/Release](https://raw.githubusercontent.com/nodejs/Release/main/schedule.json)) — لا تحديثات أمنية لصورة `node:20-slim` التي تبني واجهة الإنتاج.
+- **الخيارات**: (أ) إبقاء Node 20 — يعمل لكن على بيئة بلا دعم. (ب) Node 24 (LTS نشط) — خطوة أكبر، والجذر على 22. (ج) Node 22 (صيانة حتى 2027-04-30) — متسق مع الجذر وR-076.
+- **القرار**: (ج). `engines.node >=22.12.0` في `web/package.json` (+ القفل)، CI `node-version: '22'` و`npm ci --engine-strict` لـ`web/` في `build` و`audit`، Dockerfile `node:22-slim` و`npm ci --engine-strict` (أُزيل `|| npm install` — كان يخفي انحراف القفل). الدليل: `dist` مطابق بايتاً ببايت لبناء Node 20 (sha256، 3 ملفات)، Node 20 يُرفض (EBADENGINE)، audit صفر (logs/74).
+- **العكس**: إرجاع `node-version: '20'` و`node:20-slim` وحذف `engines` من `web/package.json` والقفل.
+- **متابعة**: Node 22 ينتهي 2027-04-30 — يُراجع في دورات M6 (نمط R-084).
+- **التاريخ**: 2026-10-14 — دفعة M6/27.

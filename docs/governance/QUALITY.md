@@ -148,3 +148,6 @@
 ## R-087 — إصدارات GitHub Actions (Node 24)
 - `actions/checkout@v7`، `actions/setup-node@v7`، `actions/setup-python@v7`، `actions/upload-artifact@v7` (كانت v4/v4/v5/v4 على Node 20، logs/71). صفر تنبيه "Node.js 20 is deprecated" في الـ8 jobs (logs/72).
 - مراجعة دورية: تنبيهات CI جزء من فحص التبعيات في كل دورة (نمط R-084).
+
+## R-089 — `web/` على Node 22 (D-042)
+- jobs `build` و`audit`: `web/` على Node 22 بـ`npm ci --engine-strict` (كان Node 20 + `npm install`). كل خطوات Node في CI الآن Node 22 (logs/74).

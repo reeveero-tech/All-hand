@@ -66,21 +66,24 @@ jobs:
           # No packaging configured for the Python server yet — see ROADMAP R-012.
           echo "Server artifacts: no packaging configured yet."
       
+      # R-089: web/ moves to Node 22 (Node 20 EOL 2026-04-30); engines.node
+      # >=22.12.0 in web/package.json, enforced by --engine-strict, clean from lockfile.
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
       
       - name: Build web frontend
         working-directory: web/
         run: |
-          npm install --no-audit --no-fund
+          node --version
+          npm ci --engine-strict --no-audit --no-fund
           npm run build
 
       # R-076: @tanstack/react-start (and 8 sibling packages) declare
-      # engines.node >=22.12.0, mirrored in the root package.json. web/ and the
-      # Docker image stay on Node 20 (vite 8 supports ^20.19); only the root app
-      # moves. --engine-strict turns any future engines mismatch into a failure.
+      # engines.node >=22.12.0, mirrored in the root package.json. Since R-089
+      # web/ and the Docker build stage are on Node 22 too (D-042).
+      # --engine-strict turns any future engines mismatch into a failure.
       - name: Set up Node for the root app (>=22.12)
         uses: actions/setup-node@v7
         with:
@@ -193,12 +196,12 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'   # R-089 (D-042)
 
       - name: Web dependency audit (production deps only)
         working-directory: web/
         run: |
-          npm install --no-audit --no-fund
+          npm ci --engine-strict --no-audit --no-fund
           npm audit --omit=dev --audit-level=high
           # Blocking on critical/high in production deps (react/react-dom).
           # Dev deps are covered by the full audit below (blocking since R-071).
