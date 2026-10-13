@@ -8,7 +8,7 @@ on:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       
@@ -31,7 +31,7 @@ jobs:
             server.py agent_civilization agos_kernel tests
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       
@@ -50,7 +50,7 @@ jobs:
         run: pytest tests/ -v --cov=agent_civilization --cov=agos_kernel --cov-report=xml
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [quality, test]
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
   docker:
     # R-040: verify the real Dockerfile builds and the container serves /health.
     # Ubuntu runners provide Docker; the sandbox used for docs work does not.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [quality, test]
     steps:
       - uses: actions/checkout@v4
@@ -171,7 +171,7 @@ jobs:
   audit:
     # R-045: dependency vulnerability audit in CI (pip-audit + npm audit).
     # Blocking on critical/high; moderate/low reported but non-blocking (dev-only deps).
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [quality, test]
     steps:
       - uses: actions/checkout@v4
@@ -238,7 +238,7 @@ jobs:
     # storage configured (tests/test_r042_live_storage.py). Blocking.
     # Hosted Supabase itself is NOT exercised here (no owner credentials) —
     # see docs/governance/DECISIONS.md D-038.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [quality, test]
     services:
       postgres:
@@ -292,7 +292,7 @@ jobs:
     # Deliberately NOT a required status check: an outage of DuckDuckGo, DNS or
     # Wikipedia must not block merges, but a failure stays visible on the PR.
     # The deterministic suite (job `test`) runs these agents on a fake transport.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [quality]
     steps:
       - uses: actions/checkout@v4
@@ -309,7 +309,7 @@ jobs:
         run: pytest tests/ -m network -v
 
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: build
     # PyPI publish gated by R-030 (policy decision pending) — disabled until decided.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish]')
