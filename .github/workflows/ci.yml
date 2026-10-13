@@ -274,7 +274,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio
+          pip install pytest pytest-asyncio httpx2  # httpx2: starlette.testclient, needed at collection
       - name: Live network tests
         run: pytest tests/ -m network -v
 
