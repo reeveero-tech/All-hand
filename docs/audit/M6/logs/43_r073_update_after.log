@@ -1,0 +1,91 @@
+== R-073 UPDATE 2026-10-13T14:58:51Z
+-- npm update eslint-plugin-prettier --package-lock-only
+npm warn EBADENGINE }
+
+up to date in 1s
+UPDATE_RC=0
+ package-lock.json | 26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
++    "node_modules/@dual-bundle/import-meta-resolve": {
++      "version": "4.2.1",
++      "resolved": "https://registry.npmjs.org/@dual-bundle/import-meta-resolve/-/import-meta-resolve-4.2.1.tgz",
++      "integrity": "sha512-id+7YRUgoUX6CgV0DtuhirQWodeeA7Lf4i2x71JS/vtA5pRb/hIGWlw+G6MeXvsM+MXrz0VAydTGElX1rAfgPg==",
++      "dev": true,
++      "license": "MIT",
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/JounQin"
++      }
++    },
+-      "version": "5.5.6",
+-      "resolved": "https://registry.npmjs.org/eslint-plugin-prettier/-/eslint-plugin-prettier-5.5.6.tgz",
+-      "integrity": "sha512-ifetmTcxWfz+4qRW3pH/ujdTq2jQIj59AxJMIN26K5avYgU8dxycUETQonWiW+wPrYXA0j3Try0l1CnwVQtDqQ==",
++      "version": "5.5.7",
++      "resolved": "https://registry.npmjs.org/eslint-plugin-prettier/-/eslint-plugin-prettier-5.5.7.tgz",
++      "integrity": "sha512-WjHyn3GrFd+ZR0rzsLiM4zJZ35PZMOE0SUIxzGmnWNG0126yNfJKJzObmmkYDwHJfGlkz3PSlzyG9ez/LJntwg==",
+-        "synckit": "^0.11.13"
++        "synckit": "^0.12.3"
+-      "version": "0.11.13",
+ROOT_CI_RC=0
+`-- eslint-plugin-prettier@5.5.7
+
+ROOT_LINT_RC=0
+ROOT_LINT_MAXW0_RC=0
+ROOT_BUILD_RC=0
+found 0 vulnerabilities
+ROOT_AUDIT_FULL_RC=0
+-- Python env versions (no lockfile; CI installs latest compatible each run)
+Name: fastapi	Version: 0.143.0
+Name: uvicorn	Version: 0.54.0
+Name: pydantic	Version: 2.12.5
+Name: aiohttp	Version: 3.14.5
+Name: PyYAML	Version: 6.0.3
+Name: python-multipart	Version: 0.0.32
+Name: starlette	Version: 1.7.0
+pydantic                 2.12.5      2.14.1   wheel
+starlette                1.7.0       1.8.0    wheel
+================= 198 passed, 3 skipped, 3 deselected in 3.63s =================
+PYTEST_RC=0
+All checks passed!
+RUFF_RC=0
+== R-073 checks of side effects 2026-10-13T15:02:01Z
+-- EBADENGINE detail
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/react-start@1.169.1',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/react-start-client@1.168.42',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/react-start-rsc@0.1.62',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/react-start-server@1.167.49',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+-- synckit consumers
+tanstack_start_ts@ /home/user/workspace/agos
+`-- eslint-plugin-prettier@5.5.7
+  `-- synckit@0.12.3
+
+{
+  "node": "^14.18.0 || >=16.0.0"
+}
+-- prettier via eslint-plugin-prettier actually runs? (rule prettier/prettier configured?)
+10:import eslintConfigPrettier from "eslint-config-prettier";
+-- Python: upgrade to latest compatible (= what CI installs) and re-test
+pplx-python-sdks-llm-api 0.0.0+local requires pydantic==2.12.5, but you have pydantic 2.14.1 which is incompatible.
+Name: pydantic	Version: 2.14.1
+Name: starlette	Version: 1.7.0
+Name: fastapi	Version: 0.143.0
+pplx-sdk                                                      Dependency not found on PyPI and could not be audited: pplx-sdk (0.0.0+local)
+================= 198 passed, 3 skipped, 3 deselected in 3.67s =================
+PYTEST_LATEST_RC=0
+-- note: sandbox pydantic restored to 2.12.5 after the latest-version test (sandbox tooling pins it; not a project constraint)

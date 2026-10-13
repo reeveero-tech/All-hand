@@ -686,3 +686,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - `tests/conftest.py`: نقل مزيّف حتمي للمضيفات الخارجية + منع أي اتصال خارجي حقيقي في الاختبارات الحتمية (loopback مستثنى).
 - `tests/test_network_isolation.py` (6) و`tests/test_network_live.py` (3، `network`)؛ `pytest.ini`: `-m "not network"`.
 - CI job `network` (غير إلزامي). بلا إنترنت: 5 فشل → 198/198. RISK-019 مغلقة.
+
+## 2026-10-13 — R-073: دورة M6 الثالثة/1 — تبعيات وأمان
+
+- pip-audit وnpm audit (إنتاج وكامل، الجذر وweb/) = صفر.
+- قفل الجذر: `eslint-plugin-prettier` 5.5.6 → 5.5.7 (patch، dev).
+- سُجلت R-074 (قياسات/RISKS) وR-075 (مراجعة الخارطة) وR-076 (Node ‎>=22.12 لبناء الجذر — مكتشف).

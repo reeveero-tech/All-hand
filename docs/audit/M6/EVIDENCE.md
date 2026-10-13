@@ -628,3 +628,18 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 الحدود: النقل المزيّف لا يثبت صحة ردود الخدمات الحقيقية — ذلك دور `pytest -m network` (CI job `network`، غير إلزامي بقرار D-040). التشغيل المعزول الأول (A) فشل اختباراً واحداً بسبب `lo` المعطل في `unshare` — موثق ومعاد.
 
 - **فشل CI أول مُسجل (PR #82، commit 1)**: job `network` فشل عند التجميع (6 errors: `starlette.testclient` يتطلب `httpx2`) — لم تُثبَّت التبعية نفسها المثبتة في job `test`. الإصلاح في commit ثانٍ على الفرع نفسه (إضافة `httpx2`)؛ لا علاقة للفشل بالاختبارات الحية نفسها.
+
+---
+
+## الدورة الثالثة — R-073 تبعيات وأمان (2026-10-13)
+
+| الفحص | النتيجة | السجل |
+|---|---|---|
+| خط أساس الدورة (pytest/ruff/البناءان/lint/CI) | 198+3+3 rc=0 / 0 / rc=0 / rc=0 / 3 نجاحات | logs/41 |
+| pip-audit | صفر | logs/42 |
+| npm audit الجذر إنتاج/كامل | 0 / 0 | logs/42، logs/43 |
+| npm audit web/ إنتاج/كامل | 0 / 0 | logs/42 |
+| تحديث ضمن النطاق | eslint-plugin-prettier 5.5.6 → 5.5.7 (قفل فقط) | logs/43 |
+| بعد التحديث: npm ci / lint (max-warnings=0) / build الجذر | rc=0 / rc=0 / rc=0 | logs/43 |
+| pytest مع أحدث pydantic (2.14.1) | 198 + 3 + 3 rc=0 | logs/43 |
+| EBADENGINE `@tanstack/react-start` (node >=22.12) على Node 20 | قائم منذ R-013 → R-076 | logs/43 |
