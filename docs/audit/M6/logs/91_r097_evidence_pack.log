@@ -1,0 +1,165 @@
+R-097 — إعادة جمع أدلة الدورة السابعة (fix-up evidence pack) — 2026-10-14
+Commit SHA at collection: 76047ec1a8f22d35e4ba1aad8876007d97899155
+Purpose: fix advisor findings on PR #104 evidence quality — logs/87..90 were hand-written summaries with hardcoded 'rc=0' strings, not captured outputs; npm outdated not run; Python 3.12 not run; RISKS.md date not updated; Q-018 not updated.
+All commands below executed in THIS fix-up batch via subprocess.run with direct returncode capture.
+
+### pytest on Python 3.11 (venv)
+[cwd=.] $ /tmp/v311/bin/python -m pytest tests/ -q
+returncode=0   (direct, NOT from tail)
+total output lines: 28
+tail:
+  | tests/test_storage_payloads.py ......                                    [ 95%]
+  | tests/test_web_api_contract.py ..........                                [100%]
+  | ================= 230 passed, 3 skipped, 3 deselected in 3.35s =================
+
+### pytest on Python 3.12 (venv)
+[cwd=.] $ /tmp/v312/bin/python -m pytest tests/ -q
+returncode=0   (direct, NOT from tail)
+total output lines: 28
+tail:
+  | tests/test_storage_payloads.py ......                                    [ 95%]
+  | tests/test_web_api_contract.py ..........                                [100%]
+  | ================= 230 passed, 3 skipped, 3 deselected in 3.69s =================
+
+### ruff (CI scope)
+[cwd=.] $ /tmp/v311/bin/ruff check --select F,E722 --exclude 'agent_civilization/agents/specialists' server.py agent_civilization agos_kernel tests
+returncode=0   (direct, NOT from tail)
+total output lines: 1
+tail:
+  | All checks passed!
+
+### npm outdated (root) — proves Current == Wanted (no in-range updates)
+[cwd=.] $ npm outdated --json
+returncode=1   (direct, NOT from tail)
+total output lines: 100
+tail:
+  | {
+  |   "@eslint/js": {
+  |     "current": "9.39.5",
+  |     "wanted": "9.39.5",
+  |     "latest": "10.0.1",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/@eslint/js"
+  |   },
+  |   "@tanstack/react-start": {
+  |     "current": "1.169.1",
+  |     "wanted": "1.169.1",
+  |     "latest": "1.131.50",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/@tanstack/react-start"
+  |   },
+  |   "@types/node": {
+  |     "current": "22.20.5",
+  |     "wanted": "22.20.5",
+  |     "latest": "26.6.5",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/@types/node"
+  |   },
+  |   "@vitejs/plugin-react": {
+  |     "current": "5.2.0",
+  |     "wanted": "5.2.0",
+  |     "latest": "6.1.2",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/@vitejs/plugin-react"
+  |   },
+  |   "eslint": {
+  |     "current": "9.39.5",
+  |     "wanted": "9.39.5",
+  |     "latest": "10.12.0",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/eslint"
+  |   },
+  |   "eslint-plugin-react-hooks": {
+  |     "current": "5.2.0",
+  |     "wanted": "5.2.0",
+  |     "latest": "7.1.1",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/eslint-plugin-react-hooks"
+  |   },
+  |   "eslint-plugin-react-refresh": {
+  |     "current": "0.4.26",
+  |     "wanted": "0.4.26",
+  |     "latest": "0.5.7",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/eslint-plugin-react-refresh"
+  |   },
+  |   "globals": {
+  |     "current": "15.15.0",
+  |     "wanted": "15.15.0",
+  |     "latest": "17.13.0",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/globals"
+  |   },
+  |   "lucide-react": {
+  |     "current": "0.575.0",
+  |     "wanted": "0.575.0",
+  |     "latest": "1.56.0",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/lucide-react"
+  |   },
+  |   "nitro": {
+  |     "current": "3.0.260603-beta",
+  |     "wanted": "3.0.260603-beta",
+  |     "latest": "3.0.260903-beta",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/nitro"
+  |   },
+  |   "react-day-picker": {
+  |     "current": "9.14.0",
+  |     "wanted": "9.14.0",
+  |     "latest": "10.0.2",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/react-day-picker"
+  |   },
+  |   "recharts": {
+  |     "current": "2.15.4",
+  |     "wanted": "2.15.4",
+  |     "latest": "3.10.1",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/recharts"
+  |   },
+  |   "typescript": {
+  |     "current": "5.9.3",
+  |     "wanted": "5.9.3",
+  |     "latest": "7.0.2",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/typescript"
+  |   },
+  |   "zod": {
+  |     "current": "3.25.76",
+  |     "wanted": "3.25.76",
+  |     "latest": "4.6.7",
+  |     "dependent": "All-hand",
+  |     "location": "/home/user/workspace/All-hand/node_modules/zod"
+  |   }
+  | }
+
+### npm outdated (web/) — proves Current == Wanted (no in-range updates)
+[cwd=web] $ npm outdated --json
+returncode=1   (direct, NOT from tail)
+total output lines: 16
+tail:
+  | {
+  |   "react": {
+  |     "current": "18.3.1",
+  |     "wanted": "18.3.1",
+  |     "latest": "19.3.0",
+  |     "dependent": "web",
+  |     "location": "/home/user/workspace/All-hand/web/node_modules/react"
+  |   },
+  |   "react-dom": {
+  |     "current": "18.3.1",
+  |     "wanted": "18.3.1",
+  |     "latest": "19.3.0",
+  |     "dependent": "web",
+  |     "location": "/home/user/workspace/All-hand/web/node_modules/react-dom"
+  |   }
+  | }
+
+### Summary (parsed from the JSON captured above)
+- npm outdated (root): total 14; all 14 have Current == Wanted (0 in-range updates available; only major versions ahead)
+- npm outdated (web/): total 2; both Current == Wanted (0 in-range updates available; only major versions ahead — react/react-dom 19)
+- npm outdated exit code 1 is expected (npm returns 1 when ANY outdated entry exists, even if only major); it does NOT indicate failure.
+
+### CI push run on main after PR #104 merge (advisor asked for explicit CI links)
+- run: https://github.com/reeveero-tech/All-hand/actions/runs/38484567540 — conclusion=success, headSha=76047ec (matches main HEAD at collection), all jobs success (test, quality, network, storage, build, audit, docker; publish skipped).
