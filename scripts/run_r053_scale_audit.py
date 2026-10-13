@@ -62,7 +62,7 @@ async def run_all_tasks(civ):
     return await asyncio.gather(*tasks)
 
 
-def main():
+def main() -> int:
     print("=" * 60)
     print("R-053: قياس حدود العدد المستهدف من الوكلاء")
     print("=" * 60)
@@ -95,7 +95,12 @@ def main():
     print(f"- تنفيذ 1000 مهمة متزامنة: ~{exec_elapsed:.2f}s، نجاح {ok_count}/{total}")
     print(f"- التوسع إلى 2000 وكيل: يعمل (زمن {elapsed2:.3f}s) — الحد الأقصى مفتوح لقياس لاحق")
     print("=" * 60)
+    # R-065: أرجع رمز خروج غير صفري إذا لم تنجح كل المهام — القياس يجب أن يفشل عند الفشل
+    if ok_count < total:
+        print(f"FAILED: {total - ok_count} task(s) did not succeed", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

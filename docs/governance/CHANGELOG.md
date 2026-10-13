@@ -590,3 +590,17 @@ scale audit 1000/1000 (rc=0)؛ scenarios 3/3 (rc=0)؛ pytest 184/184 (rc=0)؛ ru
 
 ### الفحوص
 كل فحوص الأساس أعيدت برموز صحيحة (pytest 184/184 rc=0، ruff صفر rc=0، البناءان rc=0، pip-audit rc=0، npm audit --omit=dev rc=0، npm audit web/ full rc=1 مع ثغرتين موثقتين). الدليل logs/24.
+
+## 2026-10-13 — M6/5: R-065 — بقايا تصحيح الدقة من مراجعة R-064
+
+### ما تم
+1. `SECURITY.md`: صُحح `--audit-level=critical` → `high` (مطابقة معيار R-060 وتعليق CI)؛ صُحح اختزال خطر vite إلى esbuild (تحذيرات مستقلة أيضاً).
+2. `ci.yml`: صُحح الأمر `npm audit --omit=dev --audit-level=critical` → `--audit-level=high` — كان يخالف المعيار المكتوب (لا قرار D مستقل عن العتبة).
+3. `PROJECT_CHARTER.md`: نُقلت `specialists/` من "خارج النطاق" إلى داخل النطاق كمسار اختياري (مطابقة D-037) — أُزيل التضارب.
+4. `RISKS.md`: أُضيفت حالة RISK-004/005/006 (مغلقة — R-004/M1/3).
+5. حُذف ادعاء غير مدعوم عن سبب فجوات الترقيم (\"استُخدمت في M0 ثم حُذفت\") — لم يُتحقق من التاريخ.
+6. `scripts/run_r053_scale_audit.py`: أُصلح رمز الخروج — يعيد 1 عند نجاح < 100% (مع اختبار mock يثبت السلوك).
+7. `OPEN_QUESTIONS.md`: أُضيفت Q-018 (محفّز دورة M6 — افتراض مؤقت قابل للعكس: طلب المالك أو 2026-11-13).
+
+### الفحوص
+pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0؛ pip-audit rc=0؛ npm audit --omit=dev --audit-level=high rc=0 (الجذر وweb/)؛ scale audit 1000/1000 rc=0؛ اختبار الفشل الجزئي rc=1 (PASS). الدليل logs/25 (مخرجات كاملة).
