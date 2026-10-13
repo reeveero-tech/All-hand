@@ -20,7 +20,7 @@
 | 7 | `/api/agents` | GET | لا | `?specialization=` اختياري |
 | 8 | `/api/specializations` | GET | لا | |
 | 9 | `/api/tasks` | POST | `verify_api_key` (401/403 إن فُعّل `AGOS_API_KEY`) | 202 Accepted |
-| 10 | `/api/tasks` | GET | لا | `?limit=`, يعود للذاكرة إذا فشل Supabase |
+| 10 | `/api/tasks` | GET | لا | `?limit=`, يعود للذاكرة إذا فشل Supabase؛ مع التخزين `source=database` و`result`/`event_data` كائنات JSON (R-042) |
 | 11 | `/api/tasks/{task_id}` | GET | لا | 404 إن لم توجد |
 | 12 | `/api/events` | GET | لا | |
 | 13 | `/api/events/stream` | GET | لا | SSE |
@@ -49,3 +49,7 @@
 
 - لا يوجد OpenAPI مخصص خارج المولد الافتراضي من FastAPI.
 - المصادقة على المسارات الحساسة تُفرض عبر `verify_api_key` (R-004)؛ الواجهة `web/` لا ترسل `X-API-Key` بعد (قيد موثق لـ R-043).
+
+## دورة حياة الخادم (R-042، M7/6)
+- `FastAPI(lifespan=_lifespan)`: عند الإيقاف تُغلق جلسة HTTP لطبقة التخزين (`get_storage().close()`) — كانت تتسرب ("Unclosed client session"). لا تغيير في المسارات أو العقود.
+- التحقق من المسارات مع تخزين حي: `tests/test_r042_live_storage.py` (POST/GET `/api/tasks`، `/api/events`، `/api/chat`، `/api/system/status`).

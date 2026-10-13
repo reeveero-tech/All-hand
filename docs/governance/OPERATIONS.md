@@ -101,4 +101,12 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 
 ### حدود المسؤولية (Owner's Line)
 - حماية الفرع `main` (R-024) — مطلوب إعداد المالك (Q-015).
-- Supabase live (R-042) — مطلوب اعتماد المالك (Q-013).
+- Supabase المستضافة (R-042b) — مطلوب مشروع ومفاتيح المالك. التخزين نفسه مُتحقق على محرك Supabase (R-042، D-038).
+
+## تحقق التخزين الحي (R-042)
+
+- **CI**: job `storage` (مانع) — حاوية `postgres:17` + PostgREST v12.2.3 (مثبت بـsha256) + `scripts/r042/run_local_stack.sh`؛ السجل يُرفع artifact `r042-storage-verification-log`.
+- **محلياً**: PostgreSQL + ملف PostgREST، ثم:
+  `ADMIN_URI=postgresql://postgres@HOST/agos AUTH_URI=postgresql://authenticator:authenticator@HOST/agos POSTGREST_BIN=/path/postgrest bash scripts/r042/run_local_stack.sh`
+- **ضد Supabase الحقيقية** (R-042b): طبّق `docs/sql/001_init.sql` في محرر SQL للمشروع (لا تطبّق `scripts/r042/*.sql` هناك — الأدوار موجودة)، ثم `SUPABASE_URL=... SUPABASE_ANON_KEY=... python scripts/run_r042_storage_verify.py` (0 = 22/22).
+- **عَرَض فشل الكتابة**: سطر تحذير `storage` بصيغة `<op> rejected: HTTP <code> <body>` (مثلاً 401 مفتاح خاطئ، 404 جدول غير موجود = المخطط لم يُطبق، 42501 = صلاحيات/RLS).

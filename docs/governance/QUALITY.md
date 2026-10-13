@@ -55,7 +55,7 @@
 
 1. لا اختبارات للمصادقة وCORS وrate limiting (المصادقة مغطاة جزئياً في test_security.py بعد R-004).
 2. لا اختبارات واجهة `web/`.
-3. لا تحقق حي من Supabase (R-042 blocked).
+3. ~~لا تحقق حي من Supabase~~ — التخزين مُتحقق حياً على PostgreSQL + PostgREST في CI job `storage` (R-042، M7/6)؛ Supabase المستضافة نفسها غير مختبرة (R-042b).
 4. ~~فحص Docker داخل CI جديد لم يثبت نجاحه بعد~~ — تحقق وناجح (R-040 ✓ M4/1 — تشغيلان ناجحان على رأسي `f02ed61` و`13fc37d`).
 
 ## بوابة الحوكمة (R-020)
@@ -94,3 +94,8 @@
 - **تصحيح أمر CI `audit`**: `npm audit --omit=dev --audit-level=critical` → `--audit-level=high` (والمسار الكامل `--audit-level=high` أيضاً) — الأمر كان يخالف معيار R-060 المكتوب في ROADMAP وتعليق job نفسه؛ لا قرار D مستقل عن العتبة، فالتصحيح أعاد الأمر للمطابقة مع المعيار (لا العكس — خفض المعيار ليوافق الأمر ممنوع).
 - **سكربت القياس `scripts/run_r053_scale_audit.py`**: صار يضبط رمز خروج غير صفري (1) عند نجاح أقل من 100% — القياس يفشل عند الفشل. اختبار mock يثبت السلوك (logs/25). الفحص الحالي يُخرج 1000/1000 برمز 0.
 - القياسات الحالية: pytest **184/184**، ruff صفر، البناءان rc=0، pip-audit صفر، npm audit --omit=dev --audit-level=high صفر (الجذر وweb/)، scale audit 1000/1000 (rc=0). الدليل: logs/25.
+
+## تحديث R-042 (M7/6)
+- **CI job `storage` جديد** (`.github/workflows/ci.yml` — needs quality+test، مانع): خدمة `postgres:17`، PostgREST v12.2.3 بتحقق sha256، ثم `scripts/r042/run_local_stack.sh`: تطبيق المخطط، ضابط سلبي (JWT غير صالح → 401)، `scripts/run_r042_storage_verify.py` (22 فحصاً؛ رمز خروج 1 عند أي فشل)، و`tests/test_r042_live_storage.py` (3 اختبارات خادم مع التخزين).
+- `pytest tests/` الافتراضي: 189 ناجحاً + 3 متخطاة (الاختبارات الحية تتطلب `R042_LIVE=1`) = 184 سابقة + 5 في `tests/test_storage_payloads.py` (مميِّزة: 5/5 تفشل على الكود السابق — logs/14).
+- محلياً في هذه الدفعة فشلت 3 اختبارات للباحث `researcher` بسبب مهلة SSL إلى DuckDuckGo (غير قابل للوصول من بيئة الوكيل — `curl` → 000)؛ تكرر الفشل نفسه على الشجرة قبل التغيير (logs/16). الحَكَم: job `test` في CI.
