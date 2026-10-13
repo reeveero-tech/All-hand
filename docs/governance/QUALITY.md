@@ -151,3 +151,6 @@
 
 ## R-089 — `web/` على Node 22 (D-042)
 - jobs `build` و`audit`: `web/` على Node 22 بـ`npm ci --engine-strict` (كان Node 20 + `npm install`). كل خطوات Node في CI الآن Node 22 (logs/74).
+
+## R-090 — Python 3.12 في job `test` (D-043)
+- `test` يشغّل الحزمة مرتين: 3.11 (مع التغطية) ثم 3.12 (نسخة الإنتاج). اسم الفحص ثابت. باقي jobs Python على 3.11.
