@@ -331,3 +331,40 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 
 ### السجل
 - `logs/23_r024_protection.json` — استجابة GET الحماية الفعلية (200).
+
+---
+
+## R-060 (دورة M6/1) — تحديث التبعيات وفحص أمني دوري (2026-10-13)
+
+### فحص قبل التحديث
+- pip-audit -r requirements.txt → صفر ثغرات معروفة (rc=0).
+- npm audit --omit=dev (الجذر) → صفر ثغرات (rc=0).
+- npm audit --omit=dev (web/) → صفر ثغرات (rc=0).
+- npm audit الكامل (الجذر) → صفر ثغرات.
+- npm audit الكامل (web/) → ثغرتان dev فقط (esbuild moderate + vite high عبر esbuild) — نفس ثغري R-045.
+
+### التحديثات الآمنة المطبقة
+1. `requirements.txt`: pydantic مقيد بـ`>=2.12,<3` (كان بلا قيد) — يضمن إصداراً ثابتاً عبر CI وDocker وRender.
+2. `web/package-lock.json`: تحديثات minor آمنة (electron-to-chromium 1.5.452→1.5.453، postcss 8.5.29→8.5.30، nanoid 3.3.19→3.3.20).
+3. `package-lock.json` (الجذر): إعادة تنظيم dev-only لتبعية ajv (لا تغيير إنتاج — dev/optional flag فقط).
+4. pydantic مُحدَّث فعلياً إلى 2.14.1 في بيئة الفحص (اختبار التوافق).
+
+### ثغرة لم تُصلح (مُوثقة)
+ثغرتا dev في web/ (vite/esbuild) — الإصلاح يتطلب vite 8.x (تغيير رئيسي) — مؤجل بقرار R-045 الأصلي (لا يغير R-060 شيئاً).
+
+### الفحوص بعد التحديث
+| الفحص | النتيجة | السجل |
+|---|---|---|
+| pytest tests/ | 184 passed، rc=0 | logs/22 |
+| ruff F,E722 (live paths) | صفر، rc=0 | logs/22 |
+| بناء web/ | rc=0 | logs/22 |
+| بناء الجذر | rc=0 | logs/22 |
+| pip-audit -r requirements.txt | صفر، rc=0 | logs/22 |
+| npm audit --omit=dev (root + web/) | صفر، rc=0 | logs/22 |
+| npm audit full (root) | صفر، rc=0 | logs/22 |
+| npm audit full (web/) | ثغرتا dev فقط (موثقتان) | logs/22 |
+
+### حدود (صدقاً)
+- الفحص على CI (Python 3.11) ينتظر الدمج — فحصنا المحلي على Python 3.14.3.
+- pydantic 2.14.1 اختُبر على Python 3.14.3 فقط محلياً؛ توافقه مع 3.11 يتحقق في CI.
+- Docker غير متوفر محلياً — البناء يتحقق في CI job `docker`.

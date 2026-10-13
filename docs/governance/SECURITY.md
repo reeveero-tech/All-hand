@@ -65,7 +65,15 @@
 5. فحص أسرار شامل (gitleaks/trufflehog) في CI.
 6. تحديث `SECURITY.md` الجذري وإزالة التعارض.
 
-## فحوص التبعيات (R-045 — 2026-10-12)
+## فحوص التبعيات (R-060 — دورة M6/1 — 2026-10-13)
+
+- **CI job `audit`** (.github/workflows/ci.yml): يُشغّل `pip-audit -r requirements.txt` و`npm audit --omit=dev --audit-level=critical` في كل PR. الحاجب (blocking) على: صفر ثغرات حرجة/عالية في تبعيات الإنتاج.
+- **نتيجة الدورة (R-060)**: pip-audit صفر ثغرات معروفة ✓؛ npm audit --omit=dev (الجذر وweb/) صفر ✓؛ npm audit الكامل صفر في الجذر وثغرتا dev فقط في web/ (نفس ثغري R-045).
+- **تحديثات آمنة مُطبقة**: pydantic مقيد بـ`>=2.12,<3` في `requirements.txt`؛ تحديثات minor في `web/package-lock.json` (electron-to-chromium، postcss، nanoid)؛ إعادة تنظيم dev-only في `package-lock.json` (الجذر).
+- **ثغرة لم تُصلح (مُوثقة)**: ثغرتا dev في web/ (esbuild moderate + vite high عبر esbuild) — الإصلاح يتطلب vite 8.x (تغيير رئيسي) — مؤجل بقرار R-045 الأصلي؛ لا يغير R-060 شيئاً.
+- الأدلة: `docs/audit/M6/logs/21..22`.
+
+## فحوص التبعيات (R-045 — 2026-10-12 — تاريخي)
 
 - **CI job `audit`** (.github/workflows/ci.yml): يُشغّل `pip-audit -r requirements.txt` و`npm audit --omit=dev --audit-level=critical` في كل PR. الحاجب (blocking) على: صفر ثغرات حرجة/عالية في تبعيات الإنتاج.
 - **المسار الموثق وقت إضافة R-045**: `pip-audit -r requirements.txt` → صفر ثغرات معروفة (راجع logs/19). `npm audit --omit=dev` في web/ → صفر ثغرات (react/react-dom نظيفة — logs/20). المسار الكامل `npm audit` (يشمل vite/esbuild للتطوير) يُظهر ثغرتين (moderate/high) في تبعيات dev فقط — غير مانعة للإنتاج:
