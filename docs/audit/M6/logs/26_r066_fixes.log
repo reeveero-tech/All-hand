@@ -1,0 +1,37 @@
+=== R-066 — بقايا تصحيح الدقة النهائية ===
+DATE: 2026-10-13T03:03:26Z
+MAIN SHA: 0e1b6d815a57b3cd56913b1e2af32883c2db33b1
+
+## Reproduction of 850/1000 (pre-fix script, from git history)
+SHA tested: 3db7e72473044a33bdd90035f8b097cc9062852c (R-053 original)
+NOTE: الأولى فشلت بPYTHONPATH — أُعيدت بنجاح أدناه
+---
+PYTHONPATH=. python3 /tmp/r053_orig.py
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 1.097s
+    نجاح: 850/1000
+REPRO_RC=0 (إعادة إنتاج ناجحة — 850/1000)
+
+--- Current script (R-065 exit-code fix) ---
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 1.317s
+    نجاح: 1000/1000
+SCALE_RC=0
+
+--- Current identifiers extraction ---
+count: 48
+main: [0, 1, 2, 3, 4, 10, 11, 12, 13, 20, 21, 22, 23, 24, 30, 31, 32, 33, 40, 41, 42, 43, 44, 45, 50, 51, 52, 53, 54, 55, 56, 60, 61, 62, 63, 64, 65, 66]
+sub: ['003a', '003b', '003c', '003d', '031b', '032c', '032b', '032a', '055a', '031c']
+
+--- Full builds (direct, no pipe) ---
+WEB_BUILD_RC=0
+ROOT_BUILD_RC=0
+
+--- pytest (direct) ---
+PYTEST_RC=0
+
+============================= 184 passed in 3.70s ==============================
+
+--- ruff (direct) ---
+All checks passed!
+RUFF_RC=0
