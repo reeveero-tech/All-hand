@@ -1,0 +1,30 @@
+== R-075 roadmap audit AFTER 2026-10-13T15:49:59Z base=c64ba86+changes
+item headings: 61
+duplicate ids: none
+status counts: {'done': 61}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 693
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (a2ba8de..HEAD): ['R-073', 'R-074', 'R-076', 'R-077', 'R-078']
+  not in ROADMAP: none
+  R-073: roadmap=yes changelog=yes
+  R-074: roadmap=yes changelog=yes
+  R-075: roadmap=yes changelog=yes
+  R-076: roadmap=yes changelog=yes
+  R-077: roadmap=yes changelog=yes
+  R-078: roadmap=yes changelog=yes
+AUDIT_RC=0
+-- required status checks on main (read-only API):
+["quality","test","build","docker","governance","audit"]
+-- ci.yml jobs:
+['quality', 'test', 'build', 'docker', 'audit', 'storage', 'network', 'publish']
+-- final checks
+================= 216 passed, 3 skipped, 3 deselected in 3.58s =================
+All checks passed!
+RUFF_RC=0

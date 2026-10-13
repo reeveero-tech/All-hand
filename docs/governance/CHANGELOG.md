@@ -715,3 +715,10 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - `supabase_store.py`: تصنيف المفتاح (`service`/`public`/`unknown`/`none`) دون كشفه؛ تحذير بدء للمفتاح العام.
 - `/health`: storage `degraded` مع المفتاح العام؛ `/api/system/status`: حقل `supabase_key`.
 - 18 اختباراً جديداً؛ pytest 216 + 3 + 3. OPERATIONS: صُحح "`/health` يعيد 200 دائماً". RISK-018 مغلقة.
+
+## 2026-10-13 — R-075: مراجعة الخارطة — إغلاق دورة M6 الثالثة
+
+- تدقيق آلي (`scripts/run_r075_roadmap_audit.py`): 61 بنداً، صفر بلا حالة، صفر تكرار، صفر بند خارج الخارطة.
+- ترتيب التنفيذ: ✓ لـ12 بنداً منجزاً كانت بلا علامة.
+- وثائق متجمدة صُححت: OPERATIONS/PROJECT_STATE (وظائف CI)، OPEN_QUESTIONS (Q-018/Q-020)، QUALITY (قسم الحالة الحالية).
+- الدورة الثالثة مكتملة: R-073، R-076، R-077، R-074، R-078، R-075.
