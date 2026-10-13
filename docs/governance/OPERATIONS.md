@@ -4,6 +4,17 @@
 
 ## البناء والتشغيل المحلي
 
+### تشغيل الاختبارات محلياً (R-091 — نفس أوامر CI job `test`)
+```bash
+python3.11 -m venv .venv && . .venv/bin/activate        # CI: 3.11 ثم 3.12 (D-043)
+pip install -r requirements.txt
+pip install pytest pytest-asyncio pytest-cov httpx2       # httpx2 لا httpx — starlette.testclient يستورده
+pytest tests/ -q                                           # 230 + 3 متخطاة + 3 مستبعدة (network)
+pytest -m network -q                                       # يحتاج إنترنت (CI job network)
+```
+- تبعيات الاختبار ليست في `requirements.txt` (تبعيات التشغيل فقط). تثبيت `httpx` بدل `httpx2` يعطي `StarletteDeprecationWarning` (logs/82).
+- قبل الدفع: جرّب أيضاً بلا `web/dist` (job `test` لا يبني الواجهة) وعلى 3.11 (درسا R-083 في QUALITY).
+
 ### الواجهة (`web/`)
 ```bash
 cd web && npm ci --engine-strict && npm run build   # Node >=22.12.0 (R-089)
