@@ -1,0 +1,41 @@
+== R-086 roadmap audit BEFORE 2026-10-13T22:01:12Z main=fb764f5
+item headings: 73
+duplicate ids: none
+  not done: R-086 -> ready
+status counts: {'done': 72, 'ready': 1}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 873
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (8fc58a6..HEAD): ['R-084', 'R-085', 'R-087', 'R-088', 'R-089', 'R-090']
+  not in ROADMAP: none
+  R-084: roadmap=yes changelog=yes
+  R-085: roadmap=yes changelog=yes
+  R-086: roadmap=yes changelog=no
+  R-087: roadmap=yes changelog=yes
+  R-088: roadmap=yes changelog=yes
+  R-089: roadmap=yes changelog=yes
+  R-090: roadmap=yes changelog=yes
+AUDIT_RC=0
+-- R-090 CI evidence (PR #99 run 38473803163, job test 115559338813):
+   Python 3.11.16
+   230 passed, 3 skipped, 3 deselected in 15.98s 
+   Python 3.12.14
+   230 passed, 3 skipped, 3 deselected in 4.76s 
+   note: setup-python '3.12' resolved 3.12.14 (runner cache); render.yaml pins 3.12.15 (Render needs a full patch) — same minor, one patch apart.
+-- stale scan
+docs/governance/ROADMAP.md:457:  - تدقيق حالة كل البنود: 43 done، 1 blocked (R-042 — بيانات اعتماد Supabase من المالك)، 1 done (R
+docs/governance/ROADMAP.md:633:- النتيجة: المسبار قبل (logs/49): 5/5 حالات `healthy` بلا تحذير — بما فيها 3 مفاتيح عامة. 
+docs/governance/ROADMAP.md:637:> R-079/R-080/R-081 تكرار R-073/R-074/R-075 بمعرفات جديدة. خط الأساس (logs/54): pytest 216 + 3 + 3 rc=0، ruff ص�
+docs/governance/ROADMAP.md:646:  - **Python**: بيئة venv نظيفة بأحدث متوافق (= ما يثبته CI): fastapi 0.143.0، pydantic 2.14.1، starlette 1.8.
+docs/governance/ROADMAP.md:660:- ما تم: السكربت صار يقبل نطاق commits ومعرفات الدورة كوسائط (الافتراضي يعيد إنتا
+docs/governance/ROADMAP.md:673:- النتيجة: المسبار قبل (logs/58): انقطاع → 401 → تعافٍ، `/health` storage `healthy` في الثلاث، ص
+-- PROJECT_STATE CI job list line:
+25:5. **CI** — كل فحوص أخضر على `main`؛ بوابة `governance` (R-020) تعمل آلياً. الوظائف الحالية (R-075): quality (ruff F/E722) + test (pytest الافتراضي، بلا إنترنت — D-040) + build (web/ على Node 22 (R-089)؛ الجذر على Node 22: `npm ci --engine-strict` + eslint `--max-warnings=0` + build — R-070/R-076) + docker (R-040) + 
+-- OPERATIONS CI job line:
+41:- الوظائف (تحقق R-075 من `ci.yml`): quality (ruff F/E722) + test (pytest الافتراضي، بلا إنترنت — D-040) + build (web/ على Node 22 (R-089)؛ الجذر على Node 22: `npm ci --engine-strict` + eslint `--max-warnings=0` + build — R-070/R-076) + docker (R-040) + audit (pip-audit + npm audit لـweb/ والجذر، إنتاج وكامل، مانع — R-045/R-071/R-077) + storage (PostgreSQL + PostgREST حي — R-042) + network (`pytest -m network` على

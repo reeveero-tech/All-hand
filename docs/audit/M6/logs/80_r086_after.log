@@ -1,0 +1,27 @@
+== R-086 roadmap audit AFTER 2026-10-13T22:01:52Z base=fb764f5+changes
+item headings: 73
+duplicate ids: none
+status counts: {'done': 73}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+order section length: 925
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (8fc58a6..HEAD): ['R-084', 'R-085', 'R-087', 'R-088', 'R-089', 'R-090']
+  not in ROADMAP: none
+  R-084: roadmap=yes changelog=yes
+  R-085: roadmap=yes changelog=yes
+  R-086: roadmap=yes changelog=yes
+  R-087: roadmap=yes changelog=yes
+  R-088: roadmap=yes changelog=yes
+  R-089: roadmap=yes changelog=yes
+  R-090: roadmap=yes changelog=yes
+AUDIT_RC=0
+-- stale scan (QUALITY current section + job lists):
+  no R-075 job-list refs left
+-- pytest 3.11 / 3.12 / ruff
+=========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.37s ============
+=========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.71s ============
+All checks passed!
