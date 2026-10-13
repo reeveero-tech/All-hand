@@ -139,3 +139,4 @@
 
 ## درس R-083 — نسخة Python في التحقق المحلي
 - CI يشغّل Python 3.11؛ صياغة 3.12+ (مثل `\` داخل تعبير f-string) تمر محلياً على نسخة أحدث وتفشل في CI. التحقق المحلي قبل الدفع: `python3.11 -m compileall -q server.py agent_civilization agos_kernel tests scripts` + pytest على 3.11 (logs/63b).
+- كذلك job `test` لا يبني `web/` — مسار SPA (`/{full_path:path}`) غير مسجّل فيه؛ الاختبارات التي تعتمد عليه يجب أن تكيّف توقعها (R-083، logs/63c).

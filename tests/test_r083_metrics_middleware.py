@@ -42,12 +42,16 @@ def test_server_counts_requests_by_route_template():
 
 
 def test_spa_catch_all_does_not_explode_cardinality():
+    """Unknown paths collapse into ONE label: `/{full_path}` when web/dist is built
+    (SPA catch-all route registered), `<unmatched>` otherwise (CI `test` job)."""
+    has_spa = any(getattr(r, "path", "") == "/{full_path:path}" for r in server.app.routes)
+    expected = "/{full_path}" if has_spa else "<unmatched>"
     with TestClient(server.app) as c:
         for i in range(30):
             c.get(f"/random/page/{i}")
         text = c.get("/metrics").text
     assert not any("/random/page" in ln for ln in text.splitlines())
-    assert 'endpoint="/{full_path}"' in text
+    assert f'endpoint="{expected}"' in text
 
 
 def test_server_metrics_exposition_is_valid():
