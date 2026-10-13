@@ -1,0 +1,45 @@
+== R-074 (M6 cycle 3) measurements 2026-10-13T15:20:38Z main=c27a801
+== R-051 real-dispatch audit (online — researcher/api_integrator/network_client hit the real internet)
+  ],
+  "summary": {
+    "total": 20,
+    "real": 20,
+    "simulated": 0,
+    "failed": 0
+  }
+}
+R051_RC=0
+== R-053 scale audit
+    ذروة RSS بعد الإنشاء: 27.9 MB
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 1.347s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 41.6 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 41.6 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~1.35s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+R053_RC=0
+== R-055 scenarios
+الزمن الكلي: 0.013s
+
+==================================================
+كل المراحل ناجحة: True
+كل النتائج النهائية موجودة: True
+✓ السيناريوهات الثلاثة ناجحة
+R055_RC=0
+== R-042 local live storage (PostgreSQL 18 + PostgREST 12.2.3)
+R042_RC=0
+invalid JWT -> HTTP 401
+anon insert -> HTTP 401 {"code":"42501","details":null,"hint":null,"message":"new row violates row-level security policy for table \"tasks\""}
+insert_task rejected: HTTP 401 {"code":"PGRST301","details":null,"hint":null,"message":"JWSError (JSONDecodeError \"Not valid base64url\")"}
+R-042 storage verification: 22/22 checks passed
+============================== 3 passed in 0.58s ===============================
