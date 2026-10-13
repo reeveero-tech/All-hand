@@ -1,0 +1,54 @@
+=== R-064 — audit fixes: proper exit codes + verifications ===
+DATE: 2026-10-13T02:46:35Z
+MAIN SHA: c90f671376b29ee67339c6e5a0d4e3acf5d176a2
+
+## pytest tests/ (with set -o pipefail where piping)
+tests/test_web_api_contract.py ..........                                [100%]
+
+============================= 184 passed in 3.85s ==============================
+PYTEST_RC=0
+
+## ruff F,E722 (live paths)
+All checks passed!
+RUFF_RC=0
+
+## web build
+WEB_BUILD_RC=0
+dist/assets/index-CVWjJx84.css   11.84 kB │ gzip:  2.94 kB
+dist/assets/index-DGWuZoTX.js   164.19 kB │ gzip: 52.21 kB
+✓ built in 874ms
+
+## root build
+ROOT_BUILD_RC=0
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+
+## pip-audit -r requirements.txt
+No known vulnerabilities found
+PIP_AUDIT_RC=0
+
+## npm audit --omit=dev (root — direct, no pipe)
+NPM_ROOT_RC=0
+found 0 vulnerabilities
+
+## npm audit --omit=dev (web/ — direct, no pipe)
+NPM_WEB_RC=0
+found 0 vulnerabilities
+
+## npm audit full (root — direct, no pipe)
+NPM_ROOT_FULL_RC=0
+found 0 vulnerabilities
+
+## npm audit full (web/ — direct, no pipe)
+NPM_WEB_FULL_RC=1
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+
+## Script failure behavior check (run_r053_scale_audit.py)
+- The script prints the success count but does NOT set a non-zero exit code if
+  success < total. This is a documented limitation, not fixed here (would need
+  a separate batch with a decision on what threshold counts as failure).
+- SCALE_RC=0 is therefore the script's exit code, NOT a success guarantee.
