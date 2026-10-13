@@ -1,0 +1,22 @@
+item headings: 53
+duplicate ids: none
+  not done: R-075 -> ready
+status counts: {'done': 52, 'ready': 1}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 609
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (a2ba8de..HEAD): ['R-073', 'R-074', 'R-076', 'R-077', 'R-078']
+  not in ROADMAP: none
+  R-073: roadmap=yes changelog=yes
+  R-074: roadmap=yes changelog=yes
+  R-075: roadmap=yes changelog=yes
+  R-076: roadmap=yes changelog=yes
+  R-077: roadmap=yes changelog=yes
+  R-078: roadmap=yes changelog=yes
+-- note: this first run used '^### ' only (53 items); the script was corrected to '^#{3,4} ' (61 = 55 at R-069 + 6). See logs/53.

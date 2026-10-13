@@ -38,7 +38,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 - `VITE_SUPABASE_*` بدائل خلفية يقرأها `supabase_store.py`؛ الواجهة `web/` لا تقرأها.
 
 ### CI (`ci.yml`)
-- الوظائف: quality (ruff F/E722 على المسارات الحية) + test (pytest tests/) + build (web/) + docker (R-040: بناء الصورة وتشغيلها والتحقق من `/health`) + publish (معطل إلا بـ`[publish]` — D-011).
+- الوظائف (تحقق R-075 من `ci.yml`): quality (ruff F/E722) + test (pytest الافتراضي، بلا إنترنت — D-040) + build (web/ على Node 20؛ الجذر على Node 22: `npm ci --engine-strict` + eslint `--max-warnings=0` + build — R-070/R-076) + docker (R-040) + audit (pip-audit + npm audit لـweb/ والجذر، إنتاج وكامل، مانع — R-045/R-071/R-077) + storage (PostgreSQL + PostgREST حي — R-042) + network (`pytest -m network` على الإنترنت الحقيقي، غير إلزامي — D-040) + publish (معطل إلا بـ`[publish]` — D-011)؛ وسير عمل مستقل `governance-gate.yml` (R-020). الفحوص الإلزامية لحماية `main` (قراءة API): quality، test، build، docker، governance، audit — `storage` خارجها (Q-020) و`network` خارجها عمداً (D-040).
 - `publish` يرفع إلى PyPI عند push لـ main مشروطاً بنجاح الوظائف السابقة ووسم `[publish]` في رسالة الدمج (D-011) — راجع RISK-009.
 
 ## متغيرات البيئة (المرصودة في الكود)

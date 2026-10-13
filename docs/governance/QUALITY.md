@@ -128,3 +128,11 @@
 
 ## تحديث R-077
 - CI job `audit`: خطوتان جديدتان مانعتان لتبعيات npm في الجذر (Node 22، `set -o pipefail`). على main: صفر؛ ضابط سلبي rc=1 (logs/46).
+
+## الحالة الحالية (مراجعة R-075، 2026-10-13 — تغلق الدورة الثالثة)
+> الأقسام أعلاه سجل زمني؛ هذا القسم هو المرجع الحالي.
+- `pytest tests/`: **216 + 3 متخطاة + 3 مستبعدة** (`network`)، متصلاً ومعزولاً عن الإنترنت (R-072/R-078)؛ `pytest -m network`: 3/3 (CI job `network`).
+- ruff `--select F,E722` على `server.py agent_civilization agos_kernel tests scripts`: صفر.
+- الجذر: `npm ci --engine-strict` (Node 22) + eslint `--max-warnings=0` + build: rc=0. web/: build rc=0 (vite 8).
+- audit: pip-audit صفر؛ npm audit إنتاج وكامل صفر في web/ والجذر — كلها مانعة في CI (R-077).
+- R-053 1000/1000 (1.347s)؛ R-051 20/20؛ R-055 3/3؛ R-042 22/22 + 3/3 (R-074).
