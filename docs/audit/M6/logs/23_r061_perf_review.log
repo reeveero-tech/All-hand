@@ -1,4 +1,8 @@
 === R-061 cycle 1 — performance/errors review (with fixed PAYLOADS) ===
+
+NOTE (R-064): هذا السجل كُتب بعد إصلاح السكربت مباشرة؛ سجل ما قبل الإصلاح
+(850/1000) دُوِّن في محتوى EVIDENCE والتحليل أدناه لكن ليس كسجل مستقل محفوظ.
+سجل الرموز الصحيحة للفحوص معاد في logs/24.
 DATE: 2026-10-13T02:36:52Z
 MAIN SHA: aac7b862aaacd92975f74cb98e9dd8aee0ec459c
 
