@@ -14,7 +14,7 @@ import time
 import pytest
 
 LIVE = os.environ.get("R042_LIVE") == "1" and bool(os.environ.get("SUPABASE_URL")) \
-    and bool(os.environ.get("SUPABASE_ANON_KEY"))
+    and bool(os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_ANON_KEY"))
 
 pytestmark = pytest.mark.skipif(not LIVE, reason="R-042 live storage not configured (set R042_LIVE=1)")
 
@@ -31,7 +31,7 @@ def client():
 def _rest(path):
     import json
     import urllib.request
-    key = os.environ["SUPABASE_ANON_KEY"]
+    key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_ANON_KEY"]
     req = urllib.request.Request(f"{os.environ['SUPABASE_URL']}/rest/v1/{path}",
                                  headers={"apikey": key, "Authorization": f"Bearer {key}"})
     with urllib.request.urlopen(req, timeout=10) as r:
@@ -62,7 +62,7 @@ def test_task_lifecycle_persisted(client):
 
     # give the post-execution storage writes a moment (they follow the memory update)
     row = None
-    for _ in range(50):
+    for _ in range(100):
         listed = client.get("/api/tasks?limit=200").json()
         assert listed["source"] == "database", listed.get("source")
         row = next((t for t in listed["tasks"] if t["task_id"] == task_id), None)
@@ -76,10 +76,16 @@ def test_task_lifecycle_persisted(client):
     assert row["result"]["ok"] == mem["result"]["ok"]
     assert row["finished_at"] is not None
 
-    events = client.get("/api/events?limit=200").json()["events"]
-    mine = [e for e in events if isinstance(e.get("event_data"), dict)
-            and e["event_data"].get("task_id") == task_id]
-    types = {e["event_type"] for e in mine}
+    # task_completed is written after update_task + upsert_agent_stats; over a
+    # real network (hosted Supabase) that lands later — poll, don't read once.
+    types = set()
+    for _ in range(100):
+        events = client.get("/api/events?limit=200").json()["events"]
+        types = {e["event_type"] for e in events if isinstance(e.get("event_data"), dict)
+                 and e["event_data"].get("task_id") == task_id}
+        if {"task_created", "task_completed"} <= types:
+            break
+        time.sleep(0.1)
     assert {"task_created", "task_completed"} <= types, f"events for task: {types}"
 
 

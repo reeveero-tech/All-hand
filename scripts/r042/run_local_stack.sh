@@ -40,13 +40,22 @@ for _ in $(seq 1 30); do
 done
 
 export SUPABASE_URL="http://127.0.0.1:$PROXY_PORT"
-SUPABASE_ANON_KEY="$(python scripts/r042/make_jwt.py "$JWT_SECRET")"
-export SUPABASE_ANON_KEY
+# R-042b: the server uses the service_role key (RLS is on, no anon policies).
+SUPABASE_SERVICE_KEY="$(python scripts/r042/make_jwt.py "$JWT_SECRET" service_role)"
+ANON_JWT="$(python scripts/r042/make_jwt.py "$JWT_SECRET" anon)"
+export SUPABASE_SERVICE_KEY
+unset SUPABASE_ANON_KEY
 
 echo "== negative control: request without a valid JWT must be rejected"
 code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer invalid.token.x" "$SUPABASE_URL/rest/v1/tasks")
 echo "invalid JWT -> HTTP $code"
 [ "$code" = "401" ] || { echo "FAIL: invalid JWT not rejected"; exit 1; }
+
+echo "== negative control: anon role must be denied by RLS (no policies)"
+code=$(curl -s -o /tmp/r042_anon.txt -w '%{http_code}' -X POST -H "Authorization: Bearer $ANON_JWT" \
+  -H "Content-Type: application/json" -d '{"task_id":"r042-anon-probe","specialization":"analyst"}' "$SUPABASE_URL/rest/v1/tasks")
+echo "anon insert -> HTTP $code $(head -c 200 /tmp/r042_anon.txt)"
+[ "$code" = "401" ] || [ "$code" = "403" ] || { echo "FAIL: anon write not denied"; exit 1; }
 
 echo "== storage layer verification"
 python scripts/run_r042_storage_verify.py

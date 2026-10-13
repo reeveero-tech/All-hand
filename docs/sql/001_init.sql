@@ -42,3 +42,11 @@ create table if not exists events (
 
 -- Read access from /api/events (order by created_at desc).
 create index if not exists idx_events_created_at on events (created_at desc);
+
+-- R-042b: Row Level Security ON, with NO policies. The server uses the
+-- secret/service_role key (SUPABASE_SERVICE_KEY), which bypasses RLS; the
+-- public anon/publishable key gets no access to these tables. Hosted projects
+-- may enable RLS automatically — this makes the behaviour explicit everywhere.
+alter table tasks enable row level security;
+alter table agent_stats enable row level security;
+alter table events enable row level security;
