@@ -1,0 +1,19 @@
+== R-077 root npm audit in CI 2026-10-13T15:23:14Z base=5321e64 node=v22.23.3
+-- BEFORE: audit job steps touching the root (expected none)
+2:    # R-045: dependency vulnerability audit in CI (pip-audit + npm audit).
+29:        working-directory: web/
+32:          npm audit --omit=dev --audit-level=high
+37:        working-directory: web/
+40:          npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log"
+-- AFTER: exact CI commands on current root lock (fresh clone of branch content, no node_modules)
+found 0 vulnerabilities
+ROOT_PROD_RC=0
+found 0 vulnerabilities
+ROOT_FULL_RC=0
+-- NEGATIVE probe: same commands on a lock with a known HIGH advisory (lodash 4.17.20 — GHSA-35jh-r3h4-6jhm command injection)
+lodash  <=4.17.23
+Severity: high
+Command Injection in lodash - https://github.com/advisories/GHSA-35jh-r3h4-6jhm
+NEG_PROD_RC=1
+NEG_FULL_RC=1
+audit steps: [None, 'Set up Python', 'Install pip-audit', 'Python dependency audit (requirements.txt)', 'Set up Node', 'Web dependency audit (production deps only)', 'Web dependency audit (full — blocking since R-071)', 'Set up Node for the root app (>=22.12)', 'Root dependency audit (production deps)', 'Root dependency audit (full, including dev)']

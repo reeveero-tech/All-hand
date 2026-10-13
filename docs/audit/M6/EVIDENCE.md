@@ -654,3 +654,13 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | Node 22.23.3 (sha256 مُتحقق من SHASUMS256): `npm ci --engine-strict` | rc=0، صفر EBADENGINE | logs/45 |
 | lint `--max-warnings=0` / build / audit (Node 22) | rc=0 / rc=0 / 0 | logs/45 |
 | ضابط سلبي: القفل الجديد على Node 20 + engine-strict | rc=1 | logs/45 |
+
+---
+
+## الدورة الثالثة — R-077 npm audit للجذر في CI (2026-10-13)
+
+| الفحص | النتيجة | السجل |
+|---|---|---|
+| خطوات audit قبل R-077 تمس الجذر | لا شيء (web/ فقط) | logs/46 |
+| أوامر CI على قفل الجذر الحالي (إنتاج / كامل) | 0، rc=0 / 0، rc=0 | logs/46 |
+| ضابط سلبي lodash 4.17.20 (إنتاج / كامل) | rc=1 / rc=1 | logs/46 |
