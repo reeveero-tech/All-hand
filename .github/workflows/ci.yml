@@ -49,6 +49,22 @@ jobs:
       - name: Run tests (live test suite)
         run: pytest tests/ -v --cov=agent_civilization --cov=agos_kernel --cov-report=xml
 
+      # R-090 (D-043): production runs Python 3.12 (Dockerfile python:3.12-slim,
+      # render.yaml PYTHON_VERSION). Same job, second interpreter — a matrix would
+      # rename the required check `test` (branch protection is owner-managed, Q-020).
+      - name: Set up Python 3.12 (runtime version)
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Run tests on Python 3.12
+        run: |
+          python --version
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx2
+          python -m pytest tests/ -q
+
   build:
     runs-on: ubuntu-26.04
     needs: [quality, test]

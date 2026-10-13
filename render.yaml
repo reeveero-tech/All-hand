@@ -16,8 +16,10 @@ services:
       - key: AGENTS_PER_SPEC
         value: "3"
       # يستهلكه Render (المنصة) لا كود التطبيق (Q-007).
+      # R-090: Render requires a full patch version here; latest 3.12 patch
+      # (3.12.0 was the 2023 initial release). CI tests 3.12 in job `test`.
       - key: PYTHON_VERSION
-        value: "3.12.0"
+        value: "3.12.15"
       # R-041: مدخلا المصادقة/CORS للنشر (sync:false = يدخل المشغّل قيمهما في
       # لوحة Render؛ لا سر يُخزن في هذا الملف). ترك AGOS_API_KEY فارغاً
       # يبقي الخادم في الوضع المفتوح (سلوك R-004).

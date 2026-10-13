@@ -1,0 +1,7 @@
+== R-090 local checks 2026-10-13T21:51:18Z
+-- 3.11 (CI primary): =========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.49s ============
+-- Python 3.12.13 (runtime minor; 3.12.15 not downloadable via uv here — CI setup-python resolves latest 3.12): =========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.79s ============
+-- 3.12 without web/dist (CI test job condition):
+   =========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.69s ============
+-- compileall 3.11: ok
+-- ruff: All checks passed!
