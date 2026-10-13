@@ -35,7 +35,7 @@ jobs:
   governance:
     runs-on: ubuntu-26.04   # D-041 (R-088)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       - name: Atomic batch check
         run: |

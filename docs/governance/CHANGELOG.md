@@ -762,3 +762,5 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 
 - كل `runs-on` في `ci.yml` و`governance-gate.yml` → `ubuntu-26.04` صراحةً، بعد تجربة ناجحة للـ7 jobs على الصورة 20260901.588 (Python 3.11.16، Node 22.23.3).
 - RISK-021 مغلقة. `publish` غير مُجرّب (يتطلب `[publish]`).
+
+## 2026-10-13 — R-087 (جارٍ): GitHub Actions إلى v7 (Node 24)

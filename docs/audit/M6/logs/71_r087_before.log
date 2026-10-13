@@ -1,0 +1,17 @@
+== R-087 BEFORE 2026-10-13T21:08:21Z main=aba8f26
+      8 .github/workflows/ci.yml:uses: actions/checkout@v4
+      4 .github/workflows/ci.yml:uses: actions/setup-node@v4
+      6 .github/workflows/ci.yml:uses: actions/setup-python@v5
+      2 .github/workflows/ci.yml:uses: actions/upload-artifact@v4
+      1 .github/workflows/governance-gate.yml:uses: actions/checkout@v4
+last main push run: 38468221513 aba8f26
+jobs run (non-skipped): 7
+per-job warnings in logs of run 38468221513 (fetched with retry; GitHub API returned transient 502s):
+  quality: fetched=174 lines, 'Node.js 20 is deprecated'=1
+  test: fetched=547 lines, 'Node.js 20 is deprecated'=1
+  network: fetched=307 lines, 'Node.js 20 is deprecated'=1
+  build: log fetch FAILED (2 lines = API error body) — not counted; 6/6 fetched jobs carry the warning
+  audit: fetched=368 lines, 'Node.js 20 is deprecated'=1
+  docker: fetched=461 lines, 'Node.js 20 is deprecated'=1
+  storage: fetched=563 lines, 'Node.js 20 is deprecated'=1
+-- web/ Node: CI node-version '20' in build+audit (Node 20 EOL 2026-04-30); web/package.json engines: null
