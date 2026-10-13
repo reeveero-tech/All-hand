@@ -103,3 +103,8 @@
 - **التحقق الوظيفي** (logs/36): بناء vite 5 وبناء vite 8 يُخدمان من `server.py` ويُفتحان في Chromium بلا رأس — 8/8 لكليهما (React مُثبت، النص العربي، `/api/*` 200، صفر أخطاء صفحة/console)؛ خادم التطوير vite 8 + وكيل `/api` → 200، 6/6؛ طلب بـ`Origin: https://evil.example` لم يُرجع `Access-Control-Allow-Origin`.
 - **CI**: خطوة `npm audit` الكاملة في web/ صارت **مانعة** (`--audit-level=high`، أزيل `continue-on-error`).
 - **متطلب**: vite 8 يتطلب Node `^20.19.0 || >=22.12.0` — CI (`node-version: '20'`) وDocker (`node:20-slim`) يأخذان أحدث 20.x (محلياً 20.20.2).
+
+## تحديث R-073 (دورة M6 الثالثة/1، 2026-10-13)
+- pip-audit صفر؛ npm audit إنتاج **وكامل** صفر في الجذر وweb/ (logs/42) — أول دورة بلا أي ثغرة dev.
+- تحديث واحد ضمن النطاق: `eslint-plugin-prettier` 5.5.6 → 5.5.7 (dev، القفل فقط)؛ تبعيته الانتقالية `synckit` 0.12.3 لا تُحمَّل في lint (الإضافة غير مفعّلة).
+- لا ترقية رئيسية. اكتشاف غير أمني: تعارض `engines.node` في الجذر (R-076).
