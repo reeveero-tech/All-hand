@@ -265,12 +265,24 @@ async def check_civilization() -> Dict[str, Any]:
 async def check_storage() -> Dict[str, Any]:
     """Check storage availability."""
     try:
-        from agent_civilization.storage import is_configured
+        from agent_civilization.storage import is_configured, key_status
         configured = is_configured()
+        key = key_status()
+        if not configured:
+            status, message = "degraded", "Using in-memory storage"
+        elif key["kind"] == "public":
+            # R-078 (RISK-018): with RLS and no anon policies (D-039) every write is
+            # rejected — the server silently falls back to memory. Make it visible.
+            status = "degraded"
+            message = (f"Supabase configured with a public key (from {key['source']}): writes are "
+                       "rejected by RLS — set SUPABASE_SERVICE_KEY to the secret/service_role key")
+        else:
+            status, message = "healthy", "Supabase configured"
         return {
-            "status": "healthy" if configured else "degraded",
-            "message": "Supabase configured" if configured else "Using in-memory storage",
+            "status": status,
+            "message": message,
             "supabase_configured": configured,
+            "supabase_key": key["kind"],
         }
     except Exception as e:
         return {"status": "degraded", "message": str(e)}

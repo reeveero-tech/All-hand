@@ -1,0 +1,11 @@
+== R-078 BEFORE 2026-10-13T15:38:32Z main=99372cd
+[legacy_anon_jwt] var=SUPABASE_ANON_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key=None | startup warning=False | key value leaked in logs=False
+[anon_jwt_in_service_var] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key=None | startup warning=False | key value leaked in logs=False
+[publishable] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key=None | startup warning=False | key value leaked in logs=False
+[service_jwt] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key=None | startup warning=False | key value leaked in logs=False
+[secret] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key=None | startup warning=False | key value leaked in logs=False

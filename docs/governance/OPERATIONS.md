@@ -62,7 +62,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 
 ## الفحوصات
 
-`/health`, `/health/live`, `/health/ready`, `/metrics`, `/api/system/status` — مع عيب موثق: `/health` يعيد 200 دائماً (R-004).
+`/health`, `/health/live`, `/health/ready`, `/metrics`, `/api/system/status`. `/health` يعيد 503 عند `unhealthy` و200 عند `healthy`/`degraded` (أُصلح في R-004؛ اختباران منذ R-068 — صُحح هنا في R-078، كان يقول "200 دائماً"). **R-078**: فحص `storage` يصير `degraded` إذا كان مفتاح Supabase عاماً، و`/api/system/status` يعرض `supabase_key: {kind, source}` (لا القيمة).
 
 ## الفجوات
 
@@ -91,6 +91,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | الحالة | العَرَض | التشخيص | الاستجابة |
 |---|---|---|---|
 | `/health` يعيد 503 (unhealthy) | خادم لا يبدأ أو وحدة نسيّة | `docker logs` / `uvicorn` stderr | تراجع فوري — لا تعديل تشغيلي حي |
+| `/health` يعيد 200 مع `storage.message` = "public key … rejected by RLS" (R-078) | مفتاح Supabase عام (`sb_publishable_` أو JWT `role=anon` أو `SUPABASE_ANON_KEY`) — كل كتابة تُرفض والخادم يعمل من الذاكرة | `curl $BASE_URL/api/system/status` → `supabase_key.kind`؛ تحذير `PUBLIC key` في سجل البدء | ضع المفتاح السري في `SUPABASE_SERVICE_KEY` وأعد التشغيل ثم `run_r042_storage_verify.py` (22/22) |
 | `/health` يعيد 200 مع degraded | الذاكرة البديلة (Supabase غير مهيأ) | `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` | مقبول مؤقتاً — Q-013؛ إن كانا مضبوطين فابحث في السجل عن `rejected: HTTP` (RISK-013/018) |
 | فشل CI في `quality` | أخطاء ruff (استيراد غير مستخدم/استثناء عريض) | `ruff check --select F,E722 <files>` | أصلح في نفس PR — لا force-push (D-034) |
 | فشل CI في `test` | فشل اختبار (انظر `docs/audit/M6/logs/11_r055_pytest.log` لنموذج) | `pytest tests/ -q` | أصلح في نفس PR |

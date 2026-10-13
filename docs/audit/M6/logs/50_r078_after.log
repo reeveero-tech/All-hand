@@ -1,0 +1,11 @@
+== R-078 AFTER (same probe) 2026-10-13T15:39:00Z
+[legacy_anon_jwt] var=SUPABASE_ANON_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_ANON_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_ANON_KEY'} | startup warning=True | key value leaked in logs=False
+[anon_jwt_in_service_var] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_SERVICE_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=True | key value leaked in logs=False
+[publishable] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_SERVICE_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=True | key value leaked in logs=False
+[service_jwt] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key={'kind': 'service', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=False | key value leaked in logs=False
+[secret] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key={'kind': 'service', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=False | key value leaked in logs=False

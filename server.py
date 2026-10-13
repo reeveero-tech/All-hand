@@ -46,7 +46,7 @@ from agent_civilization.agents.external_adapter import (
     load_external_agents_from_env,
 )
 from agent_civilization.core.llm import get_llm
-from agent_civilization.storage import get_storage, is_configured as supabase_configured
+from agent_civilization.storage import get_storage, is_configured as supabase_configured, key_status, log_key_status
 
 # ============================================================================
 # CONFIGURATION
@@ -74,7 +74,9 @@ request_counts: Dict[str, List[datetime]] = defaultdict(list)
 # App metadata
 @asynccontextmanager
 async def _lifespan(_app):
-    """R-042: close the storage HTTP session on shutdown (was leaked — 'Unclosed client session')."""
+    """R-042: close the storage HTTP session on shutdown (was leaked — 'Unclosed client session').
+    R-078: classify the Supabase key at startup and warn loudly if it is a public one."""
+    log_key_status()
     yield
     await get_storage().close()
 
@@ -443,6 +445,7 @@ async def system_status(request: Request):
         "llm_configured": get_llm().available,
         "llm_model": get_llm().model,
         "supabase_configured": supabase_configured(),
+        "supabase_key": key_status(),  # R-078: {"kind": service|public|unknown|none, "source": var} — never the value
         "specializations": len(SPECIALIZATIONS),
         "total_agents": len(agents),
         "external_agents": len(EXTERNAL_AGENTS),

@@ -2,8 +2,11 @@
 
 from agent_civilization.storage.supabase_store import (
     SupabaseStorage,
+    classify_key,
     get_storage,
     is_configured,
+    key_status,
+    log_key_status,
 )
 
-__all__ = ["SupabaseStorage", "get_storage", "is_configured"]
+__all__ = ["SupabaseStorage", "classify_key", "get_storage", "is_configured", "key_status", "log_key_status"]

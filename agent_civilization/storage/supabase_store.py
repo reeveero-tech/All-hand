@@ -6,6 +6,7 @@ Persists tasks, agent stats, and events to the Supabase database.
 Uses the REST API (no external SDK needed) via aiohttp.
 """
 
+import base64
 import json
 import logging
 import os
@@ -22,11 +23,80 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_U
 # (verified on a hosted project — docs/audit/M7/logs/20). SUPABASE_ANON_KEY is
 # kept as a fallback for existing deployments. Never expose the secret key to
 # the browser (no VITE_ variable for it).
-SUPABASE_KEY = (
-    os.environ.get("SUPABASE_SERVICE_KEY")
-    or os.environ.get("SUPABASE_ANON_KEY")
-    or os.environ.get("VITE_SUPABASE_ANON_KEY", "")
+_KEY_VARS = ("SUPABASE_SERVICE_KEY", "SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY")
+SUPABASE_KEY_SOURCE = next((v for v in _KEY_VARS if os.environ.get(v)), "")
+SUPABASE_KEY = os.environ.get(SUPABASE_KEY_SOURCE, "") if SUPABASE_KEY_SOURCE else ""
+
+
+def _jwt_role(key: str) -> Optional[str]:
+    """Return the unverified `role` claim of a legacy Supabase JWT key, or None.
+
+    Classification only — the signature is NOT checked and the value never
+    leaves this function. Supabase legacy keys are JWTs whose payload carries
+    role=anon or role=service_role.
+    """
+    parts = key.split(".")
+    if len(parts) != 3:
+        return None
+    try:
+        payload = parts[1] + "=" * (-len(parts[1]) % 4)
+        role = json.loads(base64.urlsafe_b64decode(payload.encode())).get("role")
+        return role if isinstance(role, str) else None
+    except Exception:
+        return None
+
+
+def classify_key(key: str, source: str) -> str:
+    """R-078 (RISK-018): classify a Supabase key without exposing it.
+
+    'service' — sb_secret_* or JWT role=service_role (bypasses RLS: writes work)
+    'public'  — sb_publishable_* or JWT role=anon, or an unrecognised key that
+                came from an *_ANON_KEY variable (RLS rejects every write, D-039)
+    'unknown' — unrecognised format from SUPABASE_SERVICE_KEY
+    'none'    — no key configured
+    The key format wins over the variable name, so an anon key placed in
+    SUPABASE_SERVICE_KEY is still reported as 'public'.
+    """
+    if not key:
+        return "none"
+    if key.startswith("sb_secret_"):
+        return "service"
+    if key.startswith("sb_publishable_"):
+        return "public"
+    role = _jwt_role(key)
+    if role == "service_role":
+        return "service"
+    if role == "anon":
+        return "public"
+    return "public" if source.endswith("ANON_KEY") else "unknown"
+
+
+def key_status() -> Dict[str, str]:
+    """Kind and source variable of the configured key — never its value."""
+    return {"kind": classify_key(SUPABASE_KEY, SUPABASE_KEY_SOURCE), "source": SUPABASE_KEY_SOURCE or "none"}
+
+
+PUBLIC_KEY_WARNING = (
+    "Supabase is configured with a PUBLIC key (%s, from %s): with the RLS in "
+    "docs/sql/001_init.sql every write is rejected and the server keeps data in "
+    "memory only (D-039, RISK-018). Set SUPABASE_SERVICE_KEY to the project's "
+    "secret/service_role key."
 )
+
+
+def log_key_status() -> Dict[str, str]:
+    """Log the key classification once at startup (R-078). Returns key_status()."""
+    st = key_status()
+    if not is_configured():
+        return st
+    if st["kind"] == "public":
+        logger.warning(PUBLIC_KEY_WARNING, st["kind"], st["source"])
+    elif st["kind"] == "unknown":
+        logger.warning("Supabase key format not recognised (from %s) — cannot tell whether writes will pass RLS; "
+                       "run scripts/run_r042_storage_verify.py after deploy.", st["source"])
+    else:
+        logger.info("Supabase storage key: %s (from %s)", st["kind"], st["source"])
+    return st
 
 
 def _jsonable(value: Any) -> Any:

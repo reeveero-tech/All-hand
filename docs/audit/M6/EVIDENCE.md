@@ -678,3 +678,17 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | تشغيلات CI منذ R-068 | 22 نجاح + 1 فشل مُصلح | 56 + 4 (آخر 60) | logs/48 |
 | RISK-016 (Markdown) | 33 ملفاً / 5,850 سطراً / 5 README | لم يُقس | logs/48 |
 | `tests/test_security.py` (سند تصحيح SECURITY.md) | 10/10 | — | logs/48 |
+
+---
+
+## الدورة الثالثة — R-078 كشف المفتاح العام (2026-10-13)
+
+| الحالة (مسبار `scripts/run_r078_key_probe.py`) | قبل: storage / تحذير | بعد: storage / تحذير / kind | تسرب القيمة |
+|---|---|---|---|
+| JWT anon في `SUPABASE_ANON_KEY` | healthy / لا | degraded / نعم / public | لا |
+| JWT anon في `SUPABASE_SERVICE_KEY` | healthy / لا | degraded / نعم / public | لا |
+| `sb_publishable_` في `SUPABASE_SERVICE_KEY` | healthy / لا | degraded / نعم / public | لا |
+| JWT service_role | healthy / لا | healthy / لا / service | لا |
+| `sb_secret_` | healthy / لا | healthy / لا / service | لا |
+
+السجلات: logs/49 (قبل)، logs/50 (بعد)، logs/51 (pytest 216 متصلاً ومعزولاً، الاختبارات الجديدة على الكود القديم 18 فشل، ruff 0، عقد الويب 10/10، R-042 22/22 + 3/3).

@@ -53,3 +53,8 @@
 ### Supabase المستضافة (R-042b، M7/7 — D-039)
 - طُبق المخطط على مشروع تجريبي (PostgreSQL 17.11): الأنواع مطابقة، 22/22 + 3/3 (logs/22).
 - **RLS**: مفعّل صراحة في `001_init.sql` على الجداول الثلاثة، **بلا سياسات**. الخادم يستخدم `SUPABASE_SERVICE_KEY` (يتجاوز RLS)؛ دور `anon` مرفوض كتابةً وقراءة (logs/20، وضابط سلبي في كل تشغيل CI).
+
+## R-078 — تصنيف المفتاح في طبقة التخزين
+- `supabase_store.py`: `SUPABASE_KEY_SOURCE` (أول متغير غير فارغ بالترتيب `SUPABASE_SERVICE_KEY` ← `SUPABASE_ANON_KEY` ← `VITE_SUPABASE_ANON_KEY` — نفس أولوية القراءة السابقة)، و`classify_key()`/`key_status()`/`log_key_status()`.
+- التصنيف: `sb_secret_*` أو JWT `role=service_role` → `service`؛ `sb_publishable_*` أو JWT `role=anon` → `public`؛ صيغة غير معروفة من متغير `*_ANON_KEY` → `public`، ومن `SUPABASE_SERVICE_KEY` → `unknown`. الصيغة تتقدم على اسم المتغير. ادعاء JWT يُقرأ دون تحقق من التوقيع (تصنيف فقط).
+- **مسار الكتابة بلا تغيير**: نفس المفتاح ونفس الطلبات؛ R-042 محلياً 22/22 + 3/3 بعد التغيير (logs/51).

@@ -112,3 +112,7 @@
 ## تحديث R-077 — تبعيات الجذر في CI
 - CI job `audit` يفحص الآن ثلاث شجرات آلياً: Python (pip-audit)، web/ (إنتاج + كامل)، **والجذر (إنتاج + كامل — جديد)**، كلها مانعة على high/critical. قبل R-077 كان الجذر يُفحص يدوياً في دورات M6 فقط.
 - ضابط سلبي: الأوامر نفسها على قفل فيه lodash 4.17.20 (GHSA-35jh-r3h4-6jhm، high) → rc=1 (logs/46).
+
+## تحديث R-078 — كشف المفتاح العام عند البدء (RISK-018)
+- قبل (logs/49): مفتاح عام (JWT anon في `SUPABASE_ANON_KEY` أو `SUPABASE_SERVICE_KEY`، أو `sb_publishable_`) → `/health` storage `healthy`، بلا أي تحذير.
+- بعد (logs/50، المسبار نفسه `scripts/run_r078_key_probe.py`): الحالات العامة الثلاث → `degraded` + تحذير بدء + `supabase_key.kind=public`؛ المفتاحان السريان → `healthy` بلا تحذير. **قيمة المفتاح لم تظهر في أي سجل أو رد** (فحص صريح في المسبار و3 اختبارات).
