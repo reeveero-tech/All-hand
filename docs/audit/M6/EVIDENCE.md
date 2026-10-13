@@ -290,3 +290,44 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 
 ### السجل
 - `logs/22_q016_pytest.log` — نتيجة pytest (rc=0).
+
+---
+
+## R-024 (M7/2) — تفعيل حماية الفرع `main` (2026-10-12)
+
+**البند**: R-024. **الترتيب**: دفعة M7/2.
+
+### ما تم
+حماية الفرع `main` مفعلة فعلياً عبر GitHub API (المالك بصلاحية admin — `gh api`):
+
+**طلب التفعيل**: `PUT /repos/reeveero-tech/All-hand/branches/main/protection`
+```json
+{
+  "required_status_checks": {"strict": true, "contexts": ["quality","test","build","docker","governance","audit"]},
+  "enforce_admins": false,
+  "required_pull_request_reviews": {"required_approving_review_count": 0},
+  "restrictions": null
+}
+```
+استجابة 200 — الحماية مطبقة.
+
+### التحقق (مباشر)
+`GET /repos/.../branches/main/protection` (قبل: 404 "Branch not protected") يعيد الآن:
+- `required_status_checks.strict=True`
+- `contexts=['quality', 'test', 'build', 'docker', 'governance', 'audit']`
+- `enforce_admins.enabled=False`
+- `allow_force_pushes={'enabled': False}`
+- `allow_deletions={'enabled': False}`
+
+### المعنى العملي
+أي push مباشر إلى `main` يُرفض دون نجاح فحوص الحالة الخمس/الست (quality, test, build, docker, governance, audit). البوابة الحاكمة (governance gate) مفروضة فعلياً.
+
+### مبرر الخيارات
+- `enforce_admins=false`: قرار المالك — لا يُطبَّق على المالك لإتاحة عمليات إدارية سريعة (قابل للتفعيل لاحقاً).
+- `required_approving_review_count=0`: المالك هو المراجع الوحيد — لا موافقات مطلوبة (قابل للرفع لاحقاً).
+
+### الأثر
+المعيار 6 من D-035 (حماية الفرع) **محقق**. بقي المعيار 7 (التخزين الحي R-042) لتحقيق "الحضارة قامت 100%".
+
+### السجل
+- `logs/23_r024_protection.json` — استجابة GET الحماية الفعلية (200).

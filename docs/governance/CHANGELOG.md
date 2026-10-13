@@ -472,3 +472,18 @@ D-035 (إجابة المالك على Q-016/R-050): تعريف "قيام حضا�
 
 ### الفحوص
 pytest 174/174 (rc مباشر)؛ ruff صفر. الأدلة: docs/audit/M6/logs/21 + تقرير Q-016 هذا.
+
+## 2026-10-12 — M7/2: R-024 — تفعيل حماية الفرع `main` (فعلياً)
+
+### ما تم
+حماية الفرع `main` مفعلة عبر GitHub API بواسطة المالك (إدارة المستودع):
+- `required_status_checks.strict=true` — فحوص الحالة الإلزامية: `quality`, `test`, `build`, `docker`, `governance`, `audit`.
+- `enforce_admins=false` — لا يُطبَّق على المالك (قرار المالك).
+- `required_pull_request_reviews.required_approving_review_count=0` — لا موافقات مطلوبة.
+- `allow_force_pushes=false`, `allow_deletions=false`.
+
+### التحقق
+`GET /repos/.../branches/main/protection` يعيد الحماية (200 — سابق 404 "Branch not protected").
+
+### الأثر
+البوابة الحاكمة (governance gate + CI) مفروضة فعلياً — أي push مباشر إلى main يُرفض. **المعيار 6 من D-035 (حماية الفرع) محقق** — بقي المعيار 7 (التخزين الحي R-042) لتحقيق "الحضارة قامت 100%".
