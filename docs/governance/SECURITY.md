@@ -81,7 +81,7 @@
   - `vite <=6.4.2` (GHSA-4w7w-66w2-5vf9, high — يشمل تحذيرات مستقلة أيضاً: path traversal في optimized deps، launch-editor NTLMv2، fs.deny bypass — وليس فقط عبر esbuild): نفس السياق — dev server only.
   - **الإصلاح المتاح**: `npm audit fix --force` (يرفع vite إلى 8.x — تغيير رئيسي). مؤجل عمداً: (1) لا يؤثر على الإنتاج، (2) تغيير رئيسي في أداة البناء يحتاج دفعة اختبار مستقلة، (3) غير داخل نطاق R-045 (فحص التبعيات) — يُدرج كبند مستقل إن طلب المالك.
 - **حدود حجم المدخلات**: `MAX_TASKS_KEPT` (server.py) يمنع تجميع المهام بلا حدود؛ Rate limit يحد الطلبات (100/60 ثانية افتراضياً — AGOS_RATE_LIMIT_*)؛ `AGOS_API_KEY` اختياري (R-004).
-- **تدوير المفاتيح**: `AGOS_API_KEY` و`SUPABASE_ANON_KEY` و`OPENROUTER_API_KEY` تُدار من لوحة المضيف (Render sync:false) — لا تدوير آلي داخلي؛ يُترك للمالك (المسؤولية موثقة في R-045/OPERATIONS).
+- **تدوير المفاتيح**: `AGOS_API_KEY` و`SUPABASE_SERVICE_KEY` (و`SUPABASE_ANON_KEY` البديل) و`OPENROUTER_API_KEY` تُدار من لوحة المضيف (Render sync:false) — لا تدوير آلي داخلي؛ يُترك للمالك (المسؤولية موثقة في R-045/OPERATIONS).
 
 ## تحديث R-042 (M7/6)
 - أداة التحقق تستخدم سر JWT **تجريبياً عاماً** (`r042-local-test-secret-not-a-real-key-000`) لقاعدة مؤقتة داخل CI/محلياً فقط — ليس مفتاح Supabase ولا يُستخدم في أي بيئة حقيقية. لم تُضف أسرار إلى المستودع أو إعدادات GitHub.

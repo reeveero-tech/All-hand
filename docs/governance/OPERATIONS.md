@@ -50,7 +50,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `AGOS_RATE_LIMIT_REQUESTS` | server.py | 100 |
 | `AGOS_RATE_LIMIT_WINDOW` | server.py | 60 |
 | `SUPABASE_URL` / `VITE_SUPABASE_URL` | supabase_store.py | `""` |
-| `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY` | supabase_store.py | `""` |
+| `SUPABASE_SERVICE_KEY` (مفضّل — D-039) ثم `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY` (بديل للتوافق) | supabase_store.py | `""` |
 | `OPENROUTER_API_KEY` | core/llm.py | `""` |
 | `LLM_MODEL` | core/llm.py | `meta-llama/llama-3.3-70b-instruct:free` |
 | `EXTERNAL_AGENTS` | agents/external_adapter.py | `""` |
@@ -91,7 +91,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | الحالة | العَرَض | التشخيص | الاستجابة |
 |---|---|---|---|
 | `/health` يعيد 503 (unhealthy) | خادم لا يبدأ أو وحدة نسيّة | `docker logs` / `uvicorn` stderr | تراجع فوري — لا تعديل تشغيلي حي |
-| `/health` يعيد 200 مع degraded | الذاكرة البديلة (Supabase غير مهيأ) | `SUPABASE_URL`/`SUPABASE_ANON_KEY` | مقبول مؤقتاً — Q-013 |
+| `/health` يعيد 200 مع degraded | الذاكرة البديلة (Supabase غير مهيأ) | `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` | مقبول مؤقتاً — Q-013؛ إن كانا مضبوطين فابحث في السجل عن `rejected: HTTP` (RISK-013/018) |
 | فشل CI في `quality` | أخطاء ruff (استيراد غير مستخدم/استثناء عريض) | `ruff check --select F,E722 <files>` | أصلح في نفس PR — لا force-push (D-034) |
 | فشل CI في `test` | فشل اختبار (انظر `docs/audit/M6/logs/11_r055_pytest.log` لنموذج) | `pytest tests/ -q` | أصلح في نفس PR |
 | فشل CI في `governance` | دفعة ناقصة ROADMAP/PROJECT_STATE/CHANGELOG/EVIDENCE | راجع `GOVERNANCE_GATE.md` | أضف الناقص في نفس PR قبل الدمج |

@@ -1,0 +1,13 @@
+== R-069 roadmap audit AFTER edits 2026-10-13T05:30:18Z (BEFORE: 56 headings, R-066 duplicated, 11 'هذه الدفعة')
+headings: 55 | duplicates: [] | no status: []
+status: {'done': 52, 'ready': 3}
+'هذه الدفعة' occurrences: 3
+== stale-phrase scan (outside history files)
+docs/governance/OPEN_QUESTIONS.md:78:- **مرتبط بـ**: R-050 (حُلّ)، R-024 (✓ M7/2)، R-042 (✓ M7/6، R-042b ✓ M7/7). (صُحح في R-069 — كان يقول "يبقى blocked" للاثنين.)
+SCAN_RC=0 (1 = none)
+== pytest / ruff
+======================== 192 passed, 3 skipped in 4.00s ========================
+PYTEST_RC=0
+All checks passed!
+RUFF_RC=0
+== after final fix: 'هذه الدفعة' occurrences: 2 (both are quotations of the phrase itself: inside R-062 and R-069)
