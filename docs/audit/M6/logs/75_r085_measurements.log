@@ -1,0 +1,51 @@
+== R-085 (M6 cycle 5) measurements 2026-10-13T21:39:35Z main=fa59212
+== R-051 real-dispatch audit (online)
+  "summary": {
+    "total": 20,
+    "real": 20,
+    "simulated": 0,
+    "failed": 0
+  }
+R051_RC=0
+== R-053 scale audit
+    زمن الإنشاء: 0.002s
+    ذروة RSS بعد الإنشاء: 27.8 MB
+    زمن التنفيذ: 1.349s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 41.5 MB
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 41.5 MB
+- تنفيذ 1000 مهمة متزامنة: ~1.35s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+R053_RC=0
+== R-055 scenarios
+كل المراحل ناجحة: True
+كل النتائج النهائية موجودة: True
+✓ السيناريوهات الثلاثة ناجحة
+R055_RC=0
+== R-042 local live storage
+R042_RC=0
+invalid JWT -> HTTP 401
+anon insert -> HTTP 401 {"code":"42501","details":null,"hint":null,"message":"new row violates row-level security policy for table \"tasks\""}
+insert_task rejected: HTTP 401 {"code":"PGRST301","details":null,"hint":null,"message":"JWSError (JSONDecodeError \"Not valid base64url\")"}
+R-042 storage verification: 22/22 checks passed
+============================== 3 passed in 0.56s ===============================
+== R-078 key probe (5 cases; first run omitted the case argument — invocation error, rerun)
+[legacy_anon_jwt] var=SUPABASE_ANON_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_ANON_KEY)
+[anon_jwt_in_service_var] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABAS
+[publishable] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_SERVICE_KE
+[service_jwt] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+[secret] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+== R-082 storage failure probe
+[1 down (connection refused)] /health=degraded storage=degraded msg='last storage operation failed: insert_event (exception: ClientConnectorError) at 
+[2 HTTP 401 (key revoked)] /health=degraded storage=degraded msg='last storage operation failed: get_tasks (HTTP 401) at 2026-10-13T21:39:41+00:00'
+[3 recovered (201/200)] /health=healthy storage=healthy msg='Supabase configured'
+== R-085 new: /metrics under HTTP load
+10000 requests (2x5000) over 103 distinct raw paths: 3.34s + 3.32s
+agos_http_requests_total series: 8 (sum=10200, includes 200 warm-up)
+raw path labels leaked: 0
+histogram series: 8, max raw window: 1024
+invalid exposition lines: 0 of 170
+peak RSS MB: before=68.1 after 5000=68.1 after 10000=68.1 (growth second half=0.0)
+storage series: ['agos_storage_last_operation_ok -1']
