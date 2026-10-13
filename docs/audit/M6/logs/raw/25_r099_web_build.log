@@ -1,0 +1,20 @@
+$ npm run build
+returncode=0
+--- stdout ---
+
+> agos-civilization-web@3.0.0 build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 21 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.77 kB │ gzip:  0.45 kB
+dist/assets/index-CXDttt6K.css   11.60 kB │ gzip:  2.87 kB
+dist/assets/index-CNVv2G0G.js   164.25 kB │ gzip: 52.15 kB
+
+✓ built in 99ms
+
+--- stderr ---
+

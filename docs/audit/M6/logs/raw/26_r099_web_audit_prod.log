@@ -1,0 +1,10 @@
+$ npm audit --omit=dev --audit-level=high
+returncode=0
+--- stdout ---
+found 0 vulnerabilities
+
+--- stderr ---
+
+
+### Note
+R-098's evidence pack ran `npm audit --audit-level=high` for web/ but did NOT include the `--omit=dev` (production-only) variant for web/ — only root had both prod and full audits. R-099 closes this gap: web/ npm audit --omit=dev --audit-level=high → 0 vulnerabilities, rc=0. (The full audit for web/ is already in raw/14 from R-098.)
