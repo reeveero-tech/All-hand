@@ -23,7 +23,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent_civilization.agents.real import create_civilization  # noqa: E402
 
-# مهام ملائمة لكل تخصص (لاستبعاد فشل "بيانات غير كافية" من إشارة القياس)
+# مهام ملائمة لكل تخصص (لاستبعاد فشل "بيانات غير كافية" أو "لا كود" من إشارة القياس).
+# R-061 (دورة M6/2): أضيفت مهام للتخصصات الثلاثة code_generator/surgeon/modifier —
+# مهمة demo النصية لم تعد تمرر إلى _extract_code ككود منذ R-055 (النص غير الشبيه
+# بـPython يعيد "" بدل النص الخام)، فكانت تفشل بـ"no code provided". هذا سلوك صحيح
+# (رفض مهمة غير مناسبة أدق من ادعاء نجاح كاذب) — الخطأ كان في السكربت لا في الكود.
 PAYLOADS = {
     "analyst": {"prompt": "avg", "data": [1, 2, 3, 4]},
     "data_processor": {"prompt": "sum", "data": [1, 2, 3, 4]},
@@ -32,6 +36,9 @@ PAYLOADS = {
     "test_runner": {"prompt": "print(1+1)"},
     "validator": {"prompt": '{"a":1}'},
     "api_integrator": {"prompt": "GET https://example.com"},
+    "code_generator": {"data": "def hello():\n    return 1"},
+    "surgeon": {"data": "def f():\n    try:\n        pass\n    except:\n        pass\n"},
+    "modifier": {"data": "x = 1   \n"},
 }
 
 def rss_mb() -> float:
