@@ -1,0 +1,26 @@
+== R-081 roadmap audit AFTER 2026-10-13T17:57:58Z base=64214cc+changes
+item headings: 66
+duplicate ids: none
+status counts: {'done': 66}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 770
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (3d07b9b..HEAD): ['R-074', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083']
+  not in ROADMAP: none
+  R-079: roadmap=yes changelog=yes
+  R-080: roadmap=yes changelog=yes
+  R-081: roadmap=yes changelog=yes
+  R-082: roadmap=yes changelog=yes
+  R-083: roadmap=yes changelog=yes
+AUDIT_RC=0
+-- stale scan (expect none):
+-- pytest 3.14 / 3.11 / ruff
+================= 230 passed, 3 skipped, 3 deselected in 3.59s =================
+=========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.32s ============
+All checks passed!
