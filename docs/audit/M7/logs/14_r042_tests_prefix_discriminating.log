@@ -1,0 +1,43 @@
+== tests/test_storage_payloads.py against PRE-FIX supabase_store.py (HEAD)
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/agos
+configfile: pytest.ini
+plugins: platformdirs-4.13.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 5 items
+
+tests/test_storage_payloads.py FFFFF                                     [100%]
+
+=================================== FAILURES ===================================
+___________________ test_update_task_sends_result_as_object ____________________
+tests/test_storage_payloads.py:65: in test_update_task_sends_result_as_object
+    assert payload["result"] == result and isinstance(payload["result"], dict)
+E   assert ('{"ok": true, "nested": {"n": [1, 2]}}' == {'ok': True, 'nested': {'n': [1, 2]}})
+_________________ test_insert_event_sends_event_data_as_object _________________
+tests/test_storage_payloads.py:72: in test_insert_event_sends_event_data_as_object
+    assert sess.calls[0][2]["json"]["event_data"] == {"task_id": "t1", "ok": True}
+E   assert '{"task_id": "t1", "ok": true}' == {'task_id': 't1', 'ok': True}
+_____________________ test_jsonable_coerces_non_json_types _____________________
+tests/test_storage_payloads.py:79: in test_jsonable_coerces_non_json_types
+    assert ss._jsonable({"a": Odd(), "b": (1, 2)}) == {"a": "odd", "b": [1, 2]}
+           ^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.storage.supabase_store' has no attribute '_jsonable'
+__________________ test_rejected_write_returns_false_and_logs __________________
+tests/test_storage_payloads.py:86: in test_rejected_write_returns_false_and_logs
+    assert "insert_task rejected: HTTP 401" in caplog.text
+E   AssertionError: assert 'insert_task rejected: HTTP 401' in ''
+E    +  where '' = <_pytest.logging.LogCaptureFixture object at 0x7f3d0b706cf0>.text
+__________________ test_rejected_read_returns_empty_and_logs ___________________
+tests/test_storage_payloads.py:93: in test_rejected_read_returns_empty_and_logs
+    assert "get_events rejected: HTTP 500" in caplog.text
+E   AssertionError: assert 'get_events rejected: HTTP 500' in ''
+E    +  where '' = <_pytest.logging.LogCaptureFixture object at 0x7f3d0b5bda90>.text
+=========================== short test summary info ============================
+FAILED tests/test_storage_payloads.py::test_update_task_sends_result_as_object
+FAILED tests/test_storage_payloads.py::test_insert_event_sends_event_data_as_object
+FAILED tests/test_storage_payloads.py::test_jsonable_coerces_non_json_types
+FAILED tests/test_storage_payloads.py::test_rejected_write_returns_false_and_logs
+FAILED tests/test_storage_payloads.py::test_rejected_read_returns_empty_and_logs
+============================== 5 failed in 0.11s ===============================
+RC=1

@@ -1,0 +1,44 @@
+== CI job storage — run 38342294304 job 115115928633 (PR #75, head 906df9b)
+2026-10-13T03:34:36.4688791Z Digest: sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+2026-10-13T03:34:36.4781781Z ##[command]/usr/bin/docker create --name 8ac4cf7f91f1405cbf4cef68907942d8_postgres17_18d82a --label fa3420 --network github_network_c53c8573c24e492bb759c42315fe13c2 --network-alias postgres -p 5432:5432 --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s --health-retries 30 -e "POSTGRES_PASSWORD=postgres" -e "POSTGRES_DB=agos" -e GITHUB_ACTIONS=true -e CI=true postgres:17
+﻿2026-10-13T03:34:47.7475471Z ##[group]Run curl -sSL -o /tmp/pgrst.tar.xz https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz
+2026-10-13T03:34:47.7476647Z ^[[36;1mcurl -sSL -o /tmp/pgrst.tar.xz https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz^[[0m
+2026-10-13T03:34:47.7477562Z ^[[36;1mecho "9f71269e61ac3a940281e93ff415760f5957e430e475ba4c3889f3ede7d5527c  /tmp/pgrst.tar.xz" | sha256sum -c -^[[0m
+2026-10-13T03:34:47.9887037Z /tmp/pgrst.tar.xz: OK
+2026-10-13T03:34:48.2486346Z == apply schema (Supabase role emulation + docs/sql/001_init.sql)
+2026-10-13T03:34:48.5229638Z == start PostgREST PostgREST 12.2.3
+2026-10-13T03:34:49.0902093Z == negative control: request without a valid JWT must be rejected
+2026-10-13T03:34:49.0981133Z invalid JWT -> HTTP 401
+2026-10-13T03:34:49.0981615Z == storage layer verification
+2026-10-13T03:34:49.3352508Z insert_task rejected: HTTP 401 {"code":"PGRST301","details":null,"hint":null,"message":"JWSError (JSONDecodeError \"Not valid base64url\")"}
+2026-10-13T03:34:49.3435562Z [PASS] tasks.insert_task returns True
+2026-10-13T03:34:49.3437683Z [PASS] tasks row readable after insert — http=200 rows=[{'task_id': 'r042-4b7af6b8', 'specialization': 'analysis', 'prompt': 'R-042 live check', 'status': 'queued', 'agent_name': None, 'result': None, 'elapsed_s': None, 'created_at': '2026-10-13T03:34:49.295639+00:00', 'finished_at': None}]
+2026-10-13T03:34:49.3439347Z [PASS] tasks.created_at defaulted
+2026-10-13T03:34:49.3439771Z [PASS] tasks.status == queued
+2026-10-13T03:34:49.3440246Z [PASS] tasks.get_tasks includes row — 1 rows
+2026-10-13T03:34:49.3440706Z [PASS] tasks.update_task(running) returns True
+2026-10-13T03:34:49.3441199Z [PASS] tasks.update_task(completed, result) returns True
+2026-10-13T03:34:49.3444379Z [PASS] tasks.status == completed — row={'task_id': 'r042-4b7af6b8', 'specialization': 'analysis', 'prompt': 'R-042 live check', 'status': 'completed', 'agent_name': 'r042-agent-4b7af6b8', 'result': {'ok': True, 'nested': {'n': [1, 2]}, 'output': 'x = 1', 'elapsed_s': 0.01}, 'elapsed_s': 0.01, 'created_at': '2026-10-13T03:34:49.295639+00:00', 'finished_at': '2026-10-13T03:34:49.309801+00:00'}
+2026-10-13T03:34:49.3446322Z [PASS] tasks.agent_name stored
+2026-10-13T03:34:49.3447005Z [PASS] tasks.finished_at is a timestamp — finished_at='2026-10-13T03:34:49.309801+00:00'
+2026-10-13T03:34:49.3448288Z [PASS] tasks.result stored as JSON object (not string) — type=dict value={'ok': True, 'nested': {'n': [1, 2]}, 'output': 'x = 1', 'elapsed_s': 0.01}
+2026-10-13T03:34:49.3449154Z [PASS] tasks.elapsed_s numeric
+2026-10-13T03:34:49.3449581Z [PASS] agent_stats.upsert (insert) returns True
+2026-10-13T03:34:49.3450110Z [PASS] agent_stats.upsert (conflict/merge) returns True
+2026-10-13T03:34:49.3452029Z [PASS] agent_stats exactly one row after two upserts — rows=[{'agent_name': 'r042-agent-4b7af6b8', 'specialization': 'analysis', 'tasks_completed': 2, 'tasks_failed': 1, 'total_time_s': 1.25, 'last_active_at': '2026-10-13T03:34:49.319687+00:00', 'updated_at': '2026-10-13T03:34:49.319687+00:00'}]
+2026-10-13T03:34:49.3455044Z [PASS] agent_stats merged values — row={'agent_name': 'r042-agent-4b7af6b8', 'specialization': 'analysis', 'tasks_completed': 2, 'tasks_failed': 1, 'total_time_s': 1.25, 'last_active_at': '2026-10-13T03:34:49.319687+00:00', 'updated_at': '2026-10-13T03:34:49.319687+00:00'}
+2026-10-13T03:34:49.3456502Z [PASS] agent_stats timestamps set
+2026-10-13T03:34:49.3456925Z [PASS] agent_stats.get_agent_stats includes row
+2026-10-13T03:34:49.3457414Z [PASS] events.insert_event returns True
+2026-10-13T03:34:49.3458819Z [PASS] events.event_data stored as JSON object (not string) — sample=[{'id': 1, 'event_type': 'r042_check', 'event_data': {'n': 3, 'ok': True, 'task_id': 'r042-4b7af6b8'}, 'created_at': '2026-10-13T03:34:49.328352+00:00'}]
+2026-10-13T03:34:49.3459979Z [PASS] events.id is integer identity
+2026-10-13T03:34:49.3460409Z [PASS] rejected write (invalid key) returns False
+2026-10-13T03:34:49.3460903Z R-042 storage verification: 22/22 checks passed
+2026-10-13T03:34:49.3664642Z == server end-to-end with live storage
+2026-10-13T03:34:49.8742098Z ============================= test session starts ==============================
+2026-10-13T03:34:50.3469707Z tests/test_r042_live_storage.py::test_status_reports_live_storage PASSED [ 33%]
+2026-10-13T03:34:50.4675081Z tests/test_r042_live_storage.py::test_task_lifecycle_persisted PASSED    [ 66%]
+2026-10-13T03:34:50.5231519Z tests/test_r042_live_storage.py::test_chat_persists_and_agent_stats_upserted PASSED [100%]
+2026-10-13T03:34:50.5232284Z ============================== 3 passed in 0.62s ===============================
+JOB_CONCLUSION=success
+TEST_JOB: https://github.com/reeveero-tech/All-hand/actions/runs/38342294304/job/115115767048

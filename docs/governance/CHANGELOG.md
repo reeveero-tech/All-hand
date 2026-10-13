@@ -619,3 +619,19 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0؛ pip-audit rc=0�
 
 ### الفحوص
 pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ scale audit 1000/1000 rc=0؛ إعادة إنتاج 850/1000 rc=0 (REPRO). الدليل logs/26.
+
+## 2026-10-13 — M7/6: R-042 — التحقق الحي من التخزين (PostgreSQL + PostgREST)
+
+### مضاف
+- CI job `storage` (مانع): `postgres:17` + PostgREST v12.2.3 (sha256) + `scripts/r042/run_local_stack.sh`.
+- `scripts/run_r042_storage_verify.py` (22 فحصاً، يعمل ضد Supabase الحقيقية بمتغيرات البيئة نفسها)، `scripts/r042/` (محاكاة أدوار Supabase، وكيل `/rest/v1`، مولد JWT تجريبي).
+- `tests/test_r042_live_storage.py` (3 — حية، تُتخطى افتراضياً) و`tests/test_storage_payloads.py` (5 — مميِّزة).
+- D-038، Q-019، R-042b.
+
+### مُصلح
+- `supabase_store.py`: `result`/`event_data` يُخزَّنان كائنات JSON لا نصوصاً مرمزة مرتين في `jsonb`؛ تسجيل رفض HTTP (RISK-013).
+- `server.py`: `lifespan` يغلق جلسة التخزين عند الإيقاف.
+
+### الحالة
+- R-042 → done (بالبديل الموثق)؛ معايير D-035: 7/7 وفق نص التعريف (السابع بالبديل — قابل للعكس، Q-019). Supabase المستضافة: R-042b blocked على المالك.
+- Q-020: فحص `storage` غير مُدرج في الفحوص الإلزامية لحماية الفرع — يحتاج موافقة المالك.

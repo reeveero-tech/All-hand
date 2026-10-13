@@ -1,7 +1,9 @@
 -- AGOS Agent Civilization — Supabase schema (R-022)
 -- Derived from the actual payloads sent by agent_civilization/storage/supabase_store.py
--- (fields sent: see docs/governance/DATA_MODEL.md). Column TYPES are inferred
--- from Python types; they were not verified against a live database.
+-- (fields sent: see docs/governance/DATA_MODEL.md). Column TYPES were inferred
+-- from Python types (R-022) and VERIFIED live in R-042 (M7/6) on PostgreSQL 17/18
+-- + PostgREST 12.2.3 via scripts/r042/run_local_stack.sh — no change required.
+-- Not yet applied to a hosted Supabase project (R-042b).
 
 create table if not exists tasks (
     task_id         text primary key,
