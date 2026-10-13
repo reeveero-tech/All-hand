@@ -1,0 +1,20 @@
+== R-088 BEFORE 2026-10-13T20:48:21Z main=48a5b5b
+-- runs-on in workflows
+.github/workflows/ci.yml:11:    runs-on: ubuntu-latest
+.github/workflows/ci.yml:34:    runs-on: ubuntu-latest
+.github/workflows/ci.yml:53:    runs-on: ubuntu-latest
+.github/workflows/ci.yml:105:    runs-on: ubuntu-latest
+.github/workflows/ci.yml:174:    runs-on: ubuntu-latest
+.github/workflows/ci.yml:241:    runs-on: ubuntu-latest
+.github/workflows/ci.yml:295:    runs-on: ubuntu-latest
+.github/workflows/ci.yml:312:    runs-on: ubuntu-latest
+.github/workflows/governance-gate.yml:15:    runs-on: ubuntu-latest
+-- runner image actually used by jobs of the last main push run
+run=38444056680
+test: Version: 20261002.596 Image: ubuntu-24.04 Version: 20261004.327.1 
+quality: Version: 20261002.596 Image: ubuntu-24.04 Version: 20261004.327.1 
+network: Version: 20261002.596 Image: ubuntu-24.04 Version: 20261004.327.1 
+docker: Version: 20261002.596 Image: ubuntu-24.04 Version: 20261004.327.1 
+build: Version: 20261002.596 Image: ubuntu-24.04 Version: 20261004.327.1 
+storage: Version: 20261002.596 Image: ubuntu-24.04 Version: 20261004.327.1 
+audit: Version: 20261002.596 Image: ubuntu-24.04 Version: 20261004.327.1 
