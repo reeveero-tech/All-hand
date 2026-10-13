@@ -698,3 +698,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - `package.json` (الجذر): `engines.node >=22.12.0` (متطلب TanStack Start منذ R-013).
 - CI: خطوات الجذر على Node 22 مع `npm ci --engine-strict`؛ web/ وDocker على Node 20 بلا تغيير.
 - سُجل R-077 (npm audit للجذر في CI — فجوة مكتشفة).
+
+## 2026-10-13 — R-077: npm audit لتبعيات الجذر في CI
+
+- CI job `audit`: فحص الجذر (إنتاج + كامل، high، مانع) — كان الجذر خارج أي فحص آلي.
+- ضابط سلبي (lodash 4.17.20) يفشل كما ينبغي.

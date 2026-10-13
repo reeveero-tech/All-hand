@@ -125,3 +125,6 @@
 ## تحديث R-076
 - CI job `build`: خطوات الجذر على **Node 22** (`setup-node` ثانٍ) و`npm ci --engine-strict` — تعارض `engines` صار فشلاً لا تحذيراً. خطوة `web/` على Node 20 كما هي.
 - الأدلة: Node 20 + engine-strict rc=1 (قبل وضابط سلبي)، Node 22 rc=0 + lint/build rc=0 (logs/44، logs/45).
+
+## تحديث R-077
+- CI job `audit`: خطوتان جديدتان مانعتان لتبعيات npm في الجذر (Node 22، `set -o pipefail`). على main: صفر؛ ضابط سلبي rc=1 (logs/46).

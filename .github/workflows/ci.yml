@@ -200,8 +200,8 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm audit --omit=dev --audit-level=high
-          # Blocking on critical/high in PRODUCTION deps only (react/react-dom).
-          # Dev-only (vite/esbuild) is non-blocking — see docs/governance/SECURITY.md R-045.
+          # Blocking on critical/high in production deps (react/react-dom).
+          # Dev deps are covered by the full audit below (blocking since R-071).
 
       - name: Web dependency audit (full — blocking since R-071)
         working-directory: web/
@@ -211,6 +211,25 @@ jobs:
           # R-071: vite 5 -> 8 closed the two dev-only advisories (esbuild/vite) that
           # made this step informational since R-045; it now blocks on high/critical
           # in dev deps too. See docs/governance/SECURITY.md R-071.
+
+      # R-077: the root TanStack Start app (src/, ~414 packages) was never
+      # audited in CI — only by hand during M6 cycles. npm audit reads
+      # package-lock.json, so no install is needed; Node 22 matches the root
+      # engines (R-076).
+      - name: Set up Node for the root app (>=22.12)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Root dependency audit (production deps)
+        run: |
+          set -o pipefail
+          npm audit --omit=dev --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_root_prod.log"
+
+      - name: Root dependency audit (full, including dev)
+        run: |
+          set -o pipefail
+          npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_root_full.log"
 
   storage:
     # R-042: live storage verification against PostgreSQL + PostgREST — the
