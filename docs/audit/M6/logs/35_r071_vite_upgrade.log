@@ -1,0 +1,45 @@
+== R-071 web/ vite upgrade 2026-10-13T14:33:22Z base=6c4be91 node=v20.20.2
+-- BEFORE
+agos-civilization-web@3.0.0 /tmp/wt71/web
++-- @vitejs/plugin-react@4.7.0
+| `-- vite@5.4.21 deduped
+`-- vite@5.4.21
+  `-- esbuild@0.21.5
+
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+AUDIT_BEFORE_RC=1
+build before: rc=0, assets: index-*.js 165214 B, index-*.css 11835 B
+-- UPGRADE: npm install -D vite@^8.3.4 @vitejs/plugin-react@^6.1.2
+
+added 9 packages, removed 51 packages, and changed 3 packages in 5s
+INSTALL_RC=0
+agos-civilization-web@3.0.0 /tmp/wt71/web
++-- @vitejs/plugin-react@6.1.2
+| `-- vite@8.3.4 deduped
+`-- vite@8.3.4
+  `-- rolldown@1.2.13
+
+-- AFTER audit (full)
+found 0 vulnerabilities
+AUDIT_FULL_RC=0
+found 0 vulnerabilities
+AUDIT_PROD_RC=0
+-- clean install from lock
+NPM_CI_RC=0
+-- build
+✓ 21 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.77 kB │ gzip:  0.45 kB
+dist/assets/index-CXDttt6K.css   11.60 kB │ gzip:  2.87 kB
+dist/assets/index-CNVv2G0G.js   164.25 kB │ gzip: 52.15 kB
+
+✓ built in 124ms
+BUILD_RC=0
+total 184
+drwxr-xr-x 2 user user   4096 Oct 13 14:33 .
+drwxr-xr-x 3 user user   4096 Oct 13 14:33 ..
+-rw-r--r-- 1 user user 164250 Oct 13 14:33 index-CNVv2G0G.js
+-rw-r--r-- 1 user user  11601 Oct 13 14:33 index-CXDttt6K.css

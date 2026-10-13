@@ -71,6 +71,7 @@
 - **نتيجة الدورة (R-060)**: pip-audit صفر ثغرات معروفة ✓؛ npm audit --omit=dev (الجذر وweb/) صفر ✓؛ npm audit الكامل صفر في الجذر وثغرتا dev فقط في web/ (نفس ثغري R-045).
 - **تحديثات آمنة مُطبقة**: pydantic مقيد بـ`>=2.12,<3` في `requirements.txt`؛ تحديثات minor في `web/package-lock.json` (electron-to-chromium، postcss، nanoid)؛ إعادة تنظيم dev-only في `package-lock.json` (الجذر).
 - **ثغرة لم تُصلح (مُوثقة)**: ثغرتا dev في web/ (esbuild moderate + vite high عبر esbuild) — الإصلاح يتطلب vite 8.x (تغيير رئيسي) — مؤجل بقرار R-045 الأصلي؛ لا يغير R-060 شيئاً.
+  - **أُغلقت في R-071** (2026-10-13): vite 5.4.21 → 8.3.4 أزال esbuild 0.21.5 كلياً (vite 8 يبني بـrolldown)؛ `npm audit` الكامل في web/ = صفر.
 - الأدلة: `docs/audit/M6/logs/21..22`.
 
 ## فحوص التبعيات (R-045 — 2026-10-12 — تاريخي)
@@ -95,3 +96,10 @@
 
 ## تحديث R-067 (دورة M6 الثانية/1)
 - pip-audit صفر؛ npm audit الجذر صفر (إنتاج وكامل)؛ web/ إنتاج صفر. تحديث minor/patch لقفل الجذر (27 تبعية مباشرة) — لا ترقيات رئيسية. الثغرتان dev في web/ باقيتان → R-071 (ترقية vite مستقلة). الأدلة `docs/audit/M6/logs/27..28`.
+
+## تحديث R-071 — إغلاق ثغرتي أدوات التطوير في web/
+- **قبل**: `npm audit` الكامل في web/ = 2 (esbuild ≤0.24.2 moderate — GHSA-67mh-4wv8-2f99؛ vite ≤6.4.2 high). **بعد**: صفر (logs/35).
+- **الترقية**: `vite` ^5.4.21 → ^8.3.4، `@vitejs/plugin-react` ^4.3.4 → ^6.1.2 (devDependencies فقط؛ react/react-dom بلا تغيير). esbuild لم يعد في شجرة web/.
+- **التحقق الوظيفي** (logs/36): بناء vite 5 وبناء vite 8 يُخدمان من `server.py` ويُفتحان في Chromium بلا رأس — 8/8 لكليهما (React مُثبت، النص العربي، `/api/*` 200، صفر أخطاء صفحة/console)؛ خادم التطوير vite 8 + وكيل `/api` → 200، 6/6؛ طلب بـ`Origin: https://evil.example` لم يُرجع `Access-Control-Allow-Origin`.
+- **CI**: خطوة `npm audit` الكاملة في web/ صارت **مانعة** (`--audit-level=high`، أزيل `continue-on-error`).
+- **متطلب**: vite 8 يتطلب Node `^20.19.0 || >=22.12.0` — CI (`node-version: '20'`) وDocker (`node:20-slim`) يأخذان أحدث 20.x (محلياً 20.20.2).

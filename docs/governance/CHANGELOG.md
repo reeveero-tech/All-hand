@@ -674,3 +674,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - `eslint.config.js` (ESLint 9 flat) بالتبعيات الموجودة فقط؛ إزالة توجيهي `eslint-disable` بلا فائدة في `src/lib/`.
 - CI `build`: الجذر صار يُثبت (`npm ci`) ويُفحص (`--max-warnings=0`) ويُبنى — لم يكن مشمولاً.
 - `npm run lint` rc=2 → rc=0؛ بناء الجذر rc=0 (logs/34).
+
+## 2026-10-13 — R-071: ترقية vite في web/ (إغلاق ثغرتي أدوات التطوير)
+
+- `vite` 5.4.21 → 8.3.4، `@vitejs/plugin-react` 4.7.0 → 6.1.2؛ npm audit الكامل في web/: 2 → 0.
+- تحقق وظيفي في Chromium قبل/بعد (8/8)، وخادم التطوير + وكيل `/api` (6/6) — `scripts/run_r071_web_verify.py`.
+- CI: audit الكامل في web/ صار مانعاً.

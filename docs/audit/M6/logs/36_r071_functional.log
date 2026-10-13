@@ -1,0 +1,41 @@
+== R-071 functional verification 2026-10-13T14:34:41Z
+-- A) BEFORE: main checkout, web/ built with vite 5.4.21
+build rc=0
+[PASS] GET / -> index.html
+[PASS] GET /assets/index-DGWuZoTX.js — text/javascript; charset=utf-8 165214 B
+[PASS] GET /assets/index-CVWjJx84.css — text/css; charset=utf-8 11835 B
+[PASS] React mounted (#root has children) — children=1
+[PASS] UI text rendered — 316 chars; sample='A\nAGOS Civilization\nv3.0 · حضارة الوكلاء\n◈لوحة التحكم\n✦المحا'
+[PASS] title — AGOS - حضارة الوكلاء
+[PASS] UI fetched /api/* successfully — [(200, '/api/events?limit=20'), (200, '/api/system/status'), (200, '/api/events/stream')]
+[PASS] no page/console errors
+
+R-071 web verification: 8/8 checks passed
+BEFORE_RC=0
+
+-- B) AFTER: branch, web/ built with vite 8.3.4
+[PASS] GET / -> index.html
+[PASS] GET /assets/index-CNVv2G0G.js — text/javascript; charset=utf-8 164250 B
+[PASS] GET /assets/index-CXDttt6K.css — text/css; charset=utf-8 11601 B
+[PASS] React mounted (#root has children) — children=1
+[PASS] UI text rendered — 316 chars; sample='A\nAGOS Civilization\nv3.0 · حضارة الوكلاء\n◈لوحة التحكم\n✦المحا'
+[PASS] title — AGOS - حضارة الوكلاء
+[PASS] UI fetched /api/* successfully — [(200, '/api/events?limit=20'), (200, '/api/system/status'), (200, '/api/events/stream')]
+[PASS] no page/console errors
+
+R-071 web verification: 8/8 checks passed
+AFTER_RC=0
+
+-- C) dev server (vite 8.3.4) + /api proxy -> :8000
+dev / -> 200; has @vite/client: 1
+dev /api/system/status (proxied) -> 200 {"status":"healthy","uptime_s":4,"llm_configured":false,"llm_model":"meta-llama/llama-3.3-70b-instru
+[PASS] React mounted (#root has children) — children=1
+[PASS] UI text rendered — 316 chars; sample='A\nAGOS Civilization\nv3.0 · حضارة الوكلاء\n◈لوحة التحكم\n✦المحا'
+[PASS] title — AGOS - حضارة الوكلاء
+[PASS] UI fetched /api/* successfully — [(200, '/api/events?limit=20'), (200, '/api/system/status'), (200, '/api/events?limit=20'), (200, '/api/system/status')]
+[PASS] no page/console errors
+
+R-071 web verification: 6/6 checks passed
+DEV_RC=0
+-- C2) cross-origin probe of dev server (advisory class of GHSA-67mh-4wv8-2f99)
+Access-Control-Allow-Origin for Origin: https://evil.example -> []
