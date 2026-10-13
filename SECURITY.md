@@ -1,7 +1,7 @@
 # AGOS Agent Civilization - Security Documentation
 
-**Version:** 1.0  
-**Last Updated:** 2026-07-23
+**Version:** 1.1  
+**Last Updated:** 2026-10-13 (R-074: corrected against the code; the measured, authoritative security reference is [docs/governance/SECURITY.md](docs/governance/SECURITY.md))
 
 ---
 
@@ -35,11 +35,16 @@ curl -X POST https://your-domain.com/api/tasks \
   -d '{"specialization":"analyst","prompt":"Analyze data"}'
 ```
 
-**Protected Endpoints:**
+**Protected Endpoints** (since R-004 — `verify_api_key` in `server.py`; proven by `tests/test_security.py`):
+- `POST /api/tasks` - Submit a task
+- `POST /api/chat` - Chat routing
 - `POST /api/agents/external` - Register external agents
 - `DELETE /api/agents/external/{name}` - Remove external agents
+- `GET /civilization/registry`, `POST /civilization/plan`, `POST /civilization/execute` (all `/civilization/*` routes)
 
-**Note:** Authentication is automatically enabled when `AGOS_API_KEY` is set.
+Missing key → `401`, wrong key → `403`.
+
+**Note:** Authentication is automatically enabled when `AGOS_API_KEY` is set; with it unset the endpoints above are open (development only).
 
 ---
 
@@ -142,7 +147,9 @@ logging.basicConfig(
 | `AGOS_RATE_LIMIT_REQUESTS` | No | 100 | MEDIUM |
 | `AGOS_RATE_LIMIT_WINDOW` | No | 60 | MEDIUM |
 | `OPENROUTER_API_KEY` | For AI | None | HIGH |
-| `SUPABASE_ANON_KEY` | For persistence | None | MEDIUM |
+| `SUPABASE_URL` | For persistence | None | MEDIUM |
+| `SUPABASE_SERVICE_KEY` | For persistence (preferred, server-side only) | None | HIGH |
+| `SUPABASE_ANON_KEY` | Fallback only — with the RLS in `docs/sql/001_init.sql` every write is rejected (D-039, RISK-018) | None | MEDIUM |
 
 ---
 
@@ -153,7 +160,7 @@ Before deploying to production, ensure:
 - [ ] Set `AGOS_API_KEY` to a secure value
 - [ ] Configure `AGOS_ALLOWED_ORIGINS` with specific domains
 - [ ] Review and adjust rate limits
-- [ ] Enable Supabase for persistent storage
+- [ ] Enable Supabase for persistent storage with `SUPABASE_SERVICE_KEY` (not the anon key), then run `python scripts/run_r042_storage_verify.py` (expect 22/22)
 - [ ] Use HTTPS for all connections
 - [ ] Review logs regularly
 - [ ] Enable monitoring/alerting
@@ -230,7 +237,7 @@ For enterprise compliance requirements, contact the development team.
 
 ---
 
-*Last updated: 2026-07-23*
+*Last updated: 2026-10-13 (R-074)*
 
 ---
 
@@ -244,6 +251,8 @@ For enterprise compliance requirements, contact the development team.
 - مسارات `/civilization/*` بلا أي معلمة أمنية.
 - `GET /health` يحسب رمز 503 لكنه لا يعيده أبداً (200 دائماً).
 - CORS الافتراضي `*` مع `allow_credentials=True`.
+
+> **حالة هذه النقاط الآن (تحقق R-074، 2026-10-13، عند `c27a801`)**: كلها أُصلحت — المصادقة مفروضة على المسارات أعلاه (R-004، `tests/test_security.py`)؛ `/health` يعيد 503 عند `unhealthy` (R-068، اختباران)؛ CORS مع `*` يعطّل `allow_credentials` (`server.py`: `allow_credentials=not _IS_WILDCARD`). القائمة أعلاه سجل تاريخي لتدقيق M0 لا وصف للوضع الحالي.
 
 المرجع المعتمد للتوثيق الأمني المقيس أصبح
 [docs/governance/SECURITY.md](docs/governance/SECURITY.md)، والمعالجة متتبعة كبند خارطة R-004. تظل إرشادات الضبط في هذه الوثيقة صالحة لغرضها الأصلي (كيفية ضبط المتغيرات عند النشر).

@@ -1,0 +1,70 @@
+== R-074 RISK evidence 2026-10-13T15:21:32Z main=c27a801
+-- RISK-016 metric (baseline in RISKS: 59,798 LOC Markdown, 82 README)
+tracked .md files: 33
+tracked .md LOC: 5850
+tracked README*.md: 5
+root-level .md: 7
+CIVILIZATION_MAP.md
+DEPLOY.md
+FINAL-ARCHITECTURE.md
+IMPLEMENTATION_PLAN.md
+INTEGRITY-REPORT.md
+README.md
+SECURITY.md
+by top dir (files / LOC):
+  .lovable: 1 / 19
+  docs: 24 / 3963
+  src: 1 / 21
+historical marker present in root docs:
+  CIVILIZATION_MAP.md: 1
+  DEPLOY.md: 
+  FINAL-ARCHITECTURE.md: 1
+  IMPLEMENTATION_PLAN.md: 1
+  INTEGRITY-REPORT.md: 1
+  README.md: 
+  SECURITY.md: 
+-- RISK-018: does startup detect anon/publishable key?
+agent_civilization/storage/supabase_store.py:20:# secret / service_role key (bypasses RLS). docs/sql/001_init.sql enables RLS
+agent_civilization/storage/supabase_store.py:21:# with no anon policies, so an anon/publishable key can read/write nothing
+agent_civilization/storage/supabase_store.py:26:    os.environ.get("SUPABASE_SERVICE_KEY")
+-- RISK-020 candidate: main push runs per merge commit
+  #77 61e5a4e merged 2026-10-13T05:23:10Z -> push runs: 2026-10-13T05:23:13Z success
+  #78 526b8b5 merged 2026-10-13T05:28:41Z -> push runs: 2026-10-13T05:28:44Z success
+  #79 6c4be91 merged 2026-10-13T05:32:41Z -> push runs: 2026-10-13T05:32:43Z success
+  #80 16e0aa9 merged 2026-10-13T14:35:22Z -> push runs: 2026-10-13T14:49:23Z success
+  #81 eb474e3 merged 2026-10-13T14:38:21Z -> push runs: NONE
+  #82 a2ba8de merged 2026-10-13T14:45:59Z -> push runs: 2026-10-13T14:46:02Z success
+  #83 c27a801 merged 2026-10-13T15:09:34Z -> push runs: 2026-10-13T15:09:38Z success
+
+-- code drift since measurements (c27a801 -> aa4fc26), Python/scripts only:
+(empty = no Python change; measurements in logs/47 still describe current code)
+-- root SECURITY.md corrections backed by tests:
+============================== 10 passed in 0.51s ==============================
+104:    allow_credentials=not _IS_WILDCARD,
+
+-- CI runs since R-068 review (created > 2026-10-13T05:20Z), snapshot at 15:20Z (created / branch / event / status / conclusion / sha / run id / title):
+2026-10-13T15:20:23Z	m6/r076-root-node22	pull_request	in_progress		1f77de9	38421200330	M6/14: R-076 — Node ‎>=22.12 لتطبيق الجذر
+2026-10-13T15:20:23Z	m6/r076-root-node22	pull_request	completed	success	1f77de9	38421200094	M6/14: R-076 — Node ‎>=22.12 لتطبيق الجذر
+2026-10-13T15:09:38Z	main	push	completed	success	c27a801	38419630340	Merge pull request #83 from reeveero-tech/m6/r073-
+2026-10-13T15:03:29Z	m6/r073-deps-security-cycle3	pull_request	completed	success	d1ff18f	38418746128	M6/13: R-073 — دورة M6 الثالثة/1: تبعيات وأمان
+2026-10-13T15:03:29Z	m6/r073-deps-security-cycle3	pull_request	completed	success	d1ff18f	38418746118	M6/13: R-073 — دورة M6 الثالثة/1: تبعيات وأمان
+2026-10-13T14:49:23Z	main	push	completed	success	16e0aa9	38416673392	Merge pull request #80 from reeveero-tech/m6/r070-
+2026-10-13T14:46:02Z	main	push	completed	success	a2ba8de	38416194609	Merge pull request #82 from reeveero-tech/m6/r072-
+2026-10-13T14:44:19Z	m6/r072-network-test-isolation	pull_request	completed	success	6909dca	38415943032	M6/12: R-072 — فصل الاختبارات المعتمدة على الشبكة
+2026-10-13T14:44:19Z	m6/r072-network-test-isolation	pull_request	completed	success	6909dca	38415942945	M6/12: R-072 — فصل الاختبارات المعتمدة على الشبكة
+2026-10-13T14:42:01Z	m6/r072-network-test-isolation	pull_request	completed	failure	99a0069	38415609026	M6/12: R-072 — فصل الاختبارات المعتمدة على الشبكة
+2026-10-13T14:42:01Z	m6/r072-network-test-isolation	pull_request	completed	success	99a0069	38415608938	M6/12: R-072 — فصل الاختبارات المعتمدة على الشبكة
+2026-10-13T14:36:39Z	m6/r071-web-vite-upgrade	pull_request	completed	success	40529ed	38414835185	M6/11: R-071 — ترقية vite في web/ وإغلاق ثغرتي أدو
+2026-10-13T14:36:39Z	m6/r071-web-vite-upgrade	pull_request	completed	success	40529ed	38414835002	M6/11: R-071 — ترقية vite في web/ وإغلاق ثغرتي أدو
+2026-10-13T14:32:57Z	m6/r070-root-eslint-config	pull_request	completed	success	08ae6fd	38414305278	M6/10: R-070 — إصلاح npm run lint في الجذر
+2026-10-13T14:32:57Z	m6/r070-root-eslint-config	pull_request	completed	success	08ae6fd	38414305273	M6/10: R-070 — إصلاح npm run lint في الجذر
+2026-10-13T05:32:43Z	main	push	completed	success	6c4be91	38351935626	Merge pull request #79 from reeveero-tech/m6/r069-
+2026-10-13T05:30:52Z	m6/r069-roadmap-review-cycle2	pull_request	completed	success	a7a8e33	38351773395	M6/9: R-069 — مراجعة الخارطة (إغلاق دورة M6 الثاني
+2026-10-13T05:30:52Z	m6/r069-roadmap-review-cycle2	pull_request	completed	success	a7a8e33	38351773378	M6/9: R-069 — مراجعة الخارطة (إغلاق دورة M6 الثاني
+2026-10-13T05:28:44Z	main	push	completed	success	526b8b5	38351582635	Merge pull request #78 from reeveero-tech/m6/r068-
+2026-10-13T05:27:07Z	m6/r068-measurements-risks-cycle2	pull_request	completed	success	0dc8899	38351444780	M6/8: R-068 — دورة M6 الثانية: القياسات والأخطاء و
+2026-10-13T05:27:07Z	m6/r068-measurements-risks-cycle2	pull_request	completed	success	0dc8899	38351444681	M6/8: R-068 — دورة M6 الثانية: القياسات والأخطاء و
+2026-10-13T05:23:13Z	main	push	completed	success	61e5a4e	38351115260	Merge pull request #77 from reeveero-tech/m6/r067-
+2026-10-13T05:21:36Z	m6/r067-deps-security-cycle2	pull_request	completed	success	85b9d3b	38350978360	M6/7: R-067 — دورة M6 الثانية: تبعيات وأمان
+2026-10-13T05:21:36Z	m6/r067-deps-security-cycle2	pull_request	completed	success	85b9d3b	38350978349	M6/7: R-067 — دورة M6 الثانية: تبعيات وأمان
+summary: 23 completed = 22 success + 1 failure (38415609026: R-072 job network, missing httpx2 — fixed in 6909dca); 1 in progress at snapshot time
