@@ -767,3 +767,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 
 - checkout v4→v7، setup-node v4→v7، setup-python v5→v7، upload-artifact v4→v7؛ لا تغيير كاسر يمسّ المدخلات المستخدمة.
 - صفر تنبيه Node 20 في الـ8 jobs؛ RISK-022 مغلقة. سُجل R-089 (web/ على Node 20 المنتهي).
+
+## 2026-10-14 — R-089: `web/` وDocker على Node 22 (D-042)
+
+- `web/package.json`: `engines.node >=22.12.0`؛ CI: Node 22 + `npm ci --engine-strict` لـ`web/`؛ Dockerfile: `node:22-slim` + `npm ci --engine-strict`.
+- `dist` مطابق بايتاً ببايت لبناء Node 20؛ Node 20 يُرفض الآن (EBADENGINE).

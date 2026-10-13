@@ -6,9 +6,9 @@
 
 ### الواجهة (`web/`)
 ```bash
-cd web && npm install && npm run build
+cd web && npm ci --engine-strict && npm run build   # Node >=22.12.0 (R-089)
 ```
-- مُتحقق: نجاح في 902ms ([log 08](../audit/M0/logs/08_web_build.log)).
+- مُتحقق: نجاح في 902ms ([log 08](../audit/M0/logs/08_web_build.log)). منذ R-089: `engines.node >=22.12.0` في `web/package.json` — Node 20 (منتهي الدعم) يُرفض بـ`EBADENGINE` (logs/74).
 
 ### الخادم
 ```bash
@@ -26,7 +26,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 ## النشر
 
 ### Docker (من `Dockerfile`)
-- مراحل: `node:20-slim` لبناء `web/` ثم `python:3.12-slim` للتشغيل؛ يُخدم `web/dist` عبر `server.py`. منذ R-071: `web/` يستخدم vite 8 ويتطلب Node `^20.19.0 || >=22.12.0`. **تطبيق الجذر (`src/`، TanStack Start) يتطلب Node `>=22.12.0`** (R-076 — معلن في `package.json` ومفروض في CI بـ`npm ci --engine-strict`)؛ ليس جزءاً من صورة Docker.
+- مراحل: `node:22-slim` لبناء `web/` (منذ R-089، D-042؛ كان `node:20-slim`) بـ`npm ci --engine-strict` بلا بديل `npm install` صامت، ثم `python:3.12-slim` للتشغيل؛ يُخدم `web/dist` عبر `server.py`. منذ R-071: `web/` يستخدم vite 8 (يدعم `^20.19.0 || >=22.12.0`)؛ المشروع يثبّت `>=22.12.0`. **تطبيق الجذر (`src/`، TanStack Start) يتطلب Node `>=22.12.0`** (R-076 — معلن في `package.json` ومفروض في CI بـ`npm ci --engine-strict`)؛ ليس جزءاً من صورة Docker.
 - **`.dockerignore`** (جديد في R-040): يمنع دخول `.git` و`node_modules` و`web/dist` والأسرار (`.env*`) في سياق `COPY . .` — كانت تغيب قبله فكان سياق البناء يشمل كل ملفات العمل.
 - **التحقق (R-040، ✓ done — دفعة M4/1)**: job `docker` في CI تبني الصورة وتشغلها وتتحقق من `/health` (HTTP 200 + جسم JSON يحوي `status`)، مع جمع السجلات ورفعها كـ artifact. تحققت في تشغيلين: الأول (run 38285632672) على رأس `f02ed61` والثاني/النهائي (run 38285911497) على رأس `13fc37d` — كلاهما نجح. الأدلة مُرتكزة في `docs/audit/M4/logs/05..09`. بيئة التحرير المحلية بلا Docker (دليل `docs/audit/M4/logs/04`).
 
@@ -38,7 +38,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 - `VITE_SUPABASE_*` بدائل خلفية يقرأها `supabase_store.py`؛ الواجهة `web/` لا تقرأها.
 
 ### CI (`ci.yml`)
-- الوظائف (تحقق R-075 من `ci.yml`): quality (ruff F/E722) + test (pytest الافتراضي، بلا إنترنت — D-040) + build (web/ على Node 20؛ الجذر على Node 22: `npm ci --engine-strict` + eslint `--max-warnings=0` + build — R-070/R-076) + docker (R-040) + audit (pip-audit + npm audit لـweb/ والجذر، إنتاج وكامل، مانع — R-045/R-071/R-077) + storage (PostgreSQL + PostgREST حي — R-042) + network (`pytest -m network` على الإنترنت الحقيقي، غير إلزامي — D-040) + publish (معطل إلا بـ`[publish]` — D-011)؛ وسير عمل مستقل `governance-gate.yml` (R-020). الفحوص الإلزامية لحماية `main` (قراءة API): quality، test، build، docker، governance، audit — `storage` خارجها (Q-020) و`network` خارجها عمداً (D-040).
+- الوظائف (تحقق R-075 من `ci.yml`): quality (ruff F/E722) + test (pytest الافتراضي، بلا إنترنت — D-040) + build (web/ على Node 22 (R-089)؛ الجذر على Node 22: `npm ci --engine-strict` + eslint `--max-warnings=0` + build — R-070/R-076) + docker (R-040) + audit (pip-audit + npm audit لـweb/ والجذر، إنتاج وكامل، مانع — R-045/R-071/R-077) + storage (PostgreSQL + PostgREST حي — R-042) + network (`pytest -m network` على الإنترنت الحقيقي، غير إلزامي — D-040) + publish (معطل إلا بـ`[publish]` — D-011)؛ وسير عمل مستقل `governance-gate.yml` (R-020). الفحوص الإلزامية لحماية `main` (قراءة API): quality، test، build، docker، governance، audit — `storage` خارجها (Q-020) و`network` خارجها عمداً (D-040).
 - `publish` يرفع إلى PyPI عند push لـ main مشروطاً بنجاح الوظائف السابقة ووسم `[publish]` في رسالة الدمج (D-011) — راجع RISK-009.
 
 ## متغيرات البيئة (المرصودة في الكود)

@@ -1,7 +1,9 @@
-FROM node:20-slim AS frontend-build
+# R-089 (D-042): Node 22 (Node 20 EOL 2026-04-30); clean install from the lockfile,
+# engines enforced — no silent fallback to `npm install`.
+FROM node:22-slim AS frontend-build
 WORKDIR /app/web
-COPY web/package.json web/package-lock.json* ./
-RUN npm ci || npm install
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --engine-strict --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 

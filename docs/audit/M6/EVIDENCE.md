@@ -824,3 +824,12 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | تنبيه "Node.js 20 is deprecated" | 6/6 jobs المجلوبة | 0/8 |
 | jobs | 7/7 نجاح | 8/8 نجاح (مع governance) |
 | artifacts | docker 8189B، r042 1767B | docker 8209B، r042 1769B |
+
+## الدورة الخامسة — R-089 web/ على Node 22 (2026-10-14)
+
+| فحص | قبل (logs/73) | بعد (logs/74) |
+|---|---|---|
+| Node لـ`web/` في CI / Docker | 20 / `node:20-slim` | 22 / `node:22-slim` |
+| `npm ci --engine-strict` على Node 20 | rc=0 (لا engines) | rc=1 EBADENGINE |
+| build + audit على Node 22 | — | rc=0، 0 ثغرات |
+| `dist` Node 20 مقابل Node 22 | — | مطابق (sha256، 3 ملفات) |

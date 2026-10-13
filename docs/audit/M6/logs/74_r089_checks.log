@@ -1,0 +1,22 @@
+== R-089 checks 2026-10-13T21:29:40Z base=a855e2c+changes
+-- A) Node 20 build of OLD tree (reference output)
+node v20.20.2 build rc=0
+-- B) Node 22: npm ci --engine-strict + build + audit (new tree)
+node v22.23.3 npm ci --engine-strict rc=0
+build rc=0
+found 0 vulnerabilities
+found 0 vulnerabilities
+-- C) dist identical Node 20 vs Node 22?
+IDENTICAL (3 files, sha256)
+-- D) negative control: Node 20 + --engine-strict now refused
+npm error code EBADENGINE
+npm error engine Unsupported engine
+node v20.20.2 npm ci --engine-strict rc=1
+-- restore web/node_modules on Node 22
+rc=0
+-- E) pytest (web/dist present) + ruff
+================= 230 passed, 3 skipped, 3 deselected in 3.70s =================
+All checks passed!
+-- F) workflow YAML
+yaml ok
+-- G) docker locally: not available in sandbox — verified by CI job docker
