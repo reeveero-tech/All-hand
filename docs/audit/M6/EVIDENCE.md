@@ -643,3 +643,14 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | بعد التحديث: npm ci / lint (max-warnings=0) / build الجذر | rc=0 / rc=0 / rc=0 | logs/43 |
 | pytest مع أحدث pydantic (2.14.1) | 198 + 3 + 3 rc=0 | logs/43 |
 | EBADENGINE `@tanstack/react-start` (node >=22.12) على Node 20 | قائم منذ R-013 → R-076 | logs/43 |
+
+---
+
+## الدورة الثالثة — R-076 Node لتطبيق الجذر (2026-10-13)
+
+| الفحص | النتيجة | السجل |
+|---|---|---|
+| Node 20.20.2: `npm ci --engine-strict` | rc=1 (EBADENGINE)؛ 9 حزم `>=22.12.0` | logs/44 |
+| Node 22.23.3 (sha256 مُتحقق من SHASUMS256): `npm ci --engine-strict` | rc=0، صفر EBADENGINE | logs/45 |
+| lint `--max-warnings=0` / build / audit (Node 22) | rc=0 / rc=0 / 0 | logs/45 |
+| ضابط سلبي: القفل الجديد على Node 20 + engine-strict | rc=1 | logs/45 |

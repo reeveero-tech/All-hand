@@ -77,10 +77,21 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
 
+      # R-076: @tanstack/react-start (and 8 sibling packages) declare
+      # engines.node >=22.12.0, mirrored in the root package.json. web/ and the
+      # Docker image stay on Node 20 (vite 8 supports ^20.19); only the root app
+      # moves. --engine-strict turns any future engines mismatch into a failure.
+      - name: Set up Node for the root app (>=22.12)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       # R-070: the root TanStack Start app (src/) was neither linted nor built
       # in CI; `npm run lint` had been broken (no eslint.config.js) unnoticed.
-      - name: Root app — install (clean, from lockfile)
-        run: npm ci --no-audit --no-fund
+      - name: Root app — install (clean, from lockfile, engines enforced)
+        run: |
+          node --version
+          npm ci --engine-strict --no-audit --no-fund
 
       - name: Root app — lint (no warnings allowed)
         run: npx eslint . --max-warnings=0

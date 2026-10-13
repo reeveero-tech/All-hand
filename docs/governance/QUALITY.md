@@ -121,3 +121,7 @@
 - `pytest tests/` الافتراضي: **198 + 3 متخطاة + 3 مستبعدة** — لا يلمس الإنترنت (حماية `tests/conftest.py`). بلا شبكة إطلاقاً: 198/198 (كان 5 فشل — logs/38، logs/39).
 - **CI job `network` جديد** (needs quality، **غير إلزامي**): `pytest tests/ -m network` — الوكلاء الثلاثة على الإنترنت الحقيقي.
 - قاعدة "CI هو الحَكَم" لفشل `researcher` المحلي (M7/6، R-068) لم تعد لازمة للحزمة الافتراضية.
+
+## تحديث R-076
+- CI job `build`: خطوات الجذر على **Node 22** (`setup-node` ثانٍ) و`npm ci --engine-strict` — تعارض `engines` صار فشلاً لا تحذيراً. خطوة `web/` على Node 20 كما هي.
+- الأدلة: Node 20 + engine-strict rc=1 (قبل وضابط سلبي)، Node 22 rc=0 + lint/build rc=0 (logs/44، logs/45).

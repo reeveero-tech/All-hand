@@ -1,0 +1,19 @@
+== R-076 AFTER 2026-10-13T15:11:42Z
+node v22.23.3 npm 10.9.9
+up to date in 862ms
+ package-lock.json | 3 +++
+ 1 file changed, 3 insertions(+)
++      },
++      "engines": {
++        "node": ">=22.12.0"
+added 414 packages in 2m
+NODE22_ENGINE_STRICT_CI_RC=0
+(EBADENGINE count on Node 22 — 0 expected; rg rc=1 means none)
+ROOT_LINT_RC=0
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+ROOT_BUILD_RC=0
+found 0 vulnerabilities
+-- negative probe: same lock on Node 20 with --engine-strict must fail
+npm error code EBADENGINE
+NODE20_ENGINE_STRICT_RC=1
