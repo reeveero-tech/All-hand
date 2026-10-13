@@ -38,7 +38,7 @@
 
 ### داخل النطاق (المسار الحي المُتحقق منه)
 
-- الخادم `server.py` + `agent_civilization/` (باستثناء `specialists/` stubs).
+- الخادم `server.py` + `agent_civilization/` (بما فيها `specialists/` — مُوصّلة اختيارياً بمسار التشغيل منذ R-032/M7/4 عبر `AGOS_AGENT_IMPL=specialists`).
 - `web/` (واجهة React التي يخدمها Docker — تم التحقق من البناء بنجاح).
 - `agos_kernel/` (البنية التحتية الحية: circuit breaker، metrics، health، redis — مُستوردة من `server.py`).
 - `tests/` (الاختبارات الجذرية).
@@ -47,7 +47,7 @@
 ### خارج النطاق (غير مرتبط بمسار التشغيل المُتحقق منه)
 
 - `agos-kernel/` (dash) — حُذف من main في R-033 (D-026) وأُرشف في `archive/agos-kernel-v1`؛ لم يكن مستخدماً في أي مسار تشغيل.
-- `src/` + root `package.json` (TanStack TS) — فشل البناء (`lovable-error-reporting` مفقود). راجع Q-002.
+- `src/` + root `package.json` (TanStack TS) — البناء ناجح منذ R-013/M2/4 (استُكملت وحدات `lovable-error-reporting`). راجع Q-002 (محلولة جزئياً — تقرير الربط الحقيقي مؤجل).
 - المجلدات الجذرية غير المستوردة (`foundation`, `rie`, `meta`, `research`, `intelligence`, `evolution`, `enterprise`, `ecosystem`, `domain`, `cognition`, `seos`, `products`, `cloud`, `civilization`, `consolidation`, `constitution`, `execution`, `execution-program`, `knowledge-base`, `rie-sprint1`, `sdk`, `sdks`, `sdl-loop`, `spec-formal`, `sprint-000`, إلخ) — **لم يُتحقق من استخدامها** في مسار التشغيل؛ راجع Q-003.
-- `agent_civilization/agents/specialists/` — 1,021 ملف Python (21 `__init__.py` + 1,000 ملف وكيل stub)؛ **لم يُتحقق من استيرادها** من أي ملف حي؛ راجع Q-004.
+- `agent_civilization/agents/specialists/` — 1,021 ملف Python (21 `__init__.py` + 1,000 ملف وكيل قالبي)؛ مُوصّلة بمسار التشغيل اختيارياً منذ R-032/M7/4 (D-037)؛ راجع Q-004 (حُل جزئياً).
 - `agents.yaml` — يُقرأ فقط من `agent_manager.py` و`auto_fetch_agents.py` (سكربتات مستقلة، غير مستوردة من `server.py`)؛ راجع Q-006.

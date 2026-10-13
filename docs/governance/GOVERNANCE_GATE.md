@@ -1,6 +1,6 @@
 # بوابة الحوكمة (GOVERNANCE_GATE)
 
-> **الحالة**: workflow منفّذ في `.github/workflows/governance-gate.yml` (دفعة M3/3، R-020). **غير مفروض** حتى تُفعَّل حماية الفرع `main` (require status checks). اختُبر منطقه محلياً (حالتان إيجابيتان وأربع سلبيات) في `docs/audit/M3/logs/gate_test_harness.sh`؛ الاختبار السلبي على PR حقيقي يُوثَّق بعد الدمج.
+> **الحالة**: workflow منفّذ في `.github/workflows/governance-gate.yml` (دفعة M3/3، R-020). **مفروضة فعلياً منذ R-024 (M7/2، 2026-10-12)**: حماية الفرع `main` تفرض الفحوص الإلزامية (quality/test/build/docker/governance/audit؛ strict). اختُبر منطقه محلياً (حالتان إيجابيتان وأربع سلبيات) في `docs/audit/M3/logs/gate_test_harness.sh`. حد موثق: `enforce_admins=false` فحساب المالك يستطيع التجاوز (قرار المالك).
 
 ## القاعدة
 
