@@ -1,0 +1,27 @@
+== R-085 CI review 2026-10-13T21:40:20Z main=fa59212
+-- push run per merge commit #91..#97 (RISK-020)
+  #91 91968a9 merged 2026-10-13T17:27:40Z -> push: 2026-10-13T17:27:42Z success 38438836340
+  #92 64214cc merged 2026-10-13T17:56:39Z -> push: 2026-10-13T17:56:42Z success 38442741488
+  #93 8fc58a6 merged 2026-10-13T18:06:22Z -> push: 2026-10-13T18:06:24Z success 38444056680
+  #94 48a5b5b merged 2026-10-13T20:48:19Z -> push: 2026-10-13T20:48:22Z success 38465723522
+  #95 aba8f26 merged 2026-10-13T21:07:41Z -> push: 2026-10-13T21:07:44Z success 38468221513
+  #96 a855e2c merged 2026-10-13T21:28:37Z -> push: 2026-10-13T21:28:41Z success 38470895456
+  #97 fa59212 merged 2026-10-13T21:39:16Z -> push: 2026-10-13T21:39:18Z success 38472220757 (was in_progress at first snapshot)
+-- all ci.yml + governance runs created since 2026-10-13T17:05Z
+  total runs: 33
+  by conclusion:
+          1 
+          3 failure
+         29 success
+  non-success runs:
+    (main push 38472220757 for #97 was in_progress at snapshot; completed: completed success)
+    2026-10-13T20:48:51Z	Governance Gate	m6/r088-ubuntu-2604-readiness	pull_request	failure	38465787765
+    2026-10-13T17:40:37Z	AGOS Kernel CI/CD	m6/r083-metrics-middleware	pull_request	failure	38440573044
+    2026-10-13T17:31:55Z	AGOS Kernel CI/CD	m6/r083-metrics-middleware	pull_request	failure	38439407319
+-- main push run 38472220757 (#97) jobs: quality=success, test=success, network=success, build=success, audit=success, docker=success, storage=success, publish=skipped
+-- docker job 115554218509 log (496 lines): Image: ubuntu-26.04 x1; image_size=63647674 x1; "status":"degraded" x3; "status":"healthy" x6
+-- docker build stage image: library/node:22-slim (7 matches in build log)
+-- note: "status":"degraded" x3 in docker log = /health with no Supabase configured (in-memory storage, expected per OPERATIONS); job asserts HTTP 200 + body.
+-- R-085 discovery: Python version gap (tests 3.11 in CI vs runtime 3.12 in Docker/Render)
+   Dockerfile: FROM python:3.12-slim | render.yaml PYTHON_VERSION: "3.12.0" | ci.yml python-version: python-version: '3.11' 
+   local Python 3.12.13: =========== 230 passed, 3 skipped, 3 deselected, 1 warning in 5.77s ============
