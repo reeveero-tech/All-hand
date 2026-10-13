@@ -141,5 +141,6 @@
 - CI يشغّل Python 3.11؛ صياغة 3.12+ (مثل `\` داخل تعبير f-string) تمر محلياً على نسخة أحدث وتفشل في CI. التحقق المحلي قبل الدفع: `python3.11 -m compileall -q server.py agent_civilization agos_kernel tests scripts` + pytest على 3.11 (logs/63b).
 - كذلك job `test` لا يبني `web/` — مسار SPA (`/{full_path:path}`) غير مسجّل فيه؛ الاختبارات التي تعتمد عليه يجب أن تكيّف توقعها (R-083، logs/63c).
 
-## R-088 — صورة المشغّل (تجربة جارية)
-- كل jobs في `ci.yml` و`governance-gate.yml`: `runs-on: ubuntu-26.04` صراحةً (كانت `ubuntu-latest` = ubuntu-24.04 حتى الترحيل، logs/69).
+## R-088 — صورة المشغّل `ubuntu-26.04` (D-041)
+- كل jobs في `ci.yml` و`governance-gate.yml`: `runs-on: ubuntu-26.04` صراحةً (كانت `ubuntu-latest` = ubuntu-24.04، logs/69). مختبرة: الـ7 jobs + governance ناجحة على الصورة 20260901.588، Python 3.11.16، Node 22.23.3 (logs/70). `publish` غير مُجرّب.
+- تغيير الصورة لاحقاً = commit صريح مع تشغيل كامل (لا ترحيل صامت).

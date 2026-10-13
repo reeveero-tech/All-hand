@@ -757,3 +757,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 
 - pip-audit صفر؛ npm audit صفر (الجذر وweb/)؛ لا تحديث ضمن النطاقات؛ venv نظيف على Python 3.11 بأحدث متوافق → 230 + 3 + 3.
 - اكتشافان من تنبيهات CI: Actions على Node 20 (R-087، RISK-022)، ترحيل `ubuntu-latest` إلى 26.04 من 2026-10-19 (R-088، RISK-021).
+
+## 2026-10-13 — R-088: CI على Ubuntu 26.04 (D-041)
+
+- كل `runs-on` في `ci.yml` و`governance-gate.yml` → `ubuntu-26.04` صراحةً، بعد تجربة ناجحة للـ7 jobs على الصورة 20260901.588 (Python 3.11.16، Node 22.23.3).
+- RISK-021 مغلقة. `publish` غير مُجرّب (يتطلب `[publish]`).

@@ -807,3 +807,11 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | pip-audit / npm audit (جذر، web/) | 0 / 0، 0 | logs/67 |
 | venv نظيف Python 3.11 بأحدث متوافق | 230 + 3 + 3 | logs/68 |
 | تنبيهات CI على main | Node 20 (كل job)، Ubuntu 26.04 (7 jobs) | logs/68 |
+
+## الدورة الخامسة — R-088 Ubuntu 26.04 (2026-10-13)
+
+| job | قبل (logs/69): الصورة | بعد (logs/70): الصورة / النتيجة |
+|---|---|---|
+| quality، test، network، docker، build، storage، audit | ubuntu-24.04 (20261004) عبر `ubuntu-latest` | ubuntu-26.04 (20260901.588) / 7/7 نجاح |
+| test | 230 + 3 + 3 | 230 + 3 + 3 (Python 3.11.16) |
+| publish | — | غير مُجرّب (`[publish]` فقط) |

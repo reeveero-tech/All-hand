@@ -33,7 +33,7 @@ on:
     branches: [main]
 jobs:
   governance:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04   # D-041 (R-088)
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
