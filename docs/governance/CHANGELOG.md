@@ -680,3 +680,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - `vite` 5.4.21 → 8.3.4، `@vitejs/plugin-react` 4.7.0 → 6.1.2؛ npm audit الكامل في web/: 2 → 0.
 - تحقق وظيفي في Chromium قبل/بعد (8/8)، وخادم التطوير + وكيل `/api` (6/6) — `scripts/run_r071_web_verify.py`.
 - CI: audit الكامل في web/ صار مانعاً.
+
+## 2026-10-13 — R-072: فصل الاختبارات المعتمدة على الشبكة (D-040)
+
+- `tests/conftest.py`: نقل مزيّف حتمي للمضيفات الخارجية + منع أي اتصال خارجي حقيقي في الاختبارات الحتمية (loopback مستثنى).
+- `tests/test_network_isolation.py` (6) و`tests/test_network_live.py` (3، `network`)؛ `pytest.ini`: `-m "not network"`.
+- CI job `network` (غير إلزامي). بلا إنترنت: 5 فشل → 198/198. RISK-019 مغلقة.

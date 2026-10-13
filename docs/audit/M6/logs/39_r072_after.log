@@ -1,0 +1,46 @@
+== R-072 AFTER 2026-10-13T14:39:32Z base=eb474e3
+-- A) default suite, fully offline (unshare -rn)
+DNS: fails (isolated): [Errno -3] Temporary failure in name resolution
+============ 1 failed, 197 passed, 3 skipped, 3 deselected in 3.53s ============
+OFFLINE_PYTEST_RC=1
+-- B) default suite, online
+================= 198 passed, 3 skipped, 3 deselected in 3.40s =================
+ONLINE_PYTEST_RC=0
+-- C) pytest -m network (real internet)
+====================== 3 passed, 201 deselected in 0.61s =======================
+NETWORK_RC=0
+-- D) pytest -m network offline (must FAIL — proves these tests really use the network)
+====================== 3 failed, 201 deselected in 0.46s =======================
+NETWORK_OFFLINE_RC=1
+-- E) guard discriminating: conftest guard disabled -> offline suite
+FAILED tests/test_civilization_scale.py::test_agents_execute_real_dispatch - ...
+FAILED tests/test_network_isolation.py::test_external_socket_connect_is_blocked
+FAILED tests/test_network_isolation.py::test_external_dns_is_not_queried - so...
+FAILED tests/test_network_isolation.py::test_loopback_is_untouched - OSError:...
+FAILED tests/test_network_isolation.py::test_urlopen_is_the_fake_here - Asser...
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[api_integrator]
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[network_client]
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[researcher]
+FAILED tests/test_specialist_runtime.py::test_every_specialization_executes_through_specialist_class
+======= 9 failed, 187 passed, 3 skipped, 3 deselected, 2 errors in 3.43s =======
+-- F) ruff
+All checks passed!
+RUFF_RC=0
+
+== NOTE: run A above had 1 failure = test_loopback_is_untouched with 'Network is unreachable': 'unshare -rn' starts with lo DOWN (ip link: state DOWN). Not a guard defect. Re-run with lo UP (a real offline machine has loopback):
+-- A2) default suite, fully offline, lo up
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+DNS: fails (isolated): [Errno -3] Temporary failure in name resolution
+================= 198 passed, 3 skipped, 3 deselected in 3.60s =================
+OFFLINE_PYTEST_RC=0
+-- E2) guard disabled (conftest.py removed temporarily), offline, lo up
+FAILED tests/test_civilization_scale.py::test_agents_execute_real_dispatch - ...
+FAILED tests/test_network_isolation.py::test_external_socket_connect_is_blocked
+FAILED tests/test_network_isolation.py::test_external_dns_is_not_queried - so...
+FAILED tests/test_network_isolation.py::test_urlopen_is_the_fake_here - Asser...
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[api_integrator]
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[network_client]
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[researcher]
+FAILED tests/test_specialist_runtime.py::test_every_specialization_executes_through_specialist_class
+======= 8 failed, 188 passed, 3 skipped, 3 deselected, 2 errors in 3.56s =======
+?? tests/conftest.py

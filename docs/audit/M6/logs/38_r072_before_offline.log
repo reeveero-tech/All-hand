@@ -1,0 +1,14 @@
+== R-072 BEFORE: pytest in an isolated network namespace (unshare -rn: no interfaces but lo) 2026-10-13T14:37:31Z main=16e0aa9
+DNS: fails as expected: [Errno -3] Temporary failure in name resolution
+E    +    where <built-in method get of dict object at 0x7fdc006a8680> = {'ok': False, 'agent': 'api_integrator_0002', 'elapsed_s': 0.007, 'result': {'ok': False, 'error': 'http: <urlopen error [Errno -3] Temporary failure in name resolution>'}}.get
+E   AssertionError: api_integrator فشل: {'ok': False, 'agent': 'api_integrator_test', 'elapsed_s': 0.0, 'result': {'ok': False, 'error': 'http: <urlopen error [Errno -3] Temporary failure in name resolution>'}}
+E   AssertionError: network_client فشل: {'ok': False, 'agent': 'network_client_test', 'elapsed_s': 0.0, 'result': {'ok': False, 'error': 'dns: [Errno -3] Temporary failure in name resolution'}}
+E   AssertionError: researcher فشل: {'ok': False, 'agent': 'researcher_test', 'elapsed_s': 0.0, 'result': {'ok': False, 'error': 'search: <urlopen error [Errno -3] Temporary failure in name resolution>'}}
+E   AssertionError: api_integrator: {'ok': False, 'error': 'http: <urlopen error [Errno -3] Temporary failure in name resolution>'}
+FAILED tests/test_civilization_scale.py::test_agents_execute_real_dispatch - ...
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[api_integrator]
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[network_client]
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[researcher]
+FAILED tests/test_specialist_runtime.py::test_every_specialization_executes_through_specialist_class
+=================== 5 failed, 187 passed, 3 skipped in 3.43s ===================
+PYTEST_OFFLINE_RC=0
