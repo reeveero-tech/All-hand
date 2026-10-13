@@ -1,0 +1,63 @@
+== R-080 (M6 cycle 4) measurements 2026-10-13T17:01:23Z main=3d07b9b
+== R-051 real-dispatch audit (online)
+  "summary": {
+    "total": 20,
+    "real": 20,
+    "simulated": 0,
+    "failed": 0
+  }
+}
+R051_RC=0
+== R-053 scale audit
+    زمن الإنشاء: 0.002s
+    ذروة RSS بعد الإنشاء: 27.9 MB
+    زمن التنفيذ: 1.307s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 40.8 MB
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 40.8 MB
+- تنفيذ 1000 مهمة متزامنة: ~1.31s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+R053_RC=0
+== R-055 scenarios
+كل المراحل ناجحة: True
+كل النتائج النهائية موجودة: True
+✓ السيناريوهات الثلاثة ناجحة
+R055_RC=0
+== R-042 local live storage
+R042_RC=0
+invalid JWT -> HTTP 401
+anon insert -> HTTP 401 {"code":"42501","details":null,"hint":null,"message":"new row violates row-level security policy
+insert_task rejected: HTTP 401 {"code":"PGRST301","details":null,"hint":null,"message":"JWSError (JSONDecodeError \"Not 
+R-042 storage verification: 22/22 checks passed
+============================== 3 passed in 0.58s ===============================
+== R-078 key probe (public vs service)
+[publishable] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_
+[secret] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+== CI: push run per merge commit since R-074 (#86..#88) + runs since 2026-10-13T15:30Z
+  #84 5321e64 merged 2026-10-13T15:22:51Z -> push: 2026-10-13T15:22:55Z success
+  #85 aa4fc26 merged 2026-10-13T15:30:43Z -> push: 2026-10-13T15:30:46Z success
+  #86 99372cd merged 2026-10-13T15:38:10Z -> push: 2026-10-13T15:38:13Z success
+  #87 c64ba86 merged 2026-10-13T15:48:41Z -> push: 2026-10-13T15:48:44Z success
+  #88 3d07b9b merged 2026-10-13T15:57:45Z -> push: 2026-10-13T15:57:48Z success
+2026-10-13T17:01:12Z	m6/r079-deps-security-cycle4	pull_request	in_progress		38435248764
+2026-10-13T17:01:12Z	m6/r079-deps-security-cycle4	pull_request	completed	success	38435248617
+2026-10-13T15:57:48Z	main	push	completed	success	38426524198
+2026-10-13T15:50:34Z	m6/r075-roadmap-review-cycle3	pull_request	completed	success	38425497633
+2026-10-13T15:50:34Z	m6/r075-roadmap-review-cycle3	pull_request	completed	success	38425497423
+2026-10-13T15:48:44Z	main	push	completed	success	38425238863
+2026-10-13T15:42:00Z	m6/r078-supabase-key-kind	pull_request	completed	success	38424296767
+2026-10-13T15:42:00Z	m6/r078-supabase-key-kind	pull_request	completed	success	38424296721
+2026-10-13T15:38:13Z	main	push	completed	success	38423763335
+2026-10-13T15:31:55Z	m6/r074-measurements-risks-cycle3	pull_request	completed	success	38422867542
+2026-10-13T15:31:55Z	m6/r074-measurements-risks-cycle3	pull_request	completed	success	38422867494
+2026-10-13T15:30:46Z	main	push	completed	success	38422700805
+summary by conclusion:
+     11 completed/success
+      1 in_progress/
+-- gap fill: runs created 2026-10-13T15:20Z..15:30Z (between R-074 snapshot and this window)
+2026-10-13T15:23:50Z	m6/r077-root-npm-audit-ci	pull_request	completed	success	38421698781
+2026-10-13T15:23:50Z	m6/r077-root-npm-audit-ci	pull_request	completed	success	38421698301
+2026-10-13T15:22:55Z	main	push	completed	success	38421564534
+2026-10-13T15:20:23Z	m6/r076-root-node22	pull_request	completed	success	38421200330
+2026-10-13T15:20:23Z	m6/r076-root-node22	pull_request	completed	success	38421200094
