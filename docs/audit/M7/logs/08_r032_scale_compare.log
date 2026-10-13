@@ -1,0 +1,2 @@
+impl=real agents=1000 build_s=0.002 exec_1000_s=1.23 ok=1000/1000 maxrss_mb=39.1
+impl=specialists agents=1000 build_s=0.152 exec_1000_s=1.06 ok=1000/1000 maxrss_mb=66.7

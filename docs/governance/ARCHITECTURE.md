@@ -39,7 +39,7 @@ All-hand/ (الجذر — 55 دليلاً، 1,981 ملفاً متتبعاً)
 
 ### 2. `agent_civilization/` (نواة الوكلاء)
 - **29 ملفاً خارج `specialists/`** (~2,670 LOC). سلسلة الاستيراد المثبتة من `server.py` تمر عبر `agents/real/` و`core/` و`routing/` و`pipeline/` و`storage/`؛ الملفات الـ29 ليست كلها مثبتة الاستخدام وقت التشغيل — المثبت هو سلسلة الاستيراد فقط.
-- ملفات `specialists/` (1,000 وكيل proxy) تستدعي `real_dispatcher.dispatch` فعلاً (تأكيداً لتقرير INTEGRITY) لكن لم يُكتشف كود يُنشئها أو يستوردها وقت التشغيل.
+- ملفات `specialists/` (1,000 وكيل proxy) تستدعي `real_dispatcher.dispatch` فعلاً. **منذ R-032 (D-037) موصولة اختيارياً**: `AGOS_AGENT_IMPL=specialists` يجعل `create_civilization` يبني الحضارة من أصنافها الـ1,000 عبر `agents/real/specialist_runtime.py` (`SpecialistBackedAgent` يغلف نسخة حقيقية من الصنف ويعرض عقد `RealSpecialistAgent` نفسه)، مع `CommunicationHub` مشترك. الافتراضي (`real`) لم يتغير. ملاحظة بنيوية: الـ1,000 ملف = 20 قالباً منسوخاً 50 مرة (بصمة مطابقة).
 - **الوكلاء**: `server.py` يقرأ `AGENTS_PER_SPEC` (R-041؛ افتراضي 50) ويمرره إلى `create_civilization(agents_per_spec)` → 1,000 `RealSpecialistAgent` افتراضياً (20 تخصصاً × 50)؛ 60 وكيلاً عند ضبط 3. القيم غير الصالحة (صفر/سالب/نص) تُرفض برسالة بدء واضحة.
 - **التوجيه**: `auto_route(message)` يختار التخصص (بـ OpenRouter LLM إن توفر مفتاح، وإلا توجيه محلي).
 - **التنفيذ**: `execute_plan(plan, civilization, data)`.
@@ -180,3 +180,14 @@ POST /civilization/execute → auto_route → tasks_store (dict فقط؛ لا ا
 كما حُذف `push_to_github.sh` (سكربت تاريخي لمرة واحدة يشير فقط إلى `agos-kernel/finalization`، مسار مطلق `/workspace`، غير مستدعى من أي مكان).
 
 `agos_kernel/` (الشرطة السفلية، 9 ملفات) هي الحية ولم تُمس.
+
+
+## تحديث R-032 (M7/4) — مسار التشغيل الاختياري عبر specialists
+```
+AGOS_AGENT_IMPL=real (افتراضي)   → RealSpecialistAgent ×1000
+AGOS_AGENT_IMPL=specialists      → SpecialistBackedAgent ×1000
+                                    └─ inner: AnalystAgent0015 … (BaseAgent)
+                                        └─ BaseAgent.execute → _process_task (مغلف) → real_dispatcher.dispatch
+```
+- قيمة غير معروفة → `ValueError` عند البدء (لا رجوع صامت).
+- إصلاح مصاحب: `BaseAgent.execute` كان يعيد `ok=True` حتى عند فشل المهمة — صار ينقل النتيجة الفعلية.

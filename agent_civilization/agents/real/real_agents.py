@@ -126,8 +126,21 @@ async def run_real(specialization: str, prompt: str, data: Optional[Any] = None)
     return {"specialization": specialization, **result}
 
 
-def create_civilization(agents_per_spec: int = 50) -> Dict[str, List[RealSpecialistAgent]]:
-    """Create 1000 real in-house workers by default; no manual user routing needed."""
+def create_civilization(agents_per_spec: int = 50, impl: Optional[str] = None) -> Dict[str, list]:
+    """Create 1000 real in-house workers by default; no manual user routing needed.
+
+    ``impl`` (or env ``AGOS_AGENT_IMPL``): ``real`` (default) → RealSpecialistAgent;
+    ``specialists`` → agents backed by the `specialists/` package classes (R-032, D-037).
+    Unknown values fail loudly at startup rather than silently falling back.
+    """
+    import os
+    impl = (impl or os.getenv("AGOS_AGENT_IMPL", "real")).strip().lower()
+    from agent_civilization.agents.real.specialist_runtime import (
+        VALID_IMPLS, create_specialist_civilization)
+    if impl not in VALID_IMPLS:
+        raise ValueError(f"AGOS_AGENT_IMPL must be one of {VALID_IMPLS}, got {impl!r}")
+    if impl == "specialists":
+        return create_specialist_civilization(SPECIALIZATIONS, agents_per_spec)
     civilization: Dict[str, List[RealSpecialistAgent]] = {}
     global_id = 0
     for spec in SPECIALIZATIONS:

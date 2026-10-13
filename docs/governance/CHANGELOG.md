@@ -502,3 +502,22 @@ pytest 174/174 (rc مباشر)؛ ruff صفر. الأدلة: docs/audit/M6/logs/2
 
 ### الفحوص
 pytest 175/175؛ ruff صفر؛ السيناريوهات 3/3؛ بناء web/ والجذر rc=0. الأدلة: docs/audit/M7/.
+
+## 2026-10-13 — M7/4: R-032 — توصيل specialists بمسار التشغيل اختيارياً (D-037)
+
+### مضاف
+- `agent_civilization/agents/real/specialist_runtime.py`: `SpecialistBackedAgent` + `create_specialist_civilization`.
+- `create_civilization(agents_per_spec, impl=None)`: يقرأ `AGOS_AGENT_IMPL` (`real` افتراضي | `specialists`)؛ قيمة غير معروفة → ValueError.
+- `tests/test_specialist_runtime.py` (9 اختبارات).
+
+### مُصلَح
+- `BaseAgent.execute`: كان يعيد `ok=True` حتى عند فشل المهمة — ينقل الآن النتيجة الفعلية ويعد الفشل.
+
+### القياس (1000 وكيل)
+| المسار | البناء | 1000 مهمة متزامنة | النجاح | الذاكرة القصوى |
+|---|---|---|---|---|
+| real | 0.002s | 1.23s | 1000/1000 | 39.1MB |
+| specialists | 0.152s | 1.06s | 1000/1000 | 66.7MB |
+
+### الفحوص
+pytest 184/184؛ ruff صفر؛ بناء web/ والجذر rc=0. الأدلة: docs/audit/M7/logs/06..10.
