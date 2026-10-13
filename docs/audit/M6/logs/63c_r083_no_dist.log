@@ -1,0 +1,12 @@
+== R-083 CI fix 2 — test job has no web/dist 2026-10-13T17:48:23Z
+-- CI run 38440573044 (PR #92 2nd commit): 1 failed, 229 passed — test_spa_catch_all_does_not_explode_cardinality expected endpoint="/{full_path}"; CI test job does not build web/, so the SPA catch-all route (server.py: if WEB_DIST.exists()) is absent and paths are labelled <unmatched>. Raw paths still never became labels (assert before it passed).
+-- A) without web/dist, OLD test (git stash of test file)
+==================== 1 failed, 5 passed, 1 warning in 0.46s ====================
+-- B) without web/dist, fixed test, Python 3.11 full suite
+=========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.54s ============
+-- C) with web/dist, Python 3.11 full suite
+=========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.30s ============
+-- D) with web/dist, Python 3.14 full suite
+================= 230 passed, 3 skipped, 3 deselected in 3.66s =================
+-- E) ruff
+All checks passed!

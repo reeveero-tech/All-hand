@@ -63,3 +63,8 @@
 - `GET /health`: `checks.storage.status` = `degraded` إذا فشلت آخر عملية تخزين (رسالة: العملية + `HTTP <code>` أو `exception: <Type>` + الوقت)، و`healthy` بعد أول نجاح. `details` تضيف `last_ok`، `last_error`، `last_success_at`، `total_ok`، `total_failed`. الرمز 200 كما هو. ترتيب الأولوية: غير مهيأ ← مفتاح عام (R-078) ← فشل آخر عملية.
 - `GET /metrics`: `agos_storage_operations{operation="…",outcome="ok|failed"}` (تراكمي منذ بدء العملية، مُصدَّر كـgauge) و`agos_storage_last_operation_ok` (1/0/‎-1). **إصلاح**: كل gauge/counter موسوم صار سلسلة مستقلة — `agos_agents_active` يصدّر 20 سطراً (كان 1).
 - الاختبارات: `tests/test_r082_storage_outcomes.py` (8).
+
+## R-083 — طلبات HTTP في `/metrics` (2026-10-13)
+- `MetricsMiddleware` مركّب: `agos_http_requests_total{method,endpoint,status}` و`agos_http_request_duration_seconds` (مدرّج: `_bucket{…,le}`، `_sum`، `_count`) لكل مجموعة وسوم.
+- `endpoint` = قالب المسار المطابق (مثل `/api/tasks/{task_id}`، `/{full_path}` لمسارات الواجهة)، `<unmatched>` لغير المطابق؛ طلبات `/metrics` لا تُعدّ. استثناء غير معالج → `status="500"`.
+- لا تغيير في أي استجابة؛ SSE `/api/events/stream` يمر بلا تخزين مؤقت (اختبار).
