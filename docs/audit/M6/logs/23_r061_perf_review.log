@@ -1,0 +1,52 @@
+=== R-061 cycle 1 — performance/errors review (with fixed PAYLOADS) ===
+DATE: 2026-10-13T02:36:52Z
+MAIN SHA: aac7b862aaacd92975f74cb98e9dd8aee0ec459c
+
+## Fix applied: scripts/run_r053_scale_audit.py PAYLOADS
+Added code_generator/surgeon/modifier payloads — the 'demo' prompt was
+no longer treated as code since R-055 (_extract_code returns '' for
+non-Python-like text). Behavior is CORRECT; the script was stale.
+
+## R-053 scale audit (re-run, post-fix)
+============================================================
+R-053: قياس حدود العدد المستهدف من الوكلاء
+============================================================
+
+[1] إنشاء العدد المستهدف (50/تخصص = 1000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS بعد الإنشاء: 27.8 MB
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 1.233s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 37.8 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 37.8 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~1.23s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+SCALE_RC=0
+
+## R-055 scenarios (re-run)
+
+==================================================
+كل المراحل ناجحة: True
+كل النتائج النهائية موجودة: True
+✓ السيناريوهات الثلاثة ناجحة
+SCEN_RC=0
+
+## pytest tests/ (regression)
+tests/test_web_api_contract.py ..........                                [100%]
+
+============================= 184 passed in 3.83s ==============================
+PYTEST_RC=0
+
+## ruff F,E722 (live paths)
+All checks passed!
+RUFF_RC=0
