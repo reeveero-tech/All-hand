@@ -1,0 +1,42 @@
+== R-091 dependency + security audit 2026-10-13T22:43:01Z main=c8f16c7
+-- pip-audit requirements.txt: No known vulnerabilities found
+-- web/ audit prod: found 0 vulnerabilities | full: found 0 vulnerabilities
+-- web/ outdated:
+Package    Current  Wanted  Latest  Location                Depended by
+react       18.3.1  18.3.1  19.3.0  node_modules/react      web
+react-dom   18.3.1  18.3.1  19.3.0  node_modules/react-dom  web
+-- root audit prod: found 0 vulnerabilities | full: found 0 vulnerabilities
+-- root outdated (Current/Wanted/Latest):
+   WANTED-DIFF: Package                              Current           Wanted           Latest  Location                                  Depended by
+   @eslint/js 9.39.5 9.39.5 10.0.1
+   @types/node 22.20.5 22.20.5 26.6.5
+   @vitejs/plugin-react 5.2.0 5.2.0 6.1.2
+   eslint 9.39.5 9.39.5 10.12.0
+   eslint-plugin-react-hooks 5.2.0 5.2.0 7.1.1
+   eslint-plugin-react-refresh 0.4.26 0.4.26 0.5.7
+   globals 15.15.0 15.15.0 17.13.0
+   lucide-react 0.575.0 0.575.0 1.56.0
+   nitro 3.0.260603-beta 3.0.260603-beta 3.0.260903-beta
+   react-day-picker 9.14.0 9.14.0 10.0.2
+   recharts 2.15.4 2.15.4 3.10.1
+   typescript 5.9.3 5.9.3 7.0.2
+   zod 3.25.76 3.25.76 4.6.7
+-- Actions: in use vs latest
+   actions/checkout in-use=v7 v7  latest=v7.0.1
+   actions/setup-node in-use=v7  latest=v7.1.0
+   actions/setup-python in-use=v7  latest=v7.0.0
+   actions/upload-artifact in-use=v7  latest=v7.0.2
+-- clean venv Python 3.11.15 latest-compatible: aiohttp=3.14.5 fastapi=0.143.0 pydantic=2.14.1 starlette=1.8.0 uvicorn=0.54.0 
+   pytest: =========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.92s ============
+-- clean venv Python 3.12.13 latest-compatible: aiohttp=3.14.5 fastapi=0.143.0 pydantic=2.14.1 starlette=1.8.0 uvicorn=0.54.0 
+   pytest: =========== 230 passed, 3 skipped, 3 deselected, 1 warning in 4.35s ============
+-- warnings in job logs of main run 38475975713
+   quality: lines=200 
+   test: lines=769 
+   network: lines=333 
+   audit: lines=382 
+   storage: lines=588 
+   docker: lines=494 
+   build: lines=728 
+-- local pytest warning explained: StarletteDeprecationWarning 'Using httpx with starlette.testclient is deprecated; install httpx2' — my local venv had httpx, CI installs httpx2 (no warning in CI test log). Test deps (pytest pytest-asyncio pytest-cov httpx2) are not in requirements.txt and not documented outside ci.yml -> documented in OPERATIONS (R-091).
+-- following the new OPERATIONS recipe exactly (3.11 venv, CI test deps): ================= 230 passed, 3 skipped, 3 deselected in 3.83s =================

@@ -1,0 +1,15 @@
+== M6 cycle 6 baseline 2026-10-13T22:40:48Z main=c8f16c7
+-- pytest 3.11: =========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.60s ============
+-- pytest 3.12: =========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.92s ============
+-- pytest 3.14 offline: ================= 230 passed, 3 skipped, 3 deselected in 3.82s =================
+-- ruff: All checks passed!
+-- node v22.23.3
+web npm ci rc=0
+web build rc=0
+root npm ci rc=0
+root lint rc=0
+root build rc=0
+-- CI main:
+38475975713 c8f16c7 push success
+38474818388 fb764f5 push success
+38473592509 d467357 push success
