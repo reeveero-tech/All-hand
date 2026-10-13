@@ -1,0 +1,22 @@
+== R-093 roadmap audit AFTER 2026-10-13T23:04:59Z base=2b6d46a+changes
+item headings: 76
+duplicate ids: none
+status counts: {'done': 76}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+order section length: 1016
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (c8f16c7..HEAD): ['R-085', 'R-091', 'R-092', 'R-093']
+  not in ROADMAP: none
+  R-091: roadmap=yes changelog=yes
+  R-092: roadmap=yes changelog=yes
+  R-093: roadmap=yes changelog=yes
+AUDIT_RC=0
+-- pytest 3.11 (httpx2 venv) / 3.12 / ruff
+================= 230 passed, 3 skipped, 3 deselected in 3.60s =================
+=========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.81s ============
+All checks passed!
+note: the 1 warning on /tmp/v312 is the httpx (not httpx2) StarletteDeprecationWarning of that older local venv (logs/82); the httpx2 venv (OPERATIONS recipe) shows none.

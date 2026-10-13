@@ -1,0 +1,23 @@
+== R-093 roadmap audit BEFORE 2026-10-13T23:04:26Z main=2b6d46a
+item headings: 76
+duplicate ids: none
+  not done: R-093 -> ready
+status counts: {'done': 75, 'ready': 1}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 964
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (c8f16c7..HEAD): ['R-085', 'R-091', 'R-092', 'R-093']
+  not in ROADMAP: none
+  R-091: roadmap=yes changelog=yes
+  R-092: roadmap=yes changelog=yes
+  R-093: roadmap=yes changelog=no
+AUDIT_RC=0
+-- stale scan
+132:## الحالة الحالية (مراجعة R-086، 2026-10-14 — تغلق الدورة الخامسة؛ كانت R-081)
+docs/governance/QUALITY.md:139:- R-053 1000/1000 (1.349s)؛ R-051 20/20؛ R-055 3/3؛ R-042 22/22 + 3/3؛ `/metrics` محدود تحت 10000 طلب (R-085).
