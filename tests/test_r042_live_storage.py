@@ -16,7 +16,11 @@ import pytest
 LIVE = os.environ.get("R042_LIVE") == "1" and bool(os.environ.get("SUPABASE_URL")) \
     and bool(os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_ANON_KEY"))
 
-pytestmark = pytest.mark.skipif(not LIVE, reason="R-042 live storage not configured (set R042_LIVE=1)")
+pytestmark = [
+    pytest.mark.skipif(not LIVE, reason="R-042 live storage not configured (set R042_LIVE=1)"),
+    # R-072: may target a hosted Supabase project — exempt from the offline guard.
+    pytest.mark.allow_external_network,
+]
 
 
 @pytest.fixture(scope="module")
