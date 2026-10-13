@@ -223,7 +223,14 @@
 - دليل التحقق: الملف + بوابة `governance` خضراء على PR هذه الدفعة.
 
 ### R-024 — تفعيل حماية الفرع `main`
-- الحالة: **blocked** (إعداد مستودع بصلاحية المالك؛ Q-015)
+- الحالة: **done** (M7/2 — 2026-10-12، بواسطة المالك عبر إدارة المستودع)
+- **ما تم**: حماية الفرع `main` مفعلة فعلياً عبر GitHub API (`PUT /repos/.../branches/main/protection`):
+  - `required_status_checks.strict=true` — فحوص الحالة الإلزامية: `quality`, `test`, `build`, `docker`, `governance`, `audit`.
+  - `enforce_admins=false` — لا يُطبَّق على المالك (قرار المالك — يسمح بعمليات إدارية سريعة).
+  - `required_pull_request_reviews.required_approving_review_count=0` — لا موافقات مطلوبة (المالك هو المراجع).
+  - `allow_force_pushes=false`, `allow_deletions=false` — لا force-push ولا حذف.
+- **التحقق**: `GET /repos/.../branches/main/protection` يعيد الحماية الفعلية (200 — سابق 404 "Branch not protected").
+- **الأثر**: البوابة الحاكمة (governance gate + CI) الآن **مفروضة فعلياً** — أي push مباشر إلى main يُرفض دون فحوص الحالة الخضراء. هذه كانت آخر عقبة تقنية لـ"الحضارة قامت 100%" من المعيار 6 (D-035).
 - الهدف: require status checks (quality, test, build, governance) + منع الدفع المباشر.
 - معيار القبول: محاولة دفع مباشر أو دمج PR فاشل الفحوص تُرفض.
 - دليل التحقق: لقطة إعدادات + محاولة رفض موثقة.

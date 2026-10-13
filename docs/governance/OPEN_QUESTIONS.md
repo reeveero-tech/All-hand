@@ -59,8 +59,9 @@
 - جانب DEPLOY حُل في R-041: أُعيدت كتابتها لتطابق `API.md` الفعلي (بادئة `/api`، افتراضيات صحيحة، `/docs` مُتحقق 200).
 - جانب INTEGRITY-REPORT باقٍ: تقرير يصف `specialists/` بأنها "real-dispatch proxy workers" — التأكيد الجزئي قائم (تستدعي `real_dispatcher` فعلاً) لكن ادعاء "90%+ real execution" غير مقيس؛ يُحل في R-051/R-056 (لا يوسَّع إليه R-041).
 
-### Q-015: هل تُفعَّل حماية الفرع `main` (require status checks لـ quality/test/build/governance)؟
-- دون حماية الفرع لا تفرض أي بوابة CI شيئاً. إعداد مستودع بصلاحية المالك؛ لم يُغيَّر في أي دفعة حتى الآن. **مرتبط بـ**: R-020، D-020.
+### Q-015: هل تُفعَّل حماية الفرع `main`؟ — **حُلت (R-024 — M7/2)**
+- **مُفعلة فعلياً** (2026-10-12، عبر GitHub API بواسطة المالك): `required_status_checks.strict=true` (quality/test/build/docker/governance/audit)، `enforce_admins=false` (قرار المالك)، `allow_force_pushes=false`، `allow_deletions=false`. راجع `docs/audit/M6/logs/23_r024_protection.json`.
+- البوابة الحاكمة (governance gate + CI) مفروضة فعلياً — أي push مباشر إلى main يُرفض. **مرتبط بـ**: R-020، D-020، R-024.
 
 ### Q-016: ما التعريف القابل للقياس لـ"قيام حضارة الوكلاء 100%"؟ — **مُجابة (D-035)**
 - الميثاق يذكر "حتى 1,000 وكيل على 20 تخصصاً" و"منصة قابلة للإنتاج" دون معايير قياس.
