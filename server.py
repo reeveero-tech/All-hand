@@ -25,6 +25,7 @@ import logging
 import os
 import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
@@ -71,7 +72,15 @@ RATE_LIMIT_WINDOW = int(os.getenv("AGOS_RATE_LIMIT_WINDOW", "60"))  # seconds
 request_counts: Dict[str, List[datetime]] = defaultdict(list)
 
 # App metadata
+@asynccontextmanager
+async def _lifespan(_app):
+    """R-042: close the storage HTTP session on shutdown (was leaked — 'Unclosed client session')."""
+    yield
+    await get_storage().close()
+
+
 app = FastAPI(
+    lifespan=_lifespan,
     title="AGOS Agent Civilization",
     description="A real AI agent civilization: 20 specializations of working agents serving the user.",
     version="3.0.0",

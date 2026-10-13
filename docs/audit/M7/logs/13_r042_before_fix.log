@@ -1,0 +1,54 @@
+== apply schema (Supabase role emulation + docs/sql/001_init.sql)
+psql:scripts/r042/supabase_roles.sql:10: NOTICE:  role "authenticator" has already been granted membership in role "anon" by role "postgres"
+ table_name  |   column_name   |        data_type         
+-------------+-----------------+--------------------------
+ agent_stats | agent_name      | text
+ agent_stats | specialization  | text
+ agent_stats | tasks_completed | integer
+ agent_stats | tasks_failed    | integer
+ agent_stats | total_time_s    | double precision
+ agent_stats | last_active_at  | timestamp with time zone
+ agent_stats | updated_at      | timestamp with time zone
+ events      | id              | bigint
+ events      | event_type      | text
+ events      | event_data      | jsonb
+ events      | created_at      | timestamp with time zone
+ tasks       | task_id         | text
+ tasks       | specialization  | text
+ tasks       | prompt          | text
+ tasks       | status          | text
+ tasks       | agent_name      | text
+ tasks       | result          | jsonb
+ tasks       | elapsed_s       | double precision
+ tasks       | created_at      | timestamp with time zone
+ tasks       | finished_at     | timestamp with time zone
+(20 rows)
+
+== start PostgREST PostgREST 12.2.3
+== negative control: request without a valid JWT must be rejected
+invalid JWT -> HTTP 401
+== storage layer verification
+target: http://127.0.0.1:54321
+[PASS] tasks.insert_task returns True
+[PASS] tasks row readable after insert — http=200 rows=[{'task_id': 'r042-66b13de9', 'specialization': 'analysis', 'prompt': 'R-042 live check', 'status': 'queued', 'agent_name': None, 'result': None, 'elapsed_s': None, 'created_at': '2026-10-13T03:28:59.518728+00:00', 'finished_at': None}]
+[PASS] tasks.created_at defaulted
+[PASS] tasks.status == queued
+[PASS] tasks.get_tasks includes row — 1 rows
+[PASS] tasks.update_task(running) returns True
+[PASS] tasks.update_task(completed, result) returns True
+[PASS] tasks.status == completed — row={'task_id': 'r042-66b13de9', 'specialization': 'analysis', 'prompt': 'R-042 live check', 'status': 'completed', 'agent_name': 'r042-agent-66b13de9', 'result': '{"ok": true, "output": "x = 1", "elapsed_s": 0.01, "nested": {"n": [1, 2]}}', 'elapsed_s': 0.01, 'created_at': '2026-10-13T03:28:59.518728+00:00', 'finished_at': '2026-10-13T03:28:59.529099+00:00'}
+[PASS] tasks.agent_name stored
+[PASS] tasks.finished_at is a timestamp — finished_at='2026-10-13T03:28:59.529099+00:00'
+[FAIL] tasks.result stored as JSON object (not string) — type=str value='{"ok": true, "output": "x = 1", "elapsed_s": 0.01, "nested": {"n": [1, 2]}}'
+[PASS] tasks.elapsed_s numeric
+[PASS] agent_stats.upsert (insert) returns True
+[PASS] agent_stats.upsert (conflict/merge) returns True
+[PASS] agent_stats exactly one row after two upserts — rows=[{'agent_name': 'r042-agent-66b13de9', 'specialization': 'analysis', 'tasks_completed': 2, 'tasks_failed': 1, 'total_time_s': 1.25, 'last_active_at': '2026-10-13T03:28:59.538598+00:00', 'updated_at': '2026-10-13T03:28:59.538598+00:00'}]
+[PASS] agent_stats merged values — row={'agent_name': 'r042-agent-66b13de9', 'specialization': 'analysis', 'tasks_completed': 2, 'tasks_failed': 1, 'total_time_s': 1.25, 'last_active_at': '2026-10-13T03:28:59.538598+00:00', 'updated_at': '2026-10-13T03:28:59.538598+00:00'}
+[PASS] agent_stats timestamps set
+[PASS] agent_stats.get_agent_stats includes row
+[PASS] events.insert_event returns True
+[FAIL] events.event_data stored as JSON object (not string) — sample=[{'id': 1, 'event_type': 'r042_check', 'event_data': '{"task_id": "r042-66b13de9", "ok": true, "n": 3}', 'created_at': '2026-10-13T03:28:59.54335+00:00'}]
+
+R-042 storage verification: 18/20 checks passed
+RC=1

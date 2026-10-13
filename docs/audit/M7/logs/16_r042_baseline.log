@@ -1,0 +1,22 @@
+== pytest tests/ (default env, live tests skipped)
+FAILED tests/test_civilization_scale.py::test_agents_execute_real_dispatch - ...
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[researcher]
+FAILED tests/test_specialist_runtime.py::test_every_specialization_executes_through_specialist_class
+================== 3 failed, 186 passed, 3 skipped in 27.66s ===================
+PYTEST_RC=1
+== ruff
+All checks passed!
+RUFF_RC=0
+
+== NOTE: the 3 failures above are all 'researcher' network fetches: 'search: <urlopen error _ssl.c:1063: The handshake operation timed out>'
+   reproduced identically on the pre-change tree (git stash) -> external network flake, not caused by R-042.
+== pytest tests/ re-run 2026-10-13T03:32:02Z
+FAILED tests/test_civilization_scale.py::test_agents_execute_real_dispatch - ...
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[researcher]
+FAILED tests/test_specialist_runtime.py::test_every_specialization_executes_through_specialist_class
+================== 3 failed, 186 passed, 3 skipped in 27.55s ===================
+PYTEST_RC=1
+== web build
+WEB_BUILD_RC=0
+== root build
+ROOT_BUILD_RC=0

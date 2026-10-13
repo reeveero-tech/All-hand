@@ -19,6 +19,29 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_U
 SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("VITE_SUPABASE_ANON_KEY", "")
 
 
+def _jsonable(value: Any) -> Any:
+    """Return a JSON-native copy of ``value`` for a ``jsonb`` column.
+
+    R-042: values were previously sent as ``json.dumps(value)``, i.e. a JSON
+    *string*; PostgREST stored that string inside ``jsonb`` (double-encoded), so
+    readers got ``str`` instead of an object (verified live — docs/audit/M7/logs/13).
+    Round-tripping keeps the object shape and coerces non-JSON types via ``str``.
+    """
+    return json.loads(json.dumps(value, default=str))
+
+
+async def _accepted(r: aiohttp.ClientResponse, op: str, codes: tuple) -> bool:
+    """True if the HTTP status is in ``codes``; otherwise log status + body (RISK-013)."""
+    if r.status in codes:
+        return True
+    try:
+        body = (await r.text())[:300]
+    except Exception:  # pragma: no cover - diagnostic only
+        body = "<unreadable>"
+    logger.warning("%s rejected: HTTP %s %s", op, r.status, body)
+    return False
+
+
 def is_configured() -> bool:
     return bool(SUPABASE_URL and SUPABASE_KEY)
 
@@ -57,7 +80,7 @@ class SupabaseStorage:
                     "status": status,
                 },
             ) as r:
-                return r.status in (200, 201)
+                return await _accepted(r, "insert_task", (200, 201))
         except Exception as e:
             logger.warning("insert_task failed: %s", e)
             return False
@@ -72,7 +95,7 @@ class SupabaseStorage:
             if agent_name:
                 payload["agent_name"] = agent_name
             if result is not None:
-                payload["result"] = json.dumps(result)
+                payload["result"] = _jsonable(result)
             if elapsed_s is not None:
                 payload["elapsed_s"] = elapsed_s
             if status in ("completed", "failed"):
@@ -81,7 +104,7 @@ class SupabaseStorage:
                 f"{self.url}/rest/v1/tasks?task_id=eq.{task_id}",
                 json=payload,
             ) as r:
-                return r.status in (200, 204)
+                return await _accepted(r, "update_task", (200, 204))
         except Exception as e:
             logger.warning("update_task failed: %s", e)
             return False
@@ -94,7 +117,7 @@ class SupabaseStorage:
             async with session.get(
                 f"{self.url}/rest/v1/tasks?order=created_at.desc&limit={limit}",
             ) as r:
-                if r.status == 200:
+                if await _accepted(r, "get_tasks", (200,)):
                     return await r.json()
                 return []
         except Exception as e:
@@ -127,7 +150,7 @@ class SupabaseStorage:
                     "Prefer": "upsert=on-conflict,resolution=merge-duplicates",
                 },
             ) as r:
-                return r.status in (200, 201)
+                return await _accepted(r, "upsert_agent_stats", (200, 201))
         except Exception as e:
             logger.warning("upsert_agent_stats failed: %s", e)
             return False
@@ -140,7 +163,7 @@ class SupabaseStorage:
             async with session.get(
                 f"{self.url}/rest/v1/agent_stats?order=total_time_s.desc",
             ) as r:
-                if r.status == 200:
+                if await _accepted(r, "get_agent_stats", (200,)):
                     return await r.json()
                 return []
         except Exception as e:
@@ -156,10 +179,10 @@ class SupabaseStorage:
                 f"{self.url}/rest/v1/events",
                 json={
                     "event_type": event_type,
-                    "event_data": json.dumps(event_data),
+                    "event_data": _jsonable(event_data),
                 },
             ) as r:
-                return r.status in (200, 201)
+                return await _accepted(r, "insert_event", (200, 201))
         except Exception as e:
             logger.warning("insert_event failed: %s", e)
             return False
@@ -172,7 +195,7 @@ class SupabaseStorage:
             async with session.get(
                 f"{self.url}/rest/v1/events?order=created_at.desc&limit={limit}",
             ) as r:
-                if r.status == 200:
+                if await _accepted(r, "get_events", (200,)):
                     return await r.json()
                 return []
         except Exception as e:
