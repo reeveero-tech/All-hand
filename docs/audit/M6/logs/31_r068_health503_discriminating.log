@@ -1,0 +1,5 @@
+== discriminating check: tests/test_security.py -k health with the 503 branch REMOVED from server.py (temporary mutation, reverted)
+=========================== short test summary info ============================
+FAILED tests/test_security.py::test_health_returns_503_when_unhealthy - asser...
+================== 1 failed, 4 passed, 5 deselected in 0.46s ===================
+RC=1

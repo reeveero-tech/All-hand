@@ -1,0 +1,55 @@
+== R-068 (M6 cycle 2) measurements 2026-10-13T05:21:46Z main=e95b0a8
+== R-051 real-dispatch audit
+  ],
+  "summary": {
+    "total": 20,
+    "real": 20,
+    "simulated": 0,
+    "failed": 0
+  }
+}
+R051_RC=0
+== R-053 scale audit
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 1.291s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 41.4 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 41.4 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~1.29s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+R053_RC=0
+== R-055 scenarios
+     5-layer architecture with 2 core actions
+  ✓ execute@code_generator (code_generator_0020) 0.000s
+     parsed OK: 0 funcs, 0 classes
+  ✓ review@reviewer (reviewer_0070) 0.000s
+     reviewed 1 loc, 0 comments
+  ✓ test@test_runner (test_runner_0090) 0.012s
+     exit=0
+النتيجة النهائية: exit=0
+الزمن الكلي: 0.013s
+
+==================================================
+كل المراحل ناجحة: True
+كل النتائج النهائية موجودة: True
+✓ السيناريوهات الثلاثة ناجحة
+R055_RC=0
+== R-042 local live storage (PostgreSQL 18 + PostgREST 12.2.3)
+ agent_stats | tasks_failed    | integer
+invalid JWT -> HTTP 401
+anon insert -> HTTP 401 {"code":"42501","details":null,"hint":null,"message":"new row violates row-level security policy for table \"tasks\""}
+insert_task rejected: HTTP 401 {"code":"PGRST301","details":null,"hint":null,"message":"JWSError (JSONDecodeError \"Not valid base64url\")"}
+[PASS] agent_stats exactly one row after two upserts — rows=[{'agent_name': 'r042-agent-1acd945d', 'specialization': 'analysis', 'tasks_completed': 2, 'tasks_failed': 1, 'total_time_s': 1.25, 'last_active_at': '2026-10-13T05:21:49.803314+00:00', 'updated_at': '2026-10-13T05:21:49.803314+00:00'}]
+[PASS] agent_stats merged values — row={'agent_name': 'r042-agent-1acd945d', 'specialization': 'analysis', 'tasks_completed': 2, 'tasks_failed': 1, 'total_time_s': 1.25, 'last_active_at': '2026-10-13T05:21:49.803314+00:00', 'updated_at': '2026-10-13T05:21:49.803314+00:00'}
+R-042 storage verification: 22/22 checks passed
+============================== 3 passed in 0.58s ===============================
+R042_RC=0

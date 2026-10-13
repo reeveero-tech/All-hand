@@ -99,3 +99,29 @@ def test_health_disable_credentials_with_wildcard(client, monkeypatch):
     )
     assert cors is not None
     assert cors.kwargs.get("allow_credentials") is False
+
+
+# R-068: the 503 branch of /health was documented (RISK-010, R-004) but no test
+# exercised it — only the healthy 200 path was covered.
+def _force_health(monkeypatch, status):
+    from agos_kernel.infrastructure import health as h
+    registry = h.get_health_registry()
+
+    async def fake():
+        return {"status": status, "checks": {}, "summary": {}}
+    monkeypatch.setattr(registry, "get_system_health", fake)
+
+
+def test_health_returns_503_when_unhealthy(client, monkeypatch):
+    _force_health(monkeypatch, "unhealthy")
+    r = client.get("/health")
+    assert r.status_code == 503
+    assert r.json()["status"] == "unhealthy"
+
+
+def test_health_returns_200_when_degraded(client, monkeypatch):
+    """'degraded' (e.g. storage fallback) still serves traffic -> 200."""
+    _force_health(monkeypatch, "degraded")
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["status"] == "degraded"
