@@ -147,9 +147,15 @@ class BaseAgent(ABC):
             self.status = "working"
             try:
                 result = await pt(work)
-                self.performance_metrics["tasks_completed"] += 1
+                # R-032: propagate the real outcome. Previously this returned
+                # ok=True even when the dispatcher reported a failure.
+                ok = bool(result.get("ok", True)) if isinstance(result, dict) else True
+                if ok:
+                    self.performance_metrics["tasks_completed"] += 1
+                else:
+                    self.performance_metrics["tasks_failed"] += 1
                 elapsed = asyncio.get_event_loop().time() - t0
-                return {"ok": True, "agent": self.name,
+                return {"ok": ok, "agent": self.name,
                         "elapsed_s": round(elapsed, 3), "result": result}
             except Exception as e:  # noqa: BLE001
                 self.performance_metrics["tasks_failed"] += 1
