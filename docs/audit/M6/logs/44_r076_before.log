@@ -1,0 +1,18 @@
+== R-076 BEFORE 2026-10-13T15:09:44Z main=c27a801
+-- Node v20.20.2: npm ci --engine-strict
+npm error code EBADENGINE
+npm error engine Unsupported engine
+npm error notsup Not compatible with your version of node/npm: @tanstack/react-start@1.169.1
+NODE20_ENGINE_STRICT_RC=1
+-- Node 20 without engine-strict: EBADENGINE warnings count
+9
+-- packages whose engines exclude Node 20.20.2
+@tanstack/react-start >=22.12.0
+@tanstack/react-start-client >=22.12.0
+@tanstack/react-start-rsc >=22.12.0
+@tanstack/react-start-server >=22.12.0
+@tanstack/start-client-core >=22.12.0
+@tanstack/start-fn-stubs >=22.12.0
+@tanstack/start-plugin-core >=22.12.0
+@tanstack/start-server-core >=22.12.0
+@tanstack/start-storage-context >=22.12.0

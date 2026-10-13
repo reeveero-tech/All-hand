@@ -692,3 +692,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - pip-audit وnpm audit (إنتاج وكامل، الجذر وweb/) = صفر.
 - قفل الجذر: `eslint-plugin-prettier` 5.5.6 → 5.5.7 (patch، dev).
 - سُجلت R-074 (قياسات/RISKS) وR-075 (مراجعة الخارطة) وR-076 (Node ‎>=22.12 لبناء الجذر — مكتشف).
+
+## 2026-10-13 — R-076: Node ‎>=22.12 لتطبيق الجذر
+
+- `package.json` (الجذر): `engines.node >=22.12.0` (متطلب TanStack Start منذ R-013).
+- CI: خطوات الجذر على Node 22 مع `npm ci --engine-strict`؛ web/ وDocker على Node 20 بلا تغيير.
+- سُجل R-077 (npm audit للجذر في CI — فجوة مكتشفة).
