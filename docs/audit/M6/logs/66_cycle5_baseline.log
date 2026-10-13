@@ -1,0 +1,19 @@
+== M6 cycle 5 baseline 2026-10-13T20:36:02Z main=8fc58a6
+-- pytest 3.14
+================= 230 passed, 3 skipped, 3 deselected in 3.86s =================
+-- pytest 3.11 (CI version)
+=========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.50s ============
+-- ruff (CI scope)
+All checks passed!
+RUFF_RC=0
+-- web/ (node v20.20.2)
+WEB_BUILD_RC=0
+-- root (Node 22)
+v22.23.3
+ROOT_CI_RC=0
+ROOT_LINT_RC=0
+ROOT_BUILD_RC=0
+-- CI main
+38444056680 8fc58a6 push success
+38442741488 64214cc push success
+38438836340 91968a9 push success
