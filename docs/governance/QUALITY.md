@@ -136,3 +136,6 @@
 - الجذر: `npm ci --engine-strict` (Node 22) + eslint `--max-warnings=0` + build: rc=0. web/: build rc=0 (vite 8).
 - audit: pip-audit صفر؛ npm audit إنتاج وكامل صفر في web/ والجذر — كلها مانعة في CI (R-077).
 - R-053 1000/1000 (1.347s)؛ R-051 20/20؛ R-055 3/3؛ R-042 22/22 + 3/3 (R-074).
+
+## درس R-083 — نسخة Python في التحقق المحلي
+- CI يشغّل Python 3.11؛ صياغة 3.12+ (مثل `\` داخل تعبير f-string) تمر محلياً على نسخة أحدث وتفشل في CI. التحقق المحلي قبل الدفع: `python3.11 -m compileall -q server.py agent_civilization agos_kernel tests scripts` + pytest على 3.11 (logs/63b).

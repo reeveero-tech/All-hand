@@ -1,0 +1,13 @@
+== R-083 CI fix — Python 3.11 (CI version: 3.11.17; local 3.11.15 via uv) 2026-10-13T17:40:03Z
+-- CI run 38439407319 (PR #92 first commit): test job collection errors 'SyntaxError: f-string expression part cannot include a backslash' (metrics.py histogram export; PEP 701 is 3.12+). Sandbox is 3.14, so local runs passed.
+-- A) branch HEAD before fix, under 3.11
+E   SyntaxError: f-string expression part cannot include a backslash
+================== 3 deselected, 1 warning, 3 errors in 0.61s ==================
+-- B) fixed tree under 3.11
+=========== 230 passed, 3 skipped, 3 deselected, 1 warning in 3.52s ============
+-- C) fixed tree under 3.14 (sandbox)
+================= 230 passed, 3 skipped, 3 deselected in 3.59s =================
+-- D) compileall under 3.11
+COMPILE_311_OK
+-- E) ruff
+All checks passed!

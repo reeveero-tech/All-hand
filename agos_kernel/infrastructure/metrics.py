@@ -346,10 +346,13 @@ class MetricsCollector:
                     agg = self._hist_agg[key]
                     base = [f'{k}="{v}"' for k, v in self._series_labels.get(key, {}).items()]
                     cumulative = 0
+                    # (no backslashes inside f-string expressions: CI runs Python 3.11)
                     for b, n in zip(agg["bounds"], agg["counts"]):
                         cumulative += n
-                        lines.append(f"{name}_bucket{{{','.join(base + [f'le=\"{b}\"'])}}} {cumulative}")
-                    lines.append(f"{name}_bucket{{{','.join(base + ['le=\"+Inf\"'])}}} {agg['count']}")
+                        le_labels = ",".join(base + ['le="%s"' % b])
+                        lines.append(f"{name}_bucket{{{le_labels}}} {cumulative}")
+                    inf_labels = ",".join(base + ['le="+Inf"'])
+                    lines.append(f"{name}_bucket{{{inf_labels}}} {agg['count']}")
                     tail = "{" + ",".join(base) + "}" if base else ""
                     lines.append(f"{name}_sum{tail} {agg['sum']}")
                     lines.append(f"{name}_count{tail} {agg['count']}")
