@@ -1,0 +1,14 @@
+$ /tmp/v311/bin/python scripts/run_r085_metrics_load.py
+[cwd=.]
+returncode=0
+--- stdout ---
+10000 requests (2x5000) over 103 distinct raw paths: 3.90s + 3.86s
+agos_http_requests_total series: 8 (sum=10200, includes 200 warm-up)
+raw path labels leaked: 0
+histogram series: 8, max raw window: 1024
+invalid exposition lines: 0 of 170
+peak RSS MB: before=61.1 after 5000=61.1 after 10000=61.1 (growth second half=0.0)
+storage series: ['agos_storage_last_operation_ok -1']
+
+--- stderr ---
+

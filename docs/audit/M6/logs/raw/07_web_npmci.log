@@ -1,0 +1,14 @@
+$ npm ci
+[cwd=web]
+returncode=0
+--- stdout ---
+
+added 23 packages, and audited 24 packages in 2s
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+--- stderr ---
+

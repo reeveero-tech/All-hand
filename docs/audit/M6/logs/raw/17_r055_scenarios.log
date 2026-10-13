@@ -1,0 +1,18 @@
+$ /tmp/v311/bin/python -m pytest tests/test_e2e_scenarios.py -q
+[cwd=.]
+returncode=0
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: platformdirs-4.13.0, cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 7 items
+
+tests/test_e2e_scenarios.py .......                                      [100%]
+
+============================== 7 passed in 0.50s ===============================
+
+--- stderr ---
+
