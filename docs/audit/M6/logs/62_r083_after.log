@@ -1,0 +1,11 @@
+== R-083 AFTER (same probe) 2026-10-13T17:28:33Z
+http_requests_total lines: 5
+    agos_http_requests_total{method="GET",endpoint="/api",status="200"} 1.0
+    agos_http_requests_total{method="GET",endpoint="/api/agents",status="200"} 2.0
+    agos_http_requests_total{method="GET",endpoint="/api/tasks/{task_id}",status="404"} 2.0
+    agos_http_requests_total{method="GET",endpoint="/health",status="200"} 1.0
+    agos_http_requests_total{method="GET",endpoint="/{full_path}",status="200"} 2.0
+duration lines: 70 (first 3) ['agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.005"} 1', 'agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.01"} 1', 'agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.025"} 1']
+invalid exposition lines: 0 []
+histogram (2 obs of 0.003s): ['p83_lat_bucket{le="0.005"} 2', 'p83_lat_bucket{le="0.01"} 2', 'p83_lat_bucket{le="0.025"} 2'] ... count line: ['p83_lat_count 2']
+raw values retained after 10002 observations: 1024

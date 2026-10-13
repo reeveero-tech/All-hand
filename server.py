@@ -110,6 +110,11 @@ app.add_middleware(
 if _IS_WILDCARD:
     logger.warning("CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set.")
 
+# R-083: count HTTP requests (method / route template / status) and durations
+# for /metrics. Pure ASGI — streaming responses (SSE) pass through untouched.
+from agos_kernel.infrastructure.metrics import MetricsMiddleware  # noqa: E402
+app.add_middleware(MetricsMiddleware)
+
 
 # ============================================================================
 # SECURITY HELPERS

@@ -740,3 +740,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - `/health`: storage `degraded` عند فشل آخر عملية، `healthy` بعد التعافي؛ `/metrics`: `agos_storage_operations` و`agos_storage_last_operation_ok`.
 - إصلاح `MetricsCollector`: سلسلة لكل مجموعة وسوم (`agents_active` 1 → 20 سطراً).
 - 8 اختبارات جديدة؛ pytest 224 + 3 + 3. سُجل R-083 (MetricsMiddleware غير مركّب).
+
+## 2026-10-13 — R-083: طلبات HTTP في `/metrics`
+
+- تركيب `MetricsMiddleware` في `server.py`؛ الوسم بقالب المسار (لا انفجار سلاسل)، 500 عند الاستثناء.
+- إصلاح المدرّج: صيغة Prometheus صحيحة لكل سلسلة، تراكم صحيح، ذاكرة محدودة (كانت تنمو بلا حد).
+- 6 اختبارات جديدة؛ pytest 230 + 3 + 3.

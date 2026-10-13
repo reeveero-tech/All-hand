@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from collections import defaultdict
+from collections import defaultdict, deque
 
 logger = logging.getLogger("agos.infrastructure.metrics")
 
@@ -71,6 +71,8 @@ class MetricsCollector:
     - Automatic label tracking
     """
     
+    DEFAULT_BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
     def __init__(self, namespace: str = "agos"):
         """
         Initialize metrics collector.
@@ -81,7 +83,11 @@ class MetricsCollector:
         self.namespace = namespace
         self._metrics: Dict[str, Metric] = {}
         self._counters: Dict[str, float] = defaultdict(float)
-        self._histograms: Dict[str, List[float]] = defaultdict(list)
+        # R-083: raw samples are kept only as a bounded window (diagnostics);
+        # export uses exact per-series aggregates, so memory no longer grows
+        # with every HTTP request once MetricsMiddleware is mounted.
+        self._histograms: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1024))
+        self._hist_agg: Dict[str, Dict[str, Any]] = {}
         # R-082: one series per label set (Prometheus model). Before, gauges and
         # counters kept a single series per name, so `agents_active` exported 1
         # of 20 specializations and labelled counters collapsed into one line.
@@ -238,10 +244,20 @@ class MetricsCollector:
         """Observe a value for histogram."""
         key = self._make_key(name, labels)
         self._histograms[key].append(value)
-        
+        self._series_labels[key] = dict(labels or {})
         full_name = f"{self.namespace}_{name}"
-        if full_name in self._metrics:
-            self._metrics[full_name].value += value
+        if full_name not in self._metrics:
+            self.register(name=name, description=name, metric_type=MetricType.HISTOGRAM)
+        metric = self._metrics[full_name]
+        bounds = sorted(metric.buckets or self.DEFAULT_BUCKETS)
+        agg = self._hist_agg.setdefault(key, {"bounds": bounds, "counts": [0] * len(bounds), "sum": 0.0, "count": 0})
+        for i, b in enumerate(agg["bounds"]):
+            if value <= b:
+                agg["counts"][i] += 1  # per-bucket (non-cumulative) — cumulated at export
+                break
+        agg["sum"] += value
+        agg["count"] += 1
+        metric.value += value
     
     def _make_key(self, name: str, labels: Optional[Dict[str, str]]) -> str:
         """Create unique key for metric with labels."""
@@ -320,27 +336,23 @@ class MetricsCollector:
                     lines.append(f"{name}{'{' + label_str + '}' if label_str else ''} {store[key]}")
             
             elif metric.metric_type == MetricType.HISTOGRAM:
-                key = self._make_key(name.replace(f"{self.namespace}_", ""), metric.labels)
-                values = self._histograms.get(key, [])
-                
-                if values:
+                # R-083: one histogram per label set, valid exposition format
+                # (`le` inside the braces), correct cumulative buckets.
+                series = sorted(k for k in self._hist_agg if k == name or k.startswith(name + "{"))
+                if series:
                     lines.append(f"# TYPE {name} histogram")
                     lines.append(f"# HELP {name} {metric.description}")
-                    
-                    buckets = metric.buckets or [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
-                    label_str = ",".join(f'{k}="{v}"' for k, v in metric.labels.items())
-                    if label_str:
-                        label_str = "{" + label_str + "}"
-                    
-                    sorted_values = sorted(values)
+                for key in series:
+                    agg = self._hist_agg[key]
+                    base = [f'{k}="{v}"' for k, v in self._series_labels.get(key, {}).items()]
                     cumulative = 0
-                    for bucket in sorted(buckets):
-                        cumulative += sum(1 for v in sorted_values if v <= bucket)
-                        lines.append(f"{name}_bucket{label_str},le=\"{bucket}\" {cumulative}")
-                    
-                    lines.append(f"{name}_bucket{label_str},le=\"+Inf\" {len(values)}")
-                    lines.append(f"{name}_sum{label_str} {sum(values)}")
-                    lines.append(f"{name}_count{label_str} {len(values)}")
+                    for b, n in zip(agg["bounds"], agg["counts"]):
+                        cumulative += n
+                        lines.append(f"{name}_bucket{{{','.join(base + [f'le=\"{b}\"'])}}} {cumulative}")
+                    lines.append(f"{name}_bucket{{{','.join(base + ['le=\"+Inf\"'])}}} {agg['count']}")
+                    tail = "{" + ",".join(base) + "}" if base else ""
+                    lines.append(f"{name}_sum{tail} {agg['sum']}")
+                    lines.append(f"{name}_count{tail} {agg['count']}")
         
         return "\n".join(lines)
     
@@ -391,9 +403,6 @@ class MetricsMiddleware:
             await self.app(scope, receive, send)
             return
         
-        # Normalize path for metrics (remove IDs)
-        endpoint = self._normalize_path(path)
-        
         start_time = time.time()
         status = 200
         
@@ -405,8 +414,15 @@ class MetricsMiddleware:
         
         try:
             await self.app(scope, receive, send_wrapper)
+        except Exception:
+            status = 500
+            raise
         finally:
             duration = time.time() - start_time
+            # R-083: label by the matched route TEMPLATE (e.g. /api/tasks/{task_id},
+            # /{full_path:path}) — bounded cardinality; the raw path never becomes a label.
+            route = scope.get("route")
+            endpoint = getattr(route, "path_format", None) or getattr(route, "path", None) or "<unmatched>"
             self.metrics.record_request(method, endpoint, status, duration)
     
     def _normalize_path(self, path: str) -> str:

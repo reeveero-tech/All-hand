@@ -113,3 +113,8 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 - **ضد Supabase الحقيقية** (R-042b ✓ M7/7): طبّق `docs/sql/001_init.sql` في محرر SQL للمشروع (لا تطبّق `scripts/r042/*.sql` هناك — الأدوار موجودة)، ثم `SUPABASE_URL=... SUPABASE_SERVICE_KEY=... python scripts/run_r042_storage_verify.py` (0 = 22/22).
 - **متغير المفتاح في الإنتاج** (D-039): `SUPABASE_SERVICE_KEY` = المفتاح السري (`sb_secret_…`) أو `service_role`. إن وُضع المفتاح العام بدلاً منه: كل كتابة تُرفض وتظهر في السجل `insert_task rejected: HTTP 401 … 42501 row-level security` والخادم يعمل من الذاكرة.
 - **عَرَض فشل الكتابة**: سطر تحذير `storage` بصيغة `<op> rejected: HTTP <code> <body>` (مثلاً 401 مفتاح خاطئ، 404 جدول غير موجود = المخطط لم يُطبق، 42501 = صلاحيات/RLS).
+
+## مقاييس HTTP (R-083)
+- معدل الطلبات والأخطاء: `agos_http_requests_total` بحسب `endpoint` (قالب المسار — عدد السلاسل محدود بعدد المسارات × الطرق × الرموز).
+- الكمون: `agos_http_request_duration_seconds_bucket` (الحدود 0.005…10 ثانية). الذاكرة محدودة: تجميعات لكل سلسلة + نافذة خام 1024 قيمة.
+- الكلفة المقاسة ~18µs/طلب (TestClient، logs/63).

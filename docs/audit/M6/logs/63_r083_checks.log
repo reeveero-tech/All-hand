@@ -1,0 +1,47 @@
+== R-083 checks 2026-10-13T17:30:31Z base=91968a9+changes
+-- A) new tests
+============================== 6 passed in 0.51s ===============================
+-- B) full suite online
+================= 230 passed, 3 skipped, 3 deselected in 3.73s =================
+-- C) full suite offline (unshare -rn, lo up)
+================= 230 passed, 3 skipped, 3 deselected in 3.75s =================
+-- D) discriminating: new tests vs OLD server.py + metrics.py
+<stdin>:40: trailing whitespace.
+        
+<stdin>:66: trailing whitespace.
+                
+<stdin>:74: trailing whitespace.
+                    
+<stdin>:79: trailing whitespace.
+                    
+<stdin>:88: trailing whitespace.
+                    
+warning: squelched 1 whitespace error
+warning: 6 lines add whitespace errors.
+FAILED tests/test_r083_metrics_middleware.py::test_server_counts_requests_by_route_template
+FAILED tests/test_r083_metrics_middleware.py::test_spa_catch_all_does_not_explode_cardinality
+FAILED tests/test_r083_metrics_middleware.py::test_server_metrics_exposition_is_valid
+FAILED tests/test_r083_metrics_middleware.py::test_histogram_cumulative_per_series_and_bounded
+FAILED tests/test_r083_metrics_middleware.py::test_exception_is_recorded_as_500_and_unmatched_label
+FAILED tests/test_r083_metrics_middleware.py::test_sse_stream_passes_through_middleware
+============================== 6 failed in 0.49s ===============================
+-- D2) overhead baseline WITHOUT middleware (old tree)
+GET /api x2000 x3: median 388 us/request (runs [388, 379, 391])
+-- D3) overhead WITH middleware
+GET /api x2000 x3: median 406 us/request (runs [406, 398, 429])
+-- E) ruff
+All checks passed!
+-- F) web API contract + infrastructure + R-082 tests
+============================== 37 passed in 0.59s ==============================
+-- G) R-053 scale audit
+    ذروة RSS بعد الإنشاء: 27.9 MB
+    ذروة RSS بعد التنفيذ: 41.5 MB
+    ذروة RSS: 41.5 MB
+-- H) R-042 local live stack
+R042_RC=0
+R-042 storage verification: 22/22 checks passed
+============================== 3 passed in 0.56s ===============================
+-- G2) R-053 summary (rerun; note: R-053 drives agents directly, not via HTTP — middleware not on its path)
+    1000 tasks: 1.224s, 1000/1000 ok, peak RSS 39.4 MB (R-080: 1.307s, 40.8 MB)
+-- overhead: TestClient GET /api median 388 -> 406 us/request (+18 us, ~4.6%, includes noise; in-process client, no network)
+-- note: stash-pop whitespace warnings in D are pre-existing trailing spaces in metrics.py, not new.
