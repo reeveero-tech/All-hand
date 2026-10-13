@@ -1,0 +1,50 @@
+=== R-063 reconciliation — baseline re-verification ===
+DATE: 2026-10-13T02:28:44Z
+MAIN SHA: 289cdf49699b505b6bab7b63910c743f86f243e8
+
+## pytest tests/ (full run)
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/agos
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 184 items
+
+tests/test_agent_production.py ........................                  [ 13%]
+tests/test_agents_per_spec.py ...                                        [ 14%]
+tests/test_api.py ..................                                     [ 24%]
+tests/test_civilization_routes.py ......                                 [ 27%]
+tests/test_civilization_scale.py .....                                   [ 30%]
+tests/test_e2e_scenarios.py .......                                      [ 34%]
+tests/test_infrastructure.py ...................                         [ 44%]
+tests/test_memory_learning_comm.py .........                             [ 49%]
+tests/test_real_dispatch_audit.py ......                                 [ 52%]
+tests/test_routing_pipeline.py .................................         [ 70%]
+tests/test_security.py ........                                          [ 75%]
+tests/test_specialist_runtime.py .........                               [ 79%]
+tests/test_specialists_package.py ...........................            [ 94%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+============================= 184 passed in 3.74s ==============================
+PYTEST_RC=0
+
+## ruff F,E722 (live paths)
+All checks passed!
+RUFF_RC=0
+
+## web build
+computing gzip size...
+dist/index.html                   0.76 kB │ gzip:  0.45 kB
+dist/assets/index-CVWjJx84.css   11.84 kB │ gzip:  2.94 kB
+dist/assets/index-DGWuZoTX.js   164.19 kB │ gzip: 52.21 kB
+✓ built in 876ms
+WEB_BUILD_RC=0
+
+## root build
+ℹ Generated .output/public/_headers
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+ROOT_BUILD_RC=0
