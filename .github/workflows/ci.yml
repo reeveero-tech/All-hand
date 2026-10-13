@@ -10,10 +10,10 @@ jobs:
   quality:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       
@@ -33,10 +33,10 @@ jobs:
   test:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       
@@ -53,10 +53,10 @@ jobs:
     runs-on: ubuntu-26.04
     needs: [quality, test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           # No pip cache: build job does not install Python deps (R-012 pending)
@@ -67,7 +67,7 @@ jobs:
           echo "Server artifacts: no packaging configured yet."
       
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
       
@@ -82,7 +82,7 @@ jobs:
       # Docker image stay on Node 20 (vite 8 supports ^20.19); only the root app
       # moves. --engine-strict turns any future engines mismatch into a failure.
       - name: Set up Node for the root app (>=22.12)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-26.04
     needs: [quality, test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build image
         run: |
@@ -151,7 +151,7 @@ jobs:
 
       - name: Upload evidence artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docker-verification-logs
           path: |
@@ -174,10 +174,10 @@ jobs:
     runs-on: ubuntu-26.04
     needs: [quality, test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
@@ -191,7 +191,7 @@ jobs:
           # pip-audit exits 1 if vulnerabilities found — already blocking.
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -217,7 +217,7 @@ jobs:
       # package-lock.json, so no install is needed; Node 22 matches the root
       # engines (R-076).
       - name: Set up Node for the root app (>=22.12)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -251,10 +251,10 @@ jobs:
           --health-cmd "pg_isready -U postgres" --health-interval 2s
           --health-timeout 5s --health-retries 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
@@ -281,7 +281,7 @@ jobs:
 
       - name: Upload storage verification log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: r042-storage-verification-log
           path: r042_storage.log
@@ -295,9 +295,9 @@ jobs:
     runs-on: ubuntu-26.04
     needs: [quality]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Install dependencies
@@ -314,7 +314,7 @@ jobs:
     # PyPI publish gated by R-030 (policy decision pending) — disabled until decided.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish]')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Publish to PyPI
         env:

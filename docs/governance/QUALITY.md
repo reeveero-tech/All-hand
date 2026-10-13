@@ -144,3 +144,7 @@
 ## R-088 — صورة المشغّل `ubuntu-26.04` (D-041)
 - كل jobs في `ci.yml` و`governance-gate.yml`: `runs-on: ubuntu-26.04` صراحةً (كانت `ubuntu-latest` = ubuntu-24.04، logs/69). مختبرة: الـ7 jobs + governance ناجحة على الصورة 20260901.588، Python 3.11.16، Node 22.23.3 (logs/70). `publish` غير مُجرّب.
 - تغيير الصورة لاحقاً = commit صريح مع تشغيل كامل (لا ترحيل صامت).
+
+## R-087 — إصدارات GitHub Actions (Node 24)
+- `actions/checkout@v7`، `actions/setup-node@v7`، `actions/setup-python@v7`، `actions/upload-artifact@v7` (كانت v4/v4/v5/v4 على Node 20، logs/71). صفر تنبيه "Node.js 20 is deprecated" في الـ8 jobs (logs/72).
+- مراجعة دورية: تنبيهات CI جزء من فحص التبعيات في كل دورة (نمط R-084).
