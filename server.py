@@ -46,7 +46,7 @@ from agent_civilization.agents.external_adapter import (
     load_external_agents_from_env,
 )
 from agent_civilization.core.llm import get_llm
-from agent_civilization.storage import get_storage, is_configured as supabase_configured, key_status, log_key_status
+from agent_civilization.storage import get_storage, is_configured as supabase_configured, key_status, log_key_status, storage_stats
 
 # ============================================================================
 # CONFIGURATION
@@ -406,6 +406,15 @@ async def prometheus_metrics():
         for spec, agents in CIVILIZATION.items():
             active = sum(1 for a in agents if a.status == "idle")
             metrics.set_gauge("agents_active", active, {"specialization": spec})
+
+        # R-082 (RISK-013): storage operation outcomes since process start
+        # (cumulative values exported as gauges; -1 = no operation yet).
+        st = storage_stats()
+        for op, c in st["operations"].items():
+            metrics.set_gauge("storage_operations", c["ok"], {"operation": op, "outcome": "ok"})
+            metrics.set_gauge("storage_operations", c["failed"], {"operation": op, "outcome": "failed"})
+        last = st["last_ok"]
+        metrics.set_gauge("storage_last_operation_ok", -1 if last is None else int(bool(last)))
         
         return Response(
             content=metrics.export_prometheus(),

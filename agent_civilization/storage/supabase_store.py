@@ -7,6 +7,7 @@ Uses the REST API (no external SDK needed) via aiohttp.
 """
 
 import base64
+from datetime import datetime, timezone
 import json
 import logging
 import os
@@ -110,10 +111,55 @@ def _jsonable(value: Any) -> Any:
     return json.loads(json.dumps(value, default=str))
 
 
+# R-082 (RISK-013): runtime outcome of every storage operation, so a failure
+# after startup (Supabase down, key revoked, 5xx) is visible in /health and
+# /metrics instead of only in the log. Only the operation name, HTTP status or
+# exception *type* and a UTC timestamp are kept — never bodies, URLs or keys.
+_STATS: Dict[str, Any] = {"ops": {}, "last_ok": None, "last_error": None, "last_success_at": None}
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _record(op: str, ok: bool, reason: Optional[str] = None) -> None:
+    counters = _STATS["ops"].setdefault(op, {"ok": 0, "failed": 0})
+    counters["ok" if ok else "failed"] += 1
+    _STATS["last_ok"] = ok
+    if ok:
+        _STATS["last_success_at"] = _now_iso()
+    else:
+        _STATS["last_error"] = {"operation": op, "reason": reason or "unknown", "at": _now_iso()}
+
+
+def _record_exception(op: str, e: BaseException) -> None:
+    _record(op, False, f"exception: {type(e).__name__}")
+
+
+def storage_stats() -> Dict[str, Any]:
+    """Snapshot of storage operation outcomes (R-082). Safe to expose: no values."""
+    ops = {k: dict(v) for k, v in _STATS["ops"].items()}
+    return {
+        "operations": ops,
+        "total_ok": sum(v["ok"] for v in ops.values()),
+        "total_failed": sum(v["failed"] for v in ops.values()),
+        "last_ok": _STATS["last_ok"],
+        "last_error": dict(_STATS["last_error"]) if _STATS["last_error"] else None,
+        "last_success_at": _STATS["last_success_at"],
+    }
+
+
+def reset_storage_stats() -> None:
+    """Test helper: forget all recorded outcomes."""
+    _STATS.update({"ops": {}, "last_ok": None, "last_error": None, "last_success_at": None})
+
+
 async def _accepted(r: aiohttp.ClientResponse, op: str, codes: tuple) -> bool:
     """True if the HTTP status is in ``codes``; otherwise log status + body (RISK-013)."""
     if r.status in codes:
+        _record(op, True)
         return True
+    _record(op, False, f"HTTP {r.status}")
     try:
         body = (await r.text())[:300]
     except Exception:  # pragma: no cover - diagnostic only
@@ -163,6 +209,7 @@ class SupabaseStorage:
                 return await _accepted(r, "insert_task", (200, 201))
         except Exception as e:
             logger.warning("insert_task failed: %s", e)
+            _record_exception("insert_task", e)
             return False
 
     async def update_task(self, task_id: str, status: str, agent_name: str = None,
@@ -187,6 +234,7 @@ class SupabaseStorage:
                 return await _accepted(r, "update_task", (200, 204))
         except Exception as e:
             logger.warning("update_task failed: %s", e)
+            _record_exception("update_task", e)
             return False
 
     async def get_tasks(self, limit: int = 50) -> List[Dict[str, Any]]:
@@ -202,6 +250,7 @@ class SupabaseStorage:
                 return []
         except Exception as e:
             logger.warning("get_tasks failed: %s", e)
+            _record_exception("get_tasks", e)
             return []
 
     async def upsert_agent_stats(self, agent_name: str, specialization: str,
@@ -233,6 +282,7 @@ class SupabaseStorage:
                 return await _accepted(r, "upsert_agent_stats", (200, 201))
         except Exception as e:
             logger.warning("upsert_agent_stats failed: %s", e)
+            _record_exception("upsert_agent_stats", e)
             return False
 
     async def get_agent_stats(self) -> List[Dict[str, Any]]:
@@ -248,6 +298,7 @@ class SupabaseStorage:
                 return []
         except Exception as e:
             logger.warning("get_agent_stats failed: %s", e)
+            _record_exception("get_agent_stats", e)
             return []
 
     async def insert_event(self, event_type: str, event_data: Dict[str, Any]) -> bool:
@@ -265,6 +316,7 @@ class SupabaseStorage:
                 return await _accepted(r, "insert_event", (200, 201))
         except Exception as e:
             logger.warning("insert_event failed: %s", e)
+            _record_exception("insert_event", e)
             return False
 
     async def get_events(self, limit: int = 50) -> List[Dict[str, Any]]:
@@ -280,6 +332,7 @@ class SupabaseStorage:
                 return []
         except Exception as e:
             logger.warning("get_events failed: %s", e)
+            _record_exception("get_events", e)
             return []
 
     async def close(self):

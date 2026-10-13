@@ -58,3 +58,9 @@
 - `supabase_store.py`: `SUPABASE_KEY_SOURCE` (أول متغير غير فارغ بالترتيب `SUPABASE_SERVICE_KEY` ← `SUPABASE_ANON_KEY` ← `VITE_SUPABASE_ANON_KEY` — نفس أولوية القراءة السابقة)، و`classify_key()`/`key_status()`/`log_key_status()`.
 - التصنيف: `sb_secret_*` أو JWT `role=service_role` → `service`؛ `sb_publishable_*` أو JWT `role=anon` → `public`؛ صيغة غير معروفة من متغير `*_ANON_KEY` → `public`، ومن `SUPABASE_SERVICE_KEY` → `unknown`. الصيغة تتقدم على اسم المتغير. ادعاء JWT يُقرأ دون تحقق من التوقيع (تصنيف فقط).
 - **مسار الكتابة بلا تغيير**: نفس المفتاح ونفس الطلبات؛ R-042 محلياً 22/22 + 3/3 بعد التغيير (logs/51).
+
+## R-082 — تسجيل نتائج العمليات في طبقة التخزين
+- `supabase_store.py`: `_STATS` على مستوى العملية — لكل عملية (`insert_task`، `update_task`، `get_tasks`، `upsert_agent_stats`، `get_agent_stats`، `insert_event`، `get_events`) عدّاد ok/failed، و`last_ok`/`last_error`/`last_success_at`. يُسجَّل في `_accepted` (رمز HTTP) وفي معالجات الاستثناءات (نوع الاستثناء فقط).
+- **لا يُحفظ**: أجسام الردود، العناوين، المفاتيح، الحمولات (اختبار صريح).
+- عقد الطبقة بلا تغيير: نفس القيم المعادة (`True`/`False`/`[]`)، نفس الطلبات؛ R-042 محلياً 22/22 + 3/3 بعد التغيير.
+- حد: `get_tasks`/`get_agent_stats`/`get_events` قد تُسجَّل نجاحاً ثم فشلاً إن نجح HTTP وفشل تحليل JSON — العدادان صحيحان كحدثين، و`last_ok` يعكس الأخير.

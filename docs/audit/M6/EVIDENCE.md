@@ -743,3 +743,21 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | مسبار R-078 | publishable → degraded؛ secret → healthy | — | logs/57 |
 | تشغيلات CI منذ لقطة R-074 | 16 نجاح، 0 فشل | 22 + 1 فشل مُصلح | logs/57 |
 | push run لكل دمج | 5/5 (#84..#88) خلال ≤4s | 5/7 في الوقت، 1 مفقود، 1 متأخر | logs/57 |
+
+---
+
+## الدورة الرابعة — R-082 فشل التخزين وقت التشغيل (2026-10-13)
+
+| المرحلة (مسبار `scripts/run_r082_storage_failure_probe.py`) | قبل: storage / أسطر `/metrics` | بعد: storage / أسطر `/metrics` |
+|---|---|---|
+| 1 انقطاع (connection refused) | healthy / 0 | degraded (`exception: ClientConnectorError`) / 11 |
+| 2 HTTP 401 (مفتاح أُبطل) | healthy / 0 | degraded (`HTTP 401`) / 11 |
+| 3 تعافٍ (201/200) | healthy / 0 | healthy (آخر خطأ محفوظ) / 11 |
+
+| فحص | النتيجة | السجل |
+|---|---|---|
+| تحذيرات تخزين في السجل قبل الإصلاح (تثبت أن الطلبات أُرسلت وفشلت) | 13 | logs/58 |
+| pytest متصلاً / معزولاً | 224 + 3 + 3 / 224 + 3 + 3 | logs/60 |
+| الاختبارات الجديدة على الكود القديم / على `metrics.py` القديم وحده | 8 فشل / 3 فشل | logs/60 |
+| `agos_agents_active` في `/metrics` | 1 → 20 سطراً | logs/60 |
+| R-042 محلياً بعد التغيير | 22/22 + 3/3 | logs/60 |

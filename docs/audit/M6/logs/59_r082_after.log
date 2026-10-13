@@ -1,0 +1,42 @@
+== R-082 AFTER (same probe) 2026-10-13T17:18:17Z branch=m6/r082-storage-failure-visibility base=6f51098+changes
+storage - WARNING - insert_task failed: Cannot connect to host 127.0.0.1:49965 ssl:default [Connect call failed ('127.0.0.1', 49965)] - insert_task:211
+storage - WARNING - insert_event failed: Cannot connect to host 127.0.0.1:49965 ssl:default [Connect call failed ('127.0.0.1', 49965)] - insert_event:318
+storage - WARNING - update_task failed: Cannot connect to host 127.0.0.1:49965 ssl:default [Connect call failed ('127.0.0.1', 49965)] - update_task:236
+storage - WARNING - update_task failed: Cannot connect to host 127.0.0.1:49965 ssl:default [Connect call failed ('127.0.0.1', 49965)] - update_task:236
+storage - WARNING - get_tasks failed: Cannot connect to host 127.0.0.1:49965 ssl:default [Connect call failed ('127.0.0.1', 49965)] - get_tasks:252
+storage - WARNING - upsert_agent_stats failed: Cannot connect to host 127.0.0.1:49965 ssl:default [Connect call failed ('127.0.0.1', 49965)] - upsert_agent_stats:284
+storage - WARNING - insert_event failed: Cannot connect to host 127.0.0.1:49965 ssl:default [Connect call failed ('127.0.0.1', 49965)] - insert_event:318
+storage - WARNING - insert_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+storage - WARNING - insert_event rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+storage - WARNING - update_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+storage - WARNING - get_tasks rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+storage - WARNING - update_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+storage - WARNING - upsert_agent_stats rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+storage - WARNING - insert_event failed: Server disconnected - insert_event:318
+[1 down (connection refused)] /health=degraded storage=degraded msg='last storage operation failed: insert_event (exception: ClientConnectorError) at 2026-10-13T17:18:18+
+    details: last_ok=False last_error={"operation": "insert_event", "reason": "exception: ClientConnectorError", "at": "2026-10-13T17:18:18+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 1
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 0
+      agos_storage_operations{operation="insert_event",outcome="failed"} 2
+      agos_storage_operations{operation="insert_event",outcome="ok"} 0
+      agos_storage_operations{operation="insert_task",outcome="failed"} 1
+      agos_storage_operations{operation="insert_task",outcome="ok"} 0
+[2 HTTP 401 (key revoked)] /health=degraded storage=degraded msg='last storage operation failed: update_task (HTTP 401) at 2026-10-13T17:18:18+00:00'
+    details: last_ok=False last_error={"operation": "update_task", "reason": "HTTP 401", "at": "2026-10-13T17:18:18+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 2
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 0
+      agos_storage_operations{operation="insert_event",outcome="failed"} 3
+      agos_storage_operations{operation="insert_event",outcome="ok"} 0
+      agos_storage_operations{operation="insert_task",outcome="failed"} 2
+      agos_storage_operations{operation="insert_task",outcome="ok"} 0
+[3 recovered (201/200)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=True last_error={"operation": "upsert_agent_stats", "reason": "HTTP 401", "at": "2026-10-13T17:18:18+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 2
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 1
+      agos_storage_operations{operation="insert_event",outcome="failed"} 3
+      agos_storage_operations{operation="insert_event",outcome="ok"} 2
+      agos_storage_operations{operation="insert_task",outcome="failed"} 2
+      agos_storage_operations{operation="insert_task",outcome="ok"} 1

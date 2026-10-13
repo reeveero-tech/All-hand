@@ -1,0 +1,43 @@
+== R-082 checks 2026-10-13T17:19:20Z base=6f51098+changes
+-- A) new tests
+============================== 8 passed in 0.42s ===============================
+-- B) full suite online
+================= 224 passed, 3 skipped, 3 deselected in 3.53s =================
+PYTEST_RC=0
+-- C) full suite offline (unshare -rn, lo up)
+================= 224 passed, 3 skipped, 3 deselected in 3.51s =================
+-- D) discriminating: new tests vs OLD source (stash of storage/health/metrics/server only)
+<stdin>:247: trailing whitespace.
+            
+warning: 1 line adds whitespace errors.
+_________ test_outcomes_recorded_for_http_ok_http_error_and_exception __________
+tests/test_r082_storage_outcomes.py:59: in test_outcomes_recorded_for_http_ok_http_error_and_exception
+FAILED tests/test_r082_storage_outcomes.py::test_outcomes_recorded_for_http_ok_http_error_and_exception
+FAILED tests/test_r082_storage_outcomes.py::test_stats_never_keep_keys_bodies_or_urls
+FAILED tests/test_r082_storage_outcomes.py::test_health_degraded_on_last_failure_and_recovers
+FAILED tests/test_r082_storage_outcomes.py::test_public_key_message_still_wins
+FAILED tests/test_r082_storage_outcomes.py::test_unconfigured_storage_unchanged
+FAILED tests/test_r082_storage_outcomes.py::test_gauges_keep_one_series_per_label_set
+FAILED tests/test_r082_storage_outcomes.py::test_labelled_counters_keep_their_series
+FAILED tests/test_r082_storage_outcomes.py::test_metrics_endpoint_exports_all_specializations_and_storage
+============================== 8 failed in 0.44s ===============================
+ M agent_civilization/storage/__init__.py  M agent_civilization/storage/supabase_store.py  M agos_kernel/infrastructure/health.py  M agos_kernel/infrastructure/metrics.py  M server.py  M tests/conftest.py ?? scripts/run_r082_storage_failure_probe.py ?? tests/test_r082_storage_outcomes.py 
+-- D2) old metrics.py only (new tests that target the gauge/counter series bug)
+<stdin>:65: trailing whitespace.
+            
+warning: 1 line adds whitespace errors.
+======================= 3 failed, 5 deselected in 0.42s ========================
+-- E) ruff
+All checks passed!
+RUFF_RC=0
+-- F) web API contract + infrastructure tests
+============================== 29 passed in 0.55s ==============================
+-- G) R-042 local live stack (real PostgREST): storage layer contract after the change
+R042_RC=0
+R-042 storage verification: 22/22 checks passed
+============================== 3 passed in 0.53s ===============================
+
+-- metrics series bug, measured on main 6f51098 before the fix (TestClient GET /metrics):
+BEFORE (main): agos_agents_active lines = 1 ['agos_agents_active{specialization="validator"} 50'] | specializations = 20
+AFTER (branch): agos_agents_active lines = 20
+-- note: http_requests_total stays 0 — MetricsMiddleware exists in agos_kernel/infrastructure/metrics.py but is not mounted in server.py (registered as R-083).

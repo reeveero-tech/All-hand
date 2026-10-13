@@ -265,9 +265,10 @@ async def check_civilization() -> Dict[str, Any]:
 async def check_storage() -> Dict[str, Any]:
     """Check storage availability."""
     try:
-        from agent_civilization.storage import is_configured, key_status
+        from agent_civilization.storage import is_configured, key_status, storage_stats
         configured = is_configured()
         key = key_status()
+        stats = storage_stats()
         if not configured:
             status, message = "degraded", "Using in-memory storage"
         elif key["kind"] == "public":
@@ -276,6 +277,14 @@ async def check_storage() -> Dict[str, Any]:
             status = "degraded"
             message = (f"Supabase configured with a public key (from {key['source']}): writes are "
                        "rejected by RLS — set SUPABASE_SERVICE_KEY to the secret/service_role key")
+        elif stats["last_ok"] is False:
+            # R-082 (RISK-013): the most recent storage operation failed at runtime
+            # (Supabase down, key revoked, 5xx ...) — data is going to memory only.
+            # Back to healthy on the next successful operation.
+            err = stats["last_error"] or {}
+            status = "degraded"
+            message = (f"last storage operation failed: {err.get('operation')} "
+                       f"({err.get('reason')}) at {err.get('at')}")
         else:
             status, message = "healthy", "Supabase configured"
         return {
@@ -283,6 +292,11 @@ async def check_storage() -> Dict[str, Any]:
             "message": message,
             "supabase_configured": configured,
             "supabase_key": key["kind"],
+            "last_ok": stats["last_ok"],
+            "last_error": stats["last_error"],
+            "last_success_at": stats["last_success_at"],
+            "total_ok": stats["total_ok"],
+            "total_failed": stats["total_failed"],
         }
     except Exception as e:
         return {"status": "degraded", "message": str(e)}

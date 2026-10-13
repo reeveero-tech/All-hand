@@ -82,6 +82,11 @@ class MetricsCollector:
         self._metrics: Dict[str, Metric] = {}
         self._counters: Dict[str, float] = defaultdict(float)
         self._histograms: Dict[str, List[float]] = defaultdict(list)
+        # R-082: one series per label set (Prometheus model). Before, gauges and
+        # counters kept a single series per name, so `agents_active` exported 1
+        # of 20 specializations and labelled counters collapsed into one line.
+        self._gauges: Dict[str, float] = {}
+        self._series_labels: Dict[str, Dict[str, str]] = {}
         
         # Predefined metrics
         self._init_default_metrics()
@@ -201,6 +206,7 @@ class MetricsCollector:
         """Increment a counter metric."""
         key = self._make_key(name, labels)
         self._counters[key] += value
+        self._series_labels[key] = dict(labels or {})
         
         full_name = f"{self.namespace}_{name}"
         if full_name not in self._metrics:
@@ -215,15 +221,13 @@ class MetricsCollector:
     ) -> None:
         """Set a gauge metric value."""
         full_name = f"{self.namespace}_{name}"
-        if full_name in self._metrics:
-            metric = self._metrics[full_name]
-            metric.value = value
-            if labels:
-                metric.labels.update(labels)
-        else:
-            # Auto-register gauge
-            self.register(name=name, description=name, metric_type=MetricType.GAUGE, labels=labels)
-            self._metrics[full_name].value = value
+        key = self._make_key(name, labels)
+        self._gauges[key] = value
+        self._series_labels[key] = dict(labels or {})
+        if full_name not in self._metrics:
+            # Auto-register gauge (series live in self._gauges, keyed by labels)
+            self.register(name=name, description=name, metric_type=MetricType.GAUGE)
+        self._metrics[full_name].value = value  # last value — kept for get_metrics() callers
     
     def observe_histogram(
         self,
@@ -299,23 +303,21 @@ class MetricsCollector:
         lines = []
         
         for name, metric in self._metrics.items():
-            if metric.metric_type == MetricType.COUNTER:
-                key = self._make_key(name.replace(f"{self.namespace}_", ""), metric.labels)
-                count = self._counters.get(key, 0)
-                lines.append(f"# TYPE {name} counter")
+            if metric.metric_type in (MetricType.COUNTER, MetricType.GAUGE):
+                store = self._counters if metric.metric_type == MetricType.COUNTER else self._gauges
+                kind = "counter" if metric.metric_type == MetricType.COUNTER else "gauge"
+                lines.append(f"# TYPE {name} {kind}")
                 lines.append(f"# HELP {name} {metric.description}")
-                label_str = ",".join(f'{k}="{v}"' for k, v in metric.labels.items())
-                if label_str:
-                    label_str = "{" + label_str + "}"
-                lines.append(f"{name}{label_str} {count}")
-            
-            elif metric.metric_type == MetricType.GAUGE:
-                lines.append(f"# TYPE {name} gauge")
-                lines.append(f"# HELP {name} {metric.description}")
-                label_str = ",".join(f'{k}="{v}"' for k, v in metric.labels.items())
-                if label_str:
-                    label_str = "{" + label_str + "}"
-                lines.append(f"{name}{label_str} {metric.value}")
+                series = sorted(k for k in store if k == name or k.startswith(name + "{"))
+                if not series:
+                    # registered but never touched: one zero/initial sample, as before
+                    label_str = ",".join(f'{k}="{v}"' for k, v in metric.labels.items())
+                    lines.append(f"{name}{'{' + label_str + '}' if label_str else ''} "
+                                 f"{0 if kind == 'counter' else metric.value}")
+                for key in series:
+                    labels = self._series_labels.get(key, {})
+                    label_str = ",".join(f'{k}="{v}"' for k, v in labels.items())
+                    lines.append(f"{name}{'{' + label_str + '}' if label_str else ''} {store[key]}")
             
             elif metric.metric_type == MetricType.HISTOGRAM:
                 key = self._make_key(name.replace(f"{self.namespace}_", ""), metric.labels)
