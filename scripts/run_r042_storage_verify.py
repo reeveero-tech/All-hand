@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """R-042: verify supabase_store.py against a live PostgREST/Supabase endpoint.
 
-Reads SUPABASE_URL and SUPABASE_ANON_KEY from the environment (same variables as
-production). Works unchanged against:
+Reads SUPABASE_URL and SUPABASE_SERVICE_KEY (or SUPABASE_ANON_KEY fallback) from
+the environment (same variables as production — see supabase_store.py). Works unchanged against:
   * a real Supabase project (after applying docs/sql/001_init.sql), or
   * the local/CI stack in scripts/r042/run_local_stack.sh
     (PostgreSQL + PostgREST + /rest/v1 prefix proxy).
@@ -43,7 +43,7 @@ async def delete(session, path):
 
 async def main() -> int:
     if not ss.is_configured():
-        print("SUPABASE_URL / SUPABASE_ANON_KEY not set — nothing to verify")
+        print("SUPABASE_URL / SUPABASE_SERVICE_KEY not set — nothing to verify")
         return 2
     print(f"target: {ss.SUPABASE_URL}")
     store = ss.SupabaseStorage()

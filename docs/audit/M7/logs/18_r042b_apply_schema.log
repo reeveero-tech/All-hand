@@ -1,0 +1,43 @@
+== R-042b: apply docs/sql/001_init.sql to hosted Supabase project fgfbavtxfmzpjneclkya (2026-10-13T03:55:49Z)
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+APPLY_RC=0
+ table_name  |   column_name   |        data_type         
+-------------+-----------------+--------------------------
+ agent_stats | agent_name      | text
+ agent_stats | specialization  | text
+ agent_stats | tasks_completed | integer
+ agent_stats | tasks_failed    | integer
+ agent_stats | total_time_s    | double precision
+ agent_stats | last_active_at  | timestamp with time zone
+ agent_stats | updated_at      | timestamp with time zone
+ events      | id              | bigint
+ events      | event_type      | text
+ events      | event_data      | jsonb
+ events      | created_at      | timestamp with time zone
+ tasks       | task_id         | text
+ tasks       | specialization  | text
+ tasks       | prompt          | text
+ tasks       | status          | text
+ tasks       | agent_name      | text
+ tasks       | result          | jsonb
+ tasks       | elapsed_s       | double precision
+ tasks       | created_at      | timestamp with time zone
+ tasks       | finished_at     | timestamp with time zone
+(20 rows)
+
+   relname   | relrowsecurity 
+-------------+----------------
+ tasks       | t
+ agent_stats | t
+ events      | t
+(3 rows)
+
+== REST probe
+apikey+bearer -> HTTP 200 []
+apikey-only -> HTTP 200 []
+invalid apikey -> HTTP 401 {"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}

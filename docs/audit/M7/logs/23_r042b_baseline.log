@@ -1,0 +1,14 @@
+== M7/7 baseline (2026-10-13T03:59:30Z)
+=========================== short test summary info ============================
+FAILED tests/test_civilization_scale.py::test_agents_execute_real_dispatch - ...
+FAILED tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[researcher]
+FAILED tests/test_specialist_runtime.py::test_every_specialization_executes_through_specialist_class
+================== 3 failed, 187 passed, 3 skipped in 27.87s ===================
+PYTEST_RC=1
+All checks passed!
+RUFF_RC=0
+WEB_BUILD_RC=0
+ROOT_BUILD_RC=0
+== secret scan of working tree (password / key literal)
+SECRET_SCAN_HITS_RC=1 (1 = none found)
+NOTE: the 3 failures are the same 'researcher' DuckDuckGo SSL-timeout failures as logs/16 (sandbox network; reproduced on pre-change tree there). CI job 'test' is the judge.

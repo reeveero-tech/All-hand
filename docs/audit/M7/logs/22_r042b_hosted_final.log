@@ -1,0 +1,56 @@
+== R-042b final run against hosted Supabase project fgfbavtxfmzpjneclkya (2026-10-13T03:57:58Z)
+key variable: SUPABASE_SERVICE_KEY (sb_secret_***REDACTED***… server-side key); SUPABASE_ANON_KEY unset
+== re-apply docs/sql/001_init.sql (idempotent; now with explicit RLS)
+psql:docs/sql/001_init.sql:18: NOTICE:  relation "tasks" already exists, skipping
+CREATE TABLE
+psql:docs/sql/001_init.sql:21: NOTICE:  relation "idx_tasks_created_at" already exists, skipping
+CREATE INDEX
+psql:docs/sql/001_init.sql:31: NOTICE:  relation "agent_stats" already exists, skipping
+CREATE TABLE
+psql:docs/sql/001_init.sql:34: NOTICE:  relation "idx_agent_stats_total_time" already exists, skipping
+CREATE INDEX
+psql:docs/sql/001_init.sql:41: NOTICE:  relation "events" already exists, skipping
+CREATE TABLE
+psql:docs/sql/001_init.sql:44: NOTICE:  relation "idx_events_created_at" already exists, skipping
+CREATE INDEX
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+APPLY_RC=0
+agent_stats rls=true
+events rls=true
+tasks rls=true
+== storage layer verification
+insert_task rejected: HTTP 401 {"message":"Invalid API key","hint":"Double check your Supabase `anon` or `service_role` API key."}
+target: https://fgfbavtxfmzpjneclkya.supabase.co
+[PASS] tasks.insert_task returns True
+[PASS] tasks row readable after insert — http=200 rows=[{'task_id': 'r042-3e906ed0', 'specialization': 'analysis', 'prompt': 'R-042 live check', 'status': 'queued', 'agent_name': None, 'result': None, 'elapsed_s': None, 'created_at': '2026-10-13T03:58:04.00562+00:00', 'finished_at': None}]
+[PASS] tasks.created_at defaulted
+[PASS] tasks.status == queued
+[PASS] tasks.get_tasks includes row — 3 rows
+[PASS] tasks.update_task(running) returns True
+[PASS] tasks.update_task(completed, result) returns True
+[PASS] tasks.status == completed — row={'task_id': 'r042-3e906ed0', 'specialization': 'analysis', 'prompt': 'R-042 live check', 'status': 'completed', 'agent_name': 'r042-agent-3e906ed0', 'result': {'ok': True, 'nested': {'n': [1, 2]}, 'output': 'x = 1', 'elapsed_s': 0.01}, 'elapsed_s': 0.01, 'created_at': '2026-10-13T03:58:04.00562+00:00', 'finished_at': '2026-10-13T03:58:07.001222+00:00'}
+[PASS] tasks.agent_name stored
+[PASS] tasks.finished_at is a timestamp — finished_at='2026-10-13T03:58:07.001222+00:00'
+[PASS] tasks.result stored as JSON object (not string) — type=dict value={'ok': True, 'nested': {'n': [1, 2]}, 'output': 'x = 1', 'elapsed_s': 0.01}
+[PASS] tasks.elapsed_s numeric
+[PASS] agent_stats.upsert (insert) returns True
+[PASS] agent_stats.upsert (conflict/merge) returns True
+[PASS] agent_stats exactly one row after two upserts — rows=[{'agent_name': 'r042-agent-3e906ed0', 'specialization': 'analysis', 'tasks_completed': 2, 'tasks_failed': 1, 'total_time_s': 1.25, 'last_active_at': '2026-10-13T03:58:09.301831+00:00', 'updated_at': '2026-10-13T03:58:09.301831+00:00'}]
+[PASS] agent_stats merged values — row={'agent_name': 'r042-agent-3e906ed0', 'specialization': 'analysis', 'tasks_completed': 2, 'tasks_failed': 1, 'total_time_s': 1.25, 'last_active_at': '2026-10-13T03:58:09.301831+00:00', 'updated_at': '2026-10-13T03:58:09.301831+00:00'}
+[PASS] agent_stats timestamps set
+[PASS] agent_stats.get_agent_stats includes row
+[PASS] events.insert_event returns True
+[PASS] events.event_data stored as JSON object (not string) — sample=[{'id': 5, 'event_type': 'r042_check', 'event_data': {'n': 3, 'ok': True, 'task_id': 'r042-3e906ed0'}, 'created_at': '2026-10-13T03:58:10.831727+00:00'}]
+[PASS] events.id is integer identity
+[PASS] rejected write (invalid key) returns False
+
+R-042 storage verification: 22/22 checks passed
+VERIFY_RC=0
+== server end-to-end with hosted Supabase
+tests/test_r042_live_storage.py::test_status_reports_live_storage PASSED [ 33%]
+tests/test_r042_live_storage.py::test_task_lifecycle_persisted PASSED    [ 66%]
+tests/test_r042_live_storage.py::test_chat_persists_and_agent_stats_upserted PASSED [100%]
+============================== 3 passed in 9.05s ===============================
+E2E_RC=0

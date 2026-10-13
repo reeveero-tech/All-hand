@@ -91,3 +91,19 @@ def test_rejected_read_returns_empty_and_logs(monkeypatch, caplog):
     with caplog.at_level(logging.WARNING, logger="storage"):
         assert asyncio.run(st.get_events()) == []
     assert "get_events rejected: HTTP 500" in caplog.text
+
+
+def test_service_key_preferred_over_anon_key(monkeypatch):
+    """R-042b: server-side secret/service key wins (RLS has no anon policies)."""
+    import importlib
+    monkeypatch.setenv("SUPABASE_URL", "http://x")
+    monkeypatch.setenv("SUPABASE_ANON_KEY", "anon")
+    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "service")
+    try:
+        assert importlib.reload(ss).SUPABASE_KEY == "service"
+        monkeypatch.delenv("SUPABASE_SERVICE_KEY")
+        assert importlib.reload(ss).SUPABASE_KEY == "anon"  # backward-compatible fallback
+    finally:
+        monkeypatch.delenv("SUPABASE_URL")
+        monkeypatch.delenv("SUPABASE_ANON_KEY")
+        importlib.reload(ss)

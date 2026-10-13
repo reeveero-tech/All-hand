@@ -49,3 +49,7 @@
 - upsert على `agent_stats` (`on_conflict=agent_name` + `resolution=merge-duplicates`) يدمج في صف واحد (فحص فعلي).
 - `"now()"` كنص في `finished_at`/`last_active_at`/`updated_at`: تقبله PostgreSQL ويُقيَّم وقت التنفيذ (فحص فعلي).
 - الأدلة: `docs/audit/M7/logs/13` (قبل: 18/22) و`15` (بعد: 22/22 + 3/3).
+
+### Supabase المستضافة (R-042b، M7/7 — D-039)
+- طُبق المخطط على مشروع تجريبي (PostgreSQL 17.11): الأنواع مطابقة، 22/22 + 3/3 (logs/22).
+- **RLS**: مفعّل صراحة في `001_init.sql` على الجداول الثلاثة، **بلا سياسات**. الخادم يستخدم `SUPABASE_SERVICE_KEY` (يتجاوز RLS)؛ دور `anon` مرفوض كتابةً وقراءة (logs/20، وضابط سلبي في كل تشغيل CI).

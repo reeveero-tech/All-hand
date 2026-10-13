@@ -101,12 +101,13 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 
 ### حدود المسؤولية (Owner's Line)
 - حماية الفرع `main` (R-024) — مطلوب إعداد المالك (Q-015).
-- Supabase المستضافة (R-042b) — مطلوب مشروع ومفاتيح المالك. التخزين نفسه مُتحقق على محرك Supabase (R-042، D-038).
+- مشروع Supabase دائم للإنتاج + إعداد Render — قرار المالك وموارده. التخزين مُتحقق على محرك Supabase (R-042) وعلى مشروع مستضاف تجريبي (R-042b).
 
 ## تحقق التخزين الحي (R-042)
 
 - **CI**: job `storage` (مانع) — حاوية `postgres:17` + PostgREST v12.2.3 (مثبت بـsha256) + `scripts/r042/run_local_stack.sh`؛ السجل يُرفع artifact `r042-storage-verification-log`.
 - **محلياً**: PostgreSQL + ملف PostgREST، ثم:
   `ADMIN_URI=postgresql://postgres@HOST/agos AUTH_URI=postgresql://authenticator:authenticator@HOST/agos POSTGREST_BIN=/path/postgrest bash scripts/r042/run_local_stack.sh`
-- **ضد Supabase الحقيقية** (R-042b): طبّق `docs/sql/001_init.sql` في محرر SQL للمشروع (لا تطبّق `scripts/r042/*.sql` هناك — الأدوار موجودة)، ثم `SUPABASE_URL=... SUPABASE_ANON_KEY=... python scripts/run_r042_storage_verify.py` (0 = 22/22).
+- **ضد Supabase الحقيقية** (R-042b ✓ M7/7): طبّق `docs/sql/001_init.sql` في محرر SQL للمشروع (لا تطبّق `scripts/r042/*.sql` هناك — الأدوار موجودة)، ثم `SUPABASE_URL=... SUPABASE_SERVICE_KEY=... python scripts/run_r042_storage_verify.py` (0 = 22/22).
+- **متغير المفتاح في الإنتاج** (D-039): `SUPABASE_SERVICE_KEY` = المفتاح السري (`sb_secret_…`) أو `service_role`. إن وُضع المفتاح العام بدلاً منه: كل كتابة تُرفض وتظهر في السجل `insert_task rejected: HTTP 401 … 42501 row-level security` والخادم يعمل من الذاكرة.
 - **عَرَض فشل الكتابة**: سطر تحذير `storage` بصيغة `<op> rejected: HTTP <code> <body>` (مثلاً 401 مفتاح خاطئ، 404 جدول غير موجود = المخطط لم يُطبق، 42501 = صلاحيات/RLS).

@@ -1,0 +1,12 @@
+== R-042b: RLS check on hosted project — role anon (no policies) must be denied
+BEGIN
+SET
+ERROR:  new row violates row-level security policy for table "tasks"
+ANON_INSERT_RC=1
+BEGIN
+SET
+0
+COMMIT
+(anon sees 0 rows under RLS ^)
+2
+(owner sees ^ rows)

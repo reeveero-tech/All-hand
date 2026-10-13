@@ -16,7 +16,17 @@ import aiohttp
 logger = logging.getLogger("storage")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("VITE_SUPABASE_ANON_KEY", "")
+# R-042b: the server writes server-side, so the preferred key is the project's
+# secret / service_role key (bypasses RLS). docs/sql/001_init.sql enables RLS
+# with no anon policies, so an anon/publishable key can read/write nothing
+# (verified on a hosted project — docs/audit/M7/logs/20). SUPABASE_ANON_KEY is
+# kept as a fallback for existing deployments. Never expose the secret key to
+# the browser (no VITE_ variable for it).
+SUPABASE_KEY = (
+    os.environ.get("SUPABASE_SERVICE_KEY")
+    or os.environ.get("SUPABASE_ANON_KEY")
+    or os.environ.get("VITE_SUPABASE_ANON_KEY", "")
+)
 
 
 def _jsonable(value: Any) -> Any:

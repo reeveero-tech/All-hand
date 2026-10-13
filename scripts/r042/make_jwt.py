@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """R-042 test harness: mint an HS256 JWT ``{"role": "anon"}`` (Supabase anon-key shape).
 
-Usage: make_jwt.py <secret>   (secret is a throwaway test value, never a real key)
+Usage: make_jwt.py <secret> [role]   (role: anon | service_role; secret is a throwaway test value, never a real key)
 """
 
 import base64
@@ -23,4 +23,4 @@ def make(secret: str, role: str = "anon") -> str:
 
 
 if __name__ == "__main__":
-    print(make(sys.argv[1]))
+    print(make(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "anon"))

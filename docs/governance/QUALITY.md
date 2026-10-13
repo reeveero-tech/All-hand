@@ -99,3 +99,7 @@
 - **CI job `storage` جديد** (`.github/workflows/ci.yml` — needs quality+test، مانع): خدمة `postgres:17`، PostgREST v12.2.3 بتحقق sha256، ثم `scripts/r042/run_local_stack.sh`: تطبيق المخطط، ضابط سلبي (JWT غير صالح → 401)، `scripts/run_r042_storage_verify.py` (22 فحصاً؛ رمز خروج 1 عند أي فشل)، و`tests/test_r042_live_storage.py` (3 اختبارات خادم مع التخزين).
 - `pytest tests/` الافتراضي: 189 ناجحاً + 3 متخطاة (الاختبارات الحية تتطلب `R042_LIVE=1`) = 184 سابقة + 5 في `tests/test_storage_payloads.py` (مميِّزة: 5/5 تفشل على الكود السابق — logs/14).
 - محلياً في هذه الدفعة فشلت 3 اختبارات للباحث `researcher` بسبب مهلة SSL إلى DuckDuckGo (غير قابل للوصول من بيئة الوكيل — `curl` → 000)؛ تكرر الفشل نفسه على الشجرة قبل التغيير (logs/16). الحَكَم: job `test` في CI.
+
+## تحديث R-042b (M7/7)
+- `pytest tests/` الافتراضي: 190 + 3 متخطاة (+1 في `tests/test_storage_payloads.py`: أولوية `SUPABASE_SERVICE_KEY`). محلياً 3 فشل شبكة `researcher` (كما في M7/6 — logs/23)؛ CI هو الحَكَم.
+- التحقق الحي على Supabase مستضافة: 22/22 + 3/3 (logs/22). CI job `storage` بلا تغيير في ci.yml؛ السكربت صار يستخدم `service_role` ويتحقق أن `anon` مرفوض.
