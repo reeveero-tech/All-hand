@@ -17,7 +17,6 @@ export function reportLovableError(
   error: unknown,
   context: LovableErrorContext = {},
 ): void {
-  // eslint-disable-next-line no-console
   console.error("[lovable-error-reporting]", error, context);
 }
 

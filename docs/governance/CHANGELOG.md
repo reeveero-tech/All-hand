@@ -668,3 +668,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - ROADMAP: R-066 المكرر دُمج (55 بنداً، صفر تكرار، صفر بلا حالة)؛ 9 صيغ "(هذه الدفعة)" استُبدلت بأرقام PR الفعلية.
 - وثائق متجمدة بعد M7/6–M7/7 صُححت: PROJECT_STATE، OPEN_QUESTIONS، README، OPERATIONS، SECURITY.
 - التالي: R-070 ← R-071 ← R-072.
+
+## 2026-10-13 — R-070: إصلاح `npm run lint` في الجذر
+
+- `eslint.config.js` (ESLint 9 flat) بالتبعيات الموجودة فقط؛ إزالة توجيهي `eslint-disable` بلا فائدة في `src/lib/`.
+- CI `build`: الجذر صار يُثبت (`npm ci`) ويُفحص (`--max-warnings=0`) ويُبنى — لم يكن مشمولاً.
+- `npm run lint` rc=2 → rc=0؛ بناء الجذر rc=0 (logs/34).

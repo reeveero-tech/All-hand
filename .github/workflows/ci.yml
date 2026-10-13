@@ -77,6 +77,17 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
 
+      # R-070: the root TanStack Start app (src/) was neither linted nor built
+      # in CI; `npm run lint` had been broken (no eslint.config.js) unnoticed.
+      - name: Root app — install (clean, from lockfile)
+        run: npm ci --no-audit --no-fund
+
+      - name: Root app — lint (no warnings allowed)
+        run: npx eslint . --max-warnings=0
+
+      - name: Root app — build
+        run: npm run build
+
   docker:
     # R-040: verify the real Dockerfile builds and the container serves /health.
     # Ubuntu runners provide Docker; the sandbox used for docs work does not.

@@ -1,0 +1,21 @@
+== R-070 root lint 2026-10-13T14:31:44Z main=6c4be91
+-- BEFORE (main, no eslint.config.js): see M6 logs/28 — rc=2 'ESLint couldn't find an eslint.config.(js|mjs|cjs) file'
+-- first run with new config: 0 errors, 2 warnings (unused 'eslint-disable-next-line no-console' in src/lib/lovable-error-reporting.ts:20, src/lib/error-capture.ts:11) -> directives removed
+-- npm run lint
+
+> lint
+> eslint .
+
+LINT_RC=0
+-- npm run lint -- --max-warnings=0
+LINT_STRICT_RC=0
+-- files linted
+18 files; 0 errors; 0 warnings
+-- negative control: a real error must be reported
+  2:9  error  'unused' is assigned a value but never used  @typescript-eslint/no-unused-vars
+✖ 1 problem (1 error, 0 warnings)
+PROBE_RC=1
+-- root build
+ROOT_BUILD_RC=0
+-- package.json/lock unchanged
+unchanged (no new dependencies)

@@ -62,7 +62,7 @@
 
 ### RISK-012: واجهة الجذر (`src/`) لا تُبنى
 - الملف `src/lib/lovable-error-reporting` مفقود ([log 09](../audit/M0/logs/09_root_build.log)). — R-013.
-- **الحالة (R-068)**: مغلقة — بناء الجذر rc=0 ([logs/30](../audit/M6/logs/30_r068_risk_status_evidence.log)). ملاحظة: `npm run lint` في الجذر معطل (لا `eslint.config.js`) — R-070.
+- **الحالة (R-068)**: مغلقة — بناء الجذر rc=0 ([logs/30](../audit/M6/logs/30_r068_risk_status_evidence.log)). ملاحظة: `npm run lint` في الجذر كان معطلاً (لا `eslint.config.js`) — أُصلح في R-070، والجذر يُفحص ويُبنى في CI منذها.
 
 ### RISK-013: تخزين Supabase يفشل بصمت
 - **الدليل**: العمليات تعيد `False`/`[]` دون رفع أخطاء عند غياب الإعداد أو فشل الطلب؛ `server.py` يعوض بمنطق الذاكرة لكل مسار على حدة — سلوك غير متجانس قد يربك التشخيص.
