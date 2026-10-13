@@ -58,3 +58,8 @@
 - `GET /api/system/status`: حقل جديد `supabase_key: {"kind": "service"|"public"|"unknown"|"none", "source": "<اسم المتغير>"|"none"}` — **لا يحوي قيمة المفتاح أبداً**. الحقول الموجودة بلا تغيير (`supabase_configured` باقٍ).
 - `GET /health`: `checks.storage.status` = `degraded` (والرمز 200 كما هو) إذا كان المفتاح عاماً، مع رسالة توجّه إلى `SUPABASE_SERVICE_KEY`؛ `checks.storage.details.supabase_key` = النوع. المفتاح السري → `healthy` كما كان.
 - عند البدء (lifespan): سطر سجل واحد — `WARNING` للمفتاح العام أو غير المعروف، `INFO` للسري. الاختبارات: `tests/test_r078_supabase_key_kind.py` (18).
+
+## R-082 — نتائج التخزين وقت التشغيل وسلاسل المقاييس (2026-10-13)
+- `GET /health`: `checks.storage.status` = `degraded` إذا فشلت آخر عملية تخزين (رسالة: العملية + `HTTP <code>` أو `exception: <Type>` + الوقت)، و`healthy` بعد أول نجاح. `details` تضيف `last_ok`، `last_error`، `last_success_at`، `total_ok`، `total_failed`. الرمز 200 كما هو. ترتيب الأولوية: غير مهيأ ← مفتاح عام (R-078) ← فشل آخر عملية.
+- `GET /metrics`: `agos_storage_operations{operation="…",outcome="ok|failed"}` (تراكمي منذ بدء العملية، مُصدَّر كـgauge) و`agos_storage_last_operation_ok` (1/0/‎-1). **إصلاح**: كل gauge/counter موسوم صار سلسلة مستقلة — `agos_agents_active` يصدّر 20 سطراً (كان 1).
+- الاختبارات: `tests/test_r082_storage_outcomes.py` (8).

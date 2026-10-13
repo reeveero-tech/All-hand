@@ -151,3 +151,13 @@ def _offline_external_network(request, monkeypatch):
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)
     monkeypatch.setattr(socket.socket, "connect_ex", guarded_connect_ex)
     yield calls
+
+
+@pytest.fixture(autouse=True)
+def _reset_storage_outcomes():
+    """R-082: storage outcome stats are process-wide; isolate them per test so a
+    failure recorded by one test cannot turn /health degraded in the next."""
+    from agent_civilization.storage import reset_storage_stats
+    reset_storage_stats()
+    yield
+    reset_storage_stats()

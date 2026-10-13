@@ -1,0 +1,23 @@
+== R-082 BEFORE 2026-10-13T17:10:13Z main=eabc100 (storage WARNING lines kept: they prove requests were attempted and failed)
+storage - WARNING - insert_task failed: Cannot connect to host 127.0.0.1:37329 ssl:default [Connect call failed ('127.0.0.1', 37329)] - insert_task:165
+storage - WARNING - insert_event failed: Cannot connect to host 127.0.0.1:37329 ssl:default [Connect call failed ('127.0.0.1', 37329)] - insert_event:267
+storage - WARNING - update_task failed: Cannot connect to host 127.0.0.1:37329 ssl:default [Connect call failed ('127.0.0.1', 37329)] - update_task:189
+storage - WARNING - update_task failed: Cannot connect to host 127.0.0.1:37329 ssl:default [Connect call failed ('127.0.0.1', 37329)] - update_task:189
+storage - WARNING - get_tasks failed: Cannot connect to host 127.0.0.1:37329 ssl:default [Connect call failed ('127.0.0.1', 37329)] - get_tasks:204
+storage - WARNING - upsert_agent_stats failed: Cannot connect to host 127.0.0.1:37329 ssl:default [Connect call failed ('127.0.0.1', 37329)] - upsert_agent_stats:235
+storage - WARNING - insert_event failed: Cannot connect to host 127.0.0.1:37329 ssl:default [Connect call failed ('127.0.0.1', 37329)] - insert_event:267
+storage - WARNING - insert_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:121
+storage - WARNING - insert_event rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:121
+storage - WARNING - update_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:121
+storage - WARNING - update_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:121
+storage - WARNING - get_tasks rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:121
+storage - WARNING - upsert_agent_stats rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:121
+[1 down (connection refused)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=None last_error=null
+    /metrics storage lines: 0
+[2 HTTP 401 (key revoked)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=None last_error=null
+    /metrics storage lines: 0
+[3 recovered (201/200)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=None last_error=null
+    /metrics storage lines: 0
