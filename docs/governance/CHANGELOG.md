@@ -649,3 +649,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - `tests/test_storage_payloads.py`: اختبار أولوية المفتاح.
 - `.env.example`، `render.yaml`: `SUPABASE_SERVICE_KEY`.
 - D-039، RISK-018.
+
+## 2026-10-13 — دورة M6 الثانية/1: R-067 — تبعيات وأمان
+
+- قفل الجذر: 27 تبعية مباشرة minor/patch ضمن النطاقات (package.json بلا تغيير)؛ معالجة خللين في npm (تراجع arborist، قفل غير متسق) — `npm ci` rc=0.
+- الفحوص: pip-audit صفر، npm audit الجذر صفر، web/ إنتاج صفر؛ pytest 190 + 3 متخطاة؛ ruff صفر؛ البناءان rc=0.
+- مُسجل: R-068، R-069 (بقية الدورة)، R-070 (lint الجذر معطل — لا eslint.config.js)، R-071 (ترقية vite في web/).

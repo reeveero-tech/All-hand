@@ -535,3 +535,22 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 ### الحدود (صدقاً)
 - إعادة إنتاج 850/1000 على النسخة التاريخية (R-053 script) لا تعيد إنتاج "السجل الأصلي" الذي كُتب وقتها — سُميت REPRO صراحة.
 - mock فحص السكربت فحص يدوي محفوظ في logs/25 — ليس اختبار pytest في CI (لم يُضف ملف اختبار).
+
+---
+
+## R-067 (دورة M6 الثانية/1) — تبعيات وأمان (2026-10-13)
+
+| الفحص | النتيجة | السجل |
+|---|---|---|
+| pip-audit -r requirements.txt | صفر، rc=0 | logs/27 |
+| npm audit --omit=dev --audit-level=high (الجذر / web) | صفر / صفر | logs/27 |
+| npm audit كامل (الجذر / web) | صفر / 2 dev (esbuild moderate، vite high) | logs/27 |
+| `npm update` | فشل — خلل npm `ERR_INVALID_ARG_TYPE` (تراجع arborist) | logs/28 |
+| `npm update --package-lock-only` ثم `npm ci` | قفل غير متسق (ajv@8 مفقود) → EUSAGE | logs/28 |
+| `npm install --package-lock-only` ثم `npm ci` | rc=0 | logs/28 |
+| تغييرات القفل | 27 مباشرة minor/patch؛ 56 مدخلاً متغيراً؛ 6 مضافة، 2 محذوفة؛ `rou3` ليست ترقية فعلية لأي مستهلك | logs/28 |
+| بناء الجذر / web | rc=0 / rc=0 | logs/28 |
+| pytest / ruff | 190 + 3 متخطاة rc=0 / صفر | logs/28 |
+| `npm run lint` (الجذر) | rc=2 على main والفرع — لا `eslint.config.js` → R-070 | logs/28 |
+
+الحدود: لا lockfile للـPython (pip-audit يحل أحدث المسموح)؛ ترقية vite مؤجلة إلى R-071.
