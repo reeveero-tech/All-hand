@@ -1,0 +1,23 @@
+$ npm outdated --json
+[cwd=web]
+returncode=1
+--- stdout ---
+{
+  "react": {
+    "current": "18.3.1",
+    "wanted": "18.3.1",
+    "latest": "19.3.0",
+    "dependent": "web",
+    "location": "/home/user/workspace/All-hand/web/node_modules/react"
+  },
+  "react-dom": {
+    "current": "18.3.1",
+    "wanted": "18.3.1",
+    "latest": "19.3.0",
+    "dependent": "web",
+    "location": "/home/user/workspace/All-hand/web/node_modules/react-dom"
+  }
+}
+
+--- stderr ---
+

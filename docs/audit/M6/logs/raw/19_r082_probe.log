@@ -1,0 +1,77 @@
+$ /tmp/v311/bin/python scripts/run_r082_storage_failure_probe.py
+[cwd=.]
+returncode=0
+--- stdout ---
+[1 down (connection refused)] /health=degraded storage=degraded msg='last storage operation failed: insert_event (exception: ClientConnectorError) at 2026-10-13T23:47:33+00:00'
+    details: last_ok=False last_error={"operation": "insert_event", "reason": "exception: ClientConnectorError", "at": "2026-10-13T23:47:33+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 1
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 0
+      agos_storage_operations{operation="insert_event",outcome="failed"} 2
+      agos_storage_operations{operation="insert_event",outcome="ok"} 0
+      agos_storage_operations{operation="insert_task",outcome="failed"} 1
+      agos_storage_operations{operation="insert_task",outcome="ok"} 0
+[2 HTTP 401 (key revoked)] /health=degraded storage=degraded msg='last storage operation failed: upsert_agent_stats (HTTP 401) at 2026-10-13T23:47:33+00:00'
+    details: last_ok=False last_error={"operation": "upsert_agent_stats", "reason": "HTTP 401", "at": "2026-10-13T23:47:33+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 2
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 0
+      agos_storage_operations{operation="insert_event",outcome="failed"} 4
+      agos_storage_operations{operation="insert_event",outcome="ok"} 0
+      agos_storage_operations{operation="insert_task",outcome="failed"} 2
+      agos_storage_operations{operation="insert_task",outcome="ok"} 0
+[3 recovered (201/200)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=True last_error={"operation": "insert_event", "reason": "HTTP 401", "at": "2026-10-13T23:47:33+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 2
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 1
+      agos_storage_operations{operation="insert_event",outcome="failed"} 4
+      agos_storage_operations{operation="insert_event",outcome="ok"} 1
+      agos_storage_operations{operation="insert_task",outcome="failed"} 2
+      agos_storage_operations{operation="insert_task",outcome="ok"} 1
+
+--- stderr ---
+2026-10-13 23:47:32,981 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:97
+2026-10-13 23:47:32,981 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:111
+2026-10-13 23:47:32,982 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-13 23:47:32,987 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:206
+2026-10-13 23:47:32,987 - agos.server - INFO - External agents loaded: 0 - <module>:208
+2026-10-13 23:47:33,012 - agos.server - INFO - Civilization routes registered successfully - <module>:691
+2026-10-13 23:47:33,023 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: agos - __init__:100
+2026-10-13 23:47:33,023 - storage - INFO - Supabase storage key: service (from SUPABASE_SERVICE_KEY) - log_key_status:99
+2026-10-13 23:47:33,028 - storage - WARNING - insert_task failed: Cannot connect to host 127.0.0.1:35467 ssl:default [Connect call failed ('127.0.0.1', 35467)] - insert_task:211
+2026-10-13 23:47:33,028 - storage - WARNING - insert_event failed: Cannot connect to host 127.0.0.1:35467 ssl:default [Connect call failed ('127.0.0.1', 35467)] - insert_event:318
+2026-10-13 23:47:33,028 - agos.server - INFO - Task created: 64699848724a for specialization: analyst - create_task:527
+2026-10-13 23:47:33,029 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-13 23:47:33,029 - storage - WARNING - update_task failed: Cannot connect to host 127.0.0.1:35467 ssl:default [Connect call failed ('127.0.0.1', 35467)] - update_task:236
+2026-10-13 23:47:33,031 - storage - WARNING - update_task failed: Cannot connect to host 127.0.0.1:35467 ssl:default [Connect call failed ('127.0.0.1', 35467)] - update_task:236
+2026-10-13 23:47:33,031 - storage - WARNING - get_tasks failed: Cannot connect to host 127.0.0.1:35467 ssl:default [Connect call failed ('127.0.0.1', 35467)] - get_tasks:252
+2026-10-13 23:47:33,031 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-13 23:47:33,031 - storage - WARNING - upsert_agent_stats failed: Cannot connect to host 127.0.0.1:35467 ssl:default [Connect call failed ('127.0.0.1', 35467)] - upsert_agent_stats:284
+2026-10-13 23:47:33,032 - storage - WARNING - insert_event failed: Cannot connect to host 127.0.0.1:35467 ssl:default [Connect call failed ('127.0.0.1', 35467)] - insert_event:318
+2026-10-13 23:47:33,033 - agos.infrastructure.health - INFO - HealthCheckRegistry initialized - __init__:170
+2026-10-13 23:47:33,034 - agos.infrastructure.redis - INFO - RedisQueue initialized with URL: redis://localhost:6379 - __init__:142
+2026-10-13 23:47:33,034 - agos.infrastructure.redis - INFO - Using Redis: False, Fallback: True - __init__:143
+2026-10-13 23:47:33,034 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+2026-10-13 23:47:33,035 - httpx2 - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-13 23:47:33,036 - httpx2 - INFO - HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-13 23:47:33,039 - storage - WARNING - insert_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-13 23:47:33,040 - storage - WARNING - insert_event rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-13 23:47:33,040 - agos.server - INFO - Task created: 690b78ec0d79 for specialization: analyst - create_task:527
+2026-10-13 23:47:33,040 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-13 23:47:33,042 - storage - WARNING - update_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-13 23:47:33,043 - storage - WARNING - get_tasks rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-13 23:47:33,043 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-13 23:47:33,044 - storage - WARNING - update_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-13 23:47:33,046 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+2026-10-13 23:47:33,046 - storage - WARNING - upsert_agent_stats rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-13 23:47:33,047 - httpx2 - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-13 23:47:33,049 - storage - WARNING - insert_event rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-13 23:47:33,049 - httpx2 - INFO - HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-13 23:47:33,051 - agos.server - INFO - Task created: 3c4678fd0209 for specialization: analyst - create_task:527
+2026-10-13 23:47:33,052 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-13 23:47:33,054 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-13 23:47:33,056 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+2026-10-13 23:47:33,057 - httpx2 - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-13 23:47:33,058 - httpx2 - INFO - HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK" - _send_single_request:1085
+

@@ -1,0 +1,100 @@
+$ npm outdated --json
+[cwd=.]
+returncode=1
+--- stdout ---
+{
+  "@eslint/js": {
+    "current": "9.39.5",
+    "wanted": "9.39.5",
+    "latest": "10.0.1",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/@eslint/js"
+  },
+  "@types/node": {
+    "current": "22.20.5",
+    "wanted": "22.20.5",
+    "latest": "26.6.5",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/@types/node"
+  },
+  "@vitejs/plugin-react": {
+    "current": "5.2.0",
+    "wanted": "5.2.0",
+    "latest": "6.1.2",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/@vitejs/plugin-react"
+  },
+  "eslint": {
+    "current": "9.39.5",
+    "wanted": "9.39.5",
+    "latest": "10.12.0",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/eslint"
+  },
+  "eslint-plugin-react-hooks": {
+    "current": "5.2.0",
+    "wanted": "5.2.0",
+    "latest": "7.1.1",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/eslint-plugin-react-hooks"
+  },
+  "eslint-plugin-react-refresh": {
+    "current": "0.4.26",
+    "wanted": "0.4.26",
+    "latest": "0.5.7",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/eslint-plugin-react-refresh"
+  },
+  "globals": {
+    "current": "15.15.0",
+    "wanted": "15.15.0",
+    "latest": "17.13.0",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/globals"
+  },
+  "lucide-react": {
+    "current": "0.575.0",
+    "wanted": "0.575.0",
+    "latest": "1.56.0",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/lucide-react"
+  },
+  "nitro": {
+    "current": "3.0.260603-beta",
+    "wanted": "3.0.260603-beta",
+    "latest": "3.0.260903-beta",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/nitro"
+  },
+  "react-day-picker": {
+    "current": "9.14.0",
+    "wanted": "9.14.0",
+    "latest": "10.0.2",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/react-day-picker"
+  },
+  "recharts": {
+    "current": "2.15.4",
+    "wanted": "2.15.4",
+    "latest": "3.10.1",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/recharts"
+  },
+  "typescript": {
+    "current": "5.9.3",
+    "wanted": "5.9.3",
+    "latest": "7.0.2",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/typescript"
+  },
+  "zod": {
+    "current": "3.25.76",
+    "wanted": "3.25.76",
+    "latest": "4.6.7",
+    "dependent": "All-hand",
+    "location": "/home/user/workspace/All-hand/node_modules/zod"
+  }
+}
+
+--- stderr ---
+

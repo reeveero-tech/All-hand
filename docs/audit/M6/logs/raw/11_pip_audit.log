@@ -1,0 +1,8 @@
+$ /tmp/v311/bin/pip-audit -r requirements.txt
+[cwd=.]
+returncode=0
+--- stdout ---
+
+--- stderr ---
+No known vulnerabilities found
+

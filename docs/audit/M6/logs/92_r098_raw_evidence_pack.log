@@ -1,0 +1,142 @@
+R-098 — raw evidence pack (full outputs, no truncation, direct returncodes) — collected 2026-10-13T23:45:22Z
+Commit SHA at collection: 8fbd498049cec137a5a8cf85625e00293c26b1cd
+Node in PATH for npm commands: Node 22.14.0 (from /tmp/node-v22.14.0-linux-x64)
+Purpose: fix R-097 logger which truncated outputs (lines[-keep:] lost data); add missing install/build/audit/measurements; correct stale claims from R-094/R-097 batches.
+
+### pytest Python 3.11
+[cwd=.] $ /tmp/v311/bin/python -m pytest tests/ -q
+returncode=0   (direct from subprocess.run)
+stdout_chars=2126 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/01_pytest_py311.log (untruncated)
+
+### pytest Python 3.12
+[cwd=.] $ /tmp/v312/bin/python -m pytest tests/ -q
+returncode=0   (direct from subprocess.run)
+stdout_chars=2126 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/02_pytest_py312.log (untruncated)
+
+### ruff (actual CI scope — no specialists exclude, includes scripts)
+[cwd=.] $ /tmp/v311/bin/ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+returncode=0   (direct from subprocess.run)
+stdout_chars=19 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/03_ruff_ci_actual.log (untruncated)
+
+### root npm ci --engine-strict
+[cwd=.] $ npm ci --engine-strict
+returncode=0   (direct from subprocess.run)
+stdout_chars=144 stderr_chars=393
+full stdout+stderr saved to: /tmp/rawlogs/04_root_npmci.log (untruncated)
+
+### root npm run lint
+[cwd=.] $ npm run lint
+returncode=0   (direct from subprocess.run)
+stdout_chars=20 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/05_root_lint.log (untruncated)
+
+### root npm run build
+[cwd=.] $ npm run build
+returncode=0   (direct from subprocess.run)
+stdout_chars=5491 stderr_chars=23818
+full stdout+stderr saved to: /tmp/rawlogs/06_root_build.log (untruncated)
+
+### web/ npm ci
+[cwd=web] $ npm ci
+returncode=0   (direct from subprocess.run)
+stdout_chars=140 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/07_web_npmci.log (untruncated)
+
+### web/ npm run build
+[cwd=web] $ npm run build
+returncode=0   (direct from subprocess.run)
+stdout_chars=388 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/08_web_build.log (untruncated)
+
+### npm outdated root (full JSON)
+[cwd=.] $ npm outdated --json
+returncode=1   (direct from subprocess.run)
+stdout_chars=2650 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/09_npm_outdated_root.json (untruncated)
+
+### npm outdated web (full JSON)
+[cwd=web] $ npm outdated --json
+returncode=1   (direct from subprocess.run)
+stdout_chars=383 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/10_npm_outdated_web.json (untruncated)
+
+### pip-audit -r requirements.txt
+[cwd=.] $ /tmp/v311/bin/pip-audit -r requirements.txt
+returncode=0   (direct from subprocess.run)
+stdout_chars=0 stderr_chars=31
+full stdout+stderr saved to: /tmp/rawlogs/11_pip_audit.log (untruncated)
+
+### root npm audit --omit=dev --audit-level=high
+[cwd=.] $ npm audit --omit=dev --audit-level=high
+returncode=0   (direct from subprocess.run)
+stdout_chars=24 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/12_root_audit_prod.log (untruncated)
+
+### root npm audit --audit-level=high
+[cwd=.] $ npm audit --audit-level=high
+returncode=0   (direct from subprocess.run)
+stdout_chars=24 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/13_root_audit_full.log (untruncated)
+
+### web/ npm audit --audit-level=high
+[cwd=web] $ npm audit --audit-level=high
+returncode=0   (direct from subprocess.run)
+stdout_chars=24 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/14_web_audit.log (untruncated)
+
+### R-051 audit (per-spec real dispatch)
+[cwd=.] $ /tmp/v311/bin/python scripts/run_r051_audit.py
+returncode=0   (direct from subprocess.run)
+stdout_chars=4848 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/15_r051_audit.log (untruncated)
+
+### R-053 scale audit
+[cwd=.] $ /tmp/v311/bin/python scripts/run_r053_scale_audit.py
+returncode=0   (direct from subprocess.run)
+stdout_chars=816 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/16_r053_scale.log (untruncated)
+
+### R-055 e2e scenarios (pytest)
+[cwd=.] $ /tmp/v311/bin/python -m pytest tests/test_e2e_scenarios.py -q
+returncode=0   (direct from subprocess.run)
+stdout_chars=574 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/17_r055_scenarios.log (untruncated)
+
+### R-078 probe — 5 cases
+[cwd=.] $ /tmp/v311/bin/python scripts/run_r078_key_probe.py legacy_anon_jwt && /tmp/v311/bin/python scripts/run_r078_key_probe.py anon_jwt_in_service_var && /tmp/v311/bin/python scripts/run_r078_key_probe.py publishable && /tmp/v311/bin/python scripts/run_r078_key_probe.py service_jwt && /tmp/v311/bin/python scripts/run_r078_key_probe.py secret
+returncode=0   (direct from subprocess.run)
+stdout_chars=1638 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/18_r078_probe.log (untruncated)
+
+### R-082 storage probe
+[cwd=.] $ /tmp/v311/bin/python scripts/run_r082_storage_failure_probe.py
+returncode=0   (direct from subprocess.run)
+stdout_chars=2202 stderr_chars=5909
+full stdout+stderr saved to: /tmp/rawlogs/19_r082_probe.log (untruncated)
+
+### R-085 /metrics load (10000 req)
+[cwd=.] $ /tmp/v311/bin/python scripts/run_r085_metrics_load.py
+returncode=0   (direct from subprocess.run)
+stdout_chars=376 stderr_chars=0
+full stdout+stderr saved to: /tmp/rawlogs/20_r085_metrics_load.log (untruncated)
+
+### Summary (parsed from full raw JSON in raw/09 and raw/10)
+- npm outdated (root): total 13 entries; all 13 have Current == Wanted → 0 in-range updates available. npm exit code 1 is npm's expected behavior whenever ANY outdated entry exists (even if only newer majors ahead) — documented to prevent misreading.
+- npm outdated (web/): total 2 entries; both Current == Wanted → 0 in-range updates available (react/react-dom 19 only, majors).
+- All other commands in this pack returned 0.
+- Full untruncated stdout/stderr of every command above is preserved in docs/audit/M6/logs/raw/ (20 files, 59,122 bytes) — R-097's logger truncated to `lines[-keep:]`; this pack fixes that.
+
+### CI push run on main after PR #105 merge
+- run: https://github.com/reeveero-tech/All-hand/actions/runs/38485509983 — conclusion=success, headSha=8fbd498 (= main HEAD at collection), all jobs success.
+- Note on "0 CI warnings" claim from R-094/R-097: the last main push run has **3 npm deprecation warnings** in job `build` (tsconfck@3.1.6 unmaintained, recharts@2.15.4 1.x/2.x inactive, eslint@9.39.5 unsupported). These are **npm package deprecation notices**, not infra/Actions/Ubuntu/Node20 warnings (which were the R-087/R-088 concerns and are gone). Claim being corrected: "0 warnings" is wrong for npm deprecations; the correct statement is "0 infra/Actions/Ubuntu/Node-20 warnings; 3 npm package deprecation notices in root build (tsconfck, recharts, eslint) — package-level, no action within R-094 scope (they need major upgrades: recharts 3, eslint 10)."
+
+### Corrections to R-094/R-095/R-096/R-097 claims
+1. R-094 (in PR #104) said "Python 3.12 not available in agent sandbox" — **wrong**: uv python list showed 3.12.13 available; R-098 ran pytest on 3.12.13 → 230+3+3 rc=0. (R-097 already fixed the run; this entry documents the original wrong claim explicitly.)
+2. R-094/R-097 "0 CI warnings" — corrected above (3 npm package deprecation notices, not 0).
+3. R-097's ruff command used the WRONG scope (kept `--exclude specialists`, omitted `scripts`) — the actual CI scope since PR #53 is `server.py agent_civilization agos_kernel tests scripts` with NO specialists exclude. R-098 ran the actual CI scope → 0 errors.
+4. R-096/README said 79 items — actual count after R-097 is **80**. README now corrected.
+5. R-096's "89_r096_before.log" description says "76 items" but the file itself counted 79 (it was produced AFTER R-094/95/96 were already added) — the "before" framing is wrong; the raw log content is preserved as-is and this is documented here.
+6. R-095 claim "no difference between sandbox and CI" is over-strong — correct statement: "tests pass on both local Pythons (3.11 and 3.12) and on CI (3.11 and 3.12 per D-043); RISK-024 check applies."
