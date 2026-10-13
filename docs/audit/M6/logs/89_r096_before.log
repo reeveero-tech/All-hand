@@ -1,0 +1,20 @@
+item headings: 79
+duplicate ids: none
+status counts: {'done': 79}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 1163
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (c8f16c7..HEAD): ['R-085', 'R-091', 'R-092', 'R-093']
+  not in ROADMAP: none
+  R-091: roadmap=yes changelog=yes
+  R-092: roadmap=yes changelog=yes
+  R-093: roadmap=yes changelog=yes
+  R-094: roadmap=yes changelog=yes
+  R-095: roadmap=yes changelog=yes
+  R-096: roadmap=yes changelog=yes

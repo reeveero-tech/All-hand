@@ -1,0 +1,12 @@
+R-095 baseline measurements — 2026-10-13/14 session
+Commit SHA: c64fedaaad7ca6667ef9f4865c9c1bc1d7f9194b
+---
+R-051 (run_r051_audit.py): 20/20 real, 0 simulated, 0 failed (rc=0)
+R-053 (run_r053_scale_audit.py): 1000/1000 concurrent, ~1.22-1.38s across two runs (within historic 1.22-1.35 jitter), peak RSS 38.7MB (sixth cycle: 41.4MB)
+R-055 (pytest test_e2e_scenarios.py): 7 passed (3 scenarios + 4 supporting), rc=0
+R-078 probe: 5 cases as designed — 3 public keys → degraded with warning, 2 service keys → healthy, no key value leaked
+R-082 probe: degraded (connection refused) → degraded (HTTP 401) → healthy (recovered), /metrics storage lines present
+R-085 /metrics load (run_r085_metrics_load.py): 10000 requests → 8 series, 0 raw path leaks, 0 invalid exposition lines, RSS growth 0.0MB
+R-042 local: postgres/postgrest not available in this sandbox (environment limit, not a project defect) — live storage verified in CI job storage (last main push run 38482938499): 22/22 + 3/3
+---
+CI since R-092: 0 failures — push run 38482938499 on c64feda succeeded (all jobs: test/quality/network/storage/build/audit/docker)

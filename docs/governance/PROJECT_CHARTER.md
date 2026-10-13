@@ -41,7 +41,7 @@
 - الخادم `server.py` + `agent_civilization/` (بما فيها `specialists/` — مُوصّلة اختيارياً بمسار التشغيل منذ R-032/M7/4 عبر `AGOS_AGENT_IMPL=specialists`؛ الافتراضي `real`، و`specialists/` ليست مساراً افتراضياً).
 - `web/` (واجهة React التي يخدمها Docker — تم التحقق من البناء بنجاح).
 - `agos_kernel/` (البنية التحتية الحية: circuit breaker، metrics، health، redis — مُستوردة من `server.py`).
-- `agent_civilization/agents/specialists/` (1,021 ملف Python) — **داخل النطاق كمسار اختياري** عبر `AGOS_AGENT_IMPL=specialists` (R-032/M7/4، D-037)؛ الافتراضي `real`. راجع Q-004 (حُل جزئياً).
+- `agent_civilization/agents/specialists/` (1,021 ملف Python) — **داخل النطاق كمسار اختياري** عبر `AGOS_AGENT_IMPL=specialists` (R-032/M7/4، D-037)؛ الافتراضي `real`. راجع Q-004 (مُغلَق — الحسم: التوصيل الاختياري).
 - `tests/` (الاختبارات الجذرية).
 - `.github/workflows/ci.yml` (CI الحالي — يحتاج إعادة توجيه).
 
