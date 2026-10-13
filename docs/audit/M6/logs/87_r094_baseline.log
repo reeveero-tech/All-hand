@@ -1,0 +1,15 @@
+R-094 baseline check — 2026-10-13/14 session
+Commit SHA: c64fedaaad7ca6667ef9f4865c9c1bc1d7f9194b
+Environment: Python 3.11 (venv via uv), Node 22.14.0, sandbox /home/user/workspace/All-hand
+---
+Command: python -m pytest tests/
+Exit code: 0
+Output:
+tests/test_web_api_contract.py ..........                                [100%]
+
+================= 230 passed, 3 skipped, 3 deselected in 3.32s =================
+---
+Command: ruff check --select F,E722 --exclude 'agent_civilization/agents/specialists' server.py agent_civilization agos_kernel tests
+Exit code: 0
+Output:
+All checks passed!

@@ -35,7 +35,7 @@
 ## وضع CI
 
 - أهداف `ci.yml` الحالية: quality (ruff F/E722 على المسارات الحية) + test (pytest tests/) + build (web/) + docker (R-040، جديد: بناء الصورة من Dockerfile الفعلي + تشغيل الحاوية + تحقق `/health` 200) + publish (معطل إلا بـ`[publish]` — D-011).
-- بوابة الحوكمة (`governance-gate.yml`) تعمل على كل PR إلى main (R-020)؛ غير مفروضة دون حماية الفروع (R-024 blocked).
+- بوابة الحوكمة (`governance-gate.yml`) تعمل على كل PR إلى main (R-020)؛ **مفروضة فعلياً منذ R-024** (حماية الفرع `main` مفعلة: quality/test/build/docker/governance/audit، strict). راجع GOVERNANCE_GATE.md.
 - job `docker` الجديدة تجمع سجلات البناء والتشغيل والحاوية وترفعها كـ artifact `docker-verification-logs`؛ نجاحها الأول يُوثق بأدلة مرتكزة في `docs/audit/M4/logs/` (خطوة ما بعد أول تشغيل للـ PR).
 
 ## Definition of Done
