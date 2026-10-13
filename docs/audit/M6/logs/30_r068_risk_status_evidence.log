@@ -1,0 +1,31 @@
+== R-068 risk-status evidence 2026-10-13T05:25:11Z main=61e5a4e
+-- RISK-001: import server on Python 3.14.3
+import server OK
+-- RISK-002/003: CI targets (ci.yml)
+31:            server.py agent_civilization agos_kernel tests
+50:        run: pytest tests/ -v --cov=agent_civilization --cov=agos_kernel --cov-report=xml
+75:        working-directory: web/
+177:        working-directory: web/
+185:        working-directory: web/
+-- RISK-003/011: agos-kernel/ present?
+ls: cannot access 'agos-kernel': No such file or directory
+-- RISK-007: top-level dirs (was 55)
+8
+agent_civilization/ agos_kernel/ docs/ public/ scripts/ src/ tests/ web/ 
+-- RISK-010: /health 503 path + test
+331:            return JSONResponse(status_code=503, content=system_health)
+3:and /health 503 semantics.
+-- RISK-012: root build
+ROOT_BUILD_RC=0
+-- RISK-015: pytest
+======================== 190 passed, 3 skipped in 3.99s ========================
+PYTEST_RC=0
+-- RISK-019: network-dependent tests (external hosts referenced by real agents)
+agent_civilization/agents/real/real_agents.py:60:duckduckgo
+-- CI history: last 60 runs
+failure: 4
+success: 56
+  failure: Governance Gate on m7/r042-live-storage-postgrest
+  failure: Governance Gate on m6/r065-audit-fixes-2
+  failure: Governance Gate on m6/wrapup
+  failure: Governance Gate on m6/r045-security

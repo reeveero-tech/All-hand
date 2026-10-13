@@ -103,3 +103,8 @@
 ## تحديث R-042b (M7/7)
 - `pytest tests/` الافتراضي: 190 + 3 متخطاة (+1 في `tests/test_storage_payloads.py`: أولوية `SUPABASE_SERVICE_KEY`). محلياً 3 فشل شبكة `researcher` (كما في M7/6 — logs/23)؛ CI هو الحَكَم.
 - التحقق الحي على Supabase مستضافة: 22/22 + 3/3 (logs/22). CI job `storage` بلا تغيير في ci.yml؛ السكربت صار يستخدم `service_role` ويتحقق أن `anon` مرفوض.
+
+## تحديث R-068 (دورة M6 الثانية/2)
+- `pytest tests/`: **192 + 3 متخطاة** (+2 في `tests/test_security.py`: `/health` 503 عند unhealthy، و200 عند degraded — كان فرع 503 بلا اختبار). مميِّز: حذف الفرع مؤقتاً يُفشل الاختبار (logs/31).
+- القياسات الدورية كلها rc=0: R-051 20/20، R-053 1000/1000، R-055 3/3، R-042 22/22 + 3/3 (logs/29).
+- RISK-019: اختبارات `researcher` تعتمد على DuckDuckGo — قاعدة "CI هو الحَكَم" عند فشل شبكي محلي؛ الإصلاح R-072.

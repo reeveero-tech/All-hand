@@ -554,3 +554,20 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | `npm run lint` (الجذر) | rc=2 على main والفرع — لا `eslint.config.js` → R-070 | logs/28 |
 
 الحدود: لا lockfile للـPython (pip-audit يحل أحدث المسموح)؛ ترقية vite مؤجلة إلى R-071.
+
+---
+
+## R-068 (دورة M6 الثانية/2) — القياسات والأخطاء وRISKS (2026-10-13)
+
+| الفحص | النتيجة | السجل |
+|---|---|---|
+| R-051 real-dispatch | 20 real / 0 simulated / 0 failed، rc=0 | logs/29 |
+| R-053 scale | 1000/1000، 1.29s، RSS 41.4MB، rc=0 | logs/29 |
+| R-055 scenarios | 3/3، rc=0 | logs/29 |
+| R-042 local live storage | 22/22 + 3/3؛ JWT غير صالح 401؛ anon 42501؛ rc=0 | logs/29 |
+| CI آخر 60 تشغيلاً | 56 success، 4 failure (كلها Governance Gate) | logs/30 |
+| أدلة حالة RISK-001/002/003/007/010/011/012/015 | import OK؛ أهداف CI حية؛ agos-kernel غائبة؛ 8 أدلة جذرية؛ فرع 503؛ بناء الجذر rc=0؛ pytest 190 | logs/30 |
+| اختبار 503 مميِّز | حذف الفرع → 1 failed rc=1؛ الملف أعيد بلا فرق | logs/31 |
+| pytest بعد الإضافة | 192 + 3 متخطاة، rc=0؛ ruff صفر | logs/32 |
+
+الحدود: logs/30 سجّل pytest 190 قبل إضافة الاختبارين؛ الرقم 192 من logs/32.
