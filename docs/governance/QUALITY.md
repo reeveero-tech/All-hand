@@ -129,14 +129,15 @@
 ## تحديث R-077
 - CI job `audit`: خطوتان جديدتان مانعتان لتبعيات npm في الجذر (Node 22، `set -o pipefail`). على main: صفر؛ ضابط سلبي rc=1 (logs/46).
 
-## الحالة الحالية (مراجعة R-086، 2026-10-14 — تغلق الدورة الخامسة؛ كانت R-081)
+## الحالة الحالية (مراجعة R-093، 2026-10-14 — تغلق الدورة السادسة؛ كانت R-086)
 > الأقسام أعلاه وأدناه سجل زمني؛ هذا القسم هو المرجع الحالي.
 - `pytest tests/`: **230 + 3 متخطاة + 3 مستبعدة** (`network`)، متصلاً ومعزولاً عن الإنترنت (R-072/R-078)، ومع/بلا `web/dist` (R-083)؛ في CI على **Python 3.11 و3.12** داخل job `test` (R-090، D-043)؛ `pytest -m network`: 3/3 (CI job `network`).
 - ruff `--select F,E722` على `server.py agent_civilization agos_kernel tests scripts`: صفر.
 - Node: **22 في كل مكان** — الجذر وweb/ بـ`npm ci --engine-strict` (R-076، R-089)، وطور بناء Docker `node:22-slim` (D-042).
 - بيئة CI: `runs-on: ubuntu-26.04` صراحةً (D-041)؛ كل الـActions على v7 (`node24`، صفر تنبيه — R-087).
 - audit: pip-audit صفر؛ npm audit إنتاج وكامل صفر في web/ والجذر — كلها مانعة في CI (R-077).
-- R-053 1000/1000 (1.349s)؛ R-051 20/20؛ R-055 3/3؛ R-042 22/22 + 3/3؛ `/metrics` محدود تحت 10000 طلب (R-085).
+- R-053 1000/1000 (1.271s، R-092)؛ R-051 20/20؛ R-055 3/3؛ R-042 22/22 + 3/3؛ `/metrics` محدود تحت 10000 طلب (`scripts/run_r085_metrics_load.py`).
+- تشغيل الاختبارات محلياً بنفس تبعيات CI (`httpx2`): وصفة في OPERATIONS (R-091).
 
 ## درس R-083 — نسخة Python في التحقق المحلي
 - CI يشغّل Python 3.11؛ صياغة 3.12+ (مثل `\` داخل تعبير f-string) تمر محلياً على نسخة أحدث وتفشل في CI. التحقق المحلي قبل الدفع: `python3.11 -m compileall -q server.py agent_civilization agos_kernel tests scripts` + pytest على 3.11 (logs/63b).
