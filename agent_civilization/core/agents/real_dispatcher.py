@@ -171,22 +171,13 @@ async def _validator(work: Dict[str, Any]) -> Dict[str, Any]:
     data = work.get("data")
     payload = data if data is not None else text
     if isinstance(payload, str):
-        # Try JSON first (a JSON payload is the strongest validation)
         try:
             parsed = json.loads(payload)
             return {"ok": True, "answer": "valid JSON",
                     "tool_output": {"type": type(parsed).__name__,
                                     "size": len(parsed) if hasattr(parsed, "__len__") else 1}}
-        except json.JSONDecodeError:
-            pass
-        # Non-JSON string: still valid as a payload (schema check passes).
-        # A validator stage in the pipeline receives free-text summaries
-        # (not raw JSON) — failing the whole pipeline because the summary
-        # is not JSON is wrong. We report it as a string payload, not an
-        # error, but flag it so consumers can distinguish.
-        return {"ok": True, "answer": "valid string payload (not JSON)",
-                "tool_output": {"type": "str", "size": len(payload),
-                                "json_parse": False}}
+        except json.JSONDecodeError as e:
+            return {"ok": False, "error": f"invalid JSON: {e.msg} at pos {e.pos}"}
     return {"ok": True, "answer": "valid python object",
             "tool_output": {"type": type(payload).__name__}}
 

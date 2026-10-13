@@ -145,3 +145,16 @@ def test_scenario_full_pipeline_stores_result_in_task_store(e2e_client):
     assert stored["status"] == "completed"
     assert stored["result"]["final"] == "valid python object"
     assert len(stored["result"]["stages"]) >= 4
+
+
+def test_validator_rejects_invalid_json_string():
+    """R-055a: الـvalidator يرفض نصاً ليس JSON — لا تساهل يمرر أي سلسلة.
+
+    إصلاح لتساهل أُدخل في R-055 (كان يعيد ok=True لأي نص) ثم ثبت أنه غير
+    لازم: السيناريوهات تنجح لأن البيانات تُمرر لكل المراحل، لا لأن التحقق ضعيف.
+    """
+    from agent_civilization.core.agents import real_dispatcher as rd
+    bad = asyncio.run(rd.dispatch("validator", {"prompt": "not json at all", "data": None}))
+    assert bad["ok"] is False and "invalid JSON" in bad["error"]
+    good = asyncio.run(rd.dispatch("validator", {"prompt": '{"a": 1}'}))
+    assert good["ok"] is True and good["answer"] == "valid JSON"
