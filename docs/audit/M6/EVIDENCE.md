@@ -593,3 +593,20 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | تبعيات جديدة | — | لا (package.json والقفل بلا تغيير) | logs/34 |
 
 الحدود: نطاق الفحص `src/` و`vite.config.ts` فقط؛ `web/` بلا lint (لا تبعيات ESLint فيه) — خارج R-070.
+
+---
+
+## R-071 — ترقية vite في web/ (2026-10-13)
+
+| الفحص | قبل (vite 5.4.21) | بعد (vite 8.3.4) | السجل |
+|---|---|---|---|
+| npm audit كامل (web/) | 2 (moderate + high)، rc=1 | 0، rc=0 | logs/35 |
+| npm audit --omit=dev (web/) | 0 | 0 | logs/35 |
+| `npm ci` / `npm run build` | — / rc=0 | rc=0 / rc=0 | logs/35 |
+| حجم الحزمة | JS 165214 B، CSS 11835 B | JS 164250 B، CSS 11601 B | logs/35 |
+| تحقق المتصفح عبر `server.py` | 8/8 | 8/8 | logs/36 |
+| خادم التطوير + وكيل `/api` | — | 200، 6/6 | logs/36 |
+| CORS لمصدر غريب على خادم التطوير | — | لا `Access-Control-Allow-Origin` | logs/36 |
+| عقد الويب / pytest / ruff / lint الجذر | — | 10/10 / 192+3 / 0 / rc=0 | logs/37 |
+
+الحدود: لم أُعِد إنتاج استغلال GHSA-67mh-4wv8-2f99 على vite 5 — فحص CORS أعلاه على vite 8 فقط، والدليل الأساسي هو خروج esbuild الضعيف من الشجرة وصفر audit.

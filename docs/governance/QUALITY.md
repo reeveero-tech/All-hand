@@ -112,3 +112,7 @@
 ## تحديث R-070
 - **CI job `build`**: أضيفت للجذر (تطبيق TanStack Start في `src/`) ثلاث خطوات: `npm ci`، `npx eslint . --max-warnings=0`، `npm run build`. قبلها لم يكن CI يفحص الجذر ولا يبنيه، فبقي `npm run lint` معطلاً (rc=2) دون أن يُلاحظ.
 - `eslint.config.js` جديد (flat config بالتبعيات الموجودة)؛ 18 ملفاً، 0 أخطاء، 0 تحذيرات؛ ضابط سلبي يلتقط خطأً حقيقياً (logs/34).
+
+## تحديث R-071
+- **CI job `audit`**: خطوة `npm audit --audit-level=high` الكاملة في web/ صارت **مانعة** (أزيل `continue-on-error: true` وأضيف `set -o pipefail`) — كانت معلوماتية منذ R-045 بسبب ثغرتي dev اللتين أغلقهما R-071.
+- تحقق المتصفح `scripts/run_r071_web_verify.py`: 8/8 قبل وبعد؛ خادم التطوير 6/6 (logs/36). pytest 192 + 3؛ عقد الويب 10/10 (logs/37).

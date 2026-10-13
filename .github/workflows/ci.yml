@@ -192,13 +192,14 @@ jobs:
           # Blocking on critical/high in PRODUCTION deps only (react/react-dom).
           # Dev-only (vite/esbuild) is non-blocking — see docs/governance/SECURITY.md R-045.
 
-      - name: Web dependency audit (full — report only)
+      - name: Web dependency audit (full — blocking since R-071)
         working-directory: web/
-        continue-on-error: true
         run: |
+          set -o pipefail
           npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log"
-          # Full audit (including dev deps) is informational — dev-only vulnerabilities
-          # do not reach production. Documented in docs/governance/SECURITY.md R-045.
+          # R-071: vite 5 -> 8 closed the two dev-only advisories (esbuild/vite) that
+          # made this step informational since R-045; it now blocks on high/critical
+          # in dev deps too. See docs/governance/SECURITY.md R-071.
 
   storage:
     # R-042: live storage verification against PostgreSQL + PostgREST — the

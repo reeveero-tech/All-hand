@@ -26,7 +26,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 ## النشر
 
 ### Docker (من `Dockerfile`)
-- مراحل: `node:20-slim` لبناء `web/` ثم `python:3.12-slim` للتشغيل؛ يُخدم `web/dist` عبر `server.py`.
+- مراحل: `node:20-slim` لبناء `web/` ثم `python:3.12-slim` للتشغيل؛ يُخدم `web/dist` عبر `server.py`. منذ R-071: `web/` يستخدم vite 8 ويتطلب Node `^20.19.0 || >=22.12.0`.
 - **`.dockerignore`** (جديد في R-040): يمنع دخول `.git` و`node_modules` و`web/dist` والأسرار (`.env*`) في سياق `COPY . .` — كانت تغيب قبله فكان سياق البناء يشمل كل ملفات العمل.
 - **التحقق (R-040، ✓ done — دفعة M4/1)**: job `docker` في CI تبني الصورة وتشغلها وتتحقق من `/health` (HTTP 200 + جسم JSON يحوي `status`)، مع جمع السجلات ورفعها كـ artifact. تحققت في تشغيلين: الأول (run 38285632672) على رأس `f02ed61` والثاني/النهائي (run 38285911497) على رأس `13fc37d` — كلاهما نجح. الأدلة مُرتكزة في `docs/audit/M4/logs/05..09`. بيئة التحرير المحلية بلا Docker (دليل `docs/audit/M4/logs/04`).
 
