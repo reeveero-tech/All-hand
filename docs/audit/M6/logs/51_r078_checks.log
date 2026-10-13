@@ -1,0 +1,21 @@
+== R-078 checks 2026-10-13T15:40:16Z base=99372cd+changes
+-- A) new tests
+============================== 18 passed in 0.43s ==============================
+-- B) full suite online
+================= 216 passed, 3 skipped, 3 deselected in 3.52s =================
+PYTEST_RC=0
+-- C) full suite offline (unshare -rn, lo up)
+================= 216 passed, 3 skipped, 3 deselected in 3.45s =================
+-- D) discriminating: new tests against the OLD implementation (git stash of source files only)
+============================== 18 failed in 0.43s ==============================
+ M agent_civilization/storage/__init__.py  M agent_civilization/storage/supabase_store.py  M agos_kernel/infrastructure/health.py  M server.py ?? tests/test_r078_supabase_key_kind.py 
+-- E) ruff
+All checks passed!
+RUFF_RC=0
+-- F) web API contract
+============================== 10 passed in 0.42s ==============================
+-- G) R-042 local live stack (service_role JWT): storage writes still pass after the change (the stack exercises SupabaseStorage directly, not server startup — startup classification is covered by A and logs/50)
+R042_RC=0
+R-042 storage verification: 22/22 checks passed
+============================== 3 passed in 0.56s ===============================
+-- note D: on the old code the 18 tests fail mostly at attribute lookup (classify_key/key_status/log_key_status did not exist); the behavioural before/after is logs/49 vs logs/50 (same probe).
