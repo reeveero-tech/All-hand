@@ -1,0 +1,27 @@
+== R-079 BEFORE 2026-10-13T16:59:17Z main=3d07b9b node(root)=v22.23.3
+-- pip-audit -r requirements.txt
+No known vulnerabilities found
+PIP_AUDIT_RC=0
+-- npm audit (.) prod/full
+found 0 vulnerabilities
+found 0 vulnerabilities
+FULL_RC=0
+-- npm outdated (.): in-range updates (Current != Wanted)
+in-range: none
+major-only (latest != wanted): 13
+-- npm audit (web) prod/full
+found 0 vulnerabilities
+found 0 vulnerabilities
+FULL_RC=0
+-- npm outdated (web): in-range updates (Current != Wanted)
+in-range: none
+major-only (latest != wanted): 2
+-- Python latest compatible vs installed
+fastapi (0.143.0)
+pydantic (2.14.1)
+uvicorn (0.54.0)
+aiohttp (3.14.5)
+Name: fastapi	Version: 0.143.0
+Name: pydantic	Version: 2.12.5
+Name: uvicorn	Version: 0.54.0
+Name: aiohttp	Version: 3.14.5

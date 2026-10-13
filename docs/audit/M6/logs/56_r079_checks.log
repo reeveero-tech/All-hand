@@ -1,0 +1,31 @@
+== R-079 checks 2026-10-13T16:59:45Z
+-- majors available (.): name current -> latest
+   @eslint/js 9.39.5 -> 10.0.1
+   @types/node 22.20.5 -> 26.6.5
+   @vitejs/plugin-react 5.2.0 -> 6.1.2
+   eslint 9.39.5 -> 10.12.0
+   eslint-plugin-react-hooks 5.2.0 -> 7.1.1
+   eslint-plugin-react-refresh 0.4.26 -> 0.5.7
+   globals 15.15.0 -> 17.13.0
+   lucide-react 0.575.0 -> 1.56.0
+   nitro 3.0.260603-beta -> 3.0.260903-beta
+   react-day-picker 9.14.0 -> 10.0.2
+   recharts 2.15.4 -> 3.10.1
+   typescript 5.9.3 -> 7.0.2
+   zod 3.25.76 -> 4.6.7
+-- majors available (web): name current -> latest
+   react 18.3.1 -> 19.3.0
+   react-dom 18.3.1 -> 19.3.0
+-- clean venv with latest compatible Python deps (what CI installs)
+[notice] To update, run: /tmp/v4/bin/python -m pip install --upgrade pip
+Name: fastapi	Version: 0.143.0
+Name: pydantic	Version: 2.14.1
+Name: starlette	Version: 1.8.0
+Name: uvicorn	Version: 0.54.0
+Name: aiohttp	Version: 3.14.5
+[notice] To update, run: /tmp/v4/bin/python -m pip install --upgrade pip
+pip  25.3    PYSEC-2026-3721 26.2.0
+VENV_PIP_AUDIT_RC=1
+================= 216 passed, 3 skipped, 3 deselected in 3.27s =================
+VENV_PYTEST_RC=0
+-- note: the single pip-audit finding is pip 25.3 bundled in the throwaway venv (/tmp/v4) — not a project dependency; CI jobs run 'python -m pip install --upgrade pip' before installing (ci.yml).
