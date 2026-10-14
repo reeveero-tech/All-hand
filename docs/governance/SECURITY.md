@@ -133,7 +133,7 @@
 | SEC-006 | تنفيذ كود عن بُعد بلا مصادقة عبر `test_runner` | حرجة | طبع سراً من بيئة الخادم؛ قرأ 4,091 بايتاً من `/proc/<ppid>/environ` | مرفوض في الوضع المفتوح؛ عند الإذن: عزل + خادم non-dumpable (القراءة → `PermissionError`) |
 | SEC-007 | SSRF عبر `api_integrator`/`network_client` | عالية | خادم داخلي 127.0.0.1 تلقى الطلب (hits=1)؛ طلب إلى 169.254.169.254 أُرسل | `blocked: …` قبل أي اتصال (hits=0)، والفحص يتكرر عند كل إعادة توجيه |
 | SEC-008 | SSRF عبر تسجيل وكيل خارجي في الوضع المفتوح | عالية | تسجيل `http://127.0.0.1/...` مقبول (201) | 400 `url rejected`؛ وفحص عند كل نداء |
-| SEC-009 | حجب الخدمة باستعلام SQLite جامح | عالية | الـAPI كله لم يرد على GET خلال 20 ثانية | يُقطع عند 3 ثوانٍ (`sqlite: interrupted`) |
+| SEC-009 | حجب الخدمة باستعلام SQLite جامح | عالية | الـAPI كله لم يرد على GET خلال 20 ثانية | يُقطع عند 3 ثوانٍ (`sqlite: interrupted`)؛ أي قيمة نصية/ثنائية > 1MB تُرفض (`string or blob too big`) |
 | SEC-010 | الصورة تعمل بـroot | متوسطة | `Dockerfile` بلا `USER` | `USER agos` (uid 10001)؛ CI job `docker` يفحص `id -u != 0` |
 
 ### السياسة (مصدرها الوحيد `agent_civilization/core/safety.py`)
@@ -144,7 +144,7 @@
 | `AGOS_ALLOW_PRIVATE_NETWORK` | غير مضبوط | `1`: يسمح للأدوات والوكلاء الخارجيين المسجلين عبر API بعناوين داخلية |
 
 - عزل التنفيذ عند السماح: `python -I`، بيئة فارغة (PATH/HOME/TMPDIR/LANG + متغيرا Python)، مجلد مؤقت يُحذف، حدود CPU 5ث، ذاكرة 512MB، ملف 10MB، 64 ملفاً مفتوحاً، بلا core، مهلة 8ث مع قتل مجموعة العمليات.
-- العناوين: يُحظر كل عنوان غير عام (loopback، RFC1918، link-local والبيانات الوصفية، CGNAT 100.64/10، ULA، المتعدد، المحجوز، وIPv4-mapped منها)؛ نطاقات التوثيق مسموحة (غير قابلة للتوجيه).
+- العناوين: يُحظر كل عنوان غير عام (loopback، RFC1918، link-local والبيانات الوصفية، CGNAT 100.64/10، ULA، المتعدد، المحجوز، وصيغ IPv6 التي تحمل IPv4 داخلها: mapped وNAT64 و6to4)؛ نطاقات التوثيق مسموحة (غير قابلة للتوجيه).
 - `GET /api/system/status` → `security.tool_policy` يعرض السياسة الفعالة (بلا أي قيمة سرية).
 
 ### حدود باقية (صادقة)
@@ -152,5 +152,5 @@
 2. إعادة ربط DNS (اسم يتغير عنوانه بين الفحص والاتصال) غير مغطاة.
 3. الاستعلام الجامح يحجز الخادم حتى 3 ثوانٍ (محدود، لا مُلغى).
 4. `prctl(PR_SET_DUMPABLE)` خاص بـLinux؛ على غيره `server_process_non_dumpable=false` معروض في الحالة.
-- الأدلة: `docs/audit/M6/logs/93_r100_runtime_safety.log` (فهرس) و`logs/raw/27..41`؛ الاختبارات `tests/test_r100_runtime_safety.py` (37).
+- الأدلة: `docs/audit/M6/logs/93_r100_runtime_safety.log` (فهرس) و`logs/raw/27..48`؛ الاختبارات `tests/test_r100_runtime_safety.py` (44).
 

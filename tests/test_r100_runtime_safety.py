@@ -3,7 +3,7 @@
 Before R-100, in the default open mode (no AGOS_API_KEY), an anonymous
 ``POST /api/tasks`` to ``test_runner`` ran arbitrary Python that could print
 the server's secrets; URL tools reached loopback/private/metadata addresses;
-SQLite had no time budget.  Evidence: docs/audit/M6/logs/raw/27_r100_probe_before.log.
+SQLite had no time budget.  Evidence: docs/audit/M6/logs/raw/27_r100_probe_before_main.log.
 
 Every assertion below exercises the real code path (real subprocess, real
 local HTTP server, real SQLite) — nothing is mocked except the offline DNS /
@@ -158,12 +158,15 @@ def test_sandbox_reports_signal_kill_honestly(monkeypatch):
 
 @pytest.mark.parametrize("ip", ["127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1",
                                 "169.254.169.254", "100.64.0.1", "0.0.0.0", "::1",
-                                "fd00::1", "fe80::1", "::ffff:127.0.0.1", "224.0.0.1"])
+                                "fd00::1", "fe80::1", "::ffff:127.0.0.1", "224.0.0.1",
+                                # IPv6 forms that embed a private IPv4 (NAT64 / 6to4)
+                                "64:ff9b::a9fe:a9fe", "64:ff9b::7f00:1", "2002:7f00:1::1"])
 def test_non_public_addresses_are_blocked(ip):
     assert safety.is_public_address(ip) is False
 
 
-@pytest.mark.parametrize("ip", ["8.8.8.8", "1.1.1.1", "2606:4700:4700::1111", "192.0.2.10"])
+@pytest.mark.parametrize("ip", ["8.8.8.8", "1.1.1.1", "2606:4700:4700::1111", "192.0.2.10",
+                                "64:ff9b::808:808"])
 def test_public_and_documentation_addresses_are_allowed(ip):
     assert safety.is_public_address(ip) is True
 
@@ -248,3 +251,26 @@ def test_db_manager_still_runs_real_sql():
     out = asyncio.run(rd.dispatch("db_manager", {
         "prompt": "CREATE TABLE t(x INTEGER); INSERT INTO t VALUES (1),(2),(3); SELECT sum(x) AS s FROM t"}))
     assert out["ok"] is True and out["tool_output"] == {"columns": ["s"], "rows": [(6,)]}
+
+
+def test_sqlite_huge_value_cannot_be_allocated_in_the_server():
+    # Without a length limit SQLite would allocate ~1 GB inside the server process.
+    with pytest.raises(Exception, match="too big"):
+        safety.run_sqlite_statements(["SELECT length(randomblob(1000000000))"])
+
+
+def test_sandbox_tolerates_invalid_utf8_output():
+    r = safety.run_sandboxed_python("import sys; sys.stdout.buffer.write(b'ok\\xff\\xfe'); sys.stdout.flush()")
+    assert r["returncode"] == 0 and r["stdout"].startswith("ok")
+
+
+def test_sandbox_timeout_does_not_hang_on_escaped_descendant():
+    # A grandchild in its own session keeps the pipes open after the group is killed.
+    code = ("import subprocess, time\n"
+            "subprocess.Popen(['sleep', '6'], start_new_session=True)\n"
+            "time.sleep(30)\n")
+    t0 = time.monotonic()
+    r = safety.run_sandboxed_python(code, timeout_s=1)
+    assert r["timed_out"] is True
+    assert time.monotonic() - t0 < 5
+

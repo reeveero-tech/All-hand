@@ -53,8 +53,25 @@ raw/38_r100_r053_scale_opt_in_final.log rc=0  opt-in, final script: 1000/1000
 raw/40_r100_r053_scale_default.log      rc=1  default: 950/1000 — "test_runner x50 — code execution is disabled in
    open mode" (expected: policy refusal, not a defect)
 
-== 6. Not verified locally (no Docker in this environment)
-The new CI docker step (container uid != 0; anonymous test_runner refused) is verified only by the PR's CI run.
+== 6. Container check (no Docker in this environment -> verified in CI only)
+raw/42_r100_ci_docker_job.log  PR #108, run 38492327553, job 115620570841, head 9a0698a: all steps success;
+   "container_uid=10001", open-mode test_runner task -> "code execution is disabled in open mode",
+   "PASS: non-root container; open-mode code execution refused"; 0 "Permission denied" lines in the job log.
+
+== 6b. Pre-merge self-review of the diff (the advisor tool used earlier in this session is not available now;
+    recorded honestly as a self-review, not an external one)
+raw/43_r100_review_findings_old_vs_fixed.log — same script against safety.py at 9a0698a and the fixed file:
+   1. NAT64 64:ff9b::a9fe:a9fe (=169.254.169.254) and 64:ff9b::7f00:1 counted as public  -> fixed (embedded IPv4 checked)
+      (6to4 2002:7f00:1::1 was already non-public via Python's is_global — finding not confirmed, test kept)
+   2. SQLite randomblob(1000000000) allocated ~1 GB inside the server                      -> fixed (SQLITE_LIMIT_LENGTH 1 MB)
+   3. invalid UTF-8 from the child raised UnicodeDecodeError in the handler                -> fixed (errors="replace")
+   4. a descendant that left the process group kept communicate() blocked (>5 s)           -> fixed (bounded wait, 3.0 s)
+   5. docstrings named a non-existent evidence file (27_r100_probe_before.log)             -> fixed
+   7 regression tests added (44 in tests/test_r100_runtime_safety.py).
+raw/44..45 pytest 3.11/3.12 after fixes: 274 passed, 3 skipped, 3 deselected (rc=0)
+raw/46 ruff after fixes: rc=0
+raw/47 probe after fixes: 8/8 safe (rc=0)
+raw/48 R-053 opt-in after fixes: 1000/1000 (rc=0)
 
 == 7. Residual limits (SECURITY.md, R-100 section)
 Child runs as the server's own user (can read app files, open sockets) — hence execution itself is policy-gated;

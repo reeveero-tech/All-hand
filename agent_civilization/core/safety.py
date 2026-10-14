@@ -8,7 +8,7 @@ unauthenticated client (the server's default "open" mode, R-004):
 * ``test_runner`` executes submitted Python.  Before R-100 the child inherited
   the server environment (``SUPABASE_SERVICE_KEY``, ``OPENROUTER_API_KEY``) and
   could read the parent's ``/proc/<ppid>/environ`` (evidence in
-  ``docs/audit/M6/logs/raw/27_r100_probe_before.log``).
+  ``docs/audit/M6/logs/raw/27_r100_probe_before_main.log``).
 * ``api_integrator`` / ``network_client`` / external agents open URLs taken from
   the request: loopback, private networks and cloud metadata endpoints
   (169.254.169.254) were reachable (SSRF).
@@ -177,7 +177,8 @@ def run_sandboxed_python(code: str, timeout_s: Optional[float] = None,
             [sys.executable, "-I", "-c", _bootstrap(limits)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             cwd=workdir, env=_sandbox_env(workdir), start_new_session=True,
-            text=True,
+            # Child output is untrusted bytes: never let invalid UTF-8 raise here.
+            encoding="utf-8", errors="replace",
         )
         try:
             out, err = proc.communicate(code, timeout=timeout_s)
@@ -187,7 +188,20 @@ def run_sandboxed_python(code: str, timeout_s: Optional[float] = None,
                 os.killpg(proc.pid, signal.SIGKILL)
             except (ProcessLookupError, PermissionError):
                 proc.kill()
-            out, err = proc.communicate()
+            try:
+                # A grandchild that left the process group (setsid) may still
+                # hold the pipes open; never wait for it indefinitely.
+                out, err = proc.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                for stream in (proc.stdin, proc.stdout, proc.stderr):
+                    try:
+                        if stream:
+                            stream.close()
+                    except OSError:
+                        pass
+                proc.kill()
+                proc.wait(timeout=2)
+                out, err = "", "output abandoned: a descendant process kept the pipes open"
             timed_out = True
         return {
             "returncode": proc.returncode,
@@ -206,6 +220,9 @@ def run_sandboxed_python(code: str, timeout_s: Optional[float] = None,
 # they are allowed so the deterministic test transport (192.0.2.x) keeps working.
 _DOC_NETS = [ipaddress.ip_network(n) for n in
              ("192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24", "2001:db8::/32")]
+# IPv6 prefixes that carry an IPv4 address inside them: the embedded IPv4 is
+# what a translator would actually reach, so it is checked too.
+_NAT64_NETS = [ipaddress.ip_network(n) for n in ("64:ff9b::/96", "64:ff9b:1::/48")]
 
 
 class UnsafeURLError(ValueError):
@@ -222,6 +239,12 @@ def is_public_address(ip: str) -> bool:
     mapped = getattr(addr, "ipv4_mapped", None)
     if mapped is not None:
         addr = mapped
+    if addr.version == 6:
+        embedded = addr.sixtofour
+        if embedded is None and any(addr in net for net in _NAT64_NETS):
+            embedded = ipaddress.IPv4Address(int(addr) & 0xFFFFFFFF)
+        if embedded is not None:
+            return is_public_address(str(embedded))
     if any(addr in net for net in _DOC_NETS):
         return True
     return bool(addr.is_global) and not addr.is_multicast
@@ -298,6 +321,10 @@ def safe_urlopen(req: urllib.request.Request, timeout: float, allow_private: Opt
 
 SQLITE_TIME_BUDGET_S = 3.0
 SQLITE_MAX_ROWS = 50
+# Largest string/blob a statement may build (default SQLite allows ~1 GB, which
+# a single ``randomblob(1000000000)`` would allocate inside the server process).
+SQLITE_MAX_LENGTH = 1_000_000
+SQLITE_MAX_SQL_LENGTH = 100_000
 _SQLITE_DENY = {getattr(sqlite3, n) for n in ("SQLITE_ATTACH", "SQLITE_DETACH") if hasattr(sqlite3, n)}
 _DENIED_PRAGMAS = {"temp_store_directory", "data_store_directory"}
 
@@ -321,6 +348,9 @@ def run_sqlite_statements(statements: Iterable[str], time_budget_s: float = SQLI
     conn = sqlite3.connect(":memory:")
     try:
         conn.set_authorizer(_sqlite_authorizer)
+        if hasattr(conn, "setlimit"):  # Python >= 3.11 (the supported floor)
+            conn.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, SQLITE_MAX_LENGTH)
+            conn.setlimit(sqlite3.SQLITE_LIMIT_SQL_LENGTH, SQLITE_MAX_SQL_LENGTH)
         deadline = time.monotonic() + time_budget_s
         conn.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 10_000)
         cur = conn.cursor()
@@ -341,5 +371,6 @@ def policy_snapshot() -> Dict[str, object]:
                            "wall_timeout_s": SANDBOX_WALL_TIMEOUT_S,
                            "server_process_non_dumpable": _HARDENED},
         "outbound_network": {"private_targets_allowed": private_network_allowed()},
-        "sqlite": {"time_budget_s": SQLITE_TIME_BUDGET_S, "attach": "denied"},
+        "sqlite": {"time_budget_s": SQLITE_TIME_BUDGET_S, "attach": "denied",
+                   "max_value_bytes": SQLITE_MAX_LENGTH},
     }
