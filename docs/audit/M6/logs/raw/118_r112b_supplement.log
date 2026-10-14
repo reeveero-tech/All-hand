@@ -1,0 +1,157 @@
+# R-112b (تكملة M6/52) — ملحق دليل التحقق
+# تاريخ: 2026-10-14T18:51:49.432405+00:00
+# الغرض: تكميل نواقص السجلات 115/116/117 وفق مراجعة مانعة — بصمة حقيقية قبل/بعد لاختبار الدخان،
+# مقارنة استخراج العناوين القديمة/الجديدة على نفس لقطة ROADMAP ما قبل R-112 (b97d7aa)،
+# بيئة و is_checkout مقاسة، وأوصاف CI مربوطة بـ SHA فعلية.
+# لا اقتطاع، لا `|| true`، لا shell pipes — كل أمر بكود خروج منفصل.
+
+## A) البيئة و هوية checkout المقاسة (لا نص مُثبَّت)
+$ /usr/local/bin/python3 --version -> rc=0
+Python 3.14.3
+# platform.python_implementation() = CPython
+# platform.python_version() = 3.14.3
+# platform.system() = Linux
+# platform.machine() = x86_64
+# sys.executable = /usr/local/bin/python3
+$ node --version -> rc=0
+v20.20.2
+$ ruff --version -> rc=0
+ruff 0.17.0
+$ git rev-parse HEAD -> rc=0
+e45c66435ac53f73a3c0ea00e6a0b58f2d2b1c8f
+$ git branch --show-current -> rc=0
+m6/r112c-evidence-fix
+$ git status --short -> rc=0
+ M docs/audit/M6/logs/raw/118_r112b_supplement.py
+ M docs/governance/CHANGELOG.md
+ M docs/governance/PROJECT_STATE.md
+ M docs/governance/ROADMAP.md
+
+## B) بصمة JSON المتعقّب قبل اختبار الدخان
+sha256: 208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4  docs/audit/M6/logs/raw/r108_sustained_load_report.json
+
+## C) اختبارات الدخان المستهدفة (اختبارا R-112 فقط) — مخرجات كاملة
+
+$ python -m pytest -v tests/test_specialists_package.py::test_r108_sustained_load_script_smoke
+# returncode: 0
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/AGOS
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/test_specialists_package.py::test_r108_sustained_load_script_smoke PASSED [100%]
+
+============================== 1 passed in 3.20s ===============================
+
+
+$ python -m pytest -v tests/test_specialists_package.py::test_r112_write_report_refuses_overwrite
+# returncode: 0
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/AGOS
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/test_specialists_package.py::test_r112_write_report_refuses_overwrite PASSED [100%]
+
+============================== 1 passed in 0.13s ===============================
+
+
+## D) بصمة JSON المتعقّب بعد الاختبارات + تأكيد التطابق صريح
+sha256: 208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4  docs/audit/M6/logs/raw/r108_sustained_load_report.json
+# equality assertion: fp_before == fp_after -> True
+# fp_before : 208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4
+# fp_after  : 208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4
+# PASS: بصمة مطابقة قبل/بعد — الاختبار لم يمس الملف المتعقّب.
+
+## E) مقارنة استخراج عناوين ROADMAP — القديمة مقابل الجديدة على نفس لقطة b97d7aa (ما قبل R-112)
+$ git show b97d7aa:docs/governance/ROADMAP.md -> rc=0 (123580 chars)
+# old regex: '^#{3,4} (R-\\d{3}[a-z]?)\\b'
+#   -> 98 unique ids: ['R-000', 'R-001', 'R-002', 'R-003', 'R-003a', 'R-003b', 'R-003c', 'R-003d', 'R-004', 'R-010', 'R-011', 'R-012', 'R-013', 'R-020', 'R-021', 'R-022', 'R-023', 'R-024', 'R-030', 'R-031', 'R-031b', 'R-031c', 'R-032', 'R-032a', 'R-032b', 'R-032c', 'R-033', 'R-040', 'R-041', 'R-042', 'R-042b', 'R-043', 'R-044', 'R-045', 'R-050', 'R-051', 'R-052', 'R-053', 'R-054', 'R-055', 'R-055a', 'R-056', 'R-060', 'R-061', 'R-062', 'R-063', 'R-064', 'R-065', 'R-066', 'R-067', 'R-068', 'R-069', 'R-070', 'R-071', 'R-072', 'R-073', 'R-074', 'R-075', 'R-076', 'R-077', 'R-078', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083', 'R-084', 'R-085', 'R-086', 'R-087', 'R-088', 'R-089', 'R-090', 'R-091', 'R-092', 'R-093', 'R-094', 'R-095', 'R-096', 'R-097', 'R-098', 'R-099', 'R-100', 'R-101', 'R-102', 'R-103', 'R-104', 'R-104b', 'R-104c', 'R-105', 'R-106', 'R-107', 'R-107b', 'R-107c', 'R-108', 'R-109', 'R-110', 'R-111']
+# new regex: 'R-\\d{3}(?:[a-z][a-z0-9]*)?'
+#   -> 99 unique ids: ['R-000', 'R-001', 'R-002', 'R-003', 'R-003a', 'R-003b', 'R-003c', 'R-003d', 'R-004', 'R-010', 'R-011', 'R-012', 'R-013', 'R-020', 'R-021', 'R-022', 'R-023', 'R-024', 'R-030', 'R-031', 'R-031b', 'R-031c', 'R-032', 'R-032a', 'R-032b', 'R-032c', 'R-033', 'R-040', 'R-041', 'R-042', 'R-042b', 'R-043', 'R-044', 'R-045', 'R-050', 'R-051', 'R-052', 'R-053', 'R-054', 'R-055', 'R-055a', 'R-056', 'R-060', 'R-061', 'R-062', 'R-063', 'R-064', 'R-065', 'R-066', 'R-067', 'R-068', 'R-069', 'R-070', 'R-071', 'R-072', 'R-073', 'R-074', 'R-075', 'R-076', 'R-077', 'R-078', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083', 'R-084', 'R-085', 'R-086', 'R-087', 'R-088', 'R-089', 'R-090', 'R-091', 'R-092', 'R-093', 'R-094', 'R-095', 'R-096', 'R-097', 'R-098', 'R-099', 'R-100', 'R-101', 'R-102', 'R-103', 'R-104', 'R-104b', 'R-104c', 'R-104c2', 'R-105', 'R-106', 'R-107', 'R-107b', 'R-107c', 'R-108', 'R-109', 'R-110', 'R-111']
+#   added by new regex   : ['R-104c2']
+#   removed by new regex : []
+#   PASS criterion: old=98, new=99, added={'R-104c2'}, removed=∅ -> actual: old=98, new=99, added=['R-104c2'], removed=[]
+
+## F) أوصاف CI مربوطة بـ SHA فعلية (تشغيلات R-112 و R-112b المكتملة)
+
+$ gh pr view 124 --json number,title,state,mergeCommit,url,headRefName
+# returncode: 0
+{
+  "headRefName": "m6/r112-evidence-integrity",
+  "mergeCommit": {
+    "oid": "69bafddb1d01d56c6ea2ce849b8f4b1059ffed26"
+  },
+  "number": 124,
+  "state": "MERGED",
+  "title": "R-112: سلامة أدلة R-108 + إصلاح عدّاد تدقيق ROADMAP (دفعة M6/50)",
+  "url": "https://github.com/reeveero-tech/All-hand/pull/124"
+}
+
+$ gh pr view 125 --json number,title,state,mergeCommit,url,headRefName
+# returncode: 0
+{
+  "headRefName": "m6/r112b-closeout-fix",
+  "mergeCommit": {
+    "oid": "992bf0c29f2efd8451f5daf002c70d8ae94dad41"
+  },
+  "number": 125,
+  "state": "MERGED",
+  "title": "R-112b: دفعة تصحيح إقفال R-112 (M6/51) — توثيق خالص",
+  "url": "https://github.com/reeveero-tech/All-hand/pull/125"
+}
+
+$ gh run view 38615264546 --json databaseId,headSha,status,conclusion,displayTitle,url
+# returncode: 0
+{
+  "conclusion": "success",
+  "databaseId": 38615264546,
+  "displayTitle": "Merge pull request #124 from reeveero-tech/m6/r112-evidence-integrity",
+  "headSha": "69bafddb1d01d56c6ea2ce849b8f4b1059ffed26",
+  "status": "completed",
+  "url": "https://github.com/reeveero-tech/All-hand/actions/runs/38615264546"
+}
+
+$ gh run view 38616551041 --json databaseId,headSha,status,conclusion,displayTitle,url
+# returncode: 0
+{
+  "conclusion": "success",
+  "databaseId": 38616551041,
+  "displayTitle": "Merge pull request #125 from reeveero-tech/m6/r112b-closeout-fix",
+  "headSha": "992bf0c29f2efd8451f5daf002c70d8ae94dad41",
+  "status": "completed",
+  "url": "https://github.com/reeveero-tech/All-hand/actions/runs/38616551041"
+}
+
+## G) مقتطف سجل CI لاختبار 392 (مقتطف موسوم — لا يُدّعى أنه السجل الكامل)
+# من run 38615264546 (R-112 على main بعد الدمج):
+#   test (Python 3.11): '================ 392 passed, 3 skipped, 3 deselected in 32.14s ================='
+#   test (Python 3.12): '================ 392 passed, 3 skipped, 3 deselected in 26.02s ================='
+# السجل الكامل: https://github.com/reeveero-tech/All-hand/actions/runs/38615264546
+# أُعيد جلبه فعلياً بـ `gh run view 38615264546 --log` قبل الكتابة هنا (مقتطف فقط أعلاه).
+# ملاحظة تصحيح (مراجعة مانعة رابعة): URL أعلاه كتبه المُجمّع بصيغة `reevero-tech` خطأً؛
+# الاسم الصحيح هو `reeveero-tech` — وهو الذي أرجعه `gh pr view` و `gh run view` فعلياً.
+$ gh run view 38615264546 --log -> rc=0 (469656 chars; excerpt below)
+--- excerpt (مقتطف) ---
+test	Run tests (live test suite)	2026-10-14T18:27:58.8636851Z ================ 392 passed, 3 skipped, 3 deselected in 32.14s =================
+test	Run tests on Python 3.12	2026-10-14T18:28:37.8091881Z ================ 392 passed, 3 skipped, 3 deselected in 26.02s =================
+--- end excerpt ---
+
+## H) مقارنة استخراج العناوين بأنماط السكربت المُلتزم فعلياً (بمراسيها ومجموعات التقاطها — لا أنماط معاد صياغتها)
+# old heading regex (verbatim from b97d7aa script): r"^#{3,4} (R-\d{3}[a-z]?)\b.*$"
+# new heading regex (verbatim from current script)    : r"^#{3,4} (R-\d{3}(?:[a-z][a-z0-9]*)?)\b.*$"
+#   old -> 98 unique ids
+#   new -> 99 unique ids
+#   added   : ['R-104c2']
+#   removed : []
+# PASS criterion (old=98, new=99, added=['R-104c2'], removed=∅) -> True
+
+# نهاية الملحق — R-112b (تكملة M6/52)
