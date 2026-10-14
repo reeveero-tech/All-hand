@@ -58,7 +58,7 @@
 |---|---|---|
 | pytest tests/ (84 + 33 جديدة) | 117/117، exit 0 | `logs/05_r052_pytest.log` |
 | ruff (F,E722) شامل tests الجديدة | صفر أخطاء، exit 0 | `logs/06_r052_ruff.log` |
-| قائمة الاختبارات الجديدة (33) | كلها PASSED | `logs/07_r052_test_list.log` |
+| قائمة الاختبارات الجديدة (29) | كلها PASSED | `logs/07_r052_test_list.log` |
 
 الاختبارات الجديدة (`tests/test_routing_pipeline.py`):
 - **routing** (7 اختبارات): تصنيف القصد لـ6 أمثلة عربية/إنجليزية، الافتراضي analyst للأوامر العامة، تخطي مرحلة plan للمهام الذرية، إضافة مراحل review+test لطلبات الكود، سلامة prompt/reason في كل مرحلة.

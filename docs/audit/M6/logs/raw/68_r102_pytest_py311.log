@@ -1,0 +1,44 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: R-102
+# env_overrides={}
+$ /tmp/v311/bin/python -m pytest tests/ -q -p no:cacheprovider
+returncode=0
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: platformdirs-4.13.0, cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 335 items / 3 deselected / 332 selected
+
+tests/test_agent_production.py ........................                  [  7%]
+tests/test_agents_per_spec.py ...                                        [  8%]
+tests/test_api.py ..................                                     [ 13%]
+tests/test_civilization_routes.py ......                                 [ 15%]
+tests/test_civilization_scale.py .....                                   [ 16%]
+tests/test_e2e_scenarios.py .......                                      [ 18%]
+tests/test_infrastructure.py ...................                         [ 24%]
+tests/test_memory_learning_comm.py .........                             [ 27%]
+tests/test_network_isolation.py ......                                   [ 29%]
+tests/test_r042_live_storage.py sss                                      [ 30%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 35%]
+tests/test_r082_storage_outcomes.py ........                             [ 37%]
+tests/test_r083_metrics_middleware.py ......                             [ 39%]
+tests/test_r100_runtime_safety.py ...................................... [ 51%]
+......                                                                   [ 53%]
+tests/test_r101_web_auth_contract.py .............                       [ 56%]
+tests/test_r102_honest_handlers.py .............................         [ 65%]
+tests/test_r106_chat_routing.py .............                            [ 69%]
+tests/test_real_dispatch_audit.py ......                                 [ 71%]
+tests/test_routing_pipeline.py .................................         [ 81%]
+tests/test_security.py ..........                                        [ 84%]
+tests/test_specialist_runtime.py .........                               [ 87%]
+tests/test_specialists_package.py ...........................            [ 95%]
+tests/test_storage_payloads.py ......                                    [ 96%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 329 passed, 3 skipped, 3 deselected in 12.42s =================
+
+--- stderr ---
+

@@ -870,3 +870,11 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - مضاف: `tests/test_r106_chat_routing.py` (13؛ على الكود السابق 10 تفشل). pytest 300 + 3 + 3 (3.11/3.12). متصفح حقيقي: «حلل 4 8 15» → analyst «n=3 mean=9.000 sd=4.546 trend=up».
 - تصحيح ARCHITECTURE: الدالة اسمها `route()` لا `auto_route()`.
 
+## 2026-10-14 — R-102: المعالجات تطابق ادعاءاتها (D-045)
+
+- **قبل** (`raw/66`): `builder` «queued» بلا طابور؛ `architect` ثابت؛ `designer` لوحة من بصمة؛ `modifier` «no changes needed» على طلب إعادة تسمية؛ `code_generator` لا يولّد.
+- مضاف: `agent_civilization/core/agents/craft.py`، `tests/test_r102_honest_handlers.py` (29؛ على الكود السابق 28/29 حالة تفشل)، `scripts/run_r102_handler_probe.py`.
+- معدّل: `real_dispatcher.py` (7 معالجات)، `agents/real/real_agents.py` (أوصاف وأدوات تطابق السلوك).
+- pytest 329 + 3 + 3 (3.11/3.12)؛ R-051 20/20 بالإذن الصريح.
+- عيبان وجدتهما الاختبارات أثناء الدفعة وأُصلحا قبل الالتزام: فحص المسار رفض `.gitignore`؛ و`builder` كان سيعامل أي `data` قاموسية (مثل `{"name": "x"}` في خط أنابيب) كقائمة ملفات.
+

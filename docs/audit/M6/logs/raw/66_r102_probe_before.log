@@ -1,0 +1,45 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: R-102 probe on main 57c4dc5 handlers (stashed changes)
+# env_overrides={}
+$ /tmp/v311/bin/python scripts/run_r102_handler_probe.py
+returncode=0
+--- stdout ---
+== builder {"prompt": "build a FastAPI service called shop"}
+   ok=True answer=1 build action(s) queued
+   tool_output={"actions": ["build"], "estimated_steps": 1}
+== builder {"prompt": "scaffold", "data": ["app.py", "tests/test_app.py"]}
+   ok=True answer=0 build action(s) queued
+   tool_output={"actions": [], "estimated_steps": 1}
+== architect {"prompt": "design system", "data": ["web ui", "api", "db"]}
+   ok=True answer=5-layer architecture with 1 core actions
+   tool_output={"layers": [{"layer": "data", "concern": "persistence"}, {"layer": "domain", "concern": "business rules"}, {"layer": "service", "concern": "orchestration"}, {"layer": "api", "concern": "contract"}, {"layer": "ui", "concern": "presentation"}], "detected_actions": ["design"], "entities": []}
+== architect {"prompt": "SaaS with payments and email notifications"}
+   ok=True answer=5-layer architecture with 0 core actions
+   tool_output={"layers": [{"layer": "data", "concern": "persistence"}, {"layer": "domain", "concern": "business rules"}, {"layer": "service", "concern": "orchestration"}, {"layer": "api", "concern": "contract"}, {"layer": "ui", "concern": "presentation"}], "detected_actions": [], "entities": ["SaaS"]}
+== designer {"prompt": "palette", "data": "brand: forest"}
+   ok=True answer=generated 5-color palette
+   tool_output={"palette": ["#19e4bd", "#2d806b", "#ed3c36", "#4fd84d", "#0bf220"], "typography_scale": [12, 14, 16, 20, 24, 32, 48]}
+== designer {"prompt": "dark mode #ff5722"}
+   ok=True answer=generated 5-color palette
+   tool_output={"palette": ["#26daf9", "#592824", "#3a312a", "#160ec8", "#5bf0c2"], "typography_scale": [12, 14, 16, 20, 24, 32, 48]}
+== modifier {"prompt": "rename foo to bar", "data": "def foo():\n    return 'foo'\n\nprint(foo())\n"}
+   ok=True answer=no changes needed
+   tool_output={"changed": false, "new_lines": 4, "diff_bytes": 0}
+== code_generator {"prompt": "gen", "data": {"function": "mean", "params": ["xs"], "returns": "sum(xs) / len(xs)"}}
+   ok=False answer=no code provided
+   tool_output=null
+== code_generator {"prompt": "اكتب كود Python لحساب متوسط قائمة أرقام"}
+   ok=False answer=no code provided
+   tool_output=null
+== analyst {"prompt": "حلل أداء النظام الحالي وما سبب البطء؟"}
+   ok=True answer=text analysis: 7 words
+   tool_output={"type": "text", "words": 7, "chars": 37}
+== strategist {"prompt": "plan", "data": ["ship mvp", "hire", "raise"]}
+   ok=True answer=1 prioritised objectives
+   tool_output={"roadmap": [{"step": 1, "goal": "plan", "weight": 1.0}]}
+== educator {"prompt": "Recursion calls itself. It needs a base case."}
+   ok=True answer=extracted 2 key points
+   tool_output={"key_points": ["Recursion calls itself", "It needs a base case"], "reading_time_min": 0.04}
+
+--- stderr ---
+
