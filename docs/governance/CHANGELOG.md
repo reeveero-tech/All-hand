@@ -1,5 +1,16 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-14 — R-112: سلامة أدلة R-108 + إصلاح عدّاد تدقيق ROADMAP (دفعة M6/50)
+
+### مُصلَح
+- `scripts/run_r108_sustained_load.py` — أضيف `--out`، والمسار الافتراضي صار بطابع زمني (لم يعد يستبدل تقارير الجريات السابقة)، و`_write_report` يكتب بـ `os.open(..., O_CREAT|O_EXCL|O_WRONLY, 0o644)` — يرفض الاستبدال أبدًا (استثناء `FileExistsError`).
+- `tests/test_specialists_package.py` — اختبار الدخان `test_r108_sustained_load_script_smoke` أُعيد كتابته: monkeypatch لـ sys.argv، `--out` إلى tmp_path، وتأكيد بصمة SHA256 للملف المتعقّب `r108_sustained_load_report.json` لا تتغير (اختبار انحدار يمنع استبدال الأدلة). اختبار جديد `test_r112_write_report_refuses_overwrite`.
+- `scripts/run_r075_roadmap_audit.py` — كلا نمطي التدقيق صارا `r"R-\d{3}(?:[a-z][a-z0-9]*)?"` — يلتقط `R-104c2` (كان التدقيق يقول 98 بينما الواقع 99).
+
+### توصيف صريح للأدلة (تصحيح رواية سابقة)
+- الـ JSON المتعقّب `docs/audit/M6/logs/raw/r108_sustained_load_report.json` هو **تشغيل دخان 3 ثوانٍ** (duration_s_target=3، 6 موجات، 60 ok) من أصل إنشاء R-108 — لم يحمل قط بيانات 600 ثانية. الدليل الكامل الوحيد لاختبار الإجهاد 10 دقائق هو السجل الخام `108_r108_sustained_load_10min.log` (831 سطرًا، ينتهي بـ OK: 82800/82800 over 828 waves (600s sustained))، وهو سليم ولم يُمس.
+- لم يُحذف ولم يُستبدل أي ملف أدلة. لم تُعد تشغيل اختبار الإجهاد 10 دقائق (السكربت الآن لا يستطيع الكتابة فوق ملف موجود — لا حاجة).
+
 ## 2026-10-12 — M0: Baseline Audit + Roadmap Bootstrap
 
 ### مضاف

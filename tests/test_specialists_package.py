@@ -241,10 +241,17 @@ async def test_r105_every_spec_executes_a_real_task():
 
 
 # --------------------------------------------- R-108 (sustained-load script smoke)
-def test_r108_sustained_load_script_smoke():
+def test_r108_sustained_load_script_smoke(monkeypatch, tmp_path):
     """R-108: the sustained-load script itself must be importable, have the
     documented CLI, and run a minimal wave successfully (proving the harness
-    works; the LONG run is the evidence log, not this test)."""
+    works; the LONG run is the evidence log, not this test).
+
+    R-112: the smoke run now writes its report to a tmp_path (never inside
+    the repo tree) and the tracked evidence file
+    `docs/audit/M6/logs/raw/r108_sustained_load_report.json` is fingerprinted
+    before and after — a regression test for the clobber flaw where every
+    smoke run silently overwrote the historical JSON."""
+    import hashlib
     import importlib.util
     from pathlib import Path
 
@@ -258,13 +265,43 @@ def test_r108_sustained_load_script_smoke():
     assert hasattr(mod, "main")
     assert mod._payloads()["test_runner"] == {"prompt": "print(1+1)"}
 
-    # a minimal end-to-end run: 3s, 10 tasks per wave — must be all-ok
+    # R-112 regression: the tracked evidence file must not be touched.
+    evidence = script.parent.parent / "docs/audit/M6/logs/raw/r108_sustained_load_report.json"
+    before = hashlib.sha256(evidence.read_bytes()).hexdigest()
+
+    # a minimal end-to-end run: 3s, 10 tasks per wave — must be all-ok.
+    # The report goes to tmp_path (R-112) so no file is written into the repo.
+    out = tmp_path / "r112_smoke_report.json"
+    monkeypatch.setattr("sys.argv",
+                        ["run_r108_sustained_load.py", "--duration-s", "3",
+                         "--wave-size", "10", "--out", str(out)])
     import asyncio
-    rc = asyncio.run(_run_r108_smoke(mod))
+    rc = asyncio.run(mod.main())
     assert rc == 0
+    assert out.exists(), "R-112: the report must be written to the --out path"
+
+    # the tracked evidence file is byte-identical before and after the run
+    after = hashlib.sha256(evidence.read_bytes()).hexdigest()
+    assert before == after, "R-112 regression: the smoke run touched the tracked evidence file"
 
 
-async def _run_r108_smoke(mod):
-    import sys
-    sys.argv = ["run_r108_sustained_load.py", "--duration-s", "3", "--wave-size", "10"]
-    return await mod.main()
+def test_r112_write_report_refuses_overwrite(tmp_path):
+    """R-112: _write_report uses O_CREAT|O_EXCL — writing to an existing path
+    raises (a hard guarantee even if the exists() check in main() races)."""
+    import importlib.util
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parent.parent / "scripts/run_r108_sustained_load.py"
+    spec = importlib.util.spec_from_file_location("r108_script_w", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    target = tmp_path / "never_overwrite.json"
+    target.write_text("{\"original\": true}")
+    try:
+        mod._write_report({"new": 1}, False, target)
+    except FileExistsError:
+        pass  # expected: O_EXCL refuses to replace an existing file
+    else:
+        raise AssertionError("R-112: _write_report silently overwrote an existing file")
+    assert target.read_text() == "{\"original\": true}"

@@ -1,0 +1,76 @@
+# R-112 — دفعة M6/50 — دليل التحقق
+# تاريخ: 2026-10-14T18:23:00Z
+# فرع: m6/r112-evidence-integrity من b97d7aa
+# بيئة محلية: Python 3.14.3 / v20.20.2 / ruff 0.17.0 (CI: 3.11/3.12 + Node 22, ubuntu-26.04)
+# =========================================================
+
+## 1) بصمة الملف المتعقّب قبل/بعد أي تشغيل pytest
+# قبل pytest:
+208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4  docs/audit/M6/logs/raw/r108_sustained_load_report.json
+
+## 2) pytest الكامل
+tests/test_specialists_package.py::test_r108_sustained_load_script_smoke PASSED [ 95%]
+tests/test_specialists_package.py::test_r112_write_report_refuses_overwrite PASSED [ 95%]
+tests/test_storage_payloads.py::test_update_task_sends_result_as_object PASSED [ 96%]
+tests/test_storage_payloads.py::test_insert_event_sends_event_data_as_object PASSED [ 96%]
+tests/test_storage_payloads.py::test_jsonable_coerces_non_json_types PASSED [ 96%]
+tests/test_storage_payloads.py::test_rejected_write_returns_false_and_logs PASSED [ 96%]
+tests/test_storage_payloads.py::test_rejected_read_returns_empty_and_logs PASSED [ 97%]
+tests/test_storage_payloads.py::test_service_key_preferred_over_anon_key PASSED [ 97%]
+tests/test_web_api_contract.py::test_system_status_fields_dashboard_reads PASSED [ 97%]
+tests/test_web_api_contract.py::test_specializations_shape_specializations_component PASSED [ 97%]
+tests/test_web_api_contract.py::test_agents_list_and_filter PASSED       [ 98%]
+tests/test_web_api_contract.py::test_e2e_task_from_ui_shape_and_poll PASSED [ 98%]
+tests/test_web_api_contract.py::test_list_tasks_frontend_shape PASSED    [ 98%]
+tests/test_web_api_contract.py::test_events_list_dashboard PASSED        [ 98%]
+tests/test_web_api_contract.py::test_chat_frontend_contract PASSED       [ 99%]
+tests/test_web_api_contract.py::test_external_agent_register_and_remove PASSED [ 99%]
+tests/test_web_api_contract.py::test_unknown_specialization_rejected PASSED [ 99%]
+tests/test_web_api_contract.py::test_sse_stream_yields_event PASSED      [100%]
+
+================ 392 passed, 3 skipped, 3 deselected in 23.94s =================
+
+# بعد pytest — بصمة يجب أن تكون مطابقة:
+208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4  docs/audit/M6/logs/raw/r108_sustained_load_report.json
+
+## 3) ruff (نطاق كامل + نطاق الوكيل)
+All checks passed!
+All checks passed!
+
+## 4) بناء الجذر + web
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
+
+✓ built in 134ms
+
+## 5) سكربت التدقيق (بعد إصلاح R-112 — يجب أن يعدّ 100 مع R-112 الجديد)
+item headings: 100
+duplicate ids: none
+status counts: {'done': 100}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+
+## 6) حالة CI على main
+completed	success	Merge pull request #123 from reeveero-tech/m6/r111-test-runner	AGOS Kernel CI/CD	main	push	38607386979	1m48s	2026-10-14T17:31:36Z
+completed	success	Merge pull request #122 from reeveero-tech/m6/r110-validator-fix	AGOS Kernel CI/CD	main	push	38599263960	2m15s	2026-10-14T16:34:41Z
+completed	success	Merge pull request #121 from reeveero-tech/m6/r109-live-hour	AGOS Kernel CI/CD	main	push	38589629811	2m40s	2026-10-14T15:28:30Z
+
+## 7) بصمة نهائية للملف المتعقّب (بعد كل التشغيلات)
+208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4  docs/audit/M6/logs/raw/r108_sustained_load_report.json
+
+## 8) git diff --stat (فحص أن ملفات التوثيق تغيرت فعلاً)
+ docs/governance/CHANGELOG.md       | 11 ++++++++
+ docs/governance/PROJECT_STATE.md   |  6 +++--
+ docs/governance/QUALITY.md         |  5 ++--
+ docs/governance/ROADMAP.md         | 15 ++++++++++-
+ scripts/run_r075_roadmap_audit.py  |  7 +++--
+ scripts/run_r108_sustained_load.py | 32 ++++++++++++++++++-----
+ tests/test_specialists_package.py  | 53 ++++++++++++++++++++++++++++++++------
+ 7 files changed, 107 insertions(+), 22 deletions(-)
+
+## 9) لا ملفات بطابع زمني جديدة في docs/audit
+ملفات r108_sustained_load_<stamp> جديدة: 0
+الرجوع إلى بصمة الملف الأصلية من git HEAD:
+208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4  -

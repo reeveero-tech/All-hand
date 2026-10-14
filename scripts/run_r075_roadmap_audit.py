@@ -11,7 +11,10 @@ import subprocess
 import sys
 
 road = open("docs/governance/ROADMAP.md", encoding="utf-8").read()
-heads = [(m.start(), m.group(1), m.group(0)) for m in re.finditer(r"^#{3,4} (R-\d{3}[a-z]?)\b.*$", road, re.M)]
+# R-112: accept multi-letter/multi-digit suffixes like R-104c2 (the old
+# single-letter [a-z]? pattern failed to match R-104c2 because \b after 'c'
+# is not a boundary when '2' follows — it silently excluded the whole item).
+heads = [(m.start(), m.group(1), m.group(0)) for m in re.finditer(r"^#{3,4} (R-\d{3}(?:[a-z][a-z0-9]*)?)\b.*$", road, re.M)]
 print(f"item headings: {len(heads)}")
 ids = [h[1] for h in heads]
 dups = [k for k, v in collections.Counter(ids).items() if v > 1]
@@ -43,7 +46,7 @@ for phrase in ["Q-020 للمالك. Q-020 للمالك", "أو فتح R-042 بق
 RANGE = sys.argv[1] if len(sys.argv) > 1 else "a2ba8de..HEAD"
 CYCLE_IDS = sys.argv[2:] or ["R-073", "R-074", "R-075", "R-076", "R-077", "R-078"]
 log = subprocess.run(["git", "log", "--format=%s", RANGE], capture_output=True, text=True).stdout
-mentioned = sorted(set(re.findall(r"R-\d{3}[a-z]?", log)))
+mentioned = sorted(set(re.findall(r"R-\d{3}(?:[a-z][a-z0-9]*)?", log)))
 print(f"R-ids in commit subjects since cycle start ({RANGE}): {mentioned}")
 print(f"  not in ROADMAP: {[r for r in mentioned if r not in ids] or 'none'}")
 chg = open("docs/governance/CHANGELOG.md", encoding="utf-8").read()
