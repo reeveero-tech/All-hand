@@ -238,3 +238,33 @@ async def test_r105_every_spec_executes_a_real_task():
         assert "ok" in result, f"{spec}: no ok flag"
         if not result.get("ok"):
             assert result.get("error"), f"{spec}: failure without an error"
+
+
+# --------------------------------------------- R-108 (sustained-load script smoke)
+def test_r108_sustained_load_script_smoke():
+    """R-108: the sustained-load script itself must be importable, have the
+    documented CLI, and run a minimal wave successfully (proving the harness
+    works; the LONG run is the evidence log, not this test)."""
+    import importlib.util
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parent.parent / "scripts/run_r108_sustained_load.py"
+    assert script.exists()
+    spec = importlib.util.spec_from_file_location("r108_script", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    # the documented CLI surface exists
+    assert hasattr(mod, "main")
+    assert mod._payloads()["test_runner"] == {"prompt": "print(1+1)"}
+
+    # a minimal end-to-end run: 3s, 10 tasks per wave — must be all-ok
+    import asyncio
+    rc = asyncio.run(_run_r108_smoke(mod))
+    assert rc == 0
+
+
+async def _run_r108_smoke(mod):
+    import sys
+    sys.argv = ["run_r108_sustained_load.py", "--duration-s", "3", "--wave-size", "10"]
+    return await mod.main()
