@@ -1,127 +1,129 @@
 {
- "method": "ast.parse + ast.dump with normalization of: class-name digits (AgentNNNN->AgentN), integer constants, logger-name strings",
+ "method": "AST NodeTransformer on the ORIGINAL files (git show 9e72b0e:...): class/function/Name ids and docstrings normalized (AgentNNNN->AgentN, Agent ID: N, spec_N); the agent_id/aid integer DEFAULTS normalized to a marker. NOT all integer constants \u2014 behavioral constants preserved.",
+ "input_revision": "9e72b0e (pre-R-105)",
+ "script": "docs/audit/M6/scripts/r105_ast_compare.py",
  "total_files": 1000,
  "distinct_bodies": 20,
- "per_group_specs": {
-  "264e4f8699c0": {
+ "groups": {
+  "d7e588b62a93": {
    "specs": [
     "analyst"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "918a5c79a897": {
+  "0276c421c89b": {
    "specs": [
     "api_integrator"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "60b8436684d2": {
+  "0510f18bd0a8": {
    "specs": [
     "architect"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "c0699cbeaced": {
+  "f982c8f9914c": {
    "specs": [
     "builder"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "71a521c250c6": {
+  "bd6219c3c39d": {
    "specs": [
     "code_generator"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "9a5f72ea86df": {
+  "414dcf40213c": {
    "specs": [
     "communicator"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "5396330e8b4b": {
+  "4c548e16b51a": {
    "specs": [
     "data_processor"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "8aa46aa17647": {
+  "4a640d19f5dc": {
    "specs": [
     "db_manager"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "312c45b57998": {
+  "e73a17e1bf0d": {
    "specs": [
     "designer"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "cbd59f7cffdd": {
+  "ff7d80873f7c": {
    "specs": [
     "educator"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "99b2a034bb5c": {
+  "fbc06207ceb0": {
    "specs": [
     "modifier"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "57899bb6d33d": {
+  "c90d63b774b3": {
    "specs": [
     "monitor"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "94d41c777166": {
+  "be3fa4501d84": {
    "specs": [
     "network_client"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "120b97c20d52": {
+  "76086a8b9322": {
    "specs": [
     "researcher"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "66274ebe4afa": {
+  "9ced60f6cba6": {
    "specs": [
     "reviewer"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "12af73d16483": {
+  "26cccff96cf7": {
    "specs": [
     "self_developer"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "0b9ad68a193f": {
+  "f077ad72fcc0": {
    "specs": [
     "strategist"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "f80244bd14f1": {
+  "3e84d7966ddd": {
    "specs": [
     "surgeon"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "b840c8830a6c": {
+  "8b7fe192b938": {
    "specs": [
     "test_runner"
    ],
-   "n_files": 50
+   "n": 50
   },
-  "d6e82b913db5": {
+  "ed0ffc4450cc": {
    "specs": [
     "validator"
    ],
-   "n_files": 50
+   "n": 50
   }
  }
 }

@@ -52,3 +52,7 @@ execute → auto_route → tasks_store dict (فقط؛ لا استدعاء Supaba
 - `agent_civilization/communication/` — الواجهة العامة للمراسلة بين الوكلاء: `CommunicationHub`/`DeliveryResult` (التنفيذ في `core/agents/communication_hub.py`)؛ يستهلكها `specialist_runtime.py`.
 - `agent_civilization/runtime/` — مساعدات الموعد النهائي للمسارات الحية: `make_deadline()`/`remaining()`؛ يستهلكها `_researcher` (ميزانية R-107c).
 - `agent_civilization/utils/` — تجميع حمولة LLM: `build_llm_payload(prompt, data)`؛ يستهلكها `_data_processor` (إرسال البيانات مع التعليمة).
+## التخصصات المولَّدة (R-105)
+
+- `agent_civilization/agents/specialists/_templates/` — **صنف أساس حقيقي واحد لكل تخصص** (20 أصلاً) + `_spec_layout.py` (تخطيط الأسماء/الافتراضات داخل الحزمة) + `_factory.py` (توليد الأصناف الخمسين لكل تخصص بـ`type()` — لا `exec`).
+- الملفات التاريخية الـ1,000 وحدات توافق رقيقة (استيراد + `create()`) — لا منطق مكرر.
