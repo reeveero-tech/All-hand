@@ -25,3 +25,16 @@ raw/78..80 R-051 x3: 19/20 each — researcher failed on DuckDuckGo TLS (SSL UNE
         An unlogged interactive run in the same session gave 20/20.
 Limits: memory shared by all clients (RISK-026); word-overlap recall, not semantic; learning measures, does not
 change handlers; web/ does not display experience yet; memory lost on restart unless AGOS_MEMORY_FILE is set.
+
+## Continuation session (2026-10-14T02:37Z) — local verification of PR #112 head before merge
+
+New agent handoff (HANDOFF_PROMPT.md) re-ran the full baseline on the PR head `771278c`:
+- pytest tests/ -> 346 passed, 3 skipped, 3 deselected (rc=0)
+- pytest -m network -> 3 passed (rc=0)  [researcher live DuckDuckGo passed on this run]
+- ruff (F,E722) both handoff scope (specialists excluded) and CI scope (scripts included, no exclusion) -> 0 (rc=0)
+- web/ npm install && npm run build -> rc=0
+- root npm install && npm run build -> rc=0
+- CI on PR #112 at 771278c: quality/test/build/docker/governance/audit/storage/network all SUCCESS
+  (publish SKIPPED — no [publish] tag, D-011 rule respected)
+
+Raw outputs preserved in docs/audit/M6/logs/raw/98_r103_continuation_local_verify.log

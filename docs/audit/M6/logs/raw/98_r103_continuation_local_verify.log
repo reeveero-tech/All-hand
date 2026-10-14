@@ -1,0 +1,37 @@
+# R-103 continuation — local verification on PR #112 head 771278c — 2026-10-14T02:36:58.309474Z (CI green on GitHub too)
+
+$ pytest tests/ (346+3+3 expected)
+exit_code=0
+tests/test_web_api_contract.py::test_external_agent_register_and_remove PASSED [ 99%]
+tests/test_web_api_contract.py::test_unknown_specialization_rejected PASSED [ 99%]
+tests/test_web_api_contract.py::test_sse_stream_yields_event PASSED      [100%]
+
+================ 346 passed, 3 skipped, 3 deselected in 13.45s =================
+
+$ pytest -m network (3)
+exit_code=0
+tests/test_network_live.py::test_researcher_live_duckduckgo PASSED       [ 33%]
+tests/test_network_live.py::test_api_integrator_live_get PASSED          [ 66%]
+tests/test_network_live.py::test_network_client_live_dns_and_head PASSED [100%]
+
+====================== 3 passed, 349 deselected in 1.00s =======================
+
+$ ruff (F,E722) with specialists excluded (handoff command)
+exit_code=0
+All checks passed!
+
+$ ruff CI scope (no exclusion)
+exit_code=0
+All checks passed!
+
+$ web npm run build
+exit_code=0
+dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
+
+✓ built in 164ms
+
+$ root npm run build
+exit_code=0
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
