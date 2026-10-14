@@ -1,0 +1,147 @@
+# R-109 evidence pack (live 1-hour soak)
+# 2026-10-14T15:25:10.902943+00:00
+# repo: /home/user/workspace/All-hand
+# git head: e46cb9dc739d21d15fc97b97b445d6e15d987e09
+# git branch: m6/r109-live-hour
+# git status --porcelain (COMPLETE):
+ M docs/audit/M6/logs/raw/r108_sustained_load_report.json
+ M docs/governance/CHANGELOG.md
+ M docs/governance/PROJECT_STATE.md
+ M docs/governance/README.md
+ M docs/governance/ROADMAP.md
+?? docs/audit/M6/logs/raw/111_r109_live_hour.log
+?? docs/audit/M6/logs/raw/112_r109_evidence_pack.log
+?? docs/audit/M6/logs/raw/r109_live_hour_report.json
+?? scripts/run_r109_live_hour.py
+
+# python 3.14.3
+
+# THE SOAK RUN: 60 minutes, 1,187 requests, 277 fully OK (23.3%),
+# 4,286 stages (2,986 ok / 1,300 fail), memory stable 47->82.7MB,
+# no stuck agents, no unhandled exceptions, no crash.
+# Full log: docs/audit/M6/logs/raw/111_r109_live_hour.log (1,217 lines)
+# Per-request JSON: docs/audit/M6/logs/raw/r109_live_hour_report.json
+
+$ pytest full suite
+$ python3 -m pytest tests/ -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 392 items / 3 deselected / 389 selected
+
+tests/test_agent_production.py ........................                  [  6%]
+tests/test_agents_per_spec.py ...                                        [  6%]
+tests/test_api.py ..................                                     [ 11%]
+tests/test_civilization_routes.py ......                                 [ 13%]
+tests/test_civilization_scale.py .....                                   [ 14%]
+tests/test_e2e_scenarios.py .......                                      [ 16%]
+tests/test_infrastructure.py ...................                         [ 21%]
+tests/test_memory_learning_comm.py .........                             [ 23%]
+tests/test_network_isolation.py ......                                   [ 24%]
+tests/test_r042_live_storage.py sss                                      [ 25%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 30%]
+tests/test_r082_storage_outcomes.py ........                             [ 32%]
+tests/test_r083_metrics_middleware.py ......                             [ 33%]
+tests/test_r100_runtime_safety.py ...................................... [ 43%]
+......                                                                   [ 45%]
+tests/test_r101_web_auth_contract.py .............                       [ 48%]
+tests/test_r102_honest_handlers.py .............................         [ 56%]
+tests/test_r103_memory_learning.py .................                     [ 60%]
+tests/test_r104_data_worker.py ................                          [ 64%]
+tests/test_r106_chat_routing.py .............                            [ 67%]
+tests/test_r107_researcher_retry.py ...............                      [ 71%]
+tests/test_real_dispatch_audit.py ......                                 [ 73%]
+tests/test_routing_pipeline.py .................................         [ 81%]
+tests/test_security.py ..........                                        [ 84%]
+tests/test_specialist_runtime.py ..........                              [ 86%]
+tests/test_specialists_package.py ...................................    [ 95%]
+tests/test_storage_payloads.py ......                                    [ 97%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 386 passed, 3 skipped, 3 deselected in 23.88s =================
+
+
+$ pytest code_exec
+$ python3 -m pytest tests/ -m code_exec -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 392 items / 364 deselected / 28 selected
+
+tests/test_civilization_scale.py .                                       [  3%]
+tests/test_e2e_scenarios.py ..                                           [ 10%]
+tests/test_r100_runtime_safety.py ...                                    [ 21%]
+tests/test_routing_pipeline.py ....................                      [ 92%]
+tests/test_specialist_runtime.py ..                                      [100%]
+
+====================== 28 passed, 364 deselected in 1.70s ======================
+
+
+$ pytest network
+$ python3 -m pytest tests/ -m network -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 392 items / 389 deselected / 3 selected
+
+tests/test_network_live.py ...                                           [100%]
+
+====================== 3 passed, 389 deselected in 0.82s =======================
+
+
+$ ruff handoff scope
+$ python3 -m ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests scripts
+exit_code=0
+--- stdout (full) ---
+All checks passed!
+
+
+$ ruff CI scope
+$ python3 -m ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+exit_code=0
+--- stdout (full) ---
+All checks passed!
+
+
+$ governance audit
+$ python3 scripts/run_r075_roadmap_audit.py main
+exit_code=0
+--- stdout (full) ---
+item headings: 96
+duplicate ids: none
+status counts: {'done': 96}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 1951
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (main): ['R-000', 'R-001', 'R-002', 'R-003a', 'R-004', 'R-010', 'R-011', 'R-012', 'R-013', 'R-020', 'R-021', 'R-022', 'R-023', 'R-024', 'R-030', 'R-031', 'R-031b', 'R-031c', 'R-032', 'R-032a', 'R-032b', 'R-032c', 'R-033', 'R-040', 'R-041', 'R-042', 'R-042b', 'R-043', 'R-044', 'R-045', 'R-051', 'R-052', 'R-053', 'R-054', 'R-055', 'R-055a', 'R-056', 'R-060', 'R-061', 'R-062', 'R-063', 'R-064', 'R-065', 'R-066', 'R-067', 'R-068', 'R-069', 'R-070', 'R-071', 'R-072', 'R-073', 'R-074', 'R-075', 'R-076', 'R-077', 'R-078', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083', 'R-084', 'R-085', 'R-086', 'R-087', 'R-088', 'R-089', 'R-090', 'R-091', 'R-092', 'R-093', 'R-094', 'R-095', 'R-096', 'R-097', 'R-098', 'R-099', 'R-100', 'R-101', 'R-102', 'R-103', 'R-104', 'R-104b', 'R-104c', 'R-105', 'R-106', 'R-107', 'R-107b', 'R-107c', 'R-108']
+  not in ROADMAP: none
+  R-073: roadmap=yes changelog=yes
+  R-074: roadmap=yes changelog=yes
+  R-075: roadmap=yes changelog=yes
+  R-076: roadmap=yes changelog=yes
+  R-077: roadmap=yes changelog=yes
+  R-078: roadmap=yes changelog=yes
+
+
+# finished 2026-10-14T15:25:43.333045+00:00
