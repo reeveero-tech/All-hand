@@ -1,0 +1,22 @@
+# R-100 evidence — branch m6/r100-runtime-safety (base main 36f8fa5cfc8bf0c141f072ed2baedc235fbd2cac, uncommitted working tree = the R-100 change)
+# note: real internet; earlier in this session one run had 1 failure in test_researcher_live_duckduckgo (external service), two reruns passed 3/3 and main also passed — see logs/93
+# cwd=. env_overrides={}
+$ /tmp/v311/bin/python -m pytest tests/ -m network -p no:cacheprovider
+returncode=0
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /tmp/v311/bin/python
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: platformdirs-4.13.0, cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 273 items / 270 deselected / 3 selected
+
+tests/test_network_live.py::test_researcher_live_duckduckgo PASSED       [ 33%]
+tests/test_network_live.py::test_api_integrator_live_get PASSED          [ 66%]
+tests/test_network_live.py::test_network_client_live_dns_and_head PASSED [100%]
+
+====================== 3 passed, 270 deselected in 0.59s =======================
+
+--- stderr ---
+

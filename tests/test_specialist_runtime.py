@@ -62,6 +62,7 @@ def test_target_count_uses_all_1000_specialist_classes():
         assert all(a.inner.specialization == spec for a in civ[spec])
 
 
+@pytest.mark.code_exec  # R-100: proves real test_runner execution (operator opt-in)
 def test_every_specialization_executes_through_specialist_class():
     civ = create_civilization(1, impl="specialists")
 
@@ -85,6 +86,7 @@ def test_base_agent_execute_propagates_failure():
     assert a.stats["tasks_failed"] == 1 and a.stats["tasks_completed"] == 0
 
 
+@pytest.mark.code_exec  # R-100: proves real test_runner execution (operator opt-in)
 def test_pipeline_runs_on_specialist_civilization():
     civ = create_civilization(5, impl="specialists")
     result = asyncio.run(execute_plan(route("review and test this code: print(1+1)"),

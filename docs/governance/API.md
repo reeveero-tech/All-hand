@@ -25,7 +25,7 @@
 | 12 | `/api/events` | GET | لا | |
 | 13 | `/api/events/stream` | GET | لا | SSE |
 | 14 | `/api/chat` | POST | `verify_api_key` (401/403 إن فُعّل `AGOS_API_KEY`) | توجيه تلقائي |
-| 15 | `/api/agents/external` | POST | `verify_api_key` — يفحص قيمة المفتاح (R-004) | 201 |
+| 15 | `/api/agents/external` | POST | `verify_api_key` — يفحص قيمة المفتاح (R-004) | 201؛ 400 `url rejected` لعنوان غير عام في الوضع المفتوح (R-100) |
 | 16 | `/api/agents/external/{name}` | **DELETE** | `verify_api_key` — يفحص قيمة المفتاح (R-004) | |
 | 17 | `/{full_path:path}` | GET | لا | catch-all يخدم `web/dist` |
 
@@ -68,3 +68,11 @@
 - `MetricsMiddleware` مركّب: `agos_http_requests_total{method,endpoint,status}` و`agos_http_request_duration_seconds` (مدرّج: `_bucket{…,le}`، `_sum`، `_count`) لكل مجموعة وسوم.
 - `endpoint` = قالب المسار المطابق (مثل `/api/tasks/{task_id}`، `/{full_path}` لمسارات الواجهة)، `<unmatched>` لغير المطابق؛ طلبات `/metrics` لا تُعدّ. استثناء غير معالج → `status="500"`.
 - لا تغيير في أي استجابة؛ SSE `/api/events/stream` يمر بلا تخزين مؤقت (اختبار).
+
+## R-100 — سياسة الأدوات الحقيقية (D-044، 2026-10-14)
+- `GET /api/system/status`: حقل جديد `security.tool_policy` = `{"code_execution": {"allowed", "reason", "limits", "wall_timeout_s", "server_process_non_dumpable"}, "outbound_network": {"private_targets_allowed"}, "sqlite": {"time_budget_s", "attach"}}` — لا قيمة سرية. الحقول الموجودة بلا تغيير.
+- `POST /api/tasks` بـ`specialization=test_runner` في الوضع المفتوح: 202 كما كان، والنتيجة `{"ok": false, "error": "code execution is disabled in open mode: …", "tool_output": {"executed": false}}`. عند الإذن: `tool_output` يضيف `elapsed_s` و`sandbox: true`؛ القتل بحد العزل → `answer: "killed by signal N (sandbox limit)"`.
+- `api_integrator`/`network_client` لهدف غير عام: `{"ok": false, "error": "blocked: …"}`؛ `network_client` (فحص DNS) يضيف `addresses` (كل العناوين المحلولة) بجانب `ip`.
+- `db_manager`: `ATTACH`/`VACUUM INTO` → `sqlite: not authorized`؛ تجاوز 3 ثوانٍ → `sqlite: interrupted`؛ الحد 50 صفاً (كما كان).
+- `POST /api/agents/external`: 400 `url rejected: blocked non-public address …` إذا كان العنوان داخلياً والخادم في الوضع المفتوح بلا `AGOS_ALLOW_PRIVATE_NETWORK=1`؛ 400 `url host cannot be resolved` لاسم لا يُحل.
+

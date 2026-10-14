@@ -844,3 +844,11 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 
 - مراجعة خارجية ثالثة على R-098 وجدت: `npm install && npm run build` (حرفياً كما في أمر التسليم) لم يُشغّل (فقط `npm ci`)؛ `npm audit --omit=dev` لـweb/ ناقص؛ دليل التخزين البعيد 22/22 + 3/3 ملخص لا سجل job فعلي؛ عدد البنود 80 في الوثائق والصحيح 81؛ PR #106 دُمج قبل مراجعة نهائية.
 - `npm install && npm run build` في الجذر وweb/ (Node 22.14.0): كلاهما rc=0؛ الأقفال بلا تغيير (`git status` نظيف). web/ `npm audit --omit=dev --audit-level=high`: صفر، rc=0. سجل job `storage` الفعلي محفوظ خاماً: `raw/21_r099_ci_storage_job_e6ff317.log` (588 سطراً — 22/22 + 3/3). عدد البنود صُحح إلى 82. الإفصاح أُكمل.
+
+## 2026-10-14 — R-100: أمان الأدوات الحقيقية في الوضع المفتوح (D-044، RISK-025)
+
+- **قبل** (مسبار حي على `main` 36f8fa5، الوضع الافتراضي): 0/6 آمن — تنفيذ كود مجهول عبر `test_runner` طبع سراً من بيئة الخادم وقرأ `/proc/<ppid>/environ` (4,091 بايتاً)؛ SSRF إلى 127.0.0.1 و169.254.169.254؛ وكيل خارجي داخلي مقبول (201)؛ CTE جامح جمّد الـAPI. **بعد**: 8/8 آمن (`docs/audit/M6/logs/raw/27..28`).
+- مضاف: `agent_civilization/core/safety.py`؛ `tests/test_r100_runtime_safety.py` (37)؛ `scripts/run_r100_safety_probe.py`؛ متغيرا `AGOS_ALLOW_CODE_EXEC` و`AGOS_ALLOW_PRIVATE_NETWORK` (`render.yaml` بـ`sync: false`)؛ `security.tool_policy` في `/api/system/status`؛ marker `code_exec`.
+- معدّل: `real_dispatcher.py` (test_runner/db_manager/network_client/api_integrator/researcher عبر safety)، `external_adapter.py`، `server.py` (فحص عنوان التسجيل، خادم non-dumpable)، `Dockerfile` (`USER agos`)، `ci.yml` (فحص الحاوية)، `tests/conftest.py` (افتراض آمن + نقل وهمي لـ`OpenerDirector`/`getaddrinfo`)، `run_r051_audit.py` (`refused_by_policy`)، `run_r053_scale_audit.py` (تسمية الفاشل).
+- الجودة: pytest 267 + 3 + 3 على 3.11 و3.12؛ ruff صفر؛ R-051 بالإذن 20/20؛ R-053 بالإذن 1000/1000 (تشغيل سابق 999/1000 محفوظ)؛ الشبكة الحية 3/3.
+- مسجّل من المسح نفسه: R-101 (ready — الواجهة ترسل المفتاح)، R-102..R-105 (proposed). تصحيح ARCHITECTURE: عدّ الملفات (1,052/31) وسطر specialists المتناقض مع D-037.

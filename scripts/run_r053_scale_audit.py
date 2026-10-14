@@ -21,6 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from agent_civilization.core import safety  # noqa: E402
 from agent_civilization.agents.real import create_civilization  # noqa: E402
 
 # مهام ملائمة لكل تخصص (لاستبعاد فشل "بيانات غير كافية" أو "لا كود" من إشارة القياس).
@@ -66,6 +67,10 @@ def main() -> int:
     print("=" * 60)
     print("R-053: قياس حدود العدد المستهدف من الوكلاء")
     print("=" * 60)
+    # R-100 (D-044): test_runner ينفذ الكود فقط بإذن صريح؛ القياس الكامل
+    # يُشغَّل بـ AGOS_ALLOW_CODE_EXEC=1 (وإلا تُرفض مهام test_runner الـ50).
+    allowed, reason = safety.code_execution_policy()
+    print(f"سياسة تنفيذ الكود: allowed={allowed} ({reason})")
 
     # 1) العدد المستهدف: 50/تخصص = 1000 وكيل
     civ, total, elapsed = create_and_measure(50)
@@ -81,6 +86,15 @@ def main() -> int:
     print(f"\n[2] تنفيذ متزامن ({total} مهمة عبر كل الوكلاء)")
     print(f"    زمن التنفيذ: {exec_elapsed:.3f}s")
     print(f"    نجاح: {ok_count}/{total}")
+    # R-100: سمِّ المهام الفاشلة (التخصص + بداية الخطأ) بدل عدّها فقط.
+    failures = {}
+    for r in results:
+        if not r.get("ok"):
+            err = str((r.get("result") or {}).get("error") or r.get("error") or "")[:80]
+            key = (r.get("specialization") or str(r.get("agent", "?")).rsplit("_", 1)[0], err)
+            failures[key] = failures.get(key, 0) + 1
+    for (spec, err), n in sorted(failures.items()):
+        print(f"    فشل: {spec} ×{n} — {err}")
     print(f"    ذروة RSS بعد التنفيذ: {rss_mb():.1f} MB")
 
     # 3) هامش التوسع: 2× المستهدف (2000 وكيل)

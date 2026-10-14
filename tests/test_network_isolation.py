@@ -23,8 +23,11 @@ def test_external_socket_connect_is_blocked():
 
 def test_external_dns_is_not_queried():
     assert socket.gethostbyname("api.duckduckgo.com").startswith("192.0.2.")  # RFC 5737 TEST-NET-1
-    with pytest.raises(socket.gaierror, match="external DNS disabled"):
-        socket.getaddrinfo("example.com", 443)
+    # R-100: getaddrinfo is answered by the same fake (the URL policy resolves
+    # every host before connecting); the answer is TEST-NET, never real DNS.
+    infos = socket.getaddrinfo("example.com", 443)
+    assert {i[4][0] for i in infos} == {socket.gethostbyname("example.com")}
+    assert infos[0][4][1] == 443
 
 
 def test_loopback_is_untouched():

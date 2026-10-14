@@ -156,3 +156,11 @@
 
 ## R-090 — Python 3.12 في job `test` (D-043)
 - `test` يشغّل الحزمة مرتين: 3.11 (مع التغطية) ثم 3.12 (نسخة الإنتاج). اسم الفحص ثابت. باقي jobs Python على 3.11.
+
+## R-100 — اختبارات أمان الأدوات وفحص الحاوية (D-044)
+- **الافتراض في الاختبارات**: fixture تلقائي في `tests/conftest.py` يبدأ كل اختبار من الوضع الإنتاجي الافتراضي (يحذف `AGOS_API_KEY` و`AGOS_ALLOW_CODE_EXEC` و`AGOS_ALLOW_PRIVATE_NETWORK`) فيُرفض `test_runner`. الاختبارات التي تثبت التنفيذ الحقيقي تحمل `@pytest.mark.code_exec` (6 اختبارات قائمة + 3 جديدة) — الإذن نفسه الذي يعطيه المشغّل، مسجّل في `pytest.ini`.
+- **النقل الوهمي الشبكي (R-072)**: صار يجيب `OpenerDirector.open` (يستخدمه `safety.safe_urlopen`) و`getaddrinfo` (يُرجع TEST-NET بدل الرفض) — DNS الحقيقي ما زال لا يُستعلم، والاتصال الخارجي الحقيقي ما زال يُرفض.
+- **`tests/test_r100_runtime_safety.py`** (37): مصفوفة السياسة، عدم التسريب عبر API، عزل البيئة/المجلد/`-I`، حدود CPU والمهلة والذاكرة، منع قراءة `/proc/<ppid>/environ`، 12 عنواناً محظوراً و4 مسموحة، المخططات، خادم داخلي حقيقي على 127.0.0.1 (hits=0 افتراضياً، 1 مع العلم)، إعادة التوجيه، الوكيل الخارجي، SQLite (ATTACH، VACUUM INTO، CTE جامح، SQL عادي).
+- **CI job `docker`**: خطوة جديدة «Verify runtime safety policy in the container (R-100)» على الحاوية المبنية فعلاً — `id -u` ليس 0، ومهمة `test_runner` مجهولة تُرفض بـ«disabled in open mode».
+- العدد: 267 + 3 skipped + 3 deselected على 3.11 و3.12 (`logs/raw/29..30`).
+

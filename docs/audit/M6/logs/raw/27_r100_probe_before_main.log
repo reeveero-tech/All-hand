@@ -1,0 +1,163 @@
+# R-100 evidence — branch m6/r100-runtime-safety (base main 36f8fa5cfc8bf0c141f072ed2baedc235fbd2cac, uncommitted working tree = the R-100 change)
+# note: run on an untouched worktree of origin/main 36f8fa5 with the probe script copied in; rc=1 = unsafe rows present
+# cwd=/tmp/main_wt env_overrides={}
+$ timeout 120 /tmp/v311/bin/python scripts/run_r100_safety_probe.py
+returncode=1
+--- stdout ---
+{
+  "auth_enabled": false,
+  "tool_policy": null,
+  "rows": [
+    {
+      "vector": "test_runner prints server env secret",
+      "safe": false,
+      "evidence": "{\"ok\": true, \"agent\": \"test_runner_0900\", \"elapsed_s\": 0.014, \"result\": {\"ok\": true, \"answer\": \"exit=0\", \"tool_output\": {\"stdout\": \"r100-probe-secret-9c1e\\n\", \"stderr\": \"\"}}}"
+    },
+    {
+      "vector": "test_runner reads server start-up env via /proc",
+      "safe": false,
+      "evidence": "bytes_read=4103 {\"ok\": true, \"answer\": \"exit=0\", \"tool_output\": {\"stdout\": \"4103\\n\", \"stderr\": \"\"}}"
+    },
+    {
+      "vector": "api_integrator reaches 127.0.0.1 server",
+      "safe": false,
+      "evidence": "internal_server_hits=1 {\"ok\": true, \"agent\": \"api_integrator_0050\", \"elapsed_s\": 0.002, \"result\": {\"ok\": true, \"answer\": \"GET http://127.0.0.1:45515/admin\", \"tool_output\": {\"status\": 200, \"content_type\": \"\", \"latency_ms\": 1.91, \"bytes\": 2, \"sample\": \"{}\"}}}"
+    },
+    {
+      "vector": "network_client to metadata 169.254.169.254",
+      "safe": false,
+      "evidence": "{\"ok\": false, \"agent\": \"network_client_0600\", \"elapsed_s\": 6.006, \"result\": {\"ok\": false, \"error\": \"http: <urlopen error timed out>\"}}"
+    },
+    {
+      "vector": "db_manager runaway recursive CTE",
+      "safe": false,
+      "evidence": "server did not answer GET /api/tasks/<id> within 20s after the query was submitted (whole API frozen)"
+    },
+    {
+      "vector": "register external agent at 127.0.0.1",
+      "safe": false,
+      "evidence": "not measured: server frozen by the previous vector"
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "safe": 0,
+    "unsafe": 6
+  }
+}
+
+--- stderr ---
+2026-10-14 00:40:16,432 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:97
+2026-10-14 00:40:16,432 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:111
+2026-10-14 00:40:16,433 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-14 00:40:16,438 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:206
+2026-10-14 00:40:16,438 - agos.server - INFO - External agents loaded: 0 - <module>:208
+2026-10-14 00:40:16,462 - agos.server - INFO - Civilization routes registered successfully - <module>:691
+2026-10-14 00:40:16,472 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: agos - __init__:100
+2026-10-14 00:40:16,476 - agos.server - INFO - Task created: 29c885c6ef29 for specialization: test_runner - create_task:527
+2026-10-14 00:40:16,477 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:40:16,478 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/29c885c6ef29 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:16,580 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/29c885c6ef29 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:16,581 - agos.server - INFO - Task created: 485a380d83a6 for specialization: test_runner - create_task:527
+2026-10-14 00:40:16,581 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:40:16,582 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/485a380d83a6 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:16,684 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/485a380d83a6 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:16,685 - agos.server - INFO - Task created: dbbd295cfe71 for specialization: api_integrator - create_task:527
+2026-10-14 00:40:16,685 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:40:16,687 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/dbbd295cfe71 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:16,788 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/dbbd295cfe71 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:16,789 - agos.server - INFO - Task created: f7d67809df86 for specialization: network_client - create_task:527
+2026-10-14 00:40:16,789 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:40:16,790 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:16,891 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:16,993 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,095 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,197 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,298 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,400 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,501 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,603 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,704 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,806 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:17,908 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,009 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,111 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,213 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,315 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,416 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,518 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,619 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,721 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,822 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:18,924 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,026 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,127 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,229 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,330 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,432 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,534 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,636 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,738 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,840 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:19,941 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,043 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,145 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,246 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,348 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,449 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,551 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,653 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,754 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,856 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:20,957 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,059 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,161 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,262 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,364 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,465 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,567 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,668 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,769 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,871 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:21,972 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,074 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,175 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,276 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,377 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,479 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,580 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,681 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,783 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,884 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f7d67809df86 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,885 - agos.server - INFO - Task created: 63b73222d236 for specialization: db_manager - create_task:527
+2026-10-14 00:40:22,886 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:40:22,887 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:22,989 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,090 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,191 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,292 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,393 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,495 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,597 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,698 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,799 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:23,901 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,003 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,105 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,206 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,308 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,409 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,511 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,612 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,713 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,815 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:24,916 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:25,017 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:25,119 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:25,220 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:25,321 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:25,423 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:25,524 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:25,625 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:40:25,726 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/63b73222d236 "HTTP/1.1 429 Too Many Requests" - _send_single_request:1085
+

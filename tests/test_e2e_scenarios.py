@@ -30,6 +30,7 @@ def _make_civ():
     return create_civilization(5)
 
 
+@pytest.mark.code_exec  # R-100: proves real test_runner execution (operator opt-in)
 def test_scenario_1_code_review_test_pipeline():
     """هدف معقد: مراجعة واختبار كود — خطة 5 مراحل عبر 5 وكلاء من تخصصات مختلفة."""
     civ = _make_civ()
@@ -70,6 +71,7 @@ def test_scenario_2_analysis_pipeline():
     assert result["final"], "لا نتيجة نهائية"
 
 
+@pytest.mark.code_exec  # R-100: proves real test_runner execution (operator opt-in)
 def test_scenario_3_architectural_build_pipeline():
     """هدف بناء معماري: understand → plan → execute → review → test."""
     civ = _make_civ()

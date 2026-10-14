@@ -8,12 +8,13 @@
 All-hand/ (الجذر — 55 دليلاً، 1,981 ملفاً متتبعاً)
 ├── server.py                    ← الخادم الرئيسي (FastAPI) — 17 مساراً صريحاً + 3 ديناميكية
 ├── run.py                       ← مُشغّل uvicorn
-├── agent_civilization/          ← 1,050 ملفاً متتبعاً (29 خارج specialists + 1,021 داخلها)
+├── agent_civilization/          ← 1,052 ملفاً متتبعاً (31 خارج specialists + 1,021 داخلها — عُدّ بـ`git ls-files` في R-100؛ كان مكتوباً 1,050/29 والقياس على main 36f8fa5 = 1,051/30)
 │   ├── agents/
 │   │   ├── real/                ← إنشاء 1,000 وكيل في الذاكرة (مثبت في سلسلة الاستيراد من server.py)
 │   │   └── specialists/          ← 1,021 ملفاً (1,000 وكيل proxy + 21 __init__.py) —
-│   │                               يصرّفون إلى real_dispatcher لكن لم يُكتشف مستهلك يُنشئهم
+│   │                               يصرّفون إلى real_dispatcher؛ موصولة اختيارياً بـAGOS_AGENT_IMPL=specialists (D-037)
 │   ├── core/agents/             ← BaseAgent, CommunicationHub, real_dispatcher
+│   ├── core/safety.py           ← سياسة الأدوات الحقيقية (R-100، D-044): إذن تنفيذ الكود + العزل، حارس العناوين، SQLite
 │   ├── routing/auto_router.py   ← auto_route()
 │   ├── pipeline/orchestrator.py ← execute_plan()
 │   ├── registry/oss_agents.py   ← سجل ~320 وكيل OSS (dataclass ثابت)

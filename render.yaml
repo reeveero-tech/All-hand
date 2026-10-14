@@ -27,6 +27,13 @@ services:
         sync: false
       - key: AGOS_ALLOWED_ORIGINS
         sync: false
+      # R-100 (D-044): اختياريان — تركهما فارغين هو الآمن. بلا AGOS_API_KEY يُرفض
+      # تنفيذ كود test_runner؛ AGOS_ALLOW_CODE_EXEC=1 يسمح به للجميع (غير موصى
+      # به على عنوان عام)، و AGOS_ALLOW_PRIVATE_NETWORK=1 يسمح بأهداف داخلية.
+      - key: AGOS_ALLOW_CODE_EXEC
+        sync: false
+      - key: AGOS_ALLOW_PRIVATE_NETWORK
+        sync: false
       - key: SUPABASE_URL
         sync: false
       # R-042b: المفتاح المفضّل للخادم (secret/service_role) — RLS مفعّل بلا سياسات anon.
