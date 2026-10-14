@@ -1,0 +1,36 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: 50 concurrent live DuckDuckGo requests, old urlopen vs safe_urlopen, 2 rounds (script /tmp/ddg_compare.py, copied below)
+# env_overrides={}
+$ timeout 200 /tmp/v311/bin/python /tmp/ddg_compare.py
+returncode=0
+--- stdout ---
+round 1 | old urllib.request.urlopen: ok 50/50 in 0.44s
+round 1 | new safety.safe_urlopen: ok 50/50 in 1.18s
+round 2 | old urllib.request.urlopen: ok 50/50 in 0.47s
+round 2 | new safety.safe_urlopen: ok 50/50 in 0.41s
+
+--- stderr ---
+
+
+--- script /tmp/ddg_compare.py ---
+import concurrent.futures as cf, json, sys, time, urllib.parse, urllib.request
+sys.path.insert(0, ".")
+from agent_civilization.core import safety
+def req(i):
+    url = "https://api.duckduckgo.com/?" + urllib.parse.urlencode({"q": f"python asyncio {i}", "format": "json", "no_html": "1", "no_redirect": "1"})
+    return urllib.request.Request(url, headers={"User-Agent": "AGOS-Research/1.0"})
+def old(i):
+    with urllib.request.urlopen(req(i), timeout=8) as r: json.loads(r.read().decode("utf-8", "replace"))
+def new(i):
+    with safety.safe_urlopen(req(i), timeout=8) as r: json.loads(r.read().decode("utf-8", "replace"))
+for rnd in (1, 2):
+    for name, fn in (("old urllib.request.urlopen", old), ("new safety.safe_urlopen", new)):
+        errs = []
+        def run(i):
+            try: fn(i); return None
+            except Exception as e: return f"{type(e).__name__}: {str(e)[:90]}"
+        t = time.monotonic()
+        with cf.ThreadPoolExecutor(50) as ex: res = list(ex.map(run, range(50)))
+        bad = [r for r in res if r]
+        print(f"round {rnd} | {name}: ok {50-len(bad)}/50 in {time.monotonic()-t:.2f}s" + (f" | errors: {sorted(set(bad))[:3]}" if bad else ""))
+        time.sleep(3)

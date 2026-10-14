@@ -152,5 +152,5 @@
 2. إعادة ربط DNS (اسم يتغير عنوانه بين الفحص والاتصال) غير مغطاة.
 3. الاستعلام الجامح يحجز الخادم حتى 3 ثوانٍ (محدود، لا مُلغى).
 4. `prctl(PR_SET_DUMPABLE)` خاص بـLinux؛ على غيره `server_process_non_dumpable=false` معروض في الحالة.
-- الأدلة: `docs/audit/M6/logs/93_r100_runtime_safety.log` (فهرس) و`logs/raw/27..48`؛ الاختبارات `tests/test_r100_runtime_safety.py` (44).
+- الأدلة: `docs/audit/M6/logs/93_r100_runtime_safety.log` (فهرس) و`logs/raw/27..50`؛ الاختبارات `tests/test_r100_runtime_safety.py` (44).
 

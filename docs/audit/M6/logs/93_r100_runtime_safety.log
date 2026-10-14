@@ -71,7 +71,13 @@ raw/43_r100_review_findings_old_vs_fixed.log — same script against safety.py a
 raw/44..45 pytest 3.11/3.12 after fixes: 274 passed, 3 skipped, 3 deselected (rc=0)
 raw/46 ruff after fixes: rc=0
 raw/47 probe after fixes: 8/8 safe (rc=0)
-raw/48 R-053 opt-in after fixes: 1000/1000 (rc=0)
+raw/48 R-053 opt-in after fixes: 996/1000 (rc=1) — "researcher x4 — search: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING]".
+   CORRECTION: commit 03ee326 wrote "1000/1000 (rc=0)" here before reading the output; the true result is 996/1000.
+   The researcher path was not touched by the review fixes. Check for a regression from the URL guard:
+raw/49 50 concurrent live DuckDuckGo requests, old urllib.request.urlopen vs new safety.safe_urlopen, 2 rounds:
+   50/50 for both in both rounds -> no evidence the guard causes it; the failure is intermittent on the external
+   service under 50 concurrent requests (same family as raw/33 and raw/34). Not proven external beyond this.
+raw/50 R-053 opt-in rerun: 1000/1000 (rc=0).
 
 == 7. Residual limits (SECURITY.md, R-100 section)
 Child runs as the server's own user (can read app files, open sockets) — hence execution itself is policy-gated;
