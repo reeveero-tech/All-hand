@@ -48,7 +48,7 @@
 ## فجوات التوثيق
 
 - لا يوجد OpenAPI مخصص خارج المولد الافتراضي من FastAPI.
-- المصادقة على المسارات الحساسة تُفرض عبر `verify_api_key` (R-004)؛ الواجهة `web/` لا ترسل `X-API-Key` بعد (قيد موثق لـ R-043).
+- المصادقة على المسارات الحساسة تُفرض عبر `verify_api_key` (R-004)؛ منذ R-101 الواجهة `web/` ترسل `X-API-Key` الذي يدخله المستخدم (كان قيداً موثقاً لـ R-043).
 
 ## دورة حياة الخادم (R-042، M7/6)
 - `FastAPI(lifespan=_lifespan)`: عند الإيقاف تُغلق جلسة HTTP لطبقة التخزين (`get_storage().close()`) — كانت تتسرب ("Unclosed client session"). لا تغيير في المسارات أو العقود.
@@ -75,4 +75,8 @@
 - `api_integrator`/`network_client` لهدف غير عام: `{"ok": false, "error": "blocked: …"}`؛ `network_client` (فحص DNS) يضيف `addresses` (كل العناوين المحلولة) بجانب `ip`.
 - `db_manager`: `ATTACH`/`VACUUM INTO` → `sqlite: not authorized`؛ تجاوز 3 ثوانٍ → `sqlite: interrupted`؛ قيمة > 1MB → `sqlite: string or blob too big`؛ الحد 50 صفاً (كما كان).
 - `POST /api/agents/external`: 400 `url rejected: blocked non-public address …` إذا كان العنوان داخلياً والخادم في الوضع المفتوح بلا `AGOS_ALLOW_PRIVATE_NETWORK=1`؛ 400 `url host cannot be resolved` لاسم لا يُحل.
+
+## R-101 — عقد الواجهة في الوضع المصادَق (2026-10-14)
+- لا تغيير في الخادم. العقد المثبت (`tests/test_r101_web_auth_contract.py`): `GET /api/system/status` → `security.authentication = "enabled"|"disabled"` (تكتشف به الواجهة الوضع بلا مفتاح)؛ مسارات القراءة التي تستطلعها الواجهة (`/api/specializations`، `/api/agents`، `/api/tasks`، `/api/events`، `/api/events/stream`) بلا مفتاح؛ الكتابة: 401 `API key required` بلا مفتاح، 403 `Invalid API key` بمفتاح خاطئ؛ CORS يسمح بترويسة `X-API-Key`.
+- العميل (`web/src/api.js`): يرسل `X-API-Key` إن وُجد في sessionStorage (`agos_api_key`)؛ أخطاؤه من نوع `ApiError` بحقل `status`؛ 401/403 تُطلق حدث `agos-auth-required`.
 

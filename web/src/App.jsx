@@ -4,6 +4,7 @@ import Chat from './components/Chat.jsx'
 import Specializations from './components/Specializations.jsx'
 import Agents from './components/Agents.jsx'
 import Tasks from './components/Tasks.jsx'
+import ApiKeyBar from './components/ApiKeyBar.jsx'
 import { fetchSystemStatus, createEventSource } from './api.js'
 
 export default function App() {
@@ -57,6 +58,9 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* R-101: header and key bar stick together, so the key field the error
+          messages point to ("أعلى الصفحة") is always visible. */}
+      <div className="app-top">
       <header className="app-header">
         <div className="app-header-brand">
           <div className="app-logo">A</div>
@@ -78,6 +82,8 @@ export default function App() {
           ))}
         </nav>
       </header>
+      <ApiKeyBar authEnabled={status?.security?.authentication === 'enabled'} />
+      </div>
 
       <main className="app-body">
         {tab === 'dashboard' && <Dashboard status={status} liveEvent={liveEvent} />}

@@ -1,0 +1,73 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: R-101 web/ node tests (final api.js)
+# env_overrides={}
+$ bash -c cd web && npm test
+returncode=0
+--- stdout ---
+
+> agos-civilization-web@3.0.0 test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+ok 1 - open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+  ---
+  duration_ms: 1.994544
+  ...
+# Subtest: stored key is sent on every call, write and read
+ok 2 - stored key is sent on every call, write and read
+  ---
+  duration_ms: 1.178871
+  ...
+# Subtest: key never appears in the URL or body
+ok 3 - key never appears in the URL or body
+  ---
+  duration_ms: 0.321681
+  ...
+# Subtest: caller headers are merged, not allowed to drop Content-Type or the key
+ok 4 - caller headers are merged, not allowed to drop Content-Type or the key
+  ---
+  duration_ms: 0.335086
+  ...
+# Subtest: clearApiKey / empty value removes the key
+ok 5 - clearApiKey / empty value removes the key
+  ---
+  duration_ms: 0.545367
+  ...
+# Subtest: 401 -> clear Arabic message, status kept, auth event dispatched
+ok 6 - 401 -> clear Arabic message, status kept, auth event dispatched
+  ---
+  duration_ms: 0.690224
+  ...
+# Subtest: 403 with a stored key -> "key is wrong" message
+ok 7 - 403 with a stored key -> "key is wrong" message
+  ---
+  duration_ms: 0.38456
+  ...
+# Subtest: other errors keep the server detail
+ok 8 - other errors keep the server detail
+  ---
+  duration_ms: 0.246463
+  ...
+# Subtest: external agent names are URL-encoded on delete
+ok 9 - external agent names are URL-encoded on delete
+  ---
+  duration_ms: 0.307943
+  ...
+# Subtest: no sessionStorage (blocked) -> calls still work without a key
+ok 10 - no sessionStorage (blocked) -> calls still work without a key
+  ---
+  duration_ms: 0.267193
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 65.518392
+
+--- stderr ---
+

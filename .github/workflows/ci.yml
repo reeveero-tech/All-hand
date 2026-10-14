@@ -96,6 +96,11 @@ jobs:
           npm ci --engine-strict --no-audit --no-fund
           npm run build
 
+      # R-101: behaviour of the real web/src/api.js (X-API-Key, 401/403 messages).
+      - name: Test web API client
+        working-directory: web/
+        run: npm test
+
       # R-076: @tanstack/react-start (and 8 sibling packages) declare
       # engines.node >=22.12.0, mirrored in the root package.json. Since R-089
       # web/ and the Docker build stage are on Node 22 too (D-042).

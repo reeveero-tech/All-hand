@@ -1,0 +1,37 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: open mode (no AGOS_API_KEY): bar hidden, chat works without a key; script appended
+# env_overrides={}
+$ timeout 120 /tmp/v311/bin/python /tmp/r101_ui_open.py
+returncode=0
+--- stdout ---
+{
+  "bar_count_open_mode": 0,
+  "chat_tail_open_mode": "أنت\nحلل 4 8 15\nA\ntone=neutral\ncommunicator · communicator_02500\nإرسال",
+  "bar_count_after_chat": 0
+}
+
+--- stderr ---
+
+
+--- script ---
+import os, subprocess, sys, time, json, urllib.request
+from playwright.sync_api import sync_playwright
+env = {k: v for k, v in os.environ.items() if k != "AGOS_API_KEY"}
+srv = subprocess.Popen([sys.executable, "-m", "uvicorn", "server:app", "--port", "18124"], env=env,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+out = {}
+try:
+    for _ in range(60):
+        try: urllib.request.urlopen("http://127.0.0.1:18124/api/system/status", timeout=1); break
+        except Exception: time.sleep(0.5)
+    with sync_playwright() as p:
+        b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1280, "height": 800})
+        pg.goto("http://127.0.0.1:18124/"); pg.wait_for_selector(".app-title"); pg.wait_for_timeout(1500)
+        out["bar_count_open_mode"] = pg.locator(".api-key-bar").count()
+        pg.click("text=المحادثة"); pg.fill(".chat-input", "حلل 4 8 15"); pg.keyboard.press("Enter"); pg.wait_for_timeout(2500)
+        out["chat_tail_open_mode"] = pg.inner_text(".chat-container")[-200:]
+        out["bar_count_after_chat"] = pg.locator(".api-key-bar").count()
+        b.close()
+finally:
+    srv.terminate(); srv.wait(10)
+print(json.dumps(out, ensure_ascii=False, indent=2))
