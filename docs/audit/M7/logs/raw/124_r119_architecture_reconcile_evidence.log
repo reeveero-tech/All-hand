@@ -1,0 +1,257 @@
+=== R-119 Evidence Pack: ARCHITECTURE.md reconcile ===
+Date: 2026-10-14T23:36:58Z
+SHA: 6439e5a1bd68b9d198ca4bb0daca46001cd3a2fa
+Branch: m7/r119-architecture-reconcile
+Python: Python 3.14.3
+Node: v22.23.3 (the ORIGINAL header reading was overwritten during log editing, so its original timing cannot be stated with confidence. What IS verifiable from the command history: the nvm 22 shell was loaded before the npm checks in Sections H/I and the npm-install checks, so those checks ran under Node v22.23.3.)
+Environment: local sandbox, python 3.14.3
+
+NOTE: This file (124) is a VERIFICATION SUMMARY — it links to full untruncated outputs
+preserved as separate files under docs/audit/M7/logs/raw/r119_full_logs/. Not every
+command in this summary records its exit code inline; the primary checks (pytest,
+ruff, npm ci/build/install) do record explicit exit codes and are also preserved
+in full in r119_full_logs/.
+
+--- SECTION A: verify_api_key called in server.py (contradicts ARCHITECTURE line 41) ---
+134:def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> Optional[str]:
+520:    verify_api_key(api_key)
+587:    verify_api_key(api_key)
+633:    verify_api_key(api_key)
+698:    verify_api_key(api_key)
+729:    verify_api_key(api_key)
+rc=0
+Count of rg matches (definition + call sites):
+6
+rc=0
+
+CORRECTION on Section A: the 6 matches above = 1 function definition (line 134) + 5 actual call sites (lines 520, 587, 633, 698, 729).
+The actual number of function CALLS to verify_api_key() is 5, not 6. Separately, the function is passed
+(not called) as a parameter at server.py:747 for /civilization/* routes.
+
+--- SECTION B: /health 503 branch exists (contradicts ARCHITECTURE line 42) ---
+158:            status_code=429,
+345:            return JSONResponse(status_code=503, content=system_health)
+rc=0
+
+--- SECTION C: root tree state ---
+.dockerignore
+.env.example
+.github
+.gitignore
+.lovable
+CIVILIZATION_MAP.md
+DEPLOY.md
+Dockerfile
+FINAL-ARCHITECTURE.md
+IMPLEMENTATION_PLAN.md
+INTEGRITY-REPORT.md
+README.md
+SECURITY.md
+agent_civilization
+agos_kernel
+components.json
+docs
+eslint.config.js
+package-lock.json
+package.json
+public
+pytest.ini
+render.yaml
+requirements.txt
+run.py
+scripts
+server.py
+src
+tests
+tsconfig.json
+vite.config.ts
+web
+
+--- SECTION D: current tracked file count ---
+1546
+rc=0
+
+--- SECTION E: tracked test files and count ---
+31
+rc=0
+
+--- SECTION F: verify src/ build and web/ build rc ---
+
+--- SECTION F: pytest with explicit rc ---
+tests/test_specialists_package.py ....................................   [ 96%]
+tests/test_storage_payloads.py ......                                    [ 97%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 435 passed, 3 skipped, 4 deselected in 24.46s =================
+pytest_exit_code=0
+
+--- SECTION G: ruff ---
+All checks passed!
+ruff_exit_code=0
+
+--- SECTION H: web build ---
+  run `npm fund` for details
+
+found 0 vulnerabilities
+web_npm_ci_exit_code=0
+dist/index.html                   0.77 kB │ gzip:  0.45 kB
+dist/assets/index-B7MkQRhG.css   12.25 kB │ gzip:  2.99 kB
+dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
+
+✓ built in 129ms
+web_build_exit_code=0
+
+--- SECTION I: root build ---
+  run `npm fund` for details
+
+found 0 vulnerabilities
+root_npm_ci_exit_code=0
+ℹ Generated .output/public/_headers
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+root_build_exit_code=0
+
+--- SECTION J: verify each specific stale claim in ARCHITECTURE.md ---
+
+J1. ARCHITECTURE says 'src/ ... فشل البناء' - actual: root build succeeds (see root_build_exit_code above)
+
+J2. ARCHITECTURE says '55 دليلاً، 1,981 ملفاً متتبعاً' - actual tracked files: 1546; tracked top-level dirs:
+__pycache__/
+agent_civilization/
+agos_kernel/
+docs/
+node_modules/
+public/
+scripts/
+src/
+tests/
+web/
+
+J3. ARCHITECTURE says 'tests/ 61 اختباراً في 3 ملفات' - actual test files: 31
+
+J4. ARCHITECTURE says 'agos-kernel/ (dash) 523 files tracked' - actual: 0
+0
+
+J5. ARCHITECTURE says 'agents.yaml يُقرأ من سكربتات مستقلة' - actual exists: 
+
+J6. ARCHITECTURE says '29 ملفاً خارج specialists' - actual: 33
+
+J7. ARCHITECTURE says 'اجسون = 3 جداول' - actually 3 tables: tasks, events, agent_stats. OK.
+
+J8. ARCHITECTURE says 'specialists/ 1,021 ملفاً (1,000 وكيل + 21 __init__.py)' - actual: 1044
+
+--- SECTION K: verify CIVILIZATION_MAP/FINAL-ARCHITECTURE/DEPLOY/INTEGRITY-REPORT historical labels still present ---
+# AGOS FINAL ARCHITECTURE STATE
+> ⚠️ **وثيقة تاريخية — وسمها R-056 (2026-10-12)**: يصف `agos-kernel/` الملف المفرد الذي حُذف في R-033 (وسم `pre-R033-agos-kernel-removal`). أي إشارة إلى "FULLY IMPLEMENTED" في تاريخ 2024 تشير إلى بنية سابقة، لا الحالية. راجع `docs/governance/ARCHITECTURE.md`.
+
+---
+# نشر حضارة الوكلاء على Render (مجاني)
+
+> محدث في R-041 (دفعة M4/3) ليطابق الكود الفعلي: كل مسار هنا مُتحقق منه من
+---
+# AGOS CIVILIZATION INTEGRITY REPORT
+
+> ⚠️ **وثيقة تاريخية — راجعها R-056 (2026-10-12)**: هذا التقرير وُلد في 2026-07-17 قبل
+
+--- SECTION L: correct J2 (git-tracked top-level dirs only, not node_modules/pycache) ---
+.dockerignore
+.env.example
+.github
+.gitignore
+.lovable
+CIVILIZATION_MAP.md
+DEPLOY.md
+Dockerfile
+FINAL-ARCHITECTURE.md
+IMPLEMENTATION_PLAN.md
+INTEGRITY-REPORT.md
+README.md
+SECURITY.md
+agent_civilization
+agos_kernel
+components.json
+docs
+eslint.config.js
+package-lock.json
+package.json
+public
+pytest.ini
+render.yaml
+requirements.txt
+run.py
+scripts
+server.py
+src
+tests
+tsconfig.json
+vite.config.ts
+web
+
+--- SECTION M: agent_civilization count: 1077 total
+  outside specialists: 33
+  inside specialists: 1044
+
+--- SECTION N: confirm 3-table claim (tasks, events, agent_stats) by grepping supabase_store.py ---
+5:Persists tasks, agent stats, and events to the Supabase database.
+201:                f"{self.url}/rest/v1/tasks",
+231:                f"{self.url}/rest/v1/tasks?task_id=eq.{task_id}",
+240:    async def get_tasks(self, limit: int = 50) -> List[Dict[str, Any]]:
+246:                f"{self.url}/rest/v1/tasks?order=created_at.desc&limit={limit}",
+248:                if await _accepted(r, "get_tasks", (200,)):
+252:            logger.warning("get_tasks failed: %s", e)
+253:            _record_exception("get_tasks", e)
+256:    async def upsert_agent_stats(self, agent_name: str, specialization: str,
+257:                                  tasks_completed: int, tasks_failed: int,
+
+--- SECTION O: verify no agents.yaml in root ---
+ls: cannot access 'agents.yaml': No such file or directory
+
+--- SECTION P: verify agos-kernel/ (dash) doesn't exist ---
+ls: cannot access 'agos-kernel/': No such file or directory
+
+--- SECTION Q: verify root package.json build script exists ---
+11:    "build": "vite build",
+
+--- SECTION R: verify specialists/ entry count ---
+1044
+
+=== SECTION S: full logs preserved ===
+
+The full untruncated outputs for each check are preserved as separate files in
+`docs/audit/M7/logs/raw/r119_full_logs/`:
+
+  r119_full_logs/r119_pytest.log      — full pytest output (rc=0, 435 passed + 3 skipped + 4 deselected)
+  r119_full_logs/r119_ruff.log        — full ruff output (rc=0, All checks passed!)
+  r119_full_logs/r119_web_ci.log     — web/ npm ci output (rc=0)
+  r119_full_logs/r119_web_build.log  — web/ npm run build output (rc=0, vite 8.3.4)
+  r119_full_logs/r119_root_ci.log    — root npm ci output (rc=0)
+  r119_full_logs/r119_root_build.log — root npm run build output (rc=0, 441 lines)
+
+The /tmp/r119_pytest.log referenced in Section F is the same file as r119_full_logs/r119_pytest.log (identical bytes; verified by copy).
+
+Note on Section L (CORRECTED): the "tracked top-level dirs" listed by `git ls-files | awk -F/ '{print $1}' | sort -u`
+include both directories and top-level files. The actual top-level tracked *directories* (10, verified by `git ls-tree -d --name-only 6439e5a`) are:
+  .github/, .lovable/, agent_civilization/, agos_kernel/, docs/, public/, scripts/, src/, tests/, web/
+
+Note on test files (CORRECTED): `ls tests/*.py | wc -l` counted 31 .py files.
+Actual `test_*.py` files = 29 (verified by `ls tests/test_*.py | wc -l` → 29). Tracked files under tests/ = 31 (29 test_*.py + conftest.py + __init__.py).
+Earlier versions of this log incorrectly wrote "30 test_*.py" — the correct number is 29.
+
+Note on specialists distribution (CORRECTED): 1,044 total = 1,000 thin compat modules (50 per spec x 20 specs)
++ 20 spec-dir __init__.py + 1 root __init__.py + 23 files in _templates/ (20 *_base.py + _factory.py + _spec_layout.py + __init__.py) = 1,044.
+=== Summary of npm install rc (both web and root) ===
+web_npm_install_exit_code=0
+root_npm_install_exit_code=0
+lockfile_diff_rc=0 (no lockfile changes from npm install)
+
+=== SECTION T: roadmap audit counter (run_r075_roadmap_audit.py, rc=0) ===
+item headings: 108
+duplicate ids: none
+status counts: {'done': 108}
+items without status: none
+Full output preserved: r119_full_logs/r119_roadmap_audit.log
+
+Note: `scripts/run_r119_live_hour.py` and tests `test_r119_*` belong to R-118 (M6/54).
+This R-119 batch is a separate documentation-only item and does NOT use or modify that script.
