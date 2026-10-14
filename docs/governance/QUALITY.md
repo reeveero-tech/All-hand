@@ -188,6 +188,11 @@
 ### R-104b/R-107b — إصلاح نواقص (دفعات تصحيح)
 
 ### R-104c/R-107c — جولة تصحيح ثانية
+
+### R-104c2/R-107c2 — جولة ثالثة
+- `test_r104_data_worker.py` (14): قيمة تظهر في `data` فقط تصل LLM وتغيير `data` يغيّر المرسل؛ عقد المستهلك الحقيقي (`TaskDispatcherAgent`: `task_complete` يخفض الحمل بغض النظر عن `result.ok`)؛ الحزم الثلاث تحمل واجهات حية (اختبار end-to-end: وكيل مبني عليها يعالج مهمة). الاختبارات القديمة صارت حتمية ببدائل اختبارية.
+- `test_r107_researcher_retry.py` (15): `SSLV3_ALERT_HANDSHAKE_FAILURE` صلب؛ اختبار التعليق يميّز الإصلاح القديم (حد 1.2ث يفشل مع انتظار 1.7ث).
+- العدد: 375 + 3 + 3 (`docs/audit/M6/logs/raw/103_r104c2_r107c2_evidence_pack.log`).
 - `test_r107_researcher_retry.py` (+3): `WRONG_VERSION_NUMBER` صلب لا يُعاد؛ `URLError` مجهول السبب صلب؛ نقل يعلق أطول من الميزانية يعيد المعالج خلالها (زمن مقاس < 1.3ث بميزانية 0.7ث).
 - `test_r104_data_worker.py` (+4): التوقيع الصحيح (`LLMClient.complete(self, system, prompt)`) مع تحقق النص المستلم؛ نجاح حتمي بديل اختباري مع فحص العدادات؛ مهمة API بـ`prompt` + `data` فعلية (نصية) تصل LLM فعلاً؛ عقد `task_complete` موثق (النتيجة تحمل `ok`).
 - العدد: 371 + 3 + 3 (`docs/audit/M6/logs/raw/102_r104c_r107c_evidence_pack.log` — خام كامل بلا اقتطاع وبلا `--silent`).

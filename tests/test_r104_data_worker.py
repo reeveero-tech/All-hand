@@ -58,23 +58,13 @@ def test_live_dispatch_data_processor_numeric_input_is_unchanged():
     assert 'llm' not in str(out['tool_output']).lower() or out['tool_output']['source'] != 'llm'
 
 
-def test_three_empty_packages_still_import_cleanly():
-    """Honest limit: the packages stay (a D-decision removal is out of scope)."""
-    import agent_civilization.communication
-    import agent_civilization.runtime
-    import agent_civilization.utils
-    assert agent_civilization.communication
-    assert agent_civilization.runtime
-    assert agent_civilization.utils
 
-
-# -------------------------------------------------- R-104b fixes (strict failure, API-level)
 def test_process_data_failure_is_strict_no_empty_answer_claim(monkeypatch):
     """R-104b: LLM failure must be visibly a failure — the pre-R-104 bug returned
     status='processed' with an empty answer; the strict test rejects exactly that."""
-    from agent_civilization.core import llm as llm_mod
+    from agent_civilization.core.llm import LLMClient
 
-    async def failing_complete(system, prompt, max_tokens=1024):
+    async def failing_complete(self, system, prompt, max_tokens=1024):
         return {"ok": False, "content": "", "error": "OPENROUTER_API_KEY is not configured.",
                 "model": "meta-llama/llama-3.3-70b-instruct:free"}
 
@@ -89,22 +79,29 @@ def test_process_data_failure_is_strict_no_empty_answer_claim(monkeypatch):
         assert out["model"]                           # the model attempted
         return out
 
-    orig = llm_mod.LLMClient.complete
-    llm_mod.LLMClient.complete = failing_complete
+    orig = LLMClient.complete
+    LLMClient.complete = failing_complete
     try:
         asyncio.run(go())
     finally:
-        llm_mod.LLMClient.complete = orig
+        LLMClient.complete = orig
 
 
 def test_process_data_success_counts_and_failure_does_not(monkeypatch):
-    """R-104b: _execute_work must only increment tasks_completed on a real success."""
+    """R-104b: _execute_work must only increment tasks_completed on a real success —
+    deterministic via a test double (not the environment's missing LLM key)."""
+    from agent_civilization.core.llm import LLMClient
+
+    async def failing_complete(self, system, prompt, max_tokens=1024):
+        return {"ok": False, "content": "", "error": "no key", "model": "m"}
+
+    monkeypatch.setattr(LLMClient, "complete", failing_complete)
+
     async def go():
         hub = CommunicationHub()
         a = DataWorkerAgent("dw", hub, worker_id=1)
         await hub.register_agent(a)
         a.start()
-        # no LLM in the test env -> _process_data returns ok=False
         a.add_work({"task_id": "t1", "data": {"input": "x"}, "original_sender": "hub"})
         await asyncio.sleep(0.2)
         assert a.performance_metrics["tasks_failed"] == 1
@@ -252,8 +249,15 @@ def test_api_level_task_with_real_data_field_reaches_llm(monkeypatch):
 
 
 def test_task_complete_event_means_attempt_finished_not_success(monkeypatch):
-    """R-104c: the consumer contract — `task_complete` signals the attempt finished;
-    the RESULT carries ok=False on failure (the consumer reads result.ok, not the action)."""
+    """R-104c: `task_complete` signals the attempt finished; the RESULT carries
+    ok=False on failure — deterministic via a test double."""
+    from agent_civilization.core.llm import LLMClient
+
+    async def failing_complete(self, system, prompt, max_tokens=1024):
+        return {"ok": False, "content": "", "error": "no key", "model": "m"}
+
+    monkeypatch.setattr(LLMClient, "complete", failing_complete)
+
     async def go():
         hub = CommunicationHub()
         a = DataWorkerAgent("dw", hub, worker_id=1)
@@ -276,3 +280,97 @@ def test_task_complete_event_means_attempt_finished_not_success(monkeypatch):
         await a.shutdown_async()
 
     asyncio.run(go())
+
+
+# --------------------------------------------- R-104c2 (blocking review round 3)
+def test_data_field_value_reaches_llm_and_changing_data_changes_the_input(monkeypatch):
+    """R-104c2: a value that appears ONLY in `data` (not in the prompt) must reach
+    the LLM — and changing the data with the same prompt must change what is sent."""
+    from agent_civilization.core.agents import real_dispatcher as rdc
+
+    received = []
+
+    async def spy_process_text(payload):
+        received.append(payload)
+        return {"ok": False, "error": "no key", "model": "m"}
+
+    from agent_civilization.agents.executors import data_worker as dw_mod
+    orig = dw_mod.process_text
+    dw_mod.process_text = spy_process_text
+    try:
+        base = {"prompt": "clean and aggregate the sales notes",
+                "data": {"notes": ["alpha-only-in-data"]}}
+        asyncio.run(rdc._data_processor(base))
+        assert received, "the LLM path was never invoked"
+        assert "alpha-only-in-data" in received[0]      # data value reached the LLM
+
+        # same prompt, different data → the payload changes
+        received.clear()
+        other = {"prompt": "clean and aggregate the sales notes",
+                 "data": {"notes": ["beta-only-in-data"]}}
+        asyncio.run(rdc._data_processor(other))
+        assert "beta-only-in-data" in received[0]
+        assert received[0] != base["prompt"] + ""  # payload is not the bare prompt
+    finally:
+        dw_mod.process_text = orig
+
+
+def test_task_dispatcher_consumer_counts_completion_not_success(monkeypatch):
+    """R-104c2: the REAL consumer of task_complete is TaskDispatcherAgent._handle_message
+    (it decrements load on task_complete regardless of result.ok). Verified against
+    the actual consumer code — the contract is 'attempt finished', not 'success'."""
+    from agent_civilization.agents.infrastructure.task_dispatcher import TaskDispatcherAgent
+    from agent_civilization.core.agents.base_agent import Message
+
+    async def go():
+        hub = CommunicationHub()
+        d = TaskDispatcherAgent("dispatch", hub)
+        d.agent_load["dw"] = 3
+        # a task_complete whose result FAILED must still decrement the load —
+        # call the consumer's own handler directly (its contract, not the hub's)
+        msg = Message(sender="dw", recipient="dispatch",
+                      content={"action": "task_complete", "task_id": "t1",
+                               "result": {"ok": False, "error": "llm down"}})
+        await d._handle_message(msg)
+        assert d.agent_load["dw"] == 2  # decremented: the attempt finished
+        # and the consumer stores no success claim anywhere — it only tracks load
+        assert not hasattr(d, "completed_tasks") or not getattr(d, "completed_tasks")
+
+    asyncio.run(go())
+
+
+def test_three_packages_carry_live_tested_responsibilities():
+    """R-104c2: the three packages must carry live, TESTED responsibilities — not
+    formal imports. Each re-export is the API an actually-running agent class
+    uses; the same objects are what the other tests in this file exercise."""
+    import agent_civilization.communication as comm
+    import agent_civilization.runtime as runtime
+    import agent_civilization.utils as utils
+
+    # communication: the hub every registered agent actually talks through
+    assert comm.CommunicationHub is not None and callable(comm.CommunicationHub)
+    hub = comm.CommunicationHub()
+    assert comm.DeliveryResult is not None
+
+    # runtime + utils: the base class and message every agent loop is built on
+    assert runtime.BaseAgent is utils.BaseAgent
+    assert runtime.Message is utils.Message
+    assert issubclass(DataWorkerAgent, runtime.BaseAgent)
+
+    # and the workqueue loop really runs through these types end-to-end:
+    # an agent built on them processes a task through the hub's message path
+    async def go():
+        a = DataWorkerAgent("dw", hub, worker_id=1)
+        await hub.register_agent(a)
+        a.start()
+        a.add_work({"task_id": "t1", "data": {"input": "x"}, "original_sender": "hub"})
+        for _ in range(50):
+            await asyncio.sleep(0.02)
+            if a.performance_metrics["tasks_completed"] + a.performance_metrics["tasks_failed"]:
+                break
+        done = a.performance_metrics["tasks_completed"] + a.performance_metrics["tasks_failed"]
+        await a.shutdown_async()
+        return done
+
+    assert asyncio.run(go()) >= 1  # the loop processed a task through these types
+

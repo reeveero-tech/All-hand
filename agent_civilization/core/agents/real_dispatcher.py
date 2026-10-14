@@ -250,8 +250,16 @@ async def _data_processor(work: Dict[str, Any]) -> Dict[str, Any]:
         text = _extract_text(work)
         if not text.strip():
             return {"ok": False, "error": "no numeric data and no text to process"}
+        # R-104c2: send BOTH the prompt and the data to the LLM path — the prompt
+        # alone was sent before, silently dropping data dict/list contents.
+        data = work.get("data")
+        payload = text
+        if data is not None:
+            payload = text + "\n\n=== data ===\n" + (
+                data if isinstance(data, str)
+                else json.dumps(data, ensure_ascii=False, default=str))
         from agent_civilization.agents.executors.data_worker import process_text
-        out = await process_text(text)
+        out = await process_text(payload)
         if not out.get("ok"):
             return {"ok": False,
                     "error": f"llm-backed data processing unavailable: {out.get('error')}",
@@ -383,8 +391,11 @@ def _is_transient_search_error(exc: Exception) -> bool:
         # handshake-timeout flakes seen in raw/32/33/34/48. Protocol errors
         # (WRONG_VERSION_NUMBER etc.) are hard.
         msg = str(exc).lower()
-        return ("unexpected_eof" in msg or "handshake" in msg
-                or "connection reset" in msg or isinstance(exc, TimeoutError))
+        # Only the specific transport flakes seen in the wild (raw/32/33/34/48):
+        # an unexpected EOF mid-stream, or a transport-level connection reset.
+        # A handshake FAILURE (TLS alert, e.g. SSLV3_ALERT_HANDSHAKE_FAILURE) is a
+        # real TLS problem — hard. A handshake TIMEOUT is a TimeoutError (handled above).
+        return "unexpected_eof" in msg or "connection reset" in msg
     if isinstance(exc, OSError) and exc.errno in (104, 53):
         return True
     return False
