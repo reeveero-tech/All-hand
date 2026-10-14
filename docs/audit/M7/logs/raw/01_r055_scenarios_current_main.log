@@ -1,0 +1,137 @@
+# R-055 scenarios re-run on CURRENT main (post-R-105) — deep inspection
+# started 2026-10-14T06:18:48.166455+00:00
+# repo: /home/user/workspace/All-hand
+# git head: e24c22b1a2a646ba14a966ee63b8b4c11d7f9b72
+# python 3.14.3
+
+$ pytest tests/test_e2e_scenarios.py (the R-055 scenarios)
+$ python3 -m pytest tests/test_e2e_scenarios.py -v --tb=long
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+tests/test_e2e_scenarios.py::test_scenario_1_code_review_test_pipeline PASSED [ 14%]
+tests/test_e2e_scenarios.py::test_scenario_2_analysis_pipeline PASSED    [ 28%]
+tests/test_e2e_scenarios.py::test_scenario_3_architectural_build_pipeline PASSED [ 42%]
+tests/test_e2e_scenarios.py::test_scenario_stages_use_different_agents PASSED [ 57%]
+tests/test_e2e_scenarios.py::test_scenario_report_contains_timing_and_outputs PASSED [ 71%]
+tests/test_e2e_scenarios.py::test_scenario_full_pipeline_stores_result_in_task_store PASSED [ 85%]
+tests/test_e2e_scenarios.py::test_validator_rejects_invalid_json_string PASSED [100%]
+
+============================== 7 passed in 0.48s ===============================
+
+
+$ pytest tests/ -m code_exec (R-055 with real code execution)
+$ python3 -m pytest tests/ -m code_exec -v
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 391 items / 363 deselected / 28 selected
+
+tests/test_civilization_scale.py::test_agents_execute_real_dispatch PASSED [  3%]
+tests/test_e2e_scenarios.py::test_scenario_1_code_review_test_pipeline PASSED [  7%]
+tests/test_e2e_scenarios.py::test_scenario_3_architectural_build_pipeline PASSED [ 10%]
+tests/test_r100_runtime_safety.py::test_sandbox_child_gets_no_server_environment PASSED [ 14%]
+tests/test_r100_runtime_safety.py::test_sandbox_child_cannot_read_server_startup_environment PASSED [ 17%]
+tests/test_r100_runtime_safety.py::test_sandbox_reports_signal_kill_honestly PASSED [ 21%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[analyst] PASSED [ 25%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[api_integrator] PASSED [ 28%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[architect] PASSED [ 32%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[builder] PASSED [ 35%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[code_generator] PASSED [ 39%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[communicator] PASSED [ 42%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[data_processor] PASSED [ 46%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[db_manager] PASSED [ 50%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[designer] PASSED [ 53%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[educator] PASSED [ 57%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[modifier] PASSED [ 60%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[monitor] PASSED [ 64%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[network_client] PASSED [ 67%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[researcher] PASSED [ 71%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[reviewer] PASSED [ 75%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[self_developer] PASSED [ 78%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[strategist] PASSED [ 82%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[surgeon] PASSED [ 85%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[test_runner] PASSED [ 89%]
+tests/test_routing_pipeline.py::test_real_specialist_agent_per_specialization[validator] PASSED [ 92%]
+tests/test_specialist_runtime.py::test_every_specialization_executes_through_specialist_class PASSED [ 96%]
+tests/test_specialist_runtime.py::test_pipeline_runs_on_specialist_civilization PASSED [100%]
+
+====================== 28 passed, 363 deselected in 1.78s ======================
+
+
+$ pytest tests/test_r103_memory_learning.py (R-103 on current main)
+$ python3 -m pytest tests/test_r103_memory_learning.py -v
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 17 items
+
+tests/test_r103_memory_learning.py::test_later_api_task_recalls_the_earlier_similar_one PASSED [  5%]
+tests/test_r103_memory_learning.py::test_unrelated_or_other_specialization_tasks_are_not_recalled PASSED [ 11%]
+tests/test_r103_memory_learning.py::test_failures_are_remembered_too PASSED [ 17%]
+tests/test_r103_memory_learning.py::test_learning_prior_reflects_earlier_outcomes PASSED [ 23%]
+tests/test_r103_memory_learning.py::test_status_reports_experience PASSED [ 29%]
+tests/test_r103_memory_learning.py::test_researcher_falls_back_to_a_remembered_result_when_live_search_fails PASSED [ 35%]
+tests/test_r103_memory_learning.py::test_researcher_without_a_close_memory_still_fails_honestly PASSED [ 41%]
+tests/test_r103_memory_learning.py::test_only_researcher_gets_a_fallback PASSED [ 47%]
+tests/test_r103_memory_learning.py::test_specialists_implementation_has_the_same_experience PASSED [ 52%]
+tests/test_r103_memory_learning.py::test_memory_and_learning_survive_a_restart_through_the_file PASSED [ 58%]
+tests/test_r103_memory_learning.py::test_memory_is_bounded PASSED        [ 64%]
+tests/test_r103_memory_learning.py::test_disabled_layer_leaves_no_trace PASSED [ 70%]
+tests/test_r103_memory_learning.py::test_a_broken_memory_never_breaks_the_task PASSED [ 76%]
+tests/test_r103_memory_learning.py::test_clearing_memory_needs_a_configured_key PASSED [ 82%]
+tests/test_r103_memory_learning.py::test_recall_finds_a_task_by_its_prompt PASSED [ 88%]
+tests/test_r103_memory_learning.py::test_load_restores_types PASSED      [ 94%]
+tests/test_r103_memory_learning.py::test_ids_do_not_depend_only_on_the_clock PASSED [100%]
+
+============================== 17 passed in 0.52s ==============================
+
+
+$ pytest tests/test_specialist_runtime.py (R-032/R-105)
+$ python3 -m pytest tests/test_specialist_runtime.py -v
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 10 items
+
+tests/test_specialist_runtime.py::test_default_impl_is_unchanged PASSED  [ 10%]
+tests/test_specialist_runtime.py::test_unknown_impl_fails_loudly PASSED  [ 20%]
+tests/test_specialist_runtime.py::test_env_selects_specialists PASSED    [ 30%]
+tests/test_specialist_runtime.py::test_target_count_uses_all_1000_specialist_classes PASSED [ 40%]
+tests/test_specialist_runtime.py::test_every_specialization_executes_through_specialist_class PASSED [ 50%]
+tests/test_specialist_runtime.py::test_base_agent_execute_propagates_failure PASSED [ 60%]
+tests/test_specialist_runtime.py::test_pipeline_runs_on_specialist_civilization PASSED [ 70%]
+tests/test_specialist_runtime.py::test_specialists_exchange_messages_via_shared_hub PASSED [ 80%]
+tests/test_specialist_runtime.py::test_live_server_routes_with_specialists PASSED [ 90%]
+tests/test_specialist_runtime.py::test_r105_specialists_impl_still_builds_1000 PASSED [100%]
+
+============================== 10 passed in 1.56s ==============================
+
+
+# finished 2026-10-14T06:19:00.038922+00:00
