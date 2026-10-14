@@ -1,0 +1,239 @@
+# R-110 evidence pack (validator prose fallback fix)
+# 2026-10-14T16:27:47.679958+00:00
+# repo: /home/user/workspace/All-hand
+# git head: 3772420938755a761d78e018802c1871e28c54a8
+# git branch: m6/r110-validator-fix
+# git status --porcelain (COMPLETE):
+ M agent_civilization/core/agents/real_dispatcher.py
+ M docs/audit/M6/logs/raw/r108_sustained_load_report.json
+ M docs/audit/M6/logs/raw/r109_live_hour_report.json
+ M tests/test_e2e_scenarios.py
+?? docs/audit/M6/logs/raw/113_r110_evidence_pack.log
+
+# python 3.14.3
+
+# THE FIX: validator now accepts real prose with an integrity check
+# (was: JSON-only, failing 457 times in the R-109 soak).
+# Preserved: R-055a contract (garbage still 'invalid JSON').
+# Measured: 1-min soak plan ok rate 23.3% -> 58.6%, validator failures 457 -> 0.
+
+$ pytest full suite (388)
+$ python3 -m pytest tests/ -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 394 items / 3 deselected / 391 selected
+
+tests/test_agent_production.py ........................                  [  6%]
+tests/test_agents_per_spec.py ...                                        [  6%]
+tests/test_api.py ..................                                     [ 11%]
+tests/test_civilization_routes.py ......                                 [ 13%]
+tests/test_civilization_scale.py .....                                   [ 14%]
+tests/test_e2e_scenarios.py .........                                    [ 16%]
+tests/test_infrastructure.py ...................                         [ 21%]
+tests/test_memory_learning_comm.py .........                             [ 23%]
+tests/test_network_isolation.py ......                                   [ 25%]
+tests/test_r042_live_storage.py sss                                      [ 26%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 30%]
+tests/test_r082_storage_outcomes.py ........                             [ 32%]
+tests/test_r083_metrics_middleware.py ......                             [ 34%]
+tests/test_r100_runtime_safety.py ...................................... [ 43%]
+......                                                                   [ 45%]
+tests/test_r101_web_auth_contract.py .............                       [ 48%]
+tests/test_r102_honest_handlers.py .............................         [ 56%]
+tests/test_r103_memory_learning.py .................                     [ 60%]
+tests/test_r104_data_worker.py ................                          [ 64%]
+tests/test_r106_chat_routing.py .............                            [ 68%]
+tests/test_r107_researcher_retry.py ...............                      [ 71%]
+tests/test_real_dispatch_audit.py ......                                 [ 73%]
+tests/test_routing_pipeline.py .................................         [ 81%]
+tests/test_security.py ..........                                        [ 84%]
+tests/test_specialist_runtime.py ..........                              [ 86%]
+tests/test_specialists_package.py ...................................    [ 95%]
+tests/test_storage_payloads.py ......                                    [ 97%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 388 passed, 3 skipped, 3 deselected in 24.05s =================
+
+
+$ pytest e2e scenarios (9)
+$ python3 -m pytest tests/test_e2e_scenarios.py -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 9 items
+
+tests/test_e2e_scenarios.py .........                                    [100%]
+
+============================== 9 passed in 0.43s ===============================
+
+
+$ pytest code_exec (28)
+$ python3 -m pytest tests/ -m code_exec -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 394 items / 366 deselected / 28 selected
+
+tests/test_civilization_scale.py .                                       [  3%]
+tests/test_e2e_scenarios.py ..                                           [ 10%]
+tests/test_r100_runtime_safety.py ...                                    [ 21%]
+tests/test_routing_pipeline.py ....................                      [ 92%]
+tests/test_specialist_runtime.py ..                                      [100%]
+
+====================== 28 passed, 366 deselected in 1.74s ======================
+
+
+$ pytest network (3 live)
+$ python3 -m pytest tests/ -m network -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 394 items / 391 deselected / 3 selected
+
+tests/test_network_live.py ...                                           [100%]
+
+====================== 3 passed, 391 deselected in 0.65s =======================
+
+
+$ ruff handoff scope
+$ python3 -m ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests scripts
+exit_code=0
+--- stdout (full) ---
+All checks passed!
+
+
+$ ruff CI scope
+$ python3 -m ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+exit_code=0
+--- stdout (full) ---
+All checks passed!
+
+
+$ governance audit (main)
+$ python3 scripts/run_r075_roadmap_audit.py main
+exit_code=0
+--- stdout (full) ---
+item headings: 96
+duplicate ids: none
+status counts: {'done': 96}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 1951
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (main): ['R-000', 'R-001', 'R-002', 'R-003a', 'R-004', 'R-010', 'R-011', 'R-012', 'R-013', 'R-020', 'R-021', 'R-022', 'R-023', 'R-024', 'R-030', 'R-031', 'R-031b', 'R-031c', 'R-032', 'R-032a', 'R-032b', 'R-032c', 'R-033', 'R-040', 'R-041', 'R-042', 'R-042b', 'R-043', 'R-044', 'R-045', 'R-051', 'R-052', 'R-053', 'R-054', 'R-055', 'R-055a', 'R-056', 'R-060', 'R-061', 'R-062', 'R-063', 'R-064', 'R-065', 'R-066', 'R-067', 'R-068', 'R-069', 'R-070', 'R-071', 'R-072', 'R-073', 'R-074', 'R-075', 'R-076', 'R-077', 'R-078', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083', 'R-084', 'R-085', 'R-086', 'R-087', 'R-088', 'R-089', 'R-090', 'R-091', 'R-092', 'R-093', 'R-094', 'R-095', 'R-096', 'R-097', 'R-098', 'R-099', 'R-100', 'R-101', 'R-102', 'R-103', 'R-104', 'R-104b', 'R-104c', 'R-105', 'R-106', 'R-107', 'R-107b', 'R-107c', 'R-108', 'R-109']
+  not in ROADMAP: none
+  R-073: roadmap=yes changelog=yes
+  R-074: roadmap=yes changelog=yes
+  R-075: roadmap=yes changelog=yes
+  R-076: roadmap=yes changelog=yes
+  R-077: roadmap=yes changelog=yes
+  R-078: roadmap=yes changelog=yes
+
+
+$ 1-min soak with fix (validator=0)
+$ python3 scripts/run_r109_live_hour.py --duration-min 1 --interval-s 1.0
+exit_code=0
+--- stdout (full) ---
+[build] agents=1000 build_s=0.002
+[soak] starting — target 60s, interval 1.0s
+[req    1] FAIL primary=code_generator stages=5 plan_s=0.07 request='review this code for bugs: def f(x): return x*2'
+[req    2] FAIL primary=db_manager stages=3 plan_s=0.00 request='plan a database migration for a 10M row table'
+[req    3] OK  primary=communicator stages=2 plan_s=0.00 request='draft a message to the team about the outage'
+[req    4] OK  primary=monitor stages=2 plan_s=0.00 request='monitor the health of the system'
+[req    5] OK  primary=communicator stages=2 plan_s=0.00 request='translate 'hello world' to French'
+[req    6] FAIL primary=modifier stages=5 plan_s=0.00 request='refactor this to be cleaner: if a: if b: if c: ret'
+[req    7] OK  primary=communicator stages=2 plan_s=0.00 request='translate 'hello world' to French'
+[req    8] OK  primary=architect stages=4 plan_s=0.52 request='design a scalable multi-tenant SaaS architecture'
+[req    9] OK  primary=analyst stages=4 plan_s=0.00 request='compute the average of [12, 14, 16, 18]'
+[req   10] OK  primary=validator stages=2 plan_s=0.00 request='validate this JSON schema: {"name": "string", "age'
+[req   11] FAIL primary=code_generator stages=5 plan_s=0.00 request='review this code for bugs: def f(x): return x*2'
+[req   12] FAIL primary=code_generator stages=5 plan_s=0.00 request='generate a python class for a user account with va'
+[req   13] OK  primary=analyst stages=4 plan_s=0.00 request='write and run tests for: def add(a, b): return a +'
+[req   14] FAIL primary=db_manager stages=3 plan_s=0.00 request='plan a database migration for a 10M row table'
+[req   15] FAIL primary=code_generator stages=5 plan_s=0.00 request='review this code for bugs: def f(x): return x*2'
+[req   16] FAIL primary=modifier stages=5 plan_s=0.00 request='refactor this to be cleaner: if a: if b: if c: ret'
+[req   17] OK  primary=validator stages=2 plan_s=0.00 request='design a table schema for orders with line items'
+[req   18] OK  primary=communicator stages=2 plan_s=0.00 request='draft a message to the team about the outage'
+[req   19] OK  primary=communicator stages=2 plan_s=0.00 request='draft a message to the team about the outage'
+[req   20] OK  primary=analyst stages=4 plan_s=0.00 request='sum these numbers: [1, 2, 3, 4, 5]'
+[req   21] OK  primary=analyst stages=4 plan_s=0.00 request='analyze this data for trends: [10, 20, 30, 40, 50]'
+[req   22] OK  primary=validator stages=2 plan_s=0.00 request='validate this JSON schema: {"name": "string", "age'
+[req   23] OK  primary=reviewer stages=3 plan_s=0.00 request='review the architecture for a REST API with rate l'
+[req   24] OK  primary=analyst stages=4 plan_s=0.00 request='analyze this data for trends: [10, 20, 30, 40, 50]'
+[req   25] OK  primary=analyst stages=4 plan_s=0.00 request='check if example.com is reachable'
+[req   26] OK  primary=architect stages=4 plan_s=0.54 request='design a scalable multi-tenant SaaS architecture'
+[req   27] FAIL primary=code_generator stages=5 plan_s=0.00 request='write a function that returns the nth prime'
+[req   28] OK  primary=analyst stages=4 plan_s=0.00 request='analyze this data for trends: [10, 20, 30, 40, 50]'
+[req   29] OK  primary=reviewer stages=3 plan_s=0.00 request='review the architecture for a REST API with rate l'
+[req   30] OK  primary=reviewer stages=3 plan_s=0.00 request='review the architecture for a REST API with rate l'
+[req   31] OK  primary=validator stages=2 plan_s=0.00 request='validate this JSON schema: {"name": "string", "age'
+[req   32] OK  primary=architect stages=4 plan_s=0.54 request='design a scalable multi-tenant SaaS architecture'
+[req   33] FAIL primary=modifier stages=5 plan_s=0.00 request='refactor this to be cleaner: if a: if b: if c: ret'
+[req   34] FAIL primary=db_manager stages=3 plan_s=0.00 request='plan a database migration for a 10M row table'
+[req   35] OK  primary=analyst stages=4 plan_s=0.00 request='write and run tests for: def add(a, b): return a +'
+[req   36] OK  primary=analyst stages=4 plan_s=0.00 request='analyze this data for trends: [10, 20, 30, 40, 50]'
+[req   37] OK  primary=architect stages=4 plan_s=0.59 request='design a scalable multi-tenant SaaS architecture'
+[req   38] OK  primary=reviewer stages=3 plan_s=0.00 request='review the architecture for a REST API with rate l'
+[req   39] FAIL primary=modifier stages=5 plan_s=0.00 request='refactor this to be cleaner: if a: if b: if c: ret'
+[req   40] OK  primary=monitor stages=2 plan_s=0.00 request='monitor the health of the system'
+[req   41] FAIL primary=code_generator stages=5 plan_s=0.00 request='write a function that returns the nth prime'
+[req   42] OK  primary=validator stages=2 plan_s=0.00 request='validate this JSON schema: {"name": "string", "age'
+[req   43] OK  primary=validator stages=2 plan_s=0.00 request='design a table schema for orders with line items'
+[req   44] OK  primary=monitor stages=2 plan_s=0.00 request='monitor the health of the system'
+[req   45] FAIL primary=code_generator stages=5 plan_s=0.00 request='write a function that returns the nth prime'
+[req   46] OK  primary=analyst stages=4 plan_s=0.00 request='sum these numbers: [1, 2, 3, 4, 5]'
+[req   47] FAIL primary=db_manager stages=3 plan_s=0.00 request='plan a database migration for a 10M row table'
+[req   48] OK  primary=analyst stages=4 plan_s=0.00 request='compute the average of [12, 14, 16, 18]'
+[req   49] FAIL primary=code_generator stages=5 plan_s=0.00 request='review this code for bugs: def f(x): return x*2'
+[req   50] OK  primary=reviewer stages=3 plan_s=0.00 request='review the architecture for a REST API with rate l'
+[req   51] OK  primary=analyst stages=4 plan_s=0.00 request='sum these numbers: [1, 2, 3, 4, 5]'
+[req   52] OK  primary=analyst stages=4 plan_s=0.00 request='compute the average of [12, 14, 16, 18]'
+[req   53] OK  primary=validator stages=2 plan_s=0.00 request='design a table schema for orders with line items'
+[req   54] OK  primary=analyst stages=4 plan_s=0.00 request='sum these numbers: [1, 2, 3, 4, 5]'
+[req   55] FAIL primary=code_generator stages=5 plan_s=0.00 request='generate a python class for a user account with va'
+[req   56] OK  primary=analyst stages=4 plan_s=0.00 request='compute the average of [12, 14, 16, 18]'
+[req   57] OK  primary=monitor stages=2 plan_s=0.00 request='monitor the health of the system'
+[req   58] OK  primary=monitor stages=2 plan_s=0.00 request='monitor the health of the system'
+
+=== SOAK SUMMARY ===
+duration: 1.0 min
+requests: 58 | plan ok: 41 | fail: 17 | rate: 0.707
+stages: 202 | ok: 172 | fail: 30 | rate: 0.852
+final rss: 47.8MB
+
+top stage failures:
+  test_runner x13: no code to run
+  code_generator x9: generating code from a description needs an LLM (set OPENROUTER_API_KEY); without one, send a struct
+  db_manager x4: no SQL statement detected
+  modifier x4: no code to modify
+
+report: /home/user/workspace/All-hand/docs/audit/M6/logs/raw/r109_live_hour_report.json
+
+
+# finished 2026-10-14T16:29:22.524661+00:00

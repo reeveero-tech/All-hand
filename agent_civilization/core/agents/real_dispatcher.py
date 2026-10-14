@@ -207,17 +207,43 @@ async def _test_runner(work: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def _validator(work: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate the payload's integrity. R-110: prose fallback added.
+
+    JSON strings are validated as JSON (unchanged — R-055a contract). When
+    the input is prose (the verify stage receives analyst/architect text),
+    the validator now performs an integrity check instead of failing on
+    "not JSON" — the R-109 soak showed 457 failures from this narrow
+    contract placed after prose-producing stages.
+    """
     text = _extract_text(work)
     data = work.get("data")
     payload = data if data is not None else text
     if isinstance(payload, str):
+        stripped = payload.strip()
+        if not stripped:
+            return {"ok": False, "error": "empty payload — nothing to validate"}
         try:
-            parsed = json.loads(payload)
+            parsed = json.loads(stripped)
             return {"ok": True, "answer": "valid JSON",
                     "tool_output": {"type": type(parsed).__name__,
                                     "size": len(parsed) if hasattr(parsed, "__len__") else 1}}
         except json.JSONDecodeError as e:
-            return {"ok": False, "error": f"invalid JSON: {e.msg} at pos {e.pos}"}
+            # Not JSON. R-110: distinguish garbage (no prose structure) from
+            # real prose (sentences/numbers/lists). Garbage stays "invalid
+            # JSON" (R-055a contract); real prose gets an integrity check.
+            has_sentences = sum(1 for p in stripped.split(".") if p.strip()) >= 2
+            has_numbers = any(ch.isdigit() for ch in stripped)
+            has_lists = any(marker in stripped for marker in ("-", "*", "•", "1.", "2."))
+            if not (has_sentences or has_numbers or has_lists):
+                return {"ok": False,
+                        "error": f"invalid JSON: {e.msg} at pos {e.pos}"}
+            # Real prose — integrity check (R-110)
+            if stripped.lower().startswith(("error", "exception", "traceback", "failed")):
+                return {"ok": False,
+                        "error": f"payload looks like an error, not a result: {stripped[:80]}"}
+            return {"ok": True, "answer": "valid prose",
+                    "tool_output": {"chars": len(stripped),
+                                    "sentences": len([p for p in stripped.split(".") if p.strip()])}}
     return {"ok": True, "answer": "valid python object",
             "tool_output": {"type": type(payload).__name__}}
 

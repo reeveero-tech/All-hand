@@ -1,10 +1,10 @@
 {
- "started_utc": "2026-10-14T15:25:32.892404+00:00",
+ "started_utc": "2026-10-14T16:31:35.498935+00:00",
  "impl": "real",
  "duration_s_target": 3,
  "wave_size": 10,
  "min_ok_rate": 1.0,
- "git_head": "e46cb9dc739d21d15fc97b97b445d6e15d987e09",
+ "git_head": "9a4b33fb6f887115899d0597ad716d9750f69b6d",
  "waves": [
   {
    "wave": 1,
@@ -12,10 +12,10 @@
    "ok": 10,
    "fail": 0,
    "ok_rate": 1.0,
-   "wave_s": 0.006,
+   "wave_s": 0.008,
    "cum_ok": 10,
    "cum_fail": 0,
-   "maxrss_mb": 247.1
+   "maxrss_mb": 247.2
   },
   {
    "wave": 2,
@@ -26,7 +26,7 @@
    "wave_s": 0.008,
    "cum_ok": 20,
    "cum_fail": 0,
-   "maxrss_mb": 247.1
+   "maxrss_mb": 247.2
   },
   {
    "wave": 3,
@@ -37,7 +37,7 @@
    "wave_s": 0.007,
    "cum_ok": 30,
    "cum_fail": 0,
-   "maxrss_mb": 247.1
+   "maxrss_mb": 247.2
   },
   {
    "wave": 4,
@@ -45,10 +45,10 @@
    "ok": 10,
    "fail": 0,
    "ok_rate": 1.0,
-   "wave_s": 0.008,
+   "wave_s": 0.007,
    "cum_ok": 40,
    "cum_fail": 0,
-   "maxrss_mb": 247.1
+   "maxrss_mb": 247.2
   },
   {
    "wave": 5,
@@ -59,7 +59,7 @@
    "wave_s": 0.007,
    "cum_ok": 50,
    "cum_fail": 0,
-   "maxrss_mb": 247.1
+   "maxrss_mb": 247.2
   },
   {
    "wave": 6,
@@ -67,10 +67,10 @@
    "ok": 10,
    "fail": 0,
    "ok_rate": 1.0,
-   "wave_s": 0.008,
+   "wave_s": 0.007,
    "cum_ok": 60,
    "cum_fail": 0,
-   "maxrss_mb": 247.1
+   "maxrss_mb": 247.2
   }
  ],
  "build_s": 0.001,
@@ -80,5 +80,5 @@
  "total_fail": 0,
  "total_tasks": 60,
  "duration_s_actual": 3,
- "maxrss_mb_final": 247.1
+ "maxrss_mb_final": 247.2
 }
