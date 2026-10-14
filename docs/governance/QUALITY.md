@@ -186,6 +186,11 @@
 ## R-107 — إعادة محاولة `researcher` للأخطاء العابرة فقط (D-048)
 
 ### R-104b/R-107b — إصلاح نواقص (دفعات تصحيح)
+
+### R-104c/R-107c — جولة تصحيح ثانية
+- `test_r107_researcher_retry.py` (+3): `WRONG_VERSION_NUMBER` صلب لا يُعاد؛ `URLError` مجهول السبب صلب؛ نقل يعلق أطول من الميزانية يعيد المعالج خلالها (زمن مقاس < 1.3ث بميزانية 0.7ث).
+- `test_r104_data_worker.py` (+4): التوقيع الصحيح (`LLMClient.complete(self, system, prompt)`) مع تحقق النص المستلم؛ نجاح حتمي بديل اختباري مع فحص العدادات؛ مهمة API بـ`prompt` + `data` فعلية (نصية) تصل LLM فعلاً؛ عقد `task_complete` موثق (النتيجة تحمل `ok`).
+- العدد: 371 + 3 + 3 (`docs/audit/M6/logs/raw/102_r104c_r107c_evidence_pack.log` — خام كامل بلا اقتطاع وبلا `--silent`).
 - `test_r104_data_worker.py` (+3، صارمة): فشل LLM يظهر `ok=False` + `status=failed` + `error` حقيقي (لا يقبل عيب ما قبل R-104)؛ `_execute_work` لا يزيد `tasks_completed` إلا عند نجاح؛ عبر TestClient مهمة نصية تصل `process_text` فعلاً وفشلها في النتيجة المخزنة.
 - `test_r107_researcher_retry.py` (+4): خطأ شهادة لا يُعاد؛ HTTP 404 لا يُعاد (صريح)؛ ميزانية 0.52ث تمنع المحاولة الثانية (عدد فعلي 1)؛ العدد يعكس المحاولات المنفذة.
 - العدد: 364 + 3 + 3 (`docs/audit/M6/logs/raw/101_r104b_r107b_evidence_pack.log` — خام كامل).

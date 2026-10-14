@@ -205,3 +205,44 @@ def test_attempts_count_reflects_actual_runs(monkeypatch):
     out = asyncio.run(go())
     assert out["ok"] is False
     assert calls["n"] == 2 and "2 attempts" in out["error"]
+
+
+# --------------------------------------------- R-107c (blocking review round 2)
+def test_ssl_protocol_error_is_not_retried():
+    """R-107c: a TLS protocol error (WRONG_VERSION_NUMBER) is hard — only the
+    transport EOF/handshake flakes seen in the wild retry."""
+    import ssl
+    assert rd._is_transient_search_error(
+        ssl.SSLError(1, "[SSL: WRONG_VERSION_NUMBER] wrong version number")) is False
+
+
+def test_unknown_cause_urlerror_is_not_retried():
+    """R-107c: a bare URLError with no reason is NOT transient — no blind retry."""
+    assert rd._is_transient_search_error(urllib.error.URLError("no reason given")) is False
+
+
+def test_handler_returns_within_budget_when_transport_hangs(monkeypatch):
+    """R-107c: a transport that hangs longer than the budget must not make the
+    handler exceed its deadline — the wait is bounded by the remaining budget."""
+    import time as _time
+
+    def hang(req, timeout=8, **kw):
+        _time.sleep(1.0)  # far longer than the 0.3s budget
+        raise urllib.error.URLError(
+            ConnectionResetError(104, "Connection reset by peer"))
+
+    monkeypatch.setattr(safety, "safe_urlopen", hang)
+    # Budget 0.7s: > 0.5 so the first attempt starts; the transport hangs 1.0s,
+    # so the wait is cancelled at ~0.7s (the remaining budget) and the handler
+    # returns without a second attempt.
+    monkeypatch.setattr(rd, "_RESEARCHER_TOTAL_TIMEOUT_S", 0.7)
+
+    async def go():
+        t0 = _time.monotonic()
+        out = await rd._researcher({"prompt": "test"})
+        return _time.monotonic() - t0, out
+
+    elapsed, out = asyncio.run(go())
+    assert out["ok"] is False
+    assert elapsed < 1.3, f"handler took {elapsed:.2f}s with a 0.7s budget"
+    assert "transient, 1 attempts" in out["error"]

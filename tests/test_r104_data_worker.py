@@ -154,3 +154,125 @@ def test_live_api_data_processor_text_only_reaches_process_text(monkeypatch):
             assert "llm-backed data processing unavailable" in res["error"]
     finally:
         dw_mod.process_text = orig
+
+
+# --------------------------------------------- R-104c (blocking review round 2)
+def test_strict_failure_with_correct_signature_and_received_prompt(monkeypatch):
+    """R-104c: monkeypatch with the REAL method signature (self, system, prompt)
+    and verify the prompt the worker actually received."""
+    from agent_civilization.core.llm import LLMClient
+
+    received = {}
+
+    async def failing_complete(self, system, prompt, max_tokens=1024):
+        received["system"], received["prompt"] = system, prompt
+        return {"ok": False, "content": "", "error": "OPENROUTER_API_KEY is not configured.",
+                "model": "meta-llama/llama-3.3-70b-instruct:free"}
+
+    monkeypatch.setattr(LLMClient, "complete", failing_complete)
+
+    async def go():
+        a = DataWorkerAgent("dw", CommunicationHub(), worker_id=1)
+        return await a._process_data({"input": "the exact prompt sent"})
+
+    out = asyncio.run(go())
+    assert out["ok"] is False and out["status"] == "failed"
+    assert received["prompt"] == "the exact prompt sent"   # the real prompt reached the LLM
+    assert "data processing worker" in received["system"]
+
+
+def test_success_is_deterministic_and_counters_increment(monkeypatch):
+    """R-104c: a deterministic success path (not env-dependent) — both counters checked."""
+    from agent_civilization.core.llm import LLMClient
+
+    async def ok_complete(self, system, prompt, max_tokens=1024):
+        return {"ok": True, "content": f"processed: {prompt}", "model": "m"}
+
+    monkeypatch.setattr(LLMClient, "complete", ok_complete)
+
+    async def go():
+        hub = CommunicationHub()
+        a = DataWorkerAgent("dw", hub, worker_id=1)
+        await hub.register_agent(a)
+        a.start()
+        a.add_work({"task_id": "t1", "data": {"input": "real input"}, "original_sender": "hub"})
+        await asyncio.sleep(0.2)
+        return a
+
+    a = asyncio.run(go())
+    assert a.performance_metrics["tasks_completed"] == 1
+    assert a.performance_metrics["tasks_failed"] == 0
+    out_result = asyncio.run(a._process_data({"input": "x"}))
+    assert out_result["ok"] is True and out_result["status"] == "processed"
+    assert out_result["answer"] == "processed: x"
+    asyncio.run(a.shutdown_async())
+
+
+def test_api_level_task_with_real_data_field_reaches_llm(monkeypatch):
+    """R-104c: an API task with a prompt AND real data — the LLM must receive the
+    prompt (the instruction), and the honest failure is stored (nested result)."""
+    from fastapi.testclient import TestClient
+    import server as server_mod
+    from agent_civilization.core import experience
+
+    received = {}
+
+    async def spy_process_text(prompt):
+        received["prompt"] = prompt
+        return {"ok": False, "error": "OPENROUTER_API_KEY is not configured.", "model": "m"}
+
+    from agent_civilization.agents.executors import data_worker as dw_mod
+    orig = dw_mod.process_text
+    dw_mod.process_text = spy_process_text
+    experience.reset()
+    try:
+        with TestClient(server_mod.app) as c:
+            # data is a dict of TEXT values (no numbers anywhere) so the numeric
+            # aggregation has nothing to do and the task goes down the LLM path.
+            r = c.post("/api/tasks", json={
+                "specialization": "data_processor",
+                "prompt": "clean and aggregate the sales notes",
+                "data": {"notes": ["strong sales", "weak sales"], "column": "sales"},
+            })
+            assert r.status_code in (200, 201, 202), r.text
+            tid = r.json()["task_id"]
+            import time as _t
+            for _ in range(400):
+                t = c.get(f"/api/tasks/{tid}").json()
+                if t["status"] in ("completed", "failed"):
+                    break
+                _t.sleep(0.01)
+            # the prompt (instruction) reached the LLM path — not just any string
+            assert "sales" in received["prompt"]
+            res = t["result"]["result"]
+            assert res["ok"] is False
+            assert "llm-backed data processing unavailable" in res["error"]
+    finally:
+        dw_mod.process_text = orig
+
+
+def test_task_complete_event_means_attempt_finished_not_success(monkeypatch):
+    """R-104c: the consumer contract — `task_complete` signals the attempt finished;
+    the RESULT carries ok=False on failure (the consumer reads result.ok, not the action)."""
+    async def go():
+        hub = CommunicationHub()
+        a = DataWorkerAgent("dw", hub, worker_id=1)
+        await hub.register_agent(a)
+        a.start()
+        sent = []
+        orig_send = hub.send_message
+        async def spy(msg):
+            if msg.sender == "dw" and msg.recipient == "hub":
+                sent.append(msg.content)
+            return await orig_send(msg)
+        hub.send_message = spy
+        a.add_work({"task_id": "t1", "data": {"input": "x"}, "original_sender": "hub"})
+        await asyncio.sleep(0.2)
+        assert len(sent) == 1
+        content = sent[0]
+        assert content["action"] == "task_complete"      # attempt finished
+        assert content["result"]["ok"] is False           # but the result says failure
+        assert content["result"]["status"] == "failed"
+        await a.shutdown_async()
+
+    asyncio.run(go())

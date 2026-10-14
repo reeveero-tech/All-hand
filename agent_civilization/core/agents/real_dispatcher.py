@@ -374,14 +374,17 @@ def _is_transient_search_error(exc: Exception) -> bool:
     if isinstance(exc, urllib.error.URLError):
         reason = getattr(exc, "reason", None)
         if reason is None:
-            return True  # bare URLError with no reason — assume transport
+            return False  # unknown cause — NOT transient (no blind retry)
         return isinstance(reason, _TRANSIENT_NET_ERRORS) or _is_transient_search_error(reason)
     if isinstance(exc, ssl.SSLCertVerificationError):
         return False  # certificate problem — hard (retrying won't help)
     if isinstance(exc, ssl.SSLError):
-        # R-107b: narrower than "all SSL" — only the transport-level EOF/handshake
-        # flakes seen in raw/33/34/48. Certificate errors (above) are excluded.
-        return True
+        # R-107c: narrower than "all SSL" — only the transport-level EOF and
+        # handshake-timeout flakes seen in raw/32/33/34/48. Protocol errors
+        # (WRONG_VERSION_NUMBER etc.) are hard.
+        msg = str(exc).lower()
+        return ("unexpected_eof" in msg or "handshake" in msg
+                or "connection reset" in msg or isinstance(exc, TimeoutError))
     if isinstance(exc, OSError) and exc.errno in (104, 53):
         return True
     return False
@@ -419,7 +422,12 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
             with safety.safe_urlopen(req, timeout=socket_timeout) as resp:
                 return json.loads(resp.read().decode("utf-8", errors="replace"))
         try:
-            j = await asyncio.wait_for(_to_thread(fetch), timeout=socket_timeout + 1.0)
+            # The wait is bounded by the REMAINING budget itself (not budget+1s), so the
+            # handler cannot exceed its deadline by more than scheduling latency.
+            # Note (honest limit): cancelling this wait does NOT stop the worker
+            # thread — a stuck DNS resolve or socket read keeps running in the
+            # background until its own timeout; we only stop waiting for it.
+            j = await asyncio.wait_for(_to_thread(fetch), timeout=remaining)
             attempts_made += 1
             abstract = j.get("AbstractText") or j.get("Heading") or ""
             related = [r.get("Text", "") for r in j.get("RelatedTopics", [])[:5]
