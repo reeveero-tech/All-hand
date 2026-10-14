@@ -19,6 +19,8 @@ from agent_civilization.pipeline.orchestrator import execute_plan
 from agent_civilization.routing.auto_router import route
 
 PAYLOADS = {
+    # R-116: educator needs material (>=2 sentences) offline; "demo" is refused honestly.
+    "educator": {"prompt": "Recursion is when a function calls itself. Every recursion needs a base case."},
     "analyst": {"prompt": "avg", "data": [1, 2, 3, 4]},
     "data_processor": {"prompt": "sum", "data": [1, 2, 3, 4]},
     "db_manager": {"prompt": "CREATE TABLE t(x INTEGER)"},
@@ -162,6 +164,8 @@ def test_r105_specialists_impl_still_builds_1000(monkeypatch):
 
     # AND the 1000 tasks actually execute (the historical 1000/1000 acceptance)
     PAYLOADS = {
+        # R-116: educator needs material (>=2 sentences) offline; "demo" is refused honestly.
+        "educator": {"prompt": "Recursion is when a function calls itself. Every recursion needs a base case."},
         "analyst": {"prompt": "avg", "data": [1, 2, 3, 4]},
         "data_processor": {"prompt": "sum", "data": [1, 2, 3, 4]},
         "db_manager": {"prompt": "CREATE TABLE t(x INTEGER)"},

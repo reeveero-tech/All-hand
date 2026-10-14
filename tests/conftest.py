@@ -104,6 +104,20 @@ def _fake_payload(url: str, method: str):
             "RelatedTopics": [{"Text": f"Related topic {i} for {q[:30]}"} for i in range(3)],
         }
         return 200, json.dumps(body).encode(), "application/x-javascript"
+    if host == "html.duckduckgo.com":
+        # R-116: the live web-search endpoint (DuckDuckGo HTML), shape-faithful
+        rows = "".join(
+            f'<div class="result"><a rel="nofollow" class="result__a" '
+            f'href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.org%2Fdoc{i}">Test result {i}</a>'
+            f'<a class="result__snippet" href="#">Deterministic snippet {i}.</a></div>' for i in range(3))
+        return 200, f"<html><body>{rows}</body></html>".encode(), "text/html; charset=utf-8"
+    if host == "api.mymemory.translated.net":
+        # R-116: the live translation service (MyMemory), shape-faithful
+        qs = urllib.parse.parse_qs(parts.query)
+        q, pair = qs.get("q", [""])[0], qs.get("langpair", ["en|fr"])[0]
+        body = {"responseStatus": 200, "responseDetails": "",
+                "responseData": {"translatedText": f"[{pair.split('|')[-1]}] {q}", "match": 1}}
+        return 200, json.dumps(body).encode(), "application/json; charset=utf-8"
     if method == "HEAD":
         return 200, b"", "text/html; charset=utf-8"
     body = {"fake": True, "host": host, "path": parts.path or "/", "note": "R-072 offline transport"}
@@ -203,3 +217,14 @@ def _fresh_experience(monkeypatch):
     yield
     experience.reset()
 
+
+
+@pytest.fixture(autouse=True)
+def _no_keyless_llm_by_default(request, monkeypatch):
+    """R-116: the runtime falls back to a keyless public LLM when no
+    OPENROUTER_API_KEY is set. Offline unit tests must stay deterministic, so
+    that fallback is switched off unless a test is marked ``network`` (live
+    check of the keyless provider) or sets the variable itself."""
+    if not request.node.get_closest_marker("network"):
+        monkeypatch.setenv("AGOS_LLM_KEYLESS", "0")
+    yield

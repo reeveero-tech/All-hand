@@ -28,6 +28,7 @@ Optional environment variables:
 
 ```bash
 OPENROUTER_API_KEY=...   # enables LLM reasoning in addition to deterministic tools
+# without it, a public key-free LLM is used (labelled keyless:<model>; AGOS_LLM_KEYLESS=0 disables) — D-051
 LLM_MODEL=meta-llama/llama-3.3-70b-instruct:free
 SUPABASE_URL=...         # optional persistence (apply docs/sql/001_init.sql first)
 SUPABASE_SERVICE_KEY=... # server-side secret/service_role key (RLS on, no anon policies — D-039)

@@ -43,6 +43,9 @@ def _payloads():
         "code_generator": {"data": "def hello():\n    return 1"},
         "surgeon": {"data": "def f():\n    try:\n        pass\n    except:\n        pass\n"},
         "modifier": {"data": "x = 1   \n"},
+        # R-116: educator needs material (>=2 sentences) offline — "demo" is a
+        # bare word, which the educator now refuses to "explain" by echoing it.
+        "educator": {"prompt": "Recursion is when a function calls itself. Every recursion needs a base case."},
     }
 
 

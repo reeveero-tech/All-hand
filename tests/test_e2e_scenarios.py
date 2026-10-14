@@ -36,7 +36,10 @@ def test_scenario_1_code_review_test_pipeline():
     civ = _make_civ()
     goal = "review and test this code: print(1+1)"
     plan = route(goal)
-    assert plan["primary"] == "code_generator"
+    # R-115: verb-first routing — "review and test" is a review (reviewer),
+    # followed by a real test stage; before, the topic word "code" won.
+    assert plan["primary"] == "reviewer"
+    assert plan["stages"][-1]["specialization"] == "test_runner"
     assert len(plan["stages"]) >= 4, f"خطة قصيرة: {[s['name'] for s in plan['stages']]}"
 
     result = asyncio.run(execute_plan(plan, civ, data="print(1+1)"))

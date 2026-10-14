@@ -51,6 +51,9 @@ def test_agents_execute_real_dispatch():
         "surgeon": {"prompt": "diagnose", "data": "def f( x ):\n    return  x"},
         "api_integrator": {"prompt": "GET https://example.com"},
         "network_client": {"prompt": "check connectivity to example.com"},
+        # R-116: educator needs material (>=2 sentences) offline — "demo" is a
+        # bare word, which the educator now refuses to "explain" by echoing it.
+        "educator": {"prompt": "Recursion is when a function calls itself. Every recursion needs a base case."},
     }
     civ = create_civilization(2)  # حضارة صغيرة للاختبار
 

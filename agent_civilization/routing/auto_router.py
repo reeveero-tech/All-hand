@@ -33,46 +33,59 @@ class Stage:
 # Order matters — first strong match wins for the *primary* stage.
 _INTENT_RULES: List[Tuple[str, str, str]] = [
     # (regex, specialization, human reason)
-    (r"\b(code|coding|program|python|javascript|typescript|rust|go\b|java\b|c\+\+|function|class|library|package|npm|pip|كود|برمج|دالة|مكتبة|بايثون|جافا)\b",
-     "code_generator", "طلب برمجي / كود"),
-    (r"\b(bug|error|exception|traceback|fix|debug|crash|صحح|أصلح|خطأ|استثناء|عطل)\b",
-     "surgeon", "تصحيح خطأ / تشخيص"),
-    (r"\b(refactor|rewrite|modify|update code|change function|عدل|أعد كتابة|حسّن)\b",
-     "modifier", "تعديل كود"),
-    (r"\b(review|audit|code smell|complexity|راجع|جودة الكود|تدقيق)\b",
-     "reviewer", "مراجعة / تدقيق"),
-    (r"\b(test|unit test|pytest|jest|coverage|اختبر|اختبار|تغطية)\b",
+    # R-115: ACTION verbs are matched before TOPIC nouns. R-113 showed topic
+    # words winning over the verb: "explain the difference between REST and
+    # GraphQL" went to api_integrator (no URL -> fail), "review this code" to
+    # code_generator, "write and run tests" to analyst (tests never ran).
+    # --- actions -----------------------------------------------------------
+    (r"\b(translate|ترجم)\w*",
+     "communicator", "ترجمة"),
+    (r"\b(explain|teach|tutorial|beginner|difference between|what is|اشرح|علّم|درس|مبتدئ|ما الفرق)\b",
+     "educator", "شرح / تعليم"),
+    (r"\b(research|search|find articles|best practices|state of the art|literature|ابحث|بحث|أدبيات|أوراق)\b",
+     "researcher", "بحث ويب"),
+    (r"\b(draft|email|message|announcement|post|copy|رسالة|إعلان|منشور|صغ)\b",
+     "communicator", "كتابة رسائل"),
+    (r"\b(run tests?|write tests?|unit tests?|pytest|jest|coverage|tests? for|اختبر|اختبار|تغطية)\b",
      "test_runner", "تشغيل / كتابة اختبارات"),
-    (r"\b(validate|schema|json|yaml|xml|parse|تحقق|صحّح صيغة|سكيمة)\b",
-     "validator", "تحقق من بنية بيانات"),
+    # writing NEW code is an action too: "write Python code to compute the
+    # average" is a code request even though "average" is an analyst word.
+    (r"\b(write|generate|create|implement)\b[^.\n]{0,40}\b(code|function|class|script|program|method)\b"
+     r"|(اكتب|أنشئ|ولّد|ولد)[^.\n]{0,30}(كود|دالة|برنامج|سكربت|كلاس)",
+     "code_generator", "كتابة كود جديد"),
+    (r"\b(bug|bugs|error|exception|traceback|fix|debug|crash|صحح|أصلح|خطأ|استثناء|عطل)\b",
+     "surgeon", "تصحيح خطأ / تشخيص"),
+    (r"\b(refactor|rewrite|clean ?up|cleaner|modify|rename|update code|change function|عدل|أعد كتابة|حسّن)\b",
+     "modifier", "تعديل كود"),
     (r"\b(architecture|architect|design system|scalable|microservice|هندسة|معمارية|نظام)\b",
      "architect", "تصميم معماري"),
+    (r"\b(review|audit|code smell|complexity|راجع|جودة الكود|تدقيق)\b",
+     "reviewer", "مراجعة / تدقيق"),
+    (r"\b(validate|verify schema|json|yaml|xml|parse|تحقق|صحّح صيغة|سكيمة)\b",
+     "validator", "تحقق من بنية بيانات"),
+    (r"\b(reachable|reachability|ping|is .* up|latency|dns|curl|اتصال|تأخير|متاح)\b",
+     "network_client", "فحص اتصال / شبكة"),
+    (r"\b(monitor|health check|health|metrics|cpu|memory usage|uptime|راقب|صحة|أداء)\b",
+     "monitor", "مراقبة النظام"),
+    (r"\b(sum|total|average|mean|median|analy[sz]e|analysis|statistics|trend|حلل|تحليل|إحصاء|متوسط|مجموع)\b",
+     "analyst", "تحليل بيانات"),
+    # --- topics ------------------------------------------------------------
+    (r"\b(database|sql|postgres|mysql|sqlite|table schema|migration|قاعدة بيانات|استعلام)\b",
+     "db_manager", "قواعد بيانات / SQL"),
+    (r"\b(code|coding|program|python|javascript|typescript|rust|go\b|java\b|c\+\+|function|class|library|package|npm|pip|كود|برمج|دالة|مكتبة|بايثون|جافا)\b",
+     "code_generator", "طلب برمجي / كود"),
     (r"\b(build|scaffold|starter|boilerplate|initialize|ابنِ|أنشئ مشروع|هيكل)\b",
      "builder", "بناء / سكافولد"),
     (r"\b(ui|ux|design|color|typography|layout|figma|واجهة|تصميم|ألوان)\b",
      "designer", "تصميم UI/UX"),
-    (r"\b(analyze|analysis|statistics|mean|median|trend|حلل|تحليل|إحصاء|متوسط)\b",
-     "analyst", "تحليل بيانات"),
     (r"\b(clean data|transform|etl|aggregate|pivot|نظّف|حوّل|جدول)\b",
      "data_processor", "معالجة بيانات"),
-    (r"\b(database|sql|postgres|mysql|sqlite|schema|migration|قاعدة بيانات|استعلام)\b",
-     "db_manager", "قواعد بيانات / SQL"),
-    (r"\b(api|endpoint|integrate|webhook|oauth|rest|graphql|واجهة برمجية|تكامل)\b",
+    (r"\b(https?://|api|endpoint|integrate|webhook|oauth|graphql|واجهة برمجية|تكامل)\b",
      "api_integrator", "تكامل API"),
-    (r"\b(http|curl|dns|proxy|ping|latency|شبكة|اتصال|تأخير)\b",
+    (r"\b(http|proxy|شبكة)\b",
      "network_client", "شبكات / HTTP"),
-    (r"\b(search|research|find articles|paper|state of the art|ابحث|بحث|أدبيات|أوراق)\b",
-     "researcher", "بحث ويب"),
-    (r"\b(monitor|health check|metrics|cpu|memory|uptime|راقب|صحة|أداء)\b",
-     "monitor", "مراقبة النظام"),
-    (r"\b(strategy|roadmap|market|competitor|okr|kpi|استراتيجية|خارطة طريق|منافس)\b",
+    (r"\b(strategy|roadmap|market|competitor|okr|kpi|plan|استراتيجية|خارطة طريق|منافس|خطة)\b",
      "strategist", "استراتيجية"),
-    (r"\b(explain|teach|tutorial|learn|beginner|اشرح|علّم|درس|مبتدئ)\b",
-     "educator", "شرح / تعليم"),
-    (r"\b(translate|arabic|english|french|spanish|ترجم|بالعربية|بالإنجليزية)\b",
-     "communicator", "ترجمة / تواصل"),
-    (r"\b(email|message|announcement|post|copy|رسالة|إعلان|منشور)\b",
-     "communicator", "كتابة رسائل"),
     (r"\b(improve myself|self improve|meta|evolve|طور نفسك|تطور ذاتي)\b",
      "self_developer", "تطوير ذاتي"),
 ]
@@ -101,7 +114,17 @@ def _instruction_text(text: str) -> str:
     return out
 
 
+# R-115: an explicit leading analysis verb wins over topic words in the rest of
+# the sentence ("حلل أداء النظام" is an analysis, although "أداء" is a monitor word).
+_LEADING_RULES = [
+    (r"^\s*(analy[sz]e|حلل|حلّل)\b", "analyst", "تحليل (فعل صريح في بداية الطلب)"),
+]
+
+
 def _match_intent(text: str):
+    for pattern, spec, r in _LEADING_RULES:
+        if re.search(pattern, text, flags=re.IGNORECASE):
+            return spec, r
     for pattern, spec, r in _INTENT_RULES:
         if re.search(pattern, text, flags=re.IGNORECASE):
             return spec, r
@@ -125,7 +148,9 @@ def _decompose(prompt: str, primary: str, reason: str) -> List[Stage]:
     if primary not in ATOMIC:
         stages.append(Stage(
             name="plan",
-            specialization="architect" if primary in {"code_generator","builder","modifier","surgeon","api_integrator","db_manager"} else "strategist",
+            # R-116: the plan stage returns the execution plan that will actually run
+            # (strategist); architect stays the primary for architecture requests.
+            specialization="strategist",
             prompt=f"Produce a concrete step-by-step plan to accomplish this goal. Be practical, list files/tools/APIs needed. Goal:\n{p_short}",
             reason="خطة تنفيذ محكمة",
         ))
@@ -152,6 +177,14 @@ def _decompose(prompt: str, primary: str, reason: str) -> List[Stage]:
             prompt="Write and run tests for the produced code. Report failures with exact traces.",
             reason="اختبار عملي",
         ))
+    elif primary == "reviewer" and re.search(r"\btest|اختبر|اختبار", prompt, re.IGNORECASE):
+        # "review and test this code" — the review is followed by a real test run
+        stages.append(Stage(
+            name="test",
+            specialization="test_runner",
+            prompt="Write and run tests for the reviewed code. Report failures with exact traces.",
+            reason="اختبار عملي",
+        ))
     elif primary in {"data_processor", "analyst"}:
         stages.append(Stage(
             name="validate",
@@ -159,14 +192,14 @@ def _decompose(prompt: str, primary: str, reason: str) -> List[Stage]:
             prompt="Validate the schema and integrity of the produced analysis / data.",
             reason="التحقق من البيانات",
         ))
-    elif primary in {"api_integrator", "network_client"}:
+    elif primary == "api_integrator":
         stages.append(Stage(
             name="probe",
             specialization="network_client",
             prompt="Perform a real HTTP probe or DNS check on any endpoints mentioned. Report status and latency.",
             reason="فحص حي للاتصال",
         ))
-    elif primary in {"researcher", "strategist", "architect"}:
+    elif primary in {"strategist", "architect"}:
         stages.append(Stage(
             name="ground",
             specialization="researcher",
@@ -194,6 +227,7 @@ def route(prompt: str) -> Dict:
     return {
         "primary": primary,
         "reason": reason,
+        "goal": prompt.strip(),
         "stages": [s.to_dict() for s in stages],
     }
 

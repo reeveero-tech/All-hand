@@ -119,7 +119,10 @@ def jaccard(a: set, b: set) -> float:
 def input_kind(work: Dict[str, Any]) -> str:
     """Coarse shape of the input — the 'approach' dimension LearningRuntime tracks."""
     data = work.get("data")
-    text = str(work.get("prompt") or "")
+    # R-114: classify the stage's own input, not the previous-stages summary the
+    # orchestrator appends (R-113 analysis: almost every stage was classified as
+    # "numbers" because earlier stages' statistics were in that summary).
+    text = str(work.get("prompt") or "").split("\n\n=== Previous stages summary ===", 1)[0]
     if isinstance(data, list):
         return "numbers" if data and all(isinstance(x, (int, float)) for x in data) else "list"
     if isinstance(data, dict):

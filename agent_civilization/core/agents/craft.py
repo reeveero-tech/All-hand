@@ -221,6 +221,8 @@ _COMPONENTS: Dict[str, Tuple[str, str, str, List[str]]] = {
                  r"\b(websockets?|real-?time|live updates|chat)\b|لحظي|مباشر|محادثة", ["api"]),
     "analytics": ("service", "event collection and reporting",
                   r"\b(analytics|metrics|reporting|tracking)\b|تحليلات|تقارير|قياس", ["queue", "database"]),
+    "rate_limiting": ("service", "per-client request throttling (R-116)",
+                      r"\b(rate[- ]?limit\w*|throttl\w*)\b|تحديد المعدل", ["api", "cache"]),
     "queue": ("infrastructure", "asynchronous work",
               r"\b(queue|worker|background jobs?|kafka|rabbitmq|celery)\b|طابور|مهام خلفية", []),
     "cache": ("infrastructure", "low-latency reads",
@@ -444,13 +446,84 @@ def _remove_unused_imports(code: str) -> Tuple[str, List[str]]:
     return new, removed
 
 
+_COMPOUND_SPLIT = re.compile(r":[ \t]+(?=(?:if|for|while|with|def|class|try)\b)")
+_REFACTOR = re.compile(r"refactor|cleaner|clean ?up|simplif|tidy|حسّن|بسّط|نظّف الكود|أعد كتابة", re.I)
+
+
+def normalise_one_line_compounds(code: str) -> Tuple[str, bool]:
+    """R-116: ``if a: if b: if c: return 1`` (one line, not valid Python) ->
+    properly nested blocks. Only splits before compound-statement keywords; the
+    result is returned only if ``ast.parse`` accepts it."""
+    out_lines: List[str] = []
+    changed = False
+    for line in code.splitlines():
+        indent = line[: len(line) - len(line.lstrip())]
+        parts = _COMPOUND_SPLIT.split(line.strip())
+        if len(parts) == 1:
+            out_lines.append(line)
+            continue
+        changed = True
+        for depth, part in enumerate(parts):
+            suffix = ":" if depth < len(parts) - 1 else ""
+            out_lines.append(indent + "    " * depth + part.strip() + suffix)
+    new = "\n".join(out_lines) + ("\n" if code.endswith("\n") else "")
+    if not changed:
+        return code, False
+    try:
+        ast.parse(new)
+    except SyntaxError:
+        return code, False
+    return new, True
+
+
+class _MergeNestedIfs(ast.NodeTransformer):
+    """``if a:\n    if b: X`` (no else on either) -> ``if a and b: X``."""
+
+    def __init__(self) -> None:
+        self.merged = 0
+
+    def visit_If(self, node: ast.If) -> ast.AST:
+        self.generic_visit(node)
+        while (not node.orelse and len(node.body) == 1 and isinstance(node.body[0], ast.If)
+               and not node.body[0].orelse):
+            inner = node.body[0]
+            left = node.test.values if isinstance(node.test, ast.BoolOp) and isinstance(node.test.op, ast.And) else [node.test]
+            right = inner.test.values if isinstance(inner.test, ast.BoolOp) and isinstance(inner.test.op, ast.And) else [inner.test]
+            node.test = ast.BoolOp(op=ast.And(), values=[*left, *right])
+            node.body = inner.body
+            self.merged += 1
+        return node
+
+
+def refactor_code(code: str) -> Tuple[str, List[str]]:
+    """Behaviour-preserving AST refactors; returns (new_code, applied)."""
+    tree = ast.parse(code)
+    t = _MergeNestedIfs()
+    tree = t.visit(tree)
+    ast.fix_missing_locations(tree)
+    applied: List[str] = []
+    if t.merged:
+        applied.append(f"merged {t.merged} nested if(s) into 'and' conditions")
+        return ast.unparse(tree) + "\n", applied
+    return code, applied
+
+
 def modify_code(code: str, instruction: str) -> Dict[str, Any]:
+    applied: List[str] = []
     try:
         ast.parse(code)
     except SyntaxError as e:
-        return {"ok": False, "error": f"input is not valid Python (line {e.lineno}: {e.msg})"}
-    applied: List[str] = []
+        fixed, ok = normalise_one_line_compounds(code)
+        if not ok:
+            return {"ok": False, "error": f"input is not valid Python (line {e.lineno}: {e.msg})"}
+        applied.append("split one-line compound statements into nested blocks (input was not valid Python)")
+        code = fixed
     new = code
+    if _REFACTOR.search(instruction or ""):
+        new, refs = refactor_code(new)
+        applied.extend(refs)
+        if not refs:
+            applied.append("refactor requested: no supported pattern found (supported: merge nested ifs)")
     for rx in _RENAME:
         m = rx.search(instruction or "")
         if m:
@@ -477,14 +550,15 @@ def modify_code(code: str, instruction: str) -> Dict[str, Any]:
         return {"ok": False, "error": f"modification produced invalid Python (line {e.lineno}); not applied"}
     diff = "".join(difflib.unified_diff(code.splitlines(keepends=True), new.splitlines(keepends=True),
                                         fromfile="before.py", tofile="after.py"))
-    recognised = any(a.startswith(("rename", "removed")) for a in applied)
+    recognised = any(a.startswith(("rename", "removed", "merged")) for a in applied)
     if not recognised:
-        answer = ("no supported instruction found (supported: 'rename X to Y', 'remove unused imports'); "
+        answer = ("no supported instruction found (supported: 'rename X to Y', 'remove unused imports', "
+                  "'refactor' = merge nested ifs); "
                   + ("trailing whitespace normalised only" if new != code else "no changes"))
     else:
         answer = "; ".join(applied)
     return {"ok": True, "answer": answer,
-            "tool_output": {"changed": new != code, "applied": applied, "new_code": new[:8000],
+            "tool_output": {"changed": new != code or bool(applied), "applied": applied, "new_code": new[:8000],
                             "diff": diff[:8000], "verified": "ast.parse"}}
 
 

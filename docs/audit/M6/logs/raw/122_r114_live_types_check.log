@@ -1,0 +1,87 @@
+# R-114..R-117 live check of every request type — cmd: python3 docs/audit/M6/scripts/r114_live_types_check.py
+# 2026-10-14T21:33:27Z llm: keyless public provider (no OPENROUTER_API_KEY); live web/translation/HTTP
+OK     0.4s write a function that returns the nth prime
+     ✓ understand analyst analyst_0000 | request: action='write' | text: 8 words, 1 sentence(s), language=en, top terms: write, function, returns, nth, prime (no numeric samples to analyse)
+     ✓ plan strategist strategist_0800 | understand(analyst) -> plan(strategist) -> execute(code_generator) -> review(reviewer) -> test(test_runner)
+     ✓ execute code_generator code_generator_0200 | generated 26 line(s) with the LLM; ast.parse OK (not executed)
+     ✓ review reviewer reviewer_0700 | reviewed 26 loc, 1 function(s): 0 issue(s) — no defects found by static checks
+     ✓ test test_runner test_runner_0900 | exit=0; 1 test(s) passed, 0 failed
+OK     0.0s review this code for bugs: def f(x): return x*2
+     ✓ understand analyst analyst_0001 | request: action='review', inline_code='def f(x): return x*2', numbers='[2.0]' | text: 11 words, 1 sentence(s), language=en, top terms: review, code, bugs, def, 
+     ✓ plan strategist strategist_0801 | understand(analyst) -> plan(strategist) -> execute(surgeon) -> review(reviewer) -> test(test_runner)
+     ✓ execute surgeon surgeon_0850 | 0 issue(s) — no defects found by AST diagnostics
+     ✓ review reviewer reviewer_0701 | reviewed 1 loc, 1 function(s): 0 issue(s) — no defects found by static checks
+     ✓ test test_runner test_runner_0901 | exit=0; 1 test(s) passed, 0 failed
+OK     0.0s refactor this to be cleaner: if a: if b: if c: ret
+     ✓ understand analyst analyst_0002 | request: action='refactor', inline_code='if a: if b: if c: return 1', numbers='[1.0]' | text: 13 words, 1 sentence(s), language=en, top terms: refactor, cleaner
+     ✓ plan strategist strategist_0802 | understand(analyst) -> plan(strategist) -> execute(modifier) -> review(reviewer) -> test(test_runner)
+     ✓ execute modifier modifier_0500 | split one-line compound statements into nested blocks (input was not valid Python); merged 2 nested if(s) into 'and' conditions; behaviour identical on 8 input 
+     ✓ review reviewer reviewer_0702 | reviewed 3 loc, 0 function(s): 0 issue(s) — no defects found by static checks
+     ✓ test test_runner test_runner_0902 | exit=0; 1 test(s) passed, 0 failed
+OK    12.6s generate a python class for a user account with va
+     ✓ understand analyst analyst_0003 | request: action='generate' | text: 10 words, 1 sentence(s), language=en, top terms: generate, python, class, user, account (no numeric samples to analyse)
+     ✓ plan strategist strategist_0803 | understand(analyst) -> plan(strategist) -> execute(code_generator) -> review(reviewer) -> test(test_runner)
+     ✓ execute code_generator code_generator_0201 | generated 63 line(s) with the LLM; ast.parse OK (not executed)
+     ✓ review reviewer reviewer_0703 | reviewed 63 loc, 7 function(s): 1 issue(s): __init__() never returns a value (line 13)
+     ✓ test test_runner test_runner_0903 | exit=0; 1 test(s) passed, 0 failed
+OK     0.0s analyze this data for trends: [10, 20, 30, 40, 50]
+     ✓ understand analyst analyst_0004 | trend=up (constant step 10) (n=5)
+     ✓ plan strategist strategist_0804 | understand(analyst) -> plan(strategist) -> execute(analyst) -> validate(validator)
+     ✓ execute analyst analyst_0005 | trend=up (constant step 10) (n=5)
+     ✓ validate validator validator_0950 | analysis integrity: 4/4 checks passed
+OK     0.0s sum these numbers: [1, 2, 3, 4, 5]
+     ✓ understand analyst analyst_0006 | sum=15 (n=5)
+     ✓ plan strategist strategist_0805 | understand(analyst) -> plan(strategist) -> execute(analyst) -> validate(validator)
+     ✓ execute analyst analyst_0007 | sum=15 (n=5)
+     ✓ validate validator validator_0951 | analysis integrity: 4/4 checks passed
+OK     0.0s compute the average of [12, 14, 16, 18]
+     ✓ understand analyst analyst_0008 | average=15 (n=4)
+     ✓ plan strategist strategist_0806 | understand(analyst) -> plan(strategist) -> execute(analyst) -> validate(validator)
+     ✓ execute analyst analyst_0009 | average=15 (n=4)
+     ✓ validate validator validator_0952 | analysis integrity: 4/4 checks passed
+OK     0.7s design a scalable multi-tenant SaaS architecture
+     ✓ understand analyst analyst_0010 | request: action='design' | text: 7 words, 1 sentence(s), language=en, top terms: design, scalable, multi, tenant, saas (no numeric samples to analyse)
+     ✓ plan strategist strategist_0807 | understand(analyst) -> plan(strategist) -> execute(architect) -> ground(researcher)
+     ✓ execute architect architect_0100 | 3 component(s): tenancy requested; database, auth implied; build order: database -> auth -> tenancy
+     ✓ ground researcher researcher_0650 | 5 source(s): Multi-Tenant SaaS Architecture: Complete Guide, Models, Design Patterns ...; SaaS and multitenant solution architecture; Let's Architect! Building 
+OK     0.0s plan a database migration for a 10M row table
+     ✓ understand analyst analyst_0011 | request: action='plan', numbers='[10.0]' | text: 9 words, 1 sentence(s), language=en, top terms: plan, database, migration, 10m, row (no numeric samples to anal
+     ✓ plan strategist strategist_0808 | understand(analyst) -> plan(strategist) -> execute(db_manager)
+     ✓ execute db_manager db_manager_0350 | migration rehearsed on 20,000 rows: expand -> 10 batch backfill -> verify (0 nulls, 0 mismatches) -> index; measured 4,230,973 rows/s, estimated backfill for 10
+OK     0.8s review the architecture for a REST API with rate l
+     ✓ understand analyst analyst_0012 | request: action='review' | text: 10 words, 1 sentence(s), language=en, top terms: review, architecture, rest, api, rate (no numeric samples to analyse)
+     ✓ plan strategist strategist_0809 | understand(analyst) -> plan(strategist) -> execute(architect) -> ground(researcher)
+     ✓ execute architect architect_0101 | 3 component(s): api, rate_limiting requested; cache implied; build order: api -> cache -> rate_limiting
+     ✓ ground researcher researcher_0651 | 5 source(s): Design a Rate Limiter API | Learn System Design - GeeksforGeeks; API and Integration Architecture best practices for rate limiting; API Gateway Arc
+OK     0.0s validate this JSON schema: {"name": "string", "age
+     ✓ understand analyst analyst_0013 | request: action='validate', quoted_text="['name', 'string', 'age', 'number']" | text: 8 words, 1 sentence(s), language=en, top terms: validate, json, schema, na
+     ✓ execute validator validator_0953 | valid JSON (embedded in the request)
+OK     0.0s write and run tests for: def add(a, b): return a +
+     ✓ understand analyst analyst_0014 | request: action='write', inline_code='def add(a, b): return a + b' | text: 12 words, 1 sentence(s), language=en, top terms: write, run, tests, def, add (no nume
+     ✓ plan strategist strategist_0810 | understand(analyst) -> plan(strategist) -> execute(test_runner)
+     ✓ execute test_runner test_runner_0904 | exit=0; 1 test(s) passed, 0 failed
+OK     4.8s design a table schema for orders with line items
+     ✓ understand analyst analyst_0015 | request: action='design' | text: 9 words, 1 sentence(s), language=en, top terms: design, table, schema, orders, line (no numeric samples to analyse)
+     ✓ plan strategist strategist_0811 | understand(analyst) -> plan(strategist) -> execute(db_manager)
+     ✓ execute db_manager db_manager_0351 | schema with 2 table(s) (line_items, orders) — executed in SQLite (heuristic)
+OK     0.1s check if example.com is reachable
+     ✓ understand analyst analyst_0016 | request: action='check', endpoint='example.com' | text: 6 words, 2 sentence(s), language=en, top terms: check, example, com, reachable (no numeric samples to an
+     ✓ plan strategist strategist_0812 | understand(analyst) -> plan(strategist) -> execute(network_client)
+     ✓ execute network_client network_client_0600 | example.com is reachable: HTTP 200 via HEAD in 101.0 ms (DNS 0.91 ms)
+OK     6.1s draft a message to the team about the outage
+     ✓ understand analyst analyst_0017 | request: action='draft' | text: 9 words, 1 sentence(s), language=en, top terms: draft, message, team, about, outage (no numeric samples to analyse)
+     ✓ execute communicator communicator_0250 | Subject: Brief Update on Today’s Service Outage  Hi Team,  Please be advised that at 10:12 AM we experienced an unexpected outage affecting our main production 
+OK     6.2s explain the difference between REST and GraphQL
+     ✓ understand analyst analyst_0018 | request: action='explain' | text: 7 words, 1 sentence(s), language=en, top terms: explain, difference, between, rest, graphql (no numeric samples to analyse)
+     ✓ execute educator educator_0450 | REST and GraphQL are two ways to design APIs, but they differ in how clients request and receive data.  **REST**   * Uses fixed HTTP routes (e.g., `/users/1/pos
+OK     0.9s translate 'hello world' to French
+     ✓ understand analyst analyst_0019 | request: action='translate', quoted_text="['hello world']", target_language='fr' | text: 5 words, 1 sentence(s), language=en, top terms: translate, hello, world
+     ✓ execute communicator communicator_0251 | Salut, le monde
+OK     0.7s research the best practices for API pagination
+     ✓ understand analyst analyst_0020 | request: action='research' | text: 7 words, 1 sentence(s), language=en, top terms: research, best, practices, api, pagination (no numeric samples to analyse)
+     ✓ plan strategist strategist_0813 | understand(analyst) -> plan(strategist) -> execute(researcher)
+     ✓ execute researcher researcher_0652 | 5 source(s): API Pagination: Best Practices and Strategies - Apidog Blog; Unlocking the Power of API Pagination: Best Practices and Strategies; Mastering API Pa
+OK     0.0s monitor the health of the system
+     ✓ understand analyst analyst_0021 | request: action='monitor' | text: 6 words, 1 sentence(s), language=en, top terms: monitor, health, system (no numeric samples to analyse)
+     ✓ execute monitor monitor_0550 | system healthy: rss=59.8MB, load1=1.31/2cpu, mem_avail=93.6%, disk_free=63.2%
+# rc=0
