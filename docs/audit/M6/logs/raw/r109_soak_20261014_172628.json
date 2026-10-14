@@ -1,0 +1,1920 @@
+{
+ "started_utc": "2026-10-14T17:26:28.949862+00:00",
+ "duration_min_target": 1,
+ "duration_s_target": 60,
+ "interval_s": 1.0,
+ "agents_per_spec": 50,
+ "git_head": "e031ec4cd4631662972c711979a24877fecfecd4",
+ "requests": [
+  {
+   "idx": 1,
+   "request": "monitor the health of the system",
+   "plan_primary": "monitor",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "monitor",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "monitor_0550"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": true,
+   "final": "system snapshot captured"
+  },
+  {
+   "idx": 2,
+   "request": "monitor the health of the system",
+   "plan_primary": "monitor",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "monitor",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "monitor_0550"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": true,
+   "final": "system snapshot captured"
+  },
+  {
+   "idx": 3,
+   "request": "research the best practices for API pagination",
+   "plan_primary": "api_integrator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "api_integrator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "api_integrator_0050"
+    },
+    {
+     "spec": "network_client",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "network_client_0600"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": false,
+   "final": "4 component(s): api, auth, storage requested; database implied; build order: api -> database -> auth -> storage"
+  },
+  {
+   "idx": 4,
+   "request": "write and run tests for: def add(a, b): return a + b",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 5,
+   "request": "refactor this to be cleaner: if a: if b: if c: return 1",
+   "plan_primary": "modifier",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "modifier",
+     "ok": false,
+     "elapsed_s": 0.001,
+     "agent": "modifier_0500"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    },
+    {
+     "spec": "test_runner",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "test_runner_0900"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": false,
+   "final": "text review: 64 words"
+  },
+  {
+   "idx": 6,
+   "request": "check if example.com is reachable",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 7,
+   "request": "review this code for bugs: def f(x): return x*2",
+   "plan_primary": "code_generator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "code_generator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "code_generator_0200"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    },
+    {
+     "spec": "test_runner",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "test_runner_0900"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "text review: 65 words"
+  },
+  {
+   "idx": 8,
+   "request": "refactor this to be cleaner: if a: if b: if c: return 1",
+   "plan_primary": "modifier",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "modifier",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "modifier_0500"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    },
+    {
+     "spec": "test_runner",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "test_runner_0900"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "text review: 64 words"
+  },
+  {
+   "idx": 9,
+   "request": "refactor this to be cleaner: if a: if b: if c: return 1",
+   "plan_primary": "modifier",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "modifier",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "modifier_0500"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    },
+    {
+     "spec": "test_runner",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "test_runner_0900"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "text review: 64 words"
+  },
+  {
+   "idx": 10,
+   "request": "compute the average of [12, 14, 16, 18]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 11,
+   "request": "validate this JSON schema: {\"name\": \"string\", \"age\": \"number\"}",
+   "plan_primary": "validator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 12,
+   "request": "compute the average of [12, 14, 16, 18]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 13,
+   "request": "monitor the health of the system",
+   "plan_primary": "monitor",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "monitor",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "monitor_0550"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "system snapshot captured"
+  },
+  {
+   "idx": 14,
+   "request": "research the best practices for API pagination",
+   "plan_primary": "api_integrator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "api_integrator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "api_integrator_0050"
+    },
+    {
+     "spec": "network_client",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "network_client_0600"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "4 component(s): api, auth, storage requested; database implied; build order: api -> database -> auth -> storage"
+  },
+  {
+   "idx": 15,
+   "request": "draft a message to the team about the outage",
+   "plan_primary": "communicator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "communicator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "communicator_0250"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "tone=neutral"
+  },
+  {
+   "idx": 16,
+   "request": "sum these numbers: [1, 2, 3, 4, 5]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 17,
+   "request": "plan a database migration for a 10M row table",
+   "plan_primary": "db_manager",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "db_manager",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "db_manager_0350"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": false,
+   "final": "3 component(s): database, auth, storage requested; build order: database -> auth -> storage"
+  },
+  {
+   "idx": 18,
+   "request": "compute the average of [12, 14, 16, 18]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 19,
+   "request": "write a function that returns the nth prime",
+   "plan_primary": "code_generator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "code_generator",
+     "ok": false,
+     "elapsed_s": 0.067,
+     "agent": "code_generator_0200"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    },
+    {
+     "spec": "test_runner",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "test_runner_0900"
+    }
+   ],
+   "plan_s": 0.068,
+   "plan_ok": false,
+   "final": "text review: 87 words"
+  },
+  {
+   "idx": 20,
+   "request": "check if example.com is reachable",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 21,
+   "request": "check if example.com is reachable",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 22,
+   "request": "review the architecture for a REST API with rate limiting",
+   "plan_primary": "reviewer",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "text review: 45 words"
+  },
+  {
+   "idx": 23,
+   "request": "analyze this data for trends: [10, 20, 30, 40, 50]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 24,
+   "request": "review this code for bugs: def f(x): return x*2",
+   "plan_primary": "code_generator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "code_generator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "code_generator_0200"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    },
+    {
+     "spec": "test_runner",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "test_runner_0900"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": false,
+   "final": "text review: 65 words"
+  },
+  {
+   "idx": 25,
+   "request": "check if example.com is reachable",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 26,
+   "request": "generate a python class for a user account with validation",
+   "plan_primary": "code_generator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "code_generator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "code_generator_0200"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    },
+    {
+     "spec": "test_runner",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "test_runner_0900"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "text review: 87 words"
+  },
+  {
+   "idx": 27,
+   "request": "draft a message to the team about the outage",
+   "plan_primary": "communicator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "communicator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "communicator_0250"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "tone=neutral"
+  },
+  {
+   "idx": 28,
+   "request": "monitor the health of the system",
+   "plan_primary": "monitor",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "monitor",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "monitor_0550"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "system snapshot captured"
+  },
+  {
+   "idx": 29,
+   "request": "plan a database migration for a 10M row table",
+   "plan_primary": "db_manager",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "db_manager",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "db_manager_0350"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "3 component(s): database, auth, storage requested; build order: database -> auth -> storage"
+  },
+  {
+   "idx": 30,
+   "request": "draft a message to the team about the outage",
+   "plan_primary": "communicator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "communicator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "communicator_0250"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "tone=neutral"
+  },
+  {
+   "idx": 31,
+   "request": "plan a database migration for a 10M row table",
+   "plan_primary": "db_manager",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "db_manager",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "db_manager_0350"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "3 component(s): database, auth, storage requested; build order: database -> auth -> storage"
+  },
+  {
+   "idx": 32,
+   "request": "sum these numbers: [1, 2, 3, 4, 5]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 33,
+   "request": "research the best practices for API pagination",
+   "plan_primary": "api_integrator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "api_integrator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "api_integrator_0050"
+    },
+    {
+     "spec": "network_client",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "network_client_0600"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "4 component(s): api, auth, storage requested; database implied; build order: api -> database -> auth -> storage"
+  },
+  {
+   "idx": 34,
+   "request": "design a table schema for orders with line items",
+   "plan_primary": "validator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 35,
+   "request": "compute the average of [12, 14, 16, 18]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 36,
+   "request": "plan a database migration for a 10M row table",
+   "plan_primary": "db_manager",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "db_manager",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "db_manager_0350"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "3 component(s): database, auth, storage requested; build order: database -> auth -> storage"
+  },
+  {
+   "idx": 37,
+   "request": "design a scalable multi-tenant SaaS architecture",
+   "plan_primary": "architect",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "researcher",
+     "ok": true,
+     "elapsed_s": 0.54,
+     "agent": "researcher_0650"
+    }
+   ],
+   "plan_s": 0.541,
+   "plan_ok": true,
+   "final": "no direct answer; see related"
+  },
+  {
+   "idx": 38,
+   "request": "write and run tests for: def add(a, b): return a + b",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 39,
+   "request": "translate 'hello world' to French",
+   "plan_primary": "communicator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "communicator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "communicator_0250"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "tone=neutral"
+  },
+  {
+   "idx": 40,
+   "request": "research the best practices for API pagination",
+   "plan_primary": "api_integrator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "api_integrator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "api_integrator_0050"
+    },
+    {
+     "spec": "network_client",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "network_client_0600"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "4 component(s): api, auth, storage requested; database implied; build order: api -> database -> auth -> storage"
+  },
+  {
+   "idx": 41,
+   "request": "monitor the health of the system",
+   "plan_primary": "monitor",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "monitor",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "monitor_0550"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "system snapshot captured"
+  },
+  {
+   "idx": 42,
+   "request": "analyze this data for trends: [10, 20, 30, 40, 50]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 43,
+   "request": "write and run tests for: def add(a, b): return a + b",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 44,
+   "request": "analyze this data for trends: [10, 20, 30, 40, 50]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 45,
+   "request": "research the best practices for API pagination",
+   "plan_primary": "api_integrator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "api_integrator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "api_integrator_0050"
+    },
+    {
+     "spec": "network_client",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "network_client_0600"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "4 component(s): api, auth, storage requested; database implied; build order: api -> database -> auth -> storage"
+  },
+  {
+   "idx": 46,
+   "request": "research the best practices for API pagination",
+   "plan_primary": "api_integrator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "api_integrator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "api_integrator_0050"
+    },
+    {
+     "spec": "network_client",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "network_client_0600"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": false,
+   "final": "4 component(s): api, auth, storage requested; database implied; build order: api -> database -> auth -> storage"
+  },
+  {
+   "idx": 47,
+   "request": "draft a message to the team about the outage",
+   "plan_primary": "communicator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "communicator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "communicator_0250"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "tone=neutral"
+  },
+  {
+   "idx": 48,
+   "request": "write a function that returns the nth prime",
+   "plan_primary": "code_generator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "code_generator",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "code_generator_0200"
+    },
+    {
+     "spec": "reviewer",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "reviewer_0700"
+    },
+    {
+     "spec": "test_runner",
+     "ok": false,
+     "elapsed_s": 0.0,
+     "agent": "test_runner_0900"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": false,
+   "final": "text review: 87 words"
+  },
+  {
+   "idx": 49,
+   "request": "design a scalable multi-tenant SaaS architecture",
+   "plan_primary": "architect",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.002,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "researcher",
+     "ok": true,
+     "elapsed_s": 0.503,
+     "agent": "researcher_0650"
+    }
+   ],
+   "plan_s": 0.506,
+   "plan_ok": true,
+   "final": "no direct answer; see related"
+  },
+  {
+   "idx": 50,
+   "request": "compute the average of [12, 14, 16, 18]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 51,
+   "request": "compute the average of [12, 14, 16, 18]",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 52,
+   "request": "check if example.com is reachable",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.002,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 53,
+   "request": "validate this JSON schema: {\"name\": \"string\", \"age\": \"number\"}",
+   "plan_primary": "validator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 54,
+   "request": "translate 'hello world' to French",
+   "plan_primary": "communicator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "communicator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "communicator_0250"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "tone=neutral"
+  },
+  {
+   "idx": 55,
+   "request": "design a scalable multi-tenant SaaS architecture",
+   "plan_primary": "architect",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "researcher",
+     "ok": true,
+     "elapsed_s": 0.5,
+     "agent": "researcher_0650"
+    }
+   ],
+   "plan_s": 0.502,
+   "plan_ok": true,
+   "final": "no direct answer; see related"
+  },
+  {
+   "idx": 56,
+   "request": "validate this JSON schema: {\"name\": \"string\", \"age\": \"number\"}",
+   "plan_primary": "validator",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.001,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 57,
+   "request": "write and run tests for: def add(a, b): return a + b",
+   "plan_primary": "analyst",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "validator",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "validator_0950"
+    }
+   ],
+   "plan_s": 0.004,
+   "plan_ok": true,
+   "final": "valid prose"
+  },
+  {
+   "idx": 58,
+   "request": "design a scalable multi-tenant SaaS architecture",
+   "plan_primary": "architect",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "researcher",
+     "ok": true,
+     "elapsed_s": 0.024,
+     "agent": "researcher_0650"
+    }
+   ],
+   "plan_s": 0.026,
+   "plan_ok": true,
+   "final": "no direct answer; see related"
+  },
+  {
+   "idx": 59,
+   "request": "design a scalable multi-tenant SaaS architecture",
+   "plan_primary": "architect",
+   "stages": [
+    {
+     "spec": "analyst",
+     "ok": true,
+     "elapsed_s": 0.001,
+     "agent": "analyst_0000"
+    },
+    {
+     "spec": "strategist",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "strategist_0800"
+    },
+    {
+     "spec": "architect",
+     "ok": true,
+     "elapsed_s": 0.0,
+     "agent": "architect_0100"
+    },
+    {
+     "spec": "researcher",
+     "ok": true,
+     "elapsed_s": 0.487,
+     "agent": "researcher_0650"
+    }
+   ],
+   "plan_s": 0.488,
+   "plan_ok": true,
+   "final": "no direct answer; see related"
+  }
+ ],
+ "periodic_snapshots": [
+  {
+   "total": 1000,
+   "idle": 1000,
+   "working": 0,
+   "agents_with_activity": 14,
+   "rss_mb": 48.9
+  }
+ ],
+ "summary": {
+  "total_requests": 59,
+  "plan_ok": 41,
+  "plan_fail": 18,
+  "plan_ok_rate": 0.6949,
+  "total_stages": 209,
+  "stage_ok": 177,
+  "stage_fail": 32,
+  "stage_ok_rate": 0.8469,
+  "duration_s_actual": 60,
+  "duration_min_actual": 1.0,
+  "maxrss_mb_final": 48.9,
+  "top_stage_failures": [
+   {
+    "spec": "test_runner",
+    "output": "no code to run",
+    "count": 8
+   },
+   {
+    "spec": "api_integrator",
+    "output": "no url detected",
+    "count": 6
+   },
+   {
+    "spec": "network_client",
+    "output": "no url/host detected",
+    "count": 6
+   },
+   {
+    "spec": "db_manager",
+    "output": "no SQL statement detected",
+    "count": 4
+   },
+   {
+    "spec": "modifier",
+    "output": "no code to modify",
+    "count": 3
+   },
+   {
+    "spec": "code_generator",
+    "output": "generating code from a description needs an LLM (set OPENROUTER_API_KEY); without one, send a struct",
+    "count": 3
+   },
+   {
+    "spec": "code_generator",
+    "output": "SyntaxError line 3: invalid syntax",
+    "count": 2
+   }
+  ],
+  "agent_stats_distribution": {
+   "total_agents_with_activity": 14,
+   "agents_all_ok": 8,
+   "agents_with_failures": 6
+  }
+ },
+ "build_s": 0.002,
+ "agents": 1000
+}

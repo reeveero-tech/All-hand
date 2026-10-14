@@ -205,3 +205,35 @@ def test_validator_pipeline_prose_r110():
     validate_stage = [s for s in result["stages"] if s["name"] == "validate"]
     assert validate_stage, "expected a validate stage"
     assert validate_stage[0]["ok"] is True
+
+def test_extract_code_inline_after_colon_r111():
+    """R-111: _extract_code recognizes inline code after a colon in prose
+    (e.g. 'write and run tests for: def add(a, b): return a + b')."""
+    from agent_civilization.core.agents import real_dispatcher as rd
+    code = rd._extract_code({"prompt": "write and run tests for: def add(a, b): return a + b"})
+    assert code.strip() == "def add(a, b): return a + b"
+    # A pure prose prompt with no colon-code still returns empty
+    assert rd._extract_code({"prompt": "analyze the data for trends"}) == ""
+
+
+def test_generate_basic_tests_r111():
+    """R-111: _generate_basic_tests produces callable smoke tests for
+    top-level functions."""
+    from agent_civilization.core.agents import real_dispatcher as rd
+    gen = rd._generate_basic_tests("def add(a, b): return a + b\ndef hello(): return 'hi'")
+    assert "def test_add_smoke" in gen
+    assert "def test_hello_smoke" in gen
+    assert "callable(add)" in gen
+    # Syntax-error code produces no tests
+    assert rd._generate_basic_tests("def broken(:") == ""
+
+
+@pytest.mark.code_exec
+def test_test_runner_inline_code_r111():
+    """R-111: end-to-end — a prose prompt with inline code now actually
+    runs (was failing 'no code to run' in the R-109 soak, 270 times)."""
+    from agent_civilization.core.agents import real_dispatcher as rd
+    r = asyncio.run(rd.dispatch("test_runner",
+                                {"prompt": "write and run tests for: def add(a, b): return a + b"}))
+    assert r["ok"] is True
+    assert r["tool_output"]["sandbox"] is True
