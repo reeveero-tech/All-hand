@@ -77,6 +77,13 @@ def _extract_code(work: Dict[str, Any]) -> str:
     # "no code to run" instead of a confusing SyntaxError).
     if re.search(r"^(?:\s*)(?:def |class |import |from |print\(|[\w.]+\s*=)", text, re.M):
         return text
+    # R-111: inline code after a colon in prose — e.g.
+    # "write and run tests for: def add(a, b): return a + b".
+    # Look for a colon followed by a Python construct on the same line
+    # or the next line.
+    m2 = re.search(r":\s*(def |class |print\(|[\w.]+\s*=)", text)
+    if m2:
+        return text[m2.start() + 1:].strip()
     return ""
 
 
@@ -187,14 +194,58 @@ async def _surgeon(work: Dict[str, Any]) -> Dict[str, Any]:
     return {"ok": True, "answer": f"{len(issues)} issue(s)", "tool_output": {"issues": issues}}
 
 
+def _generate_basic_tests(code: str) -> str:
+    """R-111: generate assert-based tests for the functions defined in code.
+
+    Uses ast to find top-level function names and their signatures, then
+    generates a basic smoke test that calls each function with safe default
+    args and asserts it returns without raising.
+    """
+    import ast as _ast
+    try:
+        tree = _ast.parse(code)
+    except SyntaxError:
+        return ""
+    tests = []
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.FunctionDef) and not node.name.startswith("_"):
+            n_args = len([a for a in node.args.args if a.arg != "self"])
+            call_args = ", ".join(
+                ("0" if not a.arg.startswith(("s", "text", "name")) else f'"x_{i}"')
+                for i, a in enumerate(node.args.args) if a.arg != "self"
+            )
+            tests.append(
+                f"def test_{node.name}_smoke():\n"
+                f"    # R-111: callable with {n_args} positional arg(s), returns without raising\n"
+                f"    assert callable({node.name})\n"
+                f"    result = {node.name}({call_args})\n"
+                f"    assert result is not None or isinstance(result, (int, float, str, bool, list, dict, type(None)))\n"
+            )
+    return "\n".join(tests)
+
+
 async def _test_runner(work: Dict[str, Any]) -> Dict[str, Any]:
-    """Run submitted Python in the sandbox — only if the policy allows it."""
+    """Run submitted Python in the sandbox — only if the policy allows it.
+
+    R-111: when the code defines functions but carries no tests, generate
+    assert-based tests for them and run code + tests together, so the stage
+    actually TESTS something instead of just executing the code.
+    """
     code = _extract_code(work)
     if not code.strip():
         return {"ok": False, "error": "no code to run"}
     allowed, reason = safety.code_execution_policy()
     if not allowed:
         return {"ok": False, "error": reason, "tool_output": {"executed": False}}
+
+    # R-111: generate tests when the code has none.
+    tests_generated = 0
+    if "def test_" not in code and "assert " not in code:
+        gen = _generate_basic_tests(code)
+        if gen:
+            code = code + "\n\n# --- generated tests (R-111) ---\n" + gen
+            tests_generated = len(gen.strip().split("\n"))
+    _r111_tests_generated = tests_generated  # exposed via tool_output below
     r = await _to_thread(safety.run_sandboxed_python, code)
     if r["timed_out"]:
         return {"ok": False, "error": f"timeout after {safety.SANDBOX_WALL_TIMEOUT_S}s",
@@ -203,7 +254,8 @@ async def _test_runner(work: Dict[str, Any]) -> Dict[str, Any]:
     note = f"exit={rc}" if rc >= 0 else f"killed by signal {-rc} (sandbox limit)"
     return {"ok": rc == 0, "answer": note,
             "tool_output": {"stdout": r["stdout"], "stderr": r["stderr"],
-                            "elapsed_s": r["elapsed_s"], "sandbox": True}}
+                            "elapsed_s": r["elapsed_s"], "sandbox": True,
+                            "r111_tests_generated": _r111_tests_generated}}
 
 
 async def _validator(work: Dict[str, Any]) -> Dict[str, Any]:

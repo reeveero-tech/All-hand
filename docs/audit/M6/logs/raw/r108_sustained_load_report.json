@@ -1,10 +1,10 @@
 {
- "started_utc": "2026-10-14T16:31:35.498935+00:00",
+ "started_utc": "2026-10-14T17:28:43.803512+00:00",
  "impl": "real",
  "duration_s_target": 3,
  "wave_size": 10,
  "min_ok_rate": 1.0,
- "git_head": "9a4b33fb6f887115899d0597ad716d9750f69b6d",
+ "git_head": "e031ec4cd4631662972c711979a24877fecfecd4",
  "waves": [
   {
    "wave": 1,
@@ -12,7 +12,7 @@
    "ok": 10,
    "fail": 0,
    "ok_rate": 1.0,
-   "wave_s": 0.008,
+   "wave_s": 0.01,
    "cum_ok": 10,
    "cum_fail": 0,
    "maxrss_mb": 247.2
@@ -23,7 +23,7 @@
    "ok": 10,
    "fail": 0,
    "ok_rate": 1.0,
-   "wave_s": 0.008,
+   "wave_s": 0.007,
    "cum_ok": 20,
    "cum_fail": 0,
    "maxrss_mb": 247.2

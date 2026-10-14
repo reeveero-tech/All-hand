@@ -83,7 +83,8 @@ async def main():
     ap.add_argument("--interval-s", type=float, default=3.0,
                     help="seconds between requests (default 3.0)")
     ap.add_argument("--agents-per-spec", type=int, default=50)
-    ap.add_argument("--out", default=str(REPO_ROOT / "docs/audit/M6/logs/raw/r109_live_hour_report.json"))
+    ap.add_argument("--out", default=None,
+                    help="output JSON path (default: timestamped so runs don't overwrite each other)")
     args = ap.parse_args()
 
     # NOTE: we do NOT set AGOS_AGENT_IMPL — use the default (real).
@@ -92,7 +93,12 @@ async def main():
     from agent_civilization.routing.auto_router import route
 
     duration_s = args.duration_min * 60
-    out_path = Path(args.out)
+    if args.out is None:
+        from datetime import datetime as _dt
+        stamp = _dt.now().strftime("%Y%m%d_%H%M%S")
+        out_path = REPO_ROOT / f"docs/audit/M6/logs/raw/r109_soak_{stamp}.json"
+    else:
+        out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     report = {
