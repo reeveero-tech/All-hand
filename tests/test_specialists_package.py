@@ -157,16 +157,39 @@ def test_r105_shims_carry_no_duplicated_implementation():
     assert not with_impl, f"implementation still duplicated in: {with_impl[:3]}"
 
 
-def test_r105_templates_are_the_single_source():
-    """R-105: exactly 20 template bodies (one per specialization) exist and each
-    spec's generated classes come from them."""
+def test_r105_base_classes_are_the_single_source():
+    """R-105: exactly 20 REAL base classes (one per specialization) exist, and
+    every generated class of a spec inherits the SAME functions from its base —
+    the implementation is shared, not copied (identity, not just structure)."""
     from pathlib import Path
 
     root = Path(__file__).resolve().parent.parent / "agent_civilization/agents/specialists"
-    templates = list((root / "_templates").glob("*_template.py.tpl"))
-    assert len(templates) == 20
+    bases = list((root / "_templates").glob("*_base.py"))
+    assert len(bases) == 20, f"expected 20 base classes, found {len(bases)}"
     for spec in SPECS:
-        assert (root / "_templates" / f"{spec}_template.py.tpl").exists()
+        base_path = root / "_templates" / f"{spec}_base.py"
+        assert base_path.exists(), f"{spec}: base class missing"
+        import ast as _ast
+        tree = _ast.parse(base_path.read_text())
+        class_defs = [n for n in _ast.walk(tree) if isinstance(n, _ast.ClassDef)]
+        assert class_defs, f"{spec}: no class in the base module"
+        # the base class defines the live methods
+        method_names = {m.name for c in class_defs for m in c.body
+                        if isinstance(m, (_ast.AsyncFunctionDef, _ast.FunctionDef))}
+        for needed in ("_process_task", "_execute_work", "_handle_message", "get_status"):
+            assert needed in method_names, f"{spec}: {needed} not defined in the base"
+
+        # and every generated class SHARES the base's functions (identity)
+        pkg = _pkg(spec)
+        for name in pkg.__all__:
+            cls = getattr(pkg, name)
+            assert cls._process_task is not None
+            # inherited from the base: the class's MRO[1] (the base) provides it
+            base_cls = cls.__mro__[1]
+            assert "_process_task" in base_cls.__dict__, (
+                f"{name}: _process_task not on the base")
+            assert cls.__dict__.get("_process_task") is None or (
+                cls.__dict__["_process_task"] is base_cls.__dict__["_process_task"])
 
 
 def test_r105_top_level_star_import_still_1000():
