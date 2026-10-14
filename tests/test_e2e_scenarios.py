@@ -160,3 +160,48 @@ def test_validator_rejects_invalid_json_string():
     assert bad["ok"] is False and "invalid JSON" in bad["error"]
     good = asyncio.run(rd.dispatch("validator", {"prompt": '{"a": 1}'}))
     assert good["ok"] is True and good["answer"] == "valid JSON"
+
+def test_validator_prose_fallback_r110():
+    """R-110: the validator accepts real prose (analyst/architect output)
+    with an integrity check instead of failing on 'not JSON'.
+
+    Discovered by the R-109 live soak: 457 failures from the validator
+    placed after prose-producing stages.
+    """
+    from agent_civilization.core.agents import real_dispatcher as rd
+    # Real prose (what analyst/architect produces)
+    prose = ("The data shows a clear upward trend. Sales grew from 10 to 50 "
+             "over 5 periods. Key factors include seasonality and marketing.")
+    ok = asyncio.run(rd.dispatch("validator", {"prompt": prose}))
+    assert ok["ok"] is True and ok["answer"] == "valid prose"
+    assert ok["tool_output"]["chars"] > 50
+
+    # Garbage still rejected with "invalid JSON" (R-055a contract preserved)
+    bad = asyncio.run(rd.dispatch("validator", {"prompt": "not json at all"}))
+    assert bad["ok"] is False and "invalid JSON" in bad["error"]
+
+    # An error-looking payload is rejected (integrity check)
+    err = asyncio.run(rd.dispatch("validator",
+                                  {"prompt": "error: something failed. see traceback."}))
+    assert err["ok"] is False and "looks like an error" in err["error"]
+
+    # Empty payload rejected
+    empty = asyncio.run(rd.dispatch("validator", {"prompt": "   "}))
+    assert empty["ok"] is False
+
+
+def test_validator_pipeline_prose_r110():
+    """R-110: end-to-end — a plan whose verify stage receives prose now
+    succeeds instead of failing on 'invalid JSON'."""
+    from agent_civilization.agents.real import create_civilization
+    from agent_civilization.pipeline.orchestrator import execute_plan
+    from agent_civilization.routing.auto_router import route
+
+    civ = create_civilization(5)
+    # A data-analysis request produces prose in the analyst stage and the
+    # validator stage receives it — must succeed now (was failing in R-109).
+    plan = route("analyze this data for trends: [10, 20, 30, 40, 50]")
+    result = asyncio.run(execute_plan(plan, civ, data=[10, 20, 30, 40, 50]))
+    validate_stage = [s for s in result["stages"] if s["name"] == "validate"]
+    assert validate_stage, "expected a validate stage"
+    assert validate_stage[0]["ok"] is True
