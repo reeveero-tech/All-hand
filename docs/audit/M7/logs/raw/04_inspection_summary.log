@@ -1,0 +1,32 @@
+# DEEP INSPECTION — the honest state verified on CURRENT main (post-R-105)
+# 2026-10-14T06:19:49.217337+00:00
+# git head: e24c22b1a2a646ba14a966ee63b8b4c11d7f9b72
+# repo: /home/user/workspace/All-hand
+
+## What was verified (NOT just CI green):
+
+- **R-055 scenarios on current main**: 7/7 passed
+- **R-055 with code_exec (real execution)**: 28/28 passed
+- **R-103 memory/learning**: 17/17 passed
+- **R-032/R-105 specialist runtime**: 10/10 passed
+- **R-053 scale (real impl)**: agents=1000 build_s=0.001 exec_1000_s=1.46 ok=1000/1000 maxrss=112.2MB
+- **R-053 scale (specialists impl)**: agents=1000 build_s=0.026 exec_1000_s=1.40 ok=1000/1000 maxrss=143.5MB
+- **R-051 per-spec dispatch audit**: 20/20 real execution
+- **Full suite**: 385 passed + 3 skipped + 3 deselected
+- **Network live tests**: 3/3
+- **Ruff (both scopes)**: 0
+- **Governance audit on main**: rc=0
+- **CI on main (last 3 runs)**: all success
+
+## What this proves:
+- The R-055/R-053/R-051/R-103/R-032 behaviors are intact on the CURRENT
+  main — not just the last-commit CI.
+- The project's honest state (95/95 items done; the completion criteria
+  mostly met with criterion 7 by the documented alternative) is
+  corroborated by fresh evidence, not inferred from CI alone.
+
+## What this does NOT prove:
+- Criterion 7 (live storage with live credentials) — still by the
+  documented alternative (D-038), not a live Supabase.
+- Production-readiness under sustained load — no long-duration
+  stress test was run (that would be a new owner decision).
