@@ -1,0 +1,129 @@
+{
+ "method": "AST NodeTransformer on the ORIGINAL files (git show 9e72b0e:...): class/function/Name ids and docstrings normalized (AgentNNNN->AgentN, Agent ID: N, spec_N); the agent_id/aid integer DEFAULTS normalized to a marker. NOT all integer constants \u2014 behavioral constants preserved.",
+ "input_revision": "9e72b0e (pre-R-105)",
+ "script": "docs/audit/M6/scripts/r105_ast_compare.py",
+ "total_files": 1000,
+ "distinct_bodies": 20,
+ "groups": {
+  "d7e588b62a93": {
+   "specs": [
+    "analyst"
+   ],
+   "n": 50
+  },
+  "0276c421c89b": {
+   "specs": [
+    "api_integrator"
+   ],
+   "n": 50
+  },
+  "0510f18bd0a8": {
+   "specs": [
+    "architect"
+   ],
+   "n": 50
+  },
+  "f982c8f9914c": {
+   "specs": [
+    "builder"
+   ],
+   "n": 50
+  },
+  "bd6219c3c39d": {
+   "specs": [
+    "code_generator"
+   ],
+   "n": 50
+  },
+  "414dcf40213c": {
+   "specs": [
+    "communicator"
+   ],
+   "n": 50
+  },
+  "4c548e16b51a": {
+   "specs": [
+    "data_processor"
+   ],
+   "n": 50
+  },
+  "4a640d19f5dc": {
+   "specs": [
+    "db_manager"
+   ],
+   "n": 50
+  },
+  "e73a17e1bf0d": {
+   "specs": [
+    "designer"
+   ],
+   "n": 50
+  },
+  "ff7d80873f7c": {
+   "specs": [
+    "educator"
+   ],
+   "n": 50
+  },
+  "fbc06207ceb0": {
+   "specs": [
+    "modifier"
+   ],
+   "n": 50
+  },
+  "c90d63b774b3": {
+   "specs": [
+    "monitor"
+   ],
+   "n": 50
+  },
+  "be3fa4501d84": {
+   "specs": [
+    "network_client"
+   ],
+   "n": 50
+  },
+  "76086a8b9322": {
+   "specs": [
+    "researcher"
+   ],
+   "n": 50
+  },
+  "9ced60f6cba6": {
+   "specs": [
+    "reviewer"
+   ],
+   "n": 50
+  },
+  "26cccff96cf7": {
+   "specs": [
+    "self_developer"
+   ],
+   "n": 50
+  },
+  "f077ad72fcc0": {
+   "specs": [
+    "strategist"
+   ],
+   "n": 50
+  },
+  "3e84d7966ddd": {
+   "specs": [
+    "surgeon"
+   ],
+   "n": 50
+  },
+  "8b7fe192b938": {
+   "specs": [
+    "test_runner"
+   ],
+   "n": 50
+  },
+  "ed0ffc4450cc": {
+   "specs": [
+    "validator"
+   ],
+   "n": 50
+  }
+ }
+}

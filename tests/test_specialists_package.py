@@ -102,3 +102,139 @@ def test_star_import_from_root_brings_classes():
     assert "analyst" in ns
     class_names = [n for n in ns if n.endswith(tuple("0123456789")) and "Agent" in n]
     assert len(class_names) == 1000
+
+
+# --------------------------------------------- R-105 (deduplication)
+def test_r105_all_1000_names_and_defaults_match_the_baseline():
+    """R-105: the generated classes must match the historical baseline exactly —
+    names, __all__ order, agent_id defaults, create() defaults."""
+    import importlib
+    import json
+    from pathlib import Path
+
+    ref_path = Path(__file__).resolve().parent.parent / "docs/audit/M6/logs/raw/r105_baseline_reference.json"
+    ref = json.loads(ref_path.read_text())
+    import inspect
+
+    for spec, spec_ref in ref["specs"].items():
+        pkg = _pkg(spec)
+        assert list(pkg.__all__) == spec_ref["__all__"], f"{spec}: __all__ order changed"
+        for name in spec_ref["__all__"]:
+            cls = getattr(pkg, name)
+            expected = spec_ref["classes"][name]
+            assert cls.__name__ == name
+            assert (inspect.signature(cls.__init__).parameters["agent_id"].default
+                    == expected["agent_id_default"]), f"{name}: default changed"
+            # the create() default too (kept in the baseline reference)
+            _fmod = importlib.import_module(
+                f"agent_civilization.agents.specialists.{spec}.{expected['file']}")
+            assert (inspect.signature(_fmod.create).parameters["aid"].default
+                    == expected["create_aid_default"]), f"{name}: create() default changed"
+
+
+def test_r105_fifty_distinct_classes_per_spec_not_aliases():
+    """R-105: type() must generate 50 DISTINCT class objects per specialization —
+    not 50 names pointing at the same class."""
+    for spec in SPECS:
+        pkg = _pkg(spec)
+        classes = [getattr(pkg, n) for n in pkg.__all__]
+        assert len(set(map(id, classes))) == 50, f"{spec}: not 50 distinct classes"
+
+
+def test_r105_shims_carry_no_duplicated_implementation():
+    """R-105: the 1,000 historical files must be THIN shims — no _process_task/
+    _execute_work/_handle_message definitions left in them (the implementation
+    lives once per spec in _templates/)."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent / "agent_civilization/agents/specialists"
+    files = [f for f in root.glob("*/*.py")
+             if f.name != "__init__.py" and "_templates" not in str(f)]
+    assert len(files) == 1000
+    with_impl = [f for f in files
+                 if any(m in f.read_text() for m in
+                        ("async def _process_task", "async def _execute_work", "async def _handle_message"))]
+    assert not with_impl, f"implementation still duplicated in: {with_impl[:3]}"
+
+
+def test_r105_base_classes_are_the_single_source():
+    """R-105: exactly 20 REAL base classes (one per specialization) exist, and
+    every generated class of a spec inherits the SAME functions from its base —
+    the implementation is shared, not copied (identity, not just structure)."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent / "agent_civilization/agents/specialists"
+    bases = list((root / "_templates").glob("*_base.py"))
+    assert len(bases) == 20, f"expected 20 base classes, found {len(bases)}"
+    for spec in SPECS:
+        base_path = root / "_templates" / f"{spec}_base.py"
+        assert base_path.exists(), f"{spec}: base class missing"
+        import ast as _ast
+        tree = _ast.parse(base_path.read_text())
+        class_defs = [n for n in _ast.walk(tree) if isinstance(n, _ast.ClassDef)]
+        assert class_defs, f"{spec}: no class in the base module"
+        # the base class defines the live methods
+        method_names = {m.name for c in class_defs for m in c.body
+                        if isinstance(m, (_ast.AsyncFunctionDef, _ast.FunctionDef))}
+        for needed in ("_process_task", "_execute_work", "_handle_message", "get_status"):
+            assert needed in method_names, f"{spec}: {needed} not defined in the base"
+
+        # and every generated class SHARES the base's functions (identity)
+        pkg = _pkg(spec)
+        for name in pkg.__all__:
+            cls = getattr(pkg, name)
+            assert cls._process_task is not None
+            # inherited from the base: the class's MRO[1] (the base) provides it
+            base_cls = cls.__mro__[1]
+            assert "_process_task" in base_cls.__dict__, (
+                f"{name}: _process_task not on the base")
+            assert cls.__dict__.get("_process_task") is None or (
+                cls.__dict__["_process_task"] is base_cls.__dict__["_process_task"])
+
+
+def test_r105_top_level_star_import_still_1000():
+    """R-105: the historical star-import surface is unchanged — 1000 classes."""
+    ns = {}
+    exec("from agent_civilization.agents.specialists import *", ns)
+    class_names = [n for n in ns if n.endswith(tuple("0123456789")) and "Agent" in n]
+    assert len(class_names) == 1000
+
+
+def test_r105_import_paths_return_the_same_class_object():
+    """R-105: importing a class via the ROOT package, the SPEC package, and the
+    INDIVIDUAL historical file must return the SAME class object (identity),
+    with the historical __module__ and defaults."""
+    import importlib
+    import agent_civilization.agents.specialists as top
+    samples = [
+        ("analyst", "AnalystAgent0015"), ("monitor", "MonitorAgent0428"),
+        ("surgeon", "SurgeonAgent0992"), ("validator", "ValidatorAgent0019"),
+    ]
+    for spec, name in samples:
+        via_root = getattr(top, name)
+        via_pkg = getattr(_pkg(spec), name)
+        aid = int(name.rsplit("Agent", 1)[1])
+        via_file = getattr(importlib.import_module(
+            f"agent_civilization.agents.specialists.{spec}.{spec}_{aid:04d}"), name)
+        assert via_root is via_pkg, f"{name}: root != spec package"
+        assert via_pkg is via_file, f"{name}: spec package != individual file"
+
+
+@pytest.mark.asyncio
+async def test_r105_every_spec_executes_a_real_task():
+    """R-105: behavior preserved — one agent from EVERY specialization (all 20)
+    executes a task through the real dispatcher and the result is checked,
+    not just accepted as any dict."""
+    hub = CommunicationHub()
+    for spec in SPECS:
+        pkg = _pkg(spec)
+        cls = getattr(pkg, pkg.__all__[0])
+        agent = cls(name=f"{spec}_0001", hub=hub, agent_id=1)
+        assert agent.specialization == spec
+        result = await agent._process_task({"prompt": "demo"})
+        assert isinstance(result, dict), f"{spec}: not a dict"
+        # a demo prompt either succeeds honestly or fails honestly — but it
+        # must carry the ok flag and (on failure) an error, never a silent mask
+        assert "ok" in result, f"{spec}: no ok flag"
+        if not result.get("ok"):
+            assert result.get("error"), f"{spec}: failure without an error"

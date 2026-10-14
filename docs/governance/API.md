@@ -108,3 +108,7 @@
 ناتج الوكيل (`outcome` في `/api/chat`، `result` في `GET /api/tasks/{id}`، مراحل خطوط الأنابيب) يضيف بجانب `ok/agent/elapsed_s/result`:
 `experience: {memory: {recalled: [{memory_id, score, ok, prompt, answer, agent, age_s}], stored_id, fallback_used}, learning: {prior: {specialization, input_kind, samples, success_rate?, avg_duration_ms?}, after: {...}}}`.
 يغيب الحقل إن `AGOS_MEMORY=0` أو فشلت الطبقة. عند بديل `researcher` يحمل `result`: `degraded: true`، `source: "memory"`، `live_error`، `memory_id`. `GET /api/system/status` يضيف `experience` (الإحصاءات نفسها التي يعيدها `/api/learning`).
+## ملاحظات السلوك الدلالي (R-105)
+
+- **الأصناف المولَّدة**: أصناف التخصصات الخمسون لكل تخصص تُولَّد عند الاستيراد من صنف أساس واحد لكل تخصص (`_templates/<spec>_base.py`) عبر `type()` — بالأسماء/الافتراضات/الترتيب التاريخية نفسها. الاستيراد عبر الجذر أو الحزمة أو الملف الفردي يعيد **نفس كائن الصنف**. لا تغيير في الواجهة أو السلوك (1000/1000 محفوظة).
+- **`create()`**: الاسم يُحسب وقت الاستدعاء (`create(hub, aid)` → `name="{spec}_{aid:04d}"`) — ليس مُثبَّتاً.
