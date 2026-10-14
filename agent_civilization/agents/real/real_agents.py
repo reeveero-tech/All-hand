@@ -14,6 +14,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from agent_civilization.core import experience as _experience
 from agent_civilization.core.agents.real_dispatcher import (
     coverage as _coverage,
     dispatch as _dispatch,
@@ -81,9 +82,14 @@ class RealSpecialistAgent:
         started = time.time()
         self.status = "working"
         try:
-            result = await _dispatch(self.specialization, work or {})
-            if result is None:
-                result = {"ok": False, "error": f"no handler for {self.specialization}"}
+            work = work or {}
+
+            async def call():
+                r = await _dispatch(self.specialization, work)
+                return r if r is not None else {"ok": False, "error": f"no handler for {self.specialization}"}
+
+            # R-103: memory + learning around the real handler (D-046)
+            result, exp = await _experience.run_with_experience(self.specialization, self.name, work, call)
             ok = bool(result.get("ok"))
             if ok:
                 self.stats["tasks_completed"] += 1
@@ -91,7 +97,10 @@ class RealSpecialistAgent:
                 self.stats["tasks_failed"] += 1
             elapsed = round(time.time() - started, 3)
             self.stats["total_time_s"] += elapsed
-            return {"ok": ok, "agent": self.name, "elapsed_s": elapsed, "result": result}
+            out = {"ok": ok, "agent": self.name, "elapsed_s": elapsed, "result": result}
+            if exp is not None:
+                out["experience"] = exp
+            return out
         except Exception as exc:  # noqa: BLE001
             elapsed = round(time.time() - started, 3)
             self.stats["tasks_failed"] += 1

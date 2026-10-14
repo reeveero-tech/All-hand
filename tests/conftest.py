@@ -191,3 +191,15 @@ def _reset_storage_outcomes():
     reset_storage_stats()
     yield
     reset_storage_stats()
+
+
+@pytest.fixture(autouse=True)
+def _fresh_experience(monkeypatch):
+    """R-103: memory/learning are process-wide; every test starts empty and never
+    writes a persistence file unless it sets one itself."""
+    from agent_civilization.core import experience
+    monkeypatch.delenv("AGOS_MEMORY_FILE", raising=False)
+    experience.reset()
+    yield
+    experience.reset()
+

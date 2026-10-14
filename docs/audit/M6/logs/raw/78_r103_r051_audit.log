@@ -1,0 +1,188 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: R-051 audit after R-103
+# env_overrides={'AGOS_ALLOW_CODE_EXEC': '1'}
+$ /tmp/v311/bin/python scripts/run_r051_audit.py
+returncode=0
+--- stdout ---
+{
+  "run_at": "2026-10-14T02:14:51+0000",
+  "coverage_self_report": {
+    "real_specializations": [
+      "analyst",
+      "api_integrator",
+      "architect",
+      "builder",
+      "code_generator",
+      "communicator",
+      "data_processor",
+      "db_manager",
+      "designer",
+      "educator",
+      "modifier",
+      "monitor",
+      "network_client",
+      "researcher",
+      "reviewer",
+      "self_developer",
+      "strategist",
+      "surgeon",
+      "test_runner",
+      "validator"
+    ],
+    "count": 20
+  },
+  "tool_policy": {
+    "code_execution": {
+      "allowed": true,
+      "reason": "AGOS_ALLOW_CODE_EXEC=1",
+      "limits": {
+        "cpu_seconds": 5,
+        "address_space_bytes": 536870912,
+        "file_size_bytes": 10485760,
+        "open_files": 64
+      },
+      "wall_timeout_s": 8.0,
+      "server_process_non_dumpable": true
+    },
+    "outbound_network": {
+      "private_targets_allowed": false
+    },
+    "sqlite": {
+      "time_budget_s": 3.0,
+      "attach": "denied",
+      "max_value_bytes": 1000000
+    }
+  },
+  "rows": [
+    {
+      "specialization": "analyst",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"n\": 10, \"mean\": 5.5, \"stdev\": 2.8722813232690143, \"min\": 1.0, \"max\": 10.0, \"outliers\": [], \"trend\": \"up\"}"
+    },
+    {
+      "specialization": "api_integrator",
+      "status": "real",
+      "elapsed_ms": 244.3,
+      "detail": "{\"status\": 200, \"content_type\": \"application/json; charset=utf-8\", \"latency_ms\": 242.92, \"bytes\": 5996, \"sample\": {\"id\": 81598961, \"node_id\": \"MDEwOlJlcG9zaXRvc"
+    },
+    {
+      "specialization": "architect",
+      "status": "real",
+      "elapsed_ms": 1.4,
+      "detail": "{\"assumed_baseline\": false, \"components\": [{\"name\": \"api\", \"layer\": \"interface\", \"responsibility\": \"request/response contract\", \"depends_on\": [], \"why\": \"reques"
+    },
+    {
+      "specialization": "builder",
+      "status": "real",
+      "elapsed_ms": 1.7,
+      "detail": "{\"stack\": \"custom\", \"project\": \"project\", \"source\": \"paths from data\", \"files\": [{\"path\": \"app.py\", \"bytes\": 110, \"check\": \"compile\", \"verified\": true, \"content"
+    },
+    {
+      "specialization": "code_generator",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"generated\": false, \"parsed\": true, \"functions\": [\"add\"], \"classes\": [], \"lines\": 3}"
+    },
+    {
+      "specialization": "communicator",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"positive\": 0, \"negative\": 0, \"score\": 0.0, \"label\": \"neutral\"}"
+    },
+    {
+      "specialization": "data_processor",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"n\": 6, \"sum\": 21.0, \"median\": 3.5, \"p25\": 2.0, \"p75\": 4.0, \"variance\": 2.9166666666666665}"
+    },
+    {
+      "specialization": "db_manager",
+      "status": "real",
+      "elapsed_ms": 1.0,
+      "detail": "{\"columns\": [\"x\"], \"rows\": [[1]]}"
+    },
+    {
+      "specialization": "designer",
+      "status": "real",
+      "elapsed_ms": 0.7,
+      "detail": "{\"palette\": {\"background\": \"#f6f9f7\", \"surface\": \"#e7efe9\", \"text\": \"#1a231d\", \"primary\": \"#307e4a\", \"secondary\": \"#3b9b8b\", \"accent\": \"#9b3b7b\"}, \"theme\": \"lig"
+    },
+    {
+      "specialization": "educator",
+      "status": "real",
+      "elapsed_ms": 0.2,
+      "detail": "{\"key_points\": [\"explain recursion\"], \"reading_time_min\": 0.01}"
+    },
+    {
+      "specialization": "modifier",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"changed\": false, \"applied\": [], \"new_code\": \"def foo():\\n    pass\\n\", \"diff\": \"\", \"verified\": \"ast.parse\"}"
+    },
+    {
+      "specialization": "monitor",
+      "status": "real",
+      "elapsed_ms": 0.3,
+      "detail": "{\"pid\": 31478, \"user_cpu_s\": 0.083, \"sys_cpu_s\": 0.012, \"max_rss_kb\": 30784, \"loadavg\": [0.2333984375, 0.0810546875, 0.02099609375]}"
+    },
+    {
+      "specialization": "network_client",
+      "status": "real",
+      "elapsed_ms": 8.5,
+      "detail": "{\"host\": \"github.com\", \"ip\": \"140.82.114.4\", \"addresses\": [\"140.82.114.4\"], \"resolve_ms\": 8.2}"
+    },
+    {
+      "specialization": "researcher",
+      "status": "failed",
+      "elapsed_ms": 18.8,
+      "detail": "search: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1016)>"
+    },
+    {
+      "specialization": "reviewer",
+      "status": "real",
+      "elapsed_ms": 1.7,
+      "detail": "{\"loc\": 3, \"comments\": 0, \"comment_ratio\": 0.0}"
+    },
+    {
+      "specialization": "self_developer",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"real_specializations\": [\"analyst\", \"api_integrator\", \"architect\", \"builder\", \"code_generator\", \"communicator\", \"data_processor\", \"db_manager\", \"designer\", \"ed"
+    },
+    {
+      "specialization": "strategist",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"roadmap\": [{\"step\": 1, \"goal\": \"a\", \"weight\": 1.0}, {\"step\": 2, \"goal\": \"b\", \"weight\": 0.67}, {\"step\": 3, \"goal\": \"c\", \"weight\": 0.33}]}"
+    },
+    {
+      "specialization": "surgeon",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"issues\": []}"
+    },
+    {
+      "specialization": "test_runner",
+      "status": "real",
+      "elapsed_ms": 14.8,
+      "detail": "{\"stdout\": \"\", \"stderr\": \"\", \"elapsed_s\": 0.012, \"sandbox\": true}"
+    },
+    {
+      "specialization": "validator",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"type\": \"dict\"}"
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "real": 19,
+    "simulated": 0,
+    "failed": 1,
+    "refused_by_policy": 0
+  }
+}
+
+--- stderr ---
+

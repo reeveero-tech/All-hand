@@ -1,0 +1,150 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: tests/test_r103_memory_learning.py against main eaa41e2 (tracked changes stashed). Separately: old memory_system stored 50,000 entries on Linux with no id collision — the id fix is preventive, shown with a fixed clock
+# env_overrides={}
+$ /tmp/v311/bin/python -m pytest tests/test_r103_memory_learning.py -q -p no:cacheprovider -rA
+returncode=1
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: platformdirs-4.13.0, cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 17 items
+
+tests/test_r103_memory_learning.py FFFFFFFFFFFF.FFFF                     [100%]
+
+=================================== FAILURES ===================================
+_____________ test_later_api_task_recalls_the_earlier_similar_one ______________
+tests/test_r103_memory_learning.py:43: in test_later_api_task_recalls_the_earlier_similar_one
+    assert first["experience"]["memory"]["recalled"] == []
+           ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'experience'
+________ test_unrelated_or_other_specialization_tasks_are_not_recalled _________
+tests/test_r103_memory_learning.py:54: in test_unrelated_or_other_specialization_tasks_are_not_recalled
+    assert _task(client, "analyst", "حلل درجات الطلاب", [70, 80, 90])["experience"]["memory"]["recalled"] == []
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'experience'
+_______________________ test_failures_are_remembered_too _______________________
+tests/test_r103_memory_learning.py:62: in test_failures_are_remembered_too
+    hits = client.get("/api/memory", params={"specialization": "modifier"}).json()["memories"]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'memories'
+________________ test_learning_prior_reflects_earlier_outcomes _________________
+tests/test_r103_memory_learning.py:69: in test_learning_prior_reflects_earlier_outcomes
+    assert r1["ok"] and r1["experience"]["learning"]["prior"]["samples"] == 0
+                        ^^^^^^^^^^^^^^^^
+E   KeyError: 'experience'
+________________________ test_status_reports_experience ________________________
+tests/test_r103_memory_learning.py:80: in test_status_reports_experience
+    exp = client.get("/api/system/status").json()["experience"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'experience'
+___ test_researcher_falls_back_to_a_remembered_result_when_live_search_fails ___
+tests/test_r103_memory_learning.py:97: in test_researcher_falls_back_to_a_remembered_result_when_live_search_fails
+    assert again["ok"] is True and res["degraded"] is True and res["source"] == "memory"
+E   assert (False is True)
+_________ test_researcher_without_a_close_memory_still_fails_honestly __________
+tests/test_r103_memory_learning.py:109: in test_researcher_without_a_close_memory_still_fails_honestly
+    assert other["ok"] is False and other["experience"]["memory"]["fallback_used"] is None
+                                    ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'experience'
+_____________________ test_only_researcher_gets_a_fallback _____________________
+tests/test_r103_memory_learning.py:116: in test_only_researcher_gets_a_fallback
+    assert r["ok"] is False and r["experience"]["memory"]["fallback_used"] is None
+                                ^^^^^^^^^^^^^^^
+E   KeyError: 'experience'
+___________ test_specialists_implementation_has_the_same_experience ____________
+tests/test_r103_memory_learning.py:128: in test_specialists_implementation_has_the_same_experience
+    assert out["impl"] and out["experience"]["memory"]["recalled"][0]["prompt"] == "analyze weekly sales"
+                           ^^^^^^^^^^^^^^^^^
+E   KeyError: 'experience'
+_________ test_memory_and_learning_survive_a_restart_through_the_file __________
+tests/test_r103_memory_learning.py:138: in test_memory_and_learning_survive_a_restart_through_the_file
+    assert json.loads(f.read_text(encoding="utf-8"))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/pathlib.py:1058: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/pathlib.py:1044: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pytest-of-user/pytest-26/test_memory_and_learning_survi0/memory.json'
+____________________________ test_memory_is_bounded ____________________________
+tests/test_r103_memory_learning.py:151: in test_memory_is_bounded
+    assert client.get("/api/learning").json()["memories"] == 10
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'memories'
+_____________________ test_disabled_layer_leaves_no_trace ______________________
+tests/test_r103_memory_learning.py:158: in test_disabled_layer_leaves_no_trace
+    assert client.get("/api/learning").json()["memories"] == 0
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'memories'
+_________________ test_clearing_memory_needs_a_configured_key __________________
+tests/test_r103_memory_learning.py:171: in test_clearing_memory_needs_a_configured_key
+    assert client.delete("/api/memory").status_code == 403          # open mode
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 405 == 403
+E    +  where 405 = <Response [405 Method Not Allowed]>.status_code
+E    +    where <Response [405 Method Not Allowed]> = delete('/api/memory')
+E    +      where delete = <starlette.testclient.TestClient object at 0x7f0f33ad4850>.delete
+____________________ test_recall_finds_a_task_by_its_prompt ____________________
+tests/test_r103_memory_learning.py:185: in test_recall_finds_a_task_by_its_prompt
+    assert len(asyncio.run(go())) == 1
+E   assert 0 == 1
+E    +  where 0 = len([])
+E    +    where [] = <function run at 0x7f0f43a7fec0>(<coroutine object test_recall_finds_a_task_by_its_prompt.<locals>.go at 0x7f0f33a56020>)
+E    +      where <function run at 0x7f0f43a7fec0> = asyncio.run
+E    +      and   <coroutine object test_recall_finds_a_task_by_its_prompt.<locals>.go at 0x7f0f33a56020> = <function test_recall_finds_a_task_by_its_prompt.<locals>.go at 0x7f0f41f87060>()
+___________________________ test_load_restores_types ___________________________
+tests/test_r103_memory_learning.py:200: in test_load_restores_types
+    found = asyncio.run(go())
+            ^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r103_memory_learning.py:199: in go
+    return await m2.search(MemoryQuery(memory_type=MemoryType.SEMANTIC, limit=10))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agos_kernel/agent_production/memory_system.py:220: in search
+    memories.sort(
+agos_kernel/agent_production/memory_system.py:221: in <lambda>
+    key=lambda m: (m.importance, m.last_accessed.timestamp()),
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'str' object has no attribute 'timestamp'
+___________________ test_ids_do_not_depend_only_on_the_clock ___________________
+tests/test_r103_memory_learning.py:222: in test_ids_do_not_depend_only_on_the_clock
+    assert asyncio.run(go()) == 200
+E   assert 1 == 200
+E    +  where 1 = <function run at 0x7f0f43a7fec0>(<coroutine object test_ids_do_not_depend_only_on_the_clock.<locals>.go at 0x7f0f33a360a0>)
+E    +    where <function run at 0x7f0f43a7fec0> = asyncio.run
+E    +    and   <coroutine object test_ids_do_not_depend_only_on_the_clock.<locals>.go at 0x7f0f33a360a0> = <function test_ids_do_not_depend_only_on_the_clock.<locals>.go at 0x7f0f33a33b00>()
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_r103_memory_learning.py::test_a_broken_memory_never_breaks_the_task
+FAILED tests/test_r103_memory_learning.py::test_later_api_task_recalls_the_earlier_similar_one
+FAILED tests/test_r103_memory_learning.py::test_unrelated_or_other_specialization_tasks_are_not_recalled
+FAILED tests/test_r103_memory_learning.py::test_failures_are_remembered_too
+FAILED tests/test_r103_memory_learning.py::test_learning_prior_reflects_earlier_outcomes
+FAILED tests/test_r103_memory_learning.py::test_status_reports_experience - K...
+FAILED tests/test_r103_memory_learning.py::test_researcher_falls_back_to_a_remembered_result_when_live_search_fails
+FAILED tests/test_r103_memory_learning.py::test_researcher_without_a_close_memory_still_fails_honestly
+FAILED tests/test_r103_memory_learning.py::test_only_researcher_gets_a_fallback
+FAILED tests/test_r103_memory_learning.py::test_specialists_implementation_has_the_same_experience
+FAILED tests/test_r103_memory_learning.py::test_memory_and_learning_survive_a_restart_through_the_file
+FAILED tests/test_r103_memory_learning.py::test_memory_is_bounded - KeyError:...
+FAILED tests/test_r103_memory_learning.py::test_disabled_layer_leaves_no_trace
+FAILED tests/test_r103_memory_learning.py::test_clearing_memory_needs_a_configured_key
+FAILED tests/test_r103_memory_learning.py::test_recall_finds_a_task_by_its_prompt
+FAILED tests/test_r103_memory_learning.py::test_load_restores_types - Attribu...
+FAILED tests/test_r103_memory_learning.py::test_ids_do_not_depend_only_on_the_clock
+========================= 16 failed, 1 passed in 0.80s =========================
+
+--- stderr ---
+

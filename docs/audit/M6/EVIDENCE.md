@@ -948,3 +948,15 @@ network_client) بمهامها الفعلية — نجاح القياس لا ي�
 | `tests/test_r102_honest_handlers.py` | 1/29 (`raw/65`) | 29/29 |
 | pytest 3.11 / 3.12 | 300 + 3 + 3 | 329 + 3 + 3 (`raw/68..69`) |
 
+## R-103 — الذاكرة والتعلم في المسار الحي (2026-10-14، D-046)
+
+الفهرس: `logs/97_r103_memory_learning.log`؛ الخام: `logs/raw/72..80`.
+
+| المقياس | قبل (`raw/72`) | بعد (`raw/74`) |
+|---|---|---|
+| مهمة analyst ثانية مشابهة | لا `experience` | تسترجع الأولى (score 0.7) بإجابتها «n=4 mean=12.000 …» |
+| `researcher` بعد انقطاع الشبكة | `ok=false` «connection reset» | `ok=true`، `degraded`، `source: memory`، `live_error` محفوظ |
+| `GET /api/learning` | 404 | 200 — عينات ونسب نجاح لكل تخصص ونوع مدخل |
+| `tests/test_r103_memory_learning.py` | 1/17 (`raw/73`) | 17/17 |
+| pytest 3.11 / 3.12 | 329 + 3 + 3 | 346 + 3 + 3 (`raw/75..76`) |
+| R-051 | — | 19/20 ×3 (`raw/78..80`): `researcher` TLS من DuckDuckGo؛ المسار المقاس بلا تغيير |
