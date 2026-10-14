@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """EducatorAgent0690 — thin compatibility shim (R-105 / D-049).
 
-The implementation was deduplicated into the single template body in
-_templates/educator_template.py; this historical module now just re-exports the
-generated class and the create() function so any existing importer keeps working.
+The implementation was deduplicated into the single base class in
+_templates/educator_base.py; this historical module re-exports the generated
+class (a type() subclass with the historical name and agent_id default) and
+the create() function.
 """
 
 from agent_civilization.agents.specialists.educator import EducatorAgent0690 as EducatorAgent0690  # noqa: F401
+from agent_civilization.agents.specialists._templates._factory import generate_create
 
 __all__ = ["EducatorAgent0690", "create"]
 
-
-def create(hub, aid: int = 690):
-    """The historical create() — kept with the same default."""
-    return EducatorAgent0690(name="educator_0690", hub=hub, agent_id=aid)
+create = generate_create("educator", EducatorAgent0690, 690)

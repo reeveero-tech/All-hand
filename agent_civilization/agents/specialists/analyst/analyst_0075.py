@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """AnalystAgent0075 — thin compatibility shim (R-105 / D-049).
 
-The implementation was deduplicated into the single template body in
-_templates/analyst_template.py; this historical module now just re-exports the
-generated class and the create() function so any existing importer keeps working.
+The implementation was deduplicated into the single base class in
+_templates/analyst_base.py; this historical module re-exports the generated
+class (a type() subclass with the historical name and agent_id default) and
+the create() function.
 """
 
 from agent_civilization.agents.specialists.analyst import AnalystAgent0075 as AnalystAgent0075  # noqa: F401
+from agent_civilization.agents.specialists._templates._factory import generate_create
 
 __all__ = ["AnalystAgent0075", "create"]
 
-
-def create(hub, aid: int = 75):
-    """The historical create() — kept with the same default."""
-    return AnalystAgent0075(name="analyst_0075", hub=hub, agent_id=aid)
+create = generate_create("analyst", AnalystAgent0075, 75)

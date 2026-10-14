@@ -108,6 +108,7 @@ def test_star_import_from_root_brings_classes():
 def test_r105_all_1000_names_and_defaults_match_the_baseline():
     """R-105: the generated classes must match the historical baseline exactly —
     names, __all__ order, agent_id defaults, create() defaults."""
+    import importlib
     import json
     from pathlib import Path
 
@@ -124,6 +125,11 @@ def test_r105_all_1000_names_and_defaults_match_the_baseline():
             assert cls.__name__ == name
             assert (inspect.signature(cls.__init__).parameters["agent_id"].default
                     == expected["agent_id_default"]), f"{name}: default changed"
+            # the create() default too (kept in the baseline reference)
+            _fmod = importlib.import_module(
+                f"agent_civilization.agents.specialists.{spec}.{expected['file']}")
+            assert (inspect.signature(_fmod.create).parameters["aid"].default
+                    == expected["create_aid_default"]), f"{name}: create() default changed"
 
 
 def test_r105_fifty_distinct_classes_per_spec_not_aliases():
@@ -171,17 +177,41 @@ def test_r105_top_level_star_import_still_1000():
     assert len(class_names) == 1000
 
 
+def test_r105_import_paths_return_the_same_class_object():
+    """R-105: importing a class via the ROOT package, the SPEC package, and the
+    INDIVIDUAL historical file must return the SAME class object (identity),
+    with the historical __module__ and defaults."""
+    import importlib
+    import agent_civilization.agents.specialists as top
+    samples = [
+        ("analyst", "AnalystAgent0015"), ("monitor", "MonitorAgent0428"),
+        ("surgeon", "SurgeonAgent0992"), ("validator", "ValidatorAgent0019"),
+    ]
+    for spec, name in samples:
+        via_root = getattr(top, name)
+        via_pkg = getattr(_pkg(spec), name)
+        aid = int(name.rsplit("Agent", 1)[1])
+        via_file = getattr(importlib.import_module(
+            f"agent_civilization.agents.specialists.{spec}.{spec}_{aid:04d}"), name)
+        assert via_root is via_pkg, f"{name}: root != spec package"
+        assert via_pkg is via_file, f"{name}: spec package != individual file"
+
+
 @pytest.mark.asyncio
-async def test_r105_sample_agent_from_every_spec_still_executes():
-    """R-105: behavior preserved — one agent from every specialization executes a
-    task through the real dispatcher (the same acceptance as before the dedup)."""
-    from agent_civilization.agents.specialists import (
-        analyst, api_integrator, db_manager, monitor,
-    )
+async def test_r105_every_spec_executes_a_real_task():
+    """R-105: behavior preserved — one agent from EVERY specialization (all 20)
+    executes a task through the real dispatcher and the result is checked,
+    not just accepted as any dict."""
     hub = CommunicationHub()
-    for pkg in (analyst, api_integrator, db_manager, monitor):
+    for spec in SPECS:
+        pkg = _pkg(spec)
         cls = getattr(pkg, pkg.__all__[0])
-        agent = cls(name=cls.__name__.lower(), hub=hub, agent_id=1)
-        assert agent.specialization
+        agent = cls(name=f"{spec}_0001", hub=hub, agent_id=1)
+        assert agent.specialization == spec
         result = await agent._process_task({"prompt": "demo"})
-        assert isinstance(result, dict)
+        assert isinstance(result, dict), f"{spec}: not a dict"
+        # a demo prompt either succeeds honestly or fails honestly — but it
+        # must carry the ok flag and (on failure) an error, never a silent mask
+        assert "ok" in result, f"{spec}: no ok flag"
+        if not result.get("ok"):
+            assert result.get("error"), f"{spec}: failure without an error"

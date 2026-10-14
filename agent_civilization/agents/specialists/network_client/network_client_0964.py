@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """NetworkClientAgent0964 — thin compatibility shim (R-105 / D-049).
 
-The implementation was deduplicated into the single template body in
-_templates/network_client_template.py; this historical module now just re-exports the
-generated class and the create() function so any existing importer keeps working.
+The implementation was deduplicated into the single base class in
+_templates/network_client_base.py; this historical module re-exports the generated
+class (a type() subclass with the historical name and agent_id default) and
+the create() function.
 """
 
 from agent_civilization.agents.specialists.network_client import NetworkClientAgent0964 as NetworkClientAgent0964  # noqa: F401
+from agent_civilization.agents.specialists._templates._factory import generate_create
 
 __all__ = ["NetworkClientAgent0964", "create"]
 
-
-def create(hub, aid: int = 964):
-    """The historical create() — kept with the same default."""
-    return NetworkClientAgent0964(name="network_client_0964", hub=hub, agent_id=aid)
+create = generate_create("network_client", NetworkClientAgent0964, 964)

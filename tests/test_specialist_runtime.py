@@ -146,13 +146,42 @@ def test_live_server_routes_with_specialists(specialists_server):
 # --------------------------------------------- R-105 (dedup, 1000/1000)
 def test_r105_specialists_impl_still_builds_1000(monkeypatch):
     """R-105: AGOS_AGENT_IMPL=specialists still builds 1000/1000 — the same
-    acceptance evidence as docs/audit/M7/logs/08 (R-032)."""
+    acceptance evidence as docs/audit/M7/logs/08 (R-032): construction AND
+    execution of 1000 tasks, with the ok count asserted (not just agents built)."""
+    import asyncio
     monkeypatch.setenv("AGOS_AGENT_IMPL", "specialists")
+    monkeypatch.setenv("AGOS_ALLOW_CODE_EXEC", "1")  # R-100/D-044: test_runner needs it
     civ = create_civilization(50)
     total = sum(len(v) for v in civ.values())
     assert total == 1000
-    # and every agent is on the shared hub with its specialization set
+    # every agent is on the shared hub with its specialization set
     for spec, agents in civ.items():
         assert len(agents) == 50
         for a in agents:
             assert a.specialization == spec
+
+    # AND the 1000 tasks actually execute (the historical 1000/1000 acceptance)
+    PAYLOADS = {
+        "analyst": {"prompt": "avg", "data": [1, 2, 3, 4]},
+        "data_processor": {"prompt": "sum", "data": [1, 2, 3, 4]},
+        "db_manager": {"prompt": "CREATE TABLE t(x INTEGER)"},
+        "network_client": {"prompt": "check connectivity to example.com"},
+        "test_runner": {"prompt": "print(1+1)"},
+        "validator": {"prompt": '{"a":1}'},
+        "api_integrator": {"prompt": "GET https://example.com"},
+        "code_generator": {"data": "def hello():\n    return 1"},
+        "surgeon": {"data": "def f():\n    try:\n        pass\n    except:\n        pass\n"},
+        "modifier": {"data": "x = 1   \n"},
+    }
+
+    async def run_all():
+        tasks = []
+        for spec, agents in civ.items():
+            for a in agents:
+                payload = PAYLOADS.get(spec, {"prompt": "demo"})
+                tasks.append(a.execute(payload))
+        return await asyncio.gather(*tasks)
+
+    results = asyncio.run(run_all())
+    ok_count = sum(1 for r in results if r.get("ok"))
+    assert ok_count == 1000, f"expected 1000/1000, got {ok_count}/1000"

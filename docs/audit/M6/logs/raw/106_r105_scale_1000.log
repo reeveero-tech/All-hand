@@ -1,8 +1,11 @@
-# R-105 scale evidence (same measurement as docs/audit/M7/logs/08)
-# 2026-10-14T05:30:17.407393+00:00
+# R-105 scale evidence — build and exec timers SEPARATED (methodology as M7/logs/08)
+# measurement script: docs/audit/M6/scripts/r105_scale_measure.py
+# env: AGOS_AGENT_IMPL=specialists AGOS_ALLOW_CODE_EXEC=1 (R-100/D-044)
+# 2026-10-14T05:37:06.102294+00:00
 # exit_code=0
 --- stdout ---
-impl=specialists agents=1000 build_s=0.746 exec_1000_s=2.25 ok=1000/1000 maxrss_mb=138.6
+impl=specialists agents=1000 build_s=0.028 exec_1000_s=1.61 ok=1000/1000 maxrss_mb=124.3
+env: AGOS_AGENT_IMPL=specialists AGOS_ALLOW_CODE_EXEC=1
 SCALE-OK
 
 --- stderr ---

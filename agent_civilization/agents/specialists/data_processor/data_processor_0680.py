@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """DataProcessorAgent0680 — thin compatibility shim (R-105 / D-049).
 
-The implementation was deduplicated into the single template body in
-_templates/data_processor_template.py; this historical module now just re-exports the
-generated class and the create() function so any existing importer keeps working.
+The implementation was deduplicated into the single base class in
+_templates/data_processor_base.py; this historical module re-exports the generated
+class (a type() subclass with the historical name and agent_id default) and
+the create() function.
 """
 
 from agent_civilization.agents.specialists.data_processor import DataProcessorAgent0680 as DataProcessorAgent0680  # noqa: F401
+from agent_civilization.agents.specialists._templates._factory import generate_create
 
 __all__ = ["DataProcessorAgent0680", "create"]
 
-
-def create(hub, aid: int = 680):
-    """The historical create() — kept with the same default."""
-    return DataProcessorAgent0680(name="data_processor_0680", hub=hub, agent_id=aid)
+create = generate_create("data_processor", DataProcessorAgent0680, 680)

@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """SelfDeveloperAgent0053 — thin compatibility shim (R-105 / D-049).
 
-The implementation was deduplicated into the single template body in
-_templates/self_developer_template.py; this historical module now just re-exports the
-generated class and the create() function so any existing importer keeps working.
+The implementation was deduplicated into the single base class in
+_templates/self_developer_base.py; this historical module re-exports the generated
+class (a type() subclass with the historical name and agent_id default) and
+the create() function.
 """
 
 from agent_civilization.agents.specialists.self_developer import SelfDeveloperAgent0053 as SelfDeveloperAgent0053  # noqa: F401
+from agent_civilization.agents.specialists._templates._factory import generate_create
 
 __all__ = ["SelfDeveloperAgent0053", "create"]
 
-
-def create(hub, aid: int = 53):
-    """The historical create() — kept with the same default."""
-    return SelfDeveloperAgent0053(name="self_developer_0053", hub=hub, agent_id=aid)
+create = generate_create("self_developer", SelfDeveloperAgent0053, 53)

@@ -1,9 +1,10 @@
-# R-105 evidence pack FINAL (specialists dedup — full raw, no truncation, no --silent)
-# started 2026-10-14T05:31:00.112465+00:00
+# R-105 evidence pack ROUND 2 (real base classes + type() factory — full raw)
+# started 2026-10-14T05:38:12.062583+00:00
 # repo (absolute cwd): /home/user/workspace/All-hand
-# git head: 9e72b0ee12800b1a71793eba3c53576823535432
-# git status --porcelain (at pack time, first 2000 chars):
- M agent_civilization/agents/specialists/analyst/__init__.py
+# git head: aca47d581bde605aecbfaf065e467c7a2a526c62
+# git branch: m6/r105-specialists-dedup
+# git status --porcelain (COMPLETE, not truncated):
+ M agent_civilization/agents/specialists/_templates/_factory.py
  M agent_civilization/agents/specialists/analyst/analyst_0015.py
  M agent_civilization/agents/specialists/analyst/analyst_0035.py
  M agent_civilization/agents/specialists/analyst/analyst_0055.py
@@ -33,8 +34,1021 @@
  M agent_civilization/agents/specialists/analyst/analyst_0535.py
  M agent_civilization/agents/specialists/analyst/analyst_0555.py
  M agent_civilization/agents/specialists/analyst/analyst_0575.py
- M agent_civilization/agents/specialists/analyst/analy
+ M agent_civilization/agents/specialists/analyst/analyst_0595.py
+ M agent_civilization/agents/specialists/analyst/analyst_0615.py
+ M agent_civilization/agents/specialists/analyst/analyst_0635.py
+ M agent_civilization/agents/specialists/analyst/analyst_0655.py
+ M agent_civilization/agents/specialists/analyst/analyst_0675.py
+ M agent_civilization/agents/specialists/analyst/analyst_0695.py
+ M agent_civilization/agents/specialists/analyst/analyst_0715.py
+ M agent_civilization/agents/specialists/analyst/analyst_0735.py
+ M agent_civilization/agents/specialists/analyst/analyst_0755.py
+ M agent_civilization/agents/specialists/analyst/analyst_0775.py
+ M agent_civilization/agents/specialists/analyst/analyst_0795.py
+ M agent_civilization/agents/specialists/analyst/analyst_0815.py
+ M agent_civilization/agents/specialists/analyst/analyst_0835.py
+ M agent_civilization/agents/specialists/analyst/analyst_0855.py
+ M agent_civilization/agents/specialists/analyst/analyst_0875.py
+ M agent_civilization/agents/specialists/analyst/analyst_0895.py
+ M agent_civilization/agents/specialists/analyst/analyst_0915.py
+ M agent_civilization/agents/specialists/analyst/analyst_0935.py
+ M agent_civilization/agents/specialists/analyst/analyst_0955.py
+ M agent_civilization/agents/specialists/analyst/analyst_0975.py
+ M agent_civilization/agents/specialists/analyst/analyst_0995.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0001.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0021.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0041.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0061.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0081.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0101.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0121.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0141.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0161.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0181.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0201.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0221.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0241.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0261.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0281.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0301.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0321.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0341.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0361.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0381.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0401.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0421.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0441.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0461.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0481.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0501.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0521.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0541.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0561.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0581.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0601.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0621.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0641.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0661.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0681.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0701.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0721.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0741.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0761.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0781.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0801.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0821.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0841.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0861.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0881.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0901.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0921.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0941.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0961.py
+ M agent_civilization/agents/specialists/api_integrator/api_integrator_0981.py
+ M agent_civilization/agents/specialists/architect/architect_0014.py
+ M agent_civilization/agents/specialists/architect/architect_0034.py
+ M agent_civilization/agents/specialists/architect/architect_0054.py
+ M agent_civilization/agents/specialists/architect/architect_0074.py
+ M agent_civilization/agents/specialists/architect/architect_0094.py
+ M agent_civilization/agents/specialists/architect/architect_0114.py
+ M agent_civilization/agents/specialists/architect/architect_0134.py
+ M agent_civilization/agents/specialists/architect/architect_0154.py
+ M agent_civilization/agents/specialists/architect/architect_0174.py
+ M agent_civilization/agents/specialists/architect/architect_0194.py
+ M agent_civilization/agents/specialists/architect/architect_0214.py
+ M agent_civilization/agents/specialists/architect/architect_0234.py
+ M agent_civilization/agents/specialists/architect/architect_0254.py
+ M agent_civilization/agents/specialists/architect/architect_0274.py
+ M agent_civilization/agents/specialists/architect/architect_0294.py
+ M agent_civilization/agents/specialists/architect/architect_0314.py
+ M agent_civilization/agents/specialists/architect/architect_0334.py
+ M agent_civilization/agents/specialists/architect/architect_0354.py
+ M agent_civilization/agents/specialists/architect/architect_0374.py
+ M agent_civilization/agents/specialists/architect/architect_0394.py
+ M agent_civilization/agents/specialists/architect/architect_0414.py
+ M agent_civilization/agents/specialists/architect/architect_0434.py
+ M agent_civilization/agents/specialists/architect/architect_0454.py
+ M agent_civilization/agents/specialists/architect/architect_0474.py
+ M agent_civilization/agents/specialists/architect/architect_0494.py
+ M agent_civilization/agents/specialists/architect/architect_0514.py
+ M agent_civilization/agents/specialists/architect/architect_0534.py
+ M agent_civilization/agents/specialists/architect/architect_0554.py
+ M agent_civilization/agents/specialists/architect/architect_0574.py
+ M agent_civilization/agents/specialists/architect/architect_0594.py
+ M agent_civilization/agents/specialists/architect/architect_0614.py
+ M agent_civilization/agents/specialists/architect/architect_0634.py
+ M agent_civilization/agents/specialists/architect/architect_0654.py
+ M agent_civilization/agents/specialists/architect/architect_0674.py
+ M agent_civilization/agents/specialists/architect/architect_0694.py
+ M agent_civilization/agents/specialists/architect/architect_0714.py
+ M agent_civilization/agents/specialists/architect/architect_0734.py
+ M agent_civilization/agents/specialists/architect/architect_0754.py
+ M agent_civilization/agents/specialists/architect/architect_0774.py
+ M agent_civilization/agents/specialists/architect/architect_0794.py
+ M agent_civilization/agents/specialists/architect/architect_0814.py
+ M agent_civilization/agents/specialists/architect/architect_0834.py
+ M agent_civilization/agents/specialists/architect/architect_0854.py
+ M agent_civilization/agents/specialists/architect/architect_0874.py
+ M agent_civilization/agents/specialists/architect/architect_0894.py
+ M agent_civilization/agents/specialists/architect/architect_0914.py
+ M agent_civilization/agents/specialists/architect/architect_0934.py
+ M agent_civilization/agents/specialists/architect/architect_0954.py
+ M agent_civilization/agents/specialists/architect/architect_0974.py
+ M agent_civilization/agents/specialists/architect/architect_0994.py
+ M agent_civilization/agents/specialists/builder/builder_0006.py
+ M agent_civilization/agents/specialists/builder/builder_0026.py
+ M agent_civilization/agents/specialists/builder/builder_0046.py
+ M agent_civilization/agents/specialists/builder/builder_0066.py
+ M agent_civilization/agents/specialists/builder/builder_0086.py
+ M agent_civilization/agents/specialists/builder/builder_0106.py
+ M agent_civilization/agents/specialists/builder/builder_0126.py
+ M agent_civilization/agents/specialists/builder/builder_0146.py
+ M agent_civilization/agents/specialists/builder/builder_0166.py
+ M agent_civilization/agents/specialists/builder/builder_0186.py
+ M agent_civilization/agents/specialists/builder/builder_0206.py
+ M agent_civilization/agents/specialists/builder/builder_0226.py
+ M agent_civilization/agents/specialists/builder/builder_0246.py
+ M agent_civilization/agents/specialists/builder/builder_0266.py
+ M agent_civilization/agents/specialists/builder/builder_0286.py
+ M agent_civilization/agents/specialists/builder/builder_0306.py
+ M agent_civilization/agents/specialists/builder/builder_0326.py
+ M agent_civilization/agents/specialists/builder/builder_0346.py
+ M agent_civilization/agents/specialists/builder/builder_0366.py
+ M agent_civilization/agents/specialists/builder/builder_0386.py
+ M agent_civilization/agents/specialists/builder/builder_0406.py
+ M agent_civilization/agents/specialists/builder/builder_0426.py
+ M agent_civilization/agents/specialists/builder/builder_0446.py
+ M agent_civilization/agents/specialists/builder/builder_0466.py
+ M agent_civilization/agents/specialists/builder/builder_0486.py
+ M agent_civilization/agents/specialists/builder/builder_0506.py
+ M agent_civilization/agents/specialists/builder/builder_0526.py
+ M agent_civilization/agents/specialists/builder/builder_0546.py
+ M agent_civilization/agents/specialists/builder/builder_0566.py
+ M agent_civilization/agents/specialists/builder/builder_0586.py
+ M agent_civilization/agents/specialists/builder/builder_0606.py
+ M agent_civilization/agents/specialists/builder/builder_0626.py
+ M agent_civilization/agents/specialists/builder/builder_0646.py
+ M agent_civilization/agents/specialists/builder/builder_0666.py
+ M agent_civilization/agents/specialists/builder/builder_0686.py
+ M agent_civilization/agents/specialists/builder/builder_0706.py
+ M agent_civilization/agents/specialists/builder/builder_0726.py
+ M agent_civilization/agents/specialists/builder/builder_0746.py
+ M agent_civilization/agents/specialists/builder/builder_0766.py
+ M agent_civilization/agents/specialists/builder/builder_0786.py
+ M agent_civilization/agents/specialists/builder/builder_0806.py
+ M agent_civilization/agents/specialists/builder/builder_0826.py
+ M agent_civilization/agents/specialists/builder/builder_0846.py
+ M agent_civilization/agents/specialists/builder/builder_0866.py
+ M agent_civilization/agents/specialists/builder/builder_0886.py
+ M agent_civilization/agents/specialists/builder/builder_0906.py
+ M agent_civilization/agents/specialists/builder/builder_0926.py
+ M agent_civilization/agents/specialists/builder/builder_0946.py
+ M agent_civilization/agents/specialists/builder/builder_0966.py
+ M agent_civilization/agents/specialists/builder/builder_0986.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0003.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0023.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0043.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0063.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0083.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0103.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0123.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0143.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0163.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0183.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0203.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0223.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0243.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0263.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0283.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0303.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0323.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0343.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0363.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0383.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0403.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0423.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0443.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0463.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0483.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0503.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0523.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0543.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0563.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0583.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0603.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0623.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0643.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0663.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0683.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0703.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0723.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0743.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0763.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0783.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0803.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0823.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0843.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0863.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0883.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0903.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0923.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0943.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0963.py
+ M agent_civilization/agents/specialists/code_generator/code_generator_0983.py
+ M agent_civilization/agents/specialists/communicator/communicator_0018.py
+ M agent_civilization/agents/specialists/communicator/communicator_0038.py
+ M agent_civilization/agents/specialists/communicator/communicator_0058.py
+ M agent_civilization/agents/specialists/communicator/communicator_0078.py
+ M agent_civilization/agents/specialists/communicator/communicator_0098.py
+ M agent_civilization/agents/specialists/communicator/communicator_0118.py
+ M agent_civilization/agents/specialists/communicator/communicator_0138.py
+ M agent_civilization/agents/specialists/communicator/communicator_0158.py
+ M agent_civilization/agents/specialists/communicator/communicator_0178.py
+ M agent_civilization/agents/specialists/communicator/communicator_0198.py
+ M agent_civilization/agents/specialists/communicator/communicator_0218.py
+ M agent_civilization/agents/specialists/communicator/communicator_0238.py
+ M agent_civilization/agents/specialists/communicator/communicator_0258.py
+ M agent_civilization/agents/specialists/communicator/communicator_0278.py
+ M agent_civilization/agents/specialists/communicator/communicator_0298.py
+ M agent_civilization/agents/specialists/communicator/communicator_0318.py
+ M agent_civilization/agents/specialists/communicator/communicator_0338.py
+ M agent_civilization/agents/specialists/communicator/communicator_0358.py
+ M agent_civilization/agents/specialists/communicator/communicator_0378.py
+ M agent_civilization/agents/specialists/communicator/communicator_0398.py
+ M agent_civilization/agents/specialists/communicator/communicator_0418.py
+ M agent_civilization/agents/specialists/communicator/communicator_0438.py
+ M agent_civilization/agents/specialists/communicator/communicator_0458.py
+ M agent_civilization/agents/specialists/communicator/communicator_0478.py
+ M agent_civilization/agents/specialists/communicator/communicator_0498.py
+ M agent_civilization/agents/specialists/communicator/communicator_0518.py
+ M agent_civilization/agents/specialists/communicator/communicator_0538.py
+ M agent_civilization/agents/specialists/communicator/communicator_0558.py
+ M agent_civilization/agents/specialists/communicator/communicator_0578.py
+ M agent_civilization/agents/specialists/communicator/communicator_0598.py
+ M agent_civilization/agents/specialists/communicator/communicator_0618.py
+ M agent_civilization/agents/specialists/communicator/communicator_0638.py
+ M agent_civilization/agents/specialists/communicator/communicator_0658.py
+ M agent_civilization/agents/specialists/communicator/communicator_0678.py
+ M agent_civilization/agents/specialists/communicator/communicator_0698.py
+ M agent_civilization/agents/specialists/communicator/communicator_0718.py
+ M agent_civilization/agents/specialists/communicator/communicator_0738.py
+ M agent_civilization/agents/specialists/communicator/communicator_0758.py
+ M agent_civilization/agents/specialists/communicator/communicator_0778.py
+ M agent_civilization/agents/specialists/communicator/communicator_0798.py
+ M agent_civilization/agents/specialists/communicator/communicator_0818.py
+ M agent_civilization/agents/specialists/communicator/communicator_0838.py
+ M agent_civilization/agents/specialists/communicator/communicator_0858.py
+ M agent_civilization/agents/specialists/communicator/communicator_0878.py
+ M agent_civilization/agents/specialists/communicator/communicator_0898.py
+ M agent_civilization/agents/specialists/communicator/communicator_0918.py
+ M agent_civilization/agents/specialists/communicator/communicator_0938.py
+ M agent_civilization/agents/specialists/communicator/communicator_0958.py
+ M agent_civilization/agents/specialists/communicator/communicator_0978.py
+ M agent_civilization/agents/specialists/communicator/communicator_0998.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0000.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0020.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0040.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0060.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0080.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0100.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0120.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0140.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0160.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0180.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0200.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0220.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0240.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0260.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0280.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0300.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0320.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0340.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0360.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0380.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0400.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0420.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0440.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0460.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0480.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0500.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0520.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0540.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0560.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0580.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0600.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0620.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0640.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0660.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0680.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0700.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0720.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0740.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0760.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0780.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0800.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0820.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0840.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0860.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0880.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0900.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0920.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0940.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0960.py
+ M agent_civilization/agents/specialists/data_processor/data_processor_0980.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0002.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0022.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0042.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0062.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0082.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0102.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0122.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0142.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0162.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0182.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0202.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0222.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0242.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0262.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0282.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0302.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0322.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0342.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0362.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0382.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0402.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0422.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0442.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0462.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0482.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0502.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0522.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0542.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0562.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0582.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0602.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0622.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0642.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0662.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0682.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0702.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0722.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0742.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0762.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0782.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0802.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0822.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0842.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0862.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0882.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0902.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0922.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0942.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0962.py
+ M agent_civilization/agents/specialists/db_manager/db_manager_0982.py
+ M agent_civilization/agents/specialists/designer/designer_0007.py
+ M agent_civilization/agents/specialists/designer/designer_0027.py
+ M agent_civilization/agents/specialists/designer/designer_0047.py
+ M agent_civilization/agents/specialists/designer/designer_0067.py
+ M agent_civilization/agents/specialists/designer/designer_0087.py
+ M agent_civilization/agents/specialists/designer/designer_0107.py
+ M agent_civilization/agents/specialists/designer/designer_0127.py
+ M agent_civilization/agents/specialists/designer/designer_0147.py
+ M agent_civilization/agents/specialists/designer/designer_0167.py
+ M agent_civilization/agents/specialists/designer/designer_0187.py
+ M agent_civilization/agents/specialists/designer/designer_0207.py
+ M agent_civilization/agents/specialists/designer/designer_0227.py
+ M agent_civilization/agents/specialists/designer/designer_0247.py
+ M agent_civilization/agents/specialists/designer/designer_0267.py
+ M agent_civilization/agents/specialists/designer/designer_0287.py
+ M agent_civilization/agents/specialists/designer/designer_0307.py
+ M agent_civilization/agents/specialists/designer/designer_0327.py
+ M agent_civilization/agents/specialists/designer/designer_0347.py
+ M agent_civilization/agents/specialists/designer/designer_0367.py
+ M agent_civilization/agents/specialists/designer/designer_0387.py
+ M agent_civilization/agents/specialists/designer/designer_0407.py
+ M agent_civilization/agents/specialists/designer/designer_0427.py
+ M agent_civilization/agents/specialists/designer/designer_0447.py
+ M agent_civilization/agents/specialists/designer/designer_0467.py
+ M agent_civilization/agents/specialists/designer/designer_0487.py
+ M agent_civilization/agents/specialists/designer/designer_0507.py
+ M agent_civilization/agents/specialists/designer/designer_0527.py
+ M agent_civilization/agents/specialists/designer/designer_0547.py
+ M agent_civilization/agents/specialists/designer/designer_0567.py
+ M agent_civilization/agents/specialists/designer/designer_0587.py
+ M agent_civilization/agents/specialists/designer/designer_0607.py
+ M agent_civilization/agents/specialists/designer/designer_0627.py
+ M agent_civilization/agents/specialists/designer/designer_0647.py
+ M agent_civilization/agents/specialists/designer/designer_0667.py
+ M agent_civilization/agents/specialists/designer/designer_0687.py
+ M agent_civilization/agents/specialists/designer/designer_0707.py
+ M agent_civilization/agents/specialists/designer/designer_0727.py
+ M agent_civilization/agents/specialists/designer/designer_0747.py
+ M agent_civilization/agents/specialists/designer/designer_0767.py
+ M agent_civilization/agents/specialists/designer/designer_0787.py
+ M agent_civilization/agents/specialists/designer/designer_0807.py
+ M agent_civilization/agents/specialists/designer/designer_0827.py
+ M agent_civilization/agents/specialists/designer/designer_0847.py
+ M agent_civilization/agents/specialists/designer/designer_0867.py
+ M agent_civilization/agents/specialists/designer/designer_0887.py
+ M agent_civilization/agents/specialists/designer/designer_0907.py
+ M agent_civilization/agents/specialists/designer/designer_0927.py
+ M agent_civilization/agents/specialists/designer/designer_0947.py
+ M agent_civilization/agents/specialists/designer/designer_0967.py
+ M agent_civilization/agents/specialists/designer/designer_0987.py
+ M agent_civilization/agents/specialists/educator/educator_0010.py
+ M agent_civilization/agents/specialists/educator/educator_0030.py
+ M agent_civilization/agents/specialists/educator/educator_0050.py
+ M agent_civilization/agents/specialists/educator/educator_0070.py
+ M agent_civilization/agents/specialists/educator/educator_0090.py
+ M agent_civilization/agents/specialists/educator/educator_0110.py
+ M agent_civilization/agents/specialists/educator/educator_0130.py
+ M agent_civilization/agents/specialists/educator/educator_0150.py
+ M agent_civilization/agents/specialists/educator/educator_0170.py
+ M agent_civilization/agents/specialists/educator/educator_0190.py
+ M agent_civilization/agents/specialists/educator/educator_0210.py
+ M agent_civilization/agents/specialists/educator/educator_0230.py
+ M agent_civilization/agents/specialists/educator/educator_0250.py
+ M agent_civilization/agents/specialists/educator/educator_0270.py
+ M agent_civilization/agents/specialists/educator/educator_0290.py
+ M agent_civilization/agents/specialists/educator/educator_0310.py
+ M agent_civilization/agents/specialists/educator/educator_0330.py
+ M agent_civilization/agents/specialists/educator/educator_0350.py
+ M agent_civilization/agents/specialists/educator/educator_0370.py
+ M agent_civilization/agents/specialists/educator/educator_0390.py
+ M agent_civilization/agents/specialists/educator/educator_0410.py
+ M agent_civilization/agents/specialists/educator/educator_0430.py
+ M agent_civilization/agents/specialists/educator/educator_0450.py
+ M agent_civilization/agents/specialists/educator/educator_0470.py
+ M agent_civilization/agents/specialists/educator/educator_0490.py
+ M agent_civilization/agents/specialists/educator/educator_0510.py
+ M agent_civilization/agents/specialists/educator/educator_0530.py
+ M agent_civilization/agents/specialists/educator/educator_0550.py
+ M agent_civilization/agents/specialists/educator/educator_0570.py
+ M agent_civilization/agents/specialists/educator/educator_0590.py
+ M agent_civilization/agents/specialists/educator/educator_0610.py
+ M agent_civilization/agents/specialists/educator/educator_0630.py
+ M agent_civilization/agents/specialists/educator/educator_0650.py
+ M agent_civilization/agents/specialists/educator/educator_0670.py
+ M agent_civilization/agents/specialists/educator/educator_0690.py
+ M agent_civilization/agents/specialists/educator/educator_0710.py
+ M agent_civilization/agents/specialists/educator/educator_0730.py
+ M agent_civilization/agents/specialists/educator/educator_0750.py
+ M agent_civilization/agents/specialists/educator/educator_0770.py
+ M agent_civilization/agents/specialists/educator/educator_0790.py
+ M agent_civilization/agents/specialists/educator/educator_0810.py
+ M agent_civilization/agents/specialists/educator/educator_0830.py
+ M agent_civilization/agents/specialists/educator/educator_0850.py
+ M agent_civilization/agents/specialists/educator/educator_0870.py
+ M agent_civilization/agents/specialists/educator/educator_0890.py
+ M agent_civilization/agents/specialists/educator/educator_0910.py
+ M agent_civilization/agents/specialists/educator/educator_0930.py
+ M agent_civilization/agents/specialists/educator/educator_0950.py
+ M agent_civilization/agents/specialists/educator/educator_0970.py
+ M agent_civilization/agents/specialists/educator/educator_0990.py
+ M agent_civilization/agents/specialists/modifier/modifier_0011.py
+ M agent_civilization/agents/specialists/modifier/modifier_0031.py
+ M agent_civilization/agents/specialists/modifier/modifier_0051.py
+ M agent_civilization/agents/specialists/modifier/modifier_0071.py
+ M agent_civilization/agents/specialists/modifier/modifier_0091.py
+ M agent_civilization/agents/specialists/modifier/modifier_0111.py
+ M agent_civilization/agents/specialists/modifier/modifier_0131.py
+ M agent_civilization/agents/specialists/modifier/modifier_0151.py
+ M agent_civilization/agents/specialists/modifier/modifier_0171.py
+ M agent_civilization/agents/specialists/modifier/modifier_0191.py
+ M agent_civilization/agents/specialists/modifier/modifier_0211.py
+ M agent_civilization/agents/specialists/modifier/modifier_0231.py
+ M agent_civilization/agents/specialists/modifier/modifier_0251.py
+ M agent_civilization/agents/specialists/modifier/modifier_0271.py
+ M agent_civilization/agents/specialists/modifier/modifier_0291.py
+ M agent_civilization/agents/specialists/modifier/modifier_0311.py
+ M agent_civilization/agents/specialists/modifier/modifier_0331.py
+ M agent_civilization/agents/specialists/modifier/modifier_0351.py
+ M agent_civilization/agents/specialists/modifier/modifier_0371.py
+ M agent_civilization/agents/specialists/modifier/modifier_0391.py
+ M agent_civilization/agents/specialists/modifier/modifier_0411.py
+ M agent_civilization/agents/specialists/modifier/modifier_0431.py
+ M agent_civilization/agents/specialists/modifier/modifier_0451.py
+ M agent_civilization/agents/specialists/modifier/modifier_0471.py
+ M agent_civilization/agents/specialists/modifier/modifier_0491.py
+ M agent_civilization/agents/specialists/modifier/modifier_0511.py
+ M agent_civilization/agents/specialists/modifier/modifier_0531.py
+ M agent_civilization/agents/specialists/modifier/modifier_0551.py
+ M agent_civilization/agents/specialists/modifier/modifier_0571.py
+ M agent_civilization/agents/specialists/modifier/modifier_0591.py
+ M agent_civilization/agents/specialists/modifier/modifier_0611.py
+ M agent_civilization/agents/specialists/modifier/modifier_0631.py
+ M agent_civilization/agents/specialists/modifier/modifier_0651.py
+ M agent_civilization/agents/specialists/modifier/modifier_0671.py
+ M agent_civilization/agents/specialists/modifier/modifier_0691.py
+ M agent_civilization/agents/specialists/modifier/modifier_0711.py
+ M agent_civilization/agents/specialists/modifier/modifier_0731.py
+ M agent_civilization/agents/specialists/modifier/modifier_0751.py
+ M agent_civilization/agents/specialists/modifier/modifier_0771.py
+ M agent_civilization/agents/specialists/modifier/modifier_0791.py
+ M agent_civilization/agents/specialists/modifier/modifier_0811.py
+ M agent_civilization/agents/specialists/modifier/modifier_0831.py
+ M agent_civilization/agents/specialists/modifier/modifier_0851.py
+ M agent_civilization/agents/specialists/modifier/modifier_0871.py
+ M agent_civilization/agents/specialists/modifier/modifier_0891.py
+ M agent_civilization/agents/specialists/modifier/modifier_0911.py
+ M agent_civilization/agents/specialists/modifier/modifier_0931.py
+ M agent_civilization/agents/specialists/modifier/modifier_0951.py
+ M agent_civilization/agents/specialists/modifier/modifier_0971.py
+ M agent_civilization/agents/specialists/modifier/modifier_0991.py
+ M agent_civilization/agents/specialists/monitor/monitor_0008.py
+ M agent_civilization/agents/specialists/monitor/monitor_0028.py
+ M agent_civilization/agents/specialists/monitor/monitor_0048.py
+ M agent_civilization/agents/specialists/monitor/monitor_0068.py
+ M agent_civilization/agents/specialists/monitor/monitor_0088.py
+ M agent_civilization/agents/specialists/monitor/monitor_0108.py
+ M agent_civilization/agents/specialists/monitor/monitor_0128.py
+ M agent_civilization/agents/specialists/monitor/monitor_0148.py
+ M agent_civilization/agents/specialists/monitor/monitor_0168.py
+ M agent_civilization/agents/specialists/monitor/monitor_0188.py
+ M agent_civilization/agents/specialists/monitor/monitor_0208.py
+ M agent_civilization/agents/specialists/monitor/monitor_0228.py
+ M agent_civilization/agents/specialists/monitor/monitor_0248.py
+ M agent_civilization/agents/specialists/monitor/monitor_0268.py
+ M agent_civilization/agents/specialists/monitor/monitor_0288.py
+ M agent_civilization/agents/specialists/monitor/monitor_0308.py
+ M agent_civilization/agents/specialists/monitor/monitor_0328.py
+ M agent_civilization/agents/specialists/monitor/monitor_0348.py
+ M agent_civilization/agents/specialists/monitor/monitor_0368.py
+ M agent_civilization/agents/specialists/monitor/monitor_0388.py
+ M agent_civilization/agents/specialists/monitor/monitor_0408.py
+ M agent_civilization/agents/specialists/monitor/monitor_0428.py
+ M agent_civilization/agents/specialists/monitor/monitor_0448.py
+ M agent_civilization/agents/specialists/monitor/monitor_0468.py
+ M agent_civilization/agents/specialists/monitor/monitor_0488.py
+ M agent_civilization/agents/specialists/monitor/monitor_0508.py
+ M agent_civilization/agents/specialists/monitor/monitor_0528.py
+ M agent_civilization/agents/specialists/monitor/monitor_0548.py
+ M agent_civilization/agents/specialists/monitor/monitor_0568.py
+ M agent_civilization/agents/specialists/monitor/monitor_0588.py
+ M agent_civilization/agents/specialists/monitor/monitor_0608.py
+ M agent_civilization/agents/specialists/monitor/monitor_0628.py
+ M agent_civilization/agents/specialists/monitor/monitor_0648.py
+ M agent_civilization/agents/specialists/monitor/monitor_0668.py
+ M agent_civilization/agents/specialists/monitor/monitor_0688.py
+ M agent_civilization/agents/specialists/monitor/monitor_0708.py
+ M agent_civilization/agents/specialists/monitor/monitor_0728.py
+ M agent_civilization/agents/specialists/monitor/monitor_0748.py
+ M agent_civilization/agents/specialists/monitor/monitor_0768.py
+ M agent_civilization/agents/specialists/monitor/monitor_0788.py
+ M agent_civilization/agents/specialists/monitor/monitor_0808.py
+ M agent_civilization/agents/specialists/monitor/monitor_0828.py
+ M agent_civilization/agents/specialists/monitor/monitor_0848.py
+ M agent_civilization/agents/specialists/monitor/monitor_0868.py
+ M agent_civilization/agents/specialists/monitor/monitor_0888.py
+ M agent_civilization/agents/specialists/monitor/monitor_0908.py
+ M agent_civilization/agents/specialists/monitor/monitor_0928.py
+ M agent_civilization/agents/specialists/monitor/monitor_0948.py
+ M agent_civilization/agents/specialists/monitor/monitor_0968.py
+ M agent_civilization/agents/specialists/monitor/monitor_0988.py
+ M agent_civilization/agents/specialists/network_client/network_client_0004.py
+ M agent_civilization/agents/specialists/network_client/network_client_0024.py
+ M agent_civilization/agents/specialists/network_client/network_client_0044.py
+ M agent_civilization/agents/specialists/network_client/network_client_0064.py
+ M agent_civilization/agents/specialists/network_client/network_client_0084.py
+ M agent_civilization/agents/specialists/network_client/network_client_0104.py
+ M agent_civilization/agents/specialists/network_client/network_client_0124.py
+ M agent_civilization/agents/specialists/network_client/network_client_0144.py
+ M agent_civilization/agents/specialists/network_client/network_client_0164.py
+ M agent_civilization/agents/specialists/network_client/network_client_0184.py
+ M agent_civilization/agents/specialists/network_client/network_client_0204.py
+ M agent_civilization/agents/specialists/network_client/network_client_0224.py
+ M agent_civilization/agents/specialists/network_client/network_client_0244.py
+ M agent_civilization/agents/specialists/network_client/network_client_0264.py
+ M agent_civilization/agents/specialists/network_client/network_client_0284.py
+ M agent_civilization/agents/specialists/network_client/network_client_0304.py
+ M agent_civilization/agents/specialists/network_client/network_client_0324.py
+ M agent_civilization/agents/specialists/network_client/network_client_0344.py
+ M agent_civilization/agents/specialists/network_client/network_client_0364.py
+ M agent_civilization/agents/specialists/network_client/network_client_0384.py
+ M agent_civilization/agents/specialists/network_client/network_client_0404.py
+ M agent_civilization/agents/specialists/network_client/network_client_0424.py
+ M agent_civilization/agents/specialists/network_client/network_client_0444.py
+ M agent_civilization/agents/specialists/network_client/network_client_0464.py
+ M agent_civilization/agents/specialists/network_client/network_client_0484.py
+ M agent_civilization/agents/specialists/network_client/network_client_0504.py
+ M agent_civilization/agents/specialists/network_client/network_client_0524.py
+ M agent_civilization/agents/specialists/network_client/network_client_0544.py
+ M agent_civilization/agents/specialists/network_client/network_client_0564.py
+ M agent_civilization/agents/specialists/network_client/network_client_0584.py
+ M agent_civilization/agents/specialists/network_client/network_client_0604.py
+ M agent_civilization/agents/specialists/network_client/network_client_0624.py
+ M agent_civilization/agents/specialists/network_client/network_client_0644.py
+ M agent_civilization/agents/specialists/network_client/network_client_0664.py
+ M agent_civilization/agents/specialists/network_client/network_client_0684.py
+ M agent_civilization/agents/specialists/network_client/network_client_0704.py
+ M agent_civilization/agents/specialists/network_client/network_client_0724.py
+ M agent_civilization/agents/specialists/network_client/network_client_0744.py
+ M agent_civilization/agents/specialists/network_client/network_client_0764.py
+ M agent_civilization/agents/specialists/network_client/network_client_0784.py
+ M agent_civilization/agents/specialists/network_client/network_client_0804.py
+ M agent_civilization/agents/specialists/network_client/network_client_0824.py
+ M agent_civilization/agents/specialists/network_client/network_client_0844.py
+ M agent_civilization/agents/specialists/network_client/network_client_0864.py
+ M agent_civilization/agents/specialists/network_client/network_client_0884.py
+ M agent_civilization/agents/specialists/network_client/network_client_0904.py
+ M agent_civilization/agents/specialists/network_client/network_client_0924.py
+ M agent_civilization/agents/specialists/network_client/network_client_0944.py
+ M agent_civilization/agents/specialists/network_client/network_client_0964.py
+ M agent_civilization/agents/specialists/network_client/network_client_0984.py
+ M agent_civilization/agents/specialists/researcher/researcher_0016.py
+ M agent_civilization/agents/specialists/researcher/researcher_0036.py
+ M agent_civilization/agents/specialists/researcher/researcher_0056.py
+ M agent_civilization/agents/specialists/researcher/researcher_0076.py
+ M agent_civilization/agents/specialists/researcher/researcher_0096.py
+ M agent_civilization/agents/specialists/researcher/researcher_0116.py
+ M agent_civilization/agents/specialists/researcher/researcher_0136.py
+ M agent_civilization/agents/specialists/researcher/researcher_0156.py
+ M agent_civilization/agents/specialists/researcher/researcher_0176.py
+ M agent_civilization/agents/specialists/researcher/researcher_0196.py
+ M agent_civilization/agents/specialists/researcher/researcher_0216.py
+ M agent_civilization/agents/specialists/researcher/researcher_0236.py
+ M agent_civilization/agents/specialists/researcher/researcher_0256.py
+ M agent_civilization/agents/specialists/researcher/researcher_0276.py
+ M agent_civilization/agents/specialists/researcher/researcher_0296.py
+ M agent_civilization/agents/specialists/researcher/researcher_0316.py
+ M agent_civilization/agents/specialists/researcher/researcher_0336.py
+ M agent_civilization/agents/specialists/researcher/researcher_0356.py
+ M agent_civilization/agents/specialists/researcher/researcher_0376.py
+ M agent_civilization/agents/specialists/researcher/researcher_0396.py
+ M agent_civilization/agents/specialists/researcher/researcher_0416.py
+ M agent_civilization/agents/specialists/researcher/researcher_0436.py
+ M agent_civilization/agents/specialists/researcher/researcher_0456.py
+ M agent_civilization/agents/specialists/researcher/researcher_0476.py
+ M agent_civilization/agents/specialists/researcher/researcher_0496.py
+ M agent_civilization/agents/specialists/researcher/researcher_0516.py
+ M agent_civilization/agents/specialists/researcher/researcher_0536.py
+ M agent_civilization/agents/specialists/researcher/researcher_0556.py
+ M agent_civilization/agents/specialists/researcher/researcher_0576.py
+ M agent_civilization/agents/specialists/researcher/researcher_0596.py
+ M agent_civilization/agents/specialists/researcher/researcher_0616.py
+ M agent_civilization/agents/specialists/researcher/researcher_0636.py
+ M agent_civilization/agents/specialists/researcher/researcher_0656.py
+ M agent_civilization/agents/specialists/researcher/researcher_0676.py
+ M agent_civilization/agents/specialists/researcher/researcher_0696.py
+ M agent_civilization/agents/specialists/researcher/researcher_0716.py
+ M agent_civilization/agents/specialists/researcher/researcher_0736.py
+ M agent_civilization/agents/specialists/researcher/researcher_0756.py
+ M agent_civilization/agents/specialists/researcher/researcher_0776.py
+ M agent_civilization/agents/specialists/researcher/researcher_0796.py
+ M agent_civilization/agents/specialists/researcher/researcher_0816.py
+ M agent_civilization/agents/specialists/researcher/researcher_0836.py
+ M agent_civilization/agents/specialists/researcher/researcher_0856.py
+ M agent_civilization/agents/specialists/researcher/researcher_0876.py
+ M agent_civilization/agents/specialists/researcher/researcher_0896.py
+ M agent_civilization/agents/specialists/researcher/researcher_0916.py
+ M agent_civilization/agents/specialists/researcher/researcher_0936.py
+ M agent_civilization/agents/specialists/researcher/researcher_0956.py
+ M agent_civilization/agents/specialists/researcher/researcher_0976.py
+ M agent_civilization/agents/specialists/researcher/researcher_0996.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0009.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0029.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0049.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0069.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0089.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0109.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0129.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0149.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0169.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0189.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0209.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0229.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0249.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0269.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0289.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0309.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0329.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0349.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0369.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0389.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0409.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0429.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0449.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0469.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0489.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0509.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0529.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0549.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0569.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0589.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0609.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0629.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0649.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0669.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0689.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0709.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0729.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0749.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0769.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0789.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0809.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0829.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0849.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0869.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0889.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0909.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0929.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0949.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0969.py
+ M agent_civilization/agents/specialists/reviewer/reviewer_0989.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0013.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0033.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0053.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0073.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0093.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0113.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0133.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0153.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0173.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0193.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0213.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0233.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0253.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0273.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0293.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0313.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0333.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0353.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0373.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0393.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0413.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0433.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0453.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0473.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0493.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0513.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0533.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0553.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0573.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0593.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0613.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0633.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0653.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0673.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0693.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0713.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0733.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0753.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0773.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0793.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0813.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0833.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0853.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0873.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0893.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0913.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0933.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0953.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0973.py
+ M agent_civilization/agents/specialists/self_developer/self_developer_0993.py
+ M agent_civilization/agents/specialists/strategist/strategist_0017.py
+ M agent_civilization/agents/specialists/strategist/strategist_0037.py
+ M agent_civilization/agents/specialists/strategist/strategist_0057.py
+ M agent_civilization/agents/specialists/strategist/strategist_0077.py
+ M agent_civilization/agents/specialists/strategist/strategist_0097.py
+ M agent_civilization/agents/specialists/strategist/strategist_0117.py
+ M agent_civilization/agents/specialists/strategist/strategist_0137.py
+ M agent_civilization/agents/specialists/strategist/strategist_0157.py
+ M agent_civilization/agents/specialists/strategist/strategist_0177.py
+ M agent_civilization/agents/specialists/strategist/strategist_0197.py
+ M agent_civilization/agents/specialists/strategist/strategist_0217.py
+ M agent_civilization/agents/specialists/strategist/strategist_0237.py
+ M agent_civilization/agents/specialists/strategist/strategist_0257.py
+ M agent_civilization/agents/specialists/strategist/strategist_0277.py
+ M agent_civilization/agents/specialists/strategist/strategist_0297.py
+ M agent_civilization/agents/specialists/strategist/strategist_0317.py
+ M agent_civilization/agents/specialists/strategist/strategist_0337.py
+ M agent_civilization/agents/specialists/strategist/strategist_0357.py
+ M agent_civilization/agents/specialists/strategist/strategist_0377.py
+ M agent_civilization/agents/specialists/strategist/strategist_0397.py
+ M agent_civilization/agents/specialists/strategist/strategist_0417.py
+ M agent_civilization/agents/specialists/strategist/strategist_0437.py
+ M agent_civilization/agents/specialists/strategist/strategist_0457.py
+ M agent_civilization/agents/specialists/strategist/strategist_0477.py
+ M agent_civilization/agents/specialists/strategist/strategist_0497.py
+ M agent_civilization/agents/specialists/strategist/strategist_0517.py
+ M agent_civilization/agents/specialists/strategist/strategist_0537.py
+ M agent_civilization/agents/specialists/strategist/strategist_0557.py
+ M agent_civilization/agents/specialists/strategist/strategist_0577.py
+ M agent_civilization/agents/specialists/strategist/strategist_0597.py
+ M agent_civilization/agents/specialists/strategist/strategist_0617.py
+ M agent_civilization/agents/specialists/strategist/strategist_0637.py
+ M agent_civilization/agents/specialists/strategist/strategist_0657.py
+ M agent_civilization/agents/specialists/strategist/strategist_0677.py
+ M agent_civilization/agents/specialists/strategist/strategist_0697.py
+ M agent_civilization/agents/specialists/strategist/strategist_0717.py
+ M agent_civilization/agents/specialists/strategist/strategist_0737.py
+ M agent_civilization/agents/specialists/strategist/strategist_0757.py
+ M agent_civilization/agents/specialists/strategist/strategist_0777.py
+ M agent_civilization/agents/specialists/strategist/strategist_0797.py
+ M agent_civilization/agents/specialists/strategist/strategist_0817.py
+ M agent_civilization/agents/specialists/strategist/strategist_0837.py
+ M agent_civilization/agents/specialists/strategist/strategist_0857.py
+ M agent_civilization/agents/specialists/strategist/strategist_0877.py
+ M agent_civilization/agents/specialists/strategist/strategist_0897.py
+ M agent_civilization/agents/specialists/strategist/strategist_0917.py
+ M agent_civilization/agents/specialists/strategist/strategist_0937.py
+ M agent_civilization/agents/specialists/strategist/strategist_0957.py
+ M agent_civilization/agents/specialists/strategist/strategist_0977.py
+ M agent_civilization/agents/specialists/strategist/strategist_0997.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0012.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0032.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0052.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0072.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0092.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0112.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0132.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0152.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0172.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0192.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0212.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0232.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0252.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0272.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0292.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0312.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0332.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0352.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0372.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0392.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0412.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0432.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0452.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0472.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0492.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0512.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0532.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0552.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0572.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0592.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0612.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0632.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0652.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0672.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0692.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0712.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0732.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0752.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0772.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0792.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0812.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0832.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0852.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0872.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0892.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0912.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0932.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0952.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0972.py
+ M agent_civilization/agents/specialists/surgeon/surgeon_0992.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0005.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0025.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0045.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0065.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0085.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0105.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0125.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0145.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0165.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0185.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0205.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0225.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0245.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0265.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0285.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0305.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0325.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0345.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0365.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0385.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0405.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0425.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0445.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0465.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0485.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0505.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0525.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0545.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0565.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0585.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0605.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0625.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0645.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0665.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0685.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0705.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0725.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0745.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0765.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0785.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0805.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0825.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0845.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0865.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0885.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0905.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0925.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0945.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0965.py
+ M agent_civilization/agents/specialists/test_runner/test_runner_0985.py
+ M agent_civilization/agents/specialists/validator/validator_0019.py
+ M agent_civilization/agents/specialists/validator/validator_0039.py
+ M agent_civilization/agents/specialists/validator/validator_0059.py
+ M agent_civilization/agents/specialists/validator/validator_0079.py
+ M agent_civilization/agents/specialists/validator/validator_0099.py
+ M agent_civilization/agents/specialists/validator/validator_0119.py
+ M agent_civilization/agents/specialists/validator/validator_0139.py
+ M agent_civilization/agents/specialists/validator/validator_0159.py
+ M agent_civilization/agents/specialists/validator/validator_0179.py
+ M agent_civilization/agents/specialists/validator/validator_0199.py
+ M agent_civilization/agents/specialists/validator/validator_0219.py
+ M agent_civilization/agents/specialists/validator/validator_0239.py
+ M agent_civilization/agents/specialists/validator/validator_0259.py
+ M agent_civilization/agents/specialists/validator/validator_0279.py
+ M agent_civilization/agents/specialists/validator/validator_0299.py
+ M agent_civilization/agents/specialists/validator/validator_0319.py
+ M agent_civilization/agents/specialists/validator/validator_0339.py
+ M agent_civilization/agents/specialists/validator/validator_0359.py
+ M agent_civilization/agents/specialists/validator/validator_0379.py
+ M agent_civilization/agents/specialists/validator/validator_0399.py
+ M agent_civilization/agents/specialists/validator/validator_0419.py
+ M agent_civilization/agents/specialists/validator/validator_0439.py
+ M agent_civilization/agents/specialists/validator/validator_0459.py
+ M agent_civilization/agents/specialists/validator/validator_0479.py
+ M agent_civilization/agents/specialists/validator/validator_0499.py
+ M agent_civilization/agents/specialists/validator/validator_0519.py
+ M agent_civilization/agents/specialists/validator/validator_0539.py
+ M agent_civilization/agents/specialists/validator/validator_0559.py
+ M agent_civilization/agents/specialists/validator/validator_0579.py
+ M agent_civilization/agents/specialists/validator/validator_0599.py
+ M agent_civilization/agents/specialists/validator/validator_0619.py
+ M agent_civilization/agents/specialists/validator/validator_0639.py
+ M agent_civilization/agents/specialists/validator/validator_0659.py
+ M agent_civilization/agents/specialists/validator/validator_0679.py
+ M agent_civilization/agents/specialists/validator/validator_0699.py
+ M agent_civilization/agents/specialists/validator/validator_0719.py
+ M agent_civilization/agents/specialists/validator/validator_0739.py
+ M agent_civilization/agents/specialists/validator/validator_0759.py
+ M agent_civilization/agents/specialists/validator/validator_0779.py
+ M agent_civilization/agents/specialists/validator/validator_0799.py
+ M agent_civilization/agents/specialists/validator/validator_0819.py
+ M agent_civilization/agents/specialists/validator/validator_0839.py
+ M agent_civilization/agents/specialists/validator/validator_0859.py
+ M agent_civilization/agents/specialists/validator/validator_0879.py
+ M agent_civilization/agents/specialists/validator/validator_0899.py
+ M agent_civilization/agents/specialists/validator/validator_0919.py
+ M agent_civilization/agents/specialists/validator/validator_0939.py
+ M agent_civilization/agents/specialists/validator/validator_0959.py
+ M agent_civilization/agents/specialists/validator/validator_0979.py
+ M agent_civilization/agents/specialists/validator/validator_0999.py
+ M docs/audit/M6/logs/raw/105_r105_evidence_pack.log
+ M docs/audit/M6/logs/raw/106_r105_scale_1000.log
+ M docs/governance/CHANGELOG.md
+ M docs/governance/DECISIONS.md
+ M docs/governance/QUALITY.md
+ M docs/governance/ROADMAP.md
+ M tests/test_specialist_runtime.py
+ M tests/test_specialists_package.py
+?? agent_civilization/agents/specialists/_templates/_spec_layout.py
+?? agent_civilization/agents/specialists/_templates/analyst_base.py
+?? agent_civilization/agents/specialists/_templates/api_integrator_base.py
+?? agent_civilization/agents/specialists/_templates/architect_base.py
+?? agent_civilization/agents/specialists/_templates/builder_base.py
+?? agent_civilization/agents/specialists/_templates/code_generator_base.py
+?? agent_civilization/agents/specialists/_templates/communicator_base.py
+?? agent_civilization/agents/specialists/_templates/data_processor_base.py
+?? agent_civilization/agents/specialists/_templates/db_manager_base.py
+?? agent_civilization/agents/specialists/_templates/designer_base.py
+?? agent_civilization/agents/specialists/_templates/educator_base.py
+?? agent_civilization/agents/specialists/_templates/modifier_base.py
+?? agent_civilization/agents/specialists/_templates/monitor_base.py
+?? agent_civilization/agents/specialists/_templates/network_client_base.py
+?? agent_civilization/agents/specialists/_templates/researcher_base.py
+?? agent_civilization/agents/specialists/_templates/reviewer_base.py
+?? agent_civilization/agents/specialists/_templates/self_developer_base.py
+?? agent_civilization/agents/specialists/_templates/strategist_base.py
+?? agent_civilization/agents/specialists/_templates/surgeon_base.py
+?? agent_civilization/agents/specialists/_templates/test_runner_base.py
+?? agent_civilization/agents/specialists/_templates/validator_base.py
+?? docs/audit/M6/logs/raw/r105_ast_comparison_report.json
+?? docs/audit/M6/scripts/
+
 # python 3.14.3
+
+# fingerprints of the tested files (sha256, size):
+#   agent_civilization/agents/specialists/_templates/_factory.py: sha256=2b703389839b6798... size=3074
+#   agent_civilization/agents/specialists/_templates/_spec_layout.py: sha256=6be8a297b811f1c1... size=38436
+#   agent_civilization/agents/specialists/_templates/monitor_base.py: sha256=275950ba5e316612... size=2683
+#   agent_civilization/agents/specialists/_templates/analyst_base.py: sha256=8c640ea6cf5193d0... size=2669
+#   agent_civilization/agents/specialists/monitor/__init__.py: sha256=64bc543600282a73... size=1772
+#   agent_civilization/agents/specialists/monitor/monitor_0428.py: sha256=f61d33b74cc6d9a9... size=632
+#   agent_civilization/agents/specialists/analyst/analyst_0015.py: sha256=615655be837b0787... size=631
+#   tests/test_specialists_package.py: sha256=aab7a04b09091fa3... size=9487
+#   tests/test_specialist_runtime.py: sha256=3ebc289f624d02f8... size=7921
 
 $ pytest tests/ full suite (cwd=/home/user/workspace/All-hand)
 $ python3 -m pytest tests/ -q
@@ -46,7 +1060,7 @@ rootdir: /home/user/workspace/All-hand
 configfile: pytest.ini
 plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 390 items / 3 deselected / 387 selected
+collected 391 items / 3 deselected / 388 selected
 
 tests/test_agent_production.py ........................                  [  6%]
 tests/test_agents_per_spec.py ...                                        [  6%]
@@ -68,19 +1082,19 @@ tests/test_r102_honest_handlers.py .............................         [ 56%]
 tests/test_r103_memory_learning.py .................                     [ 60%]
 tests/test_r104_data_worker.py ................                          [ 64%]
 tests/test_r106_chat_routing.py .............                            [ 68%]
-tests/test_r107_researcher_retry.py ...............                      [ 72%]
+tests/test_r107_researcher_retry.py ...............                      [ 71%]
 tests/test_real_dispatch_audit.py ......                                 [ 73%]
-tests/test_routing_pipeline.py .................................         [ 82%]
+tests/test_routing_pipeline.py .................................         [ 81%]
 tests/test_security.py ..........                                        [ 84%]
 tests/test_specialist_runtime.py ..........                              [ 87%]
-tests/test_specialists_package.py .................................      [ 95%]
+tests/test_specialists_package.py ..................................     [ 95%]
 tests/test_storage_payloads.py ......                                    [ 97%]
 tests/test_web_api_contract.py ..........                                [100%]
 
-================ 384 passed, 3 skipped, 3 deselected in 21.14s =================
+================ 385 passed, 3 skipped, 3 deselected in 20.87s =================
 
 
-$ pytest tests/test_specialists_package.py (33) (cwd=/home/user/workspace/All-hand)
+$ pytest tests/test_specialists_package.py (34) (cwd=/home/user/workspace/All-hand)
 $ python3 -m pytest tests/test_specialists_package.py -q
 exit_code=0
 --- stdout (full) ---
@@ -90,11 +1104,11 @@ rootdir: /home/user/workspace/All-hand
 configfile: pytest.ini
 plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 33 items
+collected 34 items
 
-tests/test_specialists_package.py .................................      [100%]
+tests/test_specialists_package.py ..................................     [100%]
 
-============================== 33 passed in 0.97s ==============================
+============================== 34 passed in 0.38s ==============================
 
 
 $ pytest tests/test_specialist_runtime.py (10) (cwd=/home/user/workspace/All-hand)
@@ -111,7 +1125,7 @@ collected 10 items
 
 tests/test_specialist_runtime.py ..........                              [100%]
 
-============================== 10 passed in 1.35s ==============================
+============================== 10 passed in 1.46s ==============================
 
 
 $ pytest tests/ -m network (3 live) (cwd=/home/user/workspace/All-hand)
@@ -124,11 +1138,11 @@ rootdir: /home/user/workspace/All-hand
 configfile: pytest.ini
 plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 390 items / 387 deselected / 3 selected
+collected 391 items / 388 deselected / 3 selected
 
 tests/test_network_live.py ...                                           [100%]
 
-====================== 3 passed, 387 deselected in 0.66s =======================
+====================== 3 passed, 388 deselected in 0.68s =======================
 
 
 $ ruff handoff scope (cwd=/home/user/workspace/All-hand)
@@ -138,37 +1152,11 @@ exit_code=0
 All checks passed!
 
 
-$ ruff CI scope (full, incl. shims) (cwd=/home/user/workspace/All-hand)
+$ ruff CI scope (full, incl. shims AND base classes) (cwd=/home/user/workspace/All-hand)
 $ python3 -m ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
 exit_code=0
 --- stdout (full) ---
 All checks passed!
-
-
-$ governance audit script (cwd=/home/user/workspace/All-hand)
-$ python3 scripts/run_r075_roadmap_audit.py 9e72b0e..HEAD
-exit_code=0
---- stdout (full) ---
-item headings: 94
-duplicate ids: none
-status counts: {'done': 94}
-items without status: none
-'(هذه الدفعة)' occurrences: 2
-   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
-   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
-order section length: 1539
-  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
-  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
-  stale phrase in order section: 'البند `blocked` الوحيد' -> False
-  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
-R-ids in commit subjects since cycle start (9e72b0e..HEAD): []
-  not in ROADMAP: none
-  R-073: roadmap=yes changelog=yes
-  R-074: roadmap=yes changelog=yes
-  R-075: roadmap=yes changelog=yes
-  R-076: roadmap=yes changelog=yes
-  R-077: roadmap=yes changelog=yes
-  R-078: roadmap=yes changelog=yes
 
 
 $ web npm install (cwd=/home/user/workspace/All-hand/web)
@@ -176,7 +1164,7 @@ $ npm install
 exit_code=0
 --- stdout (full) ---
 
-up to date, audited 24 packages in 394ms
+up to date, audited 24 packages in 479ms
 
 9 packages are looking for funding
   run `npm fund` for details
@@ -208,7 +1196,7 @@ dist/index.html                   0.77 kB │ gzip:  0.45 kB
 dist/assets/index-B7MkQRhG.css   12.25 kB │ gzip:  2.99 kB
 dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
 
-✓ built in 114ms
+✓ built in 126ms
 
 
 $ root npm install (cwd=/home/user/workspace/All-hand)
@@ -216,7 +1204,7 @@ $ npm install
 exit_code=0
 --- stdout (full) ---
 
-up to date, audited 415 packages in 692ms
+up to date, audited 415 packages in 745ms
 
 101 packages are looking for funding
   run `npm fund` for details
@@ -300,7 +1288,7 @@ computing gzip size...
 .output/public/assets/jsx-runtime-Dk72oS4N.js    8.77 kB │ gzip:   3.33 kB
 .output/public/assets/index-BkJ1TZA-.js        362.96 kB │ gzip: 115.66 kB
 
-✓ built in 705ms
+✓ built in 690ms
 vite v8.3.4 building ssr environment for production...
 transforming...
 ✓ 73 modules transformed.
@@ -322,7 +1310,7 @@ node_modules/.nitro/vite/services/ssr/assets/command-D-hBUhQa.js                
 node_modules/.nitro/vite/services/ssr/assets/router-JmfzJEID.js                      11.16 kB │ gzip:  3.43 kB
 node_modules/.nitro/vite/services/ssr/assets/server-O_RDrrow.js                      93.12 kB │ gzip: 23.53 kB
 
-✓ built in 282ms
+✓ built in 309ms
 
 [nitro] ◐ Building [Nitro] (preset: cloudflare-module, compatibility: 2026-10-14)
 [nitro] ✔ Generated public .output/public
@@ -357,7 +1345,7 @@ computing gzip size...
 .output/server/_libs/tanstack__query-core.mjs           135.99 kB │ gzip:  32.36 kB
 .output/server/_libs/@tanstack/react-router+[...].mjs   785.47 kB │ gzip: 165.48 kB
 
-✓ built in 295ms
+✓ built in 306ms
 [nitro] ℹ Using auto generated worker name: reeveero-tech-all-hand
 ℹ Generated .output/server/wrangler.json
 ℹ Generated .wrangler/deploy/config.json
@@ -383,106 +1371,6 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
  [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
 [38;5;246m───╯[0m
 
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useNavigate.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useNavigate.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/RouterProvider.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/RouterProvider.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/utils.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/utils.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useBlocker.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useBlocker.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouterState.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouterState.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Matches.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Matches.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useLocation.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useLocation.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/link.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/link.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/ClientOnly.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/ClientOnly.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
 [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useMatch.js" may not be preserved when bundling.
    [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useMatch.js:1:1 [38;5;246m][0m
    [38;5;246m│[0m
@@ -493,8 +1381,8 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
  [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
 [38;5;246m───╯[0m
 
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouter.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouter.js:1:1 [38;5;246m][0m
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useNavigate.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useNavigate.js:1:1 [38;5;246m][0m
    [38;5;246m│[0m
  [38;5;246m1 │[0m "use client";
  [38;5;240m  │[0m ──────┬──────  
@@ -513,8 +1401,8 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
  [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
 [38;5;246m───╯[0m
 
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Match.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Match.js:1:1 [38;5;246m][0m
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useBlocker.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useBlocker.js:1:1 [38;5;246m][0m
    [38;5;246m│[0m
  [38;5;246m1 │[0m "use client";
  [38;5;240m  │[0m ──────┬──────  
@@ -523,8 +1411,48 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
  [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
 [38;5;246m───╯[0m
 
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Transitioner.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Transitioner.js:1:1 [38;5;246m][0m
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Matches.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Matches.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/RouterProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/RouterProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouterState.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouterState.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/link.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/link.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useLocation.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useLocation.js:1:1 [38;5;246m][0m
    [38;5;246m│[0m
  [38;5;246m1 │[0m "use client";
  [38;5;240m  │[0m ──────┬──────  
@@ -553,8 +1481,158 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
  [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
 [38;5;246m───╯[0m
 
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js:1:1 [38;5;246m][0m
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Match.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Match.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouter.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouter.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/utils.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/utils.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/ClientOnly.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/ClientOnly.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Transitioner.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Transitioner.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/routerContext.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/routerContext.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutation.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutation.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQueries.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQueries.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useIsFetching.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useIsFetching.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutationState.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutationState.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js:1:1 [38;5;246m][0m
    [38;5;246m│[0m
  [38;5;246m1 │[0m "use client";
  [38;5;240m  │[0m ──────┬──────  
@@ -565,6 +1643,26 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
 
 [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js" may not be preserved when bundling.
    [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js:1:1 [38;5;246m][0m
    [38;5;246m│[0m
  [38;5;246m1 │[0m "use client";
  [38;5;240m  │[0m ──────┬──────  
@@ -593,66 +1691,6 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
  [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
 [38;5;246m───╯[0m
 
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/routerContext.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/routerContext.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQueries.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQueries.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
 [33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js" may not be preserved when bundling.
    [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js:1:1 [38;5;246m][0m
    [38;5;246m│[0m
@@ -673,56 +1711,6 @@ The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths r
  [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
 [38;5;246m───╯[0m
 
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutationState.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutationState.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useIsFetching.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useIsFetching.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutation.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutation.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
 
 
-
-# finished 2026-10-14T05:31:37.326862+00:00
+# finished 2026-10-14T05:38:48.848996+00:00

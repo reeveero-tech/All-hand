@@ -1,0 +1,127 @@
+{
+ "method": "ast.parse + ast.dump with normalization of: class-name digits (AgentNNNN->AgentN), integer constants, logger-name strings",
+ "total_files": 1000,
+ "distinct_bodies": 20,
+ "per_group_specs": {
+  "264e4f8699c0": {
+   "specs": [
+    "analyst"
+   ],
+   "n_files": 50
+  },
+  "918a5c79a897": {
+   "specs": [
+    "api_integrator"
+   ],
+   "n_files": 50
+  },
+  "60b8436684d2": {
+   "specs": [
+    "architect"
+   ],
+   "n_files": 50
+  },
+  "c0699cbeaced": {
+   "specs": [
+    "builder"
+   ],
+   "n_files": 50
+  },
+  "71a521c250c6": {
+   "specs": [
+    "code_generator"
+   ],
+   "n_files": 50
+  },
+  "9a5f72ea86df": {
+   "specs": [
+    "communicator"
+   ],
+   "n_files": 50
+  },
+  "5396330e8b4b": {
+   "specs": [
+    "data_processor"
+   ],
+   "n_files": 50
+  },
+  "8aa46aa17647": {
+   "specs": [
+    "db_manager"
+   ],
+   "n_files": 50
+  },
+  "312c45b57998": {
+   "specs": [
+    "designer"
+   ],
+   "n_files": 50
+  },
+  "cbd59f7cffdd": {
+   "specs": [
+    "educator"
+   ],
+   "n_files": 50
+  },
+  "99b2a034bb5c": {
+   "specs": [
+    "modifier"
+   ],
+   "n_files": 50
+  },
+  "57899bb6d33d": {
+   "specs": [
+    "monitor"
+   ],
+   "n_files": 50
+  },
+  "94d41c777166": {
+   "specs": [
+    "network_client"
+   ],
+   "n_files": 50
+  },
+  "120b97c20d52": {
+   "specs": [
+    "researcher"
+   ],
+   "n_files": 50
+  },
+  "66274ebe4afa": {
+   "specs": [
+    "reviewer"
+   ],
+   "n_files": 50
+  },
+  "12af73d16483": {
+   "specs": [
+    "self_developer"
+   ],
+   "n_files": 50
+  },
+  "0b9ad68a193f": {
+   "specs": [
+    "strategist"
+   ],
+   "n_files": 50
+  },
+  "f80244bd14f1": {
+   "specs": [
+    "surgeon"
+   ],
+   "n_files": 50
+  },
+  "b840c8830a6c": {
+   "specs": [
+    "test_runner"
+   ],
+   "n_files": 50
+  },
+  "d6e82b913db5": {
+   "specs": [
+    "validator"
+   ],
+   "n_files": 50
+  }
+ }
+}
