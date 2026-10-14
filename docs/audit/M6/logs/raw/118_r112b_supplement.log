@@ -1,5 +1,5 @@
 # R-112b (تكملة M6/52) — ملحق دليل التحقق
-# تاريخ: 2026-10-14T18:46:47.335693+00:00
+# تاريخ: 2026-10-14T18:51:49.432405+00:00
 # الغرض: تكميل نواقص السجلات 115/116/117 وفق مراجعة مانعة — بصمة حقيقية قبل/بعد لاختبار الدخان،
 # مقارنة استخراج العناوين القديمة/الجديدة على نفس لقطة ROADMAP ما قبل R-112 (b97d7aa)،
 # بيئة و is_checkout مقاسة، وأوصاف CI مربوطة بـ SHA فعلية.
@@ -18,13 +18,14 @@ v20.20.2
 $ ruff --version -> rc=0
 ruff 0.17.0
 $ git rev-parse HEAD -> rc=0
-5b5ec66cb77afdaad28d16f586ef0f2200e7efee
+e45c66435ac53f73a3c0ea00e6a0b58f2d2b1c8f
 $ git branch --show-current -> rc=0
 m6/r112c-evidence-fix
 $ git status --short -> rc=0
+ M docs/audit/M6/logs/raw/118_r112b_supplement.py
  M docs/governance/CHANGELOG.md
+ M docs/governance/PROJECT_STATE.md
  M docs/governance/ROADMAP.md
-?? docs/audit/M6/logs/raw/118_r112b_supplement.py
 
 ## B) بصمة JSON المتعقّب قبل اختبار الدخان
 sha256: 208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4  docs/audit/M6/logs/raw/r108_sustained_load_report.json
@@ -44,7 +45,7 @@ collecting ... collected 1 item
 
 tests/test_specialists_package.py::test_r108_sustained_load_script_smoke PASSED [100%]
 
-============================== 1 passed in 3.22s ===============================
+============================== 1 passed in 3.20s ===============================
 
 
 $ python -m pytest -v tests/test_specialists_package.py::test_r112_write_report_refuses_overwrite
@@ -60,7 +61,7 @@ collecting ... collected 1 item
 
 tests/test_specialists_package.py::test_r112_write_report_refuses_overwrite PASSED [100%]
 
-============================== 1 passed in 0.10s ===============================
+============================== 1 passed in 0.13s ===============================
 
 
 ## D) بصمة JSON المتعقّب بعد الاختبارات + تأكيد التطابق صريح
@@ -134,12 +135,23 @@ $ gh run view 38616551041 --json databaseId,headSha,status,conclusion,displayTit
 # من run 38615264546 (R-112 على main بعد الدمج):
 #   test (Python 3.11): '================ 392 passed, 3 skipped, 3 deselected in 32.14s ================='
 #   test (Python 3.12): '================ 392 passed, 3 skipped, 3 deselected in 26.02s ================='
-# السجل الكامل: https://github.com/reevero-tech/All-hand/actions/runs/38615264546
+# السجل الكامل: https://github.com/reeveero-tech/All-hand/actions/runs/38615264546
 # أُعيد جلبه فعلياً بـ `gh run view 38615264546 --log` قبل الكتابة هنا (مقتطف فقط أعلاه).
+# ملاحظة تصحيح (مراجعة مانعة رابعة): URL أعلاه كتبه المُجمّع بصيغة `reevero-tech` خطأً؛
+# الاسم الصحيح هو `reeveero-tech` — وهو الذي أرجعه `gh pr view` و `gh run view` فعلياً.
 $ gh run view 38615264546 --log -> rc=0 (469656 chars; excerpt below)
 --- excerpt (مقتطف) ---
 test	Run tests (live test suite)	2026-10-14T18:27:58.8636851Z ================ 392 passed, 3 skipped, 3 deselected in 32.14s =================
 test	Run tests on Python 3.12	2026-10-14T18:28:37.8091881Z ================ 392 passed, 3 skipped, 3 deselected in 26.02s =================
 --- end excerpt ---
+
+## H) مقارنة استخراج العناوين بأنماط السكربت المُلتزم فعلياً (بمراسيها ومجموعات التقاطها — لا أنماط معاد صياغتها)
+# old heading regex (verbatim from b97d7aa script): r"^#{3,4} (R-\d{3}[a-z]?)\b.*$"
+# new heading regex (verbatim from current script)    : r"^#{3,4} (R-\d{3}(?:[a-z][a-z0-9]*)?)\b.*$"
+#   old -> 98 unique ids
+#   new -> 99 unique ids
+#   added   : ['R-104c2']
+#   removed : []
+# PASS criterion (old=98, new=99, added=['R-104c2'], removed=∅) -> True
 
 # نهاية الملحق — R-112b (تكملة M6/52)

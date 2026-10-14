@@ -197,8 +197,10 @@ def main() -> int:
     out.append("# من run 38615264546 (R-112 على main بعد الدمج):")
     out.append("#   test (Python 3.11): '================ 392 passed, 3 skipped, 3 deselected in 32.14s ================='")
     out.append("#   test (Python 3.12): '================ 392 passed, 3 skipped, 3 deselected in 26.02s ================='")
-    out.append("# السجل الكامل: https://github.com/reevero-tech/All-hand/actions/runs/38615264546")
+    out.append("# السجل الكامل: https://github.com/reeveero-tech/All-hand/actions/runs/38615264546")
     out.append("# أُعيد جلبه فعلياً بـ `gh run view 38615264546 --log` قبل الكتابة هنا (مقتطف فقط أعلاه).")
+    out.append("# ملاحظة تصحيح (مراجعة مانعة رابعة): URL أعلاه كتبه المُجمّع بصيغة `reevero-tech` خطأً؛")
+    out.append("# الاسم الصحيح هو `reeveero-tech` — وهو الذي أرجعه `gh pr view` و `gh run view` فعلياً.")
     rc, stdout, stderr = run(["gh", "run", "view", "38615264546", "--log"])
     out.append(f"$ gh run view 38615264546 --log -> rc={rc} ({len(stdout)} chars; excerpt below)")
     excerpt = "\n".join(
@@ -208,6 +210,37 @@ def main() -> int:
     out.append("--- excerpt (مقتطف) ---")
     out.append(excerpt)
     out.append("--- end excerpt ---")
+
+    # ------------------------------------------------------------------
+    # H. Heading-extraction comparison using the ACTUAL committed regexes
+    # ----------------------------------------------------------------
+    emit_heading(out, "H) مقارنة استخراج العناوين بأنماط السكربت المُلتزم فعلياً (بمراسيها ومجموعات التقاطها — لا أنماط معاد صياغتها)")
+    rc_old_script, old_script_text, _ = run(
+        ["git", "show", f"{PRE_R112_SNAPSHOT_SHA}:scripts/run_r075_roadmap_audit.py"]
+    )
+    rc_road, road_text, _ = run(
+        ["git", "show", f"{PRE_R112_SNAPSHOT_SHA}:{ROADMAP_FILE}"]
+    )
+    if rc_old_script != 0 or rc_road != 0:
+        out.append(f"# FAIL: rc_old_script={rc_old_script}, rc_road={rc_road}")
+    else:
+        m_old = re.search(r're\.finditer\((r"[^"]+")', old_script_text)
+        new_script_text = Path("scripts/run_r075_roadmap_audit.py").read_text(encoding="utf-8")
+        m_new = re.search(r're\.finditer\((r"[^"]+")', new_script_text)
+        old_pat_src = m_old.group(1) if m_old else None
+        new_pat_src = m_new.group(1) if m_new else None
+        out.append(f"# old heading regex (verbatim from b97d7aa script): {old_pat_src}")
+        out.append(f"# new heading regex (verbatim from current script)    : {new_pat_src}")
+        old_ids_h = sorted(set(m.group(1) for m in re.finditer(eval(old_pat_src), road_text, re.M)))
+        new_ids_h = sorted(set(m.group(1) for m in re.finditer(eval(new_pat_src), road_text, re.M)))
+        out.append(f"#   old -> {len(old_ids_h)} unique ids")
+        out.append(f"#   new -> {len(new_ids_h)} unique ids")
+        added_h = sorted(set(new_ids_h) - set(old_ids_h))
+        removed_h = sorted(set(old_ids_h) - set(new_ids_h))
+        out.append(f"#   added   : {added_h}")
+        out.append(f"#   removed : {removed_h}")
+        ok = (len(old_ids_h) == 98 and len(new_ids_h) == 99 and added_h == ["R-104c2"] and not removed_h)
+        out.append(f"# PASS criterion (old=98, new=99, added=['R-104c2'], removed=∅) -> {ok}")
 
     out.append("")
     out.append("# نهاية الملحق — R-112b (تكملة M6/52)")
