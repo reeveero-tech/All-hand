@@ -1,0 +1,10 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: R-106
+# env_overrides={}
+$ /tmp/v311/bin/ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+returncode=0
+--- stdout ---
+All checks passed!
+
+--- stderr ---
+

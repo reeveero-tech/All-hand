@@ -78,6 +78,34 @@ _INTENT_RULES: List[Tuple[str, str, str]] = [
 ]
 
 # Universal early / late stages (added around the primary specialization)
+
+
+# R-106: payload that follows an instruction (a JSON object, a fenced code
+# block, a double-quoted string) is data, not intent.  "تحقق من صحة هذا JSON:
+# {"name":"test"}" asks for validation — the word "test" inside the data must
+# not route it to test_runner.
+_FENCE_RE = re.compile(r"```.*?```", re.S)
+_DQUOTE_RE = re.compile(r'"[^"\n]*"|“[^”\n]*”')
+_BRACES_RE = re.compile(r"\{[^{}]*\}")
+
+
+def _instruction_text(text: str) -> str:
+    """``text`` with embedded data removed (innermost JSON objects first)."""
+    out = _FENCE_RE.sub(" ", text)
+    out = _DQUOTE_RE.sub(" ", out)
+    for _ in range(10):  # nested objects: strip innermost until none remain
+        stripped = _BRACES_RE.sub(" ", out)
+        if stripped == out:
+            break
+        out = stripped
+    return out
+
+
+def _match_intent(text: str):
+    for pattern, spec, r in _INTENT_RULES:
+        if re.search(pattern, text, flags=re.IGNORECASE):
+            return spec, r
+    return None
 def _decompose(prompt: str, primary: str, reason: str) -> List[Stage]:
     """Break the goal into stages. The civilization always plans, executes, verifies."""
     p_short = prompt.strip()
@@ -154,13 +182,13 @@ def route(prompt: str) -> Dict:
     text = prompt.lower()
 
     # Detect primary intent — first strong match; default = analyst.
+    # R-106: match the instruction first; only if it carries no keyword, look
+    # inside the data too (e.g. a bare ```python``` block still means code).
     primary = "analyst"
     reason = "طلب عام — يبدأ بالتحليل"
-    for pattern, spec, r in _INTENT_RULES:
-        if re.search(pattern, text, flags=re.IGNORECASE):
-            primary = spec
-            reason = r
-            break
+    hit = _match_intent(_instruction_text(text)) or _match_intent(text)
+    if hit:
+        primary, reason = hit
 
     stages = _decompose(prompt, primary, reason)
     return {

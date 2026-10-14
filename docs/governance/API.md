@@ -24,7 +24,7 @@
 | 11 | `/api/tasks/{task_id}` | GET | لا | 404 إن لم توجد |
 | 12 | `/api/events` | GET | لا | |
 | 13 | `/api/events/stream` | GET | لا | SSE |
-| 14 | `/api/chat` | POST | `verify_api_key` (401/403 إن فُعّل `AGOS_API_KEY`) | توجيه تلقائي |
+| 14 | `/api/chat` | POST | `verify_api_key` (401/403 إن فُعّل `AGOS_API_KEY`) | توجيه تلقائي: LLM إن توفر وإلا `routing.route()` (R-106)؛ حقل `routing` |
 | 15 | `/api/agents/external` | POST | `verify_api_key` — يفحص قيمة المفتاح (R-004) | 201؛ 400 `url rejected` لعنوان غير عام في الوضع المفتوح (R-100) |
 | 16 | `/api/agents/external/{name}` | **DELETE** | `verify_api_key` — يفحص قيمة المفتاح (R-004) | |
 | 17 | `/{full_path:path}` | GET | لا | catch-all يخدم `web/dist` |
@@ -79,4 +79,9 @@
 ## R-101 — عقد الواجهة في الوضع المصادَق (2026-10-14)
 - لا تغيير في الخادم. العقد المثبت (`tests/test_r101_web_auth_contract.py`): `GET /api/system/status` → `security.authentication = "enabled"|"disabled"` (تكتشف به الواجهة الوضع بلا مفتاح)؛ مسارات القراءة التي تستطلعها الواجهة (`/api/specializations`، `/api/agents`، `/api/tasks`، `/api/events`، `/api/events/stream`) بلا مفتاح؛ الكتابة: 401 `API key required` بلا مفتاح، 403 `Invalid API key` بمفتاح خاطئ؛ CORS يسمح بترويسة `X-API-Key`.
 - العميل (`web/src/api.js`): يرسل `X-API-Key` إن وُجد في sessionStorage (`agos_api_key`)؛ أخطاؤه من نوع `ApiError` بحقل `status`؛ 401/403 تُطلق حدث `agos-auth-required`.
+
+## R-106 — توجيه `/api/chat` (2026-10-14)
+- **قبل**: بلا LLM (الافتراضي) كل رسالة → `communicator`. **بعد**: LLM أولاً إن كان مهيأً وذكر تخصصاً صالحاً؛ وإلا `agent_civilization.routing.route()` (الموجّه نفسه الذي يستخدمه `/civilization/*`).
+- الاستجابة تضيف `routing: {"method": "llm"|"keywords", "reason": "<سبب>"}`؛ `routed_to` و`agent` و`outcome` بلا تغيير في الشكل.
+- `route()`: النية تُقرأ من نص التعليمة بعد حذف البيانات المضمنة (كائنات JSON، كتل ```، النصوص بين علامتي تنصيص مزدوجتين)؛ إن خلت التعليمة من كلمة مفتاحية يُبحث في النص كاملاً (كتلة ```python``` وحدها تبقى `code_generator`).
 

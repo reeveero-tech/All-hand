@@ -862,3 +862,11 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - التحقق: متصفح حقيقي على uvicorn حقيقي — الوضعان (`raw/54..55`، لقطات)؛ pytest 287 + 3 + 3 (3.11/3.12)؛ بناء web/ والجذر ناجح.
 - مسجّل: R-106 (ready) — المحادثة بلا LLM توجّه دائماً إلى `communicator`.
 - CI على PR #109: job `network` فشل أول مرة (`test_researcher_live_duckduckgo` — `Errno 104` من DuckDuckGo، `raw/59`)، وإعادة تشغيل الـjob الفاشل نجحت؛ سُجّل التكرار كـR-107 (proposed). خطوة `Test web API client` في CI: 10/10.
+
+## 2026-10-14 — R-106: توجيه `/api/chat` بالنية
+
+- **قبل**: بلا LLM كل رسالة → `communicator` («حلل 4 8 15» → «tone=neutral»)؛ و«تحقق من صحة هذا JSON: {"name":"test"…}» في الموجّه → `test_runner`.
+- معدّل: `server.py` (`chat`: LLM ثم `routing.route()`، حقل `routing`)، `routing/auto_router.py` (`_instruction_text`، `_match_intent`).
+- مضاف: `tests/test_r106_chat_routing.py` (13؛ على الكود السابق 10 تفشل). pytest 300 + 3 + 3 (3.11/3.12). متصفح حقيقي: «حلل 4 8 15» → analyst «n=3 mean=9.000 sd=4.546 trend=up».
+- تصحيح ARCHITECTURE: الدالة اسمها `route()` لا `auto_route()`.
+

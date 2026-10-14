@@ -1,0 +1,14 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: same browser script as raw/55 (open mode, real uvicorn + Chromium) after R-106
+# env_overrides={}
+$ timeout 120 /tmp/v311/bin/python /tmp/r101_ui_open.py
+returncode=0
+--- stdout ---
+{
+  "bar_count_open_mode": 0,
+  "chat_tail_open_mode": "أنت\nحلل 4 8 15\nA\nn=3 mean=9.000 sd=4.546 trend=up\nanalyst · analyst_00000\nإرسال",
+  "bar_count_after_chat": 0
+}
+
+--- stderr ---
+

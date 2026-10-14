@@ -15,7 +15,7 @@ All-hand/ (الجذر — 55 دليلاً، 1,981 ملفاً متتبعاً)
 │   │                               يصرّفون إلى real_dispatcher؛ موصولة اختيارياً بـAGOS_AGENT_IMPL=specialists (D-037)
 │   ├── core/agents/             ← BaseAgent, CommunicationHub, real_dispatcher
 │   ├── core/safety.py           ← سياسة الأدوات الحقيقية (R-100، D-044): إذن تنفيذ الكود + العزل، حارس العناوين، SQLite
-│   ├── routing/auto_router.py   ← auto_route()
+│   ├── routing/auto_router.py   ← route() (كان مكتوباً auto_route — لا توجد دالة بهذا الاسم)؛ يستخدمه /civilization/* و/api/chat بلا LLM (R-106)
 │   ├── pipeline/orchestrator.py ← execute_plan()
 │   ├── registry/oss_agents.py   ← سجل ~320 وكيل OSS (dataclass ثابت)
 │   ├── storage/supabase_store.py ← طبقة Supabase REST
