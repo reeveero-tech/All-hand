@@ -16,6 +16,7 @@ pytest -m network -q                                       # يحتاج إنتر
 - قبل الدفع: جرّب أيضاً بلا `web/dist` (job `test` لا يبني الواجهة) وعلى 3.11 (درسا R-083 في QUALITY).
 
 ### الواجهة (`web/`)
+- اختبارات عميل API (R-101): `cd web && npm test` (Node ≥22.12، بلا تبعيات إضافية).
 ```bash
 cd web && npm ci --engine-strict && npm run build   # Node >=22.12.0 (R-089)
 ```
@@ -77,7 +78,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 ## سياسة الأدوات الحقيقية (R-100، D-044)
 
 - **قرار المشغّل عند النشر**: لتفعيل `test_runner` اضبط `AGOS_API_KEY` (موصى به — يحمي كل المسارات المنشئة للمهام) أو `AGOS_ALLOW_CODE_EXEC=1` (يسمح للجميع في الوضع المفتوح — غير موصى به على عنوان عام). بلا أي منهما تُرفض مهام `test_runner` برسالة صريحة وتبقى التخصصات الـ19 الأخرى تعمل.
-- **قيد**: الواجهة `web/` لا ترسل `X-API-Key` بعد — ضبط المفتاح يمنع إنشاء المهام من الواجهة حتى R-101.
+- **الواجهة مع المفتاح (R-101)**: حين يكون `AGOS_API_KEY` مضبوطاً يظهر في الواجهة شريط «مفتاح API»؛ يدخل المستخدم المفتاح فيُحفظ في sessionStorage للتبويب فقط ويُرسل كـ`X-API-Key`. القراءة (اللوحة، المهام، الأحداث، SSE) تعمل بلا مفتاح؛ الكتابة (مهام، محادثة، وكلاء خارجيون) تتطلبه. **لا تضع المفتاح في `VITE_*`** — يصير جزءاً من الحزمة العامة.
 - **التحقق على أي commit**: `python scripts/run_r100_safety_probe.py` (rc=0 فقط إذا كانت كل المتجهات آمنة) و`GET /api/system/status` → `security.tool_policy`.
 - **قياس معيار D-035 الأول**: `AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r051_audit.py` (20/20)؛ وR-053: `AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py` (1000/1000). بالوضع الافتراضي تظهر مهام `test_runner` كمرفوضة بالسياسة (R-051: `refused_by_policy`؛ R-053: `فشل: test_runner ×50 — code execution is disabled…`).
 

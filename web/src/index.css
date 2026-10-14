@@ -151,6 +151,48 @@ html, body {
   box-shadow: var(--shadow-glow);
 }
 
+/* R-101: API key bar (shown only in authenticated mode) */
+.app-top {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-top .app-header {
+  position: static;
+}
+
+.api-key-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 24px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.api-key-bar .api-key-input {
+  width: 240px;
+  max-width: 100%;
+  padding: 6px 10px;
+}
+
+.api-key-bar .btn {
+  padding: 6px 14px;
+}
+
+.api-key-bar .btn:not(.btn-primary) {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.api-key-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .app-body {
   flex: 1;
   padding: 24px;
@@ -832,5 +874,22 @@ textarea.form-input {
 
   .app-subtitle {
     display: none;
+  }
+}
+
+/* R-101: on narrow screens the key field shares one row with its buttons */
+@media (max-width: 768px) {
+  .api-key-bar {
+    padding: 8px 16px;
+  }
+
+  .api-key-bar .api-key-input {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .api-key-note {
+    width: 100%;
   }
 }

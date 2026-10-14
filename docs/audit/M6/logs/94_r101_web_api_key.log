@@ -1,0 +1,39 @@
+R-101 — web/ works in authenticated mode (sends X-API-Key) — evidence index
+Collected 2026-10-14 on branch m6/r101-web-api-key, base main 49dd2b2 (PR #108 merged). Node 22.14.0.
+
+== Before
+web/src/api.js (main 49dd2b2) never sent X-API-Key; with AGOS_API_KEY set (recommended since D-044 to enable
+test_runner) every UI write got 401 and showed the raw "API key required".
+Also in the old client: options.headers replaced the merged header set (a caller passing headers lost
+Content-Type), and external agent names were not URL-encoded on DELETE.
+
+== Client tests (Node, real web/src/api.js)
+raw/51_r101_web_npm_test.log        rc=0  10/10
+raw/58_r101_node_tests_on_old_api.log rc=1  same tests on the old api.js (with 2 load shims, printed in the log): 3 pass / 7 fail.
+   The 3 that pass describe behaviour that must stay (no header without a key; key not in URL/body; clearing).
+
+== Server contract (pytest, unchanged server)
+tests/test_r101_web_auth_contract.py (13) — passes on the previous code too: it pins the half of the contract
+the new UI relies on (mode detection, key-less reads incl. SSE, 401/403 details, CORS X-API-Key, test_runner
+executes when authenticated). Found while writing it: TestClient without `with` keeps no event loop between
+requests, so a task awaiting a worker thread (test_runner) never finishes — a test-harness artefact, not a
+server defect (same task: completed in 0.015 s inside `with`, as under uvicorn).
+
+== Real browser (headless Chromium via playwright, real uvicorn, built web/dist) — local, not in CI
+raw/54_r101_ui_browser_e2e.log  rc=0  AGOS_API_KEY set:
+   bar visible ("بلا مفتاح"); chat without key -> "هذا الخادم يتطلب مفتاح API — أدخله في حقل المفتاح أعلى الصفحة";
+   wrong key -> "مفتاح API غير صحيح"; right key -> real answer, server task "completed"; key in sessionStorage,
+   not in localStorage; bar visible after the chat scrolls (elementFromPoint check).
+   Defect found by the first screenshot and fixed: on the chat tab the bar scrolled under the sticky header,
+   exactly where the message points the user. Fix: header + bar in one sticky .app-top. (The pre-fix
+   screenshot was overwritten by the rerun; the defect is described here and in ROADMAP.)
+raw/55_r101_ui_browser_open_mode.log rc=0  no key: bar count 0, chat works as before.
+raw/r101_screenshots/  1_bar (desktop, auth), 2_wrong (401 + 403 messages), 3_ok (key accepted), 4_mobile (390 px)
+
+== Observation registered as R-106 (ready)
+In both modes chat routed "حلل 4 8 15 ..." to communicator ("tone=neutral"): server.chat keeps
+spec = "communicator" unless an LLM is configured; routing.route() (real keyword router) is never called.
+
+== Build / tests / lint
+raw/52 web: npm install && npm run build rc=0 (lockfile unchanged)   raw/53 root: npm install && npm run build rc=0
+raw/56..57 pytest 3.11 / 3.12: 287 passed, 3 skipped, 3 deselected (rc=0)   ruff (CI scope): All checks passed

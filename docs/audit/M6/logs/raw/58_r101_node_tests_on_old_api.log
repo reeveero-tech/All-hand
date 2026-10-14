@@ -1,0 +1,223 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: web/tests/api.test.mjs against origin/main web/src/api.js in /tmp/oldweb (two shims: import.meta.env guard so it loads in Node; no-op key functions + export of api, since the old file has none). Expected: failures = behaviour the old client lacks
+# env_overrides={}
+$ bash -c cd /tmp/oldweb && cat src/api.js && node --test tests/api.test.mjs
+returncode=1
+--- stdout ---
+const API_BASE = (import.meta.env && import.meta.env.VITE_API_BASE) || '';
+
+async function api(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export const fetchSystemStatus = () => api('/api/system/status');
+export const fetchSpecializations = () => api('/api/specializations');
+export const fetchAgents = (spec) => api(`/api/agents${spec ? `?specialization=${spec}` : ''}`);
+export const fetchTasks = (limit = 50) => api(`/api/tasks?limit=${limit}`);
+export const fetchEvents = (limit = 50) => api(`/api/events?limit=${limit}`);
+export const createTask = (specialization, prompt, data) =>
+  api('/api/tasks', { method: 'POST', body: JSON.stringify({ specialization, prompt, data }) });
+export const sendChat = (message) =>
+  api('/api/chat', { method: 'POST', body: JSON.stringify({ message }) });
+export const registerExternalAgent = (name, url, model, apiKey) =>
+  api('/api/agents/external', { method: 'POST', body: JSON.stringify({ name, url, model, api_key: apiKey }) });
+export const removeExternalAgent = (name) =>
+  api(`/api/agents/external/${name}`, { method: 'DELETE' });
+
+export function createEventSource() {
+  return new EventSource(`${API_BASE}/api/events/stream`);
+}
+// (comparison shim only: old api.js has no key functions)
+export const setApiKey = () => true; export const getApiKey = () => ''; export const clearApiKey = () => {};
+export { api };
+TAP version 13
+# Subtest: open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+ok 1 - open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+  ---
+  duration_ms: 1.210874
+  ...
+# Subtest: stored key is sent on every call, write and read
+not ok 2 - stored key is sent on every call, write and read
+  ---
+  duration_ms: 2.079372
+  location: '/tmp/oldweb/tests/api.test.mjs:50:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    '' !== 'secret-123'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'secret-123'
+  actual: ''
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/oldweb/tests/api.test.mjs:52:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:979:25)
+    async Test.processPendingSubtests (node:internal/test_runner/test:677:7)
+  ...
+# Subtest: key never appears in the URL or body
+ok 3 - key never appears in the URL or body
+  ---
+  duration_ms: 0.422215
+  ...
+# Subtest: caller headers are merged, not allowed to drop Content-Type or the key
+not ok 4 - caller headers are merged, not allowed to drop Content-Type or the key
+  ---
+  duration_ms: 0.603127
+  location: '/tmp/oldweb/tests/api.test.mjs:70:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - 'application/json'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'application/json'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/oldweb/tests/api.test.mjs:75:10)
+    async Test.run (node:internal/test_runner/test:980:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:677:7)
+  ...
+# Subtest: clearApiKey / empty value removes the key
+ok 5 - clearApiKey / empty value removes the key
+  ---
+  duration_ms: 0.519277
+  ...
+# Subtest: 401 -> clear Arabic message, status kept, auth event dispatched
+not ok 6 - 401 -> clear Arabic message, status kept, auth event dispatched
+  ---
+  duration_ms: 0.80204
+  location: '/tmp/oldweb/tests/api.test.mjs:90:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'Error'
+    - 'ApiError'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'ApiError'
+  actual: 'Error'
+  operator: 'strictEqual'
+  stack: |-
+    Object.<anonymous> (file:///tmp/oldweb/tests/api.test.mjs:93:12)
+    expectedException (node:assert:808:17)
+    expectsError (node:assert:931:3)
+    Function.rejects (node:assert:996:3)
+    async TestContext.<anonymous> (file:///tmp/oldweb/tests/api.test.mjs:92:3)
+    async Test.run (node:internal/test_runner/test:980:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:677:7)
+  ...
+# Subtest: 403 with a stored key -> "key is wrong" message
+not ok 7 - 403 with a stored key -> "key is wrong" message
+  ---
+  duration_ms: 0.393649
+  location: '/tmp/oldweb/tests/api.test.mjs:101:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The validation function is expected to return "true". Received false
+    
+    Caught error:
+    
+    Error: Invalid API key
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    async TestContext.<anonymous> (file:///tmp/oldweb/tests/api.test.mjs:104:3)
+    async Test.run (node:internal/test_runner/test:980:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:677:7)
+  ...
+# Subtest: other errors keep the server detail
+not ok 8 - other errors keep the server detail
+  ---
+  duration_ms: 0.27517
+  location: '/tmp/oldweb/tests/api.test.mjs:108:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The validation function is expected to return "true". Received false
+    
+    Caught error:
+    
+    Error: Unknown specialization: nope
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    async TestContext.<anonymous> (file:///tmp/oldweb/tests/api.test.mjs:110:3)
+    async Test.run (node:internal/test_runner/test:980:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:677:7)
+  ...
+# Subtest: external agent names are URL-encoded on delete
+not ok 9 - external agent names are URL-encoded on delete
+  ---
+  duration_ms: 0.395846
+  location: '/tmp/oldweb/tests/api.test.mjs:114:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '/api/agents/external/a b/c'
+    - '/api/agents/external/a%20b%2Fc'
+                             ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '/api/agents/external/a%20b%2Fc'
+  actual: '/api/agents/external/a b/c'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/oldweb/tests/api.test.mjs:116:10)
+    async Test.run (node:internal/test_runner/test:980:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:677:7)
+  ...
+# Subtest: no sessionStorage (blocked) -> calls still work without a key
+not ok 10 - no sessionStorage (blocked) -> calls still work without a key
+  ---
+  duration_ms: 0.392251
+  location: '/tmp/oldweb/tests/api.test.mjs:120:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/oldweb/tests/api.test.mjs:122:10)
+    Test.runInAsyncScope (node:async_hooks:211:14)
+    Test.run (node:internal/test_runner/test:979:25)
+    async Test.processPendingSubtests (node:internal/test_runner/test:677:7)
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 3
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 76.557132
+
+--- stderr ---
+

@@ -1,0 +1,81 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: real uvicorn server with AGOS_API_KEY + built web/dist + headless Chromium; final CSS. An earlier run (before the sticky fix) showed the key bar scrolled under the header on the chat tab — fixed by .app-top.
+# env_overrides={}
+$ timeout 150 /tmp/v311/bin/python /tmp/r101_ui_e2e.py
+returncode=0
+--- stdout ---
+{
+  "bar_visible_in_auth_mode": true,
+  "bar_text_initial": "بلا مفتاح\nحفظ\nالخادم يعمل بوضع المصادقة — أدخل مفتاح API لإنشاء المهام",
+  "chat_without_key": "A\nAGOS Civilization\nv3.0 · حضارة الوكلاء\n◈لوحة التحكم\n✦المحادثة\n◆التخصصات\n◇الوكلاء\n▢المهام\nبلا مفتاح\nحفظ\nهذه العملية تتطلب مفتاح API\nأنت\nحلل 4 8 15\nA\nخطأ: هذا الخادم يتطلب مفتاح API — أدخله في حقل المفتاح أعلى الصفحة\nerror · system\nإرسال",
+  "bar_after_401": "بلا مفتاح\nحفظ\nهذه العملية تتطلب مفتاح API",
+  "bar_after_403": "مفتاح مضبوط\nحفظ\nمسح\nالمفتاح مرفوض — أدخل المفتاح الصحيح",
+  "bar_after_key": "مفتاح مضبوط\nحفظ\nمسح\nالمفتاح محفوظ لهذه الجلسة فقط",
+  "chat_tail_with_key": "أنت\nحلل 4 8 15\nA\nخطأ: هذا الخادم يتطلب مفتاح API — أدخله في حقل المفتاح أعلى الصفحة\nerror · system\nأنت\nحلل 4 8 15\nA\nخطأ: مفتاح API غير صحيح — صحّحه في حقل المفتاح أعلى الصفحة\nerror · system\nأنت\nحلل 4 8 15 16 23 42\nA\ntone=neutral\ncommunicator · communicator_02500\nإرسال",
+  "key_in_sessionStorage": true,
+  "key_in_localStorage": false,
+  "bar_box_after_chat_scroll": {
+    "y": 81,
+    "height": 57
+  },
+  "bar_visible_after_chat_scroll": true,
+  "server_tasks_after": [
+    [
+      "communicator",
+      "completed"
+    ]
+  ]
+}
+
+--- stderr ---
+
+
+--- script /tmp/r101_ui_e2e.py ---
+import os, subprocess, sys, time, json, urllib.request
+from playwright.sync_api import sync_playwright
+KEY = "r101-ui-key"
+env = {**os.environ, "AGOS_API_KEY": KEY, "PORT": "18123"}
+srv = subprocess.Popen([sys.executable, "-m", "uvicorn", "server:app", "--port", "18123"], env=env,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+out = {}
+try:
+    for _ in range(60):
+        try:
+            urllib.request.urlopen("http://127.0.0.1:18123/api/system/status", timeout=1); break
+        except Exception: time.sleep(0.5)
+    with sync_playwright() as p:
+        b = p.chromium.launch(); pg = b.new_page(viewport={"width": 1280, "height": 800})
+        pg.goto("http://127.0.0.1:18123/"); pg.wait_for_selector(".api-key-bar", timeout=15000)
+        out["bar_visible_in_auth_mode"] = pg.is_visible(".api-key-bar")
+        out["bar_text_initial"] = pg.inner_text(".api-key-bar")
+        pg.screenshot(path="/tmp/r101_1_bar.png")
+        pg.click("text=المحادثة"); pg.fill(".chat-input", "حلل 4 8 15"); pg.keyboard.press("Enter")
+        pg.wait_for_selector("text=خطأ:", timeout=10000)
+        out["chat_without_key"] = pg.locator(".message").last.inner_text() if pg.locator(".message").count() else pg.inner_text("body")[-300:]
+        out["bar_after_401"] = pg.inner_text(".api-key-bar")
+        pg.fill(".api-key-input", "wrong-key"); pg.click(".api-key-bar button[type=submit]")
+        pg.fill(".chat-input", "حلل 4 8 15"); pg.keyboard.press("Enter"); pg.wait_for_timeout(1500)
+        out["bar_after_403"] = pg.inner_text(".api-key-bar")
+        pg.screenshot(path="/tmp/r101_2_wrong.png")
+        pg.click(".api-key-bar >> text=مسح")
+        pg.fill(".api-key-input", KEY); pg.click(".api-key-bar button[type=submit]")
+        pg.fill(".chat-input", "حلل 4 8 15 16 23 42"); pg.keyboard.press("Enter"); pg.wait_for_timeout(2500)
+        out["bar_after_key"] = pg.inner_text(".api-key-bar")
+        out["chat_tail_with_key"] = pg.inner_text(".chat-container")[-400:]
+        out["key_in_sessionStorage"] = pg.evaluate("sessionStorage.getItem('agos_api_key') === %s" % json.dumps(KEY))
+        out["key_in_localStorage"] = pg.evaluate("Object.values(localStorage).includes(%s)" % json.dumps(KEY))
+        box = pg.locator(".api-key-bar").bounding_box()
+        out["bar_box_after_chat_scroll"] = {"y": round(box["y"]), "height": round(box["height"])}
+        out["bar_visible_after_chat_scroll"] = pg.evaluate("""(() => { const r = document.querySelector('.api-key-bar').getBoundingClientRect();
+            const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return !!top && !!top.closest('.api-key-bar'); })()""")
+        pg.screenshot(path="/tmp/r101_3_ok.png")
+        m = b.new_page(viewport={"width": 390, "height": 760})
+        m.goto("http://127.0.0.1:18123/"); m.wait_for_selector(".api-key-bar", timeout=15000)
+        m.screenshot(path="/tmp/r101_4_mobile.png")
+        b.close()
+    tasks = json.load(urllib.request.urlopen("http://127.0.0.1:18123/api/tasks?limit=10"))
+    out["server_tasks_after"] = [(t.get("specialization"), t.get("status")) for t in tasks.get("tasks", [])]
+finally:
+    srv.terminate(); srv.wait(10)
+print(json.dumps(out, ensure_ascii=False, indent=2))
