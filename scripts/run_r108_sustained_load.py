@@ -59,7 +59,22 @@ async def main():
     ap.add_argument("--min-ok-rate", type=float, default=1.0,
                     help="minimum ok rate per wave (default 1.0 = all must succeed)")
     ap.add_argument("--impl", choices=["real", "specialists"], default="real")
+    ap.add_argument("--out", default=None,
+                    help="output JSON path (default: timestamped unique path under docs/audit/M6/logs/raw/ so runs never overwrite each other — R-112)")
     args = ap.parse_args()
+
+    # R-112: never overwrite an existing report. Default is a timestamped
+    # unique path (microsecond-precision) so two runs in the same second
+    # still collide-free; --out is honored only if it does not exist.
+    if args.out is None:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        out_path = REPO_ROOT / f"docs/audit/M6/logs/raw/r108_sustained_load_{stamp}.json"
+    else:
+        out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    if out_path.exists():
+        print(f"report path already exists — refusing to overwrite: {out_path}")
+        return 2
 
     os.environ["AGOS_AGENT_IMPL"] = args.impl
     import sys
@@ -138,7 +153,7 @@ async def main():
         if rate < args.min_ok_rate:
             report["failed"] = True
             report["failure_at_wave"] = wave_idx
-            _write_report(report, failed=True)
+            _write_report(report, True, out_path)
             print(f"FAIL: wave {wave_idx} ok rate {rate:.3f} < threshold {args.min_ok_rate}")
             for (spec, cause), n in sorted(failure_causes.items(), key=lambda x: -x[1]):
                 print(f"  cause: {spec} x{n}: {cause}")
@@ -153,7 +168,7 @@ async def main():
     report["total_tasks"] = total_ok + total_fail
     report["duration_s_actual"] = round(args.duration_s, 1)
     report["maxrss_mb_final"] = round(maxrss_mb(), 1)
-    _write_report(report, failed=False)
+    _write_report(report, False, out_path)
     print(f"OK: {total_ok}/{total_ok + total_fail} over {wave_idx} waves "
           f"({args.duration_s}s sustained)")
     return 0
@@ -166,11 +181,14 @@ def _git_head():
     return r.stdout.strip()
 
 
-def _write_report(report, failed):
-    out = REPO_ROOT / "docs/audit/M6/logs/raw/r108_sustained_load_report.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(report, indent=1))
-    print(f"report: {out}")
+def _write_report(report, failed, out_path):
+    # R-112: exclusive-write (O_CREAT|O_EXCL) — never overwrite an existing file.
+    # The check in main() (out_path.exists()) is a friendly early failure; this
+    # is the hard guarantee even if the file appeared between the check and now.
+    fd = os.open(str(out_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(report, indent=1))
+    print(f"report: {out_path}")
 
 
 if __name__ == "__main__":
