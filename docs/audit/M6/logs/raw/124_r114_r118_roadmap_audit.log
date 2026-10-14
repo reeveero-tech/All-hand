@@ -1,0 +1,23 @@
+# R-075 roadmap audit after R-114..R-118 — cmd: python3 scripts/run_r075_roadmap_audit.py main
+item headings: 107
+duplicate ids: none
+status counts: {'done': 107}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 2532
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (main): ['R-000', 'R-001', 'R-002', 'R-003a', 'R-004', 'R-010', 'R-011', 'R-012', 'R-013', 'R-020', 'R-021', 'R-022', 'R-023', 'R-024', 'R-030', 'R-031', 'R-031b', 'R-031c', 'R-032', 'R-032a', 'R-032b', 'R-032c', 'R-033', 'R-040', 'R-041', 'R-042', 'R-042b', 'R-043', 'R-044', 'R-045', 'R-051', 'R-052', 'R-053', 'R-054', 'R-055', 'R-055a', 'R-056', 'R-060', 'R-061', 'R-062', 'R-063', 'R-064', 'R-065', 'R-066', 'R-067', 'R-068', 'R-069', 'R-070', 'R-071', 'R-072', 'R-073', 'R-074', 'R-075', 'R-076', 'R-077', 'R-078', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083', 'R-084', 'R-085', 'R-086', 'R-087', 'R-088', 'R-089', 'R-090', 'R-091', 'R-092', 'R-093', 'R-094', 'R-095', 'R-096', 'R-097', 'R-098', 'R-099', 'R-100', 'R-101', 'R-102', 'R-103', 'R-104', 'R-104b', 'R-104c', 'R-104c2', 'R-105', 'R-106', 'R-107', 'R-107b', 'R-107c', 'R-107c2', 'R-108', 'R-109', 'R-110', 'R-111', 'R-112', 'R-112b', 'R-113']
+  not in ROADMAP: ['R-107c2']
+  R-073: roadmap=yes changelog=yes
+  R-074: roadmap=yes changelog=yes
+  R-075: roadmap=yes changelog=yes
+  R-076: roadmap=yes changelog=yes
+  R-077: roadmap=yes changelog=yes
+  R-078: roadmap=yes changelog=yes
+# rc=0
+# known: R-107c2 delivered inside R-104c2 (M6/48) — reconciled there, not a separate item

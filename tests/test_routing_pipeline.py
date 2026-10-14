@@ -126,7 +126,8 @@ REPRESENTATIVE_TASKS = {
     "data_processor": {"data": [1, 2, 3, 4, 5, 6]},
     "db_manager": {"prompt": "SELECT 1 AS one;"},
     "designer": {"data": "brand: forest"},
-    "educator": {"prompt": "explain recursion"},
+    # R-116: material to explain offline (a bare "explain recursion" now needs an LLM or the web)
+    "educator": {"prompt": "Recursion is when a function calls itself. Every recursion needs a base case."},
     "modifier": {"data": "def foo():\n    pass\n"},
     "monitor": {"prompt": "check system"},
     "network_client": {"prompt": "check connectivity to github.com"},
