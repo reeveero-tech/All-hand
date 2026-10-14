@@ -140,3 +140,27 @@ full stdout+stderr saved to: /tmp/rawlogs/20_r085_metrics_load.log (untruncated)
 4. R-096/README said 79 items — actual count after R-097 is **80**. README now corrected.
 5. R-096's "89_r096_before.log" description says "76 items" but the file itself counted 79 (it was produced AFTER R-094/95/96 were already added) — the "before" framing is wrong; the raw log content is preserved as-is and this is documented here.
 6. R-095 claim "no difference between sandbox and CI" is over-strong — correct statement: "tests pass on both local Pythons (3.11 and 3.12) and on CI (3.11 and 3.12 per D-043); RISK-024 check applies."
+
+### Index of raw files (in-repo location — R-099 correction)
+The commands above originally saved outputs to `/tmp/rawlogs/` (ephemeral). They are preserved permanently inside this repository:
+- raw/01_pytest_py311.log — pytest Python 3.11 (230+3+3, rc=0)
+- raw/02_pytest_py312.log — pytest Python 3.12 (230+3+3, rc=0)
+- raw/03_ruff_ci_actual.log — ruff actual CI scope (0, rc=0)
+- raw/04_root_npmci.log — root npm ci --engine-strict (rc=0)
+- raw/05_root_lint.log — root npm run lint (rc=0)
+- raw/06_root_build.log — root npm run build (rc=0)
+- raw/07_web_npmci.log — web/ npm ci (rc=0)
+- raw/08_web_build.log — web/ npm run build (rc=0)
+- raw/09_npm_outdated_root.json — root npm outdated full JSON (13 entries, all Current==Wanted; npm exit 1 expected)
+- raw/10_npm_outdated_web.json — web/ npm outdated full JSON (2 entries, all Current==Wanted)
+- raw/11_pip_audit.log — pip-audit -r requirements.txt (0, rc=0)
+- raw/12_root_audit_prod.log — root npm audit --omit=dev --audit-level=high (0, rc=0)
+- raw/13_root_audit_full.log — root npm audit --audit-level=high (0, rc=0)
+- raw/14_web_audit.log — web/ npm audit --audit-level=high (0, rc=0)
+- raw/15_r051_audit.log — R-051 per-spec real dispatch audit (20/20, rc=0)
+- raw/16_r053_scale.log — R-053 scale audit (1000/1000, RSS 38.6MB, rc=0)
+- raw/17_r055_scenarios.log — R-055 e2e scenarios pytest (7 passed, rc=0)
+- raw/18_r078_probe.log — R-078 key probe all 5 cases (rc=0)
+- raw/19_r082_probe.log — R-082 storage failure probe (degraded→degraded→healthy, rc=0)
+- raw/20_r085_metrics_load.log — R-085 /metrics load 10000 req (8 series, 0 leaks, RSS +0.0MB, rc=0)
+All paths are relative to docs/audit/M6/logs/. Added by R-099 (raw/21..26 are the R-099 additions).

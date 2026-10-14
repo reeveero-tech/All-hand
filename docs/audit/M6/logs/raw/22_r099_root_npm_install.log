@@ -1,0 +1,13 @@
+$ npm install
+returncode=0
+--- stdout ---
+
+up to date, audited 415 packages in 711ms
+
+101 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+--- stderr ---
+

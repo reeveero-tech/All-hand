@@ -163,3 +163,6 @@ tail:
 
 ### CI push run on main after PR #104 merge (advisor asked for explicit CI links)
 - run: https://github.com/reeveero-tech/All-hand/actions/runs/38484567540 — conclusion=success, headSha=76047ec (matches main HEAD at collection), all jobs success (test, quality, network, storage, build, audit, docker; publish skipped).
+
+### Post-hoc note (R-098/R-099 correction)
+This log's logger truncated outputs (lines[-keep:]) and its ruff command used the wrong scope (kept specialists exclude, omitted scripts). It does NOT contain install/build/audit/measurements. Superseded as primary evidence by logs/92 (R-098) and raw/01..26 (R-098/R-099). Preserved as-is; no history rewriting.
