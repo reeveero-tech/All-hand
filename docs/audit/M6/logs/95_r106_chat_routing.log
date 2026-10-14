@@ -1,0 +1,23 @@
+R-106 — /api/chat routes by intent — evidence index
+Collected 2026-10-14 on branch m6/r106-chat-routing, base main 7213274 (PR #109 merged).
+
+== Before (main 7213274)
+server.chat: spec = "communicator", changed only if an LLM is configured (none by default). routing.route()
+(the keyword router used by /civilization/*) was never called from chat.
+Browser (raw/55, open mode): "حلل 4 8 15" -> communicator, answer "tone=neutral".
+Router measured on the 5 quick prompts in web/src/components/Chat.jsx: 4/5 right; the JSON prompt
+'تحقق من صحة هذا JSON: {"name":"test","value":42}' -> test_runner (the word "test" inside the data).
+
+== Change
+server.py chat: LLM first (when available and its reply names a specialization), else route(); response adds
+routing {method, reason}. auto_router.route(): intent from the instruction with embedded data removed
+(JSON objects incl. nested, ``` blocks, double-quoted strings); falls back to the full text if the instruction
+has no keyword (a bare ```python``` block stays code_generator).
+
+== Evidence
+raw/60_r106_tests_on_old_code.log  rc=1  new tests vs old code: 10 failed, 3 passed (the 3 = invariants:
+       prompts exist in the UI, router still reads data when the instruction is empty, router targets exist)
+raw/61..62 pytest 3.11/3.12: 300 passed, 3 skipped, 3 deselected (rc=0)    raw/63 ruff rc=0
+raw/64_r106_ui_browser_chat.log  rc=0  same browser script as raw/55: "حلل 4 8 15" -> analyst
+       "n=3 mean=9.000 sd=4.546 trend=up"
+Not changed (out of scope, recorded in ROADMAP): first-match rule order of the router.

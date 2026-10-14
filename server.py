@@ -46,6 +46,7 @@ from agent_civilization.agents.external_adapter import (
     load_external_agents_from_env,
 )
 from agent_civilization.core import safety
+from agent_civilization.routing import route as route_request
 from agent_civilization.core.llm import get_llm
 
 # R-100 (D-044): make /proc/<pid>/environ of the server unreadable to any child
@@ -599,16 +600,22 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
     # R-004: actually enforce the API key (was received but not checked).
     verify_api_key(api_key)
     """Natural-language command: route to the best specialist and execute."""
+    # R-106: the LLM picks the specialist when configured; otherwise (or when
+    # its answer names no specialization) the deterministic keyword router
+    # decides.  Before R-106 every message went to "communicator" without an LLM.
     llm = get_llm()
-    spec = "communicator"
+    spec, method, reason = None, "keywords", ""
     if llm.available:
         routed = await llm.complete(ROUTER_SYSTEM, req.message, max_tokens=20)
         if routed["ok"]:
             candidate = routed["content"].strip().lower().replace("-", "_")
             for name in SPECIALIZATIONS:
                 if name in candidate:
-                    spec = name
+                    spec, method, reason = name, "llm", "LLM dispatcher"
                     break
+    if spec is None:
+        plan = route_request(req.message)
+        spec, reason = plan["primary"], plan["reason"]
     agent = _pick_agent(spec)
     outcome = await agent.execute({"prompt": req.message})
 
@@ -641,6 +648,7 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
     return {
         "task_id": task_id,
         "routed_to": spec,
+        "routing": {"method": method, "reason": reason},
         "agent": agent.name,
         "outcome": outcome,
     }

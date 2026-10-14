@@ -1,0 +1,104 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: tests/test_r106_chat_routing.py against main 7213274 code (server.py + auto_router.py stashed)
+# env_overrides={}
+$ /tmp/v311/bin/python -m pytest tests/test_r106_chat_routing.py -q -p no:cacheprovider -rA
+returncode=1
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: platformdirs-4.13.0, cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 13 items
+
+tests/test_r106_chat_routing.py .FFFFFFFFFF..                            [100%]
+
+=================================== FAILURES ===================================
+_ test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u062d\u0644\u0644 \u0623\u062f\u0627\u0621 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0627\u0644\u064a-analyst] _
+tests/test_r106_chat_routing.py:47: in test_chat_without_llm_routes_ui_prompts_to_the_right_specialist
+    assert d["routed_to"] == expected
+E   AssertionError: assert 'communicator' == 'analyst'
+E     
+E     - analyst
+E     + communicator
+_ test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u0627\u0628\u062d\u062b \u0639\u0646 \u0623\u062d\u062f\u062b \u062a\u0642\u0646\u064a\u0627\u062a \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a-researcher] _
+tests/test_r106_chat_routing.py:47: in test_chat_without_llm_routes_ui_prompts_to_the_right_specialist
+    assert d["routed_to"] == expected
+E   AssertionError: assert 'communicator' == 'researcher'
+E     
+E     - researcher
+E     + communicator
+_ test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u0627\u0643\u062a\u0628 \u0643\u0648\u062f Python \u0644\u062d\u0633\u0627\u0628 \u0645\u062a\u0648\u0633\u0637 \u0642\u0627\u0626\u0645\u0629 \u0623\u0631\u0642\u0627\u0645-code_generator] _
+tests/test_r106_chat_routing.py:47: in test_chat_without_llm_routes_ui_prompts_to_the_right_specialist
+    assert d["routed_to"] == expected
+E   AssertionError: assert 'communicator' == 'code_generator'
+E     
+E     - code_generator
+E     + communicator
+_ test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u062a\u062d\u0642\u0642 \u0645\u0646 \u0635\u062d\u0629 \u0647\u0630\u0627 JSON: {"name":"test","value":42}-validator] _
+tests/test_r106_chat_routing.py:47: in test_chat_without_llm_routes_ui_prompts_to_the_right_specialist
+    assert d["routed_to"] == expected
+E   AssertionError: assert 'communicator' == 'validator'
+E     
+E     - validator
+E     + communicator
+_ test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u0635\u0645\u0645 \u0627\u0633\u062a\u0631\u0627\u062a\u064a\u062c\u064a\u0629 \u0644\u062a\u0637\u0648\u064a\u0631 \u0627\u0644\u062d\u0636\u0627\u0631\u0629-strategist] _
+tests/test_r106_chat_routing.py:47: in test_chat_without_llm_routes_ui_prompts_to_the_right_specialist
+    assert d["routed_to"] == expected
+E   AssertionError: assert 'communicator' == 'strategist'
+E     
+E     - strategist
+E     + communicator
+_______ test_chat_analysis_is_answered_by_the_analyst_with_real_numbers ________
+tests/test_r106_chat_routing.py:55: in test_chat_analysis_is_answered_by_the_analyst_with_real_numbers
+    assert d["routed_to"] == "analyst"
+E   AssertionError: assert 'communicator' == 'analyst'
+E     
+E     - analyst
+E     + communicator
+_____________ test_llm_choice_wins_when_it_names_a_specialization ______________
+tests/test_r106_chat_routing.py:73: in test_llm_choice_wins_when_it_names_a_specialization
+    assert d["routed_to"] == "db_manager" and d["routing"]["method"] == "llm"
+                                              ^^^^^^^^^^^^
+E   KeyError: 'routing'
+______ test_llm_unusable_answer_falls_back_to_the_keyword_router[reply0] _______
+tests/test_r106_chat_routing.py:81: in test_llm_unusable_answer_falls_back_to_the_keyword_router
+    assert d["routed_to"] == "analyst" and d["routing"]["method"] == "keywords"
+E   AssertionError: assert ('communicator' == 'analyst'
+E     
+E     - analyst
+E     + communicator)
+______ test_llm_unusable_answer_falls_back_to_the_keyword_router[reply1] _______
+tests/test_r106_chat_routing.py:81: in test_llm_unusable_answer_falls_back_to_the_keyword_router
+    assert d["routed_to"] == "analyst" and d["routing"]["method"] == "keywords"
+E   AssertionError: assert ('communicator' == 'analyst'
+E     
+E     - analyst
+E     + communicator)
+___________ test_router_reads_intent_from_instruction_not_from_data ____________
+tests/test_r106_chat_routing.py:85: in test_router_reads_intent_from_instruction_not_from_data
+    assert route('تحقق من صحة هذا JSON: {"name":"test","value":42}')["primary"] == "validator"
+E   AssertionError: assert 'test_runner' == 'validator'
+E     
+E     - validator
+E     + test_runner
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_r106_chat_routing.py::test_ui_quick_prompts_exist_in_the_ui
+PASSED tests/test_r106_chat_routing.py::test_router_still_looks_inside_data_when_the_instruction_has_no_keyword
+PASSED tests/test_r106_chat_routing.py::test_every_router_target_is_a_live_specialization
+FAILED tests/test_r106_chat_routing.py::test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u062d\u0644\u0644 \u0623\u062f\u0627\u0621 \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u062d\u0627\u0644\u064a-analyst]
+FAILED tests/test_r106_chat_routing.py::test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u0627\u0628\u062d\u062b \u0639\u0646 \u0623\u062d\u062f\u062b \u062a\u0642\u0646\u064a\u0627\u062a \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a-researcher]
+FAILED tests/test_r106_chat_routing.py::test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u0627\u0643\u062a\u0628 \u0643\u0648\u062f Python \u0644\u062d\u0633\u0627\u0628 \u0645\u062a\u0648\u0633\u0637 \u0642\u0627\u0626\u0645\u0629 \u0623\u0631\u0642\u0627\u0645-code_generator]
+FAILED tests/test_r106_chat_routing.py::test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u062a\u062d\u0642\u0642 \u0645\u0646 \u0635\u062d\u0629 \u0647\u0630\u0627 JSON: {"name":"test","value":42}-validator]
+FAILED tests/test_r106_chat_routing.py::test_chat_without_llm_routes_ui_prompts_to_the_right_specialist[\u0635\u0645\u0645 \u0627\u0633\u062a\u0631\u0627\u062a\u064a\u062c\u064a\u0629 \u0644\u062a\u0637\u0648\u064a\u0631 \u0627\u0644\u062d\u0636\u0627\u0631\u0629-strategist]
+FAILED tests/test_r106_chat_routing.py::test_chat_analysis_is_answered_by_the_analyst_with_real_numbers
+FAILED tests/test_r106_chat_routing.py::test_llm_choice_wins_when_it_names_a_specialization
+FAILED tests/test_r106_chat_routing.py::test_llm_unusable_answer_falls_back_to_the_keyword_router[reply0]
+FAILED tests/test_r106_chat_routing.py::test_llm_unusable_answer_falls_back_to_the_keyword_router[reply1]
+FAILED tests/test_r106_chat_routing.py::test_router_reads_intent_from_instruction_not_from_data
+========================= 10 failed, 3 passed in 0.42s =========================
+
+--- stderr ---
+
