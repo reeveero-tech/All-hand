@@ -31,9 +31,11 @@ import json
 import re
 import socket
 import sqlite3
+import ssl
 import statistics
 import time
 import tokenize
+import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any, Callable, Dict, Optional
@@ -351,6 +353,36 @@ async def _api_integrator(work: Dict[str, Any]) -> Dict[str, Any]:
         return {"ok": False, "error": f"http: {e}"}
 
 
+# R-107: which DuckDuckGo failures are "transient" (worth a retry) vs. hard errors
+# (empty query, HTTP 4xx/5xx, address-policy refusals — never retried).
+_TRANSIENT_NET_ERRORS = (
+    ConnectionResetError,           # Errno 104 — seen on CI job network (raw/59)
+    ConnectionAbortedError,          # Errno 53
+    TimeoutError,                   # socket.timeout / SSL handshake timeout
+)
+
+
+def _is_transient_search_error(exc: Exception) -> bool:
+    """Only network/transport flakiness retries — never policy refusals or HTTP 4xx/5xx."""
+    if isinstance(exc, _TRANSIENT_NET_ERRORS):
+        return True
+    if isinstance(exc, urllib.error.URLError):
+        reason = getattr(exc, "reason", None)
+        if reason is None:
+            return True  # bare URLError with no reason — assume transport
+        return isinstance(reason, _TRANSIENT_NET_ERRORS) or _is_transient_search_error(reason)
+    if isinstance(exc, ssl.SSLError):
+        # SSL: UNEXPECTED_EOF_WHILE_READING (raw/33/34/48) and handshake timeouts
+        return True
+    if isinstance(exc, OSError) and exc.errno in (104, 53):
+        return True
+    return False
+
+
+_RESEARCHER_ATTEMPTS = 2  # one live attempt + one retry for transient errors only
+_RESEARCHER_TOTAL_TIMEOUT_S = 20.0  # hard budget for all attempts combined
+
+
 async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
     q = _extract_text(work).strip()
     if not q:
@@ -358,22 +390,35 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
     # DuckDuckGo Instant Answer API — no key needed.
     url = "https://api.duckduckgo.com/?" + urllib.parse.urlencode(
         {"q": q, "format": "json", "no_html": "1", "no_redirect": "1"})
-    def fetch():
-        req = urllib.request.Request(url, headers={"User-Agent": "AGOS-Research/1.0"})
-        with safety.safe_urlopen(req, timeout=8) as resp:
-            return json.loads(resp.read().decode("utf-8", errors="replace"))
-    try:
-        j = await _to_thread(fetch)
-        abstract = j.get("AbstractText") or j.get("Heading") or ""
-        related = [r.get("Text", "") for r in j.get("RelatedTopics", [])[:5]
-                   if isinstance(r, dict) and r.get("Text")]
-        return {"ok": True,
-                "answer": abstract or "no direct answer; see related",
-                "tool_output": {"abstract": abstract,
-                                 "source": j.get("AbstractURL", ""),
-                                 "related": related}}
-    except Exception as e:  # noqa: BLE001
-        return {"ok": False, "error": f"search: {e}"}
+    started = time.monotonic()
+    last_error: Optional[Exception] = None
+    for attempt in range(_RESEARCHER_ATTEMPTS):
+        elapsed = time.monotonic() - started
+        if elapsed + 8.0 > _RESEARCHER_TOTAL_TIMEOUT_S:
+            break  # budget exhausted — no more attempts
+        def fetch():
+            req = urllib.request.Request(url, headers={"User-Agent": "AGOS-Research/1.0"})
+            with safety.safe_urlopen(req, timeout=8) as resp:
+                return json.loads(resp.read().decode("utf-8", errors="replace"))
+        try:
+            j = await _to_thread(lambda: fetch())
+            abstract = j.get("AbstractText") or j.get("Heading") or ""
+            related = [r.get("Text", "") for r in j.get("RelatedTopics", [])[:5]
+                       if isinstance(r, dict) and r.get("Text")]
+            out = {"ok": True,
+                   "answer": abstract or "no direct answer; see related",
+                   "tool_output": {"abstract": abstract,
+                                    "source": j.get("AbstractURL", ""),
+                                    "related": related}}
+            if attempt:
+                out["tool_output"]["retried"] = True
+                out["tool_output"]["attempts"] = attempt + 1
+            return out
+        except Exception as e:  # noqa: BLE001
+            if not _is_transient_search_error(e):
+                return {"ok": False, "error": f"search: {e}"}  # hard error — no retry
+            last_error = e
+    return {"ok": False, "error": f"search: {last_error} (transient, {_RESEARCHER_ATTEMPTS} attempts)"}
 
 
 async def _architect(work: Dict[str, Any]) -> Dict[str, Any]:
