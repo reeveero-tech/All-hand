@@ -283,37 +283,6 @@ def test_task_complete_event_means_attempt_finished_not_success(monkeypatch):
 
 
 # --------------------------------------------- R-104c2 (blocking review round 3)
-def test_data_field_value_reaches_llm_and_changing_data_changes_the_input(monkeypatch):
-    """R-104c2: a value that appears ONLY in `data` (not in the prompt) must reach
-    the LLM — and changing the data with the same prompt must change what is sent."""
-    from agent_civilization.core.agents import real_dispatcher as rdc
-
-    received = []
-
-    async def spy_process_text(payload):
-        received.append(payload)
-        return {"ok": False, "error": "no key", "model": "m"}
-
-    from agent_civilization.agents.executors import data_worker as dw_mod
-    orig = dw_mod.process_text
-    dw_mod.process_text = spy_process_text
-    try:
-        base = {"prompt": "clean and aggregate the sales notes",
-                "data": {"notes": ["alpha-only-in-data"]}}
-        asyncio.run(rdc._data_processor(base))
-        assert received, "the LLM path was never invoked"
-        assert "alpha-only-in-data" in received[0]      # data value reached the LLM
-
-        # same prompt, different data → the payload changes
-        received.clear()
-        other = {"prompt": "clean and aggregate the sales notes",
-                 "data": {"notes": ["beta-only-in-data"]}}
-        asyncio.run(rdc._data_processor(other))
-        assert "beta-only-in-data" in received[0]
-        assert received[0] != base["prompt"] + ""  # payload is not the bare prompt
-    finally:
-        dw_mod.process_text = orig
-
 
 def test_task_dispatcher_consumer_counts_completion_not_success(monkeypatch):
     """R-104c2: the REAL consumer of task_complete is TaskDispatcherAgent._handle_message
@@ -339,14 +308,33 @@ def test_task_dispatcher_consumer_counts_completion_not_success(monkeypatch):
     asyncio.run(go())
 
 
-def test_three_packages_are_consumed_by_production_paths():
-    """R-104c2: each package must be consumed by a PRODUCTION path — not just tests.
-    If any package file is reverted to empty, the live path below breaks (import error),
-    which is what makes the wiring real rather than a formal import."""
-    # communication/: specialist_runtime.py (the AGOS_AGENT_IMPL=specialists builder)
-    # imports CommunicationHub from the package — the production consumer.
+def test_three_packages_are_consumed_by_production_paths(monkeypatch):
+    """R-104c2: each package is consumed by a PRODUCTION path — not just tests.
+    If any package file is reverted to empty, the live path below breaks (import
+    error), which is what makes the wiring real rather than a formal import."""
+    # communication/: the actual BUILDER (create_specialist_civilization, the
+    # AGOS_AGENT_IMPL=specialists path) must construct the hub through the
+    # package's interface — a stub replaces the package class and the builder's
+    # returned agents must all be on that stub hub.
     import agent_civilization.agents.real.specialist_runtime as sr
-    assert sr.CommunicationHub.__module__ == "agent_civilization.core.agents.communication_hub"
+    import agent_civilization.communication as comm
+
+    # the production module's CommunicationHub IS the package's re-export
+    assert sr.CommunicationHub is comm.CommunicationHub
+
+    class PackageHub(comm.CommunicationHub):
+        pass
+
+    monkeypatch.setattr(sr, "CommunicationHub", PackageHub)
+    civ = sr.create_specialist_civilization(["data_processor"], agents_per_spec=2)
+    # every agent in the built civilization shares the stub hub built via the package
+    hubs = set()
+    for spec, pool in civ.items():
+        for a in pool:
+            hubs.add(id(a.inner.communication_hub))
+    assert len(hubs) == 1
+    assert isinstance(civ["data_processor"][0].inner.communication_hub, PackageHub)
+
 
     # runtime/: the live researcher handler consumes make_deadline/remaining from it.
     import agent_civilization.runtime as runtime
@@ -358,6 +346,39 @@ def test_three_packages_are_consumed_by_production_paths():
     import agent_civilization.utils as utils
     assert utils.build_llm_payload("p", {"k": "v"}).endswith('{"k": "v"}')
     assert utils.build_llm_payload("p", None) == "p"
+
+
+def test_data_field_value_reaches_llm_and_changing_data_changes_the_input(monkeypatch):
+    """R-104c2: a value that appears ONLY in `data` (not in the prompt) must reach
+    the LLM — proven at the LLMClient.complete boundary itself — and changing the
+    data with the same prompt must change the payload (both payloads compared)."""
+    from agent_civilization.core.agents import real_dispatcher as rdc
+    from agent_civilization.core.llm import LLMClient
+
+    llm_prompts = []
+
+    async def recording_complete(self, system, prompt, max_tokens=1024):
+        llm_prompts.append(prompt)
+        return {"ok": False, "content": "", "error": "no key", "model": "m"}
+
+    monkeypatch.setattr(LLMClient, "complete", recording_complete)
+
+    base = {"prompt": "clean and aggregate the sales notes",
+            "data": {"notes": ["alpha-only-in-data"]}}
+    other = {"prompt": "clean and aggregate the sales notes",
+             "data": {"notes": ["beta-only-in-data"]}}
+    asyncio.run(rdc._data_processor(base))
+    assert llm_prompts, "the LLM boundary was never reached"
+    first = llm_prompts[0]
+    assert "alpha-only-in-data" in first          # data value reached the LLM
+    assert "alpha-only-in-data" not in base["prompt"]  # ...and it came from data
+
+    asyncio.run(rdc._data_processor(other))
+    second = llm_prompts[1]
+    assert "beta-only-in-data" in second
+    # the two payloads differ ONLY because the data differed (same prompt)
+    assert first != second
+    assert first.split("\n\n=== data ===\n")[0] == second.split("\n\n=== data ===\n")[0]
 
 
 def test_runtime_helpers_are_used_by_the_live_researcher_handler(monkeypatch):
