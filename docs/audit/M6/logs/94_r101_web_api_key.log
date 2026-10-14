@@ -37,3 +37,10 @@ spec = "communicator" unless an LLM is configured; routing.route() (real keyword
 == Build / tests / lint
 raw/52 web: npm install && npm run build rc=0 (lockfile unchanged)   raw/53 root: npm install && npm run build rc=0
 raw/56..57 pytest 3.11 / 3.12: 287 passed, 3 skipped, 3 deselected (rc=0)   ruff (CI scope): All checks passed
+
+== CI on PR #109 (run 38494421358)
+First attempt: network job FAILED — test_researcher_live_duckduckgo: "search: <urlopen error [Errno 104] Connection
+reset by peer>" (raw/59, verbatim). R-101 changes no Python code. `gh run rerun --failed`: network pass.
+All other jobs passed on the first attempt; build job step "Test web API client": 10 tests, 10 pass.
+Fourth transient DuckDuckGo failure this session -> registered as R-107 (proposed), not dismissed.
+

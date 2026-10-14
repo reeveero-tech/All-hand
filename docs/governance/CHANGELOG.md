@@ -861,4 +861,4 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - معدّل: `web/src/api.js` (المفتاح من sessionStorage، دمج ترويسات صحيح، `ApiError` برسائل 401/403 عربية وحدث، ترميز اسم الوكيل)، `App.jsx` (`.app-top` ملتصق)، `index.css`.
 - التحقق: متصفح حقيقي على uvicorn حقيقي — الوضعان (`raw/54..55`، لقطات)؛ pytest 287 + 3 + 3 (3.11/3.12)؛ بناء web/ والجذر ناجح.
 - مسجّل: R-106 (ready) — المحادثة بلا LLM توجّه دائماً إلى `communicator`.
-
+- CI على PR #109: job `network` فشل أول مرة (`test_researcher_live_duckduckgo` — `Errno 104` من DuckDuckGo، `raw/59`)، وإعادة تشغيل الـjob الفاشل نجحت؛ سُجّل التكرار كـR-107 (proposed). خطوة `Test web API client` في CI: 10/10.
