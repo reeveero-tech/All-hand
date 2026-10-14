@@ -63,6 +63,9 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `AGOS_RATE_LIMIT_REQUESTS` | server.py | 100 |
 | `AGOS_RATE_LIMIT_WINDOW` | server.py | 60 |
 | `AGOS_ALLOW_CODE_EXEC` (R-100، D-044) | core/safety.py | غير مضبوط = تنفيذ `test_runner` فقط إن ضُبط `AGOS_API_KEY`؛ `1` يسمح؛ `0` يرفض دائماً |
+| `AGOS_MEMORY` (R-103، D-046) | core/experience.py | غير مضبوط/`1` = الذاكرة والتعلم مفعّلان؛ `0` يعطّلهما (لا حقل `experience`) |
+| `AGOS_MEMORY_MAX` (R-103) | core/experience.py | 2000 مدخلاً (حد أدنى 10)؛ الأقل أهمية/الأقدم يُحذف |
+| `AGOS_MEMORY_FILE` (R-103) | core/experience.py | غير مضبوط = الذاكرة في العملية فقط (تضيع عند إعادة التشغيل)؛ مسار ملف = JSON بكتابة ذرية كل 25 تخزيناً وعند الإيقاف، والتعلم يُعاد بناؤه منه عند أول مهمة. على Render القرص مؤقت ما لم يُربط قرص دائم |
 | `AGOS_ALLOW_PRIVATE_NETWORK` (R-100) | core/safety.py | غير مضبوط = يُحظر كل عنوان غير عام في الأدوات والوكلاء المسجلين عبر API |
 | `SUPABASE_URL` / `VITE_SUPABASE_URL` | supabase_store.py | `""` |
 | `SUPABASE_SERVICE_KEY` (مفضّل — D-039) ثم `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY` (بديل للتوافق) | supabase_store.py | `""` |

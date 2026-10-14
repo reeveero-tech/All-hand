@@ -1,0 +1,38 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: R-103 probe on main eaa41e2 (all R-103 changes stashed; experience.py present but not wired)
+# env_overrides={}
+$ /tmp/v311/bin/python scripts/run_r103_experience_probe.py
+returncode=0
+--- stdout ---
+== analyst #1: ok=True answer=n=4 mean=12.000 sd=1.871 trend=up
+   experience="<absent>"
+== analyst #2 (similar): ok=True answer=n=4 mean=16.750 sd=7.854 trend=up
+   experience="<absent>"
+== researcher live: ok=True answer=Python is a high-level programming language.
+   experience="<absent>"
+== researcher, network down: ok=False answer=search: <urlopen error connection reset by peer>
+   experience="<absent>"
+== GET /api/learning: 404 {"detail": "Not Found"}
+
+--- stderr ---
+2026-10-14 02:13:53,833 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:103
+2026-10-14 02:13:53,833 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:117
+2026-10-14 02:13:53,834 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-14 02:13:53,839 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:212
+2026-10-14 02:13:53,839 - agos.server - INFO - External agents loaded: 0 - <module>:214
+2026-10-14 02:13:53,863 - agos.server - INFO - Civilization routes registered successfully - <module>:716
+2026-10-14 02:13:53,872 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: agos - __init__:100
+2026-10-14 02:13:53,876 - agos.server - INFO - Task created: ec7247353da8 for specialization: analyst - create_task:535
+2026-10-14 02:13:53,877 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 02:13:53,878 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/ec7247353da8 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:53,879 - agos.server - INFO - Task created: c6eac7a27dd0 for specialization: analyst - create_task:535
+2026-10-14 02:13:53,879 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 02:13:53,880 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c6eac7a27dd0 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:53,880 - agos.server - INFO - Task created: 1fa0f0e2ae62 for specialization: researcher - create_task:535
+2026-10-14 02:13:53,881 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 02:13:53,882 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/1fa0f0e2ae62 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:53,883 - agos.server - INFO - Task created: c8dc645c8c3e for specialization: researcher - create_task:535
+2026-10-14 02:13:53,883 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 02:13:53,884 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c8dc645c8c3e "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:53,885 - httpx2 - INFO - HTTP Request: GET http://testserver/api/learning "HTTP/1.1 404 Not Found" - _send_single_request:1085
+

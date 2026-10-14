@@ -154,3 +154,6 @@
 4. `prctl(PR_SET_DUMPABLE)` خاص بـLinux؛ على غيره `server_process_non_dumpable=false` معروض في الحالة.
 - الأدلة: `docs/audit/M6/logs/93_r100_runtime_safety.log` (فهرس) و`logs/raw/27..50`؛ الاختبارات `tests/test_r100_runtime_safety.py` (44).
 
+## R-103 — الذاكرة المشتركة (D-046، RISK-026، 2026-10-14)
+- كل مهمة تُخزَّن (الموجه ≤500 حرف، الإجابة أو الخطأ ≤500، كلمات المدخل ≤200) وتُعرض لاحقاً في `experience.memory.recalled` لأي عميل يرسل مهمة مشابهة في التخصص نفسه، وفي `GET /api/memory`. هذا نفس ظهور `GET /api/tasks` القائم (النشر أحادي المستأجر) — لا تُرسل أسراراً في الموجهات.
+- `DELETE /api/memory` يتطلب `AGOS_API_KEY` مهيأً (403 في الوضع المفتوح). `AGOS_MEMORY=0` يعطّل التخزين كلياً. مع `AGOS_MEMORY_FILE` تُكتب الذكريات على القرص بنص واضح.

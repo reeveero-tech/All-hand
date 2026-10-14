@@ -18,6 +18,7 @@ import importlib
 import time
 from typing import Any, Dict, List
 
+from agent_civilization.core import experience as _experience
 from agent_civilization.core.agents.communication_hub import CommunicationHub
 
 VALID_IMPLS = ("real", "specialists")
@@ -50,16 +51,26 @@ class SpecialistBackedAgent:
         started = time.time()
         self.status = "working"
         try:
-            out = await self.inner.execute(work or {})
-            ok = bool(out.get("ok"))
+            work = work or {}
+
+            async def call():
+                out = await self.inner.execute(work)
+                r = out.get("result")
+                if not isinstance(r, dict):
+                    r = {"ok": bool(out.get("ok")), "answer": r}
+                return r
+
+            # R-103: memory + learning around the real handler (D-046)
+            result, exp = await _experience.run_with_experience(self.specialization, self.name, work, call)
+            ok = bool(result.get("ok"))
             elapsed = round(time.time() - started, 3)
             self.stats["tasks_completed" if ok else "tasks_failed"] += 1
             self.stats["total_time_s"] += elapsed
-            result = out.get("result")
-            if not isinstance(result, dict):
-                result = {"ok": ok, "answer": result}
-            return {"ok": ok, "agent": self.name, "elapsed_s": elapsed,
+            resp = {"ok": ok, "agent": self.name, "elapsed_s": elapsed,
                     "result": result, "impl": self.impl_class}
+            if exp is not None:
+                resp["experience"] = exp
+            return resp
         except Exception as exc:  # noqa: BLE001
             elapsed = round(time.time() - started, 3)
             self.stats["tasks_failed"] += 1

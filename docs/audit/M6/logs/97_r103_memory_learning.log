@@ -1,0 +1,27 @@
+R-103 — memory and learning on the live execution path (D-046) — evidence index
+Collected 2026-10-14 on branch m6/r103-memory-learning, base main eaa41e2 (PR #111 merged).
+
+== Before (raw/72, scripts/run_r103_experience_probe.py on main code)
+analyst #1 / #2 (similar prompt) via POST /api/tasks: no "experience" on either outcome; #2 knows nothing of #1.
+researcher live OK, then network cut: ok=False "connection reset by peer".   GET /api/learning: 404.
+agos_kernel/agent_production imported only by tests.
+
+== Change
+NEW agent_civilization/core/experience.py: recall (Jaccard >= 0.25, same specialization) + learning prior before;
+store + record after; researcher fallback to a remembered success (>= 0.6) only when the live call fails, marked
+degraded/source=memory with live_error. Wired in RealSpecialistAgent and SpecialistBackedAgent.
+server.py: GET /api/memory, GET /api/learning, DELETE /api/memory (needs configured key), status.experience,
+persist at shutdown. memory_system.py: recall also searches metadata prompt; load restores enum/datetimes;
+atomic persist; id = clock + random suffix (preventive).
+
+== Evidence
+raw/72 / raw/74  probe before / after (identical script, offline DuckDuckGo stub)
+raw/73  rc=1  new tests vs old code: 16 failed, 1 passed (the 1 = invariant "broken memory never breaks the task").
+        Old memory_system stored 50,000 entries on Linux with no id collision -> the id fix is preventive,
+        shown in the test with a fixed clock (not claimed as an observed bug).
+raw/75..76 pytest 3.11/3.12: 346 passed, 3 skipped, 3 deselected (rc=0)    raw/77 ruff rc=0
+raw/78..80 R-051 x3: 19/20 each — researcher failed on DuckDuckGo TLS (SSL UNEXPECTED_EOF; handshake timed out),
+        known flakiness R-107. R-051 calls dispatch directly; real_dispatcher.py has 0 diff lines in this batch.
+        An unlogged interactive run in the same session gave 20/20.
+Limits: memory shared by all clients (RISK-026); word-overlap recall, not semantic; learning measures, does not
+change handlers; web/ does not display experience yet; memory lost on restart unless AGOS_MEMORY_FILE is set.

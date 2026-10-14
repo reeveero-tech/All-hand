@@ -3,7 +3,7 @@
 > **آخر تحديث**: 2026-10-12 — بعد R-041 (مصادلة مع الكود الفعلي وتصحيح أوصاف الحماية القديمة)
 > **المصدر**: قراءة مباشرة من `server.py` و`agent_civilization/civilization_routes.py`
 
-الإجمالي: **20 تعريف مسار** — 17 تعريفاً صريحاً في `server.py` (بما فيها catch-all) + 3 تعريفات ديناميكية.
+الإجمالي: **23 تعريف مسار** — 20 تعريفاً صريحاً في `server.py` (بما فيها catch-all؛ الثلاثة الأخيرة 21..23 أضافها R-103 وأُبقي ترقيم ما قبلها) + 3 تعريفات ديناميكية.
 
 **تنبيه مهم**: تعريف catch-all وتركيب `/assets` مشروطان بوجود `web/dist` (راجع `server.py:635-637`)؛ لذا عدد المسارات **المسجلة فعلياً** وقت التشغيل يعتمد على وجود الواجهة المبنية. العدد أعلاه هو عدد التعريفات في الكود.
 
@@ -28,6 +28,9 @@
 | 15 | `/api/agents/external` | POST | `verify_api_key` — يفحص قيمة المفتاح (R-004) | 201؛ 400 `url rejected` لعنوان غير عام في الوضع المفتوح (R-100) |
 | 16 | `/api/agents/external/{name}` | **DELETE** | `verify_api_key` — يفحص قيمة المفتاح (R-004) | |
 | 17 | `/{full_path:path}` | GET | لا | catch-all يخدم `web/dist` |
+| 21 | `/api/memory` | GET | لا | R-103: `?q=&specialization=&limit=` (≤100) — ذكريات المهام السابقة |
+| 22 | `/api/learning` | GET | لا | R-103: ما قيس لكل تخصص ونوع مدخل |
+| 23 | `/api/memory` | **DELETE** | يتطلب `AGOS_API_KEY` مهيأً: 403 في الوضع المفتوح، ثم 401/403 للمفتاح | R-103: مسح الذاكرة والتعلم |
 
 ## المسارات الديناميكية (`civilization_routes.py`)
 
@@ -94,3 +97,7 @@
 - `code_generator`: `{generated: bool, method: structured-spec|llm, code, functions, classes, verified}`؛ للكود المرفق `generated: false`. بلا LLM وبلا مواصفة: `ok=false` برسالة فيها مثال مواصفة.
 - `analyst` (نص): `{type: "text", words, chars, sentences, questions, language, top_terms, unique_terms}`؛ `strategist`: يقبل `data` قائمة نصوص.
 
+## R-103 — `experience` في ناتج كل مهمة (D-046، 2026-10-14)
+ناتج الوكيل (`outcome` في `/api/chat`، `result` في `GET /api/tasks/{id}`، مراحل خطوط الأنابيب) يضيف بجانب `ok/agent/elapsed_s/result`:
+`experience: {memory: {recalled: [{memory_id, score, ok, prompt, answer, agent, age_s}], stored_id, fallback_used}, learning: {prior: {specialization, input_kind, samples, success_rate?, avg_duration_ms?}, after: {...}}}`.
+يغيب الحقل إن `AGOS_MEMORY=0` أو فشلت الطبقة. عند بديل `researcher` يحمل `result`: `degraded: true`، `source: "memory"`، `live_error`، `memory_id`. `GET /api/system/status` يضيف `experience` (الإحصاءات نفسها التي يعيدها `/api/learning`).

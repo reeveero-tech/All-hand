@@ -1,0 +1,41 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: R-103 probe after change
+# env_overrides={}
+$ /tmp/v311/bin/python scripts/run_r103_experience_probe.py
+returncode=0
+--- stdout ---
+== analyst #1: ok=True answer=n=4 mean=12.000 sd=1.871 trend=up
+   experience={"memory": {"recalled": [], "stored_id": "mem_20261014021355525476_409d1ebe", "fallback_used": null}, "learning": {"prior": {"specialization": "analyst", "input_kind": "numbers", "samples": 0}, "after": {"specialization": "analyst", "input_kind": "numbers", "samples": 1, "success_rate": 1.0, "avg_duration_ms": 0.1}}}
+== analyst #2 (similar): ok=True answer=n=4 mean=16.750 sd=7.854 trend=up
+   experience={"memory": {"recalled": [{"memory_id": "mem_20261014021355525476_409d1ebe", "score": 0.7, "ok": true, "prompt": "analyze weekly sales numbers", "answer": "n=4 mean=12.000 sd=1.871 trend=up", "agent": "analyst_0000", "age_s": 0.0}], "stored_id": "mem_20261014021355527626_02044568", "fallback_used": null}, "learning": {"prior": {"specialization": "analyst", "input_kind": "numbers", "samples": 1, "success_rate": 1.0, "avg_duration_ms": 0.1}, "after": {"specialization": "analyst", "input_kind": "numbers", "samples": 2, "success_rate": 1.0, "avg_duration_ms": 0.1}}}
+== researcher live: ok=True answer=Python is a high-level programming language.
+   experience={"memory": {"recalled": [], "stored_id": "mem_20261014021355530824_6e3e7ce8", "fallback_used": null}, "learning": {"prior": {"specialization": "researcher", "input_kind": "text", "samples": 0}, "after": {"specialization": "researcher", "input_kind": "text", "samples": 1, "success_rate": 1.0, "avg_duration_ms": 1.1}}}
+== researcher, network down: ok=True answer=live search failed (search: <urlopen error connection reset by peer>); remembered result from 0.0s ago (similarity 1.0) for 'Python programming language': Python is a high-level programming language.
+   experience={"memory": {"recalled": [{"memory_id": "mem_20261014021355530824_6e3e7ce8", "score": 1.0, "ok": true, "prompt": "Python programming language", "answer": "Python is a high-level programming language.", "agent": "researcher_0650", "age_s": 0.0}], "stored_id": "mem_20261014021355533163_13027dd7", "fallback_used": "mem_20261014021355530824_6e3e7ce8"}, "learning": {"prior": {"specialization": "researcher", "input_kind": "text", "samples": 1, "success_rate": 1.0, "avg_duration_ms": 1.1}, "after": {"specialization": "researcher", "input_kind": "text", "samples": 2, "success_rate": 0.5, "avg_duration_ms": 1.0}}}
+== GET /api/learning: 200 {"enabled": true, "memories": 4, "max_entries": 2000, "persistence_file": false, "learning": {"tasks": 4, "by_specialization": {"analyst": {"samples": 2, "by_input_kind": {"numbers": {"samples": 2, "success_rate": 1.0, "avg_duration_ms": 0.1}}, "success_rate": 1.0}, "researcher": {"samples": 2, "by_input_kind": {"text": {"samples": 2, "success_rate": 0.5, "avg_duration_ms": 1.0}}, "success_rate": 0.5}}}}
+
+--- stderr ---
+2026-10-14 02:13:55,478 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:104
+2026-10-14 02:13:55,478 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:118
+2026-10-14 02:13:55,479 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-14 02:13:55,485 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:213
+2026-10-14 02:13:55,485 - agos.server - INFO - External agents loaded: 0 - <module>:215
+2026-10-14 02:13:55,510 - agos.server - INFO - Civilization routes registered successfully - <module>:748
+2026-10-14 02:13:55,520 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: agos - __init__:100
+2026-10-14 02:13:55,524 - agos.server - INFO - Task created: f60c1bf9473d for specialization: analyst - create_task:538
+2026-10-14 02:13:55,524 - agos.agent_production.memory - INFO - MemorySystem initialized (max_entries=2000) - __init__:105
+2026-10-14 02:13:55,524 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 02:13:55,525 - agos.agent_production.learning - INFO - LearningRuntime initialized (decay=0.95) - __init__:90
+2026-10-14 02:13:55,526 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/f60c1bf9473d "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:55,527 - agos.server - INFO - Task created: 199803093ca9 for specialization: analyst - create_task:538
+2026-10-14 02:13:55,527 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 02:13:55,528 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/199803093ca9 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:55,529 - agos.server - INFO - Task created: c3a947c774c4 for specialization: researcher - create_task:538
+2026-10-14 02:13:55,529 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 02:13:55,531 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c3a947c774c4 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:55,532 - agos.server - INFO - Task created: 4cb8675f6017 for specialization: researcher - create_task:538
+2026-10-14 02:13:55,532 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 02:13:55,533 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/4cb8675f6017 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:55,544 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/4cb8675f6017 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 02:13:55,545 - httpx2 - INFO - HTTP Request: GET http://testserver/api/learning "HTTP/1.1 200 OK" - _send_single_request:1085
+

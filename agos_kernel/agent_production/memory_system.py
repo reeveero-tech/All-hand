@@ -11,6 +11,8 @@ Features:
 
 import json
 import logging
+import os
+import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -125,7 +127,9 @@ class MemorySystem:
         Returns:
             Memory ID
         """
-        memory_id = memory_id or f"mem_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+        # R-103: a timestamp alone collided for two stores in the same microsecond
+        # (the second silently overwrote the first); a random suffix makes ids unique.
+        memory_id = memory_id or f"mem_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}_{uuid.uuid4().hex[:8]}"
         
         entry = MemoryEntry(
             memory_id=memory_id,
@@ -195,11 +199,15 @@ class MemorySystem:
             elif query.tags:
                 return []
         
-        # Filter by content (simple substring match)
+        # Filter by content (simple substring match). R-103: also the task prompt
+        # kept in metadata — learn_from_task() stores the prompt there, not in the
+        # content, so recall(prompt) could never find a previous task before.
         if query.query:
+            q = query.query.lower()
             results = {
                 mid for mid in results
-                if query.query.lower() in self._memories[mid].content.lower()
+                if q in self._memories[mid].content.lower()
+                or q in str(self._memories[mid].metadata.get("prompt", "")).lower()
             }
         
         # Filter by importance
@@ -383,8 +391,11 @@ class MemorySystem:
         }
         
         try:
-            with open(self._persistence_file, 'w') as f:
-                json.dump(data, f)
+            # R-103: atomic write — a crash mid-write no longer truncates the file
+            tmp = f"{self._persistence_file}.tmp"
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, default=str)
+            os.replace(tmp, self._persistence_file)
             logger.info(f"Memory persisted to {self._persistence_file}")
         except Exception as e:
             logger.error(f"Failed to persist memory: {e}")
@@ -394,7 +405,6 @@ class MemorySystem:
         if not self._persistence_file:
             return
         
-        import os
         if not os.path.exists(self._persistence_file):
             return
         
@@ -404,6 +414,13 @@ class MemorySystem:
             
             for memory_id, entry_data in data.items():
                 entry_data['tags'] = set(entry_data.get('tags', []))
+                # R-103: restore types — before, memory_type stayed a str (the type
+                # index then keyed by str, so type filters missed loaded entries) and
+                # the datetimes stayed str (sorting by last_accessed.timestamp() raised).
+                entry_data['memory_type'] = MemoryType(entry_data['memory_type'])
+                for k in ('created_at', 'last_accessed'):
+                    if isinstance(entry_data.get(k), str):
+                        entry_data[k] = datetime.fromisoformat(entry_data[k])
                 entry = MemoryEntry(**{
                     k: v for k, v in entry_data.items()
                     if k in MemoryEntry.__dataclass_fields__

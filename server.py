@@ -45,7 +45,7 @@ from agent_civilization.agents.external_adapter import (
     ExternalAgentAdapter,
     load_external_agents_from_env,
 )
-from agent_civilization.core import safety
+from agent_civilization.core import experience, safety
 from agent_civilization.routing import route as route_request
 from agent_civilization.core.llm import get_llm
 
@@ -84,6 +84,7 @@ async def _lifespan(_app):
     R-078: classify the Supabase key at startup and warn loudly if it is a public one."""
     log_key_status()
     yield
+    await experience.persist()  # R-103: no-op unless AGOS_MEMORY_FILE is set
     await get_storage().close()
 
 
@@ -478,7 +479,9 @@ async def system_status(request: Request):
             "rate_limiting": f"{RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW}s",
             # R-100 (D-044): what real tools are allowed to do in this process.
             "tool_policy": safety.policy_snapshot(),
-        }
+        },
+        # R-103 (D-046): memory and learning on the live path
+        "experience": experience.stats(),
     }
 
 
@@ -557,6 +560,35 @@ async def get_task(request: Request, task_id: str):
     if not task:
         raise HTTPException(404, "task not found")
     return task
+
+
+@app.get("/api/memory")
+@rate_limit
+async def get_memory(request: Request, q: str = "", specialization: Optional[str] = None, limit: int = 20):
+    """R-103: what the civilization remembers of earlier tasks (newest/most similar first)."""
+    items = await experience.search(q, specialization, limit)
+    return {"count": len(items), "memories": items, "stats": experience.stats()}
+
+
+@app.get("/api/learning")
+@rate_limit
+async def get_learning(request: Request):
+    """R-103: outcomes measured per specialization and input kind from real tasks."""
+    return experience.stats()
+
+
+@app.delete("/api/memory")
+@rate_limit
+async def clear_memory(request: Request, api_key: Optional[str] = Security(api_key_header)):
+    """R-103: forget everything. Destructive, so it needs AGOS_API_KEY configured
+    (refused in open mode, unlike task creation)."""
+    if not ENABLE_AUTH:
+        raise HTTPException(403, "clearing memory requires AGOS_API_KEY to be configured")
+    verify_api_key(api_key)
+    before = experience.stats()["memories"]
+    experience.reset()
+    await experience.persist()
+    return {"cleared": before}
 
 
 @app.get("/api/events")

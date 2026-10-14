@@ -878,3 +878,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - pytest 329 + 3 + 3 (3.11/3.12)؛ R-051 20/20 بالإذن الصريح.
 - عيبان وجدتهما الاختبارات أثناء الدفعة وأُصلحا قبل الالتزام: فحص المسار رفض `.gitignore`؛ و`builder` كان سيعامل أي `data` قاموسية (مثل `{"name": "x"}` في خط أنابيب) كقائمة ملفات.
 
+## 2026-10-14 — R-103: الذاكرة والتعلم في المسار الحي (D-046)
+
+- **قبل** (`raw/72`): لا أثر لمهمة سابقة في لاحقة؛ `researcher` يفشل عند انقطاع الشبكة؛ `/api/learning` 404.
+- مضاف: `agent_civilization/core/experience.py`؛ `GET /api/memory`، `GET /api/learning`، `DELETE /api/memory`؛ `experience` في ناتج كل مهمة وفي `/api/system/status`؛ `tests/test_r103_memory_learning.py` (17؛ على الكود السابق 16 تفشل)؛ `scripts/run_r103_experience_probe.py`؛ RISK-026.
+- معدّل: `real_agents.py` و`specialist_runtime.py` (يلفان المعالج بالطبقة)؛ `memory_system.py` (recall يبحث في الموجه، load يستعيد الأنواع، كتابة ذرية، معرّف غير معتمد على الساعة وحدها)؛ `tests/conftest.py` (ذاكرة فارغة لكل اختبار).
+- pytest 346 + 3 + 3 (3.11/3.12). R-051 19/20 في ثلاث تشغيلات مسجلة — `researcher` بخطأ TLS من DuckDuckGo (R-107)، والمسار الذي يقيسه R-051 بلا تغيير.
