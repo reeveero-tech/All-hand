@@ -1,0 +1,45 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: R-102 probe after change
+# env_overrides={}
+$ /tmp/v311/bin/python scripts/run_r102_handler_probe.py
+returncode=0
+--- stdout ---
+== builder {"prompt": "build a FastAPI service called shop"}
+   ok=True answer=scaffolded 5 file(s) (python-api); 5/5 passed verification (3 with a syntax check); returned in tool_output, not written to the server
+   tool_output={"stack": "python-api", "project": "shop", "source": "stack detected: python-api", "files": [{"path": "app/__init__.py", "bytes": 22, "check": "compile", "verified": true, "content": "\"\"\"Package marker.\"\"\"\n"}, {"path": "app/main.py", "bytes": 111, "check": "compile", "verified": true, "content": "\"\"\"main module.\"\"\"\n\n\ndef main() -> int:\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"}, {"path": "tests/test_main.py", "bytes": 126, "check": "compile", "verified": true, "content": "\"\"\"Tests for main.\"\"\"\n\n\ndef test_main_imports():\n    impor
+== builder {"prompt": "scaffold", "data": ["app.py", "tests/test_app.py"]}
+   ok=True answer=scaffolded 2 file(s) (custom); 2/2 passed verification (2 with a syntax check); returned in tool_output, not written to the server
+   tool_output={"stack": "custom", "project": "project", "source": "paths from data", "files": [{"path": "app.py", "bytes": 110, "check": "compile", "verified": true, "content": "\"\"\"app module.\"\"\"\n\n\ndef main() -> int:\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"}, {"path": "tests/test_app.py", "bytes": 123, "check": "compile", "verified": true, "content": "\"\"\"Tests for app.\"\"\"\n\n\ndef test_app_imports():\n    import importlib\n    assert importlib.util.find_spec('app') is not None\n"}], "persisted": false}
+== architect {"prompt": "design system", "data": ["web ui", "api", "db"]}
+   ok=True answer=3 component(s): api, database, ui requested; build order: api -> database -> ui
+   tool_output={"assumed_baseline": false, "components": [{"name": "api", "layer": "interface", "responsibility": "request/response contract", "depends_on": [], "why": "requested ('api')"}, {"name": "database", "layer": "data", "responsibility": "persistent state", "depends_on": [], "why": "requested ('db')"}, {"name": "ui", "layer": "presentation", "responsibility": "user interface", "depends_on": ["api"], "why": "requested ('web ui')"}], "layers": {"interface": ["api"], "data": ["database"], "presentation": ["ui"]}, "build_order": ["api", "database", "ui"], "edges": [["ui", "api"]], "unmatched_items": []}
+== architect {"prompt": "SaaS with payments and email notifications"}
+   ok=True answer=6 component(s): notifications, payments, tenancy requested; database, auth, queue implied; build order: database -> auth -> queue -> notifications -> payments -> tenancy
+   tool_output={"assumed_baseline": false, "components": [{"name": "database", "layer": "data", "responsibility": "persistent state", "depends_on": [], "why": "implied by tenancy"}, {"name": "auth", "layer": "service", "responsibility": "identity, sessions, permissions", "depends_on": ["database"], "why": "implied by tenancy"}, {"name": "queue", "layer": "infrastructure", "responsibility": "asynchronous work", "depends_on": [], "why": "implied by notifications"}, {"name": "notifications", "layer": "service", "responsibility": "email/push delivery", "depends_on": ["queue"], "why": "requested ('email')"}, {"na
+== designer {"prompt": "palette", "data": "brand: forest"}
+   ok=True answer=light palette from colour word 'forest' (hue 140); text/background 15.22:1, primary/background 4.71:1 — all WCAG targets met
+   tool_output={"palette": {"background": "#f6f9f7", "surface": "#e7efe9", "text": "#1a231d", "primary": "#307e4a", "secondary": "#3b9b8b", "accent": "#9b3b7b"}, "theme": "light", "source": "colour word 'forest'", "hue": 140, "wcag": {"text_on_background": {"ratio": 15.22, "target": 7.0, "pass": true}, "primary_on_background": {"ratio": 4.71, "target": 4.5, "pass": true}, "secondary_on_background": {"ratio": 3.17, "target": 3.0, "pass": true}, "accent_on_background": {"ratio": 5.99, "target": 3.0, "pass": true}}, "typography_scale": {"base_px": 16, "ratio": 1.25, "sizes_px": [10, 13, 16, 20, 25, 31, 39]}}
+== designer {"prompt": "dark mode #ff5722"}
+   ok=True answer=dark palette from hex #ff5722 (hue 14); text/background 14.98:1, primary/background 6.11:1 — all WCAG targets met
+   tool_output={"palette": {"background": "#1c1512", "surface": "#2b201d", "text": "#eee9e8", "primary": "#ff6433", "secondary": "#ffca33", "accent": "#33ceff"}, "theme": "dark", "source": "hex #ff5722", "hue": 14, "wcag": {"text_on_background": {"ratio": 14.98, "target": 7.0, "pass": true}, "primary_on_background": {"ratio": 6.11, "target": 4.5, "pass": true}, "secondary_on_background": {"ratio": 11.8, "target": 3.0, "pass": true}, "accent_on_background": {"ratio": 9.79, "target": 3.0, "pass": true}}, "typography_scale": {"base_px": 16, "ratio": 1.25, "sizes_px": [10, 13, 16, 20, 25, 31, 39]}}
+== modifier {"prompt": "rename foo to bar", "data": "def foo():\n    return 'foo'\n\nprint(foo())\n"}
+   ok=True answer=rename foo -> bar (2 occurrence(s))
+   tool_output={"changed": true, "applied": ["rename foo -> bar (2 occurrence(s))"], "new_code": "def bar():\n    return 'foo'\n\nprint(bar())\n", "diff": "--- before.py\n+++ after.py\n@@ -1,4 +1,4 @@\n-def foo():\n+def bar():\n     return 'foo'\n \n-print(foo())\n+print(bar())\n", "verified": "ast.parse"}
+== code_generator {"prompt": "gen", "data": {"function": "mean", "params": ["xs"], "returns": "sum(xs) / len(xs)"}}
+   ok=True answer=generated implemented mean from the structured spec (3 lines, compiles)
+   tool_output={"generated": true, "method": "structured-spec", "code": "def mean(xs):\n    \"\"\"mean(xs).\"\"\"\n    return sum(xs) / len(xs)\n", "functions": ["mean"], "classes": [], "verified": "compile"}
+== code_generator {"prompt": "اكتب كود Python لحساب متوسط قائمة أرقام"}
+   ok=False answer=generating code from a description needs an LLM (set OPENROUTER_API_KEY); without one, send a structured spec in data, e.g. {"function": "mean", "params": ["xs"], "returns": "sum(xs) / len(xs)"}
+   tool_output=null
+== analyst {"prompt": "حلل أداء النظام الحالي وما سبب البطء؟"}
+   ok=True answer=text: 7 words, 1 sentence(s), language=ar, top terms: حلل, أداء, النظام, الحالي, سبب (no numeric samples to analyse)
+   tool_output={"type": "text", "words": 7, "chars": 37, "sentences": 1, "questions": 1, "language": "ar", "top_terms": [["حلل", 1], ["أداء", 1], ["النظام", 1], ["الحالي", 1], ["سبب", 1]], "unique_terms": 6}
+== strategist {"prompt": "plan", "data": ["ship mvp", "hire", "raise"]}
+   ok=True answer=3 objective(s) in the order given (weight by position)
+   tool_output={"roadmap": [{"step": 1, "goal": "ship mvp", "weight": 1.0}, {"step": 2, "goal": "hire", "weight": 0.67}, {"step": 3, "goal": "raise", "weight": 0.33}]}
+== educator {"prompt": "Recursion calls itself. It needs a base case."}
+   ok=True answer=first 2 sentence(s) as key points
+   tool_output={"key_points": ["Recursion calls itself", "It needs a base case"], "reading_time_min": 0.04}
+
+--- stderr ---
+

@@ -39,6 +39,7 @@ import urllib.request
 from typing import Any, Callable, Dict, Optional
 
 from agent_civilization.core import safety
+from agent_civilization.core.agents import craft
 
 
 # ---------------------------------------------------------------------------
@@ -108,26 +109,59 @@ async def _to_thread(fn, *a, **kw):
 # ---------------------------------------------------------------------------
 
 async def _code_generator(work: Dict[str, Any]) -> Dict[str, Any]:
-    """Compile-check any Python inside the prompt/data. Real ast.parse."""
+    """Generate verified Python (R-102, D-045), or say plainly why not.
+
+    1. ``data`` is a structured spec ({"function": ..} / {"class": ..}) ->
+       deterministic generation, compile-verified.
+    2. The request is a description and an LLM is configured -> the LLM writes
+       the code; it is returned only if ``ast.parse`` accepts it.
+    3. Code was supplied -> it is validated (functions/classes), and the answer
+       says it was validated, not generated.
+    """
+    data = work.get("data")
+    if isinstance(data, dict):
+        spec_out = craft.generate_from_spec(data)
+        if spec_out is not None:
+            return spec_out
     code = _extract_code(work)
-    if not code.strip():
-        return {"ok": False, "error": "no code provided"}
-    try:
-        tree = ast.parse(code)
+    if code.strip():
+        try:
+            tree = ast.parse(code)
+        except SyntaxError as e:
+            return {"ok": False, "error": f"SyntaxError line {e.lineno}: {e.msg}"}
         funcs = [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]
         classes = [n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
-        return {
-            "ok": True,
-            "tool_output": {
-                "parsed": True,
-                "functions": funcs,
-                "classes": classes,
-                "lines": code.count("\n") + 1,
-            },
-            "answer": f"parsed OK: {len(funcs)} funcs, {len(classes)} classes",
-        }
+        return {"ok": True,
+                "answer": f"validated supplied code (not generated): {len(funcs)} funcs, {len(classes)} classes",
+                "tool_output": {"generated": False, "parsed": True, "functions": funcs,
+                                "classes": classes, "lines": code.count("\n") + 1}}
+    text = _extract_text(work)
+    if not text.strip():
+        return {"ok": False, "error": "no code, spec or description provided"}
+    from agent_civilization.core.llm import get_llm  # local: keeps import order of server.py
+    llm = get_llm()
+    if not llm.available:
+        return {"ok": False,
+                "error": ("generating code from a description needs an LLM (set OPENROUTER_API_KEY); "
+                          "without one, send a structured spec in data, e.g. "
+                          '{"function": "mean", "params": ["xs"], "returns": "sum(xs) / len(xs)"}')}
+    out = await llm.complete(
+        "You write Python. Reply with exactly one ```python fenced block and nothing else.",
+        text, max_tokens=800)
+    if not out.get("ok"):
+        return {"ok": False, "error": f"llm: {out.get('error', 'failed')}"}
+    m = re.search(r"```(?:python|py)?\n(.+?)```", out.get("content", ""), re.S)
+    src = m.group(1) if m else out.get("content", "")
+    try:
+        tree = ast.parse(src)
     except SyntaxError as e:
-        return {"ok": False, "error": f"SyntaxError line {e.lineno}: {e.msg}"}
+        return {"ok": False, "error": f"LLM output is not valid Python (line {e.lineno}: {e.msg}); discarded"}
+    return {"ok": True,
+            "answer": f"generated {src.count(chr(10)) + 1} line(s) with the LLM; ast.parse OK (not executed)",
+            "tool_output": {"generated": True, "method": "llm", "code": src[:8000],
+                            "functions": [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)],
+                            "classes": [n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)],
+                            "verified": "ast.parse"}}
 
 
 async def _surgeon(work: Dict[str, Any]) -> Dict[str, Any]:
@@ -193,10 +227,7 @@ async def _analyst(work: Dict[str, Any]) -> Dict[str, Any]:
         # "understand" stage of a pipeline sends a prose prompt.
         text = _extract_text(work)
         if text.strip():
-            words = [w for w in re.split(r"\s+", text) if w.strip()]
-            return {"ok": True, "answer": f"text analysis: {len(words)} words",
-                    "tool_output": {"type": "text", "words": len(words),
-                                    "chars": len(text)}}
+            return craft.analyse_text(text)  # R-102: real text measures, honest answer
         return {"ok": False, "error": "need >=2 numeric samples"}
     mu = statistics.fmean(nums)
     sd = statistics.pstdev(nums)
@@ -333,33 +364,23 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def _architect(work: Dict[str, Any]) -> Dict[str, Any]:
-    text = _extract_text(work)
-    # decompose into a structural plan derived from the text
-    verbs = re.findall(r"\b(build|design|create|plan|integrate|deploy|scale|secure|analyze)\b",
-                       text.lower())
-    entities = re.findall(r"\b([A-Z][a-zA-Z]{2,})\b", text)
-    layers = ["data", "domain", "service", "api", "ui"]
-    plan = [{"layer": L,
-             "concern": ("persistence" if L == "data"
-                         else "business rules" if L == "domain"
-                         else "orchestration" if L == "service"
-                         else "contract" if L == "api"
-                         else "presentation")}
-            for L in layers]
-    return {"ok": True,
-            "answer": f"{len(plan)}-layer architecture with {len(set(verbs))} core actions",
-            "tool_output": {"layers": plan,
-                             "detected_actions": list(set(verbs)),
-                             "entities": list(dict.fromkeys(entities))[:10]}}
+    """Component graph derived from the request (R-102): requested + implied
+    components, dependencies and a topological build order."""
+    return craft.design_architecture(_extract_text(work), work.get("data"))
 
 
 async def _strategist(work: Dict[str, Any]) -> Dict[str, Any]:
     text = _extract_text(work)
-    steps = [s.strip() for s in re.split(r"[.!؟\n]", text) if s.strip()]
+    data = work.get("data")
+    if isinstance(data, list) and data and all(isinstance(x, str) for x in data):
+        steps = [x.strip() for x in data if x.strip()]  # R-102: objectives given as a list
+    else:
+        steps = [s.strip() for s in re.split(r"[.!؟\n]", text) if s.strip()]
     priorities = [{"step": i + 1, "goal": s[:120],
                    "weight": round(1.0 - i / max(len(steps), 1), 2)}
                   for i, s in enumerate(steps[:6])]
-    return {"ok": True, "answer": f"{len(priorities)} prioritised objectives",
+    # R-102: weights follow the order given — say so, do not claim prioritisation logic.
+    return {"ok": True, "answer": f"{len(priorities)} objective(s) in the order given (weight by position)",
             "tool_output": {"roadmap": priorities}}
 
 
@@ -403,7 +424,7 @@ async def _educator(work: Dict[str, Any]) -> Dict[str, Any]:
     sentences = [s.strip() for s in re.split(r"[.!؟\n]", text) if s.strip()]
     keypoints = sentences[:5]
     return {"ok": True,
-            "answer": f"extracted {len(keypoints)} key points",
+            "answer": f"first {len(keypoints)} sentence(s) as key points",
             "tool_output": {"key_points": keypoints,
                              "reading_time_min": round(len(text.split()) / 200, 2)}}
 
@@ -426,38 +447,25 @@ async def _communicator(work: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def _designer(work: Dict[str, Any]) -> Dict[str, Any]:
-    text = _extract_text(work)
-    # deterministic palette from text hash
-    import hashlib
-    h = hashlib.sha256(text.encode("utf-8")).digest()
-    palette = ["#" + "".join(f"{b:02x}" for b in h[i:i + 3]) for i in range(0, 15, 3)]
-    return {"ok": True, "answer": "generated 5-color palette",
-            "tool_output": {"palette": palette,
-                             "typography_scale": [12, 14, 16, 20, 24, 32, 48]}}
+    """Palette from the colour (hex or name) and mood in the request, every
+    foreground checked against WCAG contrast targets (R-102)."""
+    return craft.design_palette(_extract_text(work), work.get("data"))
 
 
 async def _builder(work: Dict[str, Any]) -> Dict[str, Any]:
-    text = _extract_text(work)
-    verbs = re.findall(r"\b(add|create|build|make|generate|write|install|setup|configure)\b",
-                       text.lower())
-    return {"ok": True,
-            "answer": f"{len(verbs)} build action(s) queued",
-            "tool_output": {"actions": verbs, "estimated_steps": len(verbs) or 1}}
+    """Scaffold real files, verify each (compile/json/toml), return them (R-102).
+    Before: answered "N build action(s) queued" with no queue."""
+    return await _to_thread(craft.scaffold, _extract_text(work), work.get("data"))
 
 
 async def _modifier(work: Dict[str, Any]) -> Dict[str, Any]:
+    """Apply the requested edit (rename / remove unused imports) and return the
+    new code + diff, AST-verified (R-102). Before: whitespace only, result discarded."""
     code = _extract_code(work)
     if not code.strip():
         return {"ok": False, "error": "no code to modify"}
-    # real: normalise whitespace + remove trailing blanks — proves we touched it
-    lines = [ln.rstrip() for ln in code.splitlines()]
-    while lines and not lines[-1]:
-        lines.pop()
-    new_code = "\n".join(lines) + "\n"
-    changed = new_code != code
-    return {"ok": True, "answer": "normalised" if changed else "no changes needed",
-            "tool_output": {"changed": changed, "new_lines": len(lines),
-                             "diff_bytes": len(new_code) - len(code)}}
+    instruction = " ".join(str(work.get(k) or "") for k in ("prompt", "text", "query", "goal", "message"))
+    return craft.modify_code(code, instruction)
 
 
 async def _self_developer(work: Dict[str, Any]) -> Dict[str, Any]:

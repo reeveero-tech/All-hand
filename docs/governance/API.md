@@ -85,3 +85,12 @@
 - الاستجابة تضيف `routing: {"method": "llm"|"keywords", "reason": "<سبب>"}`؛ `routed_to` و`agent` و`outcome` بلا تغيير في الشكل.
 - `route()`: النية تُقرأ من نص التعليمة بعد حذف البيانات المضمنة (كائنات JSON، كتل ```، النصوص بين علامتي تنصيص مزدوجتين)؛ إن خلت التعليمة من كلمة مفتاحية يُبحث في النص كاملاً (كتلة ```python``` وحدها تبقى `code_generator`).
 
+## R-102 — شكل ناتج المعالجات (D-045، 2026-10-14)
+الحقول داخل `result.tool_output` لمهام هذه التخصصات (عبر `/api/tasks` و`/api/chat` و`/civilization/*`):
+- `builder`: `{stack, project, source, persisted: false, files: [{path, bytes, check: compile|json|toml|none, verified, content}]}`؛ `ok=false` لمسار غير آمن (مطلق، `..`، مسافات) أو أكثر من 20 ملفاً أو ملف لا يجتاز الفحص. `data` قائمة مسارات أو `{مسار: محتوى}` (يُعتد بها فقط إن بدت كل المداخل مسارات).
+- `architect`: `{assumed_baseline, components: [{name, layer, responsibility, depends_on, why}], layers, build_order, edges, unmatched_items}` (كان `{layers, detected_actions, entities}`).
+- `designer`: `{palette: {background, surface, text, primary, secondary, accent}, theme, source, hue, wcag: {<pair>: {ratio, target, pass}}, typography_scale: {base_px, ratio, sizes_px}}` (كان `{palette: [5 hex], typography_scale: [..]}`).
+- `modifier`: `{changed, applied, new_code, diff, verified}` (كان `{changed, new_lines, diff_bytes}` بلا الكود).
+- `code_generator`: `{generated: bool, method: structured-spec|llm, code, functions, classes, verified}`؛ للكود المرفق `generated: false`. بلا LLM وبلا مواصفة: `ok=false` برسالة فيها مثال مواصفة.
+- `analyst` (نص): `{type: "text", words, chars, sentences, questions, language, top_terms, unique_terms}`؛ `strategist`: يقبل `data` قائمة نصوص.
+

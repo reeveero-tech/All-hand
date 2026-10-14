@@ -1,0 +1,26 @@
+R-102 — handlers do what their answers say (D-045) — evidence index
+Collected 2026-10-14 on branch m6/r102-honest-handlers, base main 57c4dc5 (PR #110 merged).
+
+== Before (raw/66, scripts/run_r102_handler_probe.py on main handlers)
+builder  "build a FastAPI service called shop"   -> "1 build action(s) queued"   (no queue exists)
+architect ["web ui","api","db"]                   -> "5-layer architecture with 1 core actions" (same 5 layers for any input)
+designer "brand: forest"                          -> "generated 5-color palette" (SHA-256 of the text)
+modifier "rename foo to bar"                      -> "no changes needed"; modified code never returned
+code_generator structured spec                    -> "no code provided"
+strategist data ["ship mvp","hire","raise"]       -> "1 prioritised objectives" (list ignored)
+
+== Change
+NEW agent_civilization/core/agents/craft.py (stdlib only; no network; no code execution; temp dir always removed).
+real_dispatcher.py: code_generator, analyst(text), architect, strategist, educator, designer, builder, modifier.
+agents/real/real_agents.py: descriptions/tools match the behaviour.
+
+== Evidence
+raw/65_r102_tests_on_old_code.log  rc=1  new tests vs old handlers: 28 failed, 1 passed
+       (the 1 = test_contrast_ratio_matches_wcag_reference_values: tests craft.py directly, which the old dispatcher does not use)
+raw/66 / raw/67  probe before / after on identical inputs
+raw/68..69 pytest 3.11/3.12: 329 passed, 3 skipped, 3 deselected (rc=0)   raw/70 ruff rc=0
+raw/71 R-051 audit with AGOS_ALLOW_CODE_EXEC=1: real 20 / failed 0
+Found by the new tests during the batch and fixed before commit: safe-path check refused ".gitignore";
+builder would have treated any dict data (e.g. pipeline {"name":"x"}) as a file list.
+Not covered: code generation from a natural-language description needs an LLM — no key in this environment;
+the LLM path is tested with a fake LLM only.

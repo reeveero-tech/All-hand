@@ -1,0 +1,184 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: tests/test_r102_honest_handlers.py against main 57c4dc5 handlers (real_dispatcher.py + real_agents.py stashed; craft.py present but unused by old dispatcher)
+# env_overrides={}
+$ /tmp/v311/bin/python -m pytest tests/test_r102_honest_handlers.py -q -p no:cacheprovider -rA
+returncode=1
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: platformdirs-4.13.0, cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 29 items
+
+tests/test_r102_honest_handlers.py FFFFFFFFFFF.FFFFFFFFFFFFFFFFF         [100%]
+
+=================================== FAILURES ===================================
+___________ test_builder_returns_real_verified_files_for_given_paths ___________
+tests/test_r102_honest_handlers.py:31: in test_builder_returns_real_verified_files_for_given_paths
+    files = {f["path"]: f for f in r["tool_output"]["files"]}
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'files'
+____________________ test_builder_stack_follows_the_request ____________________
+tests/test_r102_honest_handlers.py:43: in test_builder_stack_follows_the_request
+    assert api["stack"] == "python-api" and node["stack"] == "node-app"
+           ^^^^^^^^^^^^
+E   KeyError: 'stack'
+____ test_builder_detects_broken_supplied_content_and_refuses_unsafe_paths _____
+tests/test_r102_honest_handlers.py:50: in test_builder_detects_broken_supplied_content_and_refuses_unsafe_paths
+    assert bad["ok"] is False and "a.py" in bad["error"]
+E   assert (True is False)
+______________ test_builder_ignores_data_that_is_not_a_file_list _______________
+tests/test_r102_honest_handlers.py:61: in test_builder_ignores_data_that_is_not_a_file_list
+    assert r["ok"] and r["tool_output"]["stack"] == "python-cli"
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'stack'
+_________________ test_architect_components_follow_the_request _________________
+tests/test_r102_honest_handlers.py:71: in test_architect_components_follow_the_request
+    names_a = {c["name"] for c in a["components"]}
+                                  ^^^^^^^^^^^^^^^
+E   KeyError: 'components'
+_______________ test_architect_build_order_respects_dependencies _______________
+tests/test_r102_honest_handlers.py:80: in test_architect_build_order_respects_dependencies
+    order = out["build_order"]
+            ^^^^^^^^^^^^^^^^^^
+E   KeyError: 'build_order'
+__________________ test_architect_arabic_and_unmatched_items ___________________
+tests/test_r102_honest_handlers.py:89: in test_architect_arabic_and_unmatched_items
+    names = {c["name"] for c in r["tool_output"]["components"]}
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'components'
+________________ test_architect_says_when_it_assumed_a_baseline ________________
+tests/test_r102_honest_handlers.py:97: in test_architect_says_when_it_assumed_a_baseline
+    assert r["ok"] and r["tool_output"]["assumed_baseline"] is True
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'assumed_baseline'
+______________ test_designer_hue_comes_from_the_requested_colour _______________
+tests/test_r102_honest_handlers.py:105: in test_designer_hue_comes_from_the_requested_colour
+    assert forest["hue"] == 140 and "forest" in forest["source"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'hue'
+_________________ test_designer_meets_wcag_targets_it_reports __________________
+tests/test_r102_honest_handlers.py:114: in test_designer_meets_wcag_targets_it_reports
+    assert craft.contrast_ratio(p["text"], p["background"]) >= 7.0, prompt
+                                ^^^^^^^^^
+E   TypeError: list indices must be integers or slices, not str
+_________________ test_designer_says_when_no_colour_was_given __________________
+tests/test_r102_honest_handlers.py:122: in test_designer_says_when_no_colour_was_given
+    assert "no colour in the request" in out["answer"]
+E   AssertionError: assert 'no colour in the request' in 'generated 5-color palette'
+_______ test_modifier_renames_identifiers_only_and_returns_the_new_code ________
+tests/test_r102_honest_handlers.py:137: in test_modifier_renames_identifiers_only_and_returns_the_new_code
+    new = r["tool_output"]["new_code"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'new_code'
+________________ test_modifier_arabic_rename_and_unused_imports ________________
+tests/test_r102_honest_handlers.py:147: in test_modifier_arabic_rename_and_unused_imports
+    new = r["tool_output"]["new_code"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'new_code'
+__________ test_modifier_is_honest_when_no_instruction_is_recognised ___________
+tests/test_r102_honest_handlers.py:155: in test_modifier_is_honest_when_no_instruction_is_recognised
+    assert r["ok"] and "no supported instruction" in r["answer"]
+E   AssertionError: assert (True and 'no supported instruction' in 'normalised')
+__________________ test_modifier_refuses_invalid_target_name ___________________
+tests/test_r102_honest_handlers.py:161: in test_modifier_refuses_invalid_target_name
+    assert r["ok"] is False
+E   assert True is False
+_____________ test_code_generator_generates_from_a_structured_spec _____________
+tests/test_r102_honest_handlers.py:168: in test_code_generator_generates_from_a_structured_spec
+    assert r["ok"] and r["tool_output"]["generated"] is True
+E   assert (False)
+____________________ test_code_generator_rejects_bad_specs _____________________
+tests/test_r102_honest_handlers.py:180: in test_code_generator_rejects_bad_specs
+    assert r["ok"] is False and "os" in r["error"]
+E   AssertionError: assert (False is False and 'os' in 'no code provided')
+______ test_code_generator_says_supplied_code_was_validated_not_generated ______
+tests/test_r102_honest_handlers.py:187: in test_code_generator_says_supplied_code_was_validated_not_generated
+    assert r["ok"] and r["tool_output"]["generated"] is False
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'generated'
+________ test_code_generator_without_llm_explains_instead_of_pretending ________
+tests/test_r102_honest_handlers.py:206: in test_code_generator_without_llm_explains_instead_of_pretending
+    assert r["ok"] is False and "needs an LLM" in r["error"] and '"function"' in r["error"]
+E   AssertionError: assert (False is False and 'needs an LLM' in 'no code provided')
+__________________ test_code_generator_llm_output_must_parse ___________________
+tests/test_r102_honest_handlers.py:214: in test_code_generator_llm_output_must_parse
+    assert r["ok"] and r["tool_output"]["method"] == "llm" and r["tool_output"]["functions"] == ["mean"]
+E   assert (False)
+___________________ test_analyst_text_reports_real_measures ____________________
+tests/test_r102_honest_handlers.py:225: in test_analyst_text_reports_real_measures
+    assert ar["language"] == "ar" and en["language"] == "en"
+           ^^^^^^^^^^^^^^
+E   KeyError: 'language'
+________ test_strategist_uses_listed_objectives_and_does_not_overclaim _________
+tests/test_r102_honest_handlers.py:233: in test_strategist_uses_listed_objectives_and_does_not_overclaim
+    assert [s["goal"] for s in r["tool_output"]["roadmap"]] == ["ship mvp", "hire", "raise"]
+E   AssertionError: assert ['plan'] == ['ship mvp', 'hire', 'raise']
+E     
+E     At index 0 diff: 'plan' != 'ship mvp'
+E     Right contains 2 more items, first extra item: 'hire'
+E     Use -v to get more diff
+__________________ test_educator_answer_describes_what_it_did __________________
+tests/test_r102_honest_handlers.py:239: in test_educator_answer_describes_what_it_did
+    assert r["answer"] == "first 3 sentence(s) as key points"
+E   AssertionError: assert 'extracted 3 key points' == 'first 3 sent...as key points'
+E     
+E     - first 3 sentence(s) as key points
+E     + extracted 3 key points
+______ test_public_descriptions_match_the_new_behaviour[builder-Scaffold] ______
+tests/test_r102_honest_handlers.py:248: in test_public_descriptions_match_the_new_behaviour
+    assert word in SPECIALIZATIONS[spec]
+E   AssertionError: assert 'Scaffold' in 'Convert goals into concrete build actions and artifacts.'
+_______ test_public_descriptions_match_the_new_behaviour[designer-WCAG] ________
+tests/test_r102_honest_handlers.py:248: in test_public_descriptions_match_the_new_behaviour
+    assert word in SPECIALIZATIONS[spec]
+E   AssertionError: assert 'WCAG' in 'Generate deterministic design systems, palettes, and UI specs.'
+______ test_public_descriptions_match_the_new_behaviour[modifier-Rename] _______
+tests/test_r102_honest_handlers.py:248: in test_public_descriptions_match_the_new_behaviour
+    assert word in SPECIALIZATIONS[spec]
+E   AssertionError: assert 'Rename' in 'Transform and normalize provided code or configuration.'
+_ test_public_descriptions_match_the_new_behaviour[architect-component graph] __
+tests/test_r102_honest_handlers.py:248: in test_public_descriptions_match_the_new_behaviour
+    assert word in SPECIALIZATIONS[spec]
+E   AssertionError: assert 'component graph' in 'Design practical system architecture and integration layers.'
+____ test_public_descriptions_match_the_new_behaviour[code_generator-spec] _____
+tests/test_r102_honest_handlers.py:248: in test_public_descriptions_match_the_new_behaviour
+    assert word in SPECIALIZATIONS[spec]
+E   AssertionError: assert 'spec' in 'Parse, validate, and produce implementation-ready code plans.'
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_r102_honest_handlers.py::test_contrast_ratio_matches_wcag_reference_values
+FAILED tests/test_r102_honest_handlers.py::test_builder_returns_real_verified_files_for_given_paths
+FAILED tests/test_r102_honest_handlers.py::test_builder_stack_follows_the_request
+FAILED tests/test_r102_honest_handlers.py::test_builder_detects_broken_supplied_content_and_refuses_unsafe_paths
+FAILED tests/test_r102_honest_handlers.py::test_builder_ignores_data_that_is_not_a_file_list
+FAILED tests/test_r102_honest_handlers.py::test_architect_components_follow_the_request
+FAILED tests/test_r102_honest_handlers.py::test_architect_build_order_respects_dependencies
+FAILED tests/test_r102_honest_handlers.py::test_architect_arabic_and_unmatched_items
+FAILED tests/test_r102_honest_handlers.py::test_architect_says_when_it_assumed_a_baseline
+FAILED tests/test_r102_honest_handlers.py::test_designer_hue_comes_from_the_requested_colour
+FAILED tests/test_r102_honest_handlers.py::test_designer_meets_wcag_targets_it_reports
+FAILED tests/test_r102_honest_handlers.py::test_designer_says_when_no_colour_was_given
+FAILED tests/test_r102_honest_handlers.py::test_modifier_renames_identifiers_only_and_returns_the_new_code
+FAILED tests/test_r102_honest_handlers.py::test_modifier_arabic_rename_and_unused_imports
+FAILED tests/test_r102_honest_handlers.py::test_modifier_is_honest_when_no_instruction_is_recognised
+FAILED tests/test_r102_honest_handlers.py::test_modifier_refuses_invalid_target_name
+FAILED tests/test_r102_honest_handlers.py::test_code_generator_generates_from_a_structured_spec
+FAILED tests/test_r102_honest_handlers.py::test_code_generator_rejects_bad_specs
+FAILED tests/test_r102_honest_handlers.py::test_code_generator_says_supplied_code_was_validated_not_generated
+FAILED tests/test_r102_honest_handlers.py::test_code_generator_without_llm_explains_instead_of_pretending
+FAILED tests/test_r102_honest_handlers.py::test_code_generator_llm_output_must_parse
+FAILED tests/test_r102_honest_handlers.py::test_analyst_text_reports_real_measures
+FAILED tests/test_r102_honest_handlers.py::test_strategist_uses_listed_objectives_and_does_not_overclaim
+FAILED tests/test_r102_honest_handlers.py::test_educator_answer_describes_what_it_did
+FAILED tests/test_r102_honest_handlers.py::test_public_descriptions_match_the_new_behaviour[builder-Scaffold]
+FAILED tests/test_r102_honest_handlers.py::test_public_descriptions_match_the_new_behaviour[designer-WCAG]
+FAILED tests/test_r102_honest_handlers.py::test_public_descriptions_match_the_new_behaviour[modifier-Rename]
+FAILED tests/test_r102_honest_handlers.py::test_public_descriptions_match_the_new_behaviour[architect-component graph]
+FAILED tests/test_r102_honest_handlers.py::test_public_descriptions_match_the_new_behaviour[code_generator-spec]
+========================= 28 failed, 1 passed in 0.28s =========================
+
+--- stderr ---
+
