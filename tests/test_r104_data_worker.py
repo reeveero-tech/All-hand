@@ -310,30 +310,55 @@ def test_task_dispatcher_consumer_counts_completion_not_success(monkeypatch):
 
 def test_three_packages_are_consumed_by_production_paths(monkeypatch):
     """R-104c2: each package is consumed by a PRODUCTION path — not just tests.
-    If any package file is reverted to empty, the live path below breaks (import
-    error), which is what makes the wiring real rather than a formal import."""
-    # communication/: the actual BUILDER (create_specialist_civilization, the
-    # AGOS_AGENT_IMPL=specialists path) must construct the hub through the
-    # package's interface — a stub replaces the package class and the builder's
-    # returned agents must all be on that stub hub.
-    import agent_civilization.agents.real.specialist_runtime as sr
-    import agent_civilization.communication as comm
+    For communication/: the package's CommunicationHub is patched FIRST, then
+    specialist_runtime is RELOADED (so its import binds the package attribute at
+    load time — this fails if the module imported from core/agents directly), and
+    the real builder constructs the civilization on the stub. The module is
+    restored afterwards."""
+    # Run in an ISOLATED SUBPROCESS: patch the package attribute BEFORE the
+    # consumer module is ever imported, which proves the module-level import
+    # actually binds the package's export at load time — reverting the import
+    # line to core/agents makes the child's assertion fail. A subprocess is
+    # used because reloading the module in-process would create new class
+    # objects and break isinstance checks in other tests.
+    import subprocess, sys, textwrap
 
-    # the production module's CommunicationHub IS the package's re-export
-    assert sr.CommunicationHub is comm.CommunicationHub
+    child = textwrap.dedent("""
+        import agent_civilization.communication as comm
 
-    class PackageHub(comm.CommunicationHub):
-        pass
+        class PackageHub(comm.CommunicationHub):
+            constructed = []
 
-    monkeypatch.setattr(sr, "CommunicationHub", PackageHub)
-    civ = sr.create_specialist_civilization(["data_processor"], agents_per_spec=2)
-    # every agent in the built civilization shares the stub hub built via the package
-    hubs = set()
-    for spec, pool in civ.items():
-        for a in pool:
-            hubs.add(id(a.inner.communication_hub))
-    assert len(hubs) == 1
-    assert isinstance(civ["data_processor"][0].inner.communication_hub, PackageHub)
+            def __init__(self):
+                PackageHub.constructed.append(self)
+                super().__init__()
+
+        # patch the PACKAGE attribute BEFORE the consumer module is ever imported
+        comm.CommunicationHub = PackageHub
+
+        # now import the consumer — its module-level
+        # `from agent_civilization.communication import CommunicationHub`
+        # binds the stub
+        import agent_civilization.agents.real.specialist_runtime as sr
+        assert sr.CommunicationHub is PackageHub, (
+            "the consumer did not bind the package's export")
+
+        civ = sr.create_specialist_civilization(["data_processor"], agents_per_spec=2)
+        assert PackageHub.constructed, "the builder never constructed the package hub"
+        hub = PackageHub.constructed[0]
+        for spec, pool in civ.items():
+            for a in pool:
+                assert a.inner.communication_hub is hub, (
+                    "an agent is not on the package-constructed hub")
+        print("CHILD-OK")
+    """)
+
+    import pathlib
+    r = subprocess.run([sys.executable, "-c", child], capture_output=True, text=True,
+                       cwd=str(pathlib.Path(__file__).resolve().parent.parent))
+    assert r.returncode == 0, (
+        "the consumer is not wired to the package:\n" + r.stderr[-2000:])
+    assert "CHILD-OK" in r.stdout
 
 
     # runtime/: the live researcher handler consumes make_deadline/remaining from it.
@@ -382,28 +407,67 @@ def test_data_field_value_reaches_llm_and_changing_data_changes_the_input(monkey
 
 
 def test_runtime_helpers_are_used_by_the_live_researcher_handler(monkeypatch):
-    """The live handler really calls the runtime package (a spy on the package
-    functions proves consumption, not just importability)."""
+    """The live handler really calls the runtime package — deterministically:
+    the transport is a controlled stub (no real network), BOTH make_deadline and
+    remaining are recorded, and the outcome is asserted for that stub."""
     import agent_civilization.runtime as runtime
-    calls = {"n": 0}
-    orig = runtime.make_deadline
+    from agent_civilization.core import safety
+    from agent_civilization.core.agents import real_dispatcher as rdc
+
+    calls = {"make": 0, "remaining": 0}
+    orig_make = runtime.make_deadline
+    orig_remaining = runtime.remaining
 
     def counting_deadline(budget):
-        calls["n"] += 1
-        return orig(budget)
+        calls["make"] += 1
+        return orig_make(budget)
+
+    def counting_remaining(deadline):
+        calls["remaining"] += 1
+        return orig_remaining(deadline)
 
     monkeypatch.setattr(runtime, "make_deadline", counting_deadline)
-    # the handler imports lazily inside _researcher_deadline, so patching the
-    # module attribute is what the handler will see
+    monkeypatch.setattr(runtime, "remaining", counting_remaining)
+
+    # a deterministic stub: an immediate, non-transient error from the transport
+    # (no real network — the handler's own classifier decides the outcome).
+    import urllib.error
+
+    def stub_urlopen(req, timeout=None):
+        raise urllib.error.URLError("stubbed: deterministic failure for the consumption test")
+
+    monkeypatch.setattr(safety, "safe_urlopen", stub_urlopen)
+
     async def go():
-        await rd._researcher({"prompt": "test"})
-    asyncio.run(go())
-    assert calls["n"] >= 1  # the live handler consumed the package
-    # outcome is either honest success or honest failure (live network or stub)
+        return await rdc._researcher({"prompt": "test"})
+
+    out = asyncio.run(go())
+    # BOTH helpers were consumed by the live handler
+    assert calls["make"] >= 1
+    assert calls["remaining"] >= 1
+    # the outcome is deterministic for the stub: honest failure, no fabrication
+    assert out["ok"] is False
+    assert "stubbed" in (out.get("error") or "")
+    assert not out.get("content")  # no fabricated results
 
 
 def test_utils_payload_is_used_by_the_live_data_processor(monkeypatch):
-    """The live handler really calls the utils package (spy proves consumption)."""
+    """The live handler really calls the utils package — a spy ON THE PACKAGE
+    FUNCTION records its inputs, and a DISTINCTIVE payload it produces is what
+    must reach process_text (proving the handler went through the package)."""
+    import agent_civilization.utils as utils
+    import agent_civilization.core.agents.real_dispatcher as rdc
+
+    spy = {"inputs": []}
+
+    def spying_build(prompt, data):
+        spy["inputs"].append((prompt, data))
+        # a distinctive marker only this stub produces — if it reaches
+        # process_text, the handler truly went through the package function
+        return f"STUB-PAYLOAD[{prompt}]::DATA={data!r}"
+
+    monkeypatch.setattr(utils, "build_llm_payload", spying_build)
+
     received = []
 
     async def spy_process_text(payload):
@@ -411,14 +475,16 @@ def test_utils_payload_is_used_by_the_live_data_processor(monkeypatch):
         return {"ok": False, "error": "no key", "model": "m"}
 
     from agent_civilization.agents.executors import data_worker as dw_mod
-    orig_pt = dw_mod.process_text
-    dw_mod.process_text = spy_process_text
-    try:
-        async def go():
-            return await rd._data_processor(
-                {"prompt": "aggregate", "data": {"col": "gamma-only-in-data"}})
-        asyncio.run(go())
-        assert received and "gamma-only-in-data" in received[0]
-    finally:
-        dw_mod.process_text = orig_pt
+    monkeypatch.setattr(dw_mod, "process_text", spy_process_text)
+
+    async def go():
+        return await rdc._data_processor(
+            {"prompt": "aggregate", "data": {"col": "gamma-only-in-data"}})
+
+    asyncio.run(go())
+
+    # the package function was called with the handler's prompt and data...
+    assert spy["inputs"] == [("aggregate", {"col": "gamma-only-in-data"})]
+    # ...and its DISTINCTIVE output is exactly what reached process_text
+    assert received == ["STUB-PAYLOAD[aggregate]::DATA={'col': 'gamma-only-in-data'}"]
 
