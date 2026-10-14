@@ -1,0 +1,85 @@
+R-100 — runtime tool safety (D-044, RISK-025) — evidence index
+Collected 2026-10-14 on branch m6/r100-runtime-safety, base main 36f8fa5cfc8bf0c141f072ed2baedc235fbd2cac.
+Interpreters: /tmp/v311 (Python 3.11), /tmp/v312 (Python 3.12). All raw files are full, untruncated
+outputs with the returncode taken directly from subprocess.run (or $? for shell captures).
+
+== 1. Survey method (owner request: "every file, line and code achieves its purpose; everything real")
+a) Simulation markers in the live path (mock/fake/simulate/placeholder/TODO in server.py and
+   agent_civilization outside specialists): none left in runtime code (removed in earlier phases).
+b) Import reachability from server.py/run.py by AST — raw/41_r100_reachability_survey.log
+   (script embedded verbatim). Not reachable from the live path:
+   - agent_civilization/agents/executors/data_worker.py (96 lines) — no importer anywhere, tests included (grep rc=1)
+   - agent_civilization/communication, runtime, utils — packages whose only file is a 0-byte __init__.py
+   - agos_kernel/agent_production/* (20+531+338+451 = 1,340 lines) — tests only (D-032/D-033 deferred wiring)
+   -> registered as R-104 and R-103 (proposed). Wording: "not connected to the verified run path", not "dead".
+c) Reading each handler of real_dispatcher.py against its claim -> R-102 (proposed):
+   _builder answers "N build action(s) queued" with no queue; _architect returns the same 5 layers for any input;
+   _code_generator only parses; _designer derives a palette from a SHA-256 of the text; _analyst counts words for
+   non-numeric goals; _modifier only collapses whitespace.
+d) web/ never sends X-API-Key (grep of web/src: only the external agent's own api_key field) -> R-101 (ready).
+e) Live probe of the default (open) mode — section 2. This was the critical finding and is fixed by R-100.
+
+== 2. Probe: scripts/run_r100_safety_probe.py (real server app via TestClient, anonymous client, watchdog)
+raw/27_r100_probe_before_main.log  rc=1  main 36f8fa5 (untouched worktree, probe copied in): 0/6 safe
+   - test_runner printed a planted env secret; read 4,091 bytes of /proc/<ppid>/environ
+   - api_integrator reached a server on 127.0.0.1 (hits=1); network_client sent a request to 169.254.169.254
+   - recursive CTE in db_manager: no answer to GET within 20 s (whole API frozen)
+   - external agent at http://127.0.0.1/... registered (201)
+raw/28_r100_probe_after.log        rc=0  branch: 8/8 safe (6 above + 2 opt-in vectors: sandbox env + /proc read denied)
+raw/39_r100_probe_after_final.log  rc=0  branch after all doc/script edits: 8/8 safe
+
+== 3. Tests and lint
+raw/29_r100_pytest_py311.log  rc=0  267 passed, 3 skipped, 3 deselected
+raw/30_r100_pytest_py312.log  rc=0  267 passed, 3 skipped, 3 deselected
+raw/31_r100_ruff_ci_scope.log rc=0  ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+raw/35_r100_pytest_network_live.log rc=0  pytest -m network: 3 passed (real internet).
+   Recorded as-is: an earlier run in this session had 1 failure in test_researcher_live_duckduckgo
+   (external service); two reruns passed 3/3 and the same test on main passed. A direct comparison of the old
+   urlopen path and the new safe_urlopen against the same live endpoints: 4/4 OK for both (not saved as raw).
+
+== 4. D-035 criterion 1 / R-051 (20 specializations)
+raw/32_r100_r051_default_open_mode.log rc=0  default: 18 real + 1 refused_by_policy (test_runner) + 1 failed
+   (researcher: "<urlopen error _ssl.c:999: The handshake operation timed out>" — DuckDuckGo, external)
+raw/33_r100_r051_opt_in.log           rc=0  AGOS_ALLOW_CODE_EXEC=1: 19 real + 1 failed
+   (researcher: "[SSL: UNEXPECTED_EOF_WHILE_READING]" — external)
+raw/36_r100_r051_opt_in_rerun.log     rc=0  AGOS_ALLOW_CODE_EXEC=1: 20/20 real
+   Note: the R-051 script's rc does not encode the count; read the per-specialization status.
+
+== 5. R-053 scale (1000 agents / 1000 concurrent tasks)
+raw/34_r100_r053_scale_opt_in.log       rc=1  opt-in: 999/1000 — the script did not name the failed task
+   (this is why the failure breakdown was added to scripts/run_r053_scale_audit.py)
+raw/37_r100_r053_scale_opt_in_rerun.log rc=0  opt-in: 1000/1000
+raw/38_r100_r053_scale_opt_in_final.log rc=0  opt-in, final script: 1000/1000
+raw/40_r100_r053_scale_default.log      rc=1  default: 950/1000 — "test_runner x50 — code execution is disabled in
+   open mode" (expected: policy refusal, not a defect)
+
+== 6. Container check (no Docker in this environment -> verified in CI only)
+raw/42_r100_ci_docker_job.log  PR #108, run 38492327553, job 115620570841, head 9a0698a: all steps success;
+   "container_uid=10001", open-mode test_runner task -> "code execution is disabled in open mode",
+   "PASS: non-root container; open-mode code execution refused"; 0 "Permission denied" lines in the job log.
+
+== 6b. Pre-merge self-review of the diff (the advisor tool used earlier in this session is not available now;
+    recorded honestly as a self-review, not an external one)
+raw/43_r100_review_findings_old_vs_fixed.log — same script against safety.py at 9a0698a and the fixed file:
+   1. NAT64 64:ff9b::a9fe:a9fe (=169.254.169.254) and 64:ff9b::7f00:1 counted as public  -> fixed (embedded IPv4 checked)
+      (6to4 2002:7f00:1::1 was already non-public via Python's is_global — finding not confirmed, test kept)
+   2. SQLite randomblob(1000000000) allocated ~1 GB inside the server                      -> fixed (SQLITE_LIMIT_LENGTH 1 MB)
+   3. invalid UTF-8 from the child raised UnicodeDecodeError in the handler                -> fixed (errors="replace")
+   4. a descendant that left the process group kept communicate() blocked (>5 s)           -> fixed (bounded wait, 3.0 s)
+   5. docstrings named a non-existent evidence file (27_r100_probe_before.log)             -> fixed
+   7 regression tests added (44 in tests/test_r100_runtime_safety.py).
+raw/44..45 pytest 3.11/3.12 after fixes: 274 passed, 3 skipped, 3 deselected (rc=0)
+raw/46 ruff after fixes: rc=0
+raw/47 probe after fixes: 8/8 safe (rc=0)
+raw/48 R-053 opt-in after fixes: 996/1000 (rc=1) — "researcher x4 — search: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING]".
+   CORRECTION: commit 03ee326 wrote "1000/1000 (rc=0)" here before reading the output; the true result is 996/1000.
+   The researcher path was not touched by the review fixes. Check for a regression from the URL guard:
+raw/49 50 concurrent live DuckDuckGo requests, old urllib.request.urlopen vs new safety.safe_urlopen, 2 rounds:
+   50/50 for both in both rounds -> no evidence the guard causes it; the failure is intermittent on the external
+   service under 50 concurrent requests (same family as raw/33 and raw/34). Not proven external beyond this.
+raw/50 R-053 opt-in rerun: 1000/1000 (rc=0).
+
+== 7. Residual limits (SECURITY.md, R-100 section)
+Child runs as the server's own user (can read app files, open sockets) — hence execution itself is policy-gated;
+DNS rebinding between check and connect is not covered; a runaway query holds the server up to 3 s; the
+non-dumpable flag is Linux-only (reported in /api/system/status).

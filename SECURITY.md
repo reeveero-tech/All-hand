@@ -1,7 +1,7 @@
 # AGOS Agent Civilization - Security Documentation
 
 **Version:** 1.1  
-**Last Updated:** 2026-10-13 (R-074: corrected against the code; the measured, authoritative security reference is [docs/governance/SECURITY.md](docs/governance/SECURITY.md))
+**Last Updated:** 2026-10-14 (R-100: runtime tool safety; the measured, authoritative security reference is [docs/governance/SECURITY.md](docs/governance/SECURITY.md))
 
 ---
 
@@ -12,6 +12,23 @@ This document outlines the security features implemented in the AGOS Agent Civil
 ---
 
 ## Security Features
+
+### 0. Runtime tool safety (R-100, D-044)
+
+Real agent tools are dangerous if exposed anonymously, so the defaults are safe:
+
+- **Code execution (`test_runner`) is refused in open mode.** It runs only when
+  `AGOS_API_KEY` is set (recommended) or `AGOS_ALLOW_CODE_EXEC=1`; `AGOS_ALLOW_CODE_EXEC=0`
+  disables it even with a key. When allowed, code runs in an isolated interpreter
+  with an empty environment, a temporary directory and CPU/memory/file limits, and
+  the server process is non-dumpable so the child cannot read its `/proc/<pid>/environ`.
+- **Outbound URLs** (`api_integrator`, `network_client`, external agents) must resolve to
+  public addresses; loopback, private, link-local/cloud-metadata ranges are blocked,
+  including on redirects. `AGOS_ALLOW_PRIVATE_NETWORK=1` lifts this deliberately.
+- **SQLite** (`db_manager`): no `ATTACH`/`VACUUM INTO`, 3-second budget per request.
+- **Docker** runs as a non-root user.
+- Check the active policy at `GET /api/system/status` → `security.tool_policy`, and
+  probe a deployment-equivalent build with `python scripts/run_r100_safety_probe.py`.
 
 ### 1. API Key Authentication (Optional)
 

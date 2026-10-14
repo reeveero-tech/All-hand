@@ -38,6 +38,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 
 ### Docker (من `Dockerfile`)
 - مراحل: `node:22-slim` لبناء `web/` (منذ R-089، D-042؛ كان `node:20-slim`) بـ`npm ci --engine-strict` بلا بديل `npm install` صامت، ثم `python:3.12-slim` للتشغيل (Python 3.12 مختبر في CI منذ R-090)؛ يُخدم `web/dist` عبر `server.py`. منذ R-071: `web/` يستخدم vite 8 (يدعم `^20.19.0 || >=22.12.0`)؛ المشروع يثبّت `>=22.12.0`. **تطبيق الجذر (`src/`، TanStack Start) يتطلب Node `>=22.12.0`** (R-076 — معلن في `package.json` ومفروض في CI بـ`npm ci --engine-strict`)؛ ليس جزءاً من صورة Docker.
+- **مستخدم غير root** (R-100، D-044): `USER agos` (uid 10001) — حدود عزل `test_runner` الصلبة لا يرفعها الابن، والتطبيق لا يكتب إلى `/app` وقت التشغيل (فُحص: لا كتابة ملفات في المسار الحي). CI job `docker` يتحقق من `id -u != 0` ومن رفض تنفيذ الكود في الوضع المفتوح على الحاوية المبنية.
 - **`.dockerignore`** (جديد في R-040): يمنع دخول `.git` و`node_modules` و`web/dist` والأسرار (`.env*`) في سياق `COPY . .` — كانت تغيب قبله فكان سياق البناء يشمل كل ملفات العمل.
 - **التحقق (R-040، ✓ done — دفعة M4/1)**: job `docker` في CI تبني الصورة وتشغلها وتتحقق من `/health` (HTTP 200 + جسم JSON يحوي `status`)، مع جمع السجلات ورفعها كـ artifact. تحققت في تشغيلين: الأول (run 38285632672) على رأس `f02ed61` والثاني/النهائي (run 38285911497) على رأس `13fc37d` — كلاهما نجح. الأدلة مُرتكزة في `docs/audit/M4/logs/05..09`. بيئة التحرير المحلية بلا Docker (دليل `docs/audit/M4/logs/04`).
 
@@ -60,6 +61,8 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `AGOS_ALLOWED_ORIGINS` | server.py | `"*"` |
 | `AGOS_RATE_LIMIT_REQUESTS` | server.py | 100 |
 | `AGOS_RATE_LIMIT_WINDOW` | server.py | 60 |
+| `AGOS_ALLOW_CODE_EXEC` (R-100، D-044) | core/safety.py | غير مضبوط = تنفيذ `test_runner` فقط إن ضُبط `AGOS_API_KEY`؛ `1` يسمح؛ `0` يرفض دائماً |
+| `AGOS_ALLOW_PRIVATE_NETWORK` (R-100) | core/safety.py | غير مضبوط = يُحظر كل عنوان غير عام في الأدوات والوكلاء المسجلين عبر API |
 | `SUPABASE_URL` / `VITE_SUPABASE_URL` | supabase_store.py | `""` |
 | `SUPABASE_SERVICE_KEY` (مفضّل — D-039) ثم `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY` (بديل للتوافق) | supabase_store.py | `""` |
 | `OPENROUTER_API_KEY` | core/llm.py | `""` |
@@ -70,6 +73,13 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `CIRCUIT_BREAKER_*` (4 متغيرات) | agos_kernel/infrastructure | 5/3/60/3 |
 
 **محدث R-041**: كل متغيرات `.env.example` موثقة ومقروءة في الكود (بما فيها `CIRCUIT_BREAKER_*` و`AGENTS_PER_SPEC` و`REDIS_URL` و`METRICS_NAMESPACE` و`VITE_API_BASE`).
+
+## سياسة الأدوات الحقيقية (R-100، D-044)
+
+- **قرار المشغّل عند النشر**: لتفعيل `test_runner` اضبط `AGOS_API_KEY` (موصى به — يحمي كل المسارات المنشئة للمهام) أو `AGOS_ALLOW_CODE_EXEC=1` (يسمح للجميع في الوضع المفتوح — غير موصى به على عنوان عام). بلا أي منهما تُرفض مهام `test_runner` برسالة صريحة وتبقى التخصصات الـ19 الأخرى تعمل.
+- **قيد**: الواجهة `web/` لا ترسل `X-API-Key` بعد — ضبط المفتاح يمنع إنشاء المهام من الواجهة حتى R-101.
+- **التحقق على أي commit**: `python scripts/run_r100_safety_probe.py` (rc=0 فقط إذا كانت كل المتجهات آمنة) و`GET /api/system/status` → `security.tool_policy`.
+- **قياس معيار D-035 الأول**: `AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r051_audit.py` (20/20)؛ وR-053: `AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py` (1000/1000). بالوضع الافتراضي تظهر مهام `test_runner` كمرفوضة بالسياسة (R-051: `refused_by_policy`؛ R-053: `فشل: test_runner ×50 — code execution is disabled…`).
 
 ## الفحوصات
 
@@ -110,7 +120,9 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | فشل CI في `governance` | دفعة ناقصة ROADMAP/PROJECT_STATE/CHANGELOG/EVIDENCE | راجع `GOVERNANCE_GATE.md` | أضف الناقص في نفس PR قبل الدمج |
 | 429 من api.github.com في اختبار api_integrator | تسريب اختبار خارجي | `grep api.github.com tests/` | بُدل إلى `https://example.com` (R-055) |
 | اختبار e2e فشل بـ401 | تسريب حالة (اختبار سابق حمّل `server` بوضع auth-on) | راجع `tests/test_e2e_scenarios.py::test_scenario_full_pipeline_stores_result_in_task_store` | fixture يعيد استيراد `server` مع حذف `AGOS_API_KEY` (R-055) |
-| القياسات تتوقف | 1000 وكيل/1000 مهمة غير مستقرين | `python3 scripts/run_r053_scale_audit.py` | راجع R-053 |
+| القياسات تتوقف | 1000 وكيل/1000 مهمة غير مستقرين | `AGOS_ALLOW_CODE_EXEC=1 python3 scripts/run_r053_scale_audit.py` (يسمّي التخصص الفاشل وخطأه منذ R-100) | راجع R-053 |
+| `test_runner` يعيد «code execution is disabled in open mode» | سياسة R-100 الافتراضية (لا `AGOS_API_KEY`) | `GET /api/system/status` → `security.tool_policy.code_execution` | اضبط `AGOS_API_KEY` (أو `AGOS_ALLOW_CODE_EXEC=1` بوعي) — D-044 |
+| أداة شبكية تعيد `blocked: blocked non-public address` | الهدف داخلي/خاص (R-100) | العنوان المحلول في الرسالة | مقصود؛ `AGOS_ALLOW_PRIVATE_NETWORK=1` لبيئة داخلية موثوقة |
 
 ### حدود المسؤولية (Owner's Line)
 - حماية الفرع `main` (R-024) — مطلوب إعداد المالك (Q-015).

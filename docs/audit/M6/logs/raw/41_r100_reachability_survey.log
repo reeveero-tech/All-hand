@@ -1,0 +1,104 @@
+# R-100 survey — import reachability from server.py/run.py (AST), final branch tree
+# script (verbatim):
+#   import ast, os, sys
+#   root='.'
+#   mods={}
+#   for d,ds,fs in os.walk('.'):
+#       if any(x in d for x in ('node_modules','.git','/specialists','__pycache__','/web','/src')): continue
+#       for f in fs:
+#           if f.endswith('.py'):
+#               p=os.path.join(d,f)[2:]
+#               m=p[:-3].replace('/','.')
+#               if m.endswith('.__init__'): m=m[:-9]
+#               mods[m]=p
+#   def imports(p,mod):
+#       t=ast.parse(open(p).read())
+#       out=set()
+#       pkg=mod if p.endswith('__init__.py') else mod.rsplit('.',1)[0] if '.' in mod else ''
+#       for n in ast.walk(t):
+#           if isinstance(n,ast.Import):
+#               for a in n.names: out.add(a.name)
+#           elif isinstance(n,ast.ImportFrom):
+#               base=n.module or ''
+#               if n.level:
+#                   parts=pkg.split('.')
+#                   parts=parts[:len(parts)-(n.level-1)] if n.level>1 else parts
+#                   base='.'.join(parts+([base] if base else []))
+#               out.add(base)
+#               for a in n.names: out.add(base+'.'+a.name)
+#       res=set()
+#       for i in out:
+#           while i:
+#               if i in mods: res.add(i); 
+#               i=i.rsplit('.',1)[0] if '.' in i else ''
+#       return res
+#   def reach(starts):
+#       seen=set(); st=list(starts)
+#       while st:
+#           m=st.pop()
+#           if m in seen: continue
+#           seen.add(m); st+= imports(mods[m],m)
+#       return seen
+#   live=reach([m for m in ('server','run') if m in mods])
+#   tests=reach([m for m in mods if m.startswith('tests')])
+#   scripts=reach([m for m in mods if m.startswith('scripts')])
+#   for m in sorted(mods):
+#       if m.startswith(('tests','scripts')): continue
+#       print(('LIVE ' if m in live else '---- ')+('T' if m in tests else ' ')+('S' if m in scripts else ' ')+' '+m, sum(1 for _ in open(mods[m])))
+$ python /tmp/reach.py
+LIVE TS agent_civilization 12
+LIVE TS agent_civilization.agents 11
+----    agent_civilization.agents.executors 5
+----    agent_civilization.agents.executors.data_worker 96
+LIVE TS agent_civilization.agents.external_adapter 114
+LIVE TS agent_civilization.agents.infrastructure 13
+LIVE TS agent_civilization.agents.infrastructure.orchestrator_agent 73
+LIVE TS agent_civilization.agents.infrastructure.resource_manager 87
+LIVE TS agent_civilization.agents.infrastructure.task_dispatcher 80
+LIVE TS agent_civilization.agents.real 16
+LIVE TS agent_civilization.agents.real.real_agents 177
+LIVE TS agent_civilization.agents.real.specialist_runtime 106
+LIVE TS agent_civilization.civilization_routes 78
+----    agent_civilization.communication 0
+LIVE TS agent_civilization.core 1
+LIVE TS agent_civilization.core.agents 8
+LIVE TS agent_civilization.core.agents.base_agent 230
+LIVE TS agent_civilization.core.agents.communication_hub 125
+LIVE TS agent_civilization.core.agents.real_dispatcher 512
+LIVE TS agent_civilization.core.llm 99
+LIVE TS agent_civilization.core.safety 345
+LIVE TS agent_civilization.pipeline 4
+LIVE TS agent_civilization.pipeline.orchestrator 106
+LIVE TS agent_civilization.registry 4
+LIVE TS agent_civilization.registry.oss_agents 487
+LIVE TS agent_civilization.routing 4
+LIVE TS agent_civilization.routing.auto_router 184
+----    agent_civilization.runtime 0
+LIVE TS agent_civilization.storage 15
+LIVE TS agent_civilization.storage.supabase_store 350
+----    agent_civilization.utils 0
+---- T  agos_kernel.agent_production 20
+---- T  agos_kernel.agent_production.agent_factory 531
+---- T  agos_kernel.agent_production.learning_runtime 338
+---- T  agos_kernel.agent_production.memory_system 451
+LIVE TS agos_kernel.infrastructure 25
+LIVE TS agos_kernel.infrastructure.circuit_breaker 317
+LIVE TS agos_kernel.infrastructure.health 364
+LIVE TS agos_kernel.infrastructure.metrics 438
+LIVE TS agos_kernel.infrastructure.redis_queue 477
+LIVE    run 72
+LIVE TS server 734
+returncode=0
+
+$ grep -rn "data_worker\|DataWorker\|executors" --include=*.py . (excluding the file itself)
+grep_rc=1 (1 = no importer)
+
+$ wc -c agent_civilization/communication/__init__.py
+0 agent_civilization/communication/__init__.py
+__init__.py
+$ wc -c agent_civilization/runtime/__init__.py
+0 agent_civilization/runtime/__init__.py
+__init__.py
+$ wc -c agent_civilization/utils/__init__.py
+0 agent_civilization/utils/__init__.py
+__init__.py

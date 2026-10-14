@@ -119,7 +119,9 @@ def test_chat_frontend_contract(client):
 
 def test_external_agent_register_and_remove(client):
     """Agents.jsx يسجل ويحذف وكيلاً خارجياً."""
-    payload = {"name": "test_ext_r043", "url": "http://127.0.0.1:9/x", "model": "m", "api_key": ""}
+    # R-100: a public host (resolved by the offline test DNS to TEST-NET); a
+    # loopback URL is refused in open mode — see tests/test_r100_runtime_safety.py.
+    payload = {"name": "test_ext_r043", "url": "http://agent.example.org:9/x", "model": "m", "api_key": ""}
     r = client.post("/api/agents/external", json=payload)
     assert r.status_code == 201, r.text
     assert r.json()["registered"]["name"] == "test_ext_r043"

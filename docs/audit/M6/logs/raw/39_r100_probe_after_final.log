@@ -1,0 +1,143 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: probe on final code after all edits
+# env_overrides={}
+$ timeout 120 /tmp/v311/bin/python scripts/run_r100_safety_probe.py
+returncode=0
+--- stdout ---
+{
+  "auth_enabled": false,
+  "tool_policy": {
+    "code_execution": {
+      "allowed": false,
+      "reason": "code execution is disabled in open mode: set AGOS_API_KEY (recommended) or AGOS_ALLOW_CODE_EXEC=1 to enable test_runner",
+      "limits": {
+        "cpu_seconds": 5,
+        "address_space_bytes": 536870912,
+        "file_size_bytes": 10485760,
+        "open_files": 64
+      },
+      "wall_timeout_s": 8.0,
+      "server_process_non_dumpable": true
+    },
+    "outbound_network": {
+      "private_targets_allowed": false
+    },
+    "sqlite": {
+      "time_budget_s": 3.0,
+      "attach": "denied"
+    }
+  },
+  "rows": [
+    {
+      "vector": "test_runner prints server env secret",
+      "safe": true,
+      "evidence": "{\"ok\": false, \"agent\": \"test_runner_0900\", \"elapsed_s\": 0.0, \"result\": {\"ok\": false, \"error\": \"code execution is disabled in open mode: set AGOS_API_KEY (recommended) or AGOS_ALLOW_CODE_EXEC=1 to enable test_runner\", \"tool_output\": {\"executed\": false}}}"
+    },
+    {
+      "vector": "test_runner reads server start-up env via /proc",
+      "safe": true,
+      "evidence": "bytes_read=none {\"ok\": false, \"error\": \"code execution is disabled in open mode: set AGOS_API_KEY (recommended) or AGOS_ALLOW_CODE_EXEC=1 to enable test_runner\", \"tool_output\": {\"executed\": false}}"
+    },
+    {
+      "vector": "api_integrator reaches 127.0.0.1 server",
+      "safe": true,
+      "evidence": "internal_server_hits=0 {\"ok\": false, \"agent\": \"api_integrator_0050\", \"elapsed_s\": 0.001, \"result\": {\"ok\": false, \"error\": \"blocked: blocked non-public address for 127.0.0.1: 127.0.0.1 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)\"}}"
+    },
+    {
+      "vector": "network_client to metadata 169.254.169.254",
+      "safe": true,
+      "evidence": "{\"ok\": false, \"agent\": \"network_client_0600\", \"elapsed_s\": 0.001, \"result\": {\"ok\": false, \"error\": \"blocked: blocked non-public address for 169.254.169.254: 169.254.169.254 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)\"}}"
+    },
+    {
+      "vector": "db_manager runaway recursive CTE",
+      "safe": true,
+      "evidence": "status=failed waited_s=3.0 {\"ok\": false, \"agent\": \"db_manager_0350\", \"elapsed_s\": 3.001, \"result\": {\"ok\": false, \"error\": \"sqlite: interrupted\"}}"
+    },
+    {
+      "vector": "register external agent at 127.0.0.1",
+      "safe": true,
+      "evidence": "http=400 {\"detail\":\"url rejected: blocked non-public address for 127.0.0.1: 127.0.0.1 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)\"}"
+    },
+    {
+      "vector": "opt-in mode: sandboxed code prints server env secret",
+      "safe": true,
+      "evidence": "{\"ok\": true, \"answer\": \"exit=0\", \"tool_output\": {\"stdout\": \"None\\n\", \"stderr\": \"\", \"elapsed_s\": 0.012, \"sandbox\": true}}"
+    },
+    {
+      "vector": "opt-in mode: sandboxed code reads server start-up env",
+      "safe": true,
+      "evidence": "stdout='DENIED' {\"ok\": true, \"answer\": \"exit=0\", \"tool_output\": {\"stdout\": \"DENIED\\n\", \"stderr\": \"\", \"elapsed_s\": 0.015, \"sandbox\": true}}"
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "safe": 8,
+    "unsafe": 0
+  }
+}
+
+--- stderr ---
+2026-10-14 00:47:23,116 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:102
+2026-10-14 00:47:23,116 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:116
+2026-10-14 00:47:23,117 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-14 00:47:23,121 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:211
+2026-10-14 00:47:23,121 - agos.server - INFO - External agents loaded: 0 - <module>:213
+2026-10-14 00:47:23,146 - agos.server - INFO - Civilization routes registered successfully - <module>:708
+2026-10-14 00:47:23,158 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: agos - __init__:100
+2026-10-14 00:47:23,162 - agos.server - INFO - Task created: 89aa60f2c649 for specialization: test_runner - create_task:534
+2026-10-14 00:47:23,162 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:47:23,163 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/89aa60f2c649 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,164 - agos.server - INFO - Task created: 98d0c65f34a7 for specialization: test_runner - create_task:534
+2026-10-14 00:47:23,164 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:47:23,165 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/98d0c65f34a7 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,166 - agos.server - INFO - Task created: 40b21af7eac2 for specialization: api_integrator - create_task:534
+2026-10-14 00:47:23,166 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:47:23,168 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/40b21af7eac2 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,168 - agos.server - INFO - Task created: e4f55fea7890 for specialization: network_client - create_task:534
+2026-10-14 00:47:23,169 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:47:23,170 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/e4f55fea7890 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,171 - agos.server - INFO - Task created: c349a36effc1 for specialization: db_manager - create_task:534
+2026-10-14 00:47:23,171 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:47:23,172 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,273 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,375 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,476 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,577 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,679 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,780 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,881 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:23,982 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,084 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,185 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,286 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,388 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,490 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,592 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,693 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,794 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,896 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:24,997 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,099 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,200 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,301 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,403 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,504 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,608 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,709 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,811 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:25,912 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:26,014 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:26,116 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:26,217 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/c349a36effc1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:26,219 - httpx2 - INFO - HTTP Request: POST http://testserver/api/agents/external "HTTP/1.1 400 Bad Request" - _send_single_request:1085
+2026-10-14 00:47:26,220 - agos.server - INFO - System status requested from testclient - system_status:455
+2026-10-14 00:47:26,222 - httpx2 - INFO - HTTP Request: GET http://testserver/api/system/status "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:26,222 - agos.server - INFO - Task created: 70e5aff9b9ad for specialization: test_runner - create_task:534
+2026-10-14 00:47:26,222 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:47:26,224 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/70e5aff9b9ad "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:26,325 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/70e5aff9b9ad "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:26,326 - agos.server - INFO - Task created: eb02530318f1 for specialization: test_runner - create_task:534
+2026-10-14 00:47:26,326 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-14 00:47:26,327 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/eb02530318f1 "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-14 00:47:26,429 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/eb02530318f1 "HTTP/1.1 200 OK" - _send_single_request:1085
+

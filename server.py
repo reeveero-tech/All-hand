@@ -45,7 +45,12 @@ from agent_civilization.agents.external_adapter import (
     ExternalAgentAdapter,
     load_external_agents_from_env,
 )
+from agent_civilization.core import safety
 from agent_civilization.core.llm import get_llm
+
+# R-100 (D-044): make /proc/<pid>/environ of the server unreadable to any child
+# (including test_runner code) before anything else runs.
+safety.harden_server_process()
 from agent_civilization.storage import get_storage, is_configured as supabase_configured, key_status, log_key_status, storage_stats
 
 # ============================================================================
@@ -470,6 +475,8 @@ async def system_status(request: Request):
         "security": {
             "authentication": "enabled" if ENABLE_AUTH else "disabled",
             "rate_limiting": f"{RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW}s",
+            # R-100 (D-044): what real tools are allowed to do in this process.
+            "tool_policy": safety.policy_snapshot(),
         }
     }
 
@@ -654,7 +661,17 @@ async def register_external_agent(
         raise HTTPException(400, "url must be http(s)")
     if any(a.name == req.name for a in EXTERNAL_AGENTS):
         raise HTTPException(409, f"external agent '{req.name}' already registered")
-    adapter = ExternalAgentAdapter(req.name, req.url, req.model, req.api_key)
+    # R-100 (D-044): in open mode an anonymous client must not point the server
+    # at its own private network; with AGOS_API_KEY the key holder may.
+    allow_private = ENABLE_AUTH or safety.private_network_allowed()
+    try:
+        await asyncio.to_thread(safety.check_url, req.url, allow_private)
+    except safety.UnsafeURLError as e:
+        raise HTTPException(400, f"url rejected: {e}")
+    except OSError as e:
+        raise HTTPException(400, f"url host cannot be resolved: {e}")
+    adapter = ExternalAgentAdapter(req.name, req.url, req.model, req.api_key,
+                                   allow_private=allow_private)
     EXTERNAL_AGENTS.append(adapter)
     logger.warning(f"External agent registered: {req.name} at {req.url}")
     return {"registered": adapter.snapshot()}

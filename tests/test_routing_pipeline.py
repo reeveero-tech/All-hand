@@ -140,6 +140,7 @@ REPRESENTATIVE_TASKS = {
 }
 
 
+@pytest.mark.code_exec  # R-100: proves real test_runner execution (operator opt-in)
 @pytest.mark.asyncio
 @pytest.mark.parametrize("spec", sorted(SPECIALIZATIONS))
 async def test_real_specialist_agent_per_specialization(spec):

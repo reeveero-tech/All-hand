@@ -162,6 +162,25 @@ jobs:
           cat /tmp/health_body.json | tee -a "$LOG"
           echo "PASS: /health returned 200 with health JSON" | tee -a "$LOG"
 
+      - name: Verify runtime safety policy in the container (R-100)
+        run: |
+          set -o pipefail
+          LOG="$GITHUB_WORKSPACE/docker_runtime.log"
+          uid=$(docker exec agos-r040 id -u)
+          echo "container_uid=$uid" | tee -a "$LOG"
+          [ "$uid" != "0" ] || { echo "FAIL: container runs as root" | tee -a "$LOG"; exit 1; }
+          # Open mode (no AGOS_API_KEY): submitted code must NOT run.
+          tid=$(curl -s -X POST http://localhost:18000/api/tasks -H 'Content-Type: application/json' \
+                -d '{"specialization":"test_runner","prompt":"print(1)"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["task_id"])')
+          for i in $(seq 1 20); do
+            curl -s "http://localhost:18000/api/tasks/$tid" > /tmp/task.json
+            grep -q '"status": *"\(completed\|failed\)"' /tmp/task.json && break
+            sleep 0.5
+          done
+          echo "open_mode_test_runner:" | tee -a "$LOG"; cat /tmp/task.json | tee -a "$LOG"; echo | tee -a "$LOG"
+          grep -q 'disabled in open mode' /tmp/task.json || { echo "FAIL: open-mode code execution not refused" | tee -a "$LOG"; exit 1; }
+          echo "PASS: non-root container; open-mode code execution refused" | tee -a "$LOG"
+
       - name: Collect diagnostics
         if: always()
         run: |

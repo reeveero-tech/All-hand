@@ -1,0 +1,35 @@
+# R-100 evidence — final code on branch m6/r100-runtime-safety (base main 36f8fa5)
+# note: default open mode: test_runner refused by policy (expected rc=1, 950/1000)
+# env_overrides={}
+$ timeout 300 /tmp/v311/bin/python scripts/run_r053_scale_audit.py
+returncode=1
+--- stdout ---
+============================================================
+R-053: قياس حدود العدد المستهدف من الوكلاء
+============================================================
+سياسة تنفيذ الكود: allowed=False (code execution is disabled in open mode: set AGOS_API_KEY (recommended) or AGOS_ALLOW_CODE_EXEC=1 to enable test_runner)
+
+[1] إنشاء العدد المستهدف (50/تخصص = 1000 وكيل)
+    زمن الإنشاء: 0.001s
+    ذروة RSS بعد الإنشاء: 26.5 MB
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 2.206s
+    نجاح: 950/1000
+    فشل: test_runner ×50 — code execution is disabled in open mode: set AGOS_API_KEY (recommended) or AGOS_
+    ذروة RSS بعد التنفيذ: 39.0 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 39.0 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~2.21s، نجاح 950/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+
+--- stderr ---
+FAILED: 50 task(s) did not succeed
+

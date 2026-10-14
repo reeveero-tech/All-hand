@@ -8,11 +8,14 @@ Before R-072, five deterministic tests failed whenever the machine had no
 network (docs/audit/M6/logs/38): the result depended on DuckDuckGo, not on the code.
 
 Now, for every test that is NOT marked ``network``:
-  * ``urllib.request.urlopen`` to a non-loopback host is answered by a local
+  * ``urllib.request.urlopen`` (and ``OpenerDirector.open``, used by
+    ``safety.safe_urlopen`` since R-100) to a non-loopback host is answered by a local
     fake transport with realistic, deterministic payloads (the agent's own
     request building, parsing and result shaping still run for real);
   * ``socket.gethostbyname`` / ``getaddrinfo`` for non-loopback names return a
-    TEST-NET address (192.0.2.x, RFC 5737) instead of hitting DNS;
+    TEST-NET address (192.0.2.x, RFC 5737) instead of hitting DNS (R-100: the
+    outbound URL policy resolves every host with ``getaddrinfo`` before
+    connecting, so the fake answers it too — real DNS is still never queried);
   * any real ``socket.connect`` to a non-loopback address raises, so a new
     hidden network dependency fails loudly instead of flaking.
 Loopback (127.0.0.1 / localhost / ::1) is untouched — local servers such as
@@ -37,6 +40,7 @@ import pytest
 
 _LOOPBACK_NAMES = {"localhost", "127.0.0.1", "::1", "testserver"}
 _ORIG_URLOPEN = urllib.request.urlopen
+_ORIG_OPENER_OPEN = urllib.request.OpenerDirector.open
 _ORIG_GETHOSTBYNAME = socket.gethostbyname
 _ORIG_GETADDRINFO = socket.getaddrinfo
 _ORIG_CONNECT = socket.socket.connect
@@ -122,13 +126,23 @@ def _offline_external_network(request, monkeypatch):
         status, body, ctype = _fake_payload(url, method)
         return _FakeResponse(url, status, body, ctype)
 
+    def fake_opener_open(self, fullurl, data=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+        req = fullurl if isinstance(fullurl, urllib.request.Request) else urllib.request.Request(fullurl)
+        if _is_loopback_host(urllib.parse.urlsplit(req.full_url).hostname):
+            return _ORIG_OPENER_OPEN(self, fullurl, data, timeout)
+        calls.append((req.get_method(), req.full_url))
+        status, body, ctype = _fake_payload(req.full_url, req.get_method())
+        return _FakeResponse(req.full_url, status, body, ctype)
+
     def fake_gethostbyname(host):
         return _ORIG_GETHOSTBYNAME(host) if _is_loopback_host(host) else _fake_ip(host)
 
     def fake_getaddrinfo(host, *args, **kwargs):
         if _is_loopback_host(host):
             return _ORIG_GETADDRINFO(host, *args, **kwargs)
-        raise socket.gaierror(socket.EAI_NONAME, f"external DNS disabled in deterministic tests: {host}")
+        port = args[0] if args else kwargs.get("port", 0)
+        return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+                 (_fake_ip(str(host)), int(port or 0)))]
 
     def _guard(addr):
         host = addr[0] if isinstance(addr, tuple) else None
@@ -146,11 +160,27 @@ def _offline_external_network(request, monkeypatch):
         return _ORIG_CONNECT_EX(self, addr)
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(urllib.request.OpenerDirector, "open", fake_opener_open)
     monkeypatch.setattr(socket, "gethostbyname", fake_gethostbyname)
     monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)
     monkeypatch.setattr(socket.socket, "connect_ex", guarded_connect_ex)
     yield calls
+
+
+@pytest.fixture(autouse=True)
+def _code_execution_policy(request, monkeypatch):
+    """R-100 (D-044): every test starts from the production default — open mode,
+    no ``AGOS_ALLOW_CODE_EXEC`` — so ``test_runner`` refuses to run code.
+    Tests that must prove real execution carry ``@pytest.mark.code_exec``,
+    which is the same explicit opt-in an operator gives in production."""
+    monkeypatch.delenv("AGOS_API_KEY", raising=False)
+    monkeypatch.delenv("AGOS_ALLOW_PRIVATE_NETWORK", raising=False)
+    if request.node.get_closest_marker("code_exec"):
+        monkeypatch.setenv("AGOS_ALLOW_CODE_EXEC", "1")
+    else:
+        monkeypatch.delenv("AGOS_ALLOW_CODE_EXEC", raising=False)
+    yield
 
 
 @pytest.fixture(autouse=True)

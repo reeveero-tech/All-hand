@@ -6,6 +6,7 @@
 - كل وكيل قابل للتنفيذ عبر الموزّع الحقيقي بمهمة ملائمة.
 - الحد الأقصى للحضارة مفتوح (لا يوجد سقف صلب في create_civilization).
 """
+import pytest
 import time
 
 from agent_civilization.agents.real import create_civilization, SPECIALIZATIONS
@@ -34,6 +35,7 @@ def test_creation_time_within_bounds():
     assert elapsed < 5.0
 
 
+@pytest.mark.code_exec  # R-100: proves real test_runner execution (operator opt-in)
 def test_agents_execute_real_dispatch():
     """كل تخصص لديه وكيل قابل للتنفيذ عبر الموزّع الحقيقي (نموذج لكل تخصص)."""
     import asyncio

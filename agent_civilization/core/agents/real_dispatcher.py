@@ -15,6 +15,11 @@ Design goals:
     richer library is present we use it; otherwise urllib does the job.
   * Deterministic error surface. Exceptions become {"ok": False, "error": ...}
     instead of crashing the agent loop.
+  * Safe by default (R-100, D-044). Code execution, outbound URLs and SQL go
+    through ``agent_civilization.core.safety``: code runs only when the policy
+    allows it and then in an isolated interpreter; URLs that resolve to
+    loopback/private/link-local addresses are refused (also on redirects);
+    SQLite cannot ATTACH files and has a time budget.
 """
 
 from __future__ import annotations
@@ -27,13 +32,13 @@ import re
 import socket
 import sqlite3
 import statistics
-import subprocess
-import sys
 import time
 import tokenize
 import urllib.parse
 import urllib.request
 from typing import Any, Callable, Dict, Optional
+
+from agent_civilization.core import safety
 
 
 # ---------------------------------------------------------------------------
@@ -147,23 +152,22 @@ async def _surgeon(work: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def _test_runner(work: Dict[str, Any]) -> Dict[str, Any]:
+    """Run submitted Python in the sandbox — only if the policy allows it."""
     code = _extract_code(work)
     if not code.strip():
         return {"ok": False, "error": "no code to run"}
-    def run():
-        return subprocess.run(
-            [sys.executable, "-c", code],
-            capture_output=True, text=True, timeout=8,
-        )
-    try:
-        r = await _to_thread(run)
-        return {
-            "ok": r.returncode == 0,
-            "answer": f"exit={r.returncode}",
-            "tool_output": {"stdout": r.stdout[-2000:], "stderr": r.stderr[-2000:]},
-        }
-    except subprocess.TimeoutExpired:
-        return {"ok": False, "error": "timeout"}
+    allowed, reason = safety.code_execution_policy()
+    if not allowed:
+        return {"ok": False, "error": reason, "tool_output": {"executed": False}}
+    r = await _to_thread(safety.run_sandboxed_python, code)
+    if r["timed_out"]:
+        return {"ok": False, "error": f"timeout after {safety.SANDBOX_WALL_TIMEOUT_S}s",
+                "tool_output": r}
+    rc = r["returncode"]
+    note = f"exit={rc}" if rc >= 0 else f"killed by signal {-rc} (sandbox limit)"
+    return {"ok": rc == 0, "answer": note,
+            "tool_output": {"stdout": r["stdout"], "stderr": r["stderr"],
+                            "elapsed_s": r["elapsed_s"], "sandbox": True}}
 
 
 async def _validator(work: Dict[str, Any]) -> Dict[str, Any]:
@@ -223,21 +227,11 @@ async def _db_manager(work: Dict[str, Any]) -> Dict[str, Any]:
     if not sql_match:
         return {"ok": False, "error": "no SQL statement detected"}
     sql = sql_match.group(0)
-    def run():
-        conn = sqlite3.connect(":memory:")
-        try:
-            cur = conn.cursor()
-            for stmt in [s for s in sql.split(";") if s.strip()]:
-                cur.execute(stmt)
-            rows = cur.fetchall() if cur.description else []
-            cols = [c[0] for c in cur.description] if cur.description else []
-            return rows, cols
-        finally:
-            conn.close()
+    statements = [st for st in sql.split(";") if st.strip()]
     try:
-        rows, cols = await _to_thread(run)
+        rows, cols = await _to_thread(safety.run_sqlite_statements, statements)
         return {"ok": True, "answer": f"{len(rows)} row(s)",
-                "tool_output": {"columns": cols, "rows": rows[:50]}}
+                "tool_output": {"columns": cols, "rows": rows}}
     except sqlite3.Error as e:
         return {"ok": False, "error": f"sqlite: {e}"}
 
@@ -253,11 +247,14 @@ async def _network_client(work: Dict[str, Any]) -> Dict[str, Any]:
         host = host_match.group(1)
         def probe():
             t0 = time.time()
-            ip = socket.gethostbyname(host)
-            return {"host": host, "ip": ip, "resolve_ms": round((time.time() - t0) * 1000, 2)}
+            addrs = safety.check_host(host)
+            return {"host": host, "ip": addrs[0], "addresses": addrs,
+                    "resolve_ms": round((time.time() - t0) * 1000, 2)}
         try:
             return {"ok": True, "answer": f"resolved {host}",
                     "tool_output": await _to_thread(probe)}
+        except safety.UnsafeURLError as e:
+            return {"ok": False, "error": f"blocked: {e}"}
         except socket.gaierror as e:
             return {"ok": False, "error": f"dns: {e}"}
 
@@ -265,7 +262,7 @@ async def _network_client(work: Dict[str, Any]) -> Dict[str, Any]:
         req = urllib.request.Request(url, method="HEAD",
                                      headers={"User-Agent": "AGOS-Civilization/1.0"})
         t0 = time.time()
-        with urllib.request.urlopen(req, timeout=6) as resp:
+        with safety.safe_urlopen(req, timeout=6) as resp:
             return {"status": resp.status, "url": resp.geturl(),
                     "content_type": resp.headers.get("content-type", ""),
                     "content_length": resp.headers.get("content-length"),
@@ -274,6 +271,8 @@ async def _network_client(work: Dict[str, Any]) -> Dict[str, Any]:
     try:
         return {"ok": True, "answer": f"HEAD {url}",
                 "tool_output": await _to_thread(head)}
+    except safety.UnsafeURLError as e:
+        return {"ok": False, "error": f"blocked: {e}"}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": f"http: {e}"}
 
@@ -286,7 +285,7 @@ async def _api_integrator(work: Dict[str, Any]) -> Dict[str, Any]:
         req = urllib.request.Request(url, headers={"User-Agent": "AGOS/1.0",
                                                     "Accept": "application/json,text/*"})
         t0 = time.time()
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with safety.safe_urlopen(req, timeout=8) as resp:
             body = resp.read(65536)
             ct = resp.headers.get("content-type", "")
             parsed = None
@@ -302,6 +301,8 @@ async def _api_integrator(work: Dict[str, Any]) -> Dict[str, Any]:
                                else body[:512].decode("utf-8", errors="replace"))}
     try:
         return {"ok": True, "answer": f"GET {url}", "tool_output": await _to_thread(get)}
+    except safety.UnsafeURLError as e:
+        return {"ok": False, "error": f"blocked: {e}"}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": f"http: {e}"}
 
@@ -315,7 +316,7 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
         {"q": q, "format": "json", "no_html": "1", "no_redirect": "1"})
     def fetch():
         req = urllib.request.Request(url, headers={"User-Agent": "AGOS-Research/1.0"})
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with safety.safe_urlopen(req, timeout=8) as resp:
             return json.loads(resp.read().decode("utf-8", errors="replace"))
     try:
         j = await _to_thread(fetch)

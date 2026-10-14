@@ -1,0 +1,40 @@
+# R-100 self-review (advisor tool unavailable this session): 5 findings in safety.py at 9a0698a, checked old vs fixed
+# script: /tmp/r100_review_check.py (verbatim below)
+#   import sys, time, threading, importlib
+#   mod = importlib.import_module(sys.argv[1])
+#   print("module:", mod.__file__)
+#   for ip in ["64:ff9b::a9fe:a9fe", "64:ff9b::7f00:1", "2002:7f00:1::1", "64:ff9b::808:808"]:
+#       print(f"is_public_address({ip}) = {mod.is_public_address(ip)}")
+#   try:
+#       mod.run_sqlite_statements(["SELECT length(randomblob(1000000000))"]); print("sqlite randomblob(1e9): ALLOWED (1 GB allocated in-process)")
+#   except Exception as e:
+#       print("sqlite randomblob(1e9): refused:", e)
+#   try:
+#       r = mod.run_sandboxed_python("import sys; sys.stdout.buffer.write(b'ok\\xff'); sys.stdout.flush()"); print("invalid utf-8 output: handled, stdout=", repr(r["stdout"]))
+#   except Exception as e:
+#       print("invalid utf-8 output: CRASH", type(e).__name__, e)
+#   res = {}
+#   def go():
+#       t = time.monotonic(); mod.run_sandboxed_python("import subprocess,time\nsubprocess.Popen(['sleep','6'],start_new_session=True)\ntime.sleep(30)\n", timeout_s=1); res["t"] = round(time.monotonic() - t, 2)
+#   th = threading.Thread(target=go, daemon=True); th.start(); th.join(5)
+#   print("timeout with escaped descendant:", f"returned in {res['t']}s" if "t" in res else "STILL BLOCKED after 5s")
+$ python /tmp/r100_review_check.py old_safety   (old_safety = safety.py at 9a0698a)
+module: /tmp/old_safety.py
+is_public_address(64:ff9b::a9fe:a9fe) = True
+is_public_address(64:ff9b::7f00:1) = True
+is_public_address(2002:7f00:1::1) = False
+is_public_address(64:ff9b::808:808) = True
+sqlite randomblob(1e9): ALLOWED (1 GB allocated in-process)
+invalid utf-8 output: CRASH UnicodeDecodeError 'utf-8' codec can't decode byte 0xff in position 2: invalid start byte
+timeout with escaped descendant: STILL BLOCKED after 5s
+returncode=0
+$ python /tmp/r100_review_check.py new_safety   (new_safety = fixed safety.py)
+module: /tmp/new_safety.py
+is_public_address(64:ff9b::a9fe:a9fe) = False
+is_public_address(64:ff9b::7f00:1) = False
+is_public_address(2002:7f00:1::1) = False
+is_public_address(64:ff9b::808:808) = True
+sqlite randomblob(1e9): refused: string or blob too big
+invalid utf-8 output: handled, stdout= 'ok�'
+timeout with escaped descendant: returned in 3.0s
+returncode=0

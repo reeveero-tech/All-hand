@@ -8,8 +8,16 @@ vLLM, OpenRouter, LocalAI) can join the civilization as a first-class citizen.
 Register via env var EXTERNAL_AGENTS (JSON list) or the /agents/external API:
 
     EXTERNAL_AGENTS='[{"name":"my-ollama","url":"http://host:11434/v1/chat/completions","model":"llama3","api_key":""}]'
+
+R-100 (D-044): every call re-checks the URL with ``safety.check_url``.  Agents
+from EXTERNAL_AGENTS are operator configuration, so internal targets (a local
+Ollama) are allowed.  Agents registered through the API may target internal
+addresses only when the server runs with AGOS_API_KEY or
+AGOS_ALLOW_PRIVATE_NETWORK=1 — otherwise an anonymous client could make the
+server call its own private network (SSRF).
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -18,14 +26,18 @@ from typing import Any, Dict, List
 
 import aiohttp
 
+from agent_civilization.core import safety
+
 logger = logging.getLogger("external_agents")
 
 
 class ExternalAgentAdapter:
     """Wraps a real remote agent behind the same execute() contract."""
 
-    def __init__(self, name: str, url: str, model: str = "", api_key: str = ""):
+    def __init__(self, name: str, url: str, model: str = "", api_key: str = "",
+                 allow_private: bool = False):
         self.name = name
+        self.allow_private = allow_private
         self.url = url
         self.model = model
         self.api_key = api_key
@@ -46,6 +58,7 @@ class ExternalAgentAdapter:
         if self.model:
             payload["model"] = self.model
         try:
+            await asyncio.to_thread(safety.check_url, self.url, self.allow_private)
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120)) as s:
                 async with s.post(self.url, headers=headers, json=payload) as r:
                     body = await r.text()
@@ -92,6 +105,7 @@ def load_external_agents_from_env() -> List[ExternalAgentAdapter]:
             ExternalAgentAdapter(
                 name=e["name"], url=e["url"],
                 model=e.get("model", ""), api_key=e.get("api_key", ""),
+                allow_private=True,  # operator-provided configuration
             )
             for e in entries
         ]

@@ -13,6 +13,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 COPY --from=frontend-build /app/web/dist /app/web/dist
+# R-100 (D-044): run as an unprivileged user. Sandbox rlimits (hard == soft)
+# cannot be raised again by a non-root child, and test_runner code cannot
+# write to the application directory.
+RUN useradd --system --uid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin agos
+USER agos
 ENV PORT=8000
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT}"]
