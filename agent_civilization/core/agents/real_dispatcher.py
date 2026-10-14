@@ -354,7 +354,8 @@ async def _api_integrator(work: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # R-107: which DuckDuckGo failures are "transient" (worth a retry) vs. hard errors
-# (empty query, HTTP 4xx/5xx, address-policy refusals — never retried).
+# (empty query, HTTP 4xx/5xx, address-policy refusals, certificate-verification
+# failures — never retried). Only transport flakiness retries.
 _TRANSIENT_NET_ERRORS = (
     ConnectionResetError,           # Errno 104 — seen on CI job network (raw/59)
     ConnectionAbortedError,          # Errno 53
@@ -363,7 +364,11 @@ _TRANSIENT_NET_ERRORS = (
 
 
 def _is_transient_search_error(exc: Exception) -> bool:
-    """Only network/transport flakiness retries — never policy refusals or HTTP 4xx/5xx."""
+    """Only network/transport flakiness retries — never policy refusals, HTTP 4xx/5xx,
+    or SSL certificate-verification failures (those indicate a real TLS problem,
+    not a flake, and retrying them wastes the budget)."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return False  # HTTP status — hard
     if isinstance(exc, _TRANSIENT_NET_ERRORS):
         return True
     if isinstance(exc, urllib.error.URLError):
@@ -371,8 +376,11 @@ def _is_transient_search_error(exc: Exception) -> bool:
         if reason is None:
             return True  # bare URLError with no reason — assume transport
         return isinstance(reason, _TRANSIENT_NET_ERRORS) or _is_transient_search_error(reason)
+    if isinstance(exc, ssl.SSLCertVerificationError):
+        return False  # certificate problem — hard (retrying won't help)
     if isinstance(exc, ssl.SSLError):
-        # SSL: UNEXPECTED_EOF_WHILE_READING (raw/33/34/48) and handshake timeouts
+        # R-107b: narrower than "all SSL" — only the transport-level EOF/handshake
+        # flakes seen in raw/33/34/48. Certificate errors (above) are excluded.
         return True
     if isinstance(exc, OSError) and exc.errno in (104, 53):
         return True
@@ -380,7 +388,15 @@ def _is_transient_search_error(exc: Exception) -> bool:
 
 
 _RESEARCHER_ATTEMPTS = 2  # one live attempt + one retry for transient errors only
-_RESEARCHER_TOTAL_TIMEOUT_S = 20.0  # hard budget for all attempts combined
+_RESEARCHER_TOTAL_TIMEOUT_S = 20.0  # hard budget for the whole handler (both attempts)
+
+
+def _researcher_deadline() -> float:
+    return time.monotonic() + _RESEARCHER_TOTAL_TIMEOUT_S
+
+
+def _remaining_budget(deadline: float) -> float:
+    return max(0.0, deadline - time.monotonic())
 
 
 async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
@@ -390,18 +406,21 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
     # DuckDuckGo Instant Answer API — no key needed.
     url = "https://api.duckduckgo.com/?" + urllib.parse.urlencode(
         {"q": q, "format": "json", "no_html": "1", "no_redirect": "1"})
-    started = time.monotonic()
+    deadline = _researcher_deadline()
     last_error: Optional[Exception] = None
+    attempts_made = 0
     for attempt in range(_RESEARCHER_ATTEMPTS):
-        elapsed = time.monotonic() - started
-        if elapsed + 8.0 > _RESEARCHER_TOTAL_TIMEOUT_S:
-            break  # budget exhausted — no more attempts
+        remaining = _remaining_budget(deadline)
+        if remaining <= 0.5:
+            break  # budget exhausted — no more attempts (count what actually ran)
+        socket_timeout = min(8.0, remaining)
         def fetch():
             req = urllib.request.Request(url, headers={"User-Agent": "AGOS-Research/1.0"})
-            with safety.safe_urlopen(req, timeout=8) as resp:
+            with safety.safe_urlopen(req, timeout=socket_timeout) as resp:
                 return json.loads(resp.read().decode("utf-8", errors="replace"))
         try:
-            j = await _to_thread(lambda: fetch())
+            j = await asyncio.wait_for(_to_thread(fetch), timeout=socket_timeout + 1.0)
+            attempts_made += 1
             abstract = j.get("AbstractText") or j.get("Heading") or ""
             related = [r.get("Text", "") for r in j.get("RelatedTopics", [])[:5]
                        if isinstance(r, dict) and r.get("Text")]
@@ -412,13 +431,20 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
                                     "related": related}}
             if attempt:
                 out["tool_output"]["retried"] = True
-                out["tool_output"]["attempts"] = attempt + 1
+                out["tool_output"]["attempts"] = attempts_made
             return out
         except Exception as e:  # noqa: BLE001
+            attempts_made += 1
+            if isinstance(e, asyncio.TimeoutError):
+                e = TimeoutError("overall budget exceeded")  # normalize for the classifier
             if not _is_transient_search_error(e):
                 return {"ok": False, "error": f"search: {e}"}  # hard error — no retry
             last_error = e
-    return {"ok": False, "error": f"search: {last_error} (transient, {_RESEARCHER_ATTEMPTS} attempts)"}
+    if attempts_made == 0:
+        return {"ok": False,
+                "error": f"search: budget exhausted before any attempt could start "
+                         f"({_RESEARCHER_TOTAL_TIMEOUT_S}s)"}
+    return {"ok": False, "error": f"search: {last_error} (transient, {attempts_made} attempts)"}
 
 
 async def _architect(work: Dict[str, Any]) -> Dict[str, Any]:

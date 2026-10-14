@@ -123,3 +123,85 @@ def test_is_transient_classifier_covers_the_seen_flakes():
     assert rd._is_transient_search_error(urllib.error.HTTPError("u", 404, "NF", {}, None)) is False
     assert rd._is_transient_search_error(PermissionError("policy")) is False
     assert rd._is_transient_search_error(ValueError("bad json")) is False
+
+
+# -------------------------------------------------- R-107b fixes (certificate + budget)
+def test_certificate_verification_error_is_not_retried(monkeypatch):
+    """R-107b: a TLS certificate problem is a hard error — retrying wastes the budget."""
+    import ssl
+    calls = {"n": 0}
+
+    def cert_fail(req, timeout=8, **kw):
+        calls["n"] += 1
+        raise urllib.error.URLError(
+            ssl.SSLCertVerificationError(1, "CERTIFICATE_VERIFY_FAILED"))
+
+    monkeypatch.setattr(safety, "safe_urlopen", cert_fail)
+
+    async def go():
+        return await rd._researcher({"prompt": "test"})
+    out = asyncio.run(go())
+    assert out["ok"] is False
+    assert calls["n"] == 1  # single attempt — certificate errors are hard
+
+
+def test_http_error_is_explicitly_not_retried(monkeypatch):
+    """R-107b: HTTP status errors (4xx/5xx) are hard — explicit, not incidental."""
+    calls = {"n": 0}
+
+    def http_404(req, timeout=8, **kw):
+        calls["n"] += 1
+        raise urllib.error.HTTPError("u", 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(safety, "safe_urlopen", http_404)
+
+    async def go():
+        return await rd._researcher({"prompt": "test"})
+    out = asyncio.run(go())
+    assert out["ok"] is False
+    assert calls["n"] == 1
+    assert "404" in out["error"]
+
+
+def test_total_budget_is_enforced_across_attempts(monkeypatch):
+    """R-107b: a slow first attempt that eats the budget must prevent a second one,
+    and the error must report the attempts that actually ran (not a fixed 2)."""
+    import time as _time
+    calls = {"n": 0}
+
+    def slow_fail(req, timeout=8, **kw):
+        calls["n"] += 1
+        _time.sleep(0.05)
+        raise urllib.error.URLError(
+            ConnectionResetError(104, "Connection reset by peer"))
+
+    monkeypatch.setattr(safety, "safe_urlopen", slow_fail)
+    # Shrink the budget so the first (slow) attempt fits but the second cannot:
+    # remaining > 0.5 must hold before attempt 1 (budget 0.52) and remaining <= 0.5
+    # after attempt 1 consumed 0.05s (0.52 - 0.05 = 0.47 <= 0.5).
+    monkeypatch.setattr(rd, "_RESEARCHER_TOTAL_TIMEOUT_S", 0.52)
+
+    async def go():
+        return await rd._researcher({"prompt": "test"})
+    out = asyncio.run(go())
+    assert out["ok"] is False
+    assert calls["n"] == 1          # second attempt prevented by the budget
+    assert "1 attempts" in out["error"]  # the real count, not the fixed 2
+
+
+def test_attempts_count_reflects_actual_runs(monkeypatch):
+    """R-107b: persistent transient failure reports the attempts that actually ran."""
+    calls = {"n": 0}
+
+    def always_fail(req, timeout=8, **kw):
+        calls["n"] += 1
+        raise urllib.error.URLError(
+            ConnectionResetError(104, "Connection reset by peer"))
+
+    monkeypatch.setattr(safety, "safe_urlopen", always_fail)
+
+    async def go():
+        return await rd._researcher({"prompt": "test"})
+    out = asyncio.run(go())
+    assert out["ok"] is False
+    assert calls["n"] == 2 and "2 attempts" in out["error"]

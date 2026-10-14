@@ -184,5 +184,10 @@
 ## R-104 — إصلاح بالتوصيل لا حذف — `DataWorkerAgent` (D-047)
 
 ## R-107 — إعادة محاولة `researcher` للأخطاء العابرة فقط (D-048)
+
+### R-104b/R-107b — إصلاح نواقص (دفعات تصحيح)
+- `test_r104_data_worker.py` (+3، صارمة): فشل LLM يظهر `ok=False` + `status=failed` + `error` حقيقي (لا يقبل عيب ما قبل R-104)؛ `_execute_work` لا يزيد `tasks_completed` إلا عند نجاح؛ عبر TestClient مهمة نصية تصل `process_text` فعلاً وفشلها في النتيجة المخزنة.
+- `test_r107_researcher_retry.py` (+4): خطأ شهادة لا يُعاد؛ HTTP 404 لا يُعاد (صريح)؛ ميزانية 0.52ث تمنع المحاولة الثانية (عدد فعلي 1)؛ العدد يعكس المحاولات المنفذة.
+- العدد: 364 + 3 + 3 (`docs/audit/M6/logs/raw/101_r104b_r107b_evidence_pack.log` — خام كامل).
 - `tests/test_r107_researcher_retry.py` (6): نقل وهمي يفشل مرة ثم ينجح (`retried: true, attempts: 2`)؛ SSL EOF عابر يُعاد؛ خطأ صلب (رفض السياسة) لا يُعاد؛ فشل متكرر يُعلن `transient, 2 attempts`؛ استعلام فارغ لا يُعاد؛ المصنّف يغطي كل الأخطاء المذكورة (ConnectionReset/SSLEOF/handshake-timeout عابرة؛ HTTP 404/PermissionError/ValueError صلبة). العدد: 357 + 3 + 3 (`docs/audit/M6/logs/100_r107_researcher_retry.log`). **الاختبار الحي `test_researcher_live_duckduckgo` يمر الآن** (نفس الاختبار الذي كان يتذبذب — راجع RISK-019).
 - `tests/test_r104_data_worker.py` (5): قابلية الوصول من سلسلة الاستيراد الحية؛ انتشار فشل LLM (`_process_data` يعيد `error` عند `ok: False` — قبل R-104 كان يخفيه)؛ تفويض `_data_processor` للنص إلى `process_text()`؛ المدخل الرقمي حتمي وغير متغير؛ الحزم الفارغة الثلاث تُستورد سليمة. العدد: 351 + 3 + 3 (`docs/audit/M6/logs/99_r104_data_worker.log`). حد: `researcher` تفشل مع `-m network` بخطأ SSL من DuckDuckGo (نفس خطأ R-107 — ليس انحداراً لهذه الدفعة؛ `api_integrator` و`network_client` يمرّان).

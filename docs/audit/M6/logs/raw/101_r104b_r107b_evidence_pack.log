@@ -1,0 +1,173 @@
+# R-104b/R-107b evidence pack
+# started 2026-10-14T03:07:37.005544+00:00
+# head of data_worker.py line 1: '#!/usr/bin/env python3'
+# git head before commit: 49b201145c0956ba333462482d3bbf50df7f0214
+# python 3.14.3
+
+$ pytest tests/ (expect 364+3+3)
+$ python3 -m pytest tests/ -q
+exit_code=0
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 370 items / 3 deselected / 367 selected
+
+tests/test_agent_production.py ........................                  [  6%]
+tests/test_agents_per_spec.py ...                                        [  7%]
+tests/test_api.py ..................                                     [ 12%]
+tests/test_civilization_routes.py ......                                 [ 13%]
+tests/test_civilization_scale.py .....                                   [ 15%]
+tests/test_e2e_scenarios.py .......                                      [ 17%]
+tests/test_infrastructure.py ...................                         [ 22%]
+tests/test_memory_learning_comm.py .........                             [ 24%]
+tests/test_network_isolation.py ......                                   [ 26%]
+tests/test_r042_live_storage.py sss                                      [ 27%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 32%]
+tests/test_r082_storage_outcomes.py ........                             [ 34%]
+tests/test_r083_metrics_middleware.py ......                             [ 35%]
+tests/test_r100_runtime_safety.py ...................................... [ 46%]
+......                                                                   [ 47%]
+tests/test_r101_web_auth_contract.py .............                       [ 51%]
+tests/test_r102_honest_handlers.py .............................         [ 59%]
+tests/test_r103_memory_learning.py .................                     [ 64%]
+tests/test_r104_data_worker.py ........                                  [ 66%]
+tests/test_r106_chat_routing.py .............                            [ 69%]
+tests/test_r107_researcher_retry.py ..........                           [ 72%]
+tests/test_real_dispatch_audit.py ......                                 [ 74%]
+tests/test_routing_pipeline.py .................................         [ 83%]
+tests/test_security.py ..........                                        [ 85%]
+tests/test_specialist_runtime.py .........                               [ 88%]
+tests/test_specialists_package.py ...........................            [ 95%]
+tests/test_storage_payloads.py ......                                    [ 97%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 364 passed, 3 skipped, 3 deselected in 13.10s =================
+
+
+$ pytest tests/test_r104_data_worker.py (8)
+$ python3 -m pytest tests/test_r104_data_worker.py -q
+exit_code=0
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 8 items
+
+tests/test_r104_data_worker.py ........                                  [100%]
+
+============================== 8 passed in 0.59s ===============================
+
+
+$ pytest tests/test_r107_researcher_retry.py (10)
+$ python3 -m pytest tests/test_r107_researcher_retry.py -q
+exit_code=0
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 10 items
+
+tests/test_r107_researcher_retry.py ..........                           [100%]
+
+============================== 10 passed in 0.17s ==============================
+
+
+$ pytest tests/ -m network (3 live)
+$ python3 -m pytest tests/ -m network -q
+exit_code=0
+--- stdout ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 370 items / 367 deselected / 3 selected
+
+tests/test_network_live.py ...                                           [100%]
+
+====================== 3 passed, 367 deselected in 0.62s =======================
+
+
+$ ruff handoff scope (specialists excluded)
+$ python3 -m ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests scripts
+exit_code=0
+--- stdout ---
+All checks passed!
+
+
+$ ruff CI scope (no exclusion)
+$ python3 -m ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+exit_code=0
+--- stdout ---
+All checks passed!
+
+
+$ web npm install --silent
+exit_code=0
+
+$ web npm run build
+exit_code=0
+
+> agos-civilization-web@3.0.0 build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 22 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.77 kB │ gzip:  0.45 kB
+dist/assets/index-B7MkQRhG.css   12.25 kB │ gzip:  2.99 kB
+dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
+
+✓ built in 103ms
+
+$ root npm install --silent
+exit_code=0
+
+$ root npm run build
+exit_code=0
+             1.17 kB │ gzip:   0.52 kB
+.output/server/_runtime.mjs                               1.18 kB │ gzip:   0.57 kB
+.output/server/_ssr/start-Dp2npYzv.mjs                    1.57 kB │ gzip:   0.72 kB
+.output/server/_tanstack-start-manifest_v-BEYWp2hp.mjs    1.60 kB │ gzip:   0.53 kB
+.output/server/_ssr/ssr.mjs                               2.12 kB │ gzip:   0.97 kB
+.output/server/_ssr/api-D1T-sVu6.mjs                      2.90 kB │ gzip:   1.54 kB
+.output/server/_ssr/agents-A--DMm3S.mjs                   4.13 kB │ gzip:   1.33 kB
+.output/server/_ssr/chat-FxcUdkYS.mjs                     6.01 kB │ gzip:   2.17 kB
+.output/server/_ssr/routes-NvKu0P0g.mjs                   6.10 kB │ gzip:   1.80 kB
+.output/server/_ssr/settings-Ddu_WzgK.mjs                 6.26 kB │ gzip:   2.01 kB
+.output/server/_ssr/command-D-hBUhQa.mjs                  8.63 kB │ gzip:   2.59 kB
+.output/server/index.mjs                                 11.12 kB │ gzip:   3.47 kB
+.output/server/_ssr/router-JmfzJEID.mjs                  11.77 kB │ gzip:   3.50 kB
+.output/server/_libs/tanstack__history.mjs               12.33 kB │ gzip:   3.66 kB
+.output/server/_libs/h3+rou3+srvx.mjs                    17.31 kB │ gzip:   4.99 kB
+.output/server/_libs/react+tanstack__react-query.mjs     29.31 kB │ gzip:   7.93 kB
+.output/server/_libs/@tanstack/router-core+[...].mjs     32.87 kB │ gzip:   8.99 kB
+.output/server/_ssr/server-O_RDrrow.mjs                  91.11 kB │ gzip:  23.37 kB
+.output/server/_libs/tanstack__query-core.mjs           135.99 kB │ gzip:  32.36 kB
+.output/server/_libs/@tanstack/react-router+[...].mjs   785.47 kB │ gzip: 165.48 kB
+
+✓ built in 271ms
+[nitro] ℹ Using auto generated worker name: reeveero-tech-all-hand
+ℹ Generated .output/server/wrangler.json
+ℹ Generated .wrangler/deploy/config.json
+ℹ Generated .output/public/_headers
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+
+
+# finished 2026-10-14T03:08:03.331507+00:00
