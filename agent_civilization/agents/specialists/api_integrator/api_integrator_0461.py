@@ -1,58 +1,16 @@
 #!/usr/bin/env python3
+"""ApiIntegratorAgent0461 — thin compatibility shim (R-105 / D-049).
+
+The implementation was deduplicated into the single template body in
+_templates/api_integrator_template.py; this historical module now just re-exports the
+generated class and the create() function so any existing importer keeps working.
 """
-ApiIntegratorAgent0461 - Handles HTTP requests and web services
-Agent ID: 461
-"""
 
-import logging
-from typing import Dict, Any
-from agent_civilization.core.agents.base_agent import BaseAgent, Message
-from agent_civilization.core.agents.communication_hub import CommunicationHub
+from agent_civilization.agents.specialists.api_integrator import ApiIntegratorAgent0461 as ApiIntegratorAgent0461  # noqa: F401
 
-logger = logging.getLogger('api_integrator_0461')
+__all__ = ["ApiIntegratorAgent0461", "create"]
 
-class ApiIntegratorAgent0461(BaseAgent):
-    def __init__(self, name: str, hub: CommunicationHub, agent_id: int = 461, **kw):
-        super().__init__(name, hub, **kw)
-        self.agent_id = agent_id
-        self.specialization = "api_integrator"
-        self.capabilities = ["api_integrator", "all"]
-        self.stats = {"tasks": 0, "errors": 0, "msgs": 0}
-        logger.info(f"Agent {name} started")
 
-    async def _process_task(self, work):
-        from agent_civilization.core.agents.real_dispatcher import dispatch
-        payload = work if isinstance(work, dict) else {"prompt": str(work)}
-        result = await dispatch(self.specialization, payload)
-        if result is None:
-            return {"ok": False, "error": f"no real dispatcher for {self.specialization}"}
-        return result
-    async def _execute_work(self, work: Dict[str, Any]):
-        try:
-            tid = work.get("task_id", "unknown")
-            logger.info(f"Agent {self.name} processing {tid}")
-            result = await self._process_task(work)
-            self.stats["tasks"] += 1
-            self.performance_metrics["tasks_completed"] += 1
-            r = Message(sender=self.name, recipient=work.get("original_sender","dispatcher"),
-                       content={"action": "task_complete", "task_id": tid, "result": result,
-                               "agent_id": self.agent_id, "spec": self.specialization})
-            await self.communication_hub.send_message(r)
-        except Exception as e:
-            logger.error(f"Agent {self.name} error: {e}")
-            self.stats["errors"] += 1
-            self.performance_metrics["tasks_failed"] += 1
-    async def _handle_message(self, msg: Message):
-        self.stats["msgs"] += 1
-        c = msg.content
-        if c.get("action") == "status_request":
-            s = Message(sender=self.name, recipient=msg.sender, content={"action":"status","status":self.get_status()})
-            await self.communication_hub.send_message(s)
-        elif c.get("action") == "task":
-            self.add_work({"task_id": c.get("task_id","?"), "data": c.get("data",{}), "original_sender": msg.sender})
-    def get_status(self) -> Dict[str, Any]:
-        b = super().get_status()
-        return {**b, "agent_id": self.agent_id, "specialization": self.specialization, "stats": self.stats.copy()}
-
-def create(hub: CommunicationHub, aid: int = 461) -> ApiIntegratorAgent0461:
-    return ApiIntegratorAgent0461(name="api_integrator_"+f"{aid:04d}", hub=hub, agent_id=aid)
+def create(hub, aid: int = 461):
+    """The historical create() — kept with the same default."""
+    return ApiIntegratorAgent0461(name="api_integrator_0461", hub=hub, agent_id=aid)

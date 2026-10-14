@@ -1,54 +1,13 @@
-# communicator agents - 50 agents
-from .communicator_0018 import CommunicatorAgent0018 as CommunicatorAgent0018
-from .communicator_0038 import CommunicatorAgent0038 as CommunicatorAgent0038
-from .communicator_0058 import CommunicatorAgent0058 as CommunicatorAgent0058
-from .communicator_0078 import CommunicatorAgent0078 as CommunicatorAgent0078
-from .communicator_0098 import CommunicatorAgent0098 as CommunicatorAgent0098
-from .communicator_0118 import CommunicatorAgent0118 as CommunicatorAgent0118
-from .communicator_0138 import CommunicatorAgent0138 as CommunicatorAgent0138
-from .communicator_0158 import CommunicatorAgent0158 as CommunicatorAgent0158
-from .communicator_0178 import CommunicatorAgent0178 as CommunicatorAgent0178
-from .communicator_0198 import CommunicatorAgent0198 as CommunicatorAgent0198
-from .communicator_0218 import CommunicatorAgent0218 as CommunicatorAgent0218
-from .communicator_0238 import CommunicatorAgent0238 as CommunicatorAgent0238
-from .communicator_0258 import CommunicatorAgent0258 as CommunicatorAgent0258
-from .communicator_0278 import CommunicatorAgent0278 as CommunicatorAgent0278
-from .communicator_0298 import CommunicatorAgent0298 as CommunicatorAgent0298
-from .communicator_0318 import CommunicatorAgent0318 as CommunicatorAgent0318
-from .communicator_0338 import CommunicatorAgent0338 as CommunicatorAgent0338
-from .communicator_0358 import CommunicatorAgent0358 as CommunicatorAgent0358
-from .communicator_0378 import CommunicatorAgent0378 as CommunicatorAgent0378
-from .communicator_0398 import CommunicatorAgent0398 as CommunicatorAgent0398
-from .communicator_0418 import CommunicatorAgent0418 as CommunicatorAgent0418
-from .communicator_0438 import CommunicatorAgent0438 as CommunicatorAgent0438
-from .communicator_0458 import CommunicatorAgent0458 as CommunicatorAgent0458
-from .communicator_0478 import CommunicatorAgent0478 as CommunicatorAgent0478
-from .communicator_0498 import CommunicatorAgent0498 as CommunicatorAgent0498
-from .communicator_0518 import CommunicatorAgent0518 as CommunicatorAgent0518
-from .communicator_0538 import CommunicatorAgent0538 as CommunicatorAgent0538
-from .communicator_0558 import CommunicatorAgent0558 as CommunicatorAgent0558
-from .communicator_0578 import CommunicatorAgent0578 as CommunicatorAgent0578
-from .communicator_0598 import CommunicatorAgent0598 as CommunicatorAgent0598
-from .communicator_0618 import CommunicatorAgent0618 as CommunicatorAgent0618
-from .communicator_0638 import CommunicatorAgent0638 as CommunicatorAgent0638
-from .communicator_0658 import CommunicatorAgent0658 as CommunicatorAgent0658
-from .communicator_0678 import CommunicatorAgent0678 as CommunicatorAgent0678
-from .communicator_0698 import CommunicatorAgent0698 as CommunicatorAgent0698
-from .communicator_0718 import CommunicatorAgent0718 as CommunicatorAgent0718
-from .communicator_0738 import CommunicatorAgent0738 as CommunicatorAgent0738
-from .communicator_0758 import CommunicatorAgent0758 as CommunicatorAgent0758
-from .communicator_0778 import CommunicatorAgent0778 as CommunicatorAgent0778
-from .communicator_0798 import CommunicatorAgent0798 as CommunicatorAgent0798
-from .communicator_0818 import CommunicatorAgent0818 as CommunicatorAgent0818
-from .communicator_0838 import CommunicatorAgent0838 as CommunicatorAgent0838
-from .communicator_0858 import CommunicatorAgent0858 as CommunicatorAgent0858
-from .communicator_0878 import CommunicatorAgent0878 as CommunicatorAgent0878
-from .communicator_0898 import CommunicatorAgent0898 as CommunicatorAgent0898
-from .communicator_0918 import CommunicatorAgent0918 as CommunicatorAgent0918
-from .communicator_0938 import CommunicatorAgent0938 as CommunicatorAgent0938
-from .communicator_0958 import CommunicatorAgent0958 as CommunicatorAgent0958
-from .communicator_0978 import CommunicatorAgent0978 as CommunicatorAgent0978
-from .communicator_0998 import CommunicatorAgent0998 as CommunicatorAgent0998
+# communicator agents — 50 agents, GENERATED (R-105 / D-049)
+# The 50 classes are generated at import time from the single template body in
+# _templates/communicator_template.py via the factory — same names, same __all__,
+# same agent_id/create() defaults as the historical 50 files (which remain as
+# thin compatibility shims re-exporting the generated classes).
+from agent_civilization.agents.specialists._templates._factory import generate_spec_classes
+
+_classes = generate_spec_classes("communicator")
+for _name in _classes:
+    globals()[_name] = _classes[_name]
 
 __all__ = [
     "CommunicatorAgent0018",

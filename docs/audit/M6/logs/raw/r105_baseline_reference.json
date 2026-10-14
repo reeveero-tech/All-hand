@@ -1,0 +1,7147 @@
+{
+ "__all_top": [
+  "analyst",
+  "api_integrator",
+  "architect",
+  "builder",
+  "code_generator",
+  "communicator",
+  "data_processor",
+  "db_manager",
+  "designer",
+  "educator",
+  "modifier",
+  "monitor",
+  "network_client",
+  "researcher",
+  "reviewer",
+  "self_developer",
+  "strategist",
+  "surgeon",
+  "test_runner",
+  "validator",
+  "AnalystAgent0015",
+  "AnalystAgent0035",
+  "AnalystAgent0055",
+  "AnalystAgent0075",
+  "AnalystAgent0095",
+  "AnalystAgent0115",
+  "AnalystAgent0135",
+  "AnalystAgent0155",
+  "AnalystAgent0175",
+  "AnalystAgent0195",
+  "AnalystAgent0215",
+  "AnalystAgent0235",
+  "AnalystAgent0255",
+  "AnalystAgent0275",
+  "AnalystAgent0295",
+  "AnalystAgent0315",
+  "AnalystAgent0335",
+  "AnalystAgent0355",
+  "AnalystAgent0375",
+  "AnalystAgent0395",
+  "AnalystAgent0415",
+  "AnalystAgent0435",
+  "AnalystAgent0455",
+  "AnalystAgent0475",
+  "AnalystAgent0495",
+  "AnalystAgent0515",
+  "AnalystAgent0535",
+  "AnalystAgent0555",
+  "AnalystAgent0575",
+  "AnalystAgent0595",
+  "AnalystAgent0615",
+  "AnalystAgent0635",
+  "AnalystAgent0655",
+  "AnalystAgent0675",
+  "AnalystAgent0695",
+  "AnalystAgent0715",
+  "AnalystAgent0735",
+  "AnalystAgent0755",
+  "AnalystAgent0775",
+  "AnalystAgent0795",
+  "AnalystAgent0815",
+  "AnalystAgent0835",
+  "AnalystAgent0855",
+  "AnalystAgent0875",
+  "AnalystAgent0895",
+  "AnalystAgent0915",
+  "AnalystAgent0935",
+  "AnalystAgent0955",
+  "AnalystAgent0975",
+  "AnalystAgent0995",
+  "ApiIntegratorAgent0001",
+  "ApiIntegratorAgent0021",
+  "ApiIntegratorAgent0041",
+  "ApiIntegratorAgent0061",
+  "ApiIntegratorAgent0081",
+  "ApiIntegratorAgent0101",
+  "ApiIntegratorAgent0121",
+  "ApiIntegratorAgent0141",
+  "ApiIntegratorAgent0161",
+  "ApiIntegratorAgent0181",
+  "ApiIntegratorAgent0201",
+  "ApiIntegratorAgent0221",
+  "ApiIntegratorAgent0241",
+  "ApiIntegratorAgent0261",
+  "ApiIntegratorAgent0281",
+  "ApiIntegratorAgent0301",
+  "ApiIntegratorAgent0321",
+  "ApiIntegratorAgent0341",
+  "ApiIntegratorAgent0361",
+  "ApiIntegratorAgent0381",
+  "ApiIntegratorAgent0401",
+  "ApiIntegratorAgent0421",
+  "ApiIntegratorAgent0441",
+  "ApiIntegratorAgent0461",
+  "ApiIntegratorAgent0481",
+  "ApiIntegratorAgent0501",
+  "ApiIntegratorAgent0521",
+  "ApiIntegratorAgent0541",
+  "ApiIntegratorAgent0561",
+  "ApiIntegratorAgent0581",
+  "ApiIntegratorAgent0601",
+  "ApiIntegratorAgent0621",
+  "ApiIntegratorAgent0641",
+  "ApiIntegratorAgent0661",
+  "ApiIntegratorAgent0681",
+  "ApiIntegratorAgent0701",
+  "ApiIntegratorAgent0721",
+  "ApiIntegratorAgent0741",
+  "ApiIntegratorAgent0761",
+  "ApiIntegratorAgent0781",
+  "ApiIntegratorAgent0801",
+  "ApiIntegratorAgent0821",
+  "ApiIntegratorAgent0841",
+  "ApiIntegratorAgent0861",
+  "ApiIntegratorAgent0881",
+  "ApiIntegratorAgent0901",
+  "ApiIntegratorAgent0921",
+  "ApiIntegratorAgent0941",
+  "ApiIntegratorAgent0961",
+  "ApiIntegratorAgent0981",
+  "ArchitectAgent0014",
+  "ArchitectAgent0034",
+  "ArchitectAgent0054",
+  "ArchitectAgent0074",
+  "ArchitectAgent0094",
+  "ArchitectAgent0114",
+  "ArchitectAgent0134",
+  "ArchitectAgent0154",
+  "ArchitectAgent0174",
+  "ArchitectAgent0194",
+  "ArchitectAgent0214",
+  "ArchitectAgent0234",
+  "ArchitectAgent0254",
+  "ArchitectAgent0274",
+  "ArchitectAgent0294",
+  "ArchitectAgent0314",
+  "ArchitectAgent0334",
+  "ArchitectAgent0354",
+  "ArchitectAgent0374",
+  "ArchitectAgent0394",
+  "ArchitectAgent0414",
+  "ArchitectAgent0434",
+  "ArchitectAgent0454",
+  "ArchitectAgent0474",
+  "ArchitectAgent0494",
+  "ArchitectAgent0514",
+  "ArchitectAgent0534",
+  "ArchitectAgent0554",
+  "ArchitectAgent0574",
+  "ArchitectAgent0594",
+  "ArchitectAgent0614",
+  "ArchitectAgent0634",
+  "ArchitectAgent0654",
+  "ArchitectAgent0674",
+  "ArchitectAgent0694",
+  "ArchitectAgent0714",
+  "ArchitectAgent0734",
+  "ArchitectAgent0754",
+  "ArchitectAgent0774",
+  "ArchitectAgent0794",
+  "ArchitectAgent0814",
+  "ArchitectAgent0834",
+  "ArchitectAgent0854",
+  "ArchitectAgent0874",
+  "ArchitectAgent0894",
+  "ArchitectAgent0914",
+  "ArchitectAgent0934",
+  "ArchitectAgent0954",
+  "ArchitectAgent0974",
+  "ArchitectAgent0994",
+  "BuilderAgent0006",
+  "BuilderAgent0026",
+  "BuilderAgent0046",
+  "BuilderAgent0066",
+  "BuilderAgent0086",
+  "BuilderAgent0106",
+  "BuilderAgent0126",
+  "BuilderAgent0146",
+  "BuilderAgent0166",
+  "BuilderAgent0186",
+  "BuilderAgent0206",
+  "BuilderAgent0226",
+  "BuilderAgent0246",
+  "BuilderAgent0266",
+  "BuilderAgent0286",
+  "BuilderAgent0306",
+  "BuilderAgent0326",
+  "BuilderAgent0346",
+  "BuilderAgent0366",
+  "BuilderAgent0386",
+  "BuilderAgent0406",
+  "BuilderAgent0426",
+  "BuilderAgent0446",
+  "BuilderAgent0466",
+  "BuilderAgent0486",
+  "BuilderAgent0506",
+  "BuilderAgent0526",
+  "BuilderAgent0546",
+  "BuilderAgent0566",
+  "BuilderAgent0586",
+  "BuilderAgent0606",
+  "BuilderAgent0626",
+  "BuilderAgent0646",
+  "BuilderAgent0666",
+  "BuilderAgent0686",
+  "BuilderAgent0706",
+  "BuilderAgent0726",
+  "BuilderAgent0746",
+  "BuilderAgent0766",
+  "BuilderAgent0786",
+  "BuilderAgent0806",
+  "BuilderAgent0826",
+  "BuilderAgent0846",
+  "BuilderAgent0866",
+  "BuilderAgent0886",
+  "BuilderAgent0906",
+  "BuilderAgent0926",
+  "BuilderAgent0946",
+  "BuilderAgent0966",
+  "BuilderAgent0986",
+  "CodeGeneratorAgent0003",
+  "CodeGeneratorAgent0023",
+  "CodeGeneratorAgent0043",
+  "CodeGeneratorAgent0063",
+  "CodeGeneratorAgent0083",
+  "CodeGeneratorAgent0103",
+  "CodeGeneratorAgent0123",
+  "CodeGeneratorAgent0143",
+  "CodeGeneratorAgent0163",
+  "CodeGeneratorAgent0183",
+  "CodeGeneratorAgent0203",
+  "CodeGeneratorAgent0223",
+  "CodeGeneratorAgent0243",
+  "CodeGeneratorAgent0263",
+  "CodeGeneratorAgent0283",
+  "CodeGeneratorAgent0303",
+  "CodeGeneratorAgent0323",
+  "CodeGeneratorAgent0343",
+  "CodeGeneratorAgent0363",
+  "CodeGeneratorAgent0383",
+  "CodeGeneratorAgent0403",
+  "CodeGeneratorAgent0423",
+  "CodeGeneratorAgent0443",
+  "CodeGeneratorAgent0463",
+  "CodeGeneratorAgent0483",
+  "CodeGeneratorAgent0503",
+  "CodeGeneratorAgent0523",
+  "CodeGeneratorAgent0543",
+  "CodeGeneratorAgent0563",
+  "CodeGeneratorAgent0583",
+  "CodeGeneratorAgent0603",
+  "CodeGeneratorAgent0623",
+  "CodeGeneratorAgent0643",
+  "CodeGeneratorAgent0663",
+  "CodeGeneratorAgent0683",
+  "CodeGeneratorAgent0703",
+  "CodeGeneratorAgent0723",
+  "CodeGeneratorAgent0743",
+  "CodeGeneratorAgent0763",
+  "CodeGeneratorAgent0783",
+  "CodeGeneratorAgent0803",
+  "CodeGeneratorAgent0823",
+  "CodeGeneratorAgent0843",
+  "CodeGeneratorAgent0863",
+  "CodeGeneratorAgent0883",
+  "CodeGeneratorAgent0903",
+  "CodeGeneratorAgent0923",
+  "CodeGeneratorAgent0943",
+  "CodeGeneratorAgent0963",
+  "CodeGeneratorAgent0983",
+  "CommunicatorAgent0018",
+  "CommunicatorAgent0038",
+  "CommunicatorAgent0058",
+  "CommunicatorAgent0078",
+  "CommunicatorAgent0098",
+  "CommunicatorAgent0118",
+  "CommunicatorAgent0138",
+  "CommunicatorAgent0158",
+  "CommunicatorAgent0178",
+  "CommunicatorAgent0198",
+  "CommunicatorAgent0218",
+  "CommunicatorAgent0238",
+  "CommunicatorAgent0258",
+  "CommunicatorAgent0278",
+  "CommunicatorAgent0298",
+  "CommunicatorAgent0318",
+  "CommunicatorAgent0338",
+  "CommunicatorAgent0358",
+  "CommunicatorAgent0378",
+  "CommunicatorAgent0398",
+  "CommunicatorAgent0418",
+  "CommunicatorAgent0438",
+  "CommunicatorAgent0458",
+  "CommunicatorAgent0478",
+  "CommunicatorAgent0498",
+  "CommunicatorAgent0518",
+  "CommunicatorAgent0538",
+  "CommunicatorAgent0558",
+  "CommunicatorAgent0578",
+  "CommunicatorAgent0598",
+  "CommunicatorAgent0618",
+  "CommunicatorAgent0638",
+  "CommunicatorAgent0658",
+  "CommunicatorAgent0678",
+  "CommunicatorAgent0698",
+  "CommunicatorAgent0718",
+  "CommunicatorAgent0738",
+  "CommunicatorAgent0758",
+  "CommunicatorAgent0778",
+  "CommunicatorAgent0798",
+  "CommunicatorAgent0818",
+  "CommunicatorAgent0838",
+  "CommunicatorAgent0858",
+  "CommunicatorAgent0878",
+  "CommunicatorAgent0898",
+  "CommunicatorAgent0918",
+  "CommunicatorAgent0938",
+  "CommunicatorAgent0958",
+  "CommunicatorAgent0978",
+  "CommunicatorAgent0998",
+  "DataProcessorAgent0000",
+  "DataProcessorAgent0020",
+  "DataProcessorAgent0040",
+  "DataProcessorAgent0060",
+  "DataProcessorAgent0080",
+  "DataProcessorAgent0100",
+  "DataProcessorAgent0120",
+  "DataProcessorAgent0140",
+  "DataProcessorAgent0160",
+  "DataProcessorAgent0180",
+  "DataProcessorAgent0200",
+  "DataProcessorAgent0220",
+  "DataProcessorAgent0240",
+  "DataProcessorAgent0260",
+  "DataProcessorAgent0280",
+  "DataProcessorAgent0300",
+  "DataProcessorAgent0320",
+  "DataProcessorAgent0340",
+  "DataProcessorAgent0360",
+  "DataProcessorAgent0380",
+  "DataProcessorAgent0400",
+  "DataProcessorAgent0420",
+  "DataProcessorAgent0440",
+  "DataProcessorAgent0460",
+  "DataProcessorAgent0480",
+  "DataProcessorAgent0500",
+  "DataProcessorAgent0520",
+  "DataProcessorAgent0540",
+  "DataProcessorAgent0560",
+  "DataProcessorAgent0580",
+  "DataProcessorAgent0600",
+  "DataProcessorAgent0620",
+  "DataProcessorAgent0640",
+  "DataProcessorAgent0660",
+  "DataProcessorAgent0680",
+  "DataProcessorAgent0700",
+  "DataProcessorAgent0720",
+  "DataProcessorAgent0740",
+  "DataProcessorAgent0760",
+  "DataProcessorAgent0780",
+  "DataProcessorAgent0800",
+  "DataProcessorAgent0820",
+  "DataProcessorAgent0840",
+  "DataProcessorAgent0860",
+  "DataProcessorAgent0880",
+  "DataProcessorAgent0900",
+  "DataProcessorAgent0920",
+  "DataProcessorAgent0940",
+  "DataProcessorAgent0960",
+  "DataProcessorAgent0980",
+  "DbManagerAgent0002",
+  "DbManagerAgent0022",
+  "DbManagerAgent0042",
+  "DbManagerAgent0062",
+  "DbManagerAgent0082",
+  "DbManagerAgent0102",
+  "DbManagerAgent0122",
+  "DbManagerAgent0142",
+  "DbManagerAgent0162",
+  "DbManagerAgent0182",
+  "DbManagerAgent0202",
+  "DbManagerAgent0222",
+  "DbManagerAgent0242",
+  "DbManagerAgent0262",
+  "DbManagerAgent0282",
+  "DbManagerAgent0302",
+  "DbManagerAgent0322",
+  "DbManagerAgent0342",
+  "DbManagerAgent0362",
+  "DbManagerAgent0382",
+  "DbManagerAgent0402",
+  "DbManagerAgent0422",
+  "DbManagerAgent0442",
+  "DbManagerAgent0462",
+  "DbManagerAgent0482",
+  "DbManagerAgent0502",
+  "DbManagerAgent0522",
+  "DbManagerAgent0542",
+  "DbManagerAgent0562",
+  "DbManagerAgent0582",
+  "DbManagerAgent0602",
+  "DbManagerAgent0622",
+  "DbManagerAgent0642",
+  "DbManagerAgent0662",
+  "DbManagerAgent0682",
+  "DbManagerAgent0702",
+  "DbManagerAgent0722",
+  "DbManagerAgent0742",
+  "DbManagerAgent0762",
+  "DbManagerAgent0782",
+  "DbManagerAgent0802",
+  "DbManagerAgent0822",
+  "DbManagerAgent0842",
+  "DbManagerAgent0862",
+  "DbManagerAgent0882",
+  "DbManagerAgent0902",
+  "DbManagerAgent0922",
+  "DbManagerAgent0942",
+  "DbManagerAgent0962",
+  "DbManagerAgent0982",
+  "DesignerAgent0007",
+  "DesignerAgent0027",
+  "DesignerAgent0047",
+  "DesignerAgent0067",
+  "DesignerAgent0087",
+  "DesignerAgent0107",
+  "DesignerAgent0127",
+  "DesignerAgent0147",
+  "DesignerAgent0167",
+  "DesignerAgent0187",
+  "DesignerAgent0207",
+  "DesignerAgent0227",
+  "DesignerAgent0247",
+  "DesignerAgent0267",
+  "DesignerAgent0287",
+  "DesignerAgent0307",
+  "DesignerAgent0327",
+  "DesignerAgent0347",
+  "DesignerAgent0367",
+  "DesignerAgent0387",
+  "DesignerAgent0407",
+  "DesignerAgent0427",
+  "DesignerAgent0447",
+  "DesignerAgent0467",
+  "DesignerAgent0487",
+  "DesignerAgent0507",
+  "DesignerAgent0527",
+  "DesignerAgent0547",
+  "DesignerAgent0567",
+  "DesignerAgent0587",
+  "DesignerAgent0607",
+  "DesignerAgent0627",
+  "DesignerAgent0647",
+  "DesignerAgent0667",
+  "DesignerAgent0687",
+  "DesignerAgent0707",
+  "DesignerAgent0727",
+  "DesignerAgent0747",
+  "DesignerAgent0767",
+  "DesignerAgent0787",
+  "DesignerAgent0807",
+  "DesignerAgent0827",
+  "DesignerAgent0847",
+  "DesignerAgent0867",
+  "DesignerAgent0887",
+  "DesignerAgent0907",
+  "DesignerAgent0927",
+  "DesignerAgent0947",
+  "DesignerAgent0967",
+  "DesignerAgent0987",
+  "EducatorAgent0010",
+  "EducatorAgent0030",
+  "EducatorAgent0050",
+  "EducatorAgent0070",
+  "EducatorAgent0090",
+  "EducatorAgent0110",
+  "EducatorAgent0130",
+  "EducatorAgent0150",
+  "EducatorAgent0170",
+  "EducatorAgent0190",
+  "EducatorAgent0210",
+  "EducatorAgent0230",
+  "EducatorAgent0250",
+  "EducatorAgent0270",
+  "EducatorAgent0290",
+  "EducatorAgent0310",
+  "EducatorAgent0330",
+  "EducatorAgent0350",
+  "EducatorAgent0370",
+  "EducatorAgent0390",
+  "EducatorAgent0410",
+  "EducatorAgent0430",
+  "EducatorAgent0450",
+  "EducatorAgent0470",
+  "EducatorAgent0490",
+  "EducatorAgent0510",
+  "EducatorAgent0530",
+  "EducatorAgent0550",
+  "EducatorAgent0570",
+  "EducatorAgent0590",
+  "EducatorAgent0610",
+  "EducatorAgent0630",
+  "EducatorAgent0650",
+  "EducatorAgent0670",
+  "EducatorAgent0690",
+  "EducatorAgent0710",
+  "EducatorAgent0730",
+  "EducatorAgent0750",
+  "EducatorAgent0770",
+  "EducatorAgent0790",
+  "EducatorAgent0810",
+  "EducatorAgent0830",
+  "EducatorAgent0850",
+  "EducatorAgent0870",
+  "EducatorAgent0890",
+  "EducatorAgent0910",
+  "EducatorAgent0930",
+  "EducatorAgent0950",
+  "EducatorAgent0970",
+  "EducatorAgent0990",
+  "ModifierAgent0011",
+  "ModifierAgent0031",
+  "ModifierAgent0051",
+  "ModifierAgent0071",
+  "ModifierAgent0091",
+  "ModifierAgent0111",
+  "ModifierAgent0131",
+  "ModifierAgent0151",
+  "ModifierAgent0171",
+  "ModifierAgent0191",
+  "ModifierAgent0211",
+  "ModifierAgent0231",
+  "ModifierAgent0251",
+  "ModifierAgent0271",
+  "ModifierAgent0291",
+  "ModifierAgent0311",
+  "ModifierAgent0331",
+  "ModifierAgent0351",
+  "ModifierAgent0371",
+  "ModifierAgent0391",
+  "ModifierAgent0411",
+  "ModifierAgent0431",
+  "ModifierAgent0451",
+  "ModifierAgent0471",
+  "ModifierAgent0491",
+  "ModifierAgent0511",
+  "ModifierAgent0531",
+  "ModifierAgent0551",
+  "ModifierAgent0571",
+  "ModifierAgent0591",
+  "ModifierAgent0611",
+  "ModifierAgent0631",
+  "ModifierAgent0651",
+  "ModifierAgent0671",
+  "ModifierAgent0691",
+  "ModifierAgent0711",
+  "ModifierAgent0731",
+  "ModifierAgent0751",
+  "ModifierAgent0771",
+  "ModifierAgent0791",
+  "ModifierAgent0811",
+  "ModifierAgent0831",
+  "ModifierAgent0851",
+  "ModifierAgent0871",
+  "ModifierAgent0891",
+  "ModifierAgent0911",
+  "ModifierAgent0931",
+  "ModifierAgent0951",
+  "ModifierAgent0971",
+  "ModifierAgent0991",
+  "MonitorAgent0008",
+  "MonitorAgent0028",
+  "MonitorAgent0048",
+  "MonitorAgent0068",
+  "MonitorAgent0088",
+  "MonitorAgent0108",
+  "MonitorAgent0128",
+  "MonitorAgent0148",
+  "MonitorAgent0168",
+  "MonitorAgent0188",
+  "MonitorAgent0208",
+  "MonitorAgent0228",
+  "MonitorAgent0248",
+  "MonitorAgent0268",
+  "MonitorAgent0288",
+  "MonitorAgent0308",
+  "MonitorAgent0328",
+  "MonitorAgent0348",
+  "MonitorAgent0368",
+  "MonitorAgent0388",
+  "MonitorAgent0408",
+  "MonitorAgent0428",
+  "MonitorAgent0448",
+  "MonitorAgent0468",
+  "MonitorAgent0488",
+  "MonitorAgent0508",
+  "MonitorAgent0528",
+  "MonitorAgent0548",
+  "MonitorAgent0568",
+  "MonitorAgent0588",
+  "MonitorAgent0608",
+  "MonitorAgent0628",
+  "MonitorAgent0648",
+  "MonitorAgent0668",
+  "MonitorAgent0688",
+  "MonitorAgent0708",
+  "MonitorAgent0728",
+  "MonitorAgent0748",
+  "MonitorAgent0768",
+  "MonitorAgent0788",
+  "MonitorAgent0808",
+  "MonitorAgent0828",
+  "MonitorAgent0848",
+  "MonitorAgent0868",
+  "MonitorAgent0888",
+  "MonitorAgent0908",
+  "MonitorAgent0928",
+  "MonitorAgent0948",
+  "MonitorAgent0968",
+  "MonitorAgent0988",
+  "NetworkClientAgent0004",
+  "NetworkClientAgent0024",
+  "NetworkClientAgent0044",
+  "NetworkClientAgent0064",
+  "NetworkClientAgent0084",
+  "NetworkClientAgent0104",
+  "NetworkClientAgent0124",
+  "NetworkClientAgent0144",
+  "NetworkClientAgent0164",
+  "NetworkClientAgent0184",
+  "NetworkClientAgent0204",
+  "NetworkClientAgent0224",
+  "NetworkClientAgent0244",
+  "NetworkClientAgent0264",
+  "NetworkClientAgent0284",
+  "NetworkClientAgent0304",
+  "NetworkClientAgent0324",
+  "NetworkClientAgent0344",
+  "NetworkClientAgent0364",
+  "NetworkClientAgent0384",
+  "NetworkClientAgent0404",
+  "NetworkClientAgent0424",
+  "NetworkClientAgent0444",
+  "NetworkClientAgent0464",
+  "NetworkClientAgent0484",
+  "NetworkClientAgent0504",
+  "NetworkClientAgent0524",
+  "NetworkClientAgent0544",
+  "NetworkClientAgent0564",
+  "NetworkClientAgent0584",
+  "NetworkClientAgent0604",
+  "NetworkClientAgent0624",
+  "NetworkClientAgent0644",
+  "NetworkClientAgent0664",
+  "NetworkClientAgent0684",
+  "NetworkClientAgent0704",
+  "NetworkClientAgent0724",
+  "NetworkClientAgent0744",
+  "NetworkClientAgent0764",
+  "NetworkClientAgent0784",
+  "NetworkClientAgent0804",
+  "NetworkClientAgent0824",
+  "NetworkClientAgent0844",
+  "NetworkClientAgent0864",
+  "NetworkClientAgent0884",
+  "NetworkClientAgent0904",
+  "NetworkClientAgent0924",
+  "NetworkClientAgent0944",
+  "NetworkClientAgent0964",
+  "NetworkClientAgent0984",
+  "ResearcherAgent0016",
+  "ResearcherAgent0036",
+  "ResearcherAgent0056",
+  "ResearcherAgent0076",
+  "ResearcherAgent0096",
+  "ResearcherAgent0116",
+  "ResearcherAgent0136",
+  "ResearcherAgent0156",
+  "ResearcherAgent0176",
+  "ResearcherAgent0196",
+  "ResearcherAgent0216",
+  "ResearcherAgent0236",
+  "ResearcherAgent0256",
+  "ResearcherAgent0276",
+  "ResearcherAgent0296",
+  "ResearcherAgent0316",
+  "ResearcherAgent0336",
+  "ResearcherAgent0356",
+  "ResearcherAgent0376",
+  "ResearcherAgent0396",
+  "ResearcherAgent0416",
+  "ResearcherAgent0436",
+  "ResearcherAgent0456",
+  "ResearcherAgent0476",
+  "ResearcherAgent0496",
+  "ResearcherAgent0516",
+  "ResearcherAgent0536",
+  "ResearcherAgent0556",
+  "ResearcherAgent0576",
+  "ResearcherAgent0596",
+  "ResearcherAgent0616",
+  "ResearcherAgent0636",
+  "ResearcherAgent0656",
+  "ResearcherAgent0676",
+  "ResearcherAgent0696",
+  "ResearcherAgent0716",
+  "ResearcherAgent0736",
+  "ResearcherAgent0756",
+  "ResearcherAgent0776",
+  "ResearcherAgent0796",
+  "ResearcherAgent0816",
+  "ResearcherAgent0836",
+  "ResearcherAgent0856",
+  "ResearcherAgent0876",
+  "ResearcherAgent0896",
+  "ResearcherAgent0916",
+  "ResearcherAgent0936",
+  "ResearcherAgent0956",
+  "ResearcherAgent0976",
+  "ResearcherAgent0996",
+  "ReviewerAgent0009",
+  "ReviewerAgent0029",
+  "ReviewerAgent0049",
+  "ReviewerAgent0069",
+  "ReviewerAgent0089",
+  "ReviewerAgent0109",
+  "ReviewerAgent0129",
+  "ReviewerAgent0149",
+  "ReviewerAgent0169",
+  "ReviewerAgent0189",
+  "ReviewerAgent0209",
+  "ReviewerAgent0229",
+  "ReviewerAgent0249",
+  "ReviewerAgent0269",
+  "ReviewerAgent0289",
+  "ReviewerAgent0309",
+  "ReviewerAgent0329",
+  "ReviewerAgent0349",
+  "ReviewerAgent0369",
+  "ReviewerAgent0389",
+  "ReviewerAgent0409",
+  "ReviewerAgent0429",
+  "ReviewerAgent0449",
+  "ReviewerAgent0469",
+  "ReviewerAgent0489",
+  "ReviewerAgent0509",
+  "ReviewerAgent0529",
+  "ReviewerAgent0549",
+  "ReviewerAgent0569",
+  "ReviewerAgent0589",
+  "ReviewerAgent0609",
+  "ReviewerAgent0629",
+  "ReviewerAgent0649",
+  "ReviewerAgent0669",
+  "ReviewerAgent0689",
+  "ReviewerAgent0709",
+  "ReviewerAgent0729",
+  "ReviewerAgent0749",
+  "ReviewerAgent0769",
+  "ReviewerAgent0789",
+  "ReviewerAgent0809",
+  "ReviewerAgent0829",
+  "ReviewerAgent0849",
+  "ReviewerAgent0869",
+  "ReviewerAgent0889",
+  "ReviewerAgent0909",
+  "ReviewerAgent0929",
+  "ReviewerAgent0949",
+  "ReviewerAgent0969",
+  "ReviewerAgent0989",
+  "SelfDeveloperAgent0013",
+  "SelfDeveloperAgent0033",
+  "SelfDeveloperAgent0053",
+  "SelfDeveloperAgent0073",
+  "SelfDeveloperAgent0093",
+  "SelfDeveloperAgent0113",
+  "SelfDeveloperAgent0133",
+  "SelfDeveloperAgent0153",
+  "SelfDeveloperAgent0173",
+  "SelfDeveloperAgent0193",
+  "SelfDeveloperAgent0213",
+  "SelfDeveloperAgent0233",
+  "SelfDeveloperAgent0253",
+  "SelfDeveloperAgent0273",
+  "SelfDeveloperAgent0293",
+  "SelfDeveloperAgent0313",
+  "SelfDeveloperAgent0333",
+  "SelfDeveloperAgent0353",
+  "SelfDeveloperAgent0373",
+  "SelfDeveloperAgent0393",
+  "SelfDeveloperAgent0413",
+  "SelfDeveloperAgent0433",
+  "SelfDeveloperAgent0453",
+  "SelfDeveloperAgent0473",
+  "SelfDeveloperAgent0493",
+  "SelfDeveloperAgent0513",
+  "SelfDeveloperAgent0533",
+  "SelfDeveloperAgent0553",
+  "SelfDeveloperAgent0573",
+  "SelfDeveloperAgent0593",
+  "SelfDeveloperAgent0613",
+  "SelfDeveloperAgent0633",
+  "SelfDeveloperAgent0653",
+  "SelfDeveloperAgent0673",
+  "SelfDeveloperAgent0693",
+  "SelfDeveloperAgent0713",
+  "SelfDeveloperAgent0733",
+  "SelfDeveloperAgent0753",
+  "SelfDeveloperAgent0773",
+  "SelfDeveloperAgent0793",
+  "SelfDeveloperAgent0813",
+  "SelfDeveloperAgent0833",
+  "SelfDeveloperAgent0853",
+  "SelfDeveloperAgent0873",
+  "SelfDeveloperAgent0893",
+  "SelfDeveloperAgent0913",
+  "SelfDeveloperAgent0933",
+  "SelfDeveloperAgent0953",
+  "SelfDeveloperAgent0973",
+  "SelfDeveloperAgent0993",
+  "StrategistAgent0017",
+  "StrategistAgent0037",
+  "StrategistAgent0057",
+  "StrategistAgent0077",
+  "StrategistAgent0097",
+  "StrategistAgent0117",
+  "StrategistAgent0137",
+  "StrategistAgent0157",
+  "StrategistAgent0177",
+  "StrategistAgent0197",
+  "StrategistAgent0217",
+  "StrategistAgent0237",
+  "StrategistAgent0257",
+  "StrategistAgent0277",
+  "StrategistAgent0297",
+  "StrategistAgent0317",
+  "StrategistAgent0337",
+  "StrategistAgent0357",
+  "StrategistAgent0377",
+  "StrategistAgent0397",
+  "StrategistAgent0417",
+  "StrategistAgent0437",
+  "StrategistAgent0457",
+  "StrategistAgent0477",
+  "StrategistAgent0497",
+  "StrategistAgent0517",
+  "StrategistAgent0537",
+  "StrategistAgent0557",
+  "StrategistAgent0577",
+  "StrategistAgent0597",
+  "StrategistAgent0617",
+  "StrategistAgent0637",
+  "StrategistAgent0657",
+  "StrategistAgent0677",
+  "StrategistAgent0697",
+  "StrategistAgent0717",
+  "StrategistAgent0737",
+  "StrategistAgent0757",
+  "StrategistAgent0777",
+  "StrategistAgent0797",
+  "StrategistAgent0817",
+  "StrategistAgent0837",
+  "StrategistAgent0857",
+  "StrategistAgent0877",
+  "StrategistAgent0897",
+  "StrategistAgent0917",
+  "StrategistAgent0937",
+  "StrategistAgent0957",
+  "StrategistAgent0977",
+  "StrategistAgent0997",
+  "SurgeonAgent0012",
+  "SurgeonAgent0032",
+  "SurgeonAgent0052",
+  "SurgeonAgent0072",
+  "SurgeonAgent0092",
+  "SurgeonAgent0112",
+  "SurgeonAgent0132",
+  "SurgeonAgent0152",
+  "SurgeonAgent0172",
+  "SurgeonAgent0192",
+  "SurgeonAgent0212",
+  "SurgeonAgent0232",
+  "SurgeonAgent0252",
+  "SurgeonAgent0272",
+  "SurgeonAgent0292",
+  "SurgeonAgent0312",
+  "SurgeonAgent0332",
+  "SurgeonAgent0352",
+  "SurgeonAgent0372",
+  "SurgeonAgent0392",
+  "SurgeonAgent0412",
+  "SurgeonAgent0432",
+  "SurgeonAgent0452",
+  "SurgeonAgent0472",
+  "SurgeonAgent0492",
+  "SurgeonAgent0512",
+  "SurgeonAgent0532",
+  "SurgeonAgent0552",
+  "SurgeonAgent0572",
+  "SurgeonAgent0592",
+  "SurgeonAgent0612",
+  "SurgeonAgent0632",
+  "SurgeonAgent0652",
+  "SurgeonAgent0672",
+  "SurgeonAgent0692",
+  "SurgeonAgent0712",
+  "SurgeonAgent0732",
+  "SurgeonAgent0752",
+  "SurgeonAgent0772",
+  "SurgeonAgent0792",
+  "SurgeonAgent0812",
+  "SurgeonAgent0832",
+  "SurgeonAgent0852",
+  "SurgeonAgent0872",
+  "SurgeonAgent0892",
+  "SurgeonAgent0912",
+  "SurgeonAgent0932",
+  "SurgeonAgent0952",
+  "SurgeonAgent0972",
+  "SurgeonAgent0992",
+  "TestRunnerAgent0005",
+  "TestRunnerAgent0025",
+  "TestRunnerAgent0045",
+  "TestRunnerAgent0065",
+  "TestRunnerAgent0085",
+  "TestRunnerAgent0105",
+  "TestRunnerAgent0125",
+  "TestRunnerAgent0145",
+  "TestRunnerAgent0165",
+  "TestRunnerAgent0185",
+  "TestRunnerAgent0205",
+  "TestRunnerAgent0225",
+  "TestRunnerAgent0245",
+  "TestRunnerAgent0265",
+  "TestRunnerAgent0285",
+  "TestRunnerAgent0305",
+  "TestRunnerAgent0325",
+  "TestRunnerAgent0345",
+  "TestRunnerAgent0365",
+  "TestRunnerAgent0385",
+  "TestRunnerAgent0405",
+  "TestRunnerAgent0425",
+  "TestRunnerAgent0445",
+  "TestRunnerAgent0465",
+  "TestRunnerAgent0485",
+  "TestRunnerAgent0505",
+  "TestRunnerAgent0525",
+  "TestRunnerAgent0545",
+  "TestRunnerAgent0565",
+  "TestRunnerAgent0585",
+  "TestRunnerAgent0605",
+  "TestRunnerAgent0625",
+  "TestRunnerAgent0645",
+  "TestRunnerAgent0665",
+  "TestRunnerAgent0685",
+  "TestRunnerAgent0705",
+  "TestRunnerAgent0725",
+  "TestRunnerAgent0745",
+  "TestRunnerAgent0765",
+  "TestRunnerAgent0785",
+  "TestRunnerAgent0805",
+  "TestRunnerAgent0825",
+  "TestRunnerAgent0845",
+  "TestRunnerAgent0865",
+  "TestRunnerAgent0885",
+  "TestRunnerAgent0905",
+  "TestRunnerAgent0925",
+  "TestRunnerAgent0945",
+  "TestRunnerAgent0965",
+  "TestRunnerAgent0985",
+  "ValidatorAgent0019",
+  "ValidatorAgent0039",
+  "ValidatorAgent0059",
+  "ValidatorAgent0079",
+  "ValidatorAgent0099",
+  "ValidatorAgent0119",
+  "ValidatorAgent0139",
+  "ValidatorAgent0159",
+  "ValidatorAgent0179",
+  "ValidatorAgent0199",
+  "ValidatorAgent0219",
+  "ValidatorAgent0239",
+  "ValidatorAgent0259",
+  "ValidatorAgent0279",
+  "ValidatorAgent0299",
+  "ValidatorAgent0319",
+  "ValidatorAgent0339",
+  "ValidatorAgent0359",
+  "ValidatorAgent0379",
+  "ValidatorAgent0399",
+  "ValidatorAgent0419",
+  "ValidatorAgent0439",
+  "ValidatorAgent0459",
+  "ValidatorAgent0479",
+  "ValidatorAgent0499",
+  "ValidatorAgent0519",
+  "ValidatorAgent0539",
+  "ValidatorAgent0559",
+  "ValidatorAgent0579",
+  "ValidatorAgent0599",
+  "ValidatorAgent0619",
+  "ValidatorAgent0639",
+  "ValidatorAgent0659",
+  "ValidatorAgent0679",
+  "ValidatorAgent0699",
+  "ValidatorAgent0719",
+  "ValidatorAgent0739",
+  "ValidatorAgent0759",
+  "ValidatorAgent0779",
+  "ValidatorAgent0799",
+  "ValidatorAgent0819",
+  "ValidatorAgent0839",
+  "ValidatorAgent0859",
+  "ValidatorAgent0879",
+  "ValidatorAgent0899",
+  "ValidatorAgent0919",
+  "ValidatorAgent0939",
+  "ValidatorAgent0959",
+  "ValidatorAgent0979",
+  "ValidatorAgent0999"
+ ],
+ "specs": {
+  "analyst": {
+   "__all__": [
+    "AnalystAgent0015",
+    "AnalystAgent0035",
+    "AnalystAgent0055",
+    "AnalystAgent0075",
+    "AnalystAgent0095",
+    "AnalystAgent0115",
+    "AnalystAgent0135",
+    "AnalystAgent0155",
+    "AnalystAgent0175",
+    "AnalystAgent0195",
+    "AnalystAgent0215",
+    "AnalystAgent0235",
+    "AnalystAgent0255",
+    "AnalystAgent0275",
+    "AnalystAgent0295",
+    "AnalystAgent0315",
+    "AnalystAgent0335",
+    "AnalystAgent0355",
+    "AnalystAgent0375",
+    "AnalystAgent0395",
+    "AnalystAgent0415",
+    "AnalystAgent0435",
+    "AnalystAgent0455",
+    "AnalystAgent0475",
+    "AnalystAgent0495",
+    "AnalystAgent0515",
+    "AnalystAgent0535",
+    "AnalystAgent0555",
+    "AnalystAgent0575",
+    "AnalystAgent0595",
+    "AnalystAgent0615",
+    "AnalystAgent0635",
+    "AnalystAgent0655",
+    "AnalystAgent0675",
+    "AnalystAgent0695",
+    "AnalystAgent0715",
+    "AnalystAgent0735",
+    "AnalystAgent0755",
+    "AnalystAgent0775",
+    "AnalystAgent0795",
+    "AnalystAgent0815",
+    "AnalystAgent0835",
+    "AnalystAgent0855",
+    "AnalystAgent0875",
+    "AnalystAgent0895",
+    "AnalystAgent0915",
+    "AnalystAgent0935",
+    "AnalystAgent0955",
+    "AnalystAgent0975",
+    "AnalystAgent0995"
+   ],
+   "classes": {
+    "AnalystAgent0015": {
+     "file": "analyst_0015",
+     "agent_id_default": 15,
+     "create_aid_default": 15
+    },
+    "AnalystAgent0035": {
+     "file": "analyst_0035",
+     "agent_id_default": 35,
+     "create_aid_default": 35
+    },
+    "AnalystAgent0055": {
+     "file": "analyst_0055",
+     "agent_id_default": 55,
+     "create_aid_default": 55
+    },
+    "AnalystAgent0075": {
+     "file": "analyst_0075",
+     "agent_id_default": 75,
+     "create_aid_default": 75
+    },
+    "AnalystAgent0095": {
+     "file": "analyst_0095",
+     "agent_id_default": 95,
+     "create_aid_default": 95
+    },
+    "AnalystAgent0115": {
+     "file": "analyst_0115",
+     "agent_id_default": 115,
+     "create_aid_default": 115
+    },
+    "AnalystAgent0135": {
+     "file": "analyst_0135",
+     "agent_id_default": 135,
+     "create_aid_default": 135
+    },
+    "AnalystAgent0155": {
+     "file": "analyst_0155",
+     "agent_id_default": 155,
+     "create_aid_default": 155
+    },
+    "AnalystAgent0175": {
+     "file": "analyst_0175",
+     "agent_id_default": 175,
+     "create_aid_default": 175
+    },
+    "AnalystAgent0195": {
+     "file": "analyst_0195",
+     "agent_id_default": 195,
+     "create_aid_default": 195
+    },
+    "AnalystAgent0215": {
+     "file": "analyst_0215",
+     "agent_id_default": 215,
+     "create_aid_default": 215
+    },
+    "AnalystAgent0235": {
+     "file": "analyst_0235",
+     "agent_id_default": 235,
+     "create_aid_default": 235
+    },
+    "AnalystAgent0255": {
+     "file": "analyst_0255",
+     "agent_id_default": 255,
+     "create_aid_default": 255
+    },
+    "AnalystAgent0275": {
+     "file": "analyst_0275",
+     "agent_id_default": 275,
+     "create_aid_default": 275
+    },
+    "AnalystAgent0295": {
+     "file": "analyst_0295",
+     "agent_id_default": 295,
+     "create_aid_default": 295
+    },
+    "AnalystAgent0315": {
+     "file": "analyst_0315",
+     "agent_id_default": 315,
+     "create_aid_default": 315
+    },
+    "AnalystAgent0335": {
+     "file": "analyst_0335",
+     "agent_id_default": 335,
+     "create_aid_default": 335
+    },
+    "AnalystAgent0355": {
+     "file": "analyst_0355",
+     "agent_id_default": 355,
+     "create_aid_default": 355
+    },
+    "AnalystAgent0375": {
+     "file": "analyst_0375",
+     "agent_id_default": 375,
+     "create_aid_default": 375
+    },
+    "AnalystAgent0395": {
+     "file": "analyst_0395",
+     "agent_id_default": 395,
+     "create_aid_default": 395
+    },
+    "AnalystAgent0415": {
+     "file": "analyst_0415",
+     "agent_id_default": 415,
+     "create_aid_default": 415
+    },
+    "AnalystAgent0435": {
+     "file": "analyst_0435",
+     "agent_id_default": 435,
+     "create_aid_default": 435
+    },
+    "AnalystAgent0455": {
+     "file": "analyst_0455",
+     "agent_id_default": 455,
+     "create_aid_default": 455
+    },
+    "AnalystAgent0475": {
+     "file": "analyst_0475",
+     "agent_id_default": 475,
+     "create_aid_default": 475
+    },
+    "AnalystAgent0495": {
+     "file": "analyst_0495",
+     "agent_id_default": 495,
+     "create_aid_default": 495
+    },
+    "AnalystAgent0515": {
+     "file": "analyst_0515",
+     "agent_id_default": 515,
+     "create_aid_default": 515
+    },
+    "AnalystAgent0535": {
+     "file": "analyst_0535",
+     "agent_id_default": 535,
+     "create_aid_default": 535
+    },
+    "AnalystAgent0555": {
+     "file": "analyst_0555",
+     "agent_id_default": 555,
+     "create_aid_default": 555
+    },
+    "AnalystAgent0575": {
+     "file": "analyst_0575",
+     "agent_id_default": 575,
+     "create_aid_default": 575
+    },
+    "AnalystAgent0595": {
+     "file": "analyst_0595",
+     "agent_id_default": 595,
+     "create_aid_default": 595
+    },
+    "AnalystAgent0615": {
+     "file": "analyst_0615",
+     "agent_id_default": 615,
+     "create_aid_default": 615
+    },
+    "AnalystAgent0635": {
+     "file": "analyst_0635",
+     "agent_id_default": 635,
+     "create_aid_default": 635
+    },
+    "AnalystAgent0655": {
+     "file": "analyst_0655",
+     "agent_id_default": 655,
+     "create_aid_default": 655
+    },
+    "AnalystAgent0675": {
+     "file": "analyst_0675",
+     "agent_id_default": 675,
+     "create_aid_default": 675
+    },
+    "AnalystAgent0695": {
+     "file": "analyst_0695",
+     "agent_id_default": 695,
+     "create_aid_default": 695
+    },
+    "AnalystAgent0715": {
+     "file": "analyst_0715",
+     "agent_id_default": 715,
+     "create_aid_default": 715
+    },
+    "AnalystAgent0735": {
+     "file": "analyst_0735",
+     "agent_id_default": 735,
+     "create_aid_default": 735
+    },
+    "AnalystAgent0755": {
+     "file": "analyst_0755",
+     "agent_id_default": 755,
+     "create_aid_default": 755
+    },
+    "AnalystAgent0775": {
+     "file": "analyst_0775",
+     "agent_id_default": 775,
+     "create_aid_default": 775
+    },
+    "AnalystAgent0795": {
+     "file": "analyst_0795",
+     "agent_id_default": 795,
+     "create_aid_default": 795
+    },
+    "AnalystAgent0815": {
+     "file": "analyst_0815",
+     "agent_id_default": 815,
+     "create_aid_default": 815
+    },
+    "AnalystAgent0835": {
+     "file": "analyst_0835",
+     "agent_id_default": 835,
+     "create_aid_default": 835
+    },
+    "AnalystAgent0855": {
+     "file": "analyst_0855",
+     "agent_id_default": 855,
+     "create_aid_default": 855
+    },
+    "AnalystAgent0875": {
+     "file": "analyst_0875",
+     "agent_id_default": 875,
+     "create_aid_default": 875
+    },
+    "AnalystAgent0895": {
+     "file": "analyst_0895",
+     "agent_id_default": 895,
+     "create_aid_default": 895
+    },
+    "AnalystAgent0915": {
+     "file": "analyst_0915",
+     "agent_id_default": 915,
+     "create_aid_default": 915
+    },
+    "AnalystAgent0935": {
+     "file": "analyst_0935",
+     "agent_id_default": 935,
+     "create_aid_default": 935
+    },
+    "AnalystAgent0955": {
+     "file": "analyst_0955",
+     "agent_id_default": 955,
+     "create_aid_default": 955
+    },
+    "AnalystAgent0975": {
+     "file": "analyst_0975",
+     "agent_id_default": 975,
+     "create_aid_default": 975
+    },
+    "AnalystAgent0995": {
+     "file": "analyst_0995",
+     "agent_id_default": 995,
+     "create_aid_default": 995
+    }
+   }
+  },
+  "api_integrator": {
+   "__all__": [
+    "ApiIntegratorAgent0001",
+    "ApiIntegratorAgent0021",
+    "ApiIntegratorAgent0041",
+    "ApiIntegratorAgent0061",
+    "ApiIntegratorAgent0081",
+    "ApiIntegratorAgent0101",
+    "ApiIntegratorAgent0121",
+    "ApiIntegratorAgent0141",
+    "ApiIntegratorAgent0161",
+    "ApiIntegratorAgent0181",
+    "ApiIntegratorAgent0201",
+    "ApiIntegratorAgent0221",
+    "ApiIntegratorAgent0241",
+    "ApiIntegratorAgent0261",
+    "ApiIntegratorAgent0281",
+    "ApiIntegratorAgent0301",
+    "ApiIntegratorAgent0321",
+    "ApiIntegratorAgent0341",
+    "ApiIntegratorAgent0361",
+    "ApiIntegratorAgent0381",
+    "ApiIntegratorAgent0401",
+    "ApiIntegratorAgent0421",
+    "ApiIntegratorAgent0441",
+    "ApiIntegratorAgent0461",
+    "ApiIntegratorAgent0481",
+    "ApiIntegratorAgent0501",
+    "ApiIntegratorAgent0521",
+    "ApiIntegratorAgent0541",
+    "ApiIntegratorAgent0561",
+    "ApiIntegratorAgent0581",
+    "ApiIntegratorAgent0601",
+    "ApiIntegratorAgent0621",
+    "ApiIntegratorAgent0641",
+    "ApiIntegratorAgent0661",
+    "ApiIntegratorAgent0681",
+    "ApiIntegratorAgent0701",
+    "ApiIntegratorAgent0721",
+    "ApiIntegratorAgent0741",
+    "ApiIntegratorAgent0761",
+    "ApiIntegratorAgent0781",
+    "ApiIntegratorAgent0801",
+    "ApiIntegratorAgent0821",
+    "ApiIntegratorAgent0841",
+    "ApiIntegratorAgent0861",
+    "ApiIntegratorAgent0881",
+    "ApiIntegratorAgent0901",
+    "ApiIntegratorAgent0921",
+    "ApiIntegratorAgent0941",
+    "ApiIntegratorAgent0961",
+    "ApiIntegratorAgent0981"
+   ],
+   "classes": {
+    "ApiIntegratorAgent0001": {
+     "file": "api_integrator_0001",
+     "agent_id_default": 1,
+     "create_aid_default": 1
+    },
+    "ApiIntegratorAgent0021": {
+     "file": "api_integrator_0021",
+     "agent_id_default": 21,
+     "create_aid_default": 21
+    },
+    "ApiIntegratorAgent0041": {
+     "file": "api_integrator_0041",
+     "agent_id_default": 41,
+     "create_aid_default": 41
+    },
+    "ApiIntegratorAgent0061": {
+     "file": "api_integrator_0061",
+     "agent_id_default": 61,
+     "create_aid_default": 61
+    },
+    "ApiIntegratorAgent0081": {
+     "file": "api_integrator_0081",
+     "agent_id_default": 81,
+     "create_aid_default": 81
+    },
+    "ApiIntegratorAgent0101": {
+     "file": "api_integrator_0101",
+     "agent_id_default": 101,
+     "create_aid_default": 101
+    },
+    "ApiIntegratorAgent0121": {
+     "file": "api_integrator_0121",
+     "agent_id_default": 121,
+     "create_aid_default": 121
+    },
+    "ApiIntegratorAgent0141": {
+     "file": "api_integrator_0141",
+     "agent_id_default": 141,
+     "create_aid_default": 141
+    },
+    "ApiIntegratorAgent0161": {
+     "file": "api_integrator_0161",
+     "agent_id_default": 161,
+     "create_aid_default": 161
+    },
+    "ApiIntegratorAgent0181": {
+     "file": "api_integrator_0181",
+     "agent_id_default": 181,
+     "create_aid_default": 181
+    },
+    "ApiIntegratorAgent0201": {
+     "file": "api_integrator_0201",
+     "agent_id_default": 201,
+     "create_aid_default": 201
+    },
+    "ApiIntegratorAgent0221": {
+     "file": "api_integrator_0221",
+     "agent_id_default": 221,
+     "create_aid_default": 221
+    },
+    "ApiIntegratorAgent0241": {
+     "file": "api_integrator_0241",
+     "agent_id_default": 241,
+     "create_aid_default": 241
+    },
+    "ApiIntegratorAgent0261": {
+     "file": "api_integrator_0261",
+     "agent_id_default": 261,
+     "create_aid_default": 261
+    },
+    "ApiIntegratorAgent0281": {
+     "file": "api_integrator_0281",
+     "agent_id_default": 281,
+     "create_aid_default": 281
+    },
+    "ApiIntegratorAgent0301": {
+     "file": "api_integrator_0301",
+     "agent_id_default": 301,
+     "create_aid_default": 301
+    },
+    "ApiIntegratorAgent0321": {
+     "file": "api_integrator_0321",
+     "agent_id_default": 321,
+     "create_aid_default": 321
+    },
+    "ApiIntegratorAgent0341": {
+     "file": "api_integrator_0341",
+     "agent_id_default": 341,
+     "create_aid_default": 341
+    },
+    "ApiIntegratorAgent0361": {
+     "file": "api_integrator_0361",
+     "agent_id_default": 361,
+     "create_aid_default": 361
+    },
+    "ApiIntegratorAgent0381": {
+     "file": "api_integrator_0381",
+     "agent_id_default": 381,
+     "create_aid_default": 381
+    },
+    "ApiIntegratorAgent0401": {
+     "file": "api_integrator_0401",
+     "agent_id_default": 401,
+     "create_aid_default": 401
+    },
+    "ApiIntegratorAgent0421": {
+     "file": "api_integrator_0421",
+     "agent_id_default": 421,
+     "create_aid_default": 421
+    },
+    "ApiIntegratorAgent0441": {
+     "file": "api_integrator_0441",
+     "agent_id_default": 441,
+     "create_aid_default": 441
+    },
+    "ApiIntegratorAgent0461": {
+     "file": "api_integrator_0461",
+     "agent_id_default": 461,
+     "create_aid_default": 461
+    },
+    "ApiIntegratorAgent0481": {
+     "file": "api_integrator_0481",
+     "agent_id_default": 481,
+     "create_aid_default": 481
+    },
+    "ApiIntegratorAgent0501": {
+     "file": "api_integrator_0501",
+     "agent_id_default": 501,
+     "create_aid_default": 501
+    },
+    "ApiIntegratorAgent0521": {
+     "file": "api_integrator_0521",
+     "agent_id_default": 521,
+     "create_aid_default": 521
+    },
+    "ApiIntegratorAgent0541": {
+     "file": "api_integrator_0541",
+     "agent_id_default": 541,
+     "create_aid_default": 541
+    },
+    "ApiIntegratorAgent0561": {
+     "file": "api_integrator_0561",
+     "agent_id_default": 561,
+     "create_aid_default": 561
+    },
+    "ApiIntegratorAgent0581": {
+     "file": "api_integrator_0581",
+     "agent_id_default": 581,
+     "create_aid_default": 581
+    },
+    "ApiIntegratorAgent0601": {
+     "file": "api_integrator_0601",
+     "agent_id_default": 601,
+     "create_aid_default": 601
+    },
+    "ApiIntegratorAgent0621": {
+     "file": "api_integrator_0621",
+     "agent_id_default": 621,
+     "create_aid_default": 621
+    },
+    "ApiIntegratorAgent0641": {
+     "file": "api_integrator_0641",
+     "agent_id_default": 641,
+     "create_aid_default": 641
+    },
+    "ApiIntegratorAgent0661": {
+     "file": "api_integrator_0661",
+     "agent_id_default": 661,
+     "create_aid_default": 661
+    },
+    "ApiIntegratorAgent0681": {
+     "file": "api_integrator_0681",
+     "agent_id_default": 681,
+     "create_aid_default": 681
+    },
+    "ApiIntegratorAgent0701": {
+     "file": "api_integrator_0701",
+     "agent_id_default": 701,
+     "create_aid_default": 701
+    },
+    "ApiIntegratorAgent0721": {
+     "file": "api_integrator_0721",
+     "agent_id_default": 721,
+     "create_aid_default": 721
+    },
+    "ApiIntegratorAgent0741": {
+     "file": "api_integrator_0741",
+     "agent_id_default": 741,
+     "create_aid_default": 741
+    },
+    "ApiIntegratorAgent0761": {
+     "file": "api_integrator_0761",
+     "agent_id_default": 761,
+     "create_aid_default": 761
+    },
+    "ApiIntegratorAgent0781": {
+     "file": "api_integrator_0781",
+     "agent_id_default": 781,
+     "create_aid_default": 781
+    },
+    "ApiIntegratorAgent0801": {
+     "file": "api_integrator_0801",
+     "agent_id_default": 801,
+     "create_aid_default": 801
+    },
+    "ApiIntegratorAgent0821": {
+     "file": "api_integrator_0821",
+     "agent_id_default": 821,
+     "create_aid_default": 821
+    },
+    "ApiIntegratorAgent0841": {
+     "file": "api_integrator_0841",
+     "agent_id_default": 841,
+     "create_aid_default": 841
+    },
+    "ApiIntegratorAgent0861": {
+     "file": "api_integrator_0861",
+     "agent_id_default": 861,
+     "create_aid_default": 861
+    },
+    "ApiIntegratorAgent0881": {
+     "file": "api_integrator_0881",
+     "agent_id_default": 881,
+     "create_aid_default": 881
+    },
+    "ApiIntegratorAgent0901": {
+     "file": "api_integrator_0901",
+     "agent_id_default": 901,
+     "create_aid_default": 901
+    },
+    "ApiIntegratorAgent0921": {
+     "file": "api_integrator_0921",
+     "agent_id_default": 921,
+     "create_aid_default": 921
+    },
+    "ApiIntegratorAgent0941": {
+     "file": "api_integrator_0941",
+     "agent_id_default": 941,
+     "create_aid_default": 941
+    },
+    "ApiIntegratorAgent0961": {
+     "file": "api_integrator_0961",
+     "agent_id_default": 961,
+     "create_aid_default": 961
+    },
+    "ApiIntegratorAgent0981": {
+     "file": "api_integrator_0981",
+     "agent_id_default": 981,
+     "create_aid_default": 981
+    }
+   }
+  },
+  "architect": {
+   "__all__": [
+    "ArchitectAgent0014",
+    "ArchitectAgent0034",
+    "ArchitectAgent0054",
+    "ArchitectAgent0074",
+    "ArchitectAgent0094",
+    "ArchitectAgent0114",
+    "ArchitectAgent0134",
+    "ArchitectAgent0154",
+    "ArchitectAgent0174",
+    "ArchitectAgent0194",
+    "ArchitectAgent0214",
+    "ArchitectAgent0234",
+    "ArchitectAgent0254",
+    "ArchitectAgent0274",
+    "ArchitectAgent0294",
+    "ArchitectAgent0314",
+    "ArchitectAgent0334",
+    "ArchitectAgent0354",
+    "ArchitectAgent0374",
+    "ArchitectAgent0394",
+    "ArchitectAgent0414",
+    "ArchitectAgent0434",
+    "ArchitectAgent0454",
+    "ArchitectAgent0474",
+    "ArchitectAgent0494",
+    "ArchitectAgent0514",
+    "ArchitectAgent0534",
+    "ArchitectAgent0554",
+    "ArchitectAgent0574",
+    "ArchitectAgent0594",
+    "ArchitectAgent0614",
+    "ArchitectAgent0634",
+    "ArchitectAgent0654",
+    "ArchitectAgent0674",
+    "ArchitectAgent0694",
+    "ArchitectAgent0714",
+    "ArchitectAgent0734",
+    "ArchitectAgent0754",
+    "ArchitectAgent0774",
+    "ArchitectAgent0794",
+    "ArchitectAgent0814",
+    "ArchitectAgent0834",
+    "ArchitectAgent0854",
+    "ArchitectAgent0874",
+    "ArchitectAgent0894",
+    "ArchitectAgent0914",
+    "ArchitectAgent0934",
+    "ArchitectAgent0954",
+    "ArchitectAgent0974",
+    "ArchitectAgent0994"
+   ],
+   "classes": {
+    "ArchitectAgent0014": {
+     "file": "architect_0014",
+     "agent_id_default": 14,
+     "create_aid_default": 14
+    },
+    "ArchitectAgent0034": {
+     "file": "architect_0034",
+     "agent_id_default": 34,
+     "create_aid_default": 34
+    },
+    "ArchitectAgent0054": {
+     "file": "architect_0054",
+     "agent_id_default": 54,
+     "create_aid_default": 54
+    },
+    "ArchitectAgent0074": {
+     "file": "architect_0074",
+     "agent_id_default": 74,
+     "create_aid_default": 74
+    },
+    "ArchitectAgent0094": {
+     "file": "architect_0094",
+     "agent_id_default": 94,
+     "create_aid_default": 94
+    },
+    "ArchitectAgent0114": {
+     "file": "architect_0114",
+     "agent_id_default": 114,
+     "create_aid_default": 114
+    },
+    "ArchitectAgent0134": {
+     "file": "architect_0134",
+     "agent_id_default": 134,
+     "create_aid_default": 134
+    },
+    "ArchitectAgent0154": {
+     "file": "architect_0154",
+     "agent_id_default": 154,
+     "create_aid_default": 154
+    },
+    "ArchitectAgent0174": {
+     "file": "architect_0174",
+     "agent_id_default": 174,
+     "create_aid_default": 174
+    },
+    "ArchitectAgent0194": {
+     "file": "architect_0194",
+     "agent_id_default": 194,
+     "create_aid_default": 194
+    },
+    "ArchitectAgent0214": {
+     "file": "architect_0214",
+     "agent_id_default": 214,
+     "create_aid_default": 214
+    },
+    "ArchitectAgent0234": {
+     "file": "architect_0234",
+     "agent_id_default": 234,
+     "create_aid_default": 234
+    },
+    "ArchitectAgent0254": {
+     "file": "architect_0254",
+     "agent_id_default": 254,
+     "create_aid_default": 254
+    },
+    "ArchitectAgent0274": {
+     "file": "architect_0274",
+     "agent_id_default": 274,
+     "create_aid_default": 274
+    },
+    "ArchitectAgent0294": {
+     "file": "architect_0294",
+     "agent_id_default": 294,
+     "create_aid_default": 294
+    },
+    "ArchitectAgent0314": {
+     "file": "architect_0314",
+     "agent_id_default": 314,
+     "create_aid_default": 314
+    },
+    "ArchitectAgent0334": {
+     "file": "architect_0334",
+     "agent_id_default": 334,
+     "create_aid_default": 334
+    },
+    "ArchitectAgent0354": {
+     "file": "architect_0354",
+     "agent_id_default": 354,
+     "create_aid_default": 354
+    },
+    "ArchitectAgent0374": {
+     "file": "architect_0374",
+     "agent_id_default": 374,
+     "create_aid_default": 374
+    },
+    "ArchitectAgent0394": {
+     "file": "architect_0394",
+     "agent_id_default": 394,
+     "create_aid_default": 394
+    },
+    "ArchitectAgent0414": {
+     "file": "architect_0414",
+     "agent_id_default": 414,
+     "create_aid_default": 414
+    },
+    "ArchitectAgent0434": {
+     "file": "architect_0434",
+     "agent_id_default": 434,
+     "create_aid_default": 434
+    },
+    "ArchitectAgent0454": {
+     "file": "architect_0454",
+     "agent_id_default": 454,
+     "create_aid_default": 454
+    },
+    "ArchitectAgent0474": {
+     "file": "architect_0474",
+     "agent_id_default": 474,
+     "create_aid_default": 474
+    },
+    "ArchitectAgent0494": {
+     "file": "architect_0494",
+     "agent_id_default": 494,
+     "create_aid_default": 494
+    },
+    "ArchitectAgent0514": {
+     "file": "architect_0514",
+     "agent_id_default": 514,
+     "create_aid_default": 514
+    },
+    "ArchitectAgent0534": {
+     "file": "architect_0534",
+     "agent_id_default": 534,
+     "create_aid_default": 534
+    },
+    "ArchitectAgent0554": {
+     "file": "architect_0554",
+     "agent_id_default": 554,
+     "create_aid_default": 554
+    },
+    "ArchitectAgent0574": {
+     "file": "architect_0574",
+     "agent_id_default": 574,
+     "create_aid_default": 574
+    },
+    "ArchitectAgent0594": {
+     "file": "architect_0594",
+     "agent_id_default": 594,
+     "create_aid_default": 594
+    },
+    "ArchitectAgent0614": {
+     "file": "architect_0614",
+     "agent_id_default": 614,
+     "create_aid_default": 614
+    },
+    "ArchitectAgent0634": {
+     "file": "architect_0634",
+     "agent_id_default": 634,
+     "create_aid_default": 634
+    },
+    "ArchitectAgent0654": {
+     "file": "architect_0654",
+     "agent_id_default": 654,
+     "create_aid_default": 654
+    },
+    "ArchitectAgent0674": {
+     "file": "architect_0674",
+     "agent_id_default": 674,
+     "create_aid_default": 674
+    },
+    "ArchitectAgent0694": {
+     "file": "architect_0694",
+     "agent_id_default": 694,
+     "create_aid_default": 694
+    },
+    "ArchitectAgent0714": {
+     "file": "architect_0714",
+     "agent_id_default": 714,
+     "create_aid_default": 714
+    },
+    "ArchitectAgent0734": {
+     "file": "architect_0734",
+     "agent_id_default": 734,
+     "create_aid_default": 734
+    },
+    "ArchitectAgent0754": {
+     "file": "architect_0754",
+     "agent_id_default": 754,
+     "create_aid_default": 754
+    },
+    "ArchitectAgent0774": {
+     "file": "architect_0774",
+     "agent_id_default": 774,
+     "create_aid_default": 774
+    },
+    "ArchitectAgent0794": {
+     "file": "architect_0794",
+     "agent_id_default": 794,
+     "create_aid_default": 794
+    },
+    "ArchitectAgent0814": {
+     "file": "architect_0814",
+     "agent_id_default": 814,
+     "create_aid_default": 814
+    },
+    "ArchitectAgent0834": {
+     "file": "architect_0834",
+     "agent_id_default": 834,
+     "create_aid_default": 834
+    },
+    "ArchitectAgent0854": {
+     "file": "architect_0854",
+     "agent_id_default": 854,
+     "create_aid_default": 854
+    },
+    "ArchitectAgent0874": {
+     "file": "architect_0874",
+     "agent_id_default": 874,
+     "create_aid_default": 874
+    },
+    "ArchitectAgent0894": {
+     "file": "architect_0894",
+     "agent_id_default": 894,
+     "create_aid_default": 894
+    },
+    "ArchitectAgent0914": {
+     "file": "architect_0914",
+     "agent_id_default": 914,
+     "create_aid_default": 914
+    },
+    "ArchitectAgent0934": {
+     "file": "architect_0934",
+     "agent_id_default": 934,
+     "create_aid_default": 934
+    },
+    "ArchitectAgent0954": {
+     "file": "architect_0954",
+     "agent_id_default": 954,
+     "create_aid_default": 954
+    },
+    "ArchitectAgent0974": {
+     "file": "architect_0974",
+     "agent_id_default": 974,
+     "create_aid_default": 974
+    },
+    "ArchitectAgent0994": {
+     "file": "architect_0994",
+     "agent_id_default": 994,
+     "create_aid_default": 994
+    }
+   }
+  },
+  "builder": {
+   "__all__": [
+    "BuilderAgent0006",
+    "BuilderAgent0026",
+    "BuilderAgent0046",
+    "BuilderAgent0066",
+    "BuilderAgent0086",
+    "BuilderAgent0106",
+    "BuilderAgent0126",
+    "BuilderAgent0146",
+    "BuilderAgent0166",
+    "BuilderAgent0186",
+    "BuilderAgent0206",
+    "BuilderAgent0226",
+    "BuilderAgent0246",
+    "BuilderAgent0266",
+    "BuilderAgent0286",
+    "BuilderAgent0306",
+    "BuilderAgent0326",
+    "BuilderAgent0346",
+    "BuilderAgent0366",
+    "BuilderAgent0386",
+    "BuilderAgent0406",
+    "BuilderAgent0426",
+    "BuilderAgent0446",
+    "BuilderAgent0466",
+    "BuilderAgent0486",
+    "BuilderAgent0506",
+    "BuilderAgent0526",
+    "BuilderAgent0546",
+    "BuilderAgent0566",
+    "BuilderAgent0586",
+    "BuilderAgent0606",
+    "BuilderAgent0626",
+    "BuilderAgent0646",
+    "BuilderAgent0666",
+    "BuilderAgent0686",
+    "BuilderAgent0706",
+    "BuilderAgent0726",
+    "BuilderAgent0746",
+    "BuilderAgent0766",
+    "BuilderAgent0786",
+    "BuilderAgent0806",
+    "BuilderAgent0826",
+    "BuilderAgent0846",
+    "BuilderAgent0866",
+    "BuilderAgent0886",
+    "BuilderAgent0906",
+    "BuilderAgent0926",
+    "BuilderAgent0946",
+    "BuilderAgent0966",
+    "BuilderAgent0986"
+   ],
+   "classes": {
+    "BuilderAgent0006": {
+     "file": "builder_0006",
+     "agent_id_default": 6,
+     "create_aid_default": 6
+    },
+    "BuilderAgent0026": {
+     "file": "builder_0026",
+     "agent_id_default": 26,
+     "create_aid_default": 26
+    },
+    "BuilderAgent0046": {
+     "file": "builder_0046",
+     "agent_id_default": 46,
+     "create_aid_default": 46
+    },
+    "BuilderAgent0066": {
+     "file": "builder_0066",
+     "agent_id_default": 66,
+     "create_aid_default": 66
+    },
+    "BuilderAgent0086": {
+     "file": "builder_0086",
+     "agent_id_default": 86,
+     "create_aid_default": 86
+    },
+    "BuilderAgent0106": {
+     "file": "builder_0106",
+     "agent_id_default": 106,
+     "create_aid_default": 106
+    },
+    "BuilderAgent0126": {
+     "file": "builder_0126",
+     "agent_id_default": 126,
+     "create_aid_default": 126
+    },
+    "BuilderAgent0146": {
+     "file": "builder_0146",
+     "agent_id_default": 146,
+     "create_aid_default": 146
+    },
+    "BuilderAgent0166": {
+     "file": "builder_0166",
+     "agent_id_default": 166,
+     "create_aid_default": 166
+    },
+    "BuilderAgent0186": {
+     "file": "builder_0186",
+     "agent_id_default": 186,
+     "create_aid_default": 186
+    },
+    "BuilderAgent0206": {
+     "file": "builder_0206",
+     "agent_id_default": 206,
+     "create_aid_default": 206
+    },
+    "BuilderAgent0226": {
+     "file": "builder_0226",
+     "agent_id_default": 226,
+     "create_aid_default": 226
+    },
+    "BuilderAgent0246": {
+     "file": "builder_0246",
+     "agent_id_default": 246,
+     "create_aid_default": 246
+    },
+    "BuilderAgent0266": {
+     "file": "builder_0266",
+     "agent_id_default": 266,
+     "create_aid_default": 266
+    },
+    "BuilderAgent0286": {
+     "file": "builder_0286",
+     "agent_id_default": 286,
+     "create_aid_default": 286
+    },
+    "BuilderAgent0306": {
+     "file": "builder_0306",
+     "agent_id_default": 306,
+     "create_aid_default": 306
+    },
+    "BuilderAgent0326": {
+     "file": "builder_0326",
+     "agent_id_default": 326,
+     "create_aid_default": 326
+    },
+    "BuilderAgent0346": {
+     "file": "builder_0346",
+     "agent_id_default": 346,
+     "create_aid_default": 346
+    },
+    "BuilderAgent0366": {
+     "file": "builder_0366",
+     "agent_id_default": 366,
+     "create_aid_default": 366
+    },
+    "BuilderAgent0386": {
+     "file": "builder_0386",
+     "agent_id_default": 386,
+     "create_aid_default": 386
+    },
+    "BuilderAgent0406": {
+     "file": "builder_0406",
+     "agent_id_default": 406,
+     "create_aid_default": 406
+    },
+    "BuilderAgent0426": {
+     "file": "builder_0426",
+     "agent_id_default": 426,
+     "create_aid_default": 426
+    },
+    "BuilderAgent0446": {
+     "file": "builder_0446",
+     "agent_id_default": 446,
+     "create_aid_default": 446
+    },
+    "BuilderAgent0466": {
+     "file": "builder_0466",
+     "agent_id_default": 466,
+     "create_aid_default": 466
+    },
+    "BuilderAgent0486": {
+     "file": "builder_0486",
+     "agent_id_default": 486,
+     "create_aid_default": 486
+    },
+    "BuilderAgent0506": {
+     "file": "builder_0506",
+     "agent_id_default": 506,
+     "create_aid_default": 506
+    },
+    "BuilderAgent0526": {
+     "file": "builder_0526",
+     "agent_id_default": 526,
+     "create_aid_default": 526
+    },
+    "BuilderAgent0546": {
+     "file": "builder_0546",
+     "agent_id_default": 546,
+     "create_aid_default": 546
+    },
+    "BuilderAgent0566": {
+     "file": "builder_0566",
+     "agent_id_default": 566,
+     "create_aid_default": 566
+    },
+    "BuilderAgent0586": {
+     "file": "builder_0586",
+     "agent_id_default": 586,
+     "create_aid_default": 586
+    },
+    "BuilderAgent0606": {
+     "file": "builder_0606",
+     "agent_id_default": 606,
+     "create_aid_default": 606
+    },
+    "BuilderAgent0626": {
+     "file": "builder_0626",
+     "agent_id_default": 626,
+     "create_aid_default": 626
+    },
+    "BuilderAgent0646": {
+     "file": "builder_0646",
+     "agent_id_default": 646,
+     "create_aid_default": 646
+    },
+    "BuilderAgent0666": {
+     "file": "builder_0666",
+     "agent_id_default": 666,
+     "create_aid_default": 666
+    },
+    "BuilderAgent0686": {
+     "file": "builder_0686",
+     "agent_id_default": 686,
+     "create_aid_default": 686
+    },
+    "BuilderAgent0706": {
+     "file": "builder_0706",
+     "agent_id_default": 706,
+     "create_aid_default": 706
+    },
+    "BuilderAgent0726": {
+     "file": "builder_0726",
+     "agent_id_default": 726,
+     "create_aid_default": 726
+    },
+    "BuilderAgent0746": {
+     "file": "builder_0746",
+     "agent_id_default": 746,
+     "create_aid_default": 746
+    },
+    "BuilderAgent0766": {
+     "file": "builder_0766",
+     "agent_id_default": 766,
+     "create_aid_default": 766
+    },
+    "BuilderAgent0786": {
+     "file": "builder_0786",
+     "agent_id_default": 786,
+     "create_aid_default": 786
+    },
+    "BuilderAgent0806": {
+     "file": "builder_0806",
+     "agent_id_default": 806,
+     "create_aid_default": 806
+    },
+    "BuilderAgent0826": {
+     "file": "builder_0826",
+     "agent_id_default": 826,
+     "create_aid_default": 826
+    },
+    "BuilderAgent0846": {
+     "file": "builder_0846",
+     "agent_id_default": 846,
+     "create_aid_default": 846
+    },
+    "BuilderAgent0866": {
+     "file": "builder_0866",
+     "agent_id_default": 866,
+     "create_aid_default": 866
+    },
+    "BuilderAgent0886": {
+     "file": "builder_0886",
+     "agent_id_default": 886,
+     "create_aid_default": 886
+    },
+    "BuilderAgent0906": {
+     "file": "builder_0906",
+     "agent_id_default": 906,
+     "create_aid_default": 906
+    },
+    "BuilderAgent0926": {
+     "file": "builder_0926",
+     "agent_id_default": 926,
+     "create_aid_default": 926
+    },
+    "BuilderAgent0946": {
+     "file": "builder_0946",
+     "agent_id_default": 946,
+     "create_aid_default": 946
+    },
+    "BuilderAgent0966": {
+     "file": "builder_0966",
+     "agent_id_default": 966,
+     "create_aid_default": 966
+    },
+    "BuilderAgent0986": {
+     "file": "builder_0986",
+     "agent_id_default": 986,
+     "create_aid_default": 986
+    }
+   }
+  },
+  "code_generator": {
+   "__all__": [
+    "CodeGeneratorAgent0003",
+    "CodeGeneratorAgent0023",
+    "CodeGeneratorAgent0043",
+    "CodeGeneratorAgent0063",
+    "CodeGeneratorAgent0083",
+    "CodeGeneratorAgent0103",
+    "CodeGeneratorAgent0123",
+    "CodeGeneratorAgent0143",
+    "CodeGeneratorAgent0163",
+    "CodeGeneratorAgent0183",
+    "CodeGeneratorAgent0203",
+    "CodeGeneratorAgent0223",
+    "CodeGeneratorAgent0243",
+    "CodeGeneratorAgent0263",
+    "CodeGeneratorAgent0283",
+    "CodeGeneratorAgent0303",
+    "CodeGeneratorAgent0323",
+    "CodeGeneratorAgent0343",
+    "CodeGeneratorAgent0363",
+    "CodeGeneratorAgent0383",
+    "CodeGeneratorAgent0403",
+    "CodeGeneratorAgent0423",
+    "CodeGeneratorAgent0443",
+    "CodeGeneratorAgent0463",
+    "CodeGeneratorAgent0483",
+    "CodeGeneratorAgent0503",
+    "CodeGeneratorAgent0523",
+    "CodeGeneratorAgent0543",
+    "CodeGeneratorAgent0563",
+    "CodeGeneratorAgent0583",
+    "CodeGeneratorAgent0603",
+    "CodeGeneratorAgent0623",
+    "CodeGeneratorAgent0643",
+    "CodeGeneratorAgent0663",
+    "CodeGeneratorAgent0683",
+    "CodeGeneratorAgent0703",
+    "CodeGeneratorAgent0723",
+    "CodeGeneratorAgent0743",
+    "CodeGeneratorAgent0763",
+    "CodeGeneratorAgent0783",
+    "CodeGeneratorAgent0803",
+    "CodeGeneratorAgent0823",
+    "CodeGeneratorAgent0843",
+    "CodeGeneratorAgent0863",
+    "CodeGeneratorAgent0883",
+    "CodeGeneratorAgent0903",
+    "CodeGeneratorAgent0923",
+    "CodeGeneratorAgent0943",
+    "CodeGeneratorAgent0963",
+    "CodeGeneratorAgent0983"
+   ],
+   "classes": {
+    "CodeGeneratorAgent0003": {
+     "file": "code_generator_0003",
+     "agent_id_default": 3,
+     "create_aid_default": 3
+    },
+    "CodeGeneratorAgent0023": {
+     "file": "code_generator_0023",
+     "agent_id_default": 23,
+     "create_aid_default": 23
+    },
+    "CodeGeneratorAgent0043": {
+     "file": "code_generator_0043",
+     "agent_id_default": 43,
+     "create_aid_default": 43
+    },
+    "CodeGeneratorAgent0063": {
+     "file": "code_generator_0063",
+     "agent_id_default": 63,
+     "create_aid_default": 63
+    },
+    "CodeGeneratorAgent0083": {
+     "file": "code_generator_0083",
+     "agent_id_default": 83,
+     "create_aid_default": 83
+    },
+    "CodeGeneratorAgent0103": {
+     "file": "code_generator_0103",
+     "agent_id_default": 103,
+     "create_aid_default": 103
+    },
+    "CodeGeneratorAgent0123": {
+     "file": "code_generator_0123",
+     "agent_id_default": 123,
+     "create_aid_default": 123
+    },
+    "CodeGeneratorAgent0143": {
+     "file": "code_generator_0143",
+     "agent_id_default": 143,
+     "create_aid_default": 143
+    },
+    "CodeGeneratorAgent0163": {
+     "file": "code_generator_0163",
+     "agent_id_default": 163,
+     "create_aid_default": 163
+    },
+    "CodeGeneratorAgent0183": {
+     "file": "code_generator_0183",
+     "agent_id_default": 183,
+     "create_aid_default": 183
+    },
+    "CodeGeneratorAgent0203": {
+     "file": "code_generator_0203",
+     "agent_id_default": 203,
+     "create_aid_default": 203
+    },
+    "CodeGeneratorAgent0223": {
+     "file": "code_generator_0223",
+     "agent_id_default": 223,
+     "create_aid_default": 223
+    },
+    "CodeGeneratorAgent0243": {
+     "file": "code_generator_0243",
+     "agent_id_default": 243,
+     "create_aid_default": 243
+    },
+    "CodeGeneratorAgent0263": {
+     "file": "code_generator_0263",
+     "agent_id_default": 263,
+     "create_aid_default": 263
+    },
+    "CodeGeneratorAgent0283": {
+     "file": "code_generator_0283",
+     "agent_id_default": 283,
+     "create_aid_default": 283
+    },
+    "CodeGeneratorAgent0303": {
+     "file": "code_generator_0303",
+     "agent_id_default": 303,
+     "create_aid_default": 303
+    },
+    "CodeGeneratorAgent0323": {
+     "file": "code_generator_0323",
+     "agent_id_default": 323,
+     "create_aid_default": 323
+    },
+    "CodeGeneratorAgent0343": {
+     "file": "code_generator_0343",
+     "agent_id_default": 343,
+     "create_aid_default": 343
+    },
+    "CodeGeneratorAgent0363": {
+     "file": "code_generator_0363",
+     "agent_id_default": 363,
+     "create_aid_default": 363
+    },
+    "CodeGeneratorAgent0383": {
+     "file": "code_generator_0383",
+     "agent_id_default": 383,
+     "create_aid_default": 383
+    },
+    "CodeGeneratorAgent0403": {
+     "file": "code_generator_0403",
+     "agent_id_default": 403,
+     "create_aid_default": 403
+    },
+    "CodeGeneratorAgent0423": {
+     "file": "code_generator_0423",
+     "agent_id_default": 423,
+     "create_aid_default": 423
+    },
+    "CodeGeneratorAgent0443": {
+     "file": "code_generator_0443",
+     "agent_id_default": 443,
+     "create_aid_default": 443
+    },
+    "CodeGeneratorAgent0463": {
+     "file": "code_generator_0463",
+     "agent_id_default": 463,
+     "create_aid_default": 463
+    },
+    "CodeGeneratorAgent0483": {
+     "file": "code_generator_0483",
+     "agent_id_default": 483,
+     "create_aid_default": 483
+    },
+    "CodeGeneratorAgent0503": {
+     "file": "code_generator_0503",
+     "agent_id_default": 503,
+     "create_aid_default": 503
+    },
+    "CodeGeneratorAgent0523": {
+     "file": "code_generator_0523",
+     "agent_id_default": 523,
+     "create_aid_default": 523
+    },
+    "CodeGeneratorAgent0543": {
+     "file": "code_generator_0543",
+     "agent_id_default": 543,
+     "create_aid_default": 543
+    },
+    "CodeGeneratorAgent0563": {
+     "file": "code_generator_0563",
+     "agent_id_default": 563,
+     "create_aid_default": 563
+    },
+    "CodeGeneratorAgent0583": {
+     "file": "code_generator_0583",
+     "agent_id_default": 583,
+     "create_aid_default": 583
+    },
+    "CodeGeneratorAgent0603": {
+     "file": "code_generator_0603",
+     "agent_id_default": 603,
+     "create_aid_default": 603
+    },
+    "CodeGeneratorAgent0623": {
+     "file": "code_generator_0623",
+     "agent_id_default": 623,
+     "create_aid_default": 623
+    },
+    "CodeGeneratorAgent0643": {
+     "file": "code_generator_0643",
+     "agent_id_default": 643,
+     "create_aid_default": 643
+    },
+    "CodeGeneratorAgent0663": {
+     "file": "code_generator_0663",
+     "agent_id_default": 663,
+     "create_aid_default": 663
+    },
+    "CodeGeneratorAgent0683": {
+     "file": "code_generator_0683",
+     "agent_id_default": 683,
+     "create_aid_default": 683
+    },
+    "CodeGeneratorAgent0703": {
+     "file": "code_generator_0703",
+     "agent_id_default": 703,
+     "create_aid_default": 703
+    },
+    "CodeGeneratorAgent0723": {
+     "file": "code_generator_0723",
+     "agent_id_default": 723,
+     "create_aid_default": 723
+    },
+    "CodeGeneratorAgent0743": {
+     "file": "code_generator_0743",
+     "agent_id_default": 743,
+     "create_aid_default": 743
+    },
+    "CodeGeneratorAgent0763": {
+     "file": "code_generator_0763",
+     "agent_id_default": 763,
+     "create_aid_default": 763
+    },
+    "CodeGeneratorAgent0783": {
+     "file": "code_generator_0783",
+     "agent_id_default": 783,
+     "create_aid_default": 783
+    },
+    "CodeGeneratorAgent0803": {
+     "file": "code_generator_0803",
+     "agent_id_default": 803,
+     "create_aid_default": 803
+    },
+    "CodeGeneratorAgent0823": {
+     "file": "code_generator_0823",
+     "agent_id_default": 823,
+     "create_aid_default": 823
+    },
+    "CodeGeneratorAgent0843": {
+     "file": "code_generator_0843",
+     "agent_id_default": 843,
+     "create_aid_default": 843
+    },
+    "CodeGeneratorAgent0863": {
+     "file": "code_generator_0863",
+     "agent_id_default": 863,
+     "create_aid_default": 863
+    },
+    "CodeGeneratorAgent0883": {
+     "file": "code_generator_0883",
+     "agent_id_default": 883,
+     "create_aid_default": 883
+    },
+    "CodeGeneratorAgent0903": {
+     "file": "code_generator_0903",
+     "agent_id_default": 903,
+     "create_aid_default": 903
+    },
+    "CodeGeneratorAgent0923": {
+     "file": "code_generator_0923",
+     "agent_id_default": 923,
+     "create_aid_default": 923
+    },
+    "CodeGeneratorAgent0943": {
+     "file": "code_generator_0943",
+     "agent_id_default": 943,
+     "create_aid_default": 943
+    },
+    "CodeGeneratorAgent0963": {
+     "file": "code_generator_0963",
+     "agent_id_default": 963,
+     "create_aid_default": 963
+    },
+    "CodeGeneratorAgent0983": {
+     "file": "code_generator_0983",
+     "agent_id_default": 983,
+     "create_aid_default": 983
+    }
+   }
+  },
+  "communicator": {
+   "__all__": [
+    "CommunicatorAgent0018",
+    "CommunicatorAgent0038",
+    "CommunicatorAgent0058",
+    "CommunicatorAgent0078",
+    "CommunicatorAgent0098",
+    "CommunicatorAgent0118",
+    "CommunicatorAgent0138",
+    "CommunicatorAgent0158",
+    "CommunicatorAgent0178",
+    "CommunicatorAgent0198",
+    "CommunicatorAgent0218",
+    "CommunicatorAgent0238",
+    "CommunicatorAgent0258",
+    "CommunicatorAgent0278",
+    "CommunicatorAgent0298",
+    "CommunicatorAgent0318",
+    "CommunicatorAgent0338",
+    "CommunicatorAgent0358",
+    "CommunicatorAgent0378",
+    "CommunicatorAgent0398",
+    "CommunicatorAgent0418",
+    "CommunicatorAgent0438",
+    "CommunicatorAgent0458",
+    "CommunicatorAgent0478",
+    "CommunicatorAgent0498",
+    "CommunicatorAgent0518",
+    "CommunicatorAgent0538",
+    "CommunicatorAgent0558",
+    "CommunicatorAgent0578",
+    "CommunicatorAgent0598",
+    "CommunicatorAgent0618",
+    "CommunicatorAgent0638",
+    "CommunicatorAgent0658",
+    "CommunicatorAgent0678",
+    "CommunicatorAgent0698",
+    "CommunicatorAgent0718",
+    "CommunicatorAgent0738",
+    "CommunicatorAgent0758",
+    "CommunicatorAgent0778",
+    "CommunicatorAgent0798",
+    "CommunicatorAgent0818",
+    "CommunicatorAgent0838",
+    "CommunicatorAgent0858",
+    "CommunicatorAgent0878",
+    "CommunicatorAgent0898",
+    "CommunicatorAgent0918",
+    "CommunicatorAgent0938",
+    "CommunicatorAgent0958",
+    "CommunicatorAgent0978",
+    "CommunicatorAgent0998"
+   ],
+   "classes": {
+    "CommunicatorAgent0018": {
+     "file": "communicator_0018",
+     "agent_id_default": 18,
+     "create_aid_default": 18
+    },
+    "CommunicatorAgent0038": {
+     "file": "communicator_0038",
+     "agent_id_default": 38,
+     "create_aid_default": 38
+    },
+    "CommunicatorAgent0058": {
+     "file": "communicator_0058",
+     "agent_id_default": 58,
+     "create_aid_default": 58
+    },
+    "CommunicatorAgent0078": {
+     "file": "communicator_0078",
+     "agent_id_default": 78,
+     "create_aid_default": 78
+    },
+    "CommunicatorAgent0098": {
+     "file": "communicator_0098",
+     "agent_id_default": 98,
+     "create_aid_default": 98
+    },
+    "CommunicatorAgent0118": {
+     "file": "communicator_0118",
+     "agent_id_default": 118,
+     "create_aid_default": 118
+    },
+    "CommunicatorAgent0138": {
+     "file": "communicator_0138",
+     "agent_id_default": 138,
+     "create_aid_default": 138
+    },
+    "CommunicatorAgent0158": {
+     "file": "communicator_0158",
+     "agent_id_default": 158,
+     "create_aid_default": 158
+    },
+    "CommunicatorAgent0178": {
+     "file": "communicator_0178",
+     "agent_id_default": 178,
+     "create_aid_default": 178
+    },
+    "CommunicatorAgent0198": {
+     "file": "communicator_0198",
+     "agent_id_default": 198,
+     "create_aid_default": 198
+    },
+    "CommunicatorAgent0218": {
+     "file": "communicator_0218",
+     "agent_id_default": 218,
+     "create_aid_default": 218
+    },
+    "CommunicatorAgent0238": {
+     "file": "communicator_0238",
+     "agent_id_default": 238,
+     "create_aid_default": 238
+    },
+    "CommunicatorAgent0258": {
+     "file": "communicator_0258",
+     "agent_id_default": 258,
+     "create_aid_default": 258
+    },
+    "CommunicatorAgent0278": {
+     "file": "communicator_0278",
+     "agent_id_default": 278,
+     "create_aid_default": 278
+    },
+    "CommunicatorAgent0298": {
+     "file": "communicator_0298",
+     "agent_id_default": 298,
+     "create_aid_default": 298
+    },
+    "CommunicatorAgent0318": {
+     "file": "communicator_0318",
+     "agent_id_default": 318,
+     "create_aid_default": 318
+    },
+    "CommunicatorAgent0338": {
+     "file": "communicator_0338",
+     "agent_id_default": 338,
+     "create_aid_default": 338
+    },
+    "CommunicatorAgent0358": {
+     "file": "communicator_0358",
+     "agent_id_default": 358,
+     "create_aid_default": 358
+    },
+    "CommunicatorAgent0378": {
+     "file": "communicator_0378",
+     "agent_id_default": 378,
+     "create_aid_default": 378
+    },
+    "CommunicatorAgent0398": {
+     "file": "communicator_0398",
+     "agent_id_default": 398,
+     "create_aid_default": 398
+    },
+    "CommunicatorAgent0418": {
+     "file": "communicator_0418",
+     "agent_id_default": 418,
+     "create_aid_default": 418
+    },
+    "CommunicatorAgent0438": {
+     "file": "communicator_0438",
+     "agent_id_default": 438,
+     "create_aid_default": 438
+    },
+    "CommunicatorAgent0458": {
+     "file": "communicator_0458",
+     "agent_id_default": 458,
+     "create_aid_default": 458
+    },
+    "CommunicatorAgent0478": {
+     "file": "communicator_0478",
+     "agent_id_default": 478,
+     "create_aid_default": 478
+    },
+    "CommunicatorAgent0498": {
+     "file": "communicator_0498",
+     "agent_id_default": 498,
+     "create_aid_default": 498
+    },
+    "CommunicatorAgent0518": {
+     "file": "communicator_0518",
+     "agent_id_default": 518,
+     "create_aid_default": 518
+    },
+    "CommunicatorAgent0538": {
+     "file": "communicator_0538",
+     "agent_id_default": 538,
+     "create_aid_default": 538
+    },
+    "CommunicatorAgent0558": {
+     "file": "communicator_0558",
+     "agent_id_default": 558,
+     "create_aid_default": 558
+    },
+    "CommunicatorAgent0578": {
+     "file": "communicator_0578",
+     "agent_id_default": 578,
+     "create_aid_default": 578
+    },
+    "CommunicatorAgent0598": {
+     "file": "communicator_0598",
+     "agent_id_default": 598,
+     "create_aid_default": 598
+    },
+    "CommunicatorAgent0618": {
+     "file": "communicator_0618",
+     "agent_id_default": 618,
+     "create_aid_default": 618
+    },
+    "CommunicatorAgent0638": {
+     "file": "communicator_0638",
+     "agent_id_default": 638,
+     "create_aid_default": 638
+    },
+    "CommunicatorAgent0658": {
+     "file": "communicator_0658",
+     "agent_id_default": 658,
+     "create_aid_default": 658
+    },
+    "CommunicatorAgent0678": {
+     "file": "communicator_0678",
+     "agent_id_default": 678,
+     "create_aid_default": 678
+    },
+    "CommunicatorAgent0698": {
+     "file": "communicator_0698",
+     "agent_id_default": 698,
+     "create_aid_default": 698
+    },
+    "CommunicatorAgent0718": {
+     "file": "communicator_0718",
+     "agent_id_default": 718,
+     "create_aid_default": 718
+    },
+    "CommunicatorAgent0738": {
+     "file": "communicator_0738",
+     "agent_id_default": 738,
+     "create_aid_default": 738
+    },
+    "CommunicatorAgent0758": {
+     "file": "communicator_0758",
+     "agent_id_default": 758,
+     "create_aid_default": 758
+    },
+    "CommunicatorAgent0778": {
+     "file": "communicator_0778",
+     "agent_id_default": 778,
+     "create_aid_default": 778
+    },
+    "CommunicatorAgent0798": {
+     "file": "communicator_0798",
+     "agent_id_default": 798,
+     "create_aid_default": 798
+    },
+    "CommunicatorAgent0818": {
+     "file": "communicator_0818",
+     "agent_id_default": 818,
+     "create_aid_default": 818
+    },
+    "CommunicatorAgent0838": {
+     "file": "communicator_0838",
+     "agent_id_default": 838,
+     "create_aid_default": 838
+    },
+    "CommunicatorAgent0858": {
+     "file": "communicator_0858",
+     "agent_id_default": 858,
+     "create_aid_default": 858
+    },
+    "CommunicatorAgent0878": {
+     "file": "communicator_0878",
+     "agent_id_default": 878,
+     "create_aid_default": 878
+    },
+    "CommunicatorAgent0898": {
+     "file": "communicator_0898",
+     "agent_id_default": 898,
+     "create_aid_default": 898
+    },
+    "CommunicatorAgent0918": {
+     "file": "communicator_0918",
+     "agent_id_default": 918,
+     "create_aid_default": 918
+    },
+    "CommunicatorAgent0938": {
+     "file": "communicator_0938",
+     "agent_id_default": 938,
+     "create_aid_default": 938
+    },
+    "CommunicatorAgent0958": {
+     "file": "communicator_0958",
+     "agent_id_default": 958,
+     "create_aid_default": 958
+    },
+    "CommunicatorAgent0978": {
+     "file": "communicator_0978",
+     "agent_id_default": 978,
+     "create_aid_default": 978
+    },
+    "CommunicatorAgent0998": {
+     "file": "communicator_0998",
+     "agent_id_default": 998,
+     "create_aid_default": 998
+    }
+   }
+  },
+  "data_processor": {
+   "__all__": [
+    "DataProcessorAgent0000",
+    "DataProcessorAgent0020",
+    "DataProcessorAgent0040",
+    "DataProcessorAgent0060",
+    "DataProcessorAgent0080",
+    "DataProcessorAgent0100",
+    "DataProcessorAgent0120",
+    "DataProcessorAgent0140",
+    "DataProcessorAgent0160",
+    "DataProcessorAgent0180",
+    "DataProcessorAgent0200",
+    "DataProcessorAgent0220",
+    "DataProcessorAgent0240",
+    "DataProcessorAgent0260",
+    "DataProcessorAgent0280",
+    "DataProcessorAgent0300",
+    "DataProcessorAgent0320",
+    "DataProcessorAgent0340",
+    "DataProcessorAgent0360",
+    "DataProcessorAgent0380",
+    "DataProcessorAgent0400",
+    "DataProcessorAgent0420",
+    "DataProcessorAgent0440",
+    "DataProcessorAgent0460",
+    "DataProcessorAgent0480",
+    "DataProcessorAgent0500",
+    "DataProcessorAgent0520",
+    "DataProcessorAgent0540",
+    "DataProcessorAgent0560",
+    "DataProcessorAgent0580",
+    "DataProcessorAgent0600",
+    "DataProcessorAgent0620",
+    "DataProcessorAgent0640",
+    "DataProcessorAgent0660",
+    "DataProcessorAgent0680",
+    "DataProcessorAgent0700",
+    "DataProcessorAgent0720",
+    "DataProcessorAgent0740",
+    "DataProcessorAgent0760",
+    "DataProcessorAgent0780",
+    "DataProcessorAgent0800",
+    "DataProcessorAgent0820",
+    "DataProcessorAgent0840",
+    "DataProcessorAgent0860",
+    "DataProcessorAgent0880",
+    "DataProcessorAgent0900",
+    "DataProcessorAgent0920",
+    "DataProcessorAgent0940",
+    "DataProcessorAgent0960",
+    "DataProcessorAgent0980"
+   ],
+   "classes": {
+    "DataProcessorAgent0000": {
+     "file": "data_processor_0000",
+     "agent_id_default": 0,
+     "create_aid_default": 0
+    },
+    "DataProcessorAgent0020": {
+     "file": "data_processor_0020",
+     "agent_id_default": 20,
+     "create_aid_default": 20
+    },
+    "DataProcessorAgent0040": {
+     "file": "data_processor_0040",
+     "agent_id_default": 40,
+     "create_aid_default": 40
+    },
+    "DataProcessorAgent0060": {
+     "file": "data_processor_0060",
+     "agent_id_default": 60,
+     "create_aid_default": 60
+    },
+    "DataProcessorAgent0080": {
+     "file": "data_processor_0080",
+     "agent_id_default": 80,
+     "create_aid_default": 80
+    },
+    "DataProcessorAgent0100": {
+     "file": "data_processor_0100",
+     "agent_id_default": 100,
+     "create_aid_default": 100
+    },
+    "DataProcessorAgent0120": {
+     "file": "data_processor_0120",
+     "agent_id_default": 120,
+     "create_aid_default": 120
+    },
+    "DataProcessorAgent0140": {
+     "file": "data_processor_0140",
+     "agent_id_default": 140,
+     "create_aid_default": 140
+    },
+    "DataProcessorAgent0160": {
+     "file": "data_processor_0160",
+     "agent_id_default": 160,
+     "create_aid_default": 160
+    },
+    "DataProcessorAgent0180": {
+     "file": "data_processor_0180",
+     "agent_id_default": 180,
+     "create_aid_default": 180
+    },
+    "DataProcessorAgent0200": {
+     "file": "data_processor_0200",
+     "agent_id_default": 200,
+     "create_aid_default": 200
+    },
+    "DataProcessorAgent0220": {
+     "file": "data_processor_0220",
+     "agent_id_default": 220,
+     "create_aid_default": 220
+    },
+    "DataProcessorAgent0240": {
+     "file": "data_processor_0240",
+     "agent_id_default": 240,
+     "create_aid_default": 240
+    },
+    "DataProcessorAgent0260": {
+     "file": "data_processor_0260",
+     "agent_id_default": 260,
+     "create_aid_default": 260
+    },
+    "DataProcessorAgent0280": {
+     "file": "data_processor_0280",
+     "agent_id_default": 280,
+     "create_aid_default": 280
+    },
+    "DataProcessorAgent0300": {
+     "file": "data_processor_0300",
+     "agent_id_default": 300,
+     "create_aid_default": 300
+    },
+    "DataProcessorAgent0320": {
+     "file": "data_processor_0320",
+     "agent_id_default": 320,
+     "create_aid_default": 320
+    },
+    "DataProcessorAgent0340": {
+     "file": "data_processor_0340",
+     "agent_id_default": 340,
+     "create_aid_default": 340
+    },
+    "DataProcessorAgent0360": {
+     "file": "data_processor_0360",
+     "agent_id_default": 360,
+     "create_aid_default": 360
+    },
+    "DataProcessorAgent0380": {
+     "file": "data_processor_0380",
+     "agent_id_default": 380,
+     "create_aid_default": 380
+    },
+    "DataProcessorAgent0400": {
+     "file": "data_processor_0400",
+     "agent_id_default": 400,
+     "create_aid_default": 400
+    },
+    "DataProcessorAgent0420": {
+     "file": "data_processor_0420",
+     "agent_id_default": 420,
+     "create_aid_default": 420
+    },
+    "DataProcessorAgent0440": {
+     "file": "data_processor_0440",
+     "agent_id_default": 440,
+     "create_aid_default": 440
+    },
+    "DataProcessorAgent0460": {
+     "file": "data_processor_0460",
+     "agent_id_default": 460,
+     "create_aid_default": 460
+    },
+    "DataProcessorAgent0480": {
+     "file": "data_processor_0480",
+     "agent_id_default": 480,
+     "create_aid_default": 480
+    },
+    "DataProcessorAgent0500": {
+     "file": "data_processor_0500",
+     "agent_id_default": 500,
+     "create_aid_default": 500
+    },
+    "DataProcessorAgent0520": {
+     "file": "data_processor_0520",
+     "agent_id_default": 520,
+     "create_aid_default": 520
+    },
+    "DataProcessorAgent0540": {
+     "file": "data_processor_0540",
+     "agent_id_default": 540,
+     "create_aid_default": 540
+    },
+    "DataProcessorAgent0560": {
+     "file": "data_processor_0560",
+     "agent_id_default": 560,
+     "create_aid_default": 560
+    },
+    "DataProcessorAgent0580": {
+     "file": "data_processor_0580",
+     "agent_id_default": 580,
+     "create_aid_default": 580
+    },
+    "DataProcessorAgent0600": {
+     "file": "data_processor_0600",
+     "agent_id_default": 600,
+     "create_aid_default": 600
+    },
+    "DataProcessorAgent0620": {
+     "file": "data_processor_0620",
+     "agent_id_default": 620,
+     "create_aid_default": 620
+    },
+    "DataProcessorAgent0640": {
+     "file": "data_processor_0640",
+     "agent_id_default": 640,
+     "create_aid_default": 640
+    },
+    "DataProcessorAgent0660": {
+     "file": "data_processor_0660",
+     "agent_id_default": 660,
+     "create_aid_default": 660
+    },
+    "DataProcessorAgent0680": {
+     "file": "data_processor_0680",
+     "agent_id_default": 680,
+     "create_aid_default": 680
+    },
+    "DataProcessorAgent0700": {
+     "file": "data_processor_0700",
+     "agent_id_default": 700,
+     "create_aid_default": 700
+    },
+    "DataProcessorAgent0720": {
+     "file": "data_processor_0720",
+     "agent_id_default": 720,
+     "create_aid_default": 720
+    },
+    "DataProcessorAgent0740": {
+     "file": "data_processor_0740",
+     "agent_id_default": 740,
+     "create_aid_default": 740
+    },
+    "DataProcessorAgent0760": {
+     "file": "data_processor_0760",
+     "agent_id_default": 760,
+     "create_aid_default": 760
+    },
+    "DataProcessorAgent0780": {
+     "file": "data_processor_0780",
+     "agent_id_default": 780,
+     "create_aid_default": 780
+    },
+    "DataProcessorAgent0800": {
+     "file": "data_processor_0800",
+     "agent_id_default": 800,
+     "create_aid_default": 800
+    },
+    "DataProcessorAgent0820": {
+     "file": "data_processor_0820",
+     "agent_id_default": 820,
+     "create_aid_default": 820
+    },
+    "DataProcessorAgent0840": {
+     "file": "data_processor_0840",
+     "agent_id_default": 840,
+     "create_aid_default": 840
+    },
+    "DataProcessorAgent0860": {
+     "file": "data_processor_0860",
+     "agent_id_default": 860,
+     "create_aid_default": 860
+    },
+    "DataProcessorAgent0880": {
+     "file": "data_processor_0880",
+     "agent_id_default": 880,
+     "create_aid_default": 880
+    },
+    "DataProcessorAgent0900": {
+     "file": "data_processor_0900",
+     "agent_id_default": 900,
+     "create_aid_default": 900
+    },
+    "DataProcessorAgent0920": {
+     "file": "data_processor_0920",
+     "agent_id_default": 920,
+     "create_aid_default": 920
+    },
+    "DataProcessorAgent0940": {
+     "file": "data_processor_0940",
+     "agent_id_default": 940,
+     "create_aid_default": 940
+    },
+    "DataProcessorAgent0960": {
+     "file": "data_processor_0960",
+     "agent_id_default": 960,
+     "create_aid_default": 960
+    },
+    "DataProcessorAgent0980": {
+     "file": "data_processor_0980",
+     "agent_id_default": 980,
+     "create_aid_default": 980
+    }
+   }
+  },
+  "db_manager": {
+   "__all__": [
+    "DbManagerAgent0002",
+    "DbManagerAgent0022",
+    "DbManagerAgent0042",
+    "DbManagerAgent0062",
+    "DbManagerAgent0082",
+    "DbManagerAgent0102",
+    "DbManagerAgent0122",
+    "DbManagerAgent0142",
+    "DbManagerAgent0162",
+    "DbManagerAgent0182",
+    "DbManagerAgent0202",
+    "DbManagerAgent0222",
+    "DbManagerAgent0242",
+    "DbManagerAgent0262",
+    "DbManagerAgent0282",
+    "DbManagerAgent0302",
+    "DbManagerAgent0322",
+    "DbManagerAgent0342",
+    "DbManagerAgent0362",
+    "DbManagerAgent0382",
+    "DbManagerAgent0402",
+    "DbManagerAgent0422",
+    "DbManagerAgent0442",
+    "DbManagerAgent0462",
+    "DbManagerAgent0482",
+    "DbManagerAgent0502",
+    "DbManagerAgent0522",
+    "DbManagerAgent0542",
+    "DbManagerAgent0562",
+    "DbManagerAgent0582",
+    "DbManagerAgent0602",
+    "DbManagerAgent0622",
+    "DbManagerAgent0642",
+    "DbManagerAgent0662",
+    "DbManagerAgent0682",
+    "DbManagerAgent0702",
+    "DbManagerAgent0722",
+    "DbManagerAgent0742",
+    "DbManagerAgent0762",
+    "DbManagerAgent0782",
+    "DbManagerAgent0802",
+    "DbManagerAgent0822",
+    "DbManagerAgent0842",
+    "DbManagerAgent0862",
+    "DbManagerAgent0882",
+    "DbManagerAgent0902",
+    "DbManagerAgent0922",
+    "DbManagerAgent0942",
+    "DbManagerAgent0962",
+    "DbManagerAgent0982"
+   ],
+   "classes": {
+    "DbManagerAgent0002": {
+     "file": "db_manager_0002",
+     "agent_id_default": 2,
+     "create_aid_default": 2
+    },
+    "DbManagerAgent0022": {
+     "file": "db_manager_0022",
+     "agent_id_default": 22,
+     "create_aid_default": 22
+    },
+    "DbManagerAgent0042": {
+     "file": "db_manager_0042",
+     "agent_id_default": 42,
+     "create_aid_default": 42
+    },
+    "DbManagerAgent0062": {
+     "file": "db_manager_0062",
+     "agent_id_default": 62,
+     "create_aid_default": 62
+    },
+    "DbManagerAgent0082": {
+     "file": "db_manager_0082",
+     "agent_id_default": 82,
+     "create_aid_default": 82
+    },
+    "DbManagerAgent0102": {
+     "file": "db_manager_0102",
+     "agent_id_default": 102,
+     "create_aid_default": 102
+    },
+    "DbManagerAgent0122": {
+     "file": "db_manager_0122",
+     "agent_id_default": 122,
+     "create_aid_default": 122
+    },
+    "DbManagerAgent0142": {
+     "file": "db_manager_0142",
+     "agent_id_default": 142,
+     "create_aid_default": 142
+    },
+    "DbManagerAgent0162": {
+     "file": "db_manager_0162",
+     "agent_id_default": 162,
+     "create_aid_default": 162
+    },
+    "DbManagerAgent0182": {
+     "file": "db_manager_0182",
+     "agent_id_default": 182,
+     "create_aid_default": 182
+    },
+    "DbManagerAgent0202": {
+     "file": "db_manager_0202",
+     "agent_id_default": 202,
+     "create_aid_default": 202
+    },
+    "DbManagerAgent0222": {
+     "file": "db_manager_0222",
+     "agent_id_default": 222,
+     "create_aid_default": 222
+    },
+    "DbManagerAgent0242": {
+     "file": "db_manager_0242",
+     "agent_id_default": 242,
+     "create_aid_default": 242
+    },
+    "DbManagerAgent0262": {
+     "file": "db_manager_0262",
+     "agent_id_default": 262,
+     "create_aid_default": 262
+    },
+    "DbManagerAgent0282": {
+     "file": "db_manager_0282",
+     "agent_id_default": 282,
+     "create_aid_default": 282
+    },
+    "DbManagerAgent0302": {
+     "file": "db_manager_0302",
+     "agent_id_default": 302,
+     "create_aid_default": 302
+    },
+    "DbManagerAgent0322": {
+     "file": "db_manager_0322",
+     "agent_id_default": 322,
+     "create_aid_default": 322
+    },
+    "DbManagerAgent0342": {
+     "file": "db_manager_0342",
+     "agent_id_default": 342,
+     "create_aid_default": 342
+    },
+    "DbManagerAgent0362": {
+     "file": "db_manager_0362",
+     "agent_id_default": 362,
+     "create_aid_default": 362
+    },
+    "DbManagerAgent0382": {
+     "file": "db_manager_0382",
+     "agent_id_default": 382,
+     "create_aid_default": 382
+    },
+    "DbManagerAgent0402": {
+     "file": "db_manager_0402",
+     "agent_id_default": 402,
+     "create_aid_default": 402
+    },
+    "DbManagerAgent0422": {
+     "file": "db_manager_0422",
+     "agent_id_default": 422,
+     "create_aid_default": 422
+    },
+    "DbManagerAgent0442": {
+     "file": "db_manager_0442",
+     "agent_id_default": 442,
+     "create_aid_default": 442
+    },
+    "DbManagerAgent0462": {
+     "file": "db_manager_0462",
+     "agent_id_default": 462,
+     "create_aid_default": 462
+    },
+    "DbManagerAgent0482": {
+     "file": "db_manager_0482",
+     "agent_id_default": 482,
+     "create_aid_default": 482
+    },
+    "DbManagerAgent0502": {
+     "file": "db_manager_0502",
+     "agent_id_default": 502,
+     "create_aid_default": 502
+    },
+    "DbManagerAgent0522": {
+     "file": "db_manager_0522",
+     "agent_id_default": 522,
+     "create_aid_default": 522
+    },
+    "DbManagerAgent0542": {
+     "file": "db_manager_0542",
+     "agent_id_default": 542,
+     "create_aid_default": 542
+    },
+    "DbManagerAgent0562": {
+     "file": "db_manager_0562",
+     "agent_id_default": 562,
+     "create_aid_default": 562
+    },
+    "DbManagerAgent0582": {
+     "file": "db_manager_0582",
+     "agent_id_default": 582,
+     "create_aid_default": 582
+    },
+    "DbManagerAgent0602": {
+     "file": "db_manager_0602",
+     "agent_id_default": 602,
+     "create_aid_default": 602
+    },
+    "DbManagerAgent0622": {
+     "file": "db_manager_0622",
+     "agent_id_default": 622,
+     "create_aid_default": 622
+    },
+    "DbManagerAgent0642": {
+     "file": "db_manager_0642",
+     "agent_id_default": 642,
+     "create_aid_default": 642
+    },
+    "DbManagerAgent0662": {
+     "file": "db_manager_0662",
+     "agent_id_default": 662,
+     "create_aid_default": 662
+    },
+    "DbManagerAgent0682": {
+     "file": "db_manager_0682",
+     "agent_id_default": 682,
+     "create_aid_default": 682
+    },
+    "DbManagerAgent0702": {
+     "file": "db_manager_0702",
+     "agent_id_default": 702,
+     "create_aid_default": 702
+    },
+    "DbManagerAgent0722": {
+     "file": "db_manager_0722",
+     "agent_id_default": 722,
+     "create_aid_default": 722
+    },
+    "DbManagerAgent0742": {
+     "file": "db_manager_0742",
+     "agent_id_default": 742,
+     "create_aid_default": 742
+    },
+    "DbManagerAgent0762": {
+     "file": "db_manager_0762",
+     "agent_id_default": 762,
+     "create_aid_default": 762
+    },
+    "DbManagerAgent0782": {
+     "file": "db_manager_0782",
+     "agent_id_default": 782,
+     "create_aid_default": 782
+    },
+    "DbManagerAgent0802": {
+     "file": "db_manager_0802",
+     "agent_id_default": 802,
+     "create_aid_default": 802
+    },
+    "DbManagerAgent0822": {
+     "file": "db_manager_0822",
+     "agent_id_default": 822,
+     "create_aid_default": 822
+    },
+    "DbManagerAgent0842": {
+     "file": "db_manager_0842",
+     "agent_id_default": 842,
+     "create_aid_default": 842
+    },
+    "DbManagerAgent0862": {
+     "file": "db_manager_0862",
+     "agent_id_default": 862,
+     "create_aid_default": 862
+    },
+    "DbManagerAgent0882": {
+     "file": "db_manager_0882",
+     "agent_id_default": 882,
+     "create_aid_default": 882
+    },
+    "DbManagerAgent0902": {
+     "file": "db_manager_0902",
+     "agent_id_default": 902,
+     "create_aid_default": 902
+    },
+    "DbManagerAgent0922": {
+     "file": "db_manager_0922",
+     "agent_id_default": 922,
+     "create_aid_default": 922
+    },
+    "DbManagerAgent0942": {
+     "file": "db_manager_0942",
+     "agent_id_default": 942,
+     "create_aid_default": 942
+    },
+    "DbManagerAgent0962": {
+     "file": "db_manager_0962",
+     "agent_id_default": 962,
+     "create_aid_default": 962
+    },
+    "DbManagerAgent0982": {
+     "file": "db_manager_0982",
+     "agent_id_default": 982,
+     "create_aid_default": 982
+    }
+   }
+  },
+  "designer": {
+   "__all__": [
+    "DesignerAgent0007",
+    "DesignerAgent0027",
+    "DesignerAgent0047",
+    "DesignerAgent0067",
+    "DesignerAgent0087",
+    "DesignerAgent0107",
+    "DesignerAgent0127",
+    "DesignerAgent0147",
+    "DesignerAgent0167",
+    "DesignerAgent0187",
+    "DesignerAgent0207",
+    "DesignerAgent0227",
+    "DesignerAgent0247",
+    "DesignerAgent0267",
+    "DesignerAgent0287",
+    "DesignerAgent0307",
+    "DesignerAgent0327",
+    "DesignerAgent0347",
+    "DesignerAgent0367",
+    "DesignerAgent0387",
+    "DesignerAgent0407",
+    "DesignerAgent0427",
+    "DesignerAgent0447",
+    "DesignerAgent0467",
+    "DesignerAgent0487",
+    "DesignerAgent0507",
+    "DesignerAgent0527",
+    "DesignerAgent0547",
+    "DesignerAgent0567",
+    "DesignerAgent0587",
+    "DesignerAgent0607",
+    "DesignerAgent0627",
+    "DesignerAgent0647",
+    "DesignerAgent0667",
+    "DesignerAgent0687",
+    "DesignerAgent0707",
+    "DesignerAgent0727",
+    "DesignerAgent0747",
+    "DesignerAgent0767",
+    "DesignerAgent0787",
+    "DesignerAgent0807",
+    "DesignerAgent0827",
+    "DesignerAgent0847",
+    "DesignerAgent0867",
+    "DesignerAgent0887",
+    "DesignerAgent0907",
+    "DesignerAgent0927",
+    "DesignerAgent0947",
+    "DesignerAgent0967",
+    "DesignerAgent0987"
+   ],
+   "classes": {
+    "DesignerAgent0007": {
+     "file": "designer_0007",
+     "agent_id_default": 7,
+     "create_aid_default": 7
+    },
+    "DesignerAgent0027": {
+     "file": "designer_0027",
+     "agent_id_default": 27,
+     "create_aid_default": 27
+    },
+    "DesignerAgent0047": {
+     "file": "designer_0047",
+     "agent_id_default": 47,
+     "create_aid_default": 47
+    },
+    "DesignerAgent0067": {
+     "file": "designer_0067",
+     "agent_id_default": 67,
+     "create_aid_default": 67
+    },
+    "DesignerAgent0087": {
+     "file": "designer_0087",
+     "agent_id_default": 87,
+     "create_aid_default": 87
+    },
+    "DesignerAgent0107": {
+     "file": "designer_0107",
+     "agent_id_default": 107,
+     "create_aid_default": 107
+    },
+    "DesignerAgent0127": {
+     "file": "designer_0127",
+     "agent_id_default": 127,
+     "create_aid_default": 127
+    },
+    "DesignerAgent0147": {
+     "file": "designer_0147",
+     "agent_id_default": 147,
+     "create_aid_default": 147
+    },
+    "DesignerAgent0167": {
+     "file": "designer_0167",
+     "agent_id_default": 167,
+     "create_aid_default": 167
+    },
+    "DesignerAgent0187": {
+     "file": "designer_0187",
+     "agent_id_default": 187,
+     "create_aid_default": 187
+    },
+    "DesignerAgent0207": {
+     "file": "designer_0207",
+     "agent_id_default": 207,
+     "create_aid_default": 207
+    },
+    "DesignerAgent0227": {
+     "file": "designer_0227",
+     "agent_id_default": 227,
+     "create_aid_default": 227
+    },
+    "DesignerAgent0247": {
+     "file": "designer_0247",
+     "agent_id_default": 247,
+     "create_aid_default": 247
+    },
+    "DesignerAgent0267": {
+     "file": "designer_0267",
+     "agent_id_default": 267,
+     "create_aid_default": 267
+    },
+    "DesignerAgent0287": {
+     "file": "designer_0287",
+     "agent_id_default": 287,
+     "create_aid_default": 287
+    },
+    "DesignerAgent0307": {
+     "file": "designer_0307",
+     "agent_id_default": 307,
+     "create_aid_default": 307
+    },
+    "DesignerAgent0327": {
+     "file": "designer_0327",
+     "agent_id_default": 327,
+     "create_aid_default": 327
+    },
+    "DesignerAgent0347": {
+     "file": "designer_0347",
+     "agent_id_default": 347,
+     "create_aid_default": 347
+    },
+    "DesignerAgent0367": {
+     "file": "designer_0367",
+     "agent_id_default": 367,
+     "create_aid_default": 367
+    },
+    "DesignerAgent0387": {
+     "file": "designer_0387",
+     "agent_id_default": 387,
+     "create_aid_default": 387
+    },
+    "DesignerAgent0407": {
+     "file": "designer_0407",
+     "agent_id_default": 407,
+     "create_aid_default": 407
+    },
+    "DesignerAgent0427": {
+     "file": "designer_0427",
+     "agent_id_default": 427,
+     "create_aid_default": 427
+    },
+    "DesignerAgent0447": {
+     "file": "designer_0447",
+     "agent_id_default": 447,
+     "create_aid_default": 447
+    },
+    "DesignerAgent0467": {
+     "file": "designer_0467",
+     "agent_id_default": 467,
+     "create_aid_default": 467
+    },
+    "DesignerAgent0487": {
+     "file": "designer_0487",
+     "agent_id_default": 487,
+     "create_aid_default": 487
+    },
+    "DesignerAgent0507": {
+     "file": "designer_0507",
+     "agent_id_default": 507,
+     "create_aid_default": 507
+    },
+    "DesignerAgent0527": {
+     "file": "designer_0527",
+     "agent_id_default": 527,
+     "create_aid_default": 527
+    },
+    "DesignerAgent0547": {
+     "file": "designer_0547",
+     "agent_id_default": 547,
+     "create_aid_default": 547
+    },
+    "DesignerAgent0567": {
+     "file": "designer_0567",
+     "agent_id_default": 567,
+     "create_aid_default": 567
+    },
+    "DesignerAgent0587": {
+     "file": "designer_0587",
+     "agent_id_default": 587,
+     "create_aid_default": 587
+    },
+    "DesignerAgent0607": {
+     "file": "designer_0607",
+     "agent_id_default": 607,
+     "create_aid_default": 607
+    },
+    "DesignerAgent0627": {
+     "file": "designer_0627",
+     "agent_id_default": 627,
+     "create_aid_default": 627
+    },
+    "DesignerAgent0647": {
+     "file": "designer_0647",
+     "agent_id_default": 647,
+     "create_aid_default": 647
+    },
+    "DesignerAgent0667": {
+     "file": "designer_0667",
+     "agent_id_default": 667,
+     "create_aid_default": 667
+    },
+    "DesignerAgent0687": {
+     "file": "designer_0687",
+     "agent_id_default": 687,
+     "create_aid_default": 687
+    },
+    "DesignerAgent0707": {
+     "file": "designer_0707",
+     "agent_id_default": 707,
+     "create_aid_default": 707
+    },
+    "DesignerAgent0727": {
+     "file": "designer_0727",
+     "agent_id_default": 727,
+     "create_aid_default": 727
+    },
+    "DesignerAgent0747": {
+     "file": "designer_0747",
+     "agent_id_default": 747,
+     "create_aid_default": 747
+    },
+    "DesignerAgent0767": {
+     "file": "designer_0767",
+     "agent_id_default": 767,
+     "create_aid_default": 767
+    },
+    "DesignerAgent0787": {
+     "file": "designer_0787",
+     "agent_id_default": 787,
+     "create_aid_default": 787
+    },
+    "DesignerAgent0807": {
+     "file": "designer_0807",
+     "agent_id_default": 807,
+     "create_aid_default": 807
+    },
+    "DesignerAgent0827": {
+     "file": "designer_0827",
+     "agent_id_default": 827,
+     "create_aid_default": 827
+    },
+    "DesignerAgent0847": {
+     "file": "designer_0847",
+     "agent_id_default": 847,
+     "create_aid_default": 847
+    },
+    "DesignerAgent0867": {
+     "file": "designer_0867",
+     "agent_id_default": 867,
+     "create_aid_default": 867
+    },
+    "DesignerAgent0887": {
+     "file": "designer_0887",
+     "agent_id_default": 887,
+     "create_aid_default": 887
+    },
+    "DesignerAgent0907": {
+     "file": "designer_0907",
+     "agent_id_default": 907,
+     "create_aid_default": 907
+    },
+    "DesignerAgent0927": {
+     "file": "designer_0927",
+     "agent_id_default": 927,
+     "create_aid_default": 927
+    },
+    "DesignerAgent0947": {
+     "file": "designer_0947",
+     "agent_id_default": 947,
+     "create_aid_default": 947
+    },
+    "DesignerAgent0967": {
+     "file": "designer_0967",
+     "agent_id_default": 967,
+     "create_aid_default": 967
+    },
+    "DesignerAgent0987": {
+     "file": "designer_0987",
+     "agent_id_default": 987,
+     "create_aid_default": 987
+    }
+   }
+  },
+  "educator": {
+   "__all__": [
+    "EducatorAgent0010",
+    "EducatorAgent0030",
+    "EducatorAgent0050",
+    "EducatorAgent0070",
+    "EducatorAgent0090",
+    "EducatorAgent0110",
+    "EducatorAgent0130",
+    "EducatorAgent0150",
+    "EducatorAgent0170",
+    "EducatorAgent0190",
+    "EducatorAgent0210",
+    "EducatorAgent0230",
+    "EducatorAgent0250",
+    "EducatorAgent0270",
+    "EducatorAgent0290",
+    "EducatorAgent0310",
+    "EducatorAgent0330",
+    "EducatorAgent0350",
+    "EducatorAgent0370",
+    "EducatorAgent0390",
+    "EducatorAgent0410",
+    "EducatorAgent0430",
+    "EducatorAgent0450",
+    "EducatorAgent0470",
+    "EducatorAgent0490",
+    "EducatorAgent0510",
+    "EducatorAgent0530",
+    "EducatorAgent0550",
+    "EducatorAgent0570",
+    "EducatorAgent0590",
+    "EducatorAgent0610",
+    "EducatorAgent0630",
+    "EducatorAgent0650",
+    "EducatorAgent0670",
+    "EducatorAgent0690",
+    "EducatorAgent0710",
+    "EducatorAgent0730",
+    "EducatorAgent0750",
+    "EducatorAgent0770",
+    "EducatorAgent0790",
+    "EducatorAgent0810",
+    "EducatorAgent0830",
+    "EducatorAgent0850",
+    "EducatorAgent0870",
+    "EducatorAgent0890",
+    "EducatorAgent0910",
+    "EducatorAgent0930",
+    "EducatorAgent0950",
+    "EducatorAgent0970",
+    "EducatorAgent0990"
+   ],
+   "classes": {
+    "EducatorAgent0010": {
+     "file": "educator_0010",
+     "agent_id_default": 10,
+     "create_aid_default": 10
+    },
+    "EducatorAgent0030": {
+     "file": "educator_0030",
+     "agent_id_default": 30,
+     "create_aid_default": 30
+    },
+    "EducatorAgent0050": {
+     "file": "educator_0050",
+     "agent_id_default": 50,
+     "create_aid_default": 50
+    },
+    "EducatorAgent0070": {
+     "file": "educator_0070",
+     "agent_id_default": 70,
+     "create_aid_default": 70
+    },
+    "EducatorAgent0090": {
+     "file": "educator_0090",
+     "agent_id_default": 90,
+     "create_aid_default": 90
+    },
+    "EducatorAgent0110": {
+     "file": "educator_0110",
+     "agent_id_default": 110,
+     "create_aid_default": 110
+    },
+    "EducatorAgent0130": {
+     "file": "educator_0130",
+     "agent_id_default": 130,
+     "create_aid_default": 130
+    },
+    "EducatorAgent0150": {
+     "file": "educator_0150",
+     "agent_id_default": 150,
+     "create_aid_default": 150
+    },
+    "EducatorAgent0170": {
+     "file": "educator_0170",
+     "agent_id_default": 170,
+     "create_aid_default": 170
+    },
+    "EducatorAgent0190": {
+     "file": "educator_0190",
+     "agent_id_default": 190,
+     "create_aid_default": 190
+    },
+    "EducatorAgent0210": {
+     "file": "educator_0210",
+     "agent_id_default": 210,
+     "create_aid_default": 210
+    },
+    "EducatorAgent0230": {
+     "file": "educator_0230",
+     "agent_id_default": 230,
+     "create_aid_default": 230
+    },
+    "EducatorAgent0250": {
+     "file": "educator_0250",
+     "agent_id_default": 250,
+     "create_aid_default": 250
+    },
+    "EducatorAgent0270": {
+     "file": "educator_0270",
+     "agent_id_default": 270,
+     "create_aid_default": 270
+    },
+    "EducatorAgent0290": {
+     "file": "educator_0290",
+     "agent_id_default": 290,
+     "create_aid_default": 290
+    },
+    "EducatorAgent0310": {
+     "file": "educator_0310",
+     "agent_id_default": 310,
+     "create_aid_default": 310
+    },
+    "EducatorAgent0330": {
+     "file": "educator_0330",
+     "agent_id_default": 330,
+     "create_aid_default": 330
+    },
+    "EducatorAgent0350": {
+     "file": "educator_0350",
+     "agent_id_default": 350,
+     "create_aid_default": 350
+    },
+    "EducatorAgent0370": {
+     "file": "educator_0370",
+     "agent_id_default": 370,
+     "create_aid_default": 370
+    },
+    "EducatorAgent0390": {
+     "file": "educator_0390",
+     "agent_id_default": 390,
+     "create_aid_default": 390
+    },
+    "EducatorAgent0410": {
+     "file": "educator_0410",
+     "agent_id_default": 410,
+     "create_aid_default": 410
+    },
+    "EducatorAgent0430": {
+     "file": "educator_0430",
+     "agent_id_default": 430,
+     "create_aid_default": 430
+    },
+    "EducatorAgent0450": {
+     "file": "educator_0450",
+     "agent_id_default": 450,
+     "create_aid_default": 450
+    },
+    "EducatorAgent0470": {
+     "file": "educator_0470",
+     "agent_id_default": 470,
+     "create_aid_default": 470
+    },
+    "EducatorAgent0490": {
+     "file": "educator_0490",
+     "agent_id_default": 490,
+     "create_aid_default": 490
+    },
+    "EducatorAgent0510": {
+     "file": "educator_0510",
+     "agent_id_default": 510,
+     "create_aid_default": 510
+    },
+    "EducatorAgent0530": {
+     "file": "educator_0530",
+     "agent_id_default": 530,
+     "create_aid_default": 530
+    },
+    "EducatorAgent0550": {
+     "file": "educator_0550",
+     "agent_id_default": 550,
+     "create_aid_default": 550
+    },
+    "EducatorAgent0570": {
+     "file": "educator_0570",
+     "agent_id_default": 570,
+     "create_aid_default": 570
+    },
+    "EducatorAgent0590": {
+     "file": "educator_0590",
+     "agent_id_default": 590,
+     "create_aid_default": 590
+    },
+    "EducatorAgent0610": {
+     "file": "educator_0610",
+     "agent_id_default": 610,
+     "create_aid_default": 610
+    },
+    "EducatorAgent0630": {
+     "file": "educator_0630",
+     "agent_id_default": 630,
+     "create_aid_default": 630
+    },
+    "EducatorAgent0650": {
+     "file": "educator_0650",
+     "agent_id_default": 650,
+     "create_aid_default": 650
+    },
+    "EducatorAgent0670": {
+     "file": "educator_0670",
+     "agent_id_default": 670,
+     "create_aid_default": 670
+    },
+    "EducatorAgent0690": {
+     "file": "educator_0690",
+     "agent_id_default": 690,
+     "create_aid_default": 690
+    },
+    "EducatorAgent0710": {
+     "file": "educator_0710",
+     "agent_id_default": 710,
+     "create_aid_default": 710
+    },
+    "EducatorAgent0730": {
+     "file": "educator_0730",
+     "agent_id_default": 730,
+     "create_aid_default": 730
+    },
+    "EducatorAgent0750": {
+     "file": "educator_0750",
+     "agent_id_default": 750,
+     "create_aid_default": 750
+    },
+    "EducatorAgent0770": {
+     "file": "educator_0770",
+     "agent_id_default": 770,
+     "create_aid_default": 770
+    },
+    "EducatorAgent0790": {
+     "file": "educator_0790",
+     "agent_id_default": 790,
+     "create_aid_default": 790
+    },
+    "EducatorAgent0810": {
+     "file": "educator_0810",
+     "agent_id_default": 810,
+     "create_aid_default": 810
+    },
+    "EducatorAgent0830": {
+     "file": "educator_0830",
+     "agent_id_default": 830,
+     "create_aid_default": 830
+    },
+    "EducatorAgent0850": {
+     "file": "educator_0850",
+     "agent_id_default": 850,
+     "create_aid_default": 850
+    },
+    "EducatorAgent0870": {
+     "file": "educator_0870",
+     "agent_id_default": 870,
+     "create_aid_default": 870
+    },
+    "EducatorAgent0890": {
+     "file": "educator_0890",
+     "agent_id_default": 890,
+     "create_aid_default": 890
+    },
+    "EducatorAgent0910": {
+     "file": "educator_0910",
+     "agent_id_default": 910,
+     "create_aid_default": 910
+    },
+    "EducatorAgent0930": {
+     "file": "educator_0930",
+     "agent_id_default": 930,
+     "create_aid_default": 930
+    },
+    "EducatorAgent0950": {
+     "file": "educator_0950",
+     "agent_id_default": 950,
+     "create_aid_default": 950
+    },
+    "EducatorAgent0970": {
+     "file": "educator_0970",
+     "agent_id_default": 970,
+     "create_aid_default": 970
+    },
+    "EducatorAgent0990": {
+     "file": "educator_0990",
+     "agent_id_default": 990,
+     "create_aid_default": 990
+    }
+   }
+  },
+  "modifier": {
+   "__all__": [
+    "ModifierAgent0011",
+    "ModifierAgent0031",
+    "ModifierAgent0051",
+    "ModifierAgent0071",
+    "ModifierAgent0091",
+    "ModifierAgent0111",
+    "ModifierAgent0131",
+    "ModifierAgent0151",
+    "ModifierAgent0171",
+    "ModifierAgent0191",
+    "ModifierAgent0211",
+    "ModifierAgent0231",
+    "ModifierAgent0251",
+    "ModifierAgent0271",
+    "ModifierAgent0291",
+    "ModifierAgent0311",
+    "ModifierAgent0331",
+    "ModifierAgent0351",
+    "ModifierAgent0371",
+    "ModifierAgent0391",
+    "ModifierAgent0411",
+    "ModifierAgent0431",
+    "ModifierAgent0451",
+    "ModifierAgent0471",
+    "ModifierAgent0491",
+    "ModifierAgent0511",
+    "ModifierAgent0531",
+    "ModifierAgent0551",
+    "ModifierAgent0571",
+    "ModifierAgent0591",
+    "ModifierAgent0611",
+    "ModifierAgent0631",
+    "ModifierAgent0651",
+    "ModifierAgent0671",
+    "ModifierAgent0691",
+    "ModifierAgent0711",
+    "ModifierAgent0731",
+    "ModifierAgent0751",
+    "ModifierAgent0771",
+    "ModifierAgent0791",
+    "ModifierAgent0811",
+    "ModifierAgent0831",
+    "ModifierAgent0851",
+    "ModifierAgent0871",
+    "ModifierAgent0891",
+    "ModifierAgent0911",
+    "ModifierAgent0931",
+    "ModifierAgent0951",
+    "ModifierAgent0971",
+    "ModifierAgent0991"
+   ],
+   "classes": {
+    "ModifierAgent0011": {
+     "file": "modifier_0011",
+     "agent_id_default": 11,
+     "create_aid_default": 11
+    },
+    "ModifierAgent0031": {
+     "file": "modifier_0031",
+     "agent_id_default": 31,
+     "create_aid_default": 31
+    },
+    "ModifierAgent0051": {
+     "file": "modifier_0051",
+     "agent_id_default": 51,
+     "create_aid_default": 51
+    },
+    "ModifierAgent0071": {
+     "file": "modifier_0071",
+     "agent_id_default": 71,
+     "create_aid_default": 71
+    },
+    "ModifierAgent0091": {
+     "file": "modifier_0091",
+     "agent_id_default": 91,
+     "create_aid_default": 91
+    },
+    "ModifierAgent0111": {
+     "file": "modifier_0111",
+     "agent_id_default": 111,
+     "create_aid_default": 111
+    },
+    "ModifierAgent0131": {
+     "file": "modifier_0131",
+     "agent_id_default": 131,
+     "create_aid_default": 131
+    },
+    "ModifierAgent0151": {
+     "file": "modifier_0151",
+     "agent_id_default": 151,
+     "create_aid_default": 151
+    },
+    "ModifierAgent0171": {
+     "file": "modifier_0171",
+     "agent_id_default": 171,
+     "create_aid_default": 171
+    },
+    "ModifierAgent0191": {
+     "file": "modifier_0191",
+     "agent_id_default": 191,
+     "create_aid_default": 191
+    },
+    "ModifierAgent0211": {
+     "file": "modifier_0211",
+     "agent_id_default": 211,
+     "create_aid_default": 211
+    },
+    "ModifierAgent0231": {
+     "file": "modifier_0231",
+     "agent_id_default": 231,
+     "create_aid_default": 231
+    },
+    "ModifierAgent0251": {
+     "file": "modifier_0251",
+     "agent_id_default": 251,
+     "create_aid_default": 251
+    },
+    "ModifierAgent0271": {
+     "file": "modifier_0271",
+     "agent_id_default": 271,
+     "create_aid_default": 271
+    },
+    "ModifierAgent0291": {
+     "file": "modifier_0291",
+     "agent_id_default": 291,
+     "create_aid_default": 291
+    },
+    "ModifierAgent0311": {
+     "file": "modifier_0311",
+     "agent_id_default": 311,
+     "create_aid_default": 311
+    },
+    "ModifierAgent0331": {
+     "file": "modifier_0331",
+     "agent_id_default": 331,
+     "create_aid_default": 331
+    },
+    "ModifierAgent0351": {
+     "file": "modifier_0351",
+     "agent_id_default": 351,
+     "create_aid_default": 351
+    },
+    "ModifierAgent0371": {
+     "file": "modifier_0371",
+     "agent_id_default": 371,
+     "create_aid_default": 371
+    },
+    "ModifierAgent0391": {
+     "file": "modifier_0391",
+     "agent_id_default": 391,
+     "create_aid_default": 391
+    },
+    "ModifierAgent0411": {
+     "file": "modifier_0411",
+     "agent_id_default": 411,
+     "create_aid_default": 411
+    },
+    "ModifierAgent0431": {
+     "file": "modifier_0431",
+     "agent_id_default": 431,
+     "create_aid_default": 431
+    },
+    "ModifierAgent0451": {
+     "file": "modifier_0451",
+     "agent_id_default": 451,
+     "create_aid_default": 451
+    },
+    "ModifierAgent0471": {
+     "file": "modifier_0471",
+     "agent_id_default": 471,
+     "create_aid_default": 471
+    },
+    "ModifierAgent0491": {
+     "file": "modifier_0491",
+     "agent_id_default": 491,
+     "create_aid_default": 491
+    },
+    "ModifierAgent0511": {
+     "file": "modifier_0511",
+     "agent_id_default": 511,
+     "create_aid_default": 511
+    },
+    "ModifierAgent0531": {
+     "file": "modifier_0531",
+     "agent_id_default": 531,
+     "create_aid_default": 531
+    },
+    "ModifierAgent0551": {
+     "file": "modifier_0551",
+     "agent_id_default": 551,
+     "create_aid_default": 551
+    },
+    "ModifierAgent0571": {
+     "file": "modifier_0571",
+     "agent_id_default": 571,
+     "create_aid_default": 571
+    },
+    "ModifierAgent0591": {
+     "file": "modifier_0591",
+     "agent_id_default": 591,
+     "create_aid_default": 591
+    },
+    "ModifierAgent0611": {
+     "file": "modifier_0611",
+     "agent_id_default": 611,
+     "create_aid_default": 611
+    },
+    "ModifierAgent0631": {
+     "file": "modifier_0631",
+     "agent_id_default": 631,
+     "create_aid_default": 631
+    },
+    "ModifierAgent0651": {
+     "file": "modifier_0651",
+     "agent_id_default": 651,
+     "create_aid_default": 651
+    },
+    "ModifierAgent0671": {
+     "file": "modifier_0671",
+     "agent_id_default": 671,
+     "create_aid_default": 671
+    },
+    "ModifierAgent0691": {
+     "file": "modifier_0691",
+     "agent_id_default": 691,
+     "create_aid_default": 691
+    },
+    "ModifierAgent0711": {
+     "file": "modifier_0711",
+     "agent_id_default": 711,
+     "create_aid_default": 711
+    },
+    "ModifierAgent0731": {
+     "file": "modifier_0731",
+     "agent_id_default": 731,
+     "create_aid_default": 731
+    },
+    "ModifierAgent0751": {
+     "file": "modifier_0751",
+     "agent_id_default": 751,
+     "create_aid_default": 751
+    },
+    "ModifierAgent0771": {
+     "file": "modifier_0771",
+     "agent_id_default": 771,
+     "create_aid_default": 771
+    },
+    "ModifierAgent0791": {
+     "file": "modifier_0791",
+     "agent_id_default": 791,
+     "create_aid_default": 791
+    },
+    "ModifierAgent0811": {
+     "file": "modifier_0811",
+     "agent_id_default": 811,
+     "create_aid_default": 811
+    },
+    "ModifierAgent0831": {
+     "file": "modifier_0831",
+     "agent_id_default": 831,
+     "create_aid_default": 831
+    },
+    "ModifierAgent0851": {
+     "file": "modifier_0851",
+     "agent_id_default": 851,
+     "create_aid_default": 851
+    },
+    "ModifierAgent0871": {
+     "file": "modifier_0871",
+     "agent_id_default": 871,
+     "create_aid_default": 871
+    },
+    "ModifierAgent0891": {
+     "file": "modifier_0891",
+     "agent_id_default": 891,
+     "create_aid_default": 891
+    },
+    "ModifierAgent0911": {
+     "file": "modifier_0911",
+     "agent_id_default": 911,
+     "create_aid_default": 911
+    },
+    "ModifierAgent0931": {
+     "file": "modifier_0931",
+     "agent_id_default": 931,
+     "create_aid_default": 931
+    },
+    "ModifierAgent0951": {
+     "file": "modifier_0951",
+     "agent_id_default": 951,
+     "create_aid_default": 951
+    },
+    "ModifierAgent0971": {
+     "file": "modifier_0971",
+     "agent_id_default": 971,
+     "create_aid_default": 971
+    },
+    "ModifierAgent0991": {
+     "file": "modifier_0991",
+     "agent_id_default": 991,
+     "create_aid_default": 991
+    }
+   }
+  },
+  "monitor": {
+   "__all__": [
+    "MonitorAgent0008",
+    "MonitorAgent0028",
+    "MonitorAgent0048",
+    "MonitorAgent0068",
+    "MonitorAgent0088",
+    "MonitorAgent0108",
+    "MonitorAgent0128",
+    "MonitorAgent0148",
+    "MonitorAgent0168",
+    "MonitorAgent0188",
+    "MonitorAgent0208",
+    "MonitorAgent0228",
+    "MonitorAgent0248",
+    "MonitorAgent0268",
+    "MonitorAgent0288",
+    "MonitorAgent0308",
+    "MonitorAgent0328",
+    "MonitorAgent0348",
+    "MonitorAgent0368",
+    "MonitorAgent0388",
+    "MonitorAgent0408",
+    "MonitorAgent0428",
+    "MonitorAgent0448",
+    "MonitorAgent0468",
+    "MonitorAgent0488",
+    "MonitorAgent0508",
+    "MonitorAgent0528",
+    "MonitorAgent0548",
+    "MonitorAgent0568",
+    "MonitorAgent0588",
+    "MonitorAgent0608",
+    "MonitorAgent0628",
+    "MonitorAgent0648",
+    "MonitorAgent0668",
+    "MonitorAgent0688",
+    "MonitorAgent0708",
+    "MonitorAgent0728",
+    "MonitorAgent0748",
+    "MonitorAgent0768",
+    "MonitorAgent0788",
+    "MonitorAgent0808",
+    "MonitorAgent0828",
+    "MonitorAgent0848",
+    "MonitorAgent0868",
+    "MonitorAgent0888",
+    "MonitorAgent0908",
+    "MonitorAgent0928",
+    "MonitorAgent0948",
+    "MonitorAgent0968",
+    "MonitorAgent0988"
+   ],
+   "classes": {
+    "MonitorAgent0008": {
+     "file": "monitor_0008",
+     "agent_id_default": 8,
+     "create_aid_default": 8
+    },
+    "MonitorAgent0028": {
+     "file": "monitor_0028",
+     "agent_id_default": 28,
+     "create_aid_default": 28
+    },
+    "MonitorAgent0048": {
+     "file": "monitor_0048",
+     "agent_id_default": 48,
+     "create_aid_default": 48
+    },
+    "MonitorAgent0068": {
+     "file": "monitor_0068",
+     "agent_id_default": 68,
+     "create_aid_default": 68
+    },
+    "MonitorAgent0088": {
+     "file": "monitor_0088",
+     "agent_id_default": 88,
+     "create_aid_default": 88
+    },
+    "MonitorAgent0108": {
+     "file": "monitor_0108",
+     "agent_id_default": 108,
+     "create_aid_default": 108
+    },
+    "MonitorAgent0128": {
+     "file": "monitor_0128",
+     "agent_id_default": 128,
+     "create_aid_default": 128
+    },
+    "MonitorAgent0148": {
+     "file": "monitor_0148",
+     "agent_id_default": 148,
+     "create_aid_default": 148
+    },
+    "MonitorAgent0168": {
+     "file": "monitor_0168",
+     "agent_id_default": 168,
+     "create_aid_default": 168
+    },
+    "MonitorAgent0188": {
+     "file": "monitor_0188",
+     "agent_id_default": 188,
+     "create_aid_default": 188
+    },
+    "MonitorAgent0208": {
+     "file": "monitor_0208",
+     "agent_id_default": 208,
+     "create_aid_default": 208
+    },
+    "MonitorAgent0228": {
+     "file": "monitor_0228",
+     "agent_id_default": 228,
+     "create_aid_default": 228
+    },
+    "MonitorAgent0248": {
+     "file": "monitor_0248",
+     "agent_id_default": 248,
+     "create_aid_default": 248
+    },
+    "MonitorAgent0268": {
+     "file": "monitor_0268",
+     "agent_id_default": 268,
+     "create_aid_default": 268
+    },
+    "MonitorAgent0288": {
+     "file": "monitor_0288",
+     "agent_id_default": 288,
+     "create_aid_default": 288
+    },
+    "MonitorAgent0308": {
+     "file": "monitor_0308",
+     "agent_id_default": 308,
+     "create_aid_default": 308
+    },
+    "MonitorAgent0328": {
+     "file": "monitor_0328",
+     "agent_id_default": 328,
+     "create_aid_default": 328
+    },
+    "MonitorAgent0348": {
+     "file": "monitor_0348",
+     "agent_id_default": 348,
+     "create_aid_default": 348
+    },
+    "MonitorAgent0368": {
+     "file": "monitor_0368",
+     "agent_id_default": 368,
+     "create_aid_default": 368
+    },
+    "MonitorAgent0388": {
+     "file": "monitor_0388",
+     "agent_id_default": 388,
+     "create_aid_default": 388
+    },
+    "MonitorAgent0408": {
+     "file": "monitor_0408",
+     "agent_id_default": 408,
+     "create_aid_default": 408
+    },
+    "MonitorAgent0428": {
+     "file": "monitor_0428",
+     "agent_id_default": 428,
+     "create_aid_default": 428
+    },
+    "MonitorAgent0448": {
+     "file": "monitor_0448",
+     "agent_id_default": 448,
+     "create_aid_default": 448
+    },
+    "MonitorAgent0468": {
+     "file": "monitor_0468",
+     "agent_id_default": 468,
+     "create_aid_default": 468
+    },
+    "MonitorAgent0488": {
+     "file": "monitor_0488",
+     "agent_id_default": 488,
+     "create_aid_default": 488
+    },
+    "MonitorAgent0508": {
+     "file": "monitor_0508",
+     "agent_id_default": 508,
+     "create_aid_default": 508
+    },
+    "MonitorAgent0528": {
+     "file": "monitor_0528",
+     "agent_id_default": 528,
+     "create_aid_default": 528
+    },
+    "MonitorAgent0548": {
+     "file": "monitor_0548",
+     "agent_id_default": 548,
+     "create_aid_default": 548
+    },
+    "MonitorAgent0568": {
+     "file": "monitor_0568",
+     "agent_id_default": 568,
+     "create_aid_default": 568
+    },
+    "MonitorAgent0588": {
+     "file": "monitor_0588",
+     "agent_id_default": 588,
+     "create_aid_default": 588
+    },
+    "MonitorAgent0608": {
+     "file": "monitor_0608",
+     "agent_id_default": 608,
+     "create_aid_default": 608
+    },
+    "MonitorAgent0628": {
+     "file": "monitor_0628",
+     "agent_id_default": 628,
+     "create_aid_default": 628
+    },
+    "MonitorAgent0648": {
+     "file": "monitor_0648",
+     "agent_id_default": 648,
+     "create_aid_default": 648
+    },
+    "MonitorAgent0668": {
+     "file": "monitor_0668",
+     "agent_id_default": 668,
+     "create_aid_default": 668
+    },
+    "MonitorAgent0688": {
+     "file": "monitor_0688",
+     "agent_id_default": 688,
+     "create_aid_default": 688
+    },
+    "MonitorAgent0708": {
+     "file": "monitor_0708",
+     "agent_id_default": 708,
+     "create_aid_default": 708
+    },
+    "MonitorAgent0728": {
+     "file": "monitor_0728",
+     "agent_id_default": 728,
+     "create_aid_default": 728
+    },
+    "MonitorAgent0748": {
+     "file": "monitor_0748",
+     "agent_id_default": 748,
+     "create_aid_default": 748
+    },
+    "MonitorAgent0768": {
+     "file": "monitor_0768",
+     "agent_id_default": 768,
+     "create_aid_default": 768
+    },
+    "MonitorAgent0788": {
+     "file": "monitor_0788",
+     "agent_id_default": 788,
+     "create_aid_default": 788
+    },
+    "MonitorAgent0808": {
+     "file": "monitor_0808",
+     "agent_id_default": 808,
+     "create_aid_default": 808
+    },
+    "MonitorAgent0828": {
+     "file": "monitor_0828",
+     "agent_id_default": 828,
+     "create_aid_default": 828
+    },
+    "MonitorAgent0848": {
+     "file": "monitor_0848",
+     "agent_id_default": 848,
+     "create_aid_default": 848
+    },
+    "MonitorAgent0868": {
+     "file": "monitor_0868",
+     "agent_id_default": 868,
+     "create_aid_default": 868
+    },
+    "MonitorAgent0888": {
+     "file": "monitor_0888",
+     "agent_id_default": 888,
+     "create_aid_default": 888
+    },
+    "MonitorAgent0908": {
+     "file": "monitor_0908",
+     "agent_id_default": 908,
+     "create_aid_default": 908
+    },
+    "MonitorAgent0928": {
+     "file": "monitor_0928",
+     "agent_id_default": 928,
+     "create_aid_default": 928
+    },
+    "MonitorAgent0948": {
+     "file": "monitor_0948",
+     "agent_id_default": 948,
+     "create_aid_default": 948
+    },
+    "MonitorAgent0968": {
+     "file": "monitor_0968",
+     "agent_id_default": 968,
+     "create_aid_default": 968
+    },
+    "MonitorAgent0988": {
+     "file": "monitor_0988",
+     "agent_id_default": 988,
+     "create_aid_default": 988
+    }
+   }
+  },
+  "network_client": {
+   "__all__": [
+    "NetworkClientAgent0004",
+    "NetworkClientAgent0024",
+    "NetworkClientAgent0044",
+    "NetworkClientAgent0064",
+    "NetworkClientAgent0084",
+    "NetworkClientAgent0104",
+    "NetworkClientAgent0124",
+    "NetworkClientAgent0144",
+    "NetworkClientAgent0164",
+    "NetworkClientAgent0184",
+    "NetworkClientAgent0204",
+    "NetworkClientAgent0224",
+    "NetworkClientAgent0244",
+    "NetworkClientAgent0264",
+    "NetworkClientAgent0284",
+    "NetworkClientAgent0304",
+    "NetworkClientAgent0324",
+    "NetworkClientAgent0344",
+    "NetworkClientAgent0364",
+    "NetworkClientAgent0384",
+    "NetworkClientAgent0404",
+    "NetworkClientAgent0424",
+    "NetworkClientAgent0444",
+    "NetworkClientAgent0464",
+    "NetworkClientAgent0484",
+    "NetworkClientAgent0504",
+    "NetworkClientAgent0524",
+    "NetworkClientAgent0544",
+    "NetworkClientAgent0564",
+    "NetworkClientAgent0584",
+    "NetworkClientAgent0604",
+    "NetworkClientAgent0624",
+    "NetworkClientAgent0644",
+    "NetworkClientAgent0664",
+    "NetworkClientAgent0684",
+    "NetworkClientAgent0704",
+    "NetworkClientAgent0724",
+    "NetworkClientAgent0744",
+    "NetworkClientAgent0764",
+    "NetworkClientAgent0784",
+    "NetworkClientAgent0804",
+    "NetworkClientAgent0824",
+    "NetworkClientAgent0844",
+    "NetworkClientAgent0864",
+    "NetworkClientAgent0884",
+    "NetworkClientAgent0904",
+    "NetworkClientAgent0924",
+    "NetworkClientAgent0944",
+    "NetworkClientAgent0964",
+    "NetworkClientAgent0984"
+   ],
+   "classes": {
+    "NetworkClientAgent0004": {
+     "file": "network_client_0004",
+     "agent_id_default": 4,
+     "create_aid_default": 4
+    },
+    "NetworkClientAgent0024": {
+     "file": "network_client_0024",
+     "agent_id_default": 24,
+     "create_aid_default": 24
+    },
+    "NetworkClientAgent0044": {
+     "file": "network_client_0044",
+     "agent_id_default": 44,
+     "create_aid_default": 44
+    },
+    "NetworkClientAgent0064": {
+     "file": "network_client_0064",
+     "agent_id_default": 64,
+     "create_aid_default": 64
+    },
+    "NetworkClientAgent0084": {
+     "file": "network_client_0084",
+     "agent_id_default": 84,
+     "create_aid_default": 84
+    },
+    "NetworkClientAgent0104": {
+     "file": "network_client_0104",
+     "agent_id_default": 104,
+     "create_aid_default": 104
+    },
+    "NetworkClientAgent0124": {
+     "file": "network_client_0124",
+     "agent_id_default": 124,
+     "create_aid_default": 124
+    },
+    "NetworkClientAgent0144": {
+     "file": "network_client_0144",
+     "agent_id_default": 144,
+     "create_aid_default": 144
+    },
+    "NetworkClientAgent0164": {
+     "file": "network_client_0164",
+     "agent_id_default": 164,
+     "create_aid_default": 164
+    },
+    "NetworkClientAgent0184": {
+     "file": "network_client_0184",
+     "agent_id_default": 184,
+     "create_aid_default": 184
+    },
+    "NetworkClientAgent0204": {
+     "file": "network_client_0204",
+     "agent_id_default": 204,
+     "create_aid_default": 204
+    },
+    "NetworkClientAgent0224": {
+     "file": "network_client_0224",
+     "agent_id_default": 224,
+     "create_aid_default": 224
+    },
+    "NetworkClientAgent0244": {
+     "file": "network_client_0244",
+     "agent_id_default": 244,
+     "create_aid_default": 244
+    },
+    "NetworkClientAgent0264": {
+     "file": "network_client_0264",
+     "agent_id_default": 264,
+     "create_aid_default": 264
+    },
+    "NetworkClientAgent0284": {
+     "file": "network_client_0284",
+     "agent_id_default": 284,
+     "create_aid_default": 284
+    },
+    "NetworkClientAgent0304": {
+     "file": "network_client_0304",
+     "agent_id_default": 304,
+     "create_aid_default": 304
+    },
+    "NetworkClientAgent0324": {
+     "file": "network_client_0324",
+     "agent_id_default": 324,
+     "create_aid_default": 324
+    },
+    "NetworkClientAgent0344": {
+     "file": "network_client_0344",
+     "agent_id_default": 344,
+     "create_aid_default": 344
+    },
+    "NetworkClientAgent0364": {
+     "file": "network_client_0364",
+     "agent_id_default": 364,
+     "create_aid_default": 364
+    },
+    "NetworkClientAgent0384": {
+     "file": "network_client_0384",
+     "agent_id_default": 384,
+     "create_aid_default": 384
+    },
+    "NetworkClientAgent0404": {
+     "file": "network_client_0404",
+     "agent_id_default": 404,
+     "create_aid_default": 404
+    },
+    "NetworkClientAgent0424": {
+     "file": "network_client_0424",
+     "agent_id_default": 424,
+     "create_aid_default": 424
+    },
+    "NetworkClientAgent0444": {
+     "file": "network_client_0444",
+     "agent_id_default": 444,
+     "create_aid_default": 444
+    },
+    "NetworkClientAgent0464": {
+     "file": "network_client_0464",
+     "agent_id_default": 464,
+     "create_aid_default": 464
+    },
+    "NetworkClientAgent0484": {
+     "file": "network_client_0484",
+     "agent_id_default": 484,
+     "create_aid_default": 484
+    },
+    "NetworkClientAgent0504": {
+     "file": "network_client_0504",
+     "agent_id_default": 504,
+     "create_aid_default": 504
+    },
+    "NetworkClientAgent0524": {
+     "file": "network_client_0524",
+     "agent_id_default": 524,
+     "create_aid_default": 524
+    },
+    "NetworkClientAgent0544": {
+     "file": "network_client_0544",
+     "agent_id_default": 544,
+     "create_aid_default": 544
+    },
+    "NetworkClientAgent0564": {
+     "file": "network_client_0564",
+     "agent_id_default": 564,
+     "create_aid_default": 564
+    },
+    "NetworkClientAgent0584": {
+     "file": "network_client_0584",
+     "agent_id_default": 584,
+     "create_aid_default": 584
+    },
+    "NetworkClientAgent0604": {
+     "file": "network_client_0604",
+     "agent_id_default": 604,
+     "create_aid_default": 604
+    },
+    "NetworkClientAgent0624": {
+     "file": "network_client_0624",
+     "agent_id_default": 624,
+     "create_aid_default": 624
+    },
+    "NetworkClientAgent0644": {
+     "file": "network_client_0644",
+     "agent_id_default": 644,
+     "create_aid_default": 644
+    },
+    "NetworkClientAgent0664": {
+     "file": "network_client_0664",
+     "agent_id_default": 664,
+     "create_aid_default": 664
+    },
+    "NetworkClientAgent0684": {
+     "file": "network_client_0684",
+     "agent_id_default": 684,
+     "create_aid_default": 684
+    },
+    "NetworkClientAgent0704": {
+     "file": "network_client_0704",
+     "agent_id_default": 704,
+     "create_aid_default": 704
+    },
+    "NetworkClientAgent0724": {
+     "file": "network_client_0724",
+     "agent_id_default": 724,
+     "create_aid_default": 724
+    },
+    "NetworkClientAgent0744": {
+     "file": "network_client_0744",
+     "agent_id_default": 744,
+     "create_aid_default": 744
+    },
+    "NetworkClientAgent0764": {
+     "file": "network_client_0764",
+     "agent_id_default": 764,
+     "create_aid_default": 764
+    },
+    "NetworkClientAgent0784": {
+     "file": "network_client_0784",
+     "agent_id_default": 784,
+     "create_aid_default": 784
+    },
+    "NetworkClientAgent0804": {
+     "file": "network_client_0804",
+     "agent_id_default": 804,
+     "create_aid_default": 804
+    },
+    "NetworkClientAgent0824": {
+     "file": "network_client_0824",
+     "agent_id_default": 824,
+     "create_aid_default": 824
+    },
+    "NetworkClientAgent0844": {
+     "file": "network_client_0844",
+     "agent_id_default": 844,
+     "create_aid_default": 844
+    },
+    "NetworkClientAgent0864": {
+     "file": "network_client_0864",
+     "agent_id_default": 864,
+     "create_aid_default": 864
+    },
+    "NetworkClientAgent0884": {
+     "file": "network_client_0884",
+     "agent_id_default": 884,
+     "create_aid_default": 884
+    },
+    "NetworkClientAgent0904": {
+     "file": "network_client_0904",
+     "agent_id_default": 904,
+     "create_aid_default": 904
+    },
+    "NetworkClientAgent0924": {
+     "file": "network_client_0924",
+     "agent_id_default": 924,
+     "create_aid_default": 924
+    },
+    "NetworkClientAgent0944": {
+     "file": "network_client_0944",
+     "agent_id_default": 944,
+     "create_aid_default": 944
+    },
+    "NetworkClientAgent0964": {
+     "file": "network_client_0964",
+     "agent_id_default": 964,
+     "create_aid_default": 964
+    },
+    "NetworkClientAgent0984": {
+     "file": "network_client_0984",
+     "agent_id_default": 984,
+     "create_aid_default": 984
+    }
+   }
+  },
+  "researcher": {
+   "__all__": [
+    "ResearcherAgent0016",
+    "ResearcherAgent0036",
+    "ResearcherAgent0056",
+    "ResearcherAgent0076",
+    "ResearcherAgent0096",
+    "ResearcherAgent0116",
+    "ResearcherAgent0136",
+    "ResearcherAgent0156",
+    "ResearcherAgent0176",
+    "ResearcherAgent0196",
+    "ResearcherAgent0216",
+    "ResearcherAgent0236",
+    "ResearcherAgent0256",
+    "ResearcherAgent0276",
+    "ResearcherAgent0296",
+    "ResearcherAgent0316",
+    "ResearcherAgent0336",
+    "ResearcherAgent0356",
+    "ResearcherAgent0376",
+    "ResearcherAgent0396",
+    "ResearcherAgent0416",
+    "ResearcherAgent0436",
+    "ResearcherAgent0456",
+    "ResearcherAgent0476",
+    "ResearcherAgent0496",
+    "ResearcherAgent0516",
+    "ResearcherAgent0536",
+    "ResearcherAgent0556",
+    "ResearcherAgent0576",
+    "ResearcherAgent0596",
+    "ResearcherAgent0616",
+    "ResearcherAgent0636",
+    "ResearcherAgent0656",
+    "ResearcherAgent0676",
+    "ResearcherAgent0696",
+    "ResearcherAgent0716",
+    "ResearcherAgent0736",
+    "ResearcherAgent0756",
+    "ResearcherAgent0776",
+    "ResearcherAgent0796",
+    "ResearcherAgent0816",
+    "ResearcherAgent0836",
+    "ResearcherAgent0856",
+    "ResearcherAgent0876",
+    "ResearcherAgent0896",
+    "ResearcherAgent0916",
+    "ResearcherAgent0936",
+    "ResearcherAgent0956",
+    "ResearcherAgent0976",
+    "ResearcherAgent0996"
+   ],
+   "classes": {
+    "ResearcherAgent0016": {
+     "file": "researcher_0016",
+     "agent_id_default": 16,
+     "create_aid_default": 16
+    },
+    "ResearcherAgent0036": {
+     "file": "researcher_0036",
+     "agent_id_default": 36,
+     "create_aid_default": 36
+    },
+    "ResearcherAgent0056": {
+     "file": "researcher_0056",
+     "agent_id_default": 56,
+     "create_aid_default": 56
+    },
+    "ResearcherAgent0076": {
+     "file": "researcher_0076",
+     "agent_id_default": 76,
+     "create_aid_default": 76
+    },
+    "ResearcherAgent0096": {
+     "file": "researcher_0096",
+     "agent_id_default": 96,
+     "create_aid_default": 96
+    },
+    "ResearcherAgent0116": {
+     "file": "researcher_0116",
+     "agent_id_default": 116,
+     "create_aid_default": 116
+    },
+    "ResearcherAgent0136": {
+     "file": "researcher_0136",
+     "agent_id_default": 136,
+     "create_aid_default": 136
+    },
+    "ResearcherAgent0156": {
+     "file": "researcher_0156",
+     "agent_id_default": 156,
+     "create_aid_default": 156
+    },
+    "ResearcherAgent0176": {
+     "file": "researcher_0176",
+     "agent_id_default": 176,
+     "create_aid_default": 176
+    },
+    "ResearcherAgent0196": {
+     "file": "researcher_0196",
+     "agent_id_default": 196,
+     "create_aid_default": 196
+    },
+    "ResearcherAgent0216": {
+     "file": "researcher_0216",
+     "agent_id_default": 216,
+     "create_aid_default": 216
+    },
+    "ResearcherAgent0236": {
+     "file": "researcher_0236",
+     "agent_id_default": 236,
+     "create_aid_default": 236
+    },
+    "ResearcherAgent0256": {
+     "file": "researcher_0256",
+     "agent_id_default": 256,
+     "create_aid_default": 256
+    },
+    "ResearcherAgent0276": {
+     "file": "researcher_0276",
+     "agent_id_default": 276,
+     "create_aid_default": 276
+    },
+    "ResearcherAgent0296": {
+     "file": "researcher_0296",
+     "agent_id_default": 296,
+     "create_aid_default": 296
+    },
+    "ResearcherAgent0316": {
+     "file": "researcher_0316",
+     "agent_id_default": 316,
+     "create_aid_default": 316
+    },
+    "ResearcherAgent0336": {
+     "file": "researcher_0336",
+     "agent_id_default": 336,
+     "create_aid_default": 336
+    },
+    "ResearcherAgent0356": {
+     "file": "researcher_0356",
+     "agent_id_default": 356,
+     "create_aid_default": 356
+    },
+    "ResearcherAgent0376": {
+     "file": "researcher_0376",
+     "agent_id_default": 376,
+     "create_aid_default": 376
+    },
+    "ResearcherAgent0396": {
+     "file": "researcher_0396",
+     "agent_id_default": 396,
+     "create_aid_default": 396
+    },
+    "ResearcherAgent0416": {
+     "file": "researcher_0416",
+     "agent_id_default": 416,
+     "create_aid_default": 416
+    },
+    "ResearcherAgent0436": {
+     "file": "researcher_0436",
+     "agent_id_default": 436,
+     "create_aid_default": 436
+    },
+    "ResearcherAgent0456": {
+     "file": "researcher_0456",
+     "agent_id_default": 456,
+     "create_aid_default": 456
+    },
+    "ResearcherAgent0476": {
+     "file": "researcher_0476",
+     "agent_id_default": 476,
+     "create_aid_default": 476
+    },
+    "ResearcherAgent0496": {
+     "file": "researcher_0496",
+     "agent_id_default": 496,
+     "create_aid_default": 496
+    },
+    "ResearcherAgent0516": {
+     "file": "researcher_0516",
+     "agent_id_default": 516,
+     "create_aid_default": 516
+    },
+    "ResearcherAgent0536": {
+     "file": "researcher_0536",
+     "agent_id_default": 536,
+     "create_aid_default": 536
+    },
+    "ResearcherAgent0556": {
+     "file": "researcher_0556",
+     "agent_id_default": 556,
+     "create_aid_default": 556
+    },
+    "ResearcherAgent0576": {
+     "file": "researcher_0576",
+     "agent_id_default": 576,
+     "create_aid_default": 576
+    },
+    "ResearcherAgent0596": {
+     "file": "researcher_0596",
+     "agent_id_default": 596,
+     "create_aid_default": 596
+    },
+    "ResearcherAgent0616": {
+     "file": "researcher_0616",
+     "agent_id_default": 616,
+     "create_aid_default": 616
+    },
+    "ResearcherAgent0636": {
+     "file": "researcher_0636",
+     "agent_id_default": 636,
+     "create_aid_default": 636
+    },
+    "ResearcherAgent0656": {
+     "file": "researcher_0656",
+     "agent_id_default": 656,
+     "create_aid_default": 656
+    },
+    "ResearcherAgent0676": {
+     "file": "researcher_0676",
+     "agent_id_default": 676,
+     "create_aid_default": 676
+    },
+    "ResearcherAgent0696": {
+     "file": "researcher_0696",
+     "agent_id_default": 696,
+     "create_aid_default": 696
+    },
+    "ResearcherAgent0716": {
+     "file": "researcher_0716",
+     "agent_id_default": 716,
+     "create_aid_default": 716
+    },
+    "ResearcherAgent0736": {
+     "file": "researcher_0736",
+     "agent_id_default": 736,
+     "create_aid_default": 736
+    },
+    "ResearcherAgent0756": {
+     "file": "researcher_0756",
+     "agent_id_default": 756,
+     "create_aid_default": 756
+    },
+    "ResearcherAgent0776": {
+     "file": "researcher_0776",
+     "agent_id_default": 776,
+     "create_aid_default": 776
+    },
+    "ResearcherAgent0796": {
+     "file": "researcher_0796",
+     "agent_id_default": 796,
+     "create_aid_default": 796
+    },
+    "ResearcherAgent0816": {
+     "file": "researcher_0816",
+     "agent_id_default": 816,
+     "create_aid_default": 816
+    },
+    "ResearcherAgent0836": {
+     "file": "researcher_0836",
+     "agent_id_default": 836,
+     "create_aid_default": 836
+    },
+    "ResearcherAgent0856": {
+     "file": "researcher_0856",
+     "agent_id_default": 856,
+     "create_aid_default": 856
+    },
+    "ResearcherAgent0876": {
+     "file": "researcher_0876",
+     "agent_id_default": 876,
+     "create_aid_default": 876
+    },
+    "ResearcherAgent0896": {
+     "file": "researcher_0896",
+     "agent_id_default": 896,
+     "create_aid_default": 896
+    },
+    "ResearcherAgent0916": {
+     "file": "researcher_0916",
+     "agent_id_default": 916,
+     "create_aid_default": 916
+    },
+    "ResearcherAgent0936": {
+     "file": "researcher_0936",
+     "agent_id_default": 936,
+     "create_aid_default": 936
+    },
+    "ResearcherAgent0956": {
+     "file": "researcher_0956",
+     "agent_id_default": 956,
+     "create_aid_default": 956
+    },
+    "ResearcherAgent0976": {
+     "file": "researcher_0976",
+     "agent_id_default": 976,
+     "create_aid_default": 976
+    },
+    "ResearcherAgent0996": {
+     "file": "researcher_0996",
+     "agent_id_default": 996,
+     "create_aid_default": 996
+    }
+   }
+  },
+  "reviewer": {
+   "__all__": [
+    "ReviewerAgent0009",
+    "ReviewerAgent0029",
+    "ReviewerAgent0049",
+    "ReviewerAgent0069",
+    "ReviewerAgent0089",
+    "ReviewerAgent0109",
+    "ReviewerAgent0129",
+    "ReviewerAgent0149",
+    "ReviewerAgent0169",
+    "ReviewerAgent0189",
+    "ReviewerAgent0209",
+    "ReviewerAgent0229",
+    "ReviewerAgent0249",
+    "ReviewerAgent0269",
+    "ReviewerAgent0289",
+    "ReviewerAgent0309",
+    "ReviewerAgent0329",
+    "ReviewerAgent0349",
+    "ReviewerAgent0369",
+    "ReviewerAgent0389",
+    "ReviewerAgent0409",
+    "ReviewerAgent0429",
+    "ReviewerAgent0449",
+    "ReviewerAgent0469",
+    "ReviewerAgent0489",
+    "ReviewerAgent0509",
+    "ReviewerAgent0529",
+    "ReviewerAgent0549",
+    "ReviewerAgent0569",
+    "ReviewerAgent0589",
+    "ReviewerAgent0609",
+    "ReviewerAgent0629",
+    "ReviewerAgent0649",
+    "ReviewerAgent0669",
+    "ReviewerAgent0689",
+    "ReviewerAgent0709",
+    "ReviewerAgent0729",
+    "ReviewerAgent0749",
+    "ReviewerAgent0769",
+    "ReviewerAgent0789",
+    "ReviewerAgent0809",
+    "ReviewerAgent0829",
+    "ReviewerAgent0849",
+    "ReviewerAgent0869",
+    "ReviewerAgent0889",
+    "ReviewerAgent0909",
+    "ReviewerAgent0929",
+    "ReviewerAgent0949",
+    "ReviewerAgent0969",
+    "ReviewerAgent0989"
+   ],
+   "classes": {
+    "ReviewerAgent0009": {
+     "file": "reviewer_0009",
+     "agent_id_default": 9,
+     "create_aid_default": 9
+    },
+    "ReviewerAgent0029": {
+     "file": "reviewer_0029",
+     "agent_id_default": 29,
+     "create_aid_default": 29
+    },
+    "ReviewerAgent0049": {
+     "file": "reviewer_0049",
+     "agent_id_default": 49,
+     "create_aid_default": 49
+    },
+    "ReviewerAgent0069": {
+     "file": "reviewer_0069",
+     "agent_id_default": 69,
+     "create_aid_default": 69
+    },
+    "ReviewerAgent0089": {
+     "file": "reviewer_0089",
+     "agent_id_default": 89,
+     "create_aid_default": 89
+    },
+    "ReviewerAgent0109": {
+     "file": "reviewer_0109",
+     "agent_id_default": 109,
+     "create_aid_default": 109
+    },
+    "ReviewerAgent0129": {
+     "file": "reviewer_0129",
+     "agent_id_default": 129,
+     "create_aid_default": 129
+    },
+    "ReviewerAgent0149": {
+     "file": "reviewer_0149",
+     "agent_id_default": 149,
+     "create_aid_default": 149
+    },
+    "ReviewerAgent0169": {
+     "file": "reviewer_0169",
+     "agent_id_default": 169,
+     "create_aid_default": 169
+    },
+    "ReviewerAgent0189": {
+     "file": "reviewer_0189",
+     "agent_id_default": 189,
+     "create_aid_default": 189
+    },
+    "ReviewerAgent0209": {
+     "file": "reviewer_0209",
+     "agent_id_default": 209,
+     "create_aid_default": 209
+    },
+    "ReviewerAgent0229": {
+     "file": "reviewer_0229",
+     "agent_id_default": 229,
+     "create_aid_default": 229
+    },
+    "ReviewerAgent0249": {
+     "file": "reviewer_0249",
+     "agent_id_default": 249,
+     "create_aid_default": 249
+    },
+    "ReviewerAgent0269": {
+     "file": "reviewer_0269",
+     "agent_id_default": 269,
+     "create_aid_default": 269
+    },
+    "ReviewerAgent0289": {
+     "file": "reviewer_0289",
+     "agent_id_default": 289,
+     "create_aid_default": 289
+    },
+    "ReviewerAgent0309": {
+     "file": "reviewer_0309",
+     "agent_id_default": 309,
+     "create_aid_default": 309
+    },
+    "ReviewerAgent0329": {
+     "file": "reviewer_0329",
+     "agent_id_default": 329,
+     "create_aid_default": 329
+    },
+    "ReviewerAgent0349": {
+     "file": "reviewer_0349",
+     "agent_id_default": 349,
+     "create_aid_default": 349
+    },
+    "ReviewerAgent0369": {
+     "file": "reviewer_0369",
+     "agent_id_default": 369,
+     "create_aid_default": 369
+    },
+    "ReviewerAgent0389": {
+     "file": "reviewer_0389",
+     "agent_id_default": 389,
+     "create_aid_default": 389
+    },
+    "ReviewerAgent0409": {
+     "file": "reviewer_0409",
+     "agent_id_default": 409,
+     "create_aid_default": 409
+    },
+    "ReviewerAgent0429": {
+     "file": "reviewer_0429",
+     "agent_id_default": 429,
+     "create_aid_default": 429
+    },
+    "ReviewerAgent0449": {
+     "file": "reviewer_0449",
+     "agent_id_default": 449,
+     "create_aid_default": 449
+    },
+    "ReviewerAgent0469": {
+     "file": "reviewer_0469",
+     "agent_id_default": 469,
+     "create_aid_default": 469
+    },
+    "ReviewerAgent0489": {
+     "file": "reviewer_0489",
+     "agent_id_default": 489,
+     "create_aid_default": 489
+    },
+    "ReviewerAgent0509": {
+     "file": "reviewer_0509",
+     "agent_id_default": 509,
+     "create_aid_default": 509
+    },
+    "ReviewerAgent0529": {
+     "file": "reviewer_0529",
+     "agent_id_default": 529,
+     "create_aid_default": 529
+    },
+    "ReviewerAgent0549": {
+     "file": "reviewer_0549",
+     "agent_id_default": 549,
+     "create_aid_default": 549
+    },
+    "ReviewerAgent0569": {
+     "file": "reviewer_0569",
+     "agent_id_default": 569,
+     "create_aid_default": 569
+    },
+    "ReviewerAgent0589": {
+     "file": "reviewer_0589",
+     "agent_id_default": 589,
+     "create_aid_default": 589
+    },
+    "ReviewerAgent0609": {
+     "file": "reviewer_0609",
+     "agent_id_default": 609,
+     "create_aid_default": 609
+    },
+    "ReviewerAgent0629": {
+     "file": "reviewer_0629",
+     "agent_id_default": 629,
+     "create_aid_default": 629
+    },
+    "ReviewerAgent0649": {
+     "file": "reviewer_0649",
+     "agent_id_default": 649,
+     "create_aid_default": 649
+    },
+    "ReviewerAgent0669": {
+     "file": "reviewer_0669",
+     "agent_id_default": 669,
+     "create_aid_default": 669
+    },
+    "ReviewerAgent0689": {
+     "file": "reviewer_0689",
+     "agent_id_default": 689,
+     "create_aid_default": 689
+    },
+    "ReviewerAgent0709": {
+     "file": "reviewer_0709",
+     "agent_id_default": 709,
+     "create_aid_default": 709
+    },
+    "ReviewerAgent0729": {
+     "file": "reviewer_0729",
+     "agent_id_default": 729,
+     "create_aid_default": 729
+    },
+    "ReviewerAgent0749": {
+     "file": "reviewer_0749",
+     "agent_id_default": 749,
+     "create_aid_default": 749
+    },
+    "ReviewerAgent0769": {
+     "file": "reviewer_0769",
+     "agent_id_default": 769,
+     "create_aid_default": 769
+    },
+    "ReviewerAgent0789": {
+     "file": "reviewer_0789",
+     "agent_id_default": 789,
+     "create_aid_default": 789
+    },
+    "ReviewerAgent0809": {
+     "file": "reviewer_0809",
+     "agent_id_default": 809,
+     "create_aid_default": 809
+    },
+    "ReviewerAgent0829": {
+     "file": "reviewer_0829",
+     "agent_id_default": 829,
+     "create_aid_default": 829
+    },
+    "ReviewerAgent0849": {
+     "file": "reviewer_0849",
+     "agent_id_default": 849,
+     "create_aid_default": 849
+    },
+    "ReviewerAgent0869": {
+     "file": "reviewer_0869",
+     "agent_id_default": 869,
+     "create_aid_default": 869
+    },
+    "ReviewerAgent0889": {
+     "file": "reviewer_0889",
+     "agent_id_default": 889,
+     "create_aid_default": 889
+    },
+    "ReviewerAgent0909": {
+     "file": "reviewer_0909",
+     "agent_id_default": 909,
+     "create_aid_default": 909
+    },
+    "ReviewerAgent0929": {
+     "file": "reviewer_0929",
+     "agent_id_default": 929,
+     "create_aid_default": 929
+    },
+    "ReviewerAgent0949": {
+     "file": "reviewer_0949",
+     "agent_id_default": 949,
+     "create_aid_default": 949
+    },
+    "ReviewerAgent0969": {
+     "file": "reviewer_0969",
+     "agent_id_default": 969,
+     "create_aid_default": 969
+    },
+    "ReviewerAgent0989": {
+     "file": "reviewer_0989",
+     "agent_id_default": 989,
+     "create_aid_default": 989
+    }
+   }
+  },
+  "self_developer": {
+   "__all__": [
+    "SelfDeveloperAgent0013",
+    "SelfDeveloperAgent0033",
+    "SelfDeveloperAgent0053",
+    "SelfDeveloperAgent0073",
+    "SelfDeveloperAgent0093",
+    "SelfDeveloperAgent0113",
+    "SelfDeveloperAgent0133",
+    "SelfDeveloperAgent0153",
+    "SelfDeveloperAgent0173",
+    "SelfDeveloperAgent0193",
+    "SelfDeveloperAgent0213",
+    "SelfDeveloperAgent0233",
+    "SelfDeveloperAgent0253",
+    "SelfDeveloperAgent0273",
+    "SelfDeveloperAgent0293",
+    "SelfDeveloperAgent0313",
+    "SelfDeveloperAgent0333",
+    "SelfDeveloperAgent0353",
+    "SelfDeveloperAgent0373",
+    "SelfDeveloperAgent0393",
+    "SelfDeveloperAgent0413",
+    "SelfDeveloperAgent0433",
+    "SelfDeveloperAgent0453",
+    "SelfDeveloperAgent0473",
+    "SelfDeveloperAgent0493",
+    "SelfDeveloperAgent0513",
+    "SelfDeveloperAgent0533",
+    "SelfDeveloperAgent0553",
+    "SelfDeveloperAgent0573",
+    "SelfDeveloperAgent0593",
+    "SelfDeveloperAgent0613",
+    "SelfDeveloperAgent0633",
+    "SelfDeveloperAgent0653",
+    "SelfDeveloperAgent0673",
+    "SelfDeveloperAgent0693",
+    "SelfDeveloperAgent0713",
+    "SelfDeveloperAgent0733",
+    "SelfDeveloperAgent0753",
+    "SelfDeveloperAgent0773",
+    "SelfDeveloperAgent0793",
+    "SelfDeveloperAgent0813",
+    "SelfDeveloperAgent0833",
+    "SelfDeveloperAgent0853",
+    "SelfDeveloperAgent0873",
+    "SelfDeveloperAgent0893",
+    "SelfDeveloperAgent0913",
+    "SelfDeveloperAgent0933",
+    "SelfDeveloperAgent0953",
+    "SelfDeveloperAgent0973",
+    "SelfDeveloperAgent0993"
+   ],
+   "classes": {
+    "SelfDeveloperAgent0013": {
+     "file": "self_developer_0013",
+     "agent_id_default": 13,
+     "create_aid_default": 13
+    },
+    "SelfDeveloperAgent0033": {
+     "file": "self_developer_0033",
+     "agent_id_default": 33,
+     "create_aid_default": 33
+    },
+    "SelfDeveloperAgent0053": {
+     "file": "self_developer_0053",
+     "agent_id_default": 53,
+     "create_aid_default": 53
+    },
+    "SelfDeveloperAgent0073": {
+     "file": "self_developer_0073",
+     "agent_id_default": 73,
+     "create_aid_default": 73
+    },
+    "SelfDeveloperAgent0093": {
+     "file": "self_developer_0093",
+     "agent_id_default": 93,
+     "create_aid_default": 93
+    },
+    "SelfDeveloperAgent0113": {
+     "file": "self_developer_0113",
+     "agent_id_default": 113,
+     "create_aid_default": 113
+    },
+    "SelfDeveloperAgent0133": {
+     "file": "self_developer_0133",
+     "agent_id_default": 133,
+     "create_aid_default": 133
+    },
+    "SelfDeveloperAgent0153": {
+     "file": "self_developer_0153",
+     "agent_id_default": 153,
+     "create_aid_default": 153
+    },
+    "SelfDeveloperAgent0173": {
+     "file": "self_developer_0173",
+     "agent_id_default": 173,
+     "create_aid_default": 173
+    },
+    "SelfDeveloperAgent0193": {
+     "file": "self_developer_0193",
+     "agent_id_default": 193,
+     "create_aid_default": 193
+    },
+    "SelfDeveloperAgent0213": {
+     "file": "self_developer_0213",
+     "agent_id_default": 213,
+     "create_aid_default": 213
+    },
+    "SelfDeveloperAgent0233": {
+     "file": "self_developer_0233",
+     "agent_id_default": 233,
+     "create_aid_default": 233
+    },
+    "SelfDeveloperAgent0253": {
+     "file": "self_developer_0253",
+     "agent_id_default": 253,
+     "create_aid_default": 253
+    },
+    "SelfDeveloperAgent0273": {
+     "file": "self_developer_0273",
+     "agent_id_default": 273,
+     "create_aid_default": 273
+    },
+    "SelfDeveloperAgent0293": {
+     "file": "self_developer_0293",
+     "agent_id_default": 293,
+     "create_aid_default": 293
+    },
+    "SelfDeveloperAgent0313": {
+     "file": "self_developer_0313",
+     "agent_id_default": 313,
+     "create_aid_default": 313
+    },
+    "SelfDeveloperAgent0333": {
+     "file": "self_developer_0333",
+     "agent_id_default": 333,
+     "create_aid_default": 333
+    },
+    "SelfDeveloperAgent0353": {
+     "file": "self_developer_0353",
+     "agent_id_default": 353,
+     "create_aid_default": 353
+    },
+    "SelfDeveloperAgent0373": {
+     "file": "self_developer_0373",
+     "agent_id_default": 373,
+     "create_aid_default": 373
+    },
+    "SelfDeveloperAgent0393": {
+     "file": "self_developer_0393",
+     "agent_id_default": 393,
+     "create_aid_default": 393
+    },
+    "SelfDeveloperAgent0413": {
+     "file": "self_developer_0413",
+     "agent_id_default": 413,
+     "create_aid_default": 413
+    },
+    "SelfDeveloperAgent0433": {
+     "file": "self_developer_0433",
+     "agent_id_default": 433,
+     "create_aid_default": 433
+    },
+    "SelfDeveloperAgent0453": {
+     "file": "self_developer_0453",
+     "agent_id_default": 453,
+     "create_aid_default": 453
+    },
+    "SelfDeveloperAgent0473": {
+     "file": "self_developer_0473",
+     "agent_id_default": 473,
+     "create_aid_default": 473
+    },
+    "SelfDeveloperAgent0493": {
+     "file": "self_developer_0493",
+     "agent_id_default": 493,
+     "create_aid_default": 493
+    },
+    "SelfDeveloperAgent0513": {
+     "file": "self_developer_0513",
+     "agent_id_default": 513,
+     "create_aid_default": 513
+    },
+    "SelfDeveloperAgent0533": {
+     "file": "self_developer_0533",
+     "agent_id_default": 533,
+     "create_aid_default": 533
+    },
+    "SelfDeveloperAgent0553": {
+     "file": "self_developer_0553",
+     "agent_id_default": 553,
+     "create_aid_default": 553
+    },
+    "SelfDeveloperAgent0573": {
+     "file": "self_developer_0573",
+     "agent_id_default": 573,
+     "create_aid_default": 573
+    },
+    "SelfDeveloperAgent0593": {
+     "file": "self_developer_0593",
+     "agent_id_default": 593,
+     "create_aid_default": 593
+    },
+    "SelfDeveloperAgent0613": {
+     "file": "self_developer_0613",
+     "agent_id_default": 613,
+     "create_aid_default": 613
+    },
+    "SelfDeveloperAgent0633": {
+     "file": "self_developer_0633",
+     "agent_id_default": 633,
+     "create_aid_default": 633
+    },
+    "SelfDeveloperAgent0653": {
+     "file": "self_developer_0653",
+     "agent_id_default": 653,
+     "create_aid_default": 653
+    },
+    "SelfDeveloperAgent0673": {
+     "file": "self_developer_0673",
+     "agent_id_default": 673,
+     "create_aid_default": 673
+    },
+    "SelfDeveloperAgent0693": {
+     "file": "self_developer_0693",
+     "agent_id_default": 693,
+     "create_aid_default": 693
+    },
+    "SelfDeveloperAgent0713": {
+     "file": "self_developer_0713",
+     "agent_id_default": 713,
+     "create_aid_default": 713
+    },
+    "SelfDeveloperAgent0733": {
+     "file": "self_developer_0733",
+     "agent_id_default": 733,
+     "create_aid_default": 733
+    },
+    "SelfDeveloperAgent0753": {
+     "file": "self_developer_0753",
+     "agent_id_default": 753,
+     "create_aid_default": 753
+    },
+    "SelfDeveloperAgent0773": {
+     "file": "self_developer_0773",
+     "agent_id_default": 773,
+     "create_aid_default": 773
+    },
+    "SelfDeveloperAgent0793": {
+     "file": "self_developer_0793",
+     "agent_id_default": 793,
+     "create_aid_default": 793
+    },
+    "SelfDeveloperAgent0813": {
+     "file": "self_developer_0813",
+     "agent_id_default": 813,
+     "create_aid_default": 813
+    },
+    "SelfDeveloperAgent0833": {
+     "file": "self_developer_0833",
+     "agent_id_default": 833,
+     "create_aid_default": 833
+    },
+    "SelfDeveloperAgent0853": {
+     "file": "self_developer_0853",
+     "agent_id_default": 853,
+     "create_aid_default": 853
+    },
+    "SelfDeveloperAgent0873": {
+     "file": "self_developer_0873",
+     "agent_id_default": 873,
+     "create_aid_default": 873
+    },
+    "SelfDeveloperAgent0893": {
+     "file": "self_developer_0893",
+     "agent_id_default": 893,
+     "create_aid_default": 893
+    },
+    "SelfDeveloperAgent0913": {
+     "file": "self_developer_0913",
+     "agent_id_default": 913,
+     "create_aid_default": 913
+    },
+    "SelfDeveloperAgent0933": {
+     "file": "self_developer_0933",
+     "agent_id_default": 933,
+     "create_aid_default": 933
+    },
+    "SelfDeveloperAgent0953": {
+     "file": "self_developer_0953",
+     "agent_id_default": 953,
+     "create_aid_default": 953
+    },
+    "SelfDeveloperAgent0973": {
+     "file": "self_developer_0973",
+     "agent_id_default": 973,
+     "create_aid_default": 973
+    },
+    "SelfDeveloperAgent0993": {
+     "file": "self_developer_0993",
+     "agent_id_default": 993,
+     "create_aid_default": 993
+    }
+   }
+  },
+  "strategist": {
+   "__all__": [
+    "StrategistAgent0017",
+    "StrategistAgent0037",
+    "StrategistAgent0057",
+    "StrategistAgent0077",
+    "StrategistAgent0097",
+    "StrategistAgent0117",
+    "StrategistAgent0137",
+    "StrategistAgent0157",
+    "StrategistAgent0177",
+    "StrategistAgent0197",
+    "StrategistAgent0217",
+    "StrategistAgent0237",
+    "StrategistAgent0257",
+    "StrategistAgent0277",
+    "StrategistAgent0297",
+    "StrategistAgent0317",
+    "StrategistAgent0337",
+    "StrategistAgent0357",
+    "StrategistAgent0377",
+    "StrategistAgent0397",
+    "StrategistAgent0417",
+    "StrategistAgent0437",
+    "StrategistAgent0457",
+    "StrategistAgent0477",
+    "StrategistAgent0497",
+    "StrategistAgent0517",
+    "StrategistAgent0537",
+    "StrategistAgent0557",
+    "StrategistAgent0577",
+    "StrategistAgent0597",
+    "StrategistAgent0617",
+    "StrategistAgent0637",
+    "StrategistAgent0657",
+    "StrategistAgent0677",
+    "StrategistAgent0697",
+    "StrategistAgent0717",
+    "StrategistAgent0737",
+    "StrategistAgent0757",
+    "StrategistAgent0777",
+    "StrategistAgent0797",
+    "StrategistAgent0817",
+    "StrategistAgent0837",
+    "StrategistAgent0857",
+    "StrategistAgent0877",
+    "StrategistAgent0897",
+    "StrategistAgent0917",
+    "StrategistAgent0937",
+    "StrategistAgent0957",
+    "StrategistAgent0977",
+    "StrategistAgent0997"
+   ],
+   "classes": {
+    "StrategistAgent0017": {
+     "file": "strategist_0017",
+     "agent_id_default": 17,
+     "create_aid_default": 17
+    },
+    "StrategistAgent0037": {
+     "file": "strategist_0037",
+     "agent_id_default": 37,
+     "create_aid_default": 37
+    },
+    "StrategistAgent0057": {
+     "file": "strategist_0057",
+     "agent_id_default": 57,
+     "create_aid_default": 57
+    },
+    "StrategistAgent0077": {
+     "file": "strategist_0077",
+     "agent_id_default": 77,
+     "create_aid_default": 77
+    },
+    "StrategistAgent0097": {
+     "file": "strategist_0097",
+     "agent_id_default": 97,
+     "create_aid_default": 97
+    },
+    "StrategistAgent0117": {
+     "file": "strategist_0117",
+     "agent_id_default": 117,
+     "create_aid_default": 117
+    },
+    "StrategistAgent0137": {
+     "file": "strategist_0137",
+     "agent_id_default": 137,
+     "create_aid_default": 137
+    },
+    "StrategistAgent0157": {
+     "file": "strategist_0157",
+     "agent_id_default": 157,
+     "create_aid_default": 157
+    },
+    "StrategistAgent0177": {
+     "file": "strategist_0177",
+     "agent_id_default": 177,
+     "create_aid_default": 177
+    },
+    "StrategistAgent0197": {
+     "file": "strategist_0197",
+     "agent_id_default": 197,
+     "create_aid_default": 197
+    },
+    "StrategistAgent0217": {
+     "file": "strategist_0217",
+     "agent_id_default": 217,
+     "create_aid_default": 217
+    },
+    "StrategistAgent0237": {
+     "file": "strategist_0237",
+     "agent_id_default": 237,
+     "create_aid_default": 237
+    },
+    "StrategistAgent0257": {
+     "file": "strategist_0257",
+     "agent_id_default": 257,
+     "create_aid_default": 257
+    },
+    "StrategistAgent0277": {
+     "file": "strategist_0277",
+     "agent_id_default": 277,
+     "create_aid_default": 277
+    },
+    "StrategistAgent0297": {
+     "file": "strategist_0297",
+     "agent_id_default": 297,
+     "create_aid_default": 297
+    },
+    "StrategistAgent0317": {
+     "file": "strategist_0317",
+     "agent_id_default": 317,
+     "create_aid_default": 317
+    },
+    "StrategistAgent0337": {
+     "file": "strategist_0337",
+     "agent_id_default": 337,
+     "create_aid_default": 337
+    },
+    "StrategistAgent0357": {
+     "file": "strategist_0357",
+     "agent_id_default": 357,
+     "create_aid_default": 357
+    },
+    "StrategistAgent0377": {
+     "file": "strategist_0377",
+     "agent_id_default": 377,
+     "create_aid_default": 377
+    },
+    "StrategistAgent0397": {
+     "file": "strategist_0397",
+     "agent_id_default": 397,
+     "create_aid_default": 397
+    },
+    "StrategistAgent0417": {
+     "file": "strategist_0417",
+     "agent_id_default": 417,
+     "create_aid_default": 417
+    },
+    "StrategistAgent0437": {
+     "file": "strategist_0437",
+     "agent_id_default": 437,
+     "create_aid_default": 437
+    },
+    "StrategistAgent0457": {
+     "file": "strategist_0457",
+     "agent_id_default": 457,
+     "create_aid_default": 457
+    },
+    "StrategistAgent0477": {
+     "file": "strategist_0477",
+     "agent_id_default": 477,
+     "create_aid_default": 477
+    },
+    "StrategistAgent0497": {
+     "file": "strategist_0497",
+     "agent_id_default": 497,
+     "create_aid_default": 497
+    },
+    "StrategistAgent0517": {
+     "file": "strategist_0517",
+     "agent_id_default": 517,
+     "create_aid_default": 517
+    },
+    "StrategistAgent0537": {
+     "file": "strategist_0537",
+     "agent_id_default": 537,
+     "create_aid_default": 537
+    },
+    "StrategistAgent0557": {
+     "file": "strategist_0557",
+     "agent_id_default": 557,
+     "create_aid_default": 557
+    },
+    "StrategistAgent0577": {
+     "file": "strategist_0577",
+     "agent_id_default": 577,
+     "create_aid_default": 577
+    },
+    "StrategistAgent0597": {
+     "file": "strategist_0597",
+     "agent_id_default": 597,
+     "create_aid_default": 597
+    },
+    "StrategistAgent0617": {
+     "file": "strategist_0617",
+     "agent_id_default": 617,
+     "create_aid_default": 617
+    },
+    "StrategistAgent0637": {
+     "file": "strategist_0637",
+     "agent_id_default": 637,
+     "create_aid_default": 637
+    },
+    "StrategistAgent0657": {
+     "file": "strategist_0657",
+     "agent_id_default": 657,
+     "create_aid_default": 657
+    },
+    "StrategistAgent0677": {
+     "file": "strategist_0677",
+     "agent_id_default": 677,
+     "create_aid_default": 677
+    },
+    "StrategistAgent0697": {
+     "file": "strategist_0697",
+     "agent_id_default": 697,
+     "create_aid_default": 697
+    },
+    "StrategistAgent0717": {
+     "file": "strategist_0717",
+     "agent_id_default": 717,
+     "create_aid_default": 717
+    },
+    "StrategistAgent0737": {
+     "file": "strategist_0737",
+     "agent_id_default": 737,
+     "create_aid_default": 737
+    },
+    "StrategistAgent0757": {
+     "file": "strategist_0757",
+     "agent_id_default": 757,
+     "create_aid_default": 757
+    },
+    "StrategistAgent0777": {
+     "file": "strategist_0777",
+     "agent_id_default": 777,
+     "create_aid_default": 777
+    },
+    "StrategistAgent0797": {
+     "file": "strategist_0797",
+     "agent_id_default": 797,
+     "create_aid_default": 797
+    },
+    "StrategistAgent0817": {
+     "file": "strategist_0817",
+     "agent_id_default": 817,
+     "create_aid_default": 817
+    },
+    "StrategistAgent0837": {
+     "file": "strategist_0837",
+     "agent_id_default": 837,
+     "create_aid_default": 837
+    },
+    "StrategistAgent0857": {
+     "file": "strategist_0857",
+     "agent_id_default": 857,
+     "create_aid_default": 857
+    },
+    "StrategistAgent0877": {
+     "file": "strategist_0877",
+     "agent_id_default": 877,
+     "create_aid_default": 877
+    },
+    "StrategistAgent0897": {
+     "file": "strategist_0897",
+     "agent_id_default": 897,
+     "create_aid_default": 897
+    },
+    "StrategistAgent0917": {
+     "file": "strategist_0917",
+     "agent_id_default": 917,
+     "create_aid_default": 917
+    },
+    "StrategistAgent0937": {
+     "file": "strategist_0937",
+     "agent_id_default": 937,
+     "create_aid_default": 937
+    },
+    "StrategistAgent0957": {
+     "file": "strategist_0957",
+     "agent_id_default": 957,
+     "create_aid_default": 957
+    },
+    "StrategistAgent0977": {
+     "file": "strategist_0977",
+     "agent_id_default": 977,
+     "create_aid_default": 977
+    },
+    "StrategistAgent0997": {
+     "file": "strategist_0997",
+     "agent_id_default": 997,
+     "create_aid_default": 997
+    }
+   }
+  },
+  "surgeon": {
+   "__all__": [
+    "SurgeonAgent0012",
+    "SurgeonAgent0032",
+    "SurgeonAgent0052",
+    "SurgeonAgent0072",
+    "SurgeonAgent0092",
+    "SurgeonAgent0112",
+    "SurgeonAgent0132",
+    "SurgeonAgent0152",
+    "SurgeonAgent0172",
+    "SurgeonAgent0192",
+    "SurgeonAgent0212",
+    "SurgeonAgent0232",
+    "SurgeonAgent0252",
+    "SurgeonAgent0272",
+    "SurgeonAgent0292",
+    "SurgeonAgent0312",
+    "SurgeonAgent0332",
+    "SurgeonAgent0352",
+    "SurgeonAgent0372",
+    "SurgeonAgent0392",
+    "SurgeonAgent0412",
+    "SurgeonAgent0432",
+    "SurgeonAgent0452",
+    "SurgeonAgent0472",
+    "SurgeonAgent0492",
+    "SurgeonAgent0512",
+    "SurgeonAgent0532",
+    "SurgeonAgent0552",
+    "SurgeonAgent0572",
+    "SurgeonAgent0592",
+    "SurgeonAgent0612",
+    "SurgeonAgent0632",
+    "SurgeonAgent0652",
+    "SurgeonAgent0672",
+    "SurgeonAgent0692",
+    "SurgeonAgent0712",
+    "SurgeonAgent0732",
+    "SurgeonAgent0752",
+    "SurgeonAgent0772",
+    "SurgeonAgent0792",
+    "SurgeonAgent0812",
+    "SurgeonAgent0832",
+    "SurgeonAgent0852",
+    "SurgeonAgent0872",
+    "SurgeonAgent0892",
+    "SurgeonAgent0912",
+    "SurgeonAgent0932",
+    "SurgeonAgent0952",
+    "SurgeonAgent0972",
+    "SurgeonAgent0992"
+   ],
+   "classes": {
+    "SurgeonAgent0012": {
+     "file": "surgeon_0012",
+     "agent_id_default": 12,
+     "create_aid_default": 12
+    },
+    "SurgeonAgent0032": {
+     "file": "surgeon_0032",
+     "agent_id_default": 32,
+     "create_aid_default": 32
+    },
+    "SurgeonAgent0052": {
+     "file": "surgeon_0052",
+     "agent_id_default": 52,
+     "create_aid_default": 52
+    },
+    "SurgeonAgent0072": {
+     "file": "surgeon_0072",
+     "agent_id_default": 72,
+     "create_aid_default": 72
+    },
+    "SurgeonAgent0092": {
+     "file": "surgeon_0092",
+     "agent_id_default": 92,
+     "create_aid_default": 92
+    },
+    "SurgeonAgent0112": {
+     "file": "surgeon_0112",
+     "agent_id_default": 112,
+     "create_aid_default": 112
+    },
+    "SurgeonAgent0132": {
+     "file": "surgeon_0132",
+     "agent_id_default": 132,
+     "create_aid_default": 132
+    },
+    "SurgeonAgent0152": {
+     "file": "surgeon_0152",
+     "agent_id_default": 152,
+     "create_aid_default": 152
+    },
+    "SurgeonAgent0172": {
+     "file": "surgeon_0172",
+     "agent_id_default": 172,
+     "create_aid_default": 172
+    },
+    "SurgeonAgent0192": {
+     "file": "surgeon_0192",
+     "agent_id_default": 192,
+     "create_aid_default": 192
+    },
+    "SurgeonAgent0212": {
+     "file": "surgeon_0212",
+     "agent_id_default": 212,
+     "create_aid_default": 212
+    },
+    "SurgeonAgent0232": {
+     "file": "surgeon_0232",
+     "agent_id_default": 232,
+     "create_aid_default": 232
+    },
+    "SurgeonAgent0252": {
+     "file": "surgeon_0252",
+     "agent_id_default": 252,
+     "create_aid_default": 252
+    },
+    "SurgeonAgent0272": {
+     "file": "surgeon_0272",
+     "agent_id_default": 272,
+     "create_aid_default": 272
+    },
+    "SurgeonAgent0292": {
+     "file": "surgeon_0292",
+     "agent_id_default": 292,
+     "create_aid_default": 292
+    },
+    "SurgeonAgent0312": {
+     "file": "surgeon_0312",
+     "agent_id_default": 312,
+     "create_aid_default": 312
+    },
+    "SurgeonAgent0332": {
+     "file": "surgeon_0332",
+     "agent_id_default": 332,
+     "create_aid_default": 332
+    },
+    "SurgeonAgent0352": {
+     "file": "surgeon_0352",
+     "agent_id_default": 352,
+     "create_aid_default": 352
+    },
+    "SurgeonAgent0372": {
+     "file": "surgeon_0372",
+     "agent_id_default": 372,
+     "create_aid_default": 372
+    },
+    "SurgeonAgent0392": {
+     "file": "surgeon_0392",
+     "agent_id_default": 392,
+     "create_aid_default": 392
+    },
+    "SurgeonAgent0412": {
+     "file": "surgeon_0412",
+     "agent_id_default": 412,
+     "create_aid_default": 412
+    },
+    "SurgeonAgent0432": {
+     "file": "surgeon_0432",
+     "agent_id_default": 432,
+     "create_aid_default": 432
+    },
+    "SurgeonAgent0452": {
+     "file": "surgeon_0452",
+     "agent_id_default": 452,
+     "create_aid_default": 452
+    },
+    "SurgeonAgent0472": {
+     "file": "surgeon_0472",
+     "agent_id_default": 472,
+     "create_aid_default": 472
+    },
+    "SurgeonAgent0492": {
+     "file": "surgeon_0492",
+     "agent_id_default": 492,
+     "create_aid_default": 492
+    },
+    "SurgeonAgent0512": {
+     "file": "surgeon_0512",
+     "agent_id_default": 512,
+     "create_aid_default": 512
+    },
+    "SurgeonAgent0532": {
+     "file": "surgeon_0532",
+     "agent_id_default": 532,
+     "create_aid_default": 532
+    },
+    "SurgeonAgent0552": {
+     "file": "surgeon_0552",
+     "agent_id_default": 552,
+     "create_aid_default": 552
+    },
+    "SurgeonAgent0572": {
+     "file": "surgeon_0572",
+     "agent_id_default": 572,
+     "create_aid_default": 572
+    },
+    "SurgeonAgent0592": {
+     "file": "surgeon_0592",
+     "agent_id_default": 592,
+     "create_aid_default": 592
+    },
+    "SurgeonAgent0612": {
+     "file": "surgeon_0612",
+     "agent_id_default": 612,
+     "create_aid_default": 612
+    },
+    "SurgeonAgent0632": {
+     "file": "surgeon_0632",
+     "agent_id_default": 632,
+     "create_aid_default": 632
+    },
+    "SurgeonAgent0652": {
+     "file": "surgeon_0652",
+     "agent_id_default": 652,
+     "create_aid_default": 652
+    },
+    "SurgeonAgent0672": {
+     "file": "surgeon_0672",
+     "agent_id_default": 672,
+     "create_aid_default": 672
+    },
+    "SurgeonAgent0692": {
+     "file": "surgeon_0692",
+     "agent_id_default": 692,
+     "create_aid_default": 692
+    },
+    "SurgeonAgent0712": {
+     "file": "surgeon_0712",
+     "agent_id_default": 712,
+     "create_aid_default": 712
+    },
+    "SurgeonAgent0732": {
+     "file": "surgeon_0732",
+     "agent_id_default": 732,
+     "create_aid_default": 732
+    },
+    "SurgeonAgent0752": {
+     "file": "surgeon_0752",
+     "agent_id_default": 752,
+     "create_aid_default": 752
+    },
+    "SurgeonAgent0772": {
+     "file": "surgeon_0772",
+     "agent_id_default": 772,
+     "create_aid_default": 772
+    },
+    "SurgeonAgent0792": {
+     "file": "surgeon_0792",
+     "agent_id_default": 792,
+     "create_aid_default": 792
+    },
+    "SurgeonAgent0812": {
+     "file": "surgeon_0812",
+     "agent_id_default": 812,
+     "create_aid_default": 812
+    },
+    "SurgeonAgent0832": {
+     "file": "surgeon_0832",
+     "agent_id_default": 832,
+     "create_aid_default": 832
+    },
+    "SurgeonAgent0852": {
+     "file": "surgeon_0852",
+     "agent_id_default": 852,
+     "create_aid_default": 852
+    },
+    "SurgeonAgent0872": {
+     "file": "surgeon_0872",
+     "agent_id_default": 872,
+     "create_aid_default": 872
+    },
+    "SurgeonAgent0892": {
+     "file": "surgeon_0892",
+     "agent_id_default": 892,
+     "create_aid_default": 892
+    },
+    "SurgeonAgent0912": {
+     "file": "surgeon_0912",
+     "agent_id_default": 912,
+     "create_aid_default": 912
+    },
+    "SurgeonAgent0932": {
+     "file": "surgeon_0932",
+     "agent_id_default": 932,
+     "create_aid_default": 932
+    },
+    "SurgeonAgent0952": {
+     "file": "surgeon_0952",
+     "agent_id_default": 952,
+     "create_aid_default": 952
+    },
+    "SurgeonAgent0972": {
+     "file": "surgeon_0972",
+     "agent_id_default": 972,
+     "create_aid_default": 972
+    },
+    "SurgeonAgent0992": {
+     "file": "surgeon_0992",
+     "agent_id_default": 992,
+     "create_aid_default": 992
+    }
+   }
+  },
+  "test_runner": {
+   "__all__": [
+    "TestRunnerAgent0005",
+    "TestRunnerAgent0025",
+    "TestRunnerAgent0045",
+    "TestRunnerAgent0065",
+    "TestRunnerAgent0085",
+    "TestRunnerAgent0105",
+    "TestRunnerAgent0125",
+    "TestRunnerAgent0145",
+    "TestRunnerAgent0165",
+    "TestRunnerAgent0185",
+    "TestRunnerAgent0205",
+    "TestRunnerAgent0225",
+    "TestRunnerAgent0245",
+    "TestRunnerAgent0265",
+    "TestRunnerAgent0285",
+    "TestRunnerAgent0305",
+    "TestRunnerAgent0325",
+    "TestRunnerAgent0345",
+    "TestRunnerAgent0365",
+    "TestRunnerAgent0385",
+    "TestRunnerAgent0405",
+    "TestRunnerAgent0425",
+    "TestRunnerAgent0445",
+    "TestRunnerAgent0465",
+    "TestRunnerAgent0485",
+    "TestRunnerAgent0505",
+    "TestRunnerAgent0525",
+    "TestRunnerAgent0545",
+    "TestRunnerAgent0565",
+    "TestRunnerAgent0585",
+    "TestRunnerAgent0605",
+    "TestRunnerAgent0625",
+    "TestRunnerAgent0645",
+    "TestRunnerAgent0665",
+    "TestRunnerAgent0685",
+    "TestRunnerAgent0705",
+    "TestRunnerAgent0725",
+    "TestRunnerAgent0745",
+    "TestRunnerAgent0765",
+    "TestRunnerAgent0785",
+    "TestRunnerAgent0805",
+    "TestRunnerAgent0825",
+    "TestRunnerAgent0845",
+    "TestRunnerAgent0865",
+    "TestRunnerAgent0885",
+    "TestRunnerAgent0905",
+    "TestRunnerAgent0925",
+    "TestRunnerAgent0945",
+    "TestRunnerAgent0965",
+    "TestRunnerAgent0985"
+   ],
+   "classes": {
+    "TestRunnerAgent0005": {
+     "file": "test_runner_0005",
+     "agent_id_default": 5,
+     "create_aid_default": 5
+    },
+    "TestRunnerAgent0025": {
+     "file": "test_runner_0025",
+     "agent_id_default": 25,
+     "create_aid_default": 25
+    },
+    "TestRunnerAgent0045": {
+     "file": "test_runner_0045",
+     "agent_id_default": 45,
+     "create_aid_default": 45
+    },
+    "TestRunnerAgent0065": {
+     "file": "test_runner_0065",
+     "agent_id_default": 65,
+     "create_aid_default": 65
+    },
+    "TestRunnerAgent0085": {
+     "file": "test_runner_0085",
+     "agent_id_default": 85,
+     "create_aid_default": 85
+    },
+    "TestRunnerAgent0105": {
+     "file": "test_runner_0105",
+     "agent_id_default": 105,
+     "create_aid_default": 105
+    },
+    "TestRunnerAgent0125": {
+     "file": "test_runner_0125",
+     "agent_id_default": 125,
+     "create_aid_default": 125
+    },
+    "TestRunnerAgent0145": {
+     "file": "test_runner_0145",
+     "agent_id_default": 145,
+     "create_aid_default": 145
+    },
+    "TestRunnerAgent0165": {
+     "file": "test_runner_0165",
+     "agent_id_default": 165,
+     "create_aid_default": 165
+    },
+    "TestRunnerAgent0185": {
+     "file": "test_runner_0185",
+     "agent_id_default": 185,
+     "create_aid_default": 185
+    },
+    "TestRunnerAgent0205": {
+     "file": "test_runner_0205",
+     "agent_id_default": 205,
+     "create_aid_default": 205
+    },
+    "TestRunnerAgent0225": {
+     "file": "test_runner_0225",
+     "agent_id_default": 225,
+     "create_aid_default": 225
+    },
+    "TestRunnerAgent0245": {
+     "file": "test_runner_0245",
+     "agent_id_default": 245,
+     "create_aid_default": 245
+    },
+    "TestRunnerAgent0265": {
+     "file": "test_runner_0265",
+     "agent_id_default": 265,
+     "create_aid_default": 265
+    },
+    "TestRunnerAgent0285": {
+     "file": "test_runner_0285",
+     "agent_id_default": 285,
+     "create_aid_default": 285
+    },
+    "TestRunnerAgent0305": {
+     "file": "test_runner_0305",
+     "agent_id_default": 305,
+     "create_aid_default": 305
+    },
+    "TestRunnerAgent0325": {
+     "file": "test_runner_0325",
+     "agent_id_default": 325,
+     "create_aid_default": 325
+    },
+    "TestRunnerAgent0345": {
+     "file": "test_runner_0345",
+     "agent_id_default": 345,
+     "create_aid_default": 345
+    },
+    "TestRunnerAgent0365": {
+     "file": "test_runner_0365",
+     "agent_id_default": 365,
+     "create_aid_default": 365
+    },
+    "TestRunnerAgent0385": {
+     "file": "test_runner_0385",
+     "agent_id_default": 385,
+     "create_aid_default": 385
+    },
+    "TestRunnerAgent0405": {
+     "file": "test_runner_0405",
+     "agent_id_default": 405,
+     "create_aid_default": 405
+    },
+    "TestRunnerAgent0425": {
+     "file": "test_runner_0425",
+     "agent_id_default": 425,
+     "create_aid_default": 425
+    },
+    "TestRunnerAgent0445": {
+     "file": "test_runner_0445",
+     "agent_id_default": 445,
+     "create_aid_default": 445
+    },
+    "TestRunnerAgent0465": {
+     "file": "test_runner_0465",
+     "agent_id_default": 465,
+     "create_aid_default": 465
+    },
+    "TestRunnerAgent0485": {
+     "file": "test_runner_0485",
+     "agent_id_default": 485,
+     "create_aid_default": 485
+    },
+    "TestRunnerAgent0505": {
+     "file": "test_runner_0505",
+     "agent_id_default": 505,
+     "create_aid_default": 505
+    },
+    "TestRunnerAgent0525": {
+     "file": "test_runner_0525",
+     "agent_id_default": 525,
+     "create_aid_default": 525
+    },
+    "TestRunnerAgent0545": {
+     "file": "test_runner_0545",
+     "agent_id_default": 545,
+     "create_aid_default": 545
+    },
+    "TestRunnerAgent0565": {
+     "file": "test_runner_0565",
+     "agent_id_default": 565,
+     "create_aid_default": 565
+    },
+    "TestRunnerAgent0585": {
+     "file": "test_runner_0585",
+     "agent_id_default": 585,
+     "create_aid_default": 585
+    },
+    "TestRunnerAgent0605": {
+     "file": "test_runner_0605",
+     "agent_id_default": 605,
+     "create_aid_default": 605
+    },
+    "TestRunnerAgent0625": {
+     "file": "test_runner_0625",
+     "agent_id_default": 625,
+     "create_aid_default": 625
+    },
+    "TestRunnerAgent0645": {
+     "file": "test_runner_0645",
+     "agent_id_default": 645,
+     "create_aid_default": 645
+    },
+    "TestRunnerAgent0665": {
+     "file": "test_runner_0665",
+     "agent_id_default": 665,
+     "create_aid_default": 665
+    },
+    "TestRunnerAgent0685": {
+     "file": "test_runner_0685",
+     "agent_id_default": 685,
+     "create_aid_default": 685
+    },
+    "TestRunnerAgent0705": {
+     "file": "test_runner_0705",
+     "agent_id_default": 705,
+     "create_aid_default": 705
+    },
+    "TestRunnerAgent0725": {
+     "file": "test_runner_0725",
+     "agent_id_default": 725,
+     "create_aid_default": 725
+    },
+    "TestRunnerAgent0745": {
+     "file": "test_runner_0745",
+     "agent_id_default": 745,
+     "create_aid_default": 745
+    },
+    "TestRunnerAgent0765": {
+     "file": "test_runner_0765",
+     "agent_id_default": 765,
+     "create_aid_default": 765
+    },
+    "TestRunnerAgent0785": {
+     "file": "test_runner_0785",
+     "agent_id_default": 785,
+     "create_aid_default": 785
+    },
+    "TestRunnerAgent0805": {
+     "file": "test_runner_0805",
+     "agent_id_default": 805,
+     "create_aid_default": 805
+    },
+    "TestRunnerAgent0825": {
+     "file": "test_runner_0825",
+     "agent_id_default": 825,
+     "create_aid_default": 825
+    },
+    "TestRunnerAgent0845": {
+     "file": "test_runner_0845",
+     "agent_id_default": 845,
+     "create_aid_default": 845
+    },
+    "TestRunnerAgent0865": {
+     "file": "test_runner_0865",
+     "agent_id_default": 865,
+     "create_aid_default": 865
+    },
+    "TestRunnerAgent0885": {
+     "file": "test_runner_0885",
+     "agent_id_default": 885,
+     "create_aid_default": 885
+    },
+    "TestRunnerAgent0905": {
+     "file": "test_runner_0905",
+     "agent_id_default": 905,
+     "create_aid_default": 905
+    },
+    "TestRunnerAgent0925": {
+     "file": "test_runner_0925",
+     "agent_id_default": 925,
+     "create_aid_default": 925
+    },
+    "TestRunnerAgent0945": {
+     "file": "test_runner_0945",
+     "agent_id_default": 945,
+     "create_aid_default": 945
+    },
+    "TestRunnerAgent0965": {
+     "file": "test_runner_0965",
+     "agent_id_default": 965,
+     "create_aid_default": 965
+    },
+    "TestRunnerAgent0985": {
+     "file": "test_runner_0985",
+     "agent_id_default": 985,
+     "create_aid_default": 985
+    }
+   }
+  },
+  "validator": {
+   "__all__": [
+    "ValidatorAgent0019",
+    "ValidatorAgent0039",
+    "ValidatorAgent0059",
+    "ValidatorAgent0079",
+    "ValidatorAgent0099",
+    "ValidatorAgent0119",
+    "ValidatorAgent0139",
+    "ValidatorAgent0159",
+    "ValidatorAgent0179",
+    "ValidatorAgent0199",
+    "ValidatorAgent0219",
+    "ValidatorAgent0239",
+    "ValidatorAgent0259",
+    "ValidatorAgent0279",
+    "ValidatorAgent0299",
+    "ValidatorAgent0319",
+    "ValidatorAgent0339",
+    "ValidatorAgent0359",
+    "ValidatorAgent0379",
+    "ValidatorAgent0399",
+    "ValidatorAgent0419",
+    "ValidatorAgent0439",
+    "ValidatorAgent0459",
+    "ValidatorAgent0479",
+    "ValidatorAgent0499",
+    "ValidatorAgent0519",
+    "ValidatorAgent0539",
+    "ValidatorAgent0559",
+    "ValidatorAgent0579",
+    "ValidatorAgent0599",
+    "ValidatorAgent0619",
+    "ValidatorAgent0639",
+    "ValidatorAgent0659",
+    "ValidatorAgent0679",
+    "ValidatorAgent0699",
+    "ValidatorAgent0719",
+    "ValidatorAgent0739",
+    "ValidatorAgent0759",
+    "ValidatorAgent0779",
+    "ValidatorAgent0799",
+    "ValidatorAgent0819",
+    "ValidatorAgent0839",
+    "ValidatorAgent0859",
+    "ValidatorAgent0879",
+    "ValidatorAgent0899",
+    "ValidatorAgent0919",
+    "ValidatorAgent0939",
+    "ValidatorAgent0959",
+    "ValidatorAgent0979",
+    "ValidatorAgent0999"
+   ],
+   "classes": {
+    "ValidatorAgent0019": {
+     "file": "validator_0019",
+     "agent_id_default": 19,
+     "create_aid_default": 19
+    },
+    "ValidatorAgent0039": {
+     "file": "validator_0039",
+     "agent_id_default": 39,
+     "create_aid_default": 39
+    },
+    "ValidatorAgent0059": {
+     "file": "validator_0059",
+     "agent_id_default": 59,
+     "create_aid_default": 59
+    },
+    "ValidatorAgent0079": {
+     "file": "validator_0079",
+     "agent_id_default": 79,
+     "create_aid_default": 79
+    },
+    "ValidatorAgent0099": {
+     "file": "validator_0099",
+     "agent_id_default": 99,
+     "create_aid_default": 99
+    },
+    "ValidatorAgent0119": {
+     "file": "validator_0119",
+     "agent_id_default": 119,
+     "create_aid_default": 119
+    },
+    "ValidatorAgent0139": {
+     "file": "validator_0139",
+     "agent_id_default": 139,
+     "create_aid_default": 139
+    },
+    "ValidatorAgent0159": {
+     "file": "validator_0159",
+     "agent_id_default": 159,
+     "create_aid_default": 159
+    },
+    "ValidatorAgent0179": {
+     "file": "validator_0179",
+     "agent_id_default": 179,
+     "create_aid_default": 179
+    },
+    "ValidatorAgent0199": {
+     "file": "validator_0199",
+     "agent_id_default": 199,
+     "create_aid_default": 199
+    },
+    "ValidatorAgent0219": {
+     "file": "validator_0219",
+     "agent_id_default": 219,
+     "create_aid_default": 219
+    },
+    "ValidatorAgent0239": {
+     "file": "validator_0239",
+     "agent_id_default": 239,
+     "create_aid_default": 239
+    },
+    "ValidatorAgent0259": {
+     "file": "validator_0259",
+     "agent_id_default": 259,
+     "create_aid_default": 259
+    },
+    "ValidatorAgent0279": {
+     "file": "validator_0279",
+     "agent_id_default": 279,
+     "create_aid_default": 279
+    },
+    "ValidatorAgent0299": {
+     "file": "validator_0299",
+     "agent_id_default": 299,
+     "create_aid_default": 299
+    },
+    "ValidatorAgent0319": {
+     "file": "validator_0319",
+     "agent_id_default": 319,
+     "create_aid_default": 319
+    },
+    "ValidatorAgent0339": {
+     "file": "validator_0339",
+     "agent_id_default": 339,
+     "create_aid_default": 339
+    },
+    "ValidatorAgent0359": {
+     "file": "validator_0359",
+     "agent_id_default": 359,
+     "create_aid_default": 359
+    },
+    "ValidatorAgent0379": {
+     "file": "validator_0379",
+     "agent_id_default": 379,
+     "create_aid_default": 379
+    },
+    "ValidatorAgent0399": {
+     "file": "validator_0399",
+     "agent_id_default": 399,
+     "create_aid_default": 399
+    },
+    "ValidatorAgent0419": {
+     "file": "validator_0419",
+     "agent_id_default": 419,
+     "create_aid_default": 419
+    },
+    "ValidatorAgent0439": {
+     "file": "validator_0439",
+     "agent_id_default": 439,
+     "create_aid_default": 439
+    },
+    "ValidatorAgent0459": {
+     "file": "validator_0459",
+     "agent_id_default": 459,
+     "create_aid_default": 459
+    },
+    "ValidatorAgent0479": {
+     "file": "validator_0479",
+     "agent_id_default": 479,
+     "create_aid_default": 479
+    },
+    "ValidatorAgent0499": {
+     "file": "validator_0499",
+     "agent_id_default": 499,
+     "create_aid_default": 499
+    },
+    "ValidatorAgent0519": {
+     "file": "validator_0519",
+     "agent_id_default": 519,
+     "create_aid_default": 519
+    },
+    "ValidatorAgent0539": {
+     "file": "validator_0539",
+     "agent_id_default": 539,
+     "create_aid_default": 539
+    },
+    "ValidatorAgent0559": {
+     "file": "validator_0559",
+     "agent_id_default": 559,
+     "create_aid_default": 559
+    },
+    "ValidatorAgent0579": {
+     "file": "validator_0579",
+     "agent_id_default": 579,
+     "create_aid_default": 579
+    },
+    "ValidatorAgent0599": {
+     "file": "validator_0599",
+     "agent_id_default": 599,
+     "create_aid_default": 599
+    },
+    "ValidatorAgent0619": {
+     "file": "validator_0619",
+     "agent_id_default": 619,
+     "create_aid_default": 619
+    },
+    "ValidatorAgent0639": {
+     "file": "validator_0639",
+     "agent_id_default": 639,
+     "create_aid_default": 639
+    },
+    "ValidatorAgent0659": {
+     "file": "validator_0659",
+     "agent_id_default": 659,
+     "create_aid_default": 659
+    },
+    "ValidatorAgent0679": {
+     "file": "validator_0679",
+     "agent_id_default": 679,
+     "create_aid_default": 679
+    },
+    "ValidatorAgent0699": {
+     "file": "validator_0699",
+     "agent_id_default": 699,
+     "create_aid_default": 699
+    },
+    "ValidatorAgent0719": {
+     "file": "validator_0719",
+     "agent_id_default": 719,
+     "create_aid_default": 719
+    },
+    "ValidatorAgent0739": {
+     "file": "validator_0739",
+     "agent_id_default": 739,
+     "create_aid_default": 739
+    },
+    "ValidatorAgent0759": {
+     "file": "validator_0759",
+     "agent_id_default": 759,
+     "create_aid_default": 759
+    },
+    "ValidatorAgent0779": {
+     "file": "validator_0779",
+     "agent_id_default": 779,
+     "create_aid_default": 779
+    },
+    "ValidatorAgent0799": {
+     "file": "validator_0799",
+     "agent_id_default": 799,
+     "create_aid_default": 799
+    },
+    "ValidatorAgent0819": {
+     "file": "validator_0819",
+     "agent_id_default": 819,
+     "create_aid_default": 819
+    },
+    "ValidatorAgent0839": {
+     "file": "validator_0839",
+     "agent_id_default": 839,
+     "create_aid_default": 839
+    },
+    "ValidatorAgent0859": {
+     "file": "validator_0859",
+     "agent_id_default": 859,
+     "create_aid_default": 859
+    },
+    "ValidatorAgent0879": {
+     "file": "validator_0879",
+     "agent_id_default": 879,
+     "create_aid_default": 879
+    },
+    "ValidatorAgent0899": {
+     "file": "validator_0899",
+     "agent_id_default": 899,
+     "create_aid_default": 899
+    },
+    "ValidatorAgent0919": {
+     "file": "validator_0919",
+     "agent_id_default": 919,
+     "create_aid_default": 919
+    },
+    "ValidatorAgent0939": {
+     "file": "validator_0939",
+     "agent_id_default": 939,
+     "create_aid_default": 939
+    },
+    "ValidatorAgent0959": {
+     "file": "validator_0959",
+     "agent_id_default": 959,
+     "create_aid_default": 959
+    },
+    "ValidatorAgent0979": {
+     "file": "validator_0979",
+     "agent_id_default": 979,
+     "create_aid_default": 979
+    },
+    "ValidatorAgent0999": {
+     "file": "validator_0999",
+     "agent_id_default": 999,
+     "create_aid_default": 999
+    }
+   }
+  }
+ },
+ "len__all_top": 1020
+}

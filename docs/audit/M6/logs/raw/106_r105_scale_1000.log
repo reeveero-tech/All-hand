@@ -1,0 +1,9 @@
+# R-105 scale evidence (same measurement as docs/audit/M7/logs/08)
+# 2026-10-14T05:30:17.407393+00:00
+# exit_code=0
+--- stdout ---
+impl=specialists agents=1000 build_s=0.746 exec_1000_s=2.25 ok=1000/1000 maxrss_mb=138.6
+SCALE-OK
+
+--- stderr ---
+

@@ -141,3 +141,18 @@ def test_live_server_routes_with_specialists(specialists_server):
     assert all(s["ok"] for s in d["stages"])
     stored = c.get(f"/api/tasks/{d['task_id']}").json()
     assert stored["status"] == "completed"
+
+
+# --------------------------------------------- R-105 (dedup, 1000/1000)
+def test_r105_specialists_impl_still_builds_1000(monkeypatch):
+    """R-105: AGOS_AGENT_IMPL=specialists still builds 1000/1000 — the same
+    acceptance evidence as docs/audit/M7/logs/08 (R-032)."""
+    monkeypatch.setenv("AGOS_AGENT_IMPL", "specialists")
+    civ = create_civilization(50)
+    total = sum(len(v) for v in civ.values())
+    assert total == 1000
+    # and every agent is on the shared hub with its specialization set
+    for spec, agents in civ.items():
+        assert len(agents) == 50
+        for a in agents:
+            assert a.specialization == spec
