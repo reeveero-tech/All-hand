@@ -892,3 +892,10 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - معدّل: `agent_civilization/agents/executors/data_worker.py` (`_process_data` ينشر فشل LLM بـok/error/model بدل إخفائه)؛ `agent_civilization/core/agents/real_dispatcher.py` (`_data_processor` لمدخل نصي فقط يفوّض إلى `process_text()`؛ المدخل الرقمي حتمي وغير متغير).
 - الحزم الفارغة الثلاث (`communication/`, `runtime/`, `utils/`) أُبقيت — حذفها يتطلب قرار D منفصل + فحص مستهلكين + وسم git؛ `test_three_empty_packages_still_import_cleanly` يثبت استيرادها السليم.
 - pytest 351 + 3 + 3 (346 قبل R-104 + 5 جديدة). ruff صفر. الحي `pytest -m network`: `researcher` تفشل بخطأ SSL من DuckDuckGo (نفس خطأ R-107 المعروف — ليس انحداراً لهذه الدفعة)؛ `api_integrator` و`network_client` يمرّان.
+
+## 2026-10-14 — R-107: إعادة محاولة `researcher` للأخطاء العابرة فقط (D-048)
+
+- **قبل**: `_researcher` محاولة واحدة بلا إعادة — 4 إخفاقات عابرة من DuckDuckGo في جلسة واحدة جعلت الاختبار الحي يتذبذب.
+- مضاف: `tests/test_r107_researcher_retry.py` (6 اختبارات تمييزية)؛ `docs/audit/M6/logs/100_r107_researcher_retry.log`؛ D-048 (قرار الإعادة للأخطاء العابرة فقط، حرفياً كما نصّ معيار القبول المقترح).
+- معدّل: `agent_civilization/core/agents/real_dispatcher.py` (`_researcher` + مصنّف `_is_transient_search_error()` — إعادة محاولة واحدة للأخطاء العابرة فقط؛ حارس العناوين (R-100) لم يُمس؛ ميزانية كلية 20ث؛ النتيجة الناجحة تُعلّم `retried: true, attempts: N`؛ الفشل المتكرر يُعلن `transient, 2 attempts`).
+- pytest 357 + 3 + 3 (351 قبل R-107 + 6 جديدة). ruff صفر. **الاختبار الحي `test_researcher_live_duckduckgo` يمر الآن** (نفس الاختبار الذي كان يتذبذب). حد: إعادة المحاولة تمتص خطأً عابراً واحداً؛ خطآن عابران متتاليان يفشلان (كما صُمم).

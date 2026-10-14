@@ -1,0 +1,37 @@
+# R-107 — researcher retry for transient network errors only (proposed → done, D-048)
+# Head: main @ 346fd3f (after PR #113 / R-104 merge); branch m6/r107-researcher-retry
+
+$ pytest tests/test_r107_researcher_retry.py -v
+exit_code=0
+6 passed:
+  - test_transient_error_is_retried_once_and_then_succeeds   (Errno 104 ConnectionReset → retry → ok, retried=True, attempts=2)
+  - test_ssl_unexpected_eof_is_treated_as_transient         (SSL UNEXPECTED_EOF_WHILE_READING → retry → ok)
+  - test_hard_error_is_not_retried                          (PermissionError "blocked by address policy" → single attempt, ok=False)
+  - test_persistent_transient_failure_reports_both_attempts  (always ConnectionReset → ok=False, "transient, 2 attempts")
+  - test_empty_query_is_not_retried                          (empty query → hard error, no network call)
+  - test_is_transient_classifier_covers_the_seen_flakes     (ConnectionReset/SSLEOF/handshake-timeout transient; HTTP 404, PermissionError, ValueError hard)
+
+$ pytest tests/ (full suite)
+exit_code=0
+357 passed, 3 skipped, 3 deselected in 12.97s   (351 before R-107 + 6 new)
+
+$ ruff (F,E722) — handoff scope (specialists excluded)
+exit_code=0
+All checks passed!
+
+$ ruff (F,E722) — CI scope (scripts included, no exclusion)
+exit_code=0
+All checks passed!
+
+$ pytest tests/ -m network (live internet, 3 tests)
+exit_code=0
+test_researcher_live_duckduckgo PASSED      ← the exact flake R-107 targets (DuckDuckGo SSL EOF)
+test_api_integrator_live_get PASSED
+test_network_client_live_dns_and_head PASSED
+3 passed in 0.28s   (before R-107 this exact test failed intermittently with SSL: UNEXPECTED_EOF — the R-107 retry absorbed it)
+
+# Honest limits:
+# - The retry absorbs ONE transient error; two consecutive transient failures still fail (as designed) with "transient, 2 attempts".
+# - The budget is 20s total, each attempt has an 8s socket timeout; no retry for policy refusals (R-100 address guard untouched).
+# - The live `test_researcher_live_duckduckgo` passing is consistent with (not proof of) the retry absorbing the flake; the discriminating
+#   unit tests (mocked transport) prove the retry logic itself.
