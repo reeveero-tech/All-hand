@@ -47,3 +47,8 @@ execute → auto_route → tasks_store dict (فقط؛ لا استدعاء Supaba
 1. في `/civilization/*` المستخدم لا يختار التخصص (الحضارة تقرر)؛ في `/api/tasks` يحدده صراحة.
 2. المصادقة اختيارية وغير مُفرضة فعلياً (راجع SECURITY).
 3. التعامل مع غياب Supabase مختلف لكل مسار: `create_task` يكتب للمحاولة ثم يعوض بالذاكرة؛ `/civilization/execute` لا يستدعي التخزين أصلاً؛ القراءة (`list_tasks`) تعود للذاكرة إذا فشل الاستعلام.
+## مسؤوليات الحزم (R-104c2)
+
+- `agent_civilization/communication/` — الواجهة العامة للمراسلة بين الوكلاء: `CommunicationHub`/`DeliveryResult` (التنفيذ في `core/agents/communication_hub.py`)؛ يستهلكها `specialist_runtime.py`.
+- `agent_civilization/runtime/` — مساعدات الموعد النهائي للمسارات الحية: `make_deadline()`/`remaining()`؛ يستهلكها `_researcher` (ميزانية R-107c).
+- `agent_civilization/utils/` — تجميع حمولة LLM: `build_llm_payload(prompt, data)`؛ يستهلكها `_data_processor` (إرسال البيانات مع التعليمة).

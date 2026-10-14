@@ -184,5 +184,20 @@
 ## R-104 — إصلاح بالتوصيل لا حذف — `DataWorkerAgent` (D-047)
 
 ## R-107 — إعادة محاولة `researcher` للأخطاء العابرة فقط (D-048)
+
+### R-104b/R-107b — إصلاح نواقص (دفعات تصحيح)
+
+### R-104c/R-107c — جولة تصحيح ثانية
+
+### R-104c2/R-107c2 — جولة ثالثة
+- `test_r104_data_worker.py` (16): قيمة تظهر في `data` فقط تصل **حد `LLMClient.complete` نفسه** (تسجيل مباشر) وتغيير `data` يغيّر الحمولة (مقارنة الحمولتين مباشرة)؛ عقد المستهلك الحقيقي (`TaskDispatcherAgent`: `task_complete` يخفض الحمل بغض النظر عن `result.ok`)؛ الحزم الثلاث لها مستهلك إنتاجي فعلي (`specialist_runtime`/`_researcher`/`_data_processor`) — جواسيس على دوال الحزم نفسها + مسار البناء الفعلي عبر واجهة `communication/`؛ اختبار `runtime` بنقل متحكم به (لا شبكة حقيقية داخل المجموعة العادية). الاختبارات القديمة صارت حتمية ببدائل اختبارية.
+- `test_r107_researcher_retry.py` (15): `SSLV3_ALERT_HANDSHAKE_FAILURE` صلب؛ اختبار التعليق يميّز الإصلاح القديم (حد 1.2ث يفشل مع انتظار 1.7ث).
+- العدد: **377 ناجحاً، 3 متجاوزة، 3 مستبعدة** (375 قبل + صافي 2) + فحص الشبكة **3 ناجحة** (`docs/audit/M6/logs/raw/104_r104c2_r107c2_evidence_pack.log`). ملاحظة: فشل شبكة واحد لوحظ في الجلسة ثم نجح لاحقاً — السبب غير مشخّص.
+- `test_r107_researcher_retry.py` (+3): `WRONG_VERSION_NUMBER` صلب لا يُعاد؛ `URLError` مجهول السبب صلب؛ نقل يعلق أطول من الميزانية يعيد المعالج خلالها (زمن مقاس < 1.3ث بميزانية 0.7ث).
+- `test_r104_data_worker.py` (+4): التوقيع الصحيح (`LLMClient.complete(self, system, prompt)`) مع تحقق النص المستلم؛ نجاح حتمي بديل اختباري مع فحص العدادات؛ مهمة API بـ`prompt` + `data` فعلية (نصية) تصل LLM فعلاً؛ عقد `task_complete` موثق (النتيجة تحمل `ok`).
+- العدد: 371 + 3 + 3 (`docs/audit/M6/logs/raw/102_r104c_r107c_evidence_pack.log` — خام كامل بلا اقتطاع وبلا `--silent`).
+- `test_r104_data_worker.py` (+3، صارمة): فشل LLM يظهر `ok=False` + `status=failed` + `error` حقيقي (لا يقبل عيب ما قبل R-104)؛ `_execute_work` لا يزيد `tasks_completed` إلا عند نجاح؛ عبر TestClient مهمة نصية تصل `process_text` فعلاً وفشلها في النتيجة المخزنة.
+- `test_r107_researcher_retry.py` (+4): خطأ شهادة لا يُعاد؛ HTTP 404 لا يُعاد (صريح)؛ ميزانية 0.52ث تمنع المحاولة الثانية (عدد فعلي 1)؛ العدد يعكس المحاولات المنفذة.
+- العدد: 364 + 3 + 3 (`docs/audit/M6/logs/raw/101_r104b_r107b_evidence_pack.log` — خام كامل).
 - `tests/test_r107_researcher_retry.py` (6): نقل وهمي يفشل مرة ثم ينجح (`retried: true, attempts: 2`)؛ SSL EOF عابر يُعاد؛ خطأ صلب (رفض السياسة) لا يُعاد؛ فشل متكرر يُعلن `transient, 2 attempts`؛ استعلام فارغ لا يُعاد؛ المصنّف يغطي كل الأخطاء المذكورة (ConnectionReset/SSLEOF/handshake-timeout عابرة؛ HTTP 404/PermissionError/ValueError صلبة). العدد: 357 + 3 + 3 (`docs/audit/M6/logs/100_r107_researcher_retry.log`). **الاختبار الحي `test_researcher_live_duckduckgo` يمر الآن** (نفس الاختبار الذي كان يتذبذب — راجع RISK-019).
 - `tests/test_r104_data_worker.py` (5): قابلية الوصول من سلسلة الاستيراد الحية؛ انتشار فشل LLM (`_process_data` يعيد `error` عند `ok: False` — قبل R-104 كان يخفيه)؛ تفويض `_data_processor` للنص إلى `process_text()`؛ المدخل الرقمي حتمي وغير متغير؛ الحزم الفارغة الثلاث تُستورد سليمة. العدد: 351 + 3 + 3 (`docs/audit/M6/logs/99_r104_data_worker.log`). حد: `researcher` تفشل مع `-m network` بخطأ SSL من DuckDuckGo (نفس خطأ R-107 — ليس انحداراً لهذه الدفعة؛ `api_integrator` و`network_client` يمرّان).

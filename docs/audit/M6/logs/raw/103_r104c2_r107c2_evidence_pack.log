@@ -1,0 +1,670 @@
+# R-104c2/R-107c2 evidence pack (round 3 final — full raw, no truncation, no --silent)
+# review round: 4 (advisor) — responding to: runtime test uses real network, consumption spies insufficient, doc inconsistencies
+# started 2026-10-14T03:44:22.772218+00:00
+# git head: d1bc11c1bc0b3c63d2f4cc5997958d57b6592101
+# python 3.14.3
+
+$ pytest tests/ full suite
+$ python3 -m pytest tests/ -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 383 items / 3 deselected / 380 selected
+
+tests/test_agent_production.py ........................                  [  6%]
+tests/test_agents_per_spec.py ...                                        [  7%]
+tests/test_api.py ..................                                     [ 11%]
+tests/test_civilization_routes.py ......                                 [ 13%]
+tests/test_civilization_scale.py .....                                   [ 14%]
+tests/test_e2e_scenarios.py .......                                      [ 16%]
+tests/test_infrastructure.py ...................                         [ 21%]
+tests/test_memory_learning_comm.py .........                             [ 23%]
+tests/test_network_isolation.py ......                                   [ 25%]
+tests/test_r042_live_storage.py sss                                      [ 26%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 31%]
+tests/test_r082_storage_outcomes.py ........                             [ 33%]
+tests/test_r083_metrics_middleware.py ......                             [ 34%]
+tests/test_r100_runtime_safety.py ...................................... [ 44%]
+......                                                                   [ 46%]
+tests/test_r101_web_auth_contract.py .............                       [ 49%]
+tests/test_r102_honest_handlers.py .............................         [ 57%]
+tests/test_r103_memory_learning.py .................                     [ 61%]
+tests/test_r104_data_worker.py ................                          [ 66%]
+tests/test_r106_chat_routing.py .............                            [ 69%]
+tests/test_r107_researcher_retry.py ...............                      [ 73%]
+tests/test_real_dispatch_audit.py ......                                 [ 75%]
+tests/test_routing_pipeline.py .................................         [ 83%]
+tests/test_security.py ..........                                        [ 86%]
+tests/test_specialist_runtime.py .........                               [ 88%]
+tests/test_specialists_package.py ...........................            [ 95%]
+tests/test_storage_payloads.py ......                                    [ 97%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 377 passed, 3 skipped, 3 deselected in 19.56s =================
+
+
+$ pytest tests/test_r104_data_worker.py (16)
+$ python3 -m pytest tests/test_r104_data_worker.py -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 16 items
+
+tests/test_r104_data_worker.py ................                          [100%]
+
+============================== 16 passed in 1.28s ==============================
+
+
+$ pytest tests/test_r107_researcher_retry.py (15)
+$ python3 -m pytest tests/test_r107_researcher_retry.py -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 15 items
+
+tests/test_r107_researcher_retry.py ...............                      [100%]
+
+============================== 15 passed in 6.17s ==============================
+
+
+$ pytest tests/ -m network (3 live)
+$ python3 -m pytest tests/ -m network -q
+exit_code=0
+--- stdout (full) ---
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 383 items / 380 deselected / 3 selected
+
+tests/test_network_live.py ...                                           [100%]
+
+====================== 3 passed, 380 deselected in 0.64s =======================
+
+
+$ ruff handoff scope
+$ python3 -m ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests scripts
+exit_code=0
+--- stdout (full) ---
+All checks passed!
+
+
+$ ruff CI scope
+$ python3 -m ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+exit_code=0
+--- stdout (full) ---
+All checks passed!
+
+
+$ web npm install (cwd=web)
+$ npm install
+exit_code=0
+--- stdout (full) ---
+
+up to date, audited 24 packages in 586ms
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+--- stderr (full) ---
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'agos-civilization-web@3.0.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+
+
+$ web npm run build (cwd=web)
+$ npm run build
+exit_code=0
+--- stdout (full) ---
+
+> agos-civilization-web@3.0.0 build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 22 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.77 kB │ gzip:  0.45 kB
+dist/assets/index-B7MkQRhG.css   12.25 kB │ gzip:  2.99 kB
+dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
+
+✓ built in 115ms
+
+
+$ root npm install
+$ npm install
+exit_code=0
+--- stdout (full) ---
+
+up to date, audited 415 packages in 704ms
+
+101 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+--- stderr (full) ---
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: undefined,
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/react-start@1.169.1',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/react-start-client@1.168.42',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/react-start-rsc@0.1.62',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/react-start-server@1.167.49',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/start-client-core@1.170.37',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/start-fn-stubs@1.162.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/start-plugin-core@1.171.52',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/start-server-core@1.169.42',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/start-storage-context@1.167.39',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+
+
+$ root npm run build
+$ npm run build
+exit_code=0
+--- stdout (full) ---
+
+> build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 207 modules transformed.
+rendering chunks...
+computing gzip size...
+.output/public/assets/styles-DgakcMqb.css       23.37 kB │ gzip:   5.21 kB
+.output/public/assets/api-n2O7kJ-w.js            1.90 kB │ gzip:   1.12 kB
+.output/public/assets/agents-C1y6RYZV.js         2.35 kB │ gzip:   0.98 kB
+.output/public/assets/chat-CxC-mhYr.js           3.59 kB │ gzip:   1.72 kB
+.output/public/assets/settings-ezf9wUA7.js       3.68 kB │ gzip:   1.58 kB
+.output/public/assets/routes-B0iWC7B9.js         3.80 kB │ gzip:   1.46 kB
+.output/public/assets/command-DTnScF3z.js        5.19 kB │ gzip:   2.02 kB
+.output/public/assets/useBackend-DNTIbVOe.js     8.36 kB │ gzip:   3.11 kB
+.output/public/assets/jsx-runtime-Dk72oS4N.js    8.77 kB │ gzip:   3.33 kB
+.output/public/assets/index-BkJ1TZA-.js        362.96 kB │ gzip: 115.66 kB
+
+✓ built in 704ms
+vite v8.3.4 building ssr environment for production...
+transforming...
+✓ 73 modules transformed.
+rendering chunks...
+computing gzip size...
+node_modules/.nitro/vite/services/ssr/assets/styles-DgakcMqb.css                     23.37 kB │ gzip:  5.21 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-plugin-adapters-D9UWiqvJ.js        0.22 kB │ gzip:  0.16 kB
+node_modules/.nitro/vite/services/ssr/assets/rolldown-runtime-D7D4PA-g.js             0.36 kB │ gzip:  0.25 kB
+node_modules/.nitro/vite/services/ssr/assets/useBackend-CTM-MADi.js                   0.86 kB │ gzip:  0.46 kB
+node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-BEYWp2hp.js   1.54 kB │ gzip:  0.50 kB
+node_modules/.nitro/vite/services/ssr/assets/start-Dp2npYzv.js                        1.58 kB │ gzip:  0.71 kB
+node_modules/.nitro/vite/services/ssr/index.js                                        2.19 kB │ gzip:  0.97 kB
+node_modules/.nitro/vite/services/ssr/assets/api-D1T-sVu6.js                          2.85 kB │ gzip:  1.50 kB
+node_modules/.nitro/vite/services/ssr/assets/agents-A--DMm3S.js                       3.52 kB │ gzip:  1.24 kB
+node_modules/.nitro/vite/services/ssr/assets/chat-FxcUdkYS.js                         5.19 kB │ gzip:  2.06 kB
+node_modules/.nitro/vite/services/ssr/assets/routes-NvKu0P0g.js                       5.22 kB │ gzip:  1.71 kB
+node_modules/.nitro/vite/services/ssr/assets/settings-Ddu_WzgK.js                     5.42 kB │ gzip:  1.89 kB
+node_modules/.nitro/vite/services/ssr/assets/command-D-hBUhQa.js                      7.51 kB │ gzip:  2.46 kB
+node_modules/.nitro/vite/services/ssr/assets/router-JmfzJEID.js                      11.16 kB │ gzip:  3.43 kB
+node_modules/.nitro/vite/services/ssr/assets/server-O_RDrrow.js                      93.12 kB │ gzip: 23.53 kB
+
+✓ built in 319ms
+
+[nitro] ◐ Building [Nitro] (preset: cloudflare-module, compatibility: 2026-10-14)
+[nitro] ✔ Generated public .output/public
+vite v8.3.4 building nitro environment for production...
+transforming...
+✓ 262 modules transformed.
+rendering chunks...
+computing gzip size...
+.output/server/_libs/srvx.mjs                             0.12 kB │ gzip:   0.12 kB
+.output/server/_ssr/empty-plugin-adapters-D9UWiqvJ.mjs    0.23 kB │ gzip:   0.16 kB
+.output/server/_ssr/rolldown-runtime-D7D4PA-g.mjs         0.41 kB │ gzip:   0.29 kB
+.output/server/_chunks/ssr-renderer.mjs                   0.60 kB │ gzip:   0.36 kB
+.output/server/_ssr/useBackend-CTM-MADi.mjs               1.07 kB │ gzip:   0.56 kB
+.output/server/_libs/hookable.mjs                         1.17 kB │ gzip:   0.52 kB
+.output/server/_runtime.mjs                               1.18 kB │ gzip:   0.57 kB
+.output/server/_ssr/start-Dp2npYzv.mjs                    1.57 kB │ gzip:   0.72 kB
+.output/server/_tanstack-start-manifest_v-BEYWp2hp.mjs    1.60 kB │ gzip:   0.53 kB
+.output/server/_ssr/ssr.mjs                               2.12 kB │ gzip:   0.97 kB
+.output/server/_ssr/api-D1T-sVu6.mjs                      2.90 kB │ gzip:   1.54 kB
+.output/server/_ssr/agents-A--DMm3S.mjs                   4.13 kB │ gzip:   1.33 kB
+.output/server/_ssr/chat-FxcUdkYS.mjs                     6.01 kB │ gzip:   2.17 kB
+.output/server/_ssr/routes-NvKu0P0g.mjs                   6.10 kB │ gzip:   1.80 kB
+.output/server/_ssr/settings-Ddu_WzgK.mjs                 6.26 kB │ gzip:   2.01 kB
+.output/server/_ssr/command-D-hBUhQa.mjs                  8.63 kB │ gzip:   2.59 kB
+.output/server/index.mjs                                 11.12 kB │ gzip:   3.47 kB
+.output/server/_ssr/router-JmfzJEID.mjs                  11.77 kB │ gzip:   3.50 kB
+.output/server/_libs/tanstack__history.mjs               12.33 kB │ gzip:   3.66 kB
+.output/server/_libs/h3+rou3+srvx.mjs                    17.31 kB │ gzip:   4.99 kB
+.output/server/_libs/react+tanstack__react-query.mjs     29.31 kB │ gzip:   7.93 kB
+.output/server/_libs/@tanstack/router-core+[...].mjs     32.87 kB │ gzip:   8.99 kB
+.output/server/_ssr/server-O_RDrrow.mjs                  91.11 kB │ gzip:  23.37 kB
+.output/server/_libs/tanstack__query-core.mjs           135.99 kB │ gzip:  32.36 kB
+.output/server/_libs/@tanstack/react-router+[...].mjs   785.47 kB │ gzip: 165.48 kB
+
+✓ built in 300ms
+[nitro] ℹ Using auto generated worker name: reeveero-tech-all-hand
+ℹ Generated .output/server/wrangler.json
+ℹ Generated .wrangler/deploy/config.json
+ℹ Generated .output/public/_headers
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+
+--- stderr (full) ---
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ WARN  inlineDynamicImports option is ignored because the codeSplitting option is specified.
+
+`output.codeSplitting.groups[0].name` is a function. Set `output.codeSplitting.groups[0].debugName` so the bundler timing report can identify this group.
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/index.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/index.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/utils.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/utils.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/link.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/link.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/ClientOnly.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/ClientOnly.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouter.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouter.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useMatch.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useMatch.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Match.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Match.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Matches.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Matches.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/RouterProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/RouterProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useBlocker.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useBlocker.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useNavigate.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useNavigate.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouterState.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouterState.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useLocation.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useLocation.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/HeadContent.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/HeadContent.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Asset.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Asset.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/matchContext.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/matchContext.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/routerContext.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/routerContext.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Transitioner.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Transitioner.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useIsFetching.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useIsFetching.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutationState.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutationState.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutation.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutation.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQueries.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQueries.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useBaseQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useBaseQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+
+
+# finished 2026-10-14T03:45:02.956007+00:00

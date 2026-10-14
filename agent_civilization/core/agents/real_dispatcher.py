@@ -250,8 +250,13 @@ async def _data_processor(work: Dict[str, Any]) -> Dict[str, Any]:
         text = _extract_text(work)
         if not text.strip():
             return {"ok": False, "error": "no numeric data and no text to process"}
+        # R-104c2: send BOTH the prompt and the data to the LLM path — the prompt
+        # alone was sent before, silently dropping data dict/list contents. The
+        # payload assembly lives in agent_civilization/utils (its canonical home).
+        from agent_civilization.utils import build_llm_payload
+        payload = build_llm_payload(text, work.get("data"))
         from agent_civilization.agents.executors.data_worker import process_text
-        out = await process_text(text)
+        out = await process_text(payload)
         if not out.get("ok"):
             return {"ok": False,
                     "error": f"llm-backed data processing unavailable: {out.get('error')}",
@@ -354,7 +359,8 @@ async def _api_integrator(work: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # R-107: which DuckDuckGo failures are "transient" (worth a retry) vs. hard errors
-# (empty query, HTTP 4xx/5xx, address-policy refusals — never retried).
+# (empty query, HTTP 4xx/5xx, address-policy refusals, certificate-verification
+# failures — never retried). Only transport flakiness retries.
 _TRANSIENT_NET_ERRORS = (
     ConnectionResetError,           # Errno 104 — seen on CI job network (raw/59)
     ConnectionAbortedError,          # Errno 53
@@ -363,24 +369,49 @@ _TRANSIENT_NET_ERRORS = (
 
 
 def _is_transient_search_error(exc: Exception) -> bool:
-    """Only network/transport flakiness retries — never policy refusals or HTTP 4xx/5xx."""
+    """Only network/transport flakiness retries — never policy refusals, HTTP 4xx/5xx,
+    or SSL certificate-verification failures (those indicate a real TLS problem,
+    not a flake, and retrying them wastes the budget)."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return False  # HTTP status — hard
     if isinstance(exc, _TRANSIENT_NET_ERRORS):
         return True
     if isinstance(exc, urllib.error.URLError):
         reason = getattr(exc, "reason", None)
         if reason is None:
-            return True  # bare URLError with no reason — assume transport
+            return False  # unknown cause — NOT transient (no blind retry)
         return isinstance(reason, _TRANSIENT_NET_ERRORS) or _is_transient_search_error(reason)
+    if isinstance(exc, ssl.SSLCertVerificationError):
+        return False  # certificate problem — hard (retrying won't help)
     if isinstance(exc, ssl.SSLError):
-        # SSL: UNEXPECTED_EOF_WHILE_READING (raw/33/34/48) and handshake timeouts
-        return True
+        # R-107c: narrower than "all SSL" — only the transport-level EOF and
+        # handshake-timeout flakes seen in raw/32/33/34/48. Protocol errors
+        # (WRONG_VERSION_NUMBER etc.) are hard.
+        msg = str(exc).lower()
+        # Only the specific transport flakes seen in the wild (raw/32/33/34/48):
+        # an unexpected EOF mid-stream, or a transport-level connection reset.
+        # A handshake FAILURE (TLS alert, e.g. SSLV3_ALERT_HANDSHAKE_FAILURE) is a
+        # real TLS problem — hard. A handshake TIMEOUT is a TimeoutError (handled above).
+        return "unexpected_eof" in msg or "connection reset" in msg
     if isinstance(exc, OSError) and exc.errno in (104, 53):
         return True
     return False
 
 
 _RESEARCHER_ATTEMPTS = 2  # one live attempt + one retry for transient errors only
-_RESEARCHER_TOTAL_TIMEOUT_S = 20.0  # hard budget for all attempts combined
+_RESEARCHER_TOTAL_TIMEOUT_S = 20.0  # hard budget for the whole handler (both attempts)
+
+
+def _researcher_deadline() -> float:
+    # R-104c2: the deadline helpers live in agent_civilization/runtime (their
+    # canonical home) — the live handler consumes them from there.
+    from agent_civilization.runtime import make_deadline
+    return make_deadline(_RESEARCHER_TOTAL_TIMEOUT_S)
+
+
+def _remaining_budget(deadline: float) -> float:
+    from agent_civilization.runtime import remaining
+    return remaining(deadline)
 
 
 async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
@@ -390,18 +421,26 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
     # DuckDuckGo Instant Answer API — no key needed.
     url = "https://api.duckduckgo.com/?" + urllib.parse.urlencode(
         {"q": q, "format": "json", "no_html": "1", "no_redirect": "1"})
-    started = time.monotonic()
+    deadline = _researcher_deadline()
     last_error: Optional[Exception] = None
+    attempts_made = 0
     for attempt in range(_RESEARCHER_ATTEMPTS):
-        elapsed = time.monotonic() - started
-        if elapsed + 8.0 > _RESEARCHER_TOTAL_TIMEOUT_S:
-            break  # budget exhausted — no more attempts
+        remaining = _remaining_budget(deadline)
+        if remaining <= 0.5:
+            break  # budget exhausted — no more attempts (count what actually ran)
+        socket_timeout = min(8.0, remaining)
         def fetch():
             req = urllib.request.Request(url, headers={"User-Agent": "AGOS-Research/1.0"})
-            with safety.safe_urlopen(req, timeout=8) as resp:
+            with safety.safe_urlopen(req, timeout=socket_timeout) as resp:
                 return json.loads(resp.read().decode("utf-8", errors="replace"))
         try:
-            j = await _to_thread(lambda: fetch())
+            # The wait is bounded by the REMAINING budget itself (not budget+1s), so the
+            # handler cannot exceed its deadline by more than scheduling latency.
+            # Note (honest limit): cancelling this wait does NOT stop the worker
+            # thread — a stuck DNS resolve or socket read keeps running in the
+            # background until its own timeout; we only stop waiting for it.
+            j = await asyncio.wait_for(_to_thread(fetch), timeout=remaining)
+            attempts_made += 1
             abstract = j.get("AbstractText") or j.get("Heading") or ""
             related = [r.get("Text", "") for r in j.get("RelatedTopics", [])[:5]
                        if isinstance(r, dict) and r.get("Text")]
@@ -412,13 +451,20 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
                                     "related": related}}
             if attempt:
                 out["tool_output"]["retried"] = True
-                out["tool_output"]["attempts"] = attempt + 1
+                out["tool_output"]["attempts"] = attempts_made
             return out
         except Exception as e:  # noqa: BLE001
+            attempts_made += 1
+            if isinstance(e, asyncio.TimeoutError):
+                e = TimeoutError("overall budget exceeded")  # normalize for the classifier
             if not _is_transient_search_error(e):
                 return {"ok": False, "error": f"search: {e}"}  # hard error — no retry
             last_error = e
-    return {"ok": False, "error": f"search: {last_error} (transient, {_RESEARCHER_ATTEMPTS} attempts)"}
+    if attempts_made == 0:
+        return {"ok": False,
+                "error": f"search: budget exhausted before any attempt could start "
+                         f"({_RESEARCHER_TOTAL_TIMEOUT_S}s)"}
+    return {"ok": False, "error": f"search: {last_error} (transient, {attempts_made} attempts)"}
 
 
 async def _architect(work: Dict[str, Any]) -> Dict[str, Any]:

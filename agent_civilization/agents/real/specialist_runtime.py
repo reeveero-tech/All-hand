@@ -19,7 +19,8 @@ import time
 from typing import Any, Dict, List
 
 from agent_civilization.core import experience as _experience
-from agent_civilization.core.agents.communication_hub import CommunicationHub
+# R-104c2: the canonical public messaging API lives in agent_civilization.communication
+from agent_civilization.communication import CommunicationHub
 
 VALID_IMPLS = ("real", "specialists")
 

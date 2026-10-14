@@ -159,5 +159,5 @@
 - `DELETE /api/memory` يتطلب `AGOS_API_KEY` مهيأً (403 في الوضع المفتوح). `AGOS_MEMORY=0` يعطّل التخزين كلياً. مع `AGOS_MEMORY_FILE` تُكتب الذكريات على القرص بنص واضح.
 
 ## R-104 — `DataWorkerAgent` معزول عن المسار (D-047، 2026-10-14)
-- قبل R-104: `agents/executors/data_worker.py` بلا مستورد في المستودع كله (حتى الاختبارات) و`_process_data` يخفي فشل LLM. بعد R-104: `process_text()` مسار حي من `real_dispatcher._data_processor` لمدخل نصي فقط؛ المدخل الرقمي حتمي وغير متغير؛ فشل LLM يُنشر صراحةً (`error` مع `model`) بدل إخفائه. لا كود تنفيذ جديد، لا شبكة جديدة، لا أسرار جديدة — الأمان السطحي بلا تغيير جوهري.
+- قبل R-104: `agents/executors/data_worker.py` بلا مستورد في المستودع كله (حتى الاختبارات) و`_process_data` يخفي فشل LLM. بعد R-104: `process_text()` مسار حي من `real_dispatcher._data_processor` لمدخل نصي فقط؛ المدخل الرقمي حتمي وغير متغير؛ فشل LLM يُنشر صراحةً (`error` مع `model`) بدل إخفائه. لا كود تنفيذ جديد ولا أسرار جديدة؛ **مسار شبكة واحد جديد**: مدخل نصي لـ`data_processor` كان يُرفض («no numeric data») صار يُرسل إلى OpenRouter عبر `get_llm().complete` (موجودة أصلاً في `core/llm.py`) — حارس العناوين لا يغطي هذا المسار (يفحص `safe_urlopen` فقط) لكن OpenRouter مزود LLM موثوق لا عنوان داخلي.
 - الحزم الفارغة الثلاث (`communication/`, `runtime/`, `utils/`) أُبقيت بلا حذف — إزالتها تتطلب قرار D منفصل + فحص مستهلكين + وسم git (قواعد الفقرة 6).

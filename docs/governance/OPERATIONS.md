@@ -71,7 +71,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `SUPABASE_SERVICE_KEY` (مفضّل — D-039) ثم `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY` (بديل للتوافق) | supabase_store.py | `""` |
 | `OPENROUTER_API_KEY` | core/llm.py | `""` |
 | `LLM_MODEL` | core/llm.py | `meta-llama/llama-3.3-70b-instruct:free` |
-| `AGOS_AGENT_IMPL` (R-104، D-047) | agents/executors/data_worker.py + real_dispatcher.py | غير مضبوط = `real` (الافتراضي)؛ `specialists` يبني الحضارة من أصناف `specialists/` (D-037). `DataWorkerAgent.process_text()` مُفوَّض إليه من `_data_processor` لمدخل نصي فقط (لا أرقام)؛ المدخل الرقمي حتمي. بلا `OPENROUTER_API_KEY` يُنشر فشل LLM صراحةً |
+| `AGOS_AGENT_IMPL` | agents/real/real_agents.py | غير مضبوط = `real` (الافتراضي)؛ `specialists` يبني الحضارة من أصناف `specialists/` (D-037). (R-104: `process_text()` — دالة وحدة لا صنف — مُفوَّضة إليها من `_data_processor` لمدخل نصي فقط؛ بلا `OPENROUTER_API_KEY` يُنشر فشل LLM صراحةً) |
 | `EXTERNAL_AGENTS` | agents/external_adapter.py | `""` |
 | `REDIS_URL` | agos_kernel/infrastructure/redis_queue.py | `redis://localhost:6379` |
 | `METRICS_NAMESPACE` | agos_kernel/infrastructure/metrics.py | `agos` |

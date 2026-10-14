@@ -66,8 +66,14 @@ class DataWorkerAgent(BaseAgent):
 
         try:
             result = await self._process_data(data)
-            self.processed_count += 1
-            self.performance_metrics["tasks_completed"] += 1
+            # R-104b: only count success when the LLM actually succeeded (ok is
+            # absent for legacy dict returns, so treat missing ok as failure).
+            succeeded = bool(result.get("ok", False)) if isinstance(result, dict) else False
+            if succeeded:
+                self.processed_count += 1
+                self.performance_metrics["tasks_completed"] += 1
+            else:
+                self.performance_metrics["tasks_failed"] += 1
 
             sender = work_item.get("original_sender", "dispatcher")
             result_msg = Message(
@@ -91,6 +97,7 @@ class DataWorkerAgent(BaseAgent):
         prompt = str(data.get("input", ""))
         out = await process_text(prompt)
         return {
+            "ok": out.get("ok", False),
             "status": "processed" if out.get("ok") else "failed",
             "answer": out.get("answer", ""),
             "error": out.get("error"),
