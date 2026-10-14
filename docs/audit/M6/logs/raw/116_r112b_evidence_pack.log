@@ -1,0 +1,70 @@
+# R-112b — دفعة M6/51 — دليل التحقق (دفعة توثيق خالصة)
+# تاريخ: 2026-10-14T18:32:57Z
+# فرع: m6/r112b-closeout-fix من 69bafdd (بعد دمج PR #124 — R-112)
+# ملاحظة: هذه دفعة توثيق خالصة — لا كود ولا أدلة تغيّرت. كل الأمر أدناه موثقة خام كاملة (لا اقتطاع tail/head).
+# =========================================================
+
+## 1) رأس git وحالة الملفات قبل/بعد
+--- git rev-parse HEAD (قبل الدفعة) ---
+69bafddb1d01d56c6ea2ce849b8f4b1059ffed26
+--- git status (بعد كل التعديلات) ---
+ M docs/governance/CHANGELOG.md
+ M docs/governance/PROJECT_STATE.md
+ M docs/governance/QUALITY.md
+ M docs/governance/README.md
+ M docs/governance/ROADMAP.md
+?? docs/audit/M6/logs/raw/116_r112b_evidence_pack.log
+
+## 2) فحص بصمة JSON المتعقّب (لا تغيّر)
+208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4  docs/audit/M6/logs/raw/r108_sustained_load_report.json
+expected: 208870875ea497d93a0184eec1a2bcb285472b19e197387588a28fcf25d50fc4
+
+## 3) كل الست نسخ المتعقّبة للـ JSON في تاريخ git — duration_s_target
+dbdd2c4b1dc6f5509aba3f77a74358c79acc26c8 : "duration_s_target":3
+fdacdbca774df7d0023d7a90e0eb585c990d1fe6 : "duration_s_target":3
+1bcd9c2b137105487a7203215d543fab05a347c1 : "duration_s_target":3
+7f809c217d4c90c3b65c764a2b4b6a183b1e1c46 : "duration_s_target":3
+154e14933a29baa33dabdb875b24bdbeab5799f6 : "duration_s_target":3
+40653cca42eb04e130ac1d5ac63ea5623a1d236c : "duration_s_target":3
+
+## 4) سكربت التدقيق R-075 (كامل المخرجات — لا اقتطاع)
+item headings: 101
+duplicate ids: none
+status counts: {'done': 101}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 2198
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (main): ['R-000', 'R-001', 'R-002', 'R-003a', 'R-004', 'R-010', 'R-011', 'R-012', 'R-013', 'R-020', 'R-021', 'R-022', 'R-023', 'R-024', 'R-030', 'R-031', 'R-031b', 'R-031c', 'R-032', 'R-032a', 'R-032b', 'R-032c', 'R-033', 'R-040', 'R-041', 'R-042', 'R-042b', 'R-043', 'R-044', 'R-045', 'R-051', 'R-052', 'R-053', 'R-054', 'R-055', 'R-055a', 'R-056', 'R-060', 'R-061', 'R-062', 'R-063', 'R-064', 'R-065', 'R-066', 'R-067', 'R-068', 'R-069', 'R-070', 'R-071', 'R-072', 'R-073', 'R-074', 'R-075', 'R-076', 'R-077', 'R-078', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083', 'R-084', 'R-085', 'R-086', 'R-087', 'R-088', 'R-089', 'R-090', 'R-091', 'R-092', 'R-093', 'R-094', 'R-095', 'R-096', 'R-097', 'R-098', 'R-099', 'R-100', 'R-101', 'R-102', 'R-103', 'R-104', 'R-104b', 'R-104c', 'R-104c2', 'R-105', 'R-106', 'R-107', 'R-107b', 'R-107c', 'R-107c2', 'R-108', 'R-109', 'R-110', 'R-111', 'R-112']
+  not in ROADMAP: ['R-107c2']
+  R-073: roadmap=yes changelog=yes
+  R-074: roadmap=yes changelog=yes
+  R-075: roadmap=yes changelog=yes
+  R-076: roadmap=yes changelog=yes
+  R-077: roadmap=yes changelog=yes
+  R-078: roadmap=yes changelog=yes
+
+## 5) git diff --stat (فحص أن ملفات التوثيق تغيّرت فعلاً)
+ docs/governance/CHANGELOG.md     | 18 +++++++++++++++++-
+ docs/governance/PROJECT_STATE.md |  6 +++---
+ docs/governance/QUALITY.md       |  2 +-
+ docs/governance/README.md        |  2 +-
+ docs/governance/ROADMAP.md       | 13 ++++++++++---
+ 5 files changed, 32 insertions(+), 9 deletions(-)
+
+## 6) حالة CI على main
+completed	success	Merge pull request #124 from reeveero-tech/m6/r112-evidence-integrity	AGOS Kernel CI/CD	main	push	38615264546	2m5s	2026-10-14T18:27:07Z
+completed	success	Merge pull request #123 from reeveero-tech/m6/r111-test-runner	AGOS Kernel CI/CD	main	push	38607386979	1m48s	2026-10-14T17:31:36Z
+completed	success	Merge pull request #122 from reeveero-tech/m6/r110-validator-fix	AGOS Kernel CI/CD	main	push	38599263960	2m15s	2026-10-14T16:34:41Z
+
+## 7) pytest سريع للتأكد لا شيء انكسر (دفعة توثيق خالصة يجب أن تكون 392)
+tests/test_web_api_contract.py::test_sse_stream_yields_event PASSED      [100%]
+
+================ 392 passed, 3 skipped, 3 deselected in 24.05s =================
+
+# نهاية دليل التحقق R-112b
