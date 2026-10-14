@@ -884,3 +884,11 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - مضاف: `agent_civilization/core/experience.py`؛ `GET /api/memory`، `GET /api/learning`، `DELETE /api/memory`؛ `experience` في ناتج كل مهمة وفي `/api/system/status`؛ `tests/test_r103_memory_learning.py` (17؛ على الكود السابق 16 تفشل)؛ `scripts/run_r103_experience_probe.py`؛ RISK-026.
 - معدّل: `real_agents.py` و`specialist_runtime.py` (يلفان المعالج بالطبقة)؛ `memory_system.py` (recall يبحث في الموجه، load يستعيد الأنواع، كتابة ذرية، معرّف غير معتمد على الساعة وحدها)؛ `tests/conftest.py` (ذاكرة فارغة لكل اختبار).
 - pytest 346 + 3 + 3 (3.11/3.12). R-051 19/20 في ثلاث تشغيلات مسجلة — `researcher` بخطأ TLS من DuckDuckGo (R-107)، والمسار الذي يقيسه R-051 بلا تغيير.
+
+## 2026-10-14 — R-104: إصلاح بالتوصيل لا حذف — `DataWorkerAgent` (D-047)
+
+- **قبل**: `agents/executors/data_worker.py` لا مستورد له في المستودع كله (حتى الاختبارات)؛ و`_process_data` يخفي فشل LLM (يعيد `{'status': 'processed', 'answer': ''}` عند `ok: False`).
+- مضاف: `process_text()` في `data_worker.py` (تُغلف نداء LLM الحقيقي، مسار حي من `real_dispatcher`)؛ `tests/test_r104_data_worker.py` (5 اختبارات تمييزية)؛ `docs/audit/M6/logs/99_r104_data_worker.log` (أدلة الفحوص)؛ D-047 (قرار الإصلاح بدل الحذف/الأرشفة).
+- معدّل: `agent_civilization/agents/executors/data_worker.py` (`_process_data` ينشر فشل LLM بـok/error/model بدل إخفائه)؛ `agent_civilization/core/agents/real_dispatcher.py` (`_data_processor` لمدخل نصي فقط يفوّض إلى `process_text()`؛ المدخل الرقمي حتمي وغير متغير).
+- الحزم الفارغة الثلاث (`communication/`, `runtime/`, `utils/`) أُبقيت — حذفها يتطلب قرار D منفصل + فحص مستهلكين + وسم git؛ `test_three_empty_packages_still_import_cleanly` يثبت استيرادها السليم.
+- pytest 351 + 3 + 3 (346 قبل R-104 + 5 جديدة). ruff صفر. الحي `pytest -m network`: `researcher` تفشل بخطأ SSL من DuckDuckGo (نفس خطأ R-107 المعروف — ليس انحداراً لهذه الدفعة)؛ `api_integrator` و`network_client` يمرّان.

@@ -242,7 +242,20 @@ async def _analyst(work: Dict[str, Any]) -> Dict[str, Any]:
 async def _data_processor(work: Dict[str, Any]) -> Dict[str, Any]:
     nums = _extract_numbers(work)
     if not nums:
-        return {"ok": False, "error": "no numeric data"}
+        # R-104 (D-047): text-only input — the deterministic aggregation has nothing
+        # to do; delegate to the LLM-backed DataWorkerAgent path (honest failure when
+        # the LLM key is missing — the exact OpenRouter error is propagated).
+        text = _extract_text(work)
+        if not text.strip():
+            return {"ok": False, "error": "no numeric data and no text to process"}
+        from agent_civilization.agents.executors.data_worker import process_text
+        out = await process_text(text)
+        if not out.get("ok"):
+            return {"ok": False,
+                    "error": f"llm-backed data processing unavailable: {out.get('error')}",
+                    "model": out.get("model")}
+        return {"ok": True, "answer": out.get("answer", ""),
+                "tool_output": {"source": "llm", "model": out.get("model")}}
     sorted_ns = sorted(nums)
     q = lambda p: sorted_ns[min(len(sorted_ns) - 1, int(p * (len(sorted_ns) - 1)))]
     return {"ok": True, "answer": f"processed {len(nums)} samples",

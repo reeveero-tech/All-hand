@@ -11,6 +11,7 @@ All-hand/ (الجذر — 55 دليلاً، 1,981 ملفاً متتبعاً)
 ├── agent_civilization/          ← 1,052 ملفاً متتبعاً (31 خارج specialists + 1,021 داخلها — عُدّ بـ`git ls-files` في R-100؛ كان مكتوباً 1,050/29 والقياس على main 36f8fa5 = 1,051/30)
 │   ├── agents/
 │   │   ├── real/                ← إنشاء 1,000 وكيل في الذاكرة (مثبت في سلسلة الاستيراد من server.py)
+│   │   ├── executors/data_worker.py ← DataWorkerAgent + process_text() — LLM-backed لمدخل نصي فقط في _data_processor (R-104، D-047)
 │   │   └── specialists/          ← 1,021 ملفاً (1,000 وكيل proxy + 21 __init__.py) —
 │   │                               يصرّفون إلى real_dispatcher؛ موصولة اختيارياً بـAGOS_AGENT_IMPL=specialists (D-037)
 │   ├── core/agents/             ← BaseAgent, CommunicationHub, real_dispatcher

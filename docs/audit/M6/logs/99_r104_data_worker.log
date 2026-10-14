@@ -1,0 +1,33 @@
+# R-104 — data_worker.py and the three empty packages: repair not delete (D-047)
+# Head: main @ c0b24ce (after PR #112 / R-103 merge); branch m6/r104-connect-data-worker
+
+$ pytest tests/test_r104_data_worker.py -v
+exit_code=0
+5 passed (reachable-from-live-path / propagates-llm-failure / text-only-delegates-to-llm / numeric-unchanged / empty-packages-import-cleanly)
+
+$ pytest tests/ (full suite)
+exit_code=0
+351 passed, 3 skipped, 3 deselected in 12.83s   (346 before R-104 + 5 new)
+
+$ ruff (F,E722) — handoff scope (specialists excluded)
+exit_code=0
+All checks passed!
+
+$ ruff (F,E722) — CI scope (scripts included, no exclusion)
+exit_code=0
+All checks passed!
+
+$ pytest tests/ -m network  (known R-107 flake — researcher only, api_integrator/network_client pass)
+exit_code=1
+FAILED test_researcher_live_duckduckgo — 'search: SSL: UNEXPECTED_EOF_WHILE_READING (api.duckduckgo.com)'
+  (same DuckDuckGo SSL flake already documented in R-107 proposed — not a regression of R-104)
+1 failed, 2 passed
+
+$ python3 -c "import agent_civilization.agents.executors; print('live')"
+exit_code=0
+live   # DataWorkerAgent is now importable from the live dispatch chain (agent_civilization.agents.executors)
+
+# Scope honesty: the three empty packages (communication/, runtime/, utils/) are kept
+# (their removal requires a D-decision + consumer audit + git tag per GOVERNANCE_GATE);
+# only DataWorkerAgent is repaired and wired into the live path. They import cleanly
+# (0-byte __init__.py files) and are covered by test_three_empty_packages_still_import_cleanly.
