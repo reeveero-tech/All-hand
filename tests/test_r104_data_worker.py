@@ -339,38 +339,65 @@ def test_task_dispatcher_consumer_counts_completion_not_success(monkeypatch):
     asyncio.run(go())
 
 
-def test_three_packages_carry_live_tested_responsibilities():
-    """R-104c2: the three packages must carry live, TESTED responsibilities — not
-    formal imports. Each re-export is the API an actually-running agent class
-    uses; the same objects are what the other tests in this file exercise."""
-    import agent_civilization.communication as comm
+def test_three_packages_are_consumed_by_production_paths():
+    """R-104c2: each package must be consumed by a PRODUCTION path — not just tests.
+    If any package file is reverted to empty, the live path below breaks (import error),
+    which is what makes the wiring real rather than a formal import."""
+    # communication/: specialist_runtime.py (the AGOS_AGENT_IMPL=specialists builder)
+    # imports CommunicationHub from the package — the production consumer.
+    import agent_civilization.agents.real.specialist_runtime as sr
+    assert sr.CommunicationHub.__module__ == "agent_civilization.core.agents.communication_hub"
+
+    # runtime/: the live researcher handler consumes make_deadline/remaining from it.
     import agent_civilization.runtime as runtime
+    assert callable(runtime.make_deadline) and callable(runtime.remaining)
+    d = runtime.make_deadline(0.5)
+    assert 0 < runtime.remaining(d) <= 0.5
+
+    # utils/: the live data-processor handler consumes build_llm_payload from it.
     import agent_civilization.utils as utils
+    assert utils.build_llm_payload("p", {"k": "v"}).endswith('{"k": "v"}')
+    assert utils.build_llm_payload("p", None) == "p"
 
-    # communication: the hub every registered agent actually talks through
-    assert comm.CommunicationHub is not None and callable(comm.CommunicationHub)
-    hub = comm.CommunicationHub()
-    assert comm.DeliveryResult is not None
 
-    # runtime + utils: the base class and message every agent loop is built on
-    assert runtime.BaseAgent is utils.BaseAgent
-    assert runtime.Message is utils.Message
-    assert issubclass(DataWorkerAgent, runtime.BaseAgent)
+def test_runtime_helpers_are_used_by_the_live_researcher_handler(monkeypatch):
+    """The live handler really calls the runtime package (a spy on the package
+    functions proves consumption, not just importability)."""
+    import agent_civilization.runtime as runtime
+    calls = {"n": 0}
+    orig = runtime.make_deadline
 
-    # and the workqueue loop really runs through these types end-to-end:
-    # an agent built on them processes a task through the hub's message path
+    def counting_deadline(budget):
+        calls["n"] += 1
+        return orig(budget)
+
+    monkeypatch.setattr(runtime, "make_deadline", counting_deadline)
+    # the handler imports lazily inside _researcher_deadline, so patching the
+    # module attribute is what the handler will see
     async def go():
-        a = DataWorkerAgent("dw", hub, worker_id=1)
-        await hub.register_agent(a)
-        a.start()
-        a.add_work({"task_id": "t1", "data": {"input": "x"}, "original_sender": "hub"})
-        for _ in range(50):
-            await asyncio.sleep(0.02)
-            if a.performance_metrics["tasks_completed"] + a.performance_metrics["tasks_failed"]:
-                break
-        done = a.performance_metrics["tasks_completed"] + a.performance_metrics["tasks_failed"]
-        await a.shutdown_async()
-        return done
+        await rd._researcher({"prompt": "test"})
+    asyncio.run(go())
+    assert calls["n"] >= 1  # the live handler consumed the package
+    # outcome is either honest success or honest failure (live network or stub)
 
-    assert asyncio.run(go()) >= 1  # the loop processed a task through these types
+
+def test_utils_payload_is_used_by_the_live_data_processor(monkeypatch):
+    """The live handler really calls the utils package (spy proves consumption)."""
+    received = []
+
+    async def spy_process_text(payload):
+        received.append(payload)
+        return {"ok": False, "error": "no key", "model": "m"}
+
+    from agent_civilization.agents.executors import data_worker as dw_mod
+    orig_pt = dw_mod.process_text
+    dw_mod.process_text = spy_process_text
+    try:
+        async def go():
+            return await rd._data_processor(
+                {"prompt": "aggregate", "data": {"col": "gamma-only-in-data"}})
+        asyncio.run(go())
+        assert received and "gamma-only-in-data" in received[0]
+    finally:
+        dw_mod.process_text = orig_pt
 

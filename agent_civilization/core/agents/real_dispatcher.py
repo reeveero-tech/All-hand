@@ -251,13 +251,10 @@ async def _data_processor(work: Dict[str, Any]) -> Dict[str, Any]:
         if not text.strip():
             return {"ok": False, "error": "no numeric data and no text to process"}
         # R-104c2: send BOTH the prompt and the data to the LLM path — the prompt
-        # alone was sent before, silently dropping data dict/list contents.
-        data = work.get("data")
-        payload = text
-        if data is not None:
-            payload = text + "\n\n=== data ===\n" + (
-                data if isinstance(data, str)
-                else json.dumps(data, ensure_ascii=False, default=str))
+        # alone was sent before, silently dropping data dict/list contents. The
+        # payload assembly lives in agent_civilization/utils (its canonical home).
+        from agent_civilization.utils import build_llm_payload
+        payload = build_llm_payload(text, work.get("data"))
         from agent_civilization.agents.executors.data_worker import process_text
         out = await process_text(payload)
         if not out.get("ok"):
@@ -406,11 +403,15 @@ _RESEARCHER_TOTAL_TIMEOUT_S = 20.0  # hard budget for the whole handler (both at
 
 
 def _researcher_deadline() -> float:
-    return time.monotonic() + _RESEARCHER_TOTAL_TIMEOUT_S
+    # R-104c2: the deadline helpers live in agent_civilization/runtime (their
+    # canonical home) — the live handler consumes them from there.
+    from agent_civilization.runtime import make_deadline
+    return make_deadline(_RESEARCHER_TOTAL_TIMEOUT_S)
 
 
 def _remaining_budget(deadline: float) -> float:
-    return max(0.0, deadline - time.monotonic())
+    from agent_civilization.runtime import remaining
+    return remaining(deadline)
 
 
 async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:

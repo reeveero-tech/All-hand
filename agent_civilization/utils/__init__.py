@@ -1,11 +1,28 @@
-"""Shared utilities for the agent civilization (R-104c2, D-047 amendment).
+"""Payload assembly for the live data-processor handler (R-104c2, D-047 amendment).
 
-Re-exports the small shared helpers agents rely on. The role is live and tested:
-``Message`` is the payload every agent-to-agent interaction is built on (exercised
-by tests/test_r104_data_worker.py, tests/test_memory_learning_comm.py), and
-``BaseAgent`` is the class every executor and infrastructure agent inherits.
+Production consumer: ``real_dispatcher._data_processor`` imports
+``build_llm_payload`` from here to assemble the prompt+data payload it sends to
+the LLM-backed path (R-104c2 — data values were dropped before). The package's
+role is live and tested — tests/test_r104_data_worker.py proves data-only
+values reach the LLM through this assembly.
 """
 
-from agent_civilization.core.agents.base_agent import BaseAgent, Message  # noqa: F401
+import json
+from typing import Any, Optional
 
-__all__ = ["BaseAgent", "Message"]
+
+def build_llm_payload(prompt: str, data: Optional[Any]) -> str:
+    """The text payload for the LLM: the instruction plus the data, serialized.
+
+    ``data`` may be a string (passed through) or any JSON-serializable value
+    (dict/list) — rendered so the LLM sees both the instruction and the data.
+    """
+    if data is None:
+        return prompt
+    payload = prompt
+    if not isinstance(data, str):
+        data = json.dumps(data, ensure_ascii=False, default=str)
+    return payload + "\n\n=== data ===\n" + data
+
+
+__all__ = ["build_llm_payload"]

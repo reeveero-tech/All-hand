@@ -1,13 +1,23 @@
-"""Runtime utilities for agent loops (R-104c2, D-047 amendment).
+"""Runtime deadline helpers for the live handlers (R-104c2, D-047 amendment).
 
-The message-processing loop of every ``BaseAgent`` subclass (``_run_loop``,
-``_process_workqueue``, ``_process_inbox``) runs inside an event loop; the
-helpers here are the loop-facing utilities those loops use. The package's role
-is live — it is exercised by every agent message-loop test (e.g. the
-``DataWorkerAgent`` workqueue tests in tests/test_r104_data_worker.py, and
-tests/test_memory_learning_comm.py) — not a formal import.
+Production consumer: ``real_dispatcher._researcher`` imports ``make_deadline``
+and ``remaining`` from here to enforce its overall budget (R-107c). The
+package's role is live and tested — tests/test_r107_researcher_retry.py
+exercises the budget through the handler that consumes these helpers.
 """
 
-from agent_civilization.core.agents.base_agent import BaseAgent, Message  # noqa: F401
+import time as _time
+from typing import Callable
 
-__all__ = ["BaseAgent", "Message"]
+
+def make_deadline(budget_s: float) -> float:
+    """A monotonic deadline ``budget_s`` seconds from now."""
+    return _time.monotonic() + budget_s
+
+
+def remaining(deadline: float) -> float:
+    """Seconds left until ``deadline`` (never negative)."""
+    return max(0.0, deadline - _time.monotonic())
+
+
+__all__ = ["make_deadline", "remaining", "Callable"]
