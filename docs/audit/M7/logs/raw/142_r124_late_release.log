@@ -1,0 +1,20 @@
+# R-124: why C memory was freed late — 30 real HTTPS requests to https://example.com via safety.safe_urlopen, GC disabled, then gc.collect() — 2026-10-15T02:56:39Z
+
+## A) before R-121 (f41fb32)
+python 3.14.3 gc thresholds=(2000, 10, 0) code=per-connection
+referrer chain of one surviving SSLContext: dict(keys=['_debuglevel', '_context', 'parent']) <- HTTPSHandler <- list <- OpenerDirector
+n=30 before: {'SSLContext': 0, 'SSLSocket': 0, 'OpenerDirector': 0} in-use 5.1MB
+after 30 requests, no GC: {'SSLContext': 30, 'SSLSocket': 0, 'OpenerDirector': 30} in-use 26.8MB (+21.7)
+after gc.collect() (freed 1110 objects): {'SSLContext': 0, 'SSLSocket': 0, 'OpenerDirector': 0} in-use 6.0MB (+0.9)
+
+## B) R-121 only (main 3da3ac2: shared TLS context)
+python 3.14.3 gc thresholds=(2000, 10, 0) code=shared-context
+n=30 before: {'SSLContext': 0, 'SSLSocket': 0, 'OpenerDirector': 0} in-use 5.1MB
+after 30 requests, no GC: {'SSLContext': 1, 'SSLSocket': 0, 'OpenerDirector': 30} in-use 6.3MB (+1.2)
+after gc.collect() (freed 1080 objects): {'SSLContext': 1, 'SSLSocket': 0, 'OpenerDirector': 0} in-use 6.3MB (+1.2)
+
+## C) R-124 (this batch: handler back-links cut + opener.close())
+python 3.14.3 gc thresholds=(2000, 10, 0) code=shared-context
+n=30 before: {'SSLContext': 0, 'SSLSocket': 0, 'OpenerDirector': 0} in-use 5.1MB
+after 30 requests, no GC: {'SSLContext': 1, 'SSLSocket': 0, 'OpenerDirector': 0} in-use 6.3MB (+1.2)
+after gc.collect() (freed 0 objects): {'SSLContext': 1, 'SSLSocket': 0, 'OpenerDirector': 0} in-use 6.3MB (+1.2)

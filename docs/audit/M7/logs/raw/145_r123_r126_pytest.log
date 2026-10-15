@@ -1,0 +1,44 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 464 items / 4 deselected / 460 selected
+
+tests/test_agent_production.py ........................                  [  5%]
+tests/test_agents_per_spec.py ...                                        [  5%]
+tests/test_api.py ..................                                     [  9%]
+tests/test_civilization_routes.py ......                                 [ 11%]
+tests/test_civilization_scale.py .....                                   [ 12%]
+tests/test_e2e_scenarios.py ............                                 [ 14%]
+tests/test_infrastructure.py ...................                         [ 18%]
+tests/test_memory_learning_comm.py .........                             [ 20%]
+tests/test_network_isolation.py ......                                   [ 22%]
+tests/test_r042_live_storage.py sss                                      [ 22%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 26%]
+tests/test_r082_storage_outcomes.py ........                             [ 28%]
+tests/test_r083_metrics_middleware.py ......                             [ 29%]
+tests/test_r100_runtime_safety.py ...................................... [ 38%]
+......                                                                   [ 39%]
+tests/test_r101_web_auth_contract.py .............                       [ 42%]
+tests/test_r102_honest_handlers.py .............................         [ 48%]
+tests/test_r103_memory_learning.py .................                     [ 52%]
+tests/test_r104_data_worker.py ................                          [ 55%]
+tests/test_r106_chat_routing.py .............                            [ 58%]
+tests/test_r107_researcher_retry.py ...............                      [ 61%]
+tests/test_r114_r118_real_fixes.py ..................................... [ 69%]
+......                                                                   [ 71%]
+tests/test_r121_tls_context.py ....                                      [ 71%]
+tests/test_r122_specialization_coverage.py ............                  [ 74%]
+tests/test_r125_self_developer_cycle.py ......                           [ 75%]
+tests/test_real_dispatch_audit.py ......                                 [ 77%]
+tests/test_routing_pipeline.py .................................         [ 84%]
+tests/test_security.py ..........                                        [ 86%]
+tests/test_specialist_runtime.py ..........                              [ 88%]
+tests/test_specialists_package.py ....................................   [ 96%]
+tests/test_storage_payloads.py ......                                    [ 97%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 457 passed, 3 skipped, 4 deselected in 23.94s =================
+rc=0

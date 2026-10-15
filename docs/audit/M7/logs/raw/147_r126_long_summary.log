@@ -1,0 +1,29 @@
+== long (r126_long_run.json) templates=all
+  min   15: rss   70.1 MB | in-use  19.4 | free-held   4.5 | traced   8.1 | exp 1494 | requests 428 verified 428 fail 0 exc 0
+  min   30: rss   79.9 MB | in-use  23.7 | free-held   4.2 | traced  11.9 | exp 2000 | requests 844 verified 842 fail 0 exc 0
+  min   45: rss   83.5 MB | in-use  22.7 | free-held   7.3 | traced  10.8 | exp 2000 | requests 1311 verified 1310 fail 0 exc 0
+  min   60: rss   83.8 MB | in-use  22.9 | free-held   7.3 | traced  10.9 | exp 2000 | requests 1743 verified 1742 fail 0 exc 0
+  min   75: rss   83.8 MB | in-use  24.7 | free-held   5.5 | traced  12.6 | exp 2000 | requests 2151 verified 2150 fail 0 exc 0
+  min   90: rss   84.0 MB | in-use  23.4 | free-held   7.0 | traced  11.4 | exp 2000 | requests 2573 verified 2573 fail 0 exc 0
+  min  105: rss   84.0 MB | in-use  22.7 | free-held   7.6 | traced  10.8 | exp 2000 | requests 3002 verified 3002 fail 0 exc 0
+  min  120: rss   84.0 MB | in-use  24.4 | free-held   5.9 | traced  12.3 | exp 2000 | requests 3398 verified 3398 fail 0 exc 0
+  min  135: rss   84.0 MB | in-use  22.8 | free-held   7.6 | traced  10.8 | exp 2000 | requests 3813 verified 3812 fail 0 exc 0
+  min  150: rss   84.0 MB | in-use  23.6 | free-held   6.8 | traced  11.5 | exp 2000 | requests 4273 verified 4273 fail 0 exc 0
+  peak rss 84.0 MB; last hour 84.0 -> 84.0 MB (+0.000 MB/min)
+  llm {'calls': 1073, 'ok': 1073, 'rate_limited': 0, 'errors': 0}
+  failures attributed: 0 / 0
+== final (r126_long_run_final.json) templates=all
+  min   15: rss   70.1 MB | in-use  19.3 | free-held   6.2 | traced   8.0 | exp 1494 | requests 428 verified 428 fail 0 exc 0
+  min   30: rss   78.2 MB | in-use  22.3 | free-held   6.2 | traced  10.5 | exp 2000 | requests 844 verified 842 fail 0 exc 0
+  min   45: rss   79.0 MB | in-use  22.6 | free-held   6.2 | traced  10.8 | exp 2000 | requests 1311 verified 1310 fail 0 exc 0
+  min   60: rss   79.2 MB | in-use  22.7 | free-held   6.3 | traced  10.8 | exp 2000 | requests 1743 verified 1742 fail 0 exc 0
+  min   75: rss   79.2 MB | in-use  22.8 | free-held   6.2 | traced  11.0 | exp 2000 | requests 2151 verified 2150 fail 0 exc 0
+  min   90: rss   79.2 MB | in-use  22.7 | free-held   6.4 | traced  10.9 | exp 2000 | requests 2573 verified 2573 fail 0 exc 0
+  min  105: rss   79.2 MB | in-use  22.8 | free-held   6.4 | traced  10.9 | exp 2000 | requests 3004 verified 3003 fail 0 exc 0
+  min  120: rss   79.2 MB | in-use  22.7 | free-held   6.5 | traced  10.8 | exp 2000 | requests 3398 verified 3398 fail 0 exc 0
+  min  135: rss   79.2 MB | in-use  22.7 | free-held   6.7 | traced  10.8 | exp 2000 | requests 3813 verified 3812 fail 0 exc 0
+  min  150: rss   79.5 MB | in-use  22.8 | free-held   6.6 | traced  10.8 | exp 2000 | requests 4273 verified 4273 fail 0 exc 0
+  peak rss 79.5 MB; last hour 79.2 -> 79.5 MB (+0.005 MB/min)
+  llm {'calls': 1073, 'ok': 1073, 'rate_limited': 0, 'errors': 0}
+  failures attributed: 0 / 0
+rc=0

@@ -1,0 +1,8 @@
+# R-125 live retest — 2026-10-15T05:32:29Z
+[1 llm off] request failed=True: drafting a message needs an LLM: no LLM configured (set OPENROUTER_API_KEY, or allow the keyless provider: AGOS_LLM_KEYLESS=1)
+[1 llm off] remembered failures for the goal: 1
+[2 llm off] self_developer ok=True: self-development cycle: probes 8/8 healthy; 20 specializations backed by real handlers; retested 1 remembered failure(s): 0 fixed and retired (0 memories), 1 still failing: communicator@execute [external] drafting a message needs an LLM: no LLM configured (set OPENROUTER_API_KEY, or a
+[2 llm off] remembered failures for the goal: 2
+[3 llm on] self_developer ok=True: self-development cycle: probes 8/8 healthy; 20 specializations backed by real handlers; retested 1 remembered failure(s): 1 fixed and retired (2 memories), 0 still failing
+[3 llm on] remembered failures for the goal: 0
+rc=0
