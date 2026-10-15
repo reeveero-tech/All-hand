@@ -1,0 +1,13 @@
+# R-133 إصدارات GitHub Actions: المستخدمة مقابل أحدث رئيسي منشور — 2026-10-15T22:44:29Z
+
+$ المستخدمة في .github/workflows/*.yml
+      4         uses: actions/setup-node@v7
+      7         uses: actions/setup-python@v7
+      2         uses: actions/upload-artifact@v7
+      9       - uses: actions/checkout@v7
+
+$ أحدث إصدار منشور لكل Action (GitHub API)
+actions/checkout: أحدث=v7.0.1
+actions/setup-python: أحدث=v7.0.0
+actions/setup-node: أحدث=v7.1.0
+actions/upload-artifact: أحدث=v7.0.2

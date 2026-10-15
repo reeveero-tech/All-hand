@@ -1,0 +1,238 @@
+# R-134 قياسات الدورة العاشرة (سجلات كاملة) — 2026-10-15T22:41:21Z — على فرع m7/r133-cycle10-deps (أساس e173d15 + تحديث react-query)
+
+$ R-051: AGOS_ALLOW_CODE_EXEC=1 venv312 python scripts/run_r051_audit.py
+{
+  "run_at": "2026-10-15T22:41:28+0000",
+  "coverage_self_report": {
+    "real_specializations": [
+      "analyst",
+      "api_integrator",
+      "architect",
+      "builder",
+      "code_generator",
+      "communicator",
+      "data_processor",
+      "db_manager",
+      "designer",
+      "educator",
+      "modifier",
+      "monitor",
+      "network_client",
+      "researcher",
+      "reviewer",
+      "self_developer",
+      "strategist",
+      "surgeon",
+      "test_runner",
+      "validator"
+    ],
+    "count": 20
+  },
+  "tool_policy": {
+    "code_execution": {
+      "allowed": true,
+      "reason": "AGOS_ALLOW_CODE_EXEC=1",
+      "limits": {
+        "cpu_seconds": 5,
+        "address_space_bytes": 536870912,
+        "file_size_bytes": 10485760,
+        "open_files": 64
+      },
+      "wall_timeout_s": 8.0,
+      "server_process_non_dumpable": true
+    },
+    "outbound_network": {
+      "private_targets_allowed": false
+    },
+    "sqlite": {
+      "time_budget_s": 3.0,
+      "attach": "denied",
+      "max_value_bytes": 1000000
+    }
+  },
+  "rows": [
+    {
+      "specialization": "analyst",
+      "status": "real",
+      "elapsed_ms": 0.3,
+      "detail": "{\"n\": 10, \"sum\": 55.0, \"mean\": 5.5, \"median\": 5.5, \"stdev\": 2.8722813232690143, \"min\": 1.0, \"max\": 10.0, \"outliers\": [], \"trend\": \"up\", \"samples\": [1.0, 2.0, 3."
+    },
+    {
+      "specialization": "api_integrator",
+      "status": "real",
+      "elapsed_ms": 160.3,
+      "detail": "{\"status\": 200, \"content_type\": \"application/json; charset=utf-8\", \"latency_ms\": 157.73, \"bytes\": 5996, \"sample\": {\"id\": 81598961, \"node_id\": \"MDEwOlJlcG9zaXRvc"
+    },
+    {
+      "specialization": "architect",
+      "status": "real",
+      "elapsed_ms": 1.4,
+      "detail": "{\"assumed_baseline\": false, \"components\": [{\"name\": \"api\", \"layer\": \"interface\", \"responsibility\": \"request/response contract\", \"depends_on\": [], \"why\": \"reques"
+    },
+    {
+      "specialization": "builder",
+      "status": "real",
+      "elapsed_ms": 1.8,
+      "detail": "{\"stack\": \"custom\", \"project\": \"project\", \"source\": \"paths from data\", \"files\": [{\"path\": \"app.py\", \"bytes\": 110, \"check\": \"compile\", \"verified\": true, \"content"
+    },
+    {
+      "specialization": "code_generator",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"generated\": false, \"parsed\": true, \"functions\": [\"add\"], \"classes\": [], \"lines\": 3}"
+    },
+    {
+      "specialization": "communicator",
+      "status": "real",
+      "elapsed_ms": 589.5,
+      "detail": "{\"method\": \"llm\", \"model\": \"keyless:gpt-oss-20b\", \"draft\": \"Subject: Request for Q3 Project Status Update  \\n\\nHi [Name],\\n\\nI hope you’re well. Could you pleas"
+    },
+    {
+      "specialization": "data_processor",
+      "status": "real",
+      "elapsed_ms": 0.2,
+      "detail": "{\"n\": 6, \"sum\": 21.0, \"median\": 3.5, \"p25\": 2.0, \"p75\": 4.0, \"variance\": 2.9166666666666665}"
+    },
+    {
+      "specialization": "db_manager",
+      "status": "real",
+      "elapsed_ms": 2.1,
+      "detail": "{\"columns\": [\"x\"], \"rows\": [[1]]}"
+    },
+    {
+      "specialization": "designer",
+      "status": "real",
+      "elapsed_ms": 1.0,
+      "detail": "{\"palette\": {\"background\": \"#f6f9f7\", \"surface\": \"#e7efe9\", \"text\": \"#1a231d\", \"primary\": \"#307e4a\", \"secondary\": \"#3b9b8b\", \"accent\": \"#9b3b7b\"}, \"theme\": \"lig"
+    },
+    {
+      "specialization": "educator",
+      "status": "real",
+      "elapsed_ms": 6365.1,
+      "detail": "{\"method\": \"llm\", \"model\": \"keyless:gpt-oss-20b\", \"provider\": \"keyless\", \"key_points\": [\"Key Points\", \"Base Case** – The simplest instance that can be answered "
+    },
+    {
+      "specialization": "modifier",
+      "status": "real",
+      "elapsed_ms": 0.1,
+      "detail": "{\"changed\": false, \"applied\": [], \"new_code\": \"def foo():\\n    pass\\n\", \"diff\": \"\", \"verified\": \"ast.parse\", \"code\": \"def foo():\\n    pass\\n\"}"
+    },
+    {
+      "specialization": "monitor",
+      "status": "real",
+      "elapsed_ms": 0.6,
+      "detail": "{\"pid\": 5608, \"user_cpu_s\": 0.223, \"sys_cpu_s\": 0.028, \"max_rss_kb\": 41064, \"cpus\": 2, \"loadavg\": [0.2001953125, 0.4833984375, 0.623046875], \"rss_kb\": 41064, \"m"
+    },
+    {
+      "specialization": "network_client",
+      "status": "real",
+      "elapsed_ms": 30.9,
+      "detail": "{\"host\": \"github.com\", \"ip\": \"140.82.112.3\", \"addresses\": [\"140.82.112.3\"], \"resolve_ms\": 9.81, \"http\": {\"status\": 200, \"url\": \"https://github.com/\", \"method\": "
+    },
+    {
+      "specialization": "researcher",
+      "status": "real",
+      "elapsed_ms": 67.0,
+      "detail": "{\"method\": \"instant-answer\", \"abstract\": \"Python is a high-level, general-purpose programming language that emphasizes code readability, simplicity, and ease-of"
+    },
+    {
+      "specialization": "reviewer",
+      "status": "real",
+      "elapsed_ms": 0.2,
+      "detail": "{\"loc\": 3, \"comments\": 0, \"comment_ratio\": 0.0, \"functions\": [\"f\"], \"issues\": [], \"code_reviewed\": true, \"checks\": [\"bare except\", \"== None\", \"mutable defaults\""
+    },
+    {
+      "specialization": "self_developer",
+      "status": "real",
+      "elapsed_ms": 5.7,
+      "detail": "{\"real_specializations\": [\"analyst\", \"api_integrator\", \"architect\", \"builder\", \"code_generator\", \"communicator\", \"data_processor\", \"db_manager\", \"designer\", \"ed"
+    },
+    {
+      "specialization": "strategist",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"roadmap\": [{\"step\": 1, \"goal\": \"a\", \"weight\": 1.0}, {\"step\": 2, \"goal\": \"b\", \"weight\": 0.67}, {\"step\": 3, \"goal\": \"c\", \"weight\": 0.33}]}"
+    },
+    {
+      "specialization": "surgeon",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"issues\": [], \"functions\": [], \"code\": \"x=1\\n\\n\\n\\ny=2\\n\"}"
+    },
+    {
+      "specialization": "test_runner",
+      "status": "real",
+      "elapsed_ms": 17.8,
+      "detail": "{\"stdout\": \"\", \"stderr\": \"\", \"elapsed_s\": 0.012, \"sandbox\": true, \"tests_passed\": 0, \"tests_failed\": 0, \"r111_tests_generated\": 0}"
+    },
+    {
+      "specialization": "validator",
+      "status": "real",
+      "elapsed_ms": 0.0,
+      "detail": "{\"type\": \"dict\"}"
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "real": 20,
+    "simulated": 0,
+    "failed": 0,
+    "refused_by_policy": 0
+  }
+}
+R051_RC=0
+
+$ R-055: AGOS_ALLOW_CODE_EXEC=1 venv312 python scripts/run_r055_scenarios.py
+
+=== السيناريو: 1: برمجي — مراجعة واختبار كود ===
+الهدف: review and test this code: print(1+1)
+التخصص الأساسي: reviewer
+عدد المراحل: 4
+  ✓ understand@analyst (analyst_0000) 0.001s
+     n=4 mean=1.000 sd=0.000 trend=flat
+  ✓ plan@strategist (strategist_0080) 0.000s
+     understand(analyst) -> plan(strategist) -> execute(reviewer) -> test(test_runner)
+  ✓ execute@reviewer (reviewer_0070) 0.000s
+     reviewed 1 loc, 0 function(s): 0 issue(s) — no defects found by static checks
+  ✓ test@test_runner (test_runner_0090) 0.019s
+     exit=0; code ran (no test functions found to run)
+النتيجة النهائية: exit=0; code ran (no test functions found to run)
+الزمن الكلي: 0.020s
+
+=== السيناريو: 2: تحليلي — تحليل بيانات ===
+الهدف: analyze the data for trends
+التخصص الأساسي: analyst
+عدد المراحل: 4
+  ✓ understand@analyst (analyst_0000) 0.001s
+     request: action='analyze' | text: 5 words, 1 sentence(s), language=en, top terms: analyze, data, tre
+  ✓ plan@strategist (strategist_0080) 0.000s
+     understand(analyst) -> plan(strategist) -> execute(analyst) -> validate(validator)
+  ✓ execute@analyst (analyst_0001) 0.000s
+     trend=up (constant step 1) (n=5)
+  ✓ validate@validator (validator_0095) 0.000s
+     valid python object
+النتيجة النهائية: valid python object
+الزمن الكلي: 0.001s
+
+=== السيناريو: 3: بناء معماري — هيكل مشروع ===
+الهدف: build a Python project structure
+التخصص الأساسي: code_generator
+عدد المراحل: 5
+  ✓ understand@analyst (analyst_0000) 0.000s
+     request: action='build' | text: 5 words, 1 sentence(s), language=en, top terms: build, python, proje
+  ✓ plan@strategist (strategist_0080) 0.000s
+     understand(analyst) -> plan(strategist) -> execute(code_generator) -> review(reviewer) -> test(test_
+  ✓ execute@code_generator (code_generator_0020) 0.000s
+     validated supplied code (not generated): 0 funcs, 0 classes
+  ✓ review@reviewer (reviewer_0070) 0.000s
+     reviewed 1 loc, 0 function(s): 0 issue(s) — no defects found by static checks
+  ✓ test@test_runner (test_runner_0090) 0.012s
+     exit=0; code ran (no test functions found to run)
+النتيجة النهائية: exit=0; code ran (no test functions found to run)
+الزمن الكلي: 0.013s
+
+==================================================
+كل المراحل ناجحة: True
+كل النتائج النهائية موجودة: True
+✓ السيناريوهات الثلاثة ناجحة
+R055_RC=0

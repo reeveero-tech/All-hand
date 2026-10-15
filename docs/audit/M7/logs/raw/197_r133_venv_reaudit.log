@@ -1,0 +1,8 @@
+# R-133 إعادة فحص venv بعد ترقية أدوات البيئة (pip/setuptools — أدوات بيئة لا تبعيات مشروع؛ requirements.txt نفسه صفر دائماً — 184) — 2026-10-15T23:05:02Z
+الأمر المنفذ لكل بيئة: $VENV/bin/pip-audit (أداة pip-audit الخاصة بالبيئة نفسها — بلا وسيط، تدقق حزم البيئة القائمة)
+--- /tmp/venv311_r133 (Python 3.11.15) — $ /tmp/venv311_r133/bin/pip-audit
+No known vulnerabilities found
+AUDIT_RC=0
+--- /tmp/venv312_r133 (Python 3.12.13) — $ /tmp/venv312_r133/bin/pip-audit
+No known vulnerabilities found
+AUDIT_RC=0

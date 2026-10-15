@@ -1,0 +1,15 @@
+# R-133 deps & security audit — 2026-10-15T22:27:38Z — base e173d15
+$ pip-audit -r requirements.txt
+No known vulnerabilities found
+PIP_AUDIT_REQ_RC=0
+
+$ pip-audit (current env)
+No known vulnerabilities found
+Name                                                          Skip Reason
+------------------------------------------------------------- ----------------------------------------------------------------------------------------------------------------------------------------------------
+idl-protobuf-perplexity-llm-api-common-llm-api-common-pyproto Dependency not found on PyPI and could not be audited: idl-protobuf-perplexity-llm-api-common-llm-api-common-pyproto (2026.10.15.1792023210+9d31e6b)
+idl-protobuf-perplexity-llm-api-llm-api-pygrpc                Dependency not found on PyPI and could not be audited: idl-protobuf-perplexity-llm-api-llm-api-pygrpc (0.0.0+local)
+idl-protobuf-perplexity-llm-api-llm-api-pyproto               Dependency not found on PyPI and could not be audited: idl-protobuf-perplexity-llm-api-llm-api-pyproto (0.0.0+local)
+pplx-python-sdks-llm-api                                      Dependency not found on PyPI and could not be audited: pplx-python-sdks-llm-api (0.0.0+local)
+pplx-sdk                                                      Dependency not found on PyPI and could not be audited: pplx-sdk (0.0.0+local)
+PIP_AUDIT_ENV_RC=0

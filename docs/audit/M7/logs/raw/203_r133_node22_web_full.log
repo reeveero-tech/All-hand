@@ -1,0 +1,103 @@
+$ Node 22.23.3 تحقق web/ (كما في CI)
+v22.23.3
+$ npm ci --engine-strict (web)
+
+added 23 packages, and audited 24 packages in 2s
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+WEB_CI_RC=0
+$ npm test (web)
+
+> agos-civilization-web@3.0.0 test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+ok 1 - open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+  ---
+  duration_ms: 2.048401
+  type: 'test'
+  ...
+# Subtest: stored key is sent on every call, write and read
+ok 2 - stored key is sent on every call, write and read
+  ---
+  duration_ms: 1.024894
+  type: 'test'
+  ...
+# Subtest: key never appears in the URL or body
+ok 3 - key never appears in the URL or body
+  ---
+  duration_ms: 0.326248
+  type: 'test'
+  ...
+# Subtest: caller headers are merged, not allowed to drop Content-Type or the key
+ok 4 - caller headers are merged, not allowed to drop Content-Type or the key
+  ---
+  duration_ms: 0.288118
+  type: 'test'
+  ...
+# Subtest: clearApiKey / empty value removes the key
+ok 5 - clearApiKey / empty value removes the key
+  ---
+  duration_ms: 0.540617
+  type: 'test'
+  ...
+# Subtest: 401 -> clear Arabic message, status kept, auth event dispatched
+ok 6 - 401 -> clear Arabic message, status kept, auth event dispatched
+  ---
+  duration_ms: 0.716829
+  type: 'test'
+  ...
+# Subtest: 403 with a stored key -> "key is wrong" message
+ok 7 - 403 with a stored key -> "key is wrong" message
+  ---
+  duration_ms: 0.462697
+  type: 'test'
+  ...
+# Subtest: other errors keep the server detail
+ok 8 - other errors keep the server detail
+  ---
+  duration_ms: 0.270566
+  type: 'test'
+  ...
+# Subtest: external agent names are URL-encoded on delete
+ok 9 - external agent names are URL-encoded on delete
+  ---
+  duration_ms: 0.285503
+  type: 'test'
+  ...
+# Subtest: no sessionStorage (blocked) -> calls still work without a key
+ok 10 - no sessionStorage (blocked) -> calls still work without a key
+  ---
+  duration_ms: 0.276523
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 108.922838
+WEB_TEST_RC=0
+$ npm run build (web)
+
+> agos-civilization-web@3.0.0 build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 22 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.77 kB │ gzip:  0.45 kB
+dist/assets/index-B7MkQRhG.css   12.25 kB │ gzip:  2.99 kB
+dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
+
+✓ built in 191ms
+WEB_BUILD_RC=0
