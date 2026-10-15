@@ -1,6 +1,6 @@
 # الواجهات (API)
 
-> **آخر تحديث**: 2026-10-14 — بعد R-104c2 (مسار النص في `data_processor`: الحمولة تصل LLM بالتعليمة **والبيانات** معاً — راجع الملاحظات)
+> **آخر تحديث**: 2026-10-15 — R-131 (توجيه `/api/chat` مع LLM بلا مفتاح). قبلها 2026-10-14 — بعد R-104c2 (مسار النص في `data_processor`: الحمولة تصل LLM بالتعليمة **والبيانات** معاً — راجع الملاحظات)
 > (تحديث سابق: 2026-10-12 — R-041: مصادلة مع الكود الفعلي وتصحيح أوصاف الحماية القديمة)
 > **المصدر**: قراءة مباشرة من `server.py` و`agent_civilization/civilization_routes.py`
 
@@ -25,7 +25,7 @@
 | 11 | `/api/tasks/{task_id}` | GET | لا | 404 إن لم توجد |
 | 12 | `/api/events` | GET | لا | |
 | 13 | `/api/events/stream` | GET | لا | SSE |
-| 14 | `/api/chat` | POST | `verify_api_key` (401/403 إن فُعّل `AGOS_API_KEY`) | توجيه تلقائي: LLM إن توفر وإلا `routing.route()` (R-106)؛ حقل `routing` |
+| 14 | `/api/chat` | POST | `verify_api_key` (401/403 إن فُعّل `AGOS_API_KEY`) | توجيه تلقائي: LLM إن توفر **بمفتاح** وإلا `routing.route()` (R-106؛ R-131: لا توجيه عبر LLM بلا مفتاح)؛ حقل `routing` |
 | 15 | `/api/agents/external` | POST | `verify_api_key` — يفحص قيمة المفتاح (R-004) | 201؛ 400 `url rejected` لعنوان غير عام في الوضع المفتوح (R-100) |
 | 16 | `/api/agents/external/{name}` | **DELETE** | `verify_api_key` — يفحص قيمة المفتاح (R-004) | |
 | 17 | `/{full_path:path}` | GET | لا | catch-all يخدم `web/dist` |
@@ -89,6 +89,10 @@
 ## R-101 — عقد الواجهة في الوضع المصادَق (2026-10-14)
 - لا تغيير في الخادم. العقد المثبت (`tests/test_r101_web_auth_contract.py`): `GET /api/system/status` → `security.authentication = "enabled"|"disabled"` (تكتشف به الواجهة الوضع بلا مفتاح)؛ مسارات القراءة التي تستطلعها الواجهة (`/api/specializations`، `/api/agents`، `/api/tasks`، `/api/events`، `/api/events/stream`) بلا مفتاح؛ الكتابة: 401 `API key required` بلا مفتاح، 403 `Invalid API key` بمفتاح خاطئ؛ CORS يسمح بترويسة `X-API-Key`.
 - العميل (`web/src/api.js`): يرسل `X-API-Key` إن وُجد في sessionStorage (`agos_api_key`)؛ أخطاؤه من نوع `ApiError` بحقل `status`؛ 401/403 تُطلق حدث `agos-auth-required`.
+
+## R-131 — `/api/chat` لا يوجّه عبر LLM بلا مفتاح (2026-10-15، D-054)
+- **قبل**: مع LLM بلا مفتاح (الافتراضي بلا `OPENROUTER_API_KEY`) كل رسالة تنتظر استدعاء توجيه للمزود العام — حتى «sum these numbers» انتظر وسيط 47–88ث تحت حمل HTTP متزامن (`docs/audit/M7/logs/raw/156`). **بعد**: `routing.method` = `keywords` مع المزود بلا مفتاح؛ `llm` فقط مع مزود بمفتاح. شكل الاستجابة بلا تغيير.
+- تحت ضغط LLM بلا مفتاح قد يحمل `outcome.error` النص «keyless LLM busy: N request(s) ahead …» (رفض فوري بدل انتظار طويل)؛ المعالجات ذات الاحتياطي تستخدمه فوراً.
 
 ## R-106 — توجيه `/api/chat` (2026-10-14)
 - **قبل**: بلا LLM (الافتراضي) كل رسالة → `communicator`. **بعد**: LLM أولاً إن كان مهيأً وذكر تخصصاً صالحاً؛ وإلا `agent_civilization.routing.route()` (الموجّه نفسه الذي يستخدمه `/civilization/*`).

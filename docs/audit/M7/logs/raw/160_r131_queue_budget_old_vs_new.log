@@ -1,0 +1,31 @@
+# R-131: queue-budget proof — same script, old vs new code
+$ cat /tmp/r131_old_budget.py
+import asyncio, time, sys
+sys.path.insert(0, ".")
+from agent_civilization.core import llm as L
+L.KEYLESS_MIN_SPACING_S = 0.0; L.KEYLESS_BUDGET_S = 0.5
+def fake_post(system, prompt, max_tokens, timeout):
+    time.sleep(0.3); return {"choices": [{"message": {"content": "ok"}}], "model": "fake"}
+L._keyless_post = fake_post
+async def go():
+    return await asyncio.gather(*(L._keyless_complete("s", f"p{i}", 10) for i in range(4)))
+t = time.monotonic(); res = asyncio.run(go())
+print("4 callers, 0.3s each, budget 0.5s:", [r["ok"] for r in res], [r.get("error") for r in res if not r["ok"]], f"{time.monotonic()-t:.2f}s")
+
+== old code 7efffdf (/tmp/base131)
+4 callers, 0.3s each, budget 0.5s: [True, True, False, False] ['keyless LLM unavailable within 0s budget (no attempt)', 'keyless LLM unavailable within 0s budget (no attempt)'] 0.60s
+== new code (m7/r131-keyless-http-load)
+4 callers, 0.3s each, budget 0.5s: [True, True, True, True] [] 1.20s
+
+== new tests on old code (expected to fail)
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+=========================== short test summary info ============================
+FAILED tests/test_r131_keyless_admission.py::test_chat_does_not_route_through_keyless_llm
+ERROR tests/test_r131_keyless_admission.py::test_budget_starts_at_the_callers_turn_not_in_the_queue
+ERROR tests/test_r131_keyless_admission.py::test_full_queue_fails_fast_with_explicit_busy
+ERROR tests/test_r131_keyless_admission.py::test_lock_wait_is_bounded - Attri...
+ERROR tests/test_r131_keyless_admission.py::test_idle_provider_still_answers
+==================== 1 failed, 1 passed, 4 errors in 0.46s =====================
+== new tests + R-106 on new code
+
+============================== 19 passed in 2.13s ==============================
