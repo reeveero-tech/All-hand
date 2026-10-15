@@ -15,6 +15,12 @@ If VmRSS grows while traced memory stays flat and fordblks grows, the growth is
 allocator retention (free memory not returned to the OS), not a Python leak.
 Run it with and without MALLOC_ARENA_MAX to compare.
 
+R-123: every unverified request / exception is now recorded with its time,
+request, the first failing stage (name + output head) or the truth check that
+rejected it, and printed as `[label] FAIL {...}` + kept in the JSON
+(`failures`, and `fail_by_reason` per snapshot) — failures are attributed, not
+only counted. --templates all|r119 picks the 24 (R-122) or the original 19.
+
 Usage: python docs/audit/M7/scripts/r121_memory_diag.py --duration-min 30 --label base
 """
 import argparse
@@ -82,6 +88,8 @@ async def main():
     ap.add_argument("--label", default="run")
     ap.add_argument("--seed", type=int, default=120)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--templates", choices=("all", "r119"), default="r119",
+                    help="r119 = the original 19 (R-121 comparability); all = the 24 of R-122")
     args = ap.parse_args()
     random.seed(args.seed)
 
@@ -99,18 +107,35 @@ async def main():
     deadline = t0 + args.duration_min * 60
     state = {"n": 0, "verified": 0, "fail": 0, "exc": 0}
     samples = []
+    failures = []
+    templates = list(live.REQUEST_TEMPLATES) if args.templates == "all" else list(live.REQUEST_TEMPLATES)[:19]
+
+    def record(kind, req, stages=None, err=None, truth=None):
+        bad = next((s for s in (stages or []) if not s.get("ok")), None)
+        f = {"t_s": round(time.monotonic() - t0, 1), "kind": kind, "request": req,
+             "stage": bad.get("name") if bad else None,
+             "specialization": bad.get("specialization") if bad else None,
+             "reason": (err or (bad or {}).get("output") or (f"truth check: {truth}" if truth else ""))[:240]}
+        failures.append(f)
+        print(f"[{args.label}] FAIL " + json.dumps(f, ensure_ascii=False), flush=True)
 
     async def loop():
         while time.monotonic() < deadline:
-            req = random.choice(live.REQUEST_TEMPLATES)
+            req = random.choice(templates)
             state["n"] += 1
             try:
                 res = await execute_plan(route(req), civ)
                 stages = res.get("stages", [])
-                ok = all(s.get("ok") for s in stages) and live.verify(req, stages)[0]
+                stages_ok = bool(stages) and all(s.get("ok") for s in stages)
+                truth_ok, desc = live.verify(req, stages) if stages_ok else (False, None)
+                ok = stages_ok and truth_ok
                 state["verified" if ok else "fail"] += 1
-            except Exception:  # noqa: BLE001
+                if not ok:
+                    record("stage" if not stages_ok else "truth", req, stages,
+                           err=None if stages else "no stages", truth=None if not stages_ok else desc)
+            except Exception as e:  # noqa: BLE001
                 state["exc"] += 1
+                record("exception", req, err=f"{type(e).__name__}: {e}")
             await asyncio.sleep(args.interval_s)
 
     async def snaps():
@@ -118,9 +143,16 @@ async def main():
             await asyncio.sleep(min(args.snap_s, max(0.5, deadline - time.monotonic())))
             s = sample(t0, state["n"], experience)
             s.update(verified=state["verified"], fail=state["fail"], exc=state["exc"],
-                     llm=dict(llm_mod.keyless_stats))
+                     llm=dict(llm_mod.keyless_stats), fail_by_reason=_by_reason(failures))
             samples.append(s)
             print(f"[{args.label}] " + json.dumps(s, ensure_ascii=False), flush=True)
+
+    def _by_reason(fs):
+        out = {}
+        for f in fs:
+            k = f"{f['kind']}:{f['stage'] or '-'}:{(f['reason'] or '')[:60]}"
+            out[k] = out.get(k, 0) + 1
+        return out
 
     await asyncio.gather(snaps(), *(loop() for _ in range(args.concurrency)))
     top = tracemalloc.take_snapshot().statistics("lineno")[:8]
@@ -130,7 +162,8 @@ async def main():
     if args.out:
         Path(args.out).write_text(json.dumps({"label": args.label, "env": {
             "MALLOC_ARENA_MAX": os.environ.get("MALLOC_ARENA_MAX"),
-            "AGOS_MEMORY_MAX": os.environ.get("AGOS_MEMORY_MAX")}, "samples": samples}, indent=1),
+            "AGOS_MEMORY_MAX": os.environ.get("AGOS_MEMORY_MAX")}, "templates": args.templates,
+            "samples": samples, "failures": failures}, indent=1),
             encoding="utf-8")
 
 
