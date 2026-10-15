@@ -1,0 +1,27 @@
+server pid=454 http://127.0.0.1:36269 | keyless LLM on (no OPENROUTER_API_KEY) | AGOS_RATE_LIMIT_REQUESTS=1000000 | AGOS_LLM_KEYLESS_MAX_WAIT_S=(default)
+
+== concurrency 1: 6 requests in 278.1s
+  needs_llm n=   3 http200=   3 other=[] ok=   3 p50=16.65s p95=140.5s max=140.5s routed_by_llm=3
+  no_llm    n=   3 http200=   3 other=[] ok=   3 p50=47.12s p95=66.98s max=66.98s routed_by_llm=3
+  all       n=   6 http200=   6 other=[] ok=   6 p50=16.65s p95=140.5s max=140.5s routed_by_llm=6
+
+== concurrency 10: 25 requests in 242.1s
+  needs_llm n=   9 http200=   9 other=[] ok=   9 p50=133.08s p95=154.62s max=154.62s routed_by_llm=8
+  no_llm    n=  16 http200=  16 other=[] ok=  16 p50=68.22s p95=136.11s max=150.09s routed_by_llm=12
+  all       n=  25 http200=  25 other=[] ok=  25 p50=68.29s p95=154.27s max=154.62s routed_by_llm=20
+
+== concurrency 25: 56 requests in 289.7s
+  needs_llm n=  22 http200=  22 other=[] ok=  17 p50=175.91s p95=176.62s max=177.2s routed_by_llm=14
+  no_llm    n=  34 http200=  34 other=[] ok=  34 p50=88.0s p95=175.85s max=176.62s routed_by_llm=17
+  all       n=  56 http200=  56 other=[] ok=  51 p50=88.64s p95=176.62s max=177.2s routed_by_llm=31
+  fail x3: drafting a message needs an LLM: llm: keyless LLM unavailable within 90s budget (no attemp
+  fail x2: llm: keyless LLM unavailable within 90s budget (no attempt)
+
+== concurrency 50: 109 requests in 308.4s
+  needs_llm n=  42 http200=  42 other=[] ok=  26 p50=176.35s p95=177.12s max=177.13s routed_by_llm=14
+  no_llm    n=  67 http200=  67 other=[] ok=  67 p50=88.15s p95=176.53s max=176.54s routed_by_llm=16
+  all       n= 109 http200= 109 other=[] ok=  93 p50=88.36s p95=176.9s max=177.13s routed_by_llm=30
+  fail x9: drafting a message needs an LLM: llm: keyless LLM unavailable within 90s budget (no attemp
+  fail x7: llm: keyless LLM unavailable within 90s budget (no attempt)
+
+report: /home/user/workspace/All-hand/docs/audit/M7/logs/raw/r131_http_load_before.json

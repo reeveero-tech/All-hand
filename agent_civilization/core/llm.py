@@ -45,12 +45,13 @@ class LLMClient:
             )
         return self._session
 
-    async def complete(self, system: str, prompt: str, max_tokens: int = 1024) -> dict:
+    async def complete(self, system: str, prompt: str, max_tokens: int = 1024,
+                       max_wait_s: float | None = None) -> dict:
         """Return {"ok": bool, "content": str, "error": str|None, "model": str}."""
         if not self.api_key and os.environ.get("OPENROUTER_API_KEY"):
             self.api_key = os.environ["OPENROUTER_API_KEY"]
         if self.provider == "keyless":
-            return await _keyless_complete(system, prompt, max_tokens)
+            return await _keyless_complete(system, prompt, max_tokens, max_wait_s)
         if not self.available:
             return {
                 "ok": False,
@@ -121,9 +122,17 @@ KEYLESS_MODEL = os.environ.get("AGOS_LLM_KEYLESS_MODEL", "openai")
 KEYLESS_MIN_SPACING_S = float(os.environ.get("AGOS_LLM_KEYLESS_SPACING_S", "6"))
 KEYLESS_BUDGET_S = float(os.environ.get("AGOS_LLM_KEYLESS_BUDGET_S", "90"))
 KEYLESS_CALL_TIMEOUT_S = 45.0
+# R-131 (D-054): admission control. A caller waits at most this long for its
+# turn; when the requests already ahead (in flight + queued, one spacing slot
+# each) cannot start within it, the call fails at once with an explicit
+# "busy" error so the handler's own fallback runs immediately. Before R-131
+# the 90 s budget started before the queue: callers deep in the queue spent
+# it all waiting and failed with "no attempt" (RISK-028).
+KEYLESS_MAX_WAIT_S = float(os.environ.get("AGOS_LLM_KEYLESS_MAX_WAIT_S", "30"))
 _keyless_lock: "_asyncio.Lock | None" = None
 _keyless_last = 0.0
-keyless_stats = {"calls": 0, "ok": 0, "rate_limited": 0, "errors": 0}
+_keyless_waiting = 0
+keyless_stats = {"calls": 0, "ok": 0, "rate_limited": 0, "errors": 0, "busy": 0}
 
 
 def _keyless_post(system: str, prompt: str, max_tokens: int, timeout: float) -> dict:
@@ -141,49 +150,80 @@ def _keyless_post(system: str, prompt: str, max_tokens: int, timeout: float) -> 
         return json.loads(resp.read().decode("utf-8", errors="replace"))
 
 
-async def _keyless_complete(system: str, prompt: str, max_tokens: int) -> dict:
-    global _keyless_lock, _keyless_last
+def _keyless_busy(ahead: int, est: float, limit: float) -> dict:
+    keyless_stats["busy"] += 1
+    return {"ok": False, "content": "", "busy": True,
+            "error": (f"keyless LLM busy: {ahead} request(s) ahead, ~{est:.0f}s estimated wait "
+                      f"> {limit:.0f}s limit (AGOS_LLM_KEYLESS_MAX_WAIT_S; set OPENROUTER_API_KEY for capacity)"),
+            "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}
+
+
+async def _keyless_complete(system: str, prompt: str, max_tokens: int,
+                            max_wait_s: float | None = None) -> dict:
+    global _keyless_lock, _keyless_last, _keyless_waiting
     if _keyless_lock is None:
         _keyless_lock = _asyncio.Lock()
+    limit = KEYLESS_MAX_WAIT_S if max_wait_s is None else max(0.0, max_wait_s)
+    ahead = _keyless_waiting + (1 if _keyless_lock.locked() else 0)
+    est = ahead * KEYLESS_MIN_SPACING_S + max(0.0, _keyless_last + KEYLESS_MIN_SPACING_S - _time.monotonic())
+    if ahead and est > limit:
+        return _keyless_busy(ahead, est, limit)
+    _keyless_waiting += 1
+    t_queue = _time.monotonic()
+    try:
+        await _asyncio.wait_for(_keyless_lock.acquire(), timeout=max(0.001, limit))
+    except (TimeoutError, _asyncio.TimeoutError):
+        return _keyless_busy(ahead, _time.monotonic() - t_queue, limit)
+    finally:
+        _keyless_waiting -= 1
+    try:
+        return await _keyless_attempts(system, prompt, max_tokens)
+    finally:
+        _keyless_lock.release()
+
+
+async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
+    """The bounded retry loop; runs with the lock held. The budget starts now,
+    when it is this caller's turn (R-131), not when it joined the queue."""
+    global _keyless_last
     deadline = _time.monotonic() + KEYLESS_BUDGET_S
     last_err = "no attempt"
-    async with _keyless_lock:
-        attempt = 0
-        while _time.monotonic() < deadline:
-            wait = KEYLESS_MIN_SPACING_S * (2 ** min(attempt, 3)) if attempt else 0.0
-            wait = max(wait, _keyless_last + KEYLESS_MIN_SPACING_S - _time.monotonic())
-            if wait > 0:
-                if _time.monotonic() + wait >= deadline:
-                    break
-                await _asyncio.sleep(wait)
-            attempt += 1
-            keyless_stats["calls"] += 1
-            remaining = max(1.0, min(KEYLESS_CALL_TIMEOUT_S, deadline - _time.monotonic()))
-            try:
-                data = await _asyncio.to_thread(_keyless_post, system, prompt, max_tokens, remaining)
-                _keyless_last = _time.monotonic()
-                content = data["choices"][0]["message"]["content"] or ""
-                if not content.strip():
-                    last_err = "empty completion"
-                    keyless_stats["errors"] += 1
-                    continue
-                keyless_stats["ok"] += 1
-                return {"ok": True, "content": content, "error": None,
-                        "model": f"keyless:{data.get('model', KEYLESS_MODEL)}",
-                        "provider": "keyless", "attempts": attempt}
-            except _urlerr.HTTPError as e:
-                _keyless_last = _time.monotonic()
-                if e.code in (402, 429, 503):
-                    keyless_stats["rate_limited"] += 1
-                    last_err = f"HTTP {e.code} (rate limited)"
-                    continue
+    attempt = 0
+    while _time.monotonic() < deadline:
+        wait = KEYLESS_MIN_SPACING_S * (2 ** min(attempt, 3)) if attempt else 0.0
+        wait = max(wait, _keyless_last + KEYLESS_MIN_SPACING_S - _time.monotonic())
+        if wait > 0:
+            if _time.monotonic() + wait >= deadline:
+                break
+            await _asyncio.sleep(wait)
+        attempt += 1
+        keyless_stats["calls"] += 1
+        remaining = max(1.0, min(KEYLESS_CALL_TIMEOUT_S, deadline - _time.monotonic()))
+        try:
+            data = await _asyncio.to_thread(_keyless_post, system, prompt, max_tokens, remaining)
+            _keyless_last = _time.monotonic()
+            content = data["choices"][0]["message"]["content"] or ""
+            if not content.strip():
+                last_err = "empty completion"
                 keyless_stats["errors"] += 1
-                return {"ok": False, "content": "", "error": f"keyless LLM HTTP {e.code}",
-                        "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}
-            except Exception as e:  # noqa: BLE001 — network failure: retry within budget
-                _keyless_last = _time.monotonic()
-                keyless_stats["errors"] += 1
-                last_err = f"{type(e).__name__}: {e}"
+                continue
+            keyless_stats["ok"] += 1
+            return {"ok": True, "content": content, "error": None,
+                    "model": f"keyless:{data.get('model', KEYLESS_MODEL)}",
+                    "provider": "keyless", "attempts": attempt}
+        except _urlerr.HTTPError as e:
+            _keyless_last = _time.monotonic()
+            if e.code in (402, 429, 503):
+                keyless_stats["rate_limited"] += 1
+                last_err = f"HTTP {e.code} (rate limited)"
+                continue
+            keyless_stats["errors"] += 1
+            return {"ok": False, "content": "", "error": f"keyless LLM HTTP {e.code}",
+                    "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}
+        except Exception as e:  # noqa: BLE001 — network failure: retry within budget
+            _keyless_last = _time.monotonic()
+            keyless_stats["errors"] += 1
+            last_err = f"{type(e).__name__}: {e}"
     return {"ok": False, "content": "",
             "error": f"keyless LLM unavailable within {KEYLESS_BUDGET_S:.0f}s budget ({last_err})",
             "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}

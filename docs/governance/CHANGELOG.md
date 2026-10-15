@@ -1,5 +1,15 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-15 — R-131: معالجة RISK-028 بقياس حمل HTTP متزامن حقيقي (دفعة m7/r131-keyless-http-load، بطلب المالك)
+
+- **الطلب**: «عالج RISK-028 بقياس حمل HTTP متزامن حقيقي».
+- **القياس**: `scripts/run_r131_http_load.py` (خادم uvicorn حقيقي، 1/10/25/50 عميلاً × 180ث) و`scripts/run_r131_compare.py`؛ قبل: الطلبات المحلية وسيط 47–88ث (كل رسالة chat تنتظر LLM بلا مفتاح للتوجيه)، 16/42 فشل «no attempt» عند 50.
+- **الإصلاح (D-054)**: `server.py` — لا توجيه chat عبر LLM بلا مفتاح؛ `agent_civilization/core/llm.py` — تحكم قبول (`AGOS_LLM_KEYLESS_MAX_WAIT_S`=30، رفض «busy» فوري، انتظار قفل محدود، الميزانية تبدأ عند الدور، `max_wait_s` اختياري، عدّاد `busy`).
+- **بعد**: المحلي وسيط 0.00ث، أقصى 0.16ث عند 50؛ LLM ~6.3ث بلا ضغط، رفض فوري تحت الضغط؛ السعة لم تزد (مسجل).
+- **الاختبارات**: `tests/test_r131_keyless_admission.py` (6؛ 5 تفشل على القديم) — المجموع 463 + 3 + 4.
+- **الأدلة**: `docs/audit/M7/logs/raw/156..164` + `r131_http_load_before.json` و`r131_http_load_after.json`.
+- **الوثائق**: ROADMAP، PROJECT_STATE، README، DECISIONS (D-054)، RISKS (RISK-028 مخففة، RISK-029 جديدة)، API (`/api/chat`)، OPERATIONS (متغير جديد)، EVIDENCE (M7)، هذا السجل.
+
 ## 2026-10-15 — الدورة الدورية التاسعة R-127..R-130 (دفعة m7/r127-cycle9-deps، بطلب المالك)
 
 - **الطلب**: «ابدأ الدورة التاسعة الآن وسجّلها في ROADMAP» (Q-018).

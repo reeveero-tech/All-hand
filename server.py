@@ -637,7 +637,13 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
     # decides.  Before R-106 every message went to "communicator" without an LLM.
     llm = get_llm()
     spec, method, reason = None, "keywords", ""
-    if llm.available:
+    # R-131 (D-054): the LLM chooses the specialist only with a configured
+    # provider key. The public keyless provider serves one call at a time
+    # (D-051): routing every chat message through it made requests that need
+    # no LLM wait up to ~75 s behind it under concurrent HTTP load, and it
+    # routed worse than the verified keyword router (R-122: 24/24)
+    # — docs/audit/M7/logs/raw/156_r131_http_load_before.log.
+    if llm.available and getattr(llm, "provider", "openrouter") != "keyless":
         routed = await llm.complete(ROUTER_SYSTEM, req.message, max_tokens=20)
         if routed["ok"]:
             candidate = routed["content"].strip().lower().replace("-", "_")
