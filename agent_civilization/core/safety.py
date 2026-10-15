@@ -335,7 +335,21 @@ def safe_urlopen(req: urllib.request.Request, timeout: float, allow_private: Opt
     check_url(req.full_url, allow_private)
     opener = urllib.request.build_opener(_CheckedRedirectHandler(allow_private),
                                          urllib.request.HTTPSHandler(context=tls_context()))
-    return opener.open(req, timeout=timeout)
+    handlers = list(opener.handlers)
+    try:
+        return opener.open(req, timeout=timeout)
+    finally:
+        # R-124: the opener and its handlers form a reference cycle
+        # (opener tables -> handler.parent -> opener) that only the cyclic GC
+        # frees; before R-121 each cycle also pinned a fresh TLS context (~0.7 MB),
+        # which is why C memory piled up "in use" and was freed in bulk
+        # (docs/audit/M7/logs/raw/142_r124_late_release.log). Cutting each
+        # handler's back-link frees the opener by refcount on return; redirects
+        # and error handling have already finished inside open(), and the
+        # response does not reference the opener.
+        for h in handlers:
+            h.parent = None
+        opener.close()
 
 
 # ---------------------------------------------------------------------------
