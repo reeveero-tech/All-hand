@@ -1,0 +1,57 @@
+report: r120_live_hour_20261015T001100Z.json
+git_head: ec72bf661d0ab27c3c53038dbf851aaad0460393 | started: 2026-10-15T00:11:00.797092+00:00 | target: 60.0 min | actual: 3601.7 s | agents: 1000 (50/spec) | concurrency: 2 | interval: 3.0 s | llm: keyless
+requests: 1547 | plan_ok: 1547 (1.000) | verified_ok: 1547 (1.000) | exceptions: 0
+stages: 5279 ok=5279 (1.000) | top_stage_failures: [] | unverified_examples: {}
+stuck working agents at end: 0 | max in flight: 2
+keyless llm: {'calls': 476, 'ok': 476, 'rate_limited': 0, 'errors': 0}
+
+== snapshots (every 300 s) ==
+t_s     req  d_req  vmrss_MB  d_vmrss  maxrss_MB  exp   active_agents  llm_calls
+   300   137    137     122.5   +122.5      122.5   483            308         35
+   600   263    126     149.1    +26.6      149.1   915            467         74
+   900   411    148     150.9     +1.8      150.9  1398            560        109
+  1200   546    135     153.2     +2.3      153.2  1869            629        149
+  1500   671    125     163.8    +10.6      163.8  2000            659        191
+  1800   810    139     220.8    +57.0      220.8  2000            707        227
+  2100   943    133     289.1    +68.3      289.1  2000            739        264
+  2400  1048    105     345.4    +56.3      345.4  2000            746        308
+  2700  1157    109     361.9    +16.5      361.9  2000            750        352
+  3000  1284    127     360.6     -1.3      361.9  2000            750        394
+  3300  1405    121     360.6     +0.0      361.9  2000            750        437
+  3600  1547    142     360.8     +0.2      361.9  2000            750        475
+  3602  1547      0     360.8     +0.0      361.9  2000            750        476
+
+== latency per request type (sum of stage elapsed_s) ==
+  n   median   p95     max    type
+  80   10.22   22.26   24.65  generate a python class for a user account with validation
+  87    3.55    9.67   12.16  explain the difference between REST and GraphQL
+  89    3.44    9.83   12.18  design a table schema for orders with line items
+  73    3.02    9.66   12.18  draft a message to the team about the outage
+  67    2.90    9.87   11.37  write a function that returns the nth prime
+  77    0.93    1.15    2.89  translate 'hello world' to French
+  83    0.70    0.80    1.02  review the architecture for a REST API with rate limiting
+  85    0.67    0.78    1.01  design a scalable multi-tenant SaaS architecture
+  81    0.65    0.76    1.11  research the best practices for API pagination
+  85    0.09    0.11    0.12  check if example.com is reachable
+  82    0.04    0.05    0.10  refactor this to be cleaner: if a: if b: if c: return 1
+  74    0.03    0.03    0.04  review this code for bugs: def f(x): return x*2
+  81    0.03    0.04    0.06  plan a database migration for a 10M row table
+  94    0.03    0.04    0.05  write and run tests for: def add(a, b): return a + b
+  95    0.01    0.02    0.06  compute the average of [12, 14, 16, 18]
+  85    0.01    0.02    0.04  analyze this data for trends: [10, 20, 30, 40, 50]
+  75    0.01    0.01    0.01  sum these numbers: [1, 2, 3, 4, 5]
+  83    0.01    0.01    0.10  validate this JSON schema: {"name": "string", "age": "number
+  71    0.01    0.01    0.02  monitor the health of the system
+
+== latency drift: first half vs second half of requests ==
+first : n=773 mean=1.462s median=0.078s | non-LLM types mean=0.4224s median=0.0240s
+second: n=774 mean=1.850s median=0.089s | non-LLM types mean=0.5752s median=0.0310s
+
+== agent distribution ==
+distinct agents used: 750 | max stages on one agent: 37
+per specialization (distinct agents): {'analyst': 50, 'architect': 50, 'code_generator': 50, 'communicator': 50, 'db_manager': 50, 'educator': 50, 'modifier': 50, 'monitor': 50, 'network_client': 50, 'researcher': 50, 'reviewer': 50, 'strategist': 50, 'surgeon': 50, 'test_runner': 50, 'validator': 50}
+stages per specialization: {'analyst': 1802, 'strategist': 1156, 'test_runner': 397, 'validator': 338, 'reviewer': 303, 'researcher': 249, 'db_manager': 170, 'architect': 168, 'communicator': 150, 'code_generator': 147, 'educator': 87, 'network_client': 85, 'modifier': 82, 'surgeon': 74, 'monitor': 71}
+specializations used: 15 of 20 (the 19 request templates never route to the other 5)
+
+== primaries ==
+{'analyst': 255, 'db_manager': 170, 'architect': 168, 'communicator': 150, 'code_generator': 147, 'test_runner': 94, 'educator': 87, 'network_client': 85, 'validator': 83, 'modifier': 82, 'researcher': 81, 'surgeon': 74, 'monitor': 71}
