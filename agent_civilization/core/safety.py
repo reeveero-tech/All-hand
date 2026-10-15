@@ -26,9 +26,11 @@ import os
 import signal
 import socket
 import sqlite3
+import ssl
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -304,6 +306,26 @@ class _CheckedRedirectHandler(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+# R-121: ONE verifying TLS context for every outbound HTTPS request. Without an
+# explicit context, urllib builds a new default context per connection, and the
+# system CA bundle is parsed again on every handshake; the freed certificate
+# memory stayed held by the allocator (~0.7 MB per request; VmRSS 361 MB after
+# the R-120 hour, `docs/audit/M7/logs/raw/133_r121_root_cause.log`). Same
+# verification as before (ssl.create_default_context: CERT_REQUIRED +
+# check_hostname); an SSLContext is safe to share across threads.
+_TLS_CONTEXT: Optional[ssl.SSLContext] = None
+_TLS_LOCK = threading.Lock()
+
+
+def tls_context() -> ssl.SSLContext:
+    global _TLS_CONTEXT
+    if _TLS_CONTEXT is None:
+        with _TLS_LOCK:
+            if _TLS_CONTEXT is None:
+                _TLS_CONTEXT = ssl.create_default_context()
+    return _TLS_CONTEXT
+
+
 def safe_urlopen(req: urllib.request.Request, timeout: float, allow_private: Optional[bool] = None):
     """``urlopen`` with the outbound policy applied to the URL and to redirects.
 
@@ -311,7 +333,8 @@ def safe_urlopen(req: urllib.request.Request, timeout: float, allow_private: Opt
     DNS answer that changes between them (rebinding) is not covered here.
     """
     check_url(req.full_url, allow_private)
-    opener = urllib.request.build_opener(_CheckedRedirectHandler(allow_private))
+    opener = urllib.request.build_opener(_CheckedRedirectHandler(allow_private),
+                                         urllib.request.HTTPSHandler(context=tls_context()))
     return opener.open(req, timeout=timeout)
 
 
