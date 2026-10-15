@@ -1,0 +1,45 @@
+# R-132: regression found and fixed inside the batch (recorded as it happened)
+# AFTER v1 (named pools + web queue cap 8, AGOS_POOL_WEB=4):
+#   - 169/170: reachability fixed (p50 19.98 s -> 0.08 s at 50), but the web pool queue reached 41 and,
+#     with no wait bound in educator's web fallback, llm_first (educator) p95 50.19 s -> 119.95 s at 50.
+#   - pytest: tests/test_specialist_runtime.py::test_r105_specialists_impl_still_builds_1000
+#     AssertionError: expected 1000/1000, got 996/1000
+#   - /tmp/r132_which.py (1000 concurrent tasks, live web):
+#       39 ('researcher', 'search: web pool busy: 8 call(s) already waiting for 4 thread(s) (cap AGOS_POOL_WEB_QUEUE=8)')
+#     -> the cap rejected researcher searches although researcher already bounds its wait by its own budget.
+# FIX (final): queue caps are opt-in (default 0 for every pool); educator web fallback and communicator
+#   translation bound their total wait with asyncio.wait_for(AGOS_WEB_WAIT_S=20); a call cancelled while
+#   queued never runs (tests/test_r132_pools.py::test_wait_cancelled_while_queued_never_runs).
+# After the fix: pytest 473 passed (test_r105... passes again).
+# Live-web note: /tmp/r132_which.py then gave 950/1000 on BOTH old (5e93d8a) and new code, all 50
+#   failures 'researcher: search: overall budget exceeded (transient ...)' — DuckDuckGo refusing a burst
+#   of 50 from this host after the load runs; same on both, so not caused by R-132.
+
+$ /tmp/r132_which.py (1000 concurrent tasks, live web), after the final fix — old vs new
+== old (5e93d8a)
+ok 950
+38 ('researcher', 'search: overall budget exceeded (transient, 1 attempts)')
+12 ('researcher', 'search: overall budget exceeded (transient, 2 attempts)')
+== new
+ok 950
+42 ('researcher', 'search: overall budget exceeded (transient, 1 attempts)')
+8 ('researcher', 'search: overall budget exceeded (transient, 2 attempts)')
+
+$ AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py (new code)
+AGOS_LLM_KEYLESS=0 OPENROUTER_API_KEY set=False
+    ذروة RSS بعد الإنشاء: 29.6 MB
+    زمن التنفيذ: 20.237s
+    نجاح: 950/1000
+    ذروة RSS بعد التنفيذ: 53.5 MB
+- تنفيذ 1000 مهمة متزامنة: ~20.24s، نجاح 950/1000
+
+$ AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py (old code 5e93d8a, same minute)
+AGOS_LLM_KEYLESS=0 OPENROUTER_API_KEY set=False
+    ذروة RSS بعد الإنشاء: 29.6 MB
+    زمن التنفيذ: 25.685s
+    نجاح: 950/1000
+    ذروة RSS بعد التنفيذ: 54.4 MB
+- تنفيذ 1000 مهمة متزامنة: ~25.69s، نجاح 950/1000
+
+$ live DuckDuckGo single query now:
+failed URLError <urlopen error [Errno 104] Connection reset by peer> 10.05 s

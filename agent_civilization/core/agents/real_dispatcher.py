@@ -151,13 +151,21 @@ def _extract_url(work: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-async def _to_thread(fn, *a, **kw):
-    return await asyncio.to_thread(fn, *a, **kw)
+async def _to_thread(fn, *a, _pool: str = "local", **kw):
+    # R-132 (D-055): each kind of blocking call runs on its own bounded pool
+    # (agent_civilization/core/pools.py) instead of the one shared default
+    # executor, so slow LLM/web calls cannot starve fast network probes.
+    from agent_civilization.core import pools
+    return await pools.run(_pool, fn, *a, **kw)
 
 
 # ---------------------------------------------------------------------------
 # R-116: shared real-world helpers (keyless, honest, bounded)
 # ---------------------------------------------------------------------------
+
+# R-132: total wait (queue for a web-pool thread + the call) for the educator
+# and communicator web fallbacks; researcher has its own budget.
+WEB_WAIT_S = float(os.environ.get("AGOS_WEB_WAIT_S", "20"))
 
 _DDG_HTML = "https://html.duckduckgo.com/html/"
 _RESULT_RE = re.compile(r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.S)
@@ -871,7 +879,7 @@ async def _network_client(work: Dict[str, Any]) -> Dict[str, Any]:
                     errors.append(f"{scheme}: {e}")
             return {**dns, "reachable": False, "http_errors": errors}
         try:
-            out = await _to_thread(probe)
+            out = await _to_thread(probe, _pool="net")
         except safety.UnsafeURLError as e:
             return {"ok": False, "error": f"blocked: {e}"}
         except socket.gaierror as e:
@@ -887,7 +895,7 @@ async def _network_client(work: Dict[str, Any]) -> Dict[str, Any]:
                 "answer": f"{host} is reachable: HTTP {h['status']} via {h['method']} in {h['latency_ms']} ms (DNS {out['resolve_ms']} ms)",
                 "tool_output": out}
     try:
-        h = await _to_thread(head_or_get, url)
+        h = await _to_thread(head_or_get, url, _pool="net")
         return {"ok": True, "answer": f"{h['method']} {url} -> HTTP {h['status']} in {h['latency_ms']} ms",
                 "tool_output": h}
     except safety.UnsafeURLError as e:
@@ -919,7 +927,7 @@ async def _api_integrator(work: Dict[str, Any]) -> Dict[str, Any]:
                     "sample": (parsed if parsed is not None
                                else body[:512].decode("utf-8", errors="replace"))}
     try:
-        out = await _to_thread(get)
+        out = await _to_thread(get, _pool="net")
         # R-122: the answer states the real response (was only "GET <url>").
         return {"ok": True, "tool_output": out,
                 "answer": (f"GET {url} -> HTTP {out['status']} ({out['content_type'] or 'no content-type'}, "
@@ -1015,7 +1023,7 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
             # Note (honest limit): cancelling this wait does NOT stop the worker
             # thread — a stuck DNS resolve or socket read keeps running in the
             # background until its own timeout; we only stop waiting for it.
-            j = await asyncio.wait_for(_to_thread(fetch), timeout=remaining)
+            j = await asyncio.wait_for(_to_thread(fetch, _pool="web"), timeout=remaining)
             attempts_made += 1
             abstract = j.get("AbstractText") or ""
             related = [r.get("Text", "") for r in j.get("RelatedTopics", [])[:5]
@@ -1026,7 +1034,7 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
                 # direct answer; see related") with no sources. Now: live web
                 # results, and failure if there are none.
                 try:
-                    results = await asyncio.wait_for(_to_thread(_web_search, q, 5, min(10.0, remaining)),
+                    results = await asyncio.wait_for(_to_thread(_web_search, q, 5, min(10.0, remaining), _pool="web"),
                                                      timeout=max(1.0, _remaining_budget(deadline)))
                 except Exception as e:  # noqa: BLE001
                     return {"ok": False, "error": f"search: no instant answer and web search failed: {e}"}
@@ -1242,7 +1250,12 @@ async def _educator(work: Dict[str, Any]) -> Dict[str, Any]:
                                 "key_points": keypoints,
                                 "reading_time_min": round(len(material.split()) / 200, 2)}}
     try:
-        results = await _to_thread(_web_search, topic, 5)
+        # R-132: bounded wait (queue + call); a call still queued at the
+        # deadline is cancelled and never runs.
+        results = await asyncio.wait_for(_to_thread(_web_search, topic, 5, _pool="web"), timeout=WEB_WAIT_S)
+    except asyncio.TimeoutError:
+        return {"ok": False, "error": (f"no explanation source: {llm['error']}; web: no result within "
+                                       f"{WEB_WAIT_S:.0f}s (queue + call, AGOS_WEB_WAIT_S)")}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": f"no explanation source: {llm['error']}; web: {e}"}
     points = [r["snippet"] for r in results if r.get("snippet")]
@@ -1271,7 +1284,8 @@ async def _communicator(work: Dict[str, Any]) -> Dict[str, Any]:
         if not phrase.strip():
             return {"ok": False, "error": "translation requested but no text found"}
         try:
-            out = await _to_thread(_mymemory, phrase, source, target)
+            out = await asyncio.wait_for(_to_thread(_mymemory, phrase, source, target, _pool="web"),
+                                         timeout=WEB_WAIT_S)  # R-132: bounded wait
             if out.strip():
                 return {"ok": True, "answer": out,
                         "tool_output": {"method": "mymemory", "source_lang": source, "target_lang": target,

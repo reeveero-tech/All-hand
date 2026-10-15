@@ -1,0 +1,36 @@
+server pid=4090 http://127.0.0.1:59351 | keyless LLM on (no OPENROUTER_API_KEY) | AGOS_RATE_LIMIT_REQUESTS=1000000 | AGOS_LLM_KEYLESS_MAX_WAIT_S=(default)
+
+== concurrency 10: 6392 requests in 151.3s
+  needs_llm n=2132 http200=2132 other=[] ok=  28 p50=0.01s p95=0.09s max=31.94s routed_by_llm=0
+  no_llm    n=4260 http200=4260 other=[] ok=4260 p50=0.01s p95=0.08s max=31.33s routed_by_llm=0
+  all       n=6392 http200=6392 other=[] ok=4288 p50=0.01s p95=0.08s max=31.94s routed_by_llm=0
+  fail x122: drafting a message needs an LLM: llm: keyless LLM busy: 5 request(s) ahead, ~32s estimated
+  fail x120: llm: keyless LLM busy: 5 request(s) ahead, ~32s estimated wait > 30s limit (AGOS_LLM_KEYLE
+  fail x119: drafting a message needs an LLM: llm: keyless LLM busy: 5 request(s) ahead, ~35s estimated
+  fail x119: llm: keyless LLM busy: 5 request(s) ahead, ~33s estimated wait > 30s limit (AGOS_LLM_KEYLE
+  fail x119: no explanation source: llm: keyless LLM busy: 5 request(s) ahead, ~32s estimated wait > 30
+  fail x117: llm: keyless LLM busy: 5 request(s) ahead, ~35s estimated wait > 30s limit (AGOS_LLM_KEYLE
+
+== concurrency 25: 683 requests in 141.1s
+  needs_llm n= 232 http200= 232 other=[] ok=  10 p50=0.02s p95=30.01s max=51.27s routed_by_llm=0
+  no_llm    n= 451 http200= 451 other=[] ok= 451 p50=0.01s p95=19.4s max=40.94s routed_by_llm=0
+  all       n= 683 http200= 683 other=[] ok= 461 p50=0.01s p95=28.48s max=51.27s routed_by_llm=0
+  fail x57: llm: keyless LLM busy: 6 request(s) ahead, ~36s estimated wait > 30s limit (AGOS_LLM_KEYLE
+  fail x49: drafting a message needs an LLM: llm: keyless LLM busy: 6 request(s) ahead, ~36s estimated
+  fail x46: no explanation source: llm: keyless LLM busy: 6 request(s) ahead, ~36s estimated wait > 30
+  fail x32: no explanation source: llm: keyless LLM busy: 5 request(s) ahead, ~36s estimated wait > 30
+  fail x11: llm: keyless LLM busy: 5 request(s) ahead, ~36s estimated wait > 30s limit (AGOS_LLM_KEYLE
+  fail x8: drafting a message needs an LLM: llm: keyless LLM busy: 5 request(s) ahead, ~36s estimated
+
+== concurrency 50: 778 requests in 161.1s
+  needs_llm n= 264 http200= 264 other=[] ok=   5 p50=0.05s p95=50.02s max=80.7s routed_by_llm=0
+  no_llm    n= 514 http200= 514 other=[] ok= 514 p50=0.01s p95=39.39s max=70.69s routed_by_llm=0
+  all       n= 778 http200= 778 other=[] ok= 519 p50=0.01s p95=40.33s max=80.7s routed_by_llm=0
+  fail x80: llm: keyless LLM busy: 6 request(s) ahead, ~36s estimated wait > 30s limit (AGOS_LLM_KEYLE
+  fail x64: drafting a message needs an LLM: llm: keyless LLM busy: 6 request(s) ahead, ~36s estimated
+  fail x60: no explanation source: llm: keyless LLM busy: 6 request(s) ahead, ~36s estimated wait > 30
+  fail x26: no explanation source: llm: keyless LLM busy: 5 request(s) ahead, ~36s estimated wait > 30
+  fail x6: drafting a message needs an LLM: llm: keyless LLM busy: 5 request(s) ahead, ~30s estimated
+  fail x5: llm: keyless LLM busy: 5 request(s) ahead, ~36s estimated wait > 30s limit (AGOS_LLM_KEYLE
+
+report: /home/user/workspace/All-hand/docs/audit/M7/logs/raw/r132_http_load_before.json

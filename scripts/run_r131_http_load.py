@@ -136,9 +136,12 @@ async def main_async(args):
     env.setdefault("AGOS_RATE_LIMIT_REQUESTS", "1000000")
     env.pop("AGOS_API_KEY", None)
     log = open(args.server_log, "w", encoding="utf-8") if args.server_log else subprocess.DEVNULL
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "server:app", "--host", "127.0.0.1",
-                             "--port", str(port), "--log-level", "warning"],
-                            cwd=str(REPO), env=env, stdout=log, stderr=subprocess.STDOUT)
+    if args.probe_out:  # R-132: same app, plus a thread-pool sampler (scripts/r132_server_probe.py)
+        cmd = [sys.executable, "scripts/r132_server_probe.py", "--port", str(port), "--out", args.probe_out]
+    else:
+        cmd = [sys.executable, "-m", "uvicorn", "server:app", "--host", "127.0.0.1",
+               "--port", str(port), "--log-level", "warning"]
+    proc = subprocess.Popen(cmd, cwd=str(REPO), env=env, stdout=log, stderr=subprocess.STDOUT)
     base = f"http://127.0.0.1:{port}"
     try:
         for _ in range(100):
@@ -188,4 +191,5 @@ if __name__ == "__main__":
     ap.add_argument("--pause-s", type=float, default=10)
     ap.add_argument("--out", required=True)
     ap.add_argument("--server-log", default=None)
+    ap.add_argument("--probe-out", default=None, help="R-132: sample thread pools to this JSONL file")
     asyncio.run(main_async(ap.parse_args()))

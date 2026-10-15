@@ -1,0 +1,26 @@
+$ python scripts/run_r132_pool_report.py docs/audit/M7/logs/raw/r132_http_load_after.json docs/audit/M7/logs/raw/r132_pools_after.jsonl
+samples=483 pools seen=['default', 'llm', 'local', 'net', 'web'] reachability runs on pool 'net'
+
+== concurrency 10 (window 0-151s, 151 samples, loop lag p95=1.8ms max=2.1ms)
+  pool llm     workers= 2 peak threads= 1 peak queued=0
+  pool local   workers= 4 peak threads= 2 peak queued=0
+  pool net     workers= 8 peak threads= 3 peak queued=0
+  pool web     workers= 4 peak threads= 4 peak queued=1
+  reachability n=53 ok=53 p50=0.07s p95=0.09s max=0.116s
+    started with net queue=0  : n=  53 p50=0.07s max=0.12s
+
+== concurrency 25 (window 161-312s, 150 samples, loop lag p95=1.7ms max=2.2ms)
+  pool llm     workers= 2 peak threads= 1 peak queued=0
+  pool local   workers= 4 peak threads= 4 peak queued=0
+  pool net     workers= 8 peak threads= 8 peak queued=0
+  pool web     workers= 4 peak threads= 4 peak queued=32
+  reachability n=126 ok=126 p50=0.07s p95=0.19s max=0.21s
+    started with net queue=0  : n= 126 p50=0.07s max=0.21s
+
+== concurrency 50 (window 322-473s, 151 samples, loop lag p95=1.9ms max=64.0ms)
+  pool llm     workers= 2 peak threads= 1 peak queued=0
+  pool local   workers= 4 peak threads= 4 peak queued=0
+  pool net     workers= 8 peak threads= 8 peak queued=0
+  pool web     workers= 4 peak threads= 4 peak queued=82
+  reachability n=266 ok=266 p50=0.1s p95=0.17s max=0.324s
+    started with net queue=0  : n= 266 p50=0.1s max=0.32s

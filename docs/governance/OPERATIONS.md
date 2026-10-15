@@ -1,6 +1,6 @@
 # التشغيل والنشر (OPERATIONS)
 
-> **آخر تحديث**: 2026-10-15 — R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
+> **آخر تحديث**: 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
 
 ## البناء والتشغيل المحلي
 
@@ -74,6 +74,9 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `AGOS_LLM_KEYLESS` (R-116، D-051) | core/llm.py | غير مضبوط/`1` = عند غياب `OPENROUTER_API_KEY` يُستخدم مزود LLM عام بلا مفتاح (Pollinations) موسوماً `keyless:<model>`؛ `0` يعطّله. الاختبارات المحلية تعطله افتراضياً (`tests/conftest.py`) |
 | `AGOS_LLM_KEYLESS_SPACING_S` / `AGOS_LLM_KEYLESS_BUDGET_S` (R-116) | core/llm.py | 6 ث بين الاستدعاءات / 90 ث ميزانية للاستدعاء (تبدأ عند دوره منذ R-131) مع إعادات 402/429/503 |
 | `AGOS_LLM_KEYLESS_MAX_WAIT_S` (R-131، D-054) | core/llm.py | 30 ث أقصى انتظار للدور؛ إن كان المقدَّر أكبر يُرفض الطلب فوراً بـ«keyless LLM busy» (الاحتياطي يعمل فوراً) |
+| `AGOS_POOL_LLM` / `AGOS_POOL_WEB` / `AGOS_POOL_NET` / `AGOS_POOL_LOCAL` (R-132، D-055) | core/pools.py | 2 / 4 / 8 / 4 خيوط (1..64) لكل نوع استدعاء حاجب |
+| `AGOS_POOL_<NAME>_QUEUE` (R-132) | core/pools.py | 0 = بلا سقف (افتراضي)؛ قيمة > 0 ترفض فوراً بـ«<name> pool busy» حين يمتلئ الطابور |
+| `AGOS_WEB_WAIT_S` (R-132) | core/agents/real_dispatcher.py | 20 ث أقصى انتظار (طابور + نداء) لاحتياطي ويب educator وترجمة communicator |
 | `AGOS_LLM_KEYLESS_URL` / `AGOS_LLM_KEYLESS_MODEL` (R-116) | core/llm.py | `https://text.pollinations.ai/openai` / `openai` |
 | `AGOS_AGENT_IMPL` | agents/real/real_agents.py | غير مضبوط = `real` (الافتراضي)؛ `specialists` يبني الحضارة من أصناف `specialists/` (D-037). (R-104: `process_text()` — دالة وحدة لا صنف — مُفوَّضة إليها من `_data_processor` لمدخل نصي فقط؛ بلا `OPENROUTER_API_KEY` يُنشر فشل LLM صراحةً) |
 | `EXTERNAL_AGENTS` | agents/external_adapter.py | `""` |

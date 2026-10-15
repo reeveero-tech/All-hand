@@ -1,0 +1,48 @@
+# R-132 pool report — BEFORE (5e93d8a, one default pool) and AFTER v1 (named pools; at that point web had a queue cap 8 — reverted, see 171)
+
+$ python scripts/run_r132_pool_report.py docs/audit/M7/logs/raw/r132_http_load_before.json docs/audit/M7/logs/raw/r132_pools_before.jsonl
+samples=483 pools seen=['default'] reachability runs on pool 'default'
+
+== concurrency 10 (window 0-151s, 151 samples, loop lag p95=5.3ms max=21.9ms)
+  pool default workers= 6 peak threads= 6 peak queued=0
+  reachability n=711 ok=711 p50=0.08s p95=0.1s max=0.171s
+    started with default queue=0  : n= 711 p50=0.08s max=0.17s
+
+== concurrency 25 (window 161-302s, 141 samples, loop lag p95=1.9ms max=22.7ms)
+  pool default workers= 6 peak threads= 6 peak queued=15
+  reachability n=80 ok=80 p50=9.97s p95=20.03s max=20.079s
+    started with default queue=0  : n=  16 p50=0.28s max=0.45s
+    started with default queue>=10: n=  64 p50=10.29s max=20.08s
+
+== concurrency 50 (window 312-473s, 161 samples, loop lag p95=1.6ms max=2.1ms)
+  pool default workers= 6 peak threads= 6 peak queued=40
+  reachability n=96 ok=96 p50=19.98s p95=40.32s max=48.912s
+    started with default queue=0  : n=  32 p50=10.4s max=20.16s
+    started with default queue>=10: n=  64 p50=20.89s max=48.91s
+
+$ python scripts/run_r132_pool_report.py docs/audit/M7/logs/raw/r132_http_load_after_v1.json docs/audit/M7/logs/raw/r132_pools_after_v1.jsonl
+samples=571 pools seen=['default', 'llm', 'local', 'net', 'web'] reachability runs on pool 'net'
+
+== concurrency 10 (window 0-151s, 151 samples, loop lag p95=1.8ms max=2.1ms)
+  pool llm     workers= 2 peak threads= 1 peak queued=0
+  pool local   workers= 4 peak threads= 1 peak queued=0
+  pool net     workers= 8 peak threads= 4 peak queued=0
+  pool web     workers= 4 peak threads= 4 peak queued=1
+  reachability n=53 ok=53 p50=0.07s p95=0.08s max=0.103s
+    started with net queue=0  : n=  53 p50=0.07s max=0.10s
+
+== concurrency 25 (window 161-321s, 160 samples, loop lag p95=1.8ms max=9.8ms)
+  pool llm     workers= 2 peak threads= 1 peak queued=0
+  pool local   workers= 4 peak threads= 2 peak queued=0
+  pool net     workers= 8 peak threads= 8 peak queued=0
+  pool web     workers= 4 peak threads= 4 peak queued=16
+  reachability n=64 ok=64 p50=0.07s p95=0.11s max=0.12s
+    started with net queue=0  : n=  64 p50=0.07s max=0.12s
+
+== concurrency 50 (window 331-562s, 230 samples, loop lag p95=1.5ms max=2.1ms)
+  pool llm     workers= 2 peak threads= 1 peak queued=0
+  pool local   workers= 4 peak threads= 4 peak queued=0
+  pool net     workers= 8 peak threads= 8 peak queued=0
+  pool web     workers= 4 peak threads= 4 peak queued=41
+  reachability n=81 ok=81 p50=0.08s p95=0.16s max=0.194s
+    started with net queue=0  : n=  81 p50=0.08s max=0.19s

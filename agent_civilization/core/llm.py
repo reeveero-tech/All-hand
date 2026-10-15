@@ -200,7 +200,8 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
         keyless_stats["calls"] += 1
         remaining = max(1.0, min(KEYLESS_CALL_TIMEOUT_S, deadline - _time.monotonic()))
         try:
-            data = await _asyncio.to_thread(_keyless_post, system, prompt, max_tokens, remaining)
+            from agent_civilization.core import pools  # R-132: own pool
+            data = await pools.run("llm", _keyless_post, system, prompt, max_tokens, remaining)
             _keyless_last = _time.monotonic()
             content = data["choices"][0]["message"]["content"] or ""
             if not content.strip():

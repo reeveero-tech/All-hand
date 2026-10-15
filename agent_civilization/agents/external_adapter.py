@@ -17,7 +17,6 @@ AGOS_ALLOW_PRIVATE_NETWORK=1 — otherwise an anonymous client could make the
 server call its own private network (SSRF).
 """
 
-import asyncio
 import json
 import logging
 import os
@@ -58,7 +57,8 @@ class ExternalAgentAdapter:
         if self.model:
             payload["model"] = self.model
         try:
-            await asyncio.to_thread(safety.check_url, self.url, self.allow_private)
+            from agent_civilization.core import pools  # R-132: DNS check on the net pool
+            await pools.run("net", safety.check_url, self.url, self.allow_private)
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120)) as s:
                 async with s.post(self.url, headers=headers, json=payload) as r:
                     body = await r.text()
