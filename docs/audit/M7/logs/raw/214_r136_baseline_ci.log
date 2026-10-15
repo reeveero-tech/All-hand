@@ -1,0 +1,19 @@
+# R-136: أدلة CI على رأس main e173d15 (فحص أساس) — 2026-10-15T22:49:40Z
+$ gh run view 38723795049 (آخر تشغيل push على main)
+https://github.com/reeveero-tech/All-hand/actions/runs/38723795049
+success
+e173d15df9c83698210d90a536cc2fb09e43c3ef
+network: success
+build: success
+audit: success
+quality: success
+publish: skipped
+test: success
+docker: success
+storage: success
+
+$ تنبيهات (check-runs) على e173d15
+0
+
+$ قائمة حماية main (قراءة API فقط)
+{"enforce_admins":false,"required":["quality","test","build","docker","governance","audit"],"strict":true}

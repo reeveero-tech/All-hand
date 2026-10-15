@@ -1,0 +1,5 @@
+# R-136: pip list --outdated على venv 3.11 و3.12 بعد ترقية أدوات البيئة (pip/setuptools) — 2026-10-15T22:49:32Z
+--- /tmp/venv311_r133 (Python 3.11.15)
+OUTDATED_RC=0
+--- /tmp/venv312_r133 (Python 3.12.13)
+OUTDATED_RC=0

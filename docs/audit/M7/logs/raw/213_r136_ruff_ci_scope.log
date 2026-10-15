@@ -1,0 +1,5 @@
+# R-136: أمر quality في CI حرفياً (ruff --select F,E722 server.py agent_civilization agos_kernel tests — بلا استثناءات) — 2026-10-15T22:49:38Z
+ملاحظة: ruff المحلي 0.17.1 مقابل 0.17.0 في CI (فروق القواعد بين الترقيعات الضئيلة غير متوقعة؛ CI هو الحكم)
+ruff 0.17.1
+All checks passed!
+RUFF_CI_SCOPE_RC=0

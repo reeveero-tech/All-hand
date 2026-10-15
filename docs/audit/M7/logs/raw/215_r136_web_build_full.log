@@ -1,0 +1,31 @@
+# R-136: بناء web/ كامل (npm install + npm run build) — Node v20.20.2 — 2026-10-15T22:49:44Z
+$ npm install
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'agos-civilization-web@3.0.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+
+up to date, audited 24 packages in 407ms
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+WEB_INSTALL_RC=0
+$ npm run build
+
+> agos-civilization-web@3.0.0 build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 22 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.77 kB │ gzip:  0.45 kB
+dist/assets/index-B7MkQRhG.css   12.25 kB │ gzip:  2.99 kB
+dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
+
+✓ built in 126ms
+WEB_BUILD_RC=0
