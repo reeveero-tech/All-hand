@@ -1,0 +1,25 @@
+# R-132: direct starvation scenario — same script on old and new code
+$ cat /tmp/r132_starve.py
+"""R-132 scenario: 12 slow web-like calls (0.6 s) then one fast network-like call.
+Old code: both go through asyncio.to_thread (one default pool). New code: the
+real dispatcher helper with named pools."""
+import asyncio, os, sys, time
+sys.path.insert(0, ".")
+from agent_civilization.core.agents import real_dispatcher as rd
+NEW = "_pool" in rd._to_thread.__code__.co_varnames
+async def go():
+    if NEW:
+        slow = [asyncio.create_task(rd._to_thread(time.sleep, 0.6, _pool="web")) for _ in range(12)]
+        await asyncio.sleep(0.05); t = time.monotonic(); await rd._to_thread(lambda: None, _pool="net")
+    else:
+        slow = [asyncio.create_task(rd._to_thread(time.sleep, 0.6)) for _ in range(12)]
+        await asyncio.sleep(0.05); t = time.monotonic(); await rd._to_thread(lambda: None)
+    fast = time.monotonic() - t
+    await asyncio.gather(*slow)
+    return fast
+print(f"cpu={os.cpu_count()} named_pools={NEW} -> fast network-like call waited {asyncio.run(go()):.3f}s behind 12 x 0.6s slow calls")
+
+== old 5e93d8a
+cpu=2 named_pools=False -> fast network-like call waited 1.151s behind 12 x 0.6s slow calls
+== new (m7/r132-thread-pool)
+cpu=2 named_pools=True -> fast network-like call waited 0.002s behind 12 x 0.6s slow calls

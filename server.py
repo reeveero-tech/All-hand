@@ -711,7 +711,8 @@ async def register_external_agent(
     # at its own private network; with AGOS_API_KEY the key holder may.
     allow_private = ENABLE_AUTH or safety.private_network_allowed()
     try:
-        await asyncio.to_thread(safety.check_url, req.url, allow_private)
+        from agent_civilization.core import pools  # R-132: DNS check on the net pool
+        await pools.run("net", safety.check_url, req.url, allow_private)
     except safety.UnsafeURLError as e:
         raise HTTPException(400, f"url rejected: {e}")
     except OSError as e:

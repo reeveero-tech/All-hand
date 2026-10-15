@@ -1,6 +1,6 @@
 # المعمارية (ARCHITECTURE)
 
-> **آخر تحديث**: 2026-10-15 — R-119 (مصالحة ادعاءات قديمة مع الواقع — خلل وثائق مقابل واقع).
+> **آخر تحديث**: 2026-10-15 — R-132 (`core/pools.py`). قبلها R-119 (مصالحة ادعاءات قديمة مع الواقع — خلل وثائق مقابل واقع).
 >
 > **حدود الأقسام**: "المسار الحي (المُتحقق منه)"، "التدفقات المُتحققة"، "تحديث R-032"، و"قرار مصير `agos-kernel/`" أقسام حالية مرجعية. "مسارات غير مرتبطة بمسار التشغيل المُتحقق منه"، "جرد الدلائل الجذرية"، "جرد ملفات `specialists/`"، "جرد ازدواج `agos-kernel/`"، و"نقاط الالتباس المعمارية" سجل تاريخي لجرد M0 (2026-10-12) — الحالة الحالية موسومة داخل كل منها بـ"مصالحة R-119". لا يُقرأ أي وصف في سجل M0 كوصف حالي دون وسم مصالحة.
 >
@@ -22,6 +22,7 @@ All-hand/ (الجذر — 10 أدلة جذرية متتبعة، 1,546 ملفاً
 │   │   └── craft.py             ← builder/architect/designer/modifier/مولّد المواصفات/تحليل النص — حتمي ومتحقق داخلياً (R-102، D-045)
 │   ├── core/experience.py       ← الذاكرة والتعلم حول المعالج الحقيقي في المسار الحي (R-103، D-046) — يستخدم agos_kernel/agent_production
 │   ├── core/safety.py           ← سياسة الأدوات الحقيقية (R-100، D-044): إذن تنفيذ الكود + العزل، حارس العناوين، SQLite
+│   ├── core/pools.py            ← مجمّعات خيوط مسماة llm/web/net/local لكل استدعاء حاجب (R-132، D-055)
 │   ├── routing/auto_router.py   ← route() (الاسم الأصلي للدالة `route`؛ `civilization_routes.py` يستوردها كـalias تحت الاسم `auto_route`: `from agent_civilization.routing import route as auto_route`)؛ توجيه محلي بالفعل (R-106)
 │   ├── pipeline/orchestrator.py ← execute_plan()
 │   ├── registry/oss_agents.py   ← سجل ~320 وكيل OSS (dataclass ثابت)
@@ -53,7 +54,7 @@ All-hand/ (الجذر — 10 أدلة جذرية متتبعة، 1,546 ملفاً
 - **`/health`**: يعيد 503 عند `unhealthy` (server.py:345) — **(مصالحة R-119: الوثيقة كانت تقول "HTTP 200 دائماً" وهذا ادعاء قديم من M0 قبل R-004؛ أُصلح في R-004 ووثق في R-068)**.
 
 ### 2. `agent_civilization/` (نواة الوكلاء)
-- **33 ملفاً متتبعاً خارج `specialists/`** (قياس R-119 على SHA `6439e5a`؛ كان 29 في M0؛ `~2,670 LOC` ادعاء قديم من M0 غير مُعاد قياسه). سلسلة الاستيراد المثبتة من `server.py` تمر عبر `agents/real/` و`core/` و`routing/` و`pipeline/` و`storage/`؛ الملفات ليست كلها مثبتة الاستخدام وقت التشغيل — المثبت هو سلسلة الاستيراد فقط.
+- **34 ملفاً متتبعاً خارج `specialists/`** (34 بعد R-132 بإضافة `core/pools.py`؛ 33 في قياس R-119 على SHA `6439e5a`؛ كان 29 في M0؛ `~2,670 LOC` ادعاء قديم من M0 غير مُعاد قياسه). سلسلة الاستيراد المثبتة من `server.py` تمر عبر `agents/real/` و`core/` و`routing/` و`pipeline/` و`storage/`؛ الملفات ليست كلها مثبتة الاستخدام وقت التشغيل — المثبت هو سلسلة الاستيراد فقط.
 - ملفات `specialists/` (1,044 ملفاً متتبعاً — منها 1,000 وحدة توافق رقيقة تُصدر أصنافاً مولّدة من مصنع `type()` + 44 ملف بنية/تهيئة — R-105/D-049) تستدعي `real_dispatcher.dispatch` فعلاً. **منذ R-032 (D-037) موصولة اختيارياً**: `AGOS_AGENT_IMPL=specialists` يجعل `create_civilization` يبني الحضارة من أصنافها عبر `agents/real/specialist_runtime.py` (`SpecialistBackedAgent` يغلف نسخة حقيقية من الصنف ويعرض عقد `RealSpecialistAgent` نفسه)، مع `CommunicationHub` مشترك. الافتراضي (`real`) لم يتغير.
 - **الوكلاء**: `server.py` يقرأ `AGENTS_PER_SPEC` (R-041؛ افتراضي 50) ويمرره إلى `create_civilization(agents_per_spec)` → 1,000 `RealSpecialistAgent` افتراضياً (20 تخصصاً × 50)؛ 60 وكيلاً عند ضبط 3. القيم غير الصالحة (صفر/سالب/نص) تُرفض برسالة بدء واضحة.
 - **التوجيه**: `route()` في `agent_civilization/routing/auto_router.py` — توجيه محلي بالفعل؛ `civilization_routes.py` يستوردها تحت الاسم المستورد `auto_route` (`from agent_civilization.routing import route as auto_route` — الوثيقة القديمة كانت تسميها `auto_route` كاسم الدالة الأصلية وهو ليس الاسم الأصلي). يستخدمه `/civilization/*`. لـ`/api/chat`: يحاول اختيار التخصص عبر `get_llm()` عندما تكون `llm.available` صحيحة؛ وإذا لم يُنتج تخصصاً صالحاً، يستخدم `route_request()` المحلي (R-106).
