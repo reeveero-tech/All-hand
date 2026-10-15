@@ -28,6 +28,7 @@ import ast
 import asyncio
 import io
 import json
+import os
 import re
 import socket
 import sqlite3
@@ -38,7 +39,7 @@ import tokenize
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from agent_civilization.core import safety
 from agent_civilization.core.agents import craft
@@ -1375,12 +1376,118 @@ async def _equivalence_check(before: str, after: str) -> Dict[str, Any]:
             "detail": sample.strip()}
 
 
+# R-125: offline probes the self-development cycle runs against its own handlers
+# (deterministic: no network, no LLM, no code execution).
+_SELF_PROBES: Dict[str, Tuple[Dict[str, Any], Callable[[Dict[str, Any]], bool]]] = {
+    "analyst": ({"data": [2, 4, 6]}, lambda r: "mean=4" in str(r.get("answer"))),
+    "data_processor": ({"data": [1, 2, 3, 4]}, lambda r: "sum=10" in str(r.get("answer"))),
+    "validator": ({"data": {"type": "json", "value": [1, 2]}}, lambda r: bool(r.get("ok"))),
+    "surgeon": ({"data": "def f(x=[]):\n    return x\n"}, lambda r: "mutable" in str(r.get("answer")).lower()),
+    "reviewer": ({"data": "def f(x):\n    return x * 2\n"}, lambda r: "reviewed" in str(r.get("answer"))),
+    "strategist": ({"data": ["a", "b", "c"]}, lambda r: bool(r.get("ok"))),
+    "designer": ({"data": "brand: forest"}, lambda r: bool(r.get("ok"))),
+    "db_manager": ({"prompt": "SELECT 1 AS one;"}, lambda r: bool(r.get("ok"))),
+}
+_EXTERNAL_HINTS = ("search:", "llm", "http", "timed out", "timeout", "rate", "urlopen", "connection",
+                   "network", "dns", "unreachable", "429", "503")
+_SELF_CIV: Optional[Dict[str, list]] = None
+
+
+def _self_retest_max() -> int:
+    try:
+        return max(0, min(10, int(os.getenv("AGOS_SELF_RETEST_MAX", "3"))))
+    except ValueError:
+        return 3
+
+
 async def _self_developer(work: Dict[str, Any]) -> Dict[str, Any]:
-    # inspect this module's own coverage as proof of self-reflection
+    """R-125 (D-053): a real self-development cycle instead of a static listing.
+
+    1. probe — run deterministic probes against its own handlers and check the
+       answers (a handler that errors or answers wrongly is reported);
+    2. retest — take the most recent *remembered failures* from the experience
+       layer (distinct user goals, newest first, AGOS_SELF_RETEST_MAX, default 3)
+       and run each goal again through the real router + pipeline;
+    3. change — a goal that now succeeds on every stage has its failure
+       memories retired (removed from the store, so recall stops surfacing a
+       fixed failure); one that still fails is reported with the failing stage,
+       its reason and whether the cause looks external (network/LLM/search) or
+       internal.
+    It does NOT edit source code (D-053: no self-modifying code without the owner).
+    """
+    global _SELF_CIV
+    from agent_civilization.core import experience as _exp
+
     real_specs = sorted(_HANDLERS.keys())
-    return {"ok": True,
-            "answer": f"{len(real_specs)} specializations backed by real handlers",
-            "tool_output": {"real_specializations": real_specs}}
+    probes = {}
+    for spec, (pw, check) in _SELF_PROBES.items():
+        try:
+            r = await _HANDLERS[spec](dict(pw))
+            good = bool(isinstance(r, dict) and r.get("ok") and check(r))
+            probes[spec] = {"ok": good, "answer": str((r or {}).get("answer") or (r or {}).get("error") or "")[:160]}
+        except Exception as e:  # noqa: BLE001
+            probes[spec] = {"ok": False, "answer": f"{type(e).__name__}: {e}"[:160]}
+    healthy = sum(1 for v in probes.values() if v["ok"])
+
+    retests: List[Dict[str, Any]] = []
+    retired = 0
+    if _exp.enabled():
+        mem = _exp.memory()
+        failed = [e for e in mem._memories.values()
+                  if e.metadata.get("layer") == "experience" and not e.metadata.get("ok")
+                  and e.metadata.get("specialization") != "self_developer" and e.metadata.get("goal")]
+        failed.sort(key=lambda e: e.created_at, reverse=True)
+        goals: List[str] = []
+        for e in failed:
+            g = e.metadata["goal"]
+            if g not in goals:
+                goals.append(g)
+        if goals and _self_retest_max():
+            from agent_civilization.agents.real import create_civilization
+            from agent_civilization.pipeline.orchestrator import execute_plan
+            from agent_civilization.routing.auto_router import route
+            if _SELF_CIV is None:
+                _SELF_CIV = create_civilization(1)
+            for goal in goals[:_self_retest_max()]:
+                plan = route(goal)
+                if any(st.get("specialization") == "self_developer" for st in plan.get("stages", [])):
+                    continue
+                try:
+                    res = await asyncio.wait_for(execute_plan(plan, _SELF_CIV), timeout=120)
+                    stages = res.get("stages", [])
+                except Exception as e:  # noqa: BLE001
+                    stages = [{"name": "retest", "ok": False, "output": f"{type(e).__name__}: {e}"}]
+                bad = next((s for s in stages if not s.get("ok")), None)
+                item = {"goal": goal[:160], "fixed": bool(stages) and bad is None}
+                if item["fixed"]:
+                    ids = [e.memory_id for e in failed if e.metadata.get("goal") == goal]
+                    for mid in ids:
+                        if await mem.forget(mid):
+                            retired += 1
+                    item["retired_memories"] = len(ids)
+                else:
+                    reason = str((bad or {}).get("output") or "no stages")[:200]
+                    item.update(stage=(bad or {}).get("name"), specialization=(bad or {}).get("specialization"),
+                                reason=reason,
+                                cause="external" if any(h in reason.lower() for h in _EXTERNAL_HINTS) else "internal")
+                retests.append(item)
+
+    fixed = sum(1 for r in retests if r["fixed"])
+    still = [r for r in retests if not r["fixed"]]
+    answer = (f"self-development cycle: probes {healthy}/{len(probes)} healthy"
+              + (f" (failing: {', '.join(s for s, v in probes.items() if not v['ok'])})" if healthy < len(probes) else "")
+              + f"; {len(real_specs)} specializations backed by real handlers; ")
+    if retests:
+        answer += (f"retested {len(retests)} remembered failure(s): {fixed} fixed and retired ({retired} memories), "
+                   f"{len(still)} still failing"
+                   + (": " + "; ".join(f"{r['specialization']}@{r['stage']} [{r['cause']}] {r['reason'][:80]}"
+                                       for r in still) if still else ""))
+    else:
+        answer += "no remembered failures to retest"
+    return {"ok": healthy == len(probes), "answer": answer,
+            **({} if healthy == len(probes) else {"error": answer}),
+            "tool_output": {"real_specializations": real_specs, "probes": probes,
+                            "retests": retests, "retired_memories": retired}}
 
 
 # ---------------------------------------------------------------------------

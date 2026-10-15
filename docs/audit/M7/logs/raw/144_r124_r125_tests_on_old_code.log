@@ -1,0 +1,13 @@
+# R-124/R-125 discriminating run: NEW tests on main 3da3ac2 (R-121 merged, before this batch) — 2026-10-15T03:00:18Z
+PASSED tests/test_r121_tls_context.py::test_tls_context_is_created_once_and_reused
+PASSED tests/test_r121_tls_context.py::test_tls_context_still_verifies_certificates_and_hostnames
+FAILED tests/test_r121_tls_context.py::test_safe_urlopen_passes_the_shared_context
+FAILED tests/test_r121_tls_context.py::test_r124_no_opener_or_context_survives_a_request_without_gc
+FAILED tests/test_r125_self_developer_cycle.py::test_probes_check_the_answers_not_only_ok
+FAILED tests/test_r125_self_developer_cycle.py::test_a_broken_handler_is_reported_and_the_cycle_fails
+FAILED tests/test_r125_self_developer_cycle.py::test_a_fixed_failure_is_retested_and_retired
+FAILED tests/test_r125_self_developer_cycle.py::test_a_failure_that_persists_is_attributed_and_kept
+FAILED tests/test_r125_self_developer_cycle.py::test_retest_limit_and_no_self_recursion
+FAILED tests/test_r125_self_developer_cycle.py::test_experience_stores_the_goal
+========================= 8 failed, 2 passed in 0.34s ==========================
+rc=1

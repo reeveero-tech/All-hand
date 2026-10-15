@@ -190,8 +190,13 @@ TRUTH = {
          lambda st: bool(re.search(r"-> HTTP [1-5]\d\d \(", _out(st, "execute")))
          and bool(re.search(r"HTTP [1-5]\d\d", _out(st, "probe")))),
     "self improve: inspect your own specializations and evolve":
-        ("self-inspection lists the 20 real handlers",
-         lambda st: "20 specializations backed by real handlers" in _out(st, "execute")),
+        # R-125: a real cycle — all own probes healthy, and remembered failures
+        # either retested (with a count) or explicitly none
+        ("self-development cycle: probes all healthy + remembered failures retested",
+         lambda st: bool(re.search(r"probes (\d+)/\1 healthy", _out(st, "execute")))
+         and "20 specializations backed by real handlers" in _out(st, "execute")
+         and ("no remembered failures to retest" in _out(st, "execute")
+              or bool(re.search(r"retested \d+ remembered failure\(s\): \d+ fixed and retired", _out(st, "execute"))))),
 }
 
 

@@ -231,6 +231,8 @@ async def _store(specialization: str, agent: str, work: Dict[str, Any], result: 
         "prompt": prompt, "answer": answer, "ok": ok, "input_kind": kind,
         "elapsed_ms": round(elapsed_ms, 1), "words": sorted(words(text))[:200],
     }
+    if work.get("goal"):  # R-125: the user request this stage served (self_developer retests it)
+        metadata["goal"] = str(work["goal"])[:_TEXT_LIMIT]
     if specialization == "researcher" and ok and not result.get("degraded"):
         blob = json.dumps(result.get("tool_output") or {}, ensure_ascii=False, default=str)
         if len(blob) <= _TOOL_OUTPUT_LIMIT:

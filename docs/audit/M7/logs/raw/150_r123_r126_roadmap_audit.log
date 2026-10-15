@@ -1,0 +1,21 @@
+item headings: 115
+duplicate ids: none
+status counts: {'done': 115}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 3351
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (a2ba8de..HEAD): ['R-053', 'R-073', 'R-074', 'R-075', 'R-076', 'R-077', 'R-078', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083', 'R-084', 'R-085', 'R-086', 'R-087', 'R-088', 'R-089', 'R-090', 'R-091', 'R-092', 'R-093', 'R-094', 'R-095', 'R-096', 'R-097', 'R-098', 'R-099', 'R-100', 'R-101', 'R-102', 'R-103', 'R-104', 'R-104b', 'R-104c', 'R-104c2', 'R-105', 'R-106', 'R-107', 'R-107b', 'R-107c', 'R-107c2', 'R-108', 'R-109', 'R-110', 'R-111', 'R-112', 'R-112b', 'R-113', 'R-114', 'R-118', 'R-119', 'R-120', 'R-121', 'R-122', 'R-123', 'R-124', 'R-125']
+  not in ROADMAP: ['R-107c2']
+  R-073: roadmap=yes changelog=yes
+  R-074: roadmap=yes changelog=yes
+  R-075: roadmap=yes changelog=yes
+  R-076: roadmap=yes changelog=yes
+  R-077: roadmap=yes changelog=yes
+  R-078: roadmap=yes changelog=yes
+rc=0
