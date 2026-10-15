@@ -1,0 +1,18 @@
+# R-121 root cause — handler isolation, before (f41fb32, worktree) vs after (shared TLS context)
+# 2026-10-15T01:38:06Z; python Python 3.14.3; OpenSSL 3.5.5 27 Jan 2026; glibc 2.43
+# columns: rss = VmRSS; malloc in-use = mallinfo2 uordblks+hblkhd; free-but-held = mallinfo2 fordblks
+
+## BEFORE (f41fb32)
+communicator    n=  30 ok=  30 | rss   35.7 ->   56.6 ( +20.9) MB | malloc in-use    6.3 ->    6.7 (  +0.3) | python-traced  0.01 | untraced growth/call    11.4 KB | malloc free-but-held   3.5 ->  24.2 | threads 2 -> 2 | maps 64 -> 64
+network_client  n=  40 ok=  40 | rss   33.5 ->   62.2 ( +28.8) MB | malloc in-use    6.2 ->    6.6 (  +0.4) | python-traced  0.01 | untraced growth/call     9.0 KB | malloc free-but-held   1.9 ->  29.7 | threads 2 -> 2 | maps 64 -> 64
+api_integrator  n=  30 ok=  30 | rss   33.5 ->   55.0 ( +21.5) MB | malloc in-use    6.2 ->    6.6 (  +0.4) | python-traced  0.01 | untraced growth/call    12.1 KB | malloc free-but-held   1.9 ->  22.5 | threads 2 -> 2 | maps 64 -> 64
+educator        n=  15 ok=  15 | rss   43.1 ->   54.1 ( +11.0) MB | malloc in-use    9.9 ->   10.2 (  +0.3) | python-traced  0.01 | untraced growth/call    22.7 KB | malloc free-but-held   1.2 ->  11.0 | threads 2 -> 2 | maps 120 -> 120
+db_manager      n=  60 ok=  60 | rss   43.3 ->   87.4 ( +44.1) MB | malloc in-use    9.9 ->   10.4 (  +0.5) | python-traced  0.02 | untraced growth/call     7.6 KB | malloc free-but-held   1.2 ->  43.5 | threads 2 -> 3 | maps 119 -> 123
+analyst         n=  60 ok=  60 | rss   29.3 ->   29.3 (  +0.0) MB | malloc in-use    5.6 ->    5.6 (  +0.0) | python-traced  0.00 | untraced growth/call     0.2 KB | malloc free-but-held   1.1 ->   1.1 | threads 1 -> 1 | maps 59 -> 59
+## AFTER (this batch: safety.tls_context shared by safe_urlopen)
+communicator    n=  30 ok=  30 | rss   33.6 ->   34.2 (  +0.6) MB | malloc in-use    6.8 ->    6.9 (  +0.1) | python-traced  0.01 | untraced growth/call     3.7 KB | malloc free-but-held   1.3 ->   1.8 | threads 2 -> 3 | maps 64 -> 68
+network_client  n=  40 ok=  40 | rss   33.4 ->   34.5 (  +1.2) MB | malloc in-use    6.8 ->    7.0 (  +0.1) | python-traced  0.01 | untraced growth/call     2.8 KB | malloc free-but-held   1.3 ->   1.9 | threads 2 -> 3 | maps 65 -> 69
+api_integrator  n=  30 ok=  30 | rss   33.4 ->   34.3 (  +0.9) MB | malloc in-use    6.8 ->    6.9 (  +0.1) | python-traced  0.01 | untraced growth/call     2.4 KB | malloc free-but-held   1.3 ->   1.6 | threads 2 -> 2 | maps 65 -> 65
+educator        n=  15 ok=  15 | rss   43.1 ->   44.0 (  +0.9) MB | malloc in-use   10.5 ->   10.5 (  +0.1) | python-traced  0.01 | untraced growth/call     4.6 KB | malloc free-but-held   0.6 ->   0.7 | threads 2 -> 2 | maps 121 -> 121
+db_manager      n=  60 ok=  60 | rss   43.4 ->   45.5 (  +2.1) MB | malloc in-use   10.5 ->   10.6 (  +0.1) | python-traced  0.01 | untraced growth/call     2.1 KB | malloc free-but-held   0.6 ->   1.2 | threads 2 -> 2 | maps 119 -> 119
+analyst         n=  60 ok=  60 | rss   29.4 ->   29.4 (  +0.0) MB | malloc in-use    5.6 ->    5.6 (  +0.0) | python-traced  0.00 | untraced growth/call     0.2 KB | malloc free-but-held   1.1 ->   1.1 | threads 1 -> 1 | maps 58 -> 58

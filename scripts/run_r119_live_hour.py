@@ -2,6 +2,10 @@
 """
 R-119: live civilization hour WITH TRUTH VERIFICATION (R-118).
 
+R-122: 24 templates since 2026-10-15 (the 19 of R-109/R-113/R-120 + one per
+specialization those 19 never reached: builder, designer, data_processor,
+api_integrator, self_developer) — every one of the 20 specializations is used.
+
 Same workload as R-109/R-113 (the 19 realistic request templates, routed
 through `route()` -> `execute_plan`, the production path, 1,000 real agents),
 plus what R-113 lacked:
@@ -88,7 +92,23 @@ REQUEST_TEMPLATES = [
     "research the best practices for API pagination",
     # monitoring
     "monitor the health of the system",
+    # R-122: the five specializations no template reached in R-120 (250 idle agents)
+    "scaffold a starter project for a todo web service",            # builder
+    "pick a dark mode color palette from #3366ff for the dashboard",  # designer
+    "aggregate these sales figures: [120, 80, 95, 300, 150]",         # data_processor
+    "integrate with the public endpoint https://example.com",       # api_integrator
+    "self improve: inspect your own specializations and evolve",     # self_developer
 ]
+
+# R-122: the specialization each template must be routed to (primary stage).
+# 20/20 specializations covered — test_r122_* asserts it against route().
+EXPECTED_PRIMARY = {
+    "scaffold a starter project for a todo web service": "builder",
+    "pick a dark mode color palette from #3366ff for the dashboard": "designer",
+    "aggregate these sales figures: [120, 80, 95, 300, 150]": "data_processor",
+    "integrate with the public endpoint https://example.com": "api_integrator",
+    "self improve: inspect your own specializations and evolve": "self_developer",
+}
 
 
 
@@ -152,6 +172,26 @@ TRUTH = {
         (">=1 live source", lambda st: bool(re.search(r"[1-9]\d* source\(s\)", _out(st, "execute")))),
     "monitor the health of the system":
         ("measured health verdict", lambda st: bool(re.search(r"system (healthy|degraded): rss=", _out(st, "execute")))),
+    # R-122
+    "scaffold a starter project for a todo web service":
+        ("all scaffolded files verified, main module reviewed AND its tests passed",
+         lambda st: bool(re.search(r"scaffolded (\d+) file\(s\).*; \1/\1 passed verification", _out(st, "execute")))
+         and "reviewed" in _out(st, "review") and bool(_TESTS_GREEN.search(_out(st, "test")))),
+    "pick a dark mode color palette from #3366ff for the dashboard":
+        ("dark palette from #3366ff, all WCAG contrast targets met",
+         lambda st: "dark palette from hex #3366ff" in _out(st, "execute")
+         and "all WCAG targets met" in _out(st, "execute")),
+    "aggregate these sales figures: [120, 80, 95, 300, 150]":
+        ("sum=745 median=120, integrity checked",
+         lambda st: "sum=745" in _out(st, "execute") and "median=120" in _out(st, "execute")
+         and "checks passed" in _out(st, "validate")),
+    "integrate with the public endpoint https://example.com":
+        ("real HTTP response on GET + live probe",
+         lambda st: bool(re.search(r"-> HTTP [1-5]\d\d \(", _out(st, "execute")))
+         and bool(re.search(r"HTTP [1-5]\d\d", _out(st, "probe")))),
+    "self improve: inspect your own specializations and evolve":
+        ("self-inspection lists the 20 real handlers",
+         lambda st: "20 specializations backed by real handlers" in _out(st, "execute")),
 }
 
 

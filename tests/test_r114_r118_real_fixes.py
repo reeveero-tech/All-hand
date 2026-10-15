@@ -357,7 +357,8 @@ def _load_r119():
 
 def test_r119_has_a_truth_check_for_every_request_type():
     mod = _load_r119()
-    assert set(mod.TRUTH) == set(mod.REQUEST_TEMPLATES) and len(mod.TRUTH) == 19
+    # R-122: 19 -> 24 templates (one per specialization the 19 never reached)
+    assert set(mod.TRUTH) == set(mod.REQUEST_TEMPLATES) and len(mod.TRUTH) == 24
 
 
 def test_r119_truth_check_rejects_the_r113_hollow_successes():

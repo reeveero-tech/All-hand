@@ -54,6 +54,19 @@ def _artifact_of(res: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     code = out.get("code") or out.get("new_code")
     if isinstance(code, str) and code.strip():
         return {"code": code}
+    # R-122: builder returns a manifest of scaffolded files (no single "code"
+    # key), so review/test received nothing and failed with "no code to run".
+    # Forward the main Python source file (first non-test .py with content).
+    files = out.get("files")
+    if isinstance(files, list):
+        for f in files:
+            if not isinstance(f, dict):
+                continue
+            path, body = str(f.get("path") or ""), f.get("content")
+            name = path.rsplit("/", 1)[-1]
+            if (path.endswith(".py") and not name.startswith("test_") and name != "__init__.py"
+                    and isinstance(body, str) and body.strip()):
+                return {"code": body, "source_file": path}
     sql = out.get("sql")
     if isinstance(sql, str) and sql.strip():
         return {"sql": sql}

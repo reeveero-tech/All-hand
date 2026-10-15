@@ -1,0 +1,21 @@
+# R-121/R-122 discriminating run: NEW tests + NEW live script on OLD code (f41fb32 worktree) — 2026-10-15T01:55:26Z
+    assert "1 test(s) passed, 0 failed" in out["answer"], out["answer"]
+E   assert '1 test(s) passed, 0 failed' in 'exit=0; code ran (no test functions found to run)'
+E   AssertionError: [{'name': 'understand', 'ok': True, 'output': 'n=5 mean=149.000 sd=79.145 trend=up'}, {'name': 'plan', 'ok': True, 'ou... 'output': 'processed 5 samples'}, {'name': 'validate', 'ok': True, 'output': 'analysis integrity: 4/4 checks passed'}]
+PASSED tests/test_r122_specialization_coverage.py::test_templates_reach_all_20_specializations
+PASSED tests/test_r122_specialization_coverage.py::test_new_templates_route_to_their_specialization
+PASSED tests/test_r122_specialization_coverage.py::test_truth_checks_reject_the_hollow_outputs_found_before_the_fix
+PASSED tests/test_r122_specialization_coverage.py::test_offline_templates_pass_their_truth_check_end_to_end[pick a dark mode color palette from #3366ff for the dashboard]
+PASSED tests/test_r122_specialization_coverage.py::test_offline_templates_pass_their_truth_check_end_to_end[self improve: inspect your own specializations and evolve]
+FAILED tests/test_r121_tls_context.py::test_tls_context_is_created_once_and_reused
+FAILED tests/test_r121_tls_context.py::test_tls_context_still_verifies_certificates_and_hostnames
+FAILED tests/test_r121_tls_context.py::test_safe_urlopen_passes_the_shared_context
+FAILED tests/test_r122_specialization_coverage.py::test_builder_artifact_forwards_the_main_module
+FAILED tests/test_r122_specialization_coverage.py::test_main_guard_no_longer_skips_the_appended_tests
+FAILED tests/test_r122_specialization_coverage.py::test_drop_main_guard_keeps_everything_else
+FAILED tests/test_r122_specialization_coverage.py::test_data_processor_answer_states_the_aggregates
+FAILED tests/test_r122_specialization_coverage.py::test_api_integrator_answer_states_the_real_response
+FAILED tests/test_r122_specialization_coverage.py::test_offline_templates_pass_their_truth_check_end_to_end[scaffold a starter project for a todo web service]
+FAILED tests/test_r122_specialization_coverage.py::test_offline_templates_pass_their_truth_check_end_to_end[aggregate these sales figures: [120, 80, 95, 300, 150]]
+========================= 10 failed, 5 passed in 0.20s =========================
+rc=1

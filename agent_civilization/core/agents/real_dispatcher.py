@@ -348,6 +348,29 @@ def _guess_args(fn: ast.FunctionDef, skip_self: bool = False) -> str:
     return ", ".join(_ARG_GUESS.get(a.arg.lower(), "1") for a in required)
 
 
+def _drop_main_guard(code: str) -> str:
+    """R-122: remove top-level ``if __name__ == "__main__":`` blocks from the copy
+    that is executed with appended tests. In the sandbox the code runs as
+    __main__, so a guard such as ``raise SystemExit(main())`` ended the process
+    BEFORE the appended tests — the stage reported "code ran" and tested nothing
+    (found by the builder template: scaffolded main.py)."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code
+    drop = set()
+    for node in tree.body:
+        if (isinstance(node, ast.If) and isinstance(node.test, ast.Compare)
+                and isinstance(node.test.left, ast.Name) and node.test.left.id == "__name__"
+                and len(node.test.comparators) == 1
+                and isinstance(node.test.comparators[0], ast.Constant)
+                and node.test.comparators[0].value == "__main__"):
+            drop.update(range(node.lineno, (node.end_lineno or node.lineno) + 1))
+    if not drop:
+        return code
+    return "\n".join(ln for i, ln in enumerate(code.splitlines(), 1) if i not in drop) + "\n"
+
+
 def _generate_basic_tests(code: str) -> str:
     """R-111/R-116: smoke tests for the TOP-LEVEL functions and classes in code.
 
@@ -433,7 +456,7 @@ async def _test_runner(work: Dict[str, Any]) -> Dict[str, Any]:
     if "def test_" not in code and "assert " not in code:
         gen = _generate_basic_tests(code)
         if gen:
-            code = code + "\n\n# --- generated tests (R-111/R-116) ---\n" + gen
+            code = _drop_main_guard(code) + "\n\n# --- generated tests (R-111/R-116) ---\n" + gen
             tests_generated = gen.count("\ndef test_") + (1 if gen.startswith("def test_") else 0)
     elif "def test_" in code and "_t()" not in code:
         try:
@@ -442,6 +465,7 @@ async def _test_runner(work: Dict[str, Any]) -> Dict[str, Any]:
         except SyntaxError:
             names = []
         if names:
+            code = _drop_main_guard(code)
             code += ("\n\n# --- test runner (R-116) ---\n_failed = 0\nfor _t in [" + ", ".join(names) + "]:\n"
                      "    try:\n        _t()\n        print('PASS', _t.__name__)\n"
                      "    except Exception as _e:\n        _failed += 1\n        print('FAIL', _t.__name__, type(_e).__name__, _e)\n"
@@ -634,7 +658,9 @@ async def _data_processor(work: Dict[str, Any]) -> Dict[str, Any]:
                 "tool_output": {"source": "llm", "model": out.get("model")}}
     sorted_ns = sorted(nums)
     q = lambda p: sorted_ns[min(len(sorted_ns) - 1, int(p * (len(sorted_ns) - 1)))]
-    return {"ok": True, "answer": f"processed {len(nums)} samples",
+    # R-122: the answer states the computed aggregates (was only "processed N samples").
+    return {"ok": True, "answer": (f"processed {len(nums)} samples: sum={sum(nums):g} "
+                                   f"median={statistics.median(nums):g} p25={q(0.25):g} p75={q(0.75):g}"),
             "tool_output": {"n": len(nums), "sum": sum(nums),
                              "median": statistics.median(nums),
                              "p25": q(0.25), "p75": q(0.75),
@@ -892,7 +918,11 @@ async def _api_integrator(work: Dict[str, Any]) -> Dict[str, Any]:
                     "sample": (parsed if parsed is not None
                                else body[:512].decode("utf-8", errors="replace"))}
     try:
-        return {"ok": True, "answer": f"GET {url}", "tool_output": await _to_thread(get)}
+        out = await _to_thread(get)
+        # R-122: the answer states the real response (was only "GET <url>").
+        return {"ok": True, "tool_output": out,
+                "answer": (f"GET {url} -> HTTP {out['status']} ({out['content_type'] or 'no content-type'}, "
+                           f"{out['bytes']} bytes, {out['latency_ms']} ms)")}
     except safety.UnsafeURLError as e:
         return {"ok": False, "error": f"blocked: {e}"}
     except Exception as e:  # noqa: BLE001
