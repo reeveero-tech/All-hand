@@ -1,0 +1,27 @@
+$ حمل /metrics: venv312 python scripts/run_r085_metrics_load.py
+10000 requests (2x5000) over 103 distinct raw paths: 3.50s + 3.53s
+agos_http_requests_total series: 8 (sum=10200, includes 200 warm-up)
+raw path labels leaked: 0
+histogram series: 8, max raw window: 1024
+invalid exposition lines: 0 of 170
+peak RSS MB: before=61.8 after 5000=61.8 after 10000=61.8 (growth second half=0.0)
+storage series: ['agos_storage_last_operation_ok -1']
+METRICS_LOAD_RC=0
+
+$ pytest -m network (إنترنت حي)
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.7.0 -- /tmp/venv312_r133/bin/python
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/agos
+configfile: pytest.ini
+plugins: platformdirs-4.13.1, cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 480 items / 476 deselected / 4 selected
+
+tests/test_network_live.py::test_researcher_live_duckduckgo PASSED       [ 25%]
+tests/test_network_live.py::test_api_integrator_live_get PASSED          [ 50%]
+tests/test_network_live.py::test_network_client_live_dns_and_head PASSED [ 75%]
+tests/test_r114_r118_real_fixes.py::test_live_keyless_llm_and_translation PASSED [100%]
+
+====================== 4 passed, 476 deselected in 2.12s =======================
+NETWORK_RC=0

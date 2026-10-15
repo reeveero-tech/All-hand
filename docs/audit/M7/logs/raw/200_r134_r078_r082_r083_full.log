@@ -1,0 +1,129 @@
+$ R-078: كل الحالات الخمس
+--- legacy_anon_jwt
+[legacy_anon_jwt] var=SUPABASE_ANON_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_ANON_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY to the secret/service_role key'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_ANON_KEY'} | startup warning=True | key value leaked in logs=False
+rc=0
+--- anon_jwt_in_service_var
+[anon_jwt_in_service_var] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_SERVICE_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY to the secret/service_role key'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=True | key value leaked in logs=False
+rc=0
+--- publishable
+[publishable] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_SERVICE_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY to the secret/service_role key'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=True | key value leaked in logs=False
+rc=0
+--- service_jwt
+[service_jwt] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key={'kind': 'service', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=False | key value leaked in logs=False
+rc=0
+--- secret
+[secret] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key={'kind': 'service', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=False | key value leaked in logs=False
+rc=0
+
+$ R-082: venv312 python scripts/run_r082_storage_failure_probe.py
+2026-10-15 22:41:38,453 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:104
+2026-10-15 22:41:38,453 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:118
+2026-10-15 22:41:38,454 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-15 22:41:38,458 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:213
+2026-10-15 22:41:38,458 - agos.server - INFO - External agents loaded: 0 - <module>:215
+2026-10-15 22:41:38,483 - agos.server - INFO - Civilization routes registered successfully - <module>:755
+2026-10-15 22:41:38,494 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: agos - __init__:100
+2026-10-15 22:41:38,494 - storage - INFO - Supabase storage key: service (from SUPABASE_SERVICE_KEY) - log_key_status:99
+2026-10-15 22:41:38,498 - storage - WARNING - insert_task failed: Cannot connect to host 127.0.0.1:51967 ssl:default [Connect call failed ('127.0.0.1', 51967)] - insert_task:211
+2026-10-15 22:41:38,498 - storage - WARNING - insert_event failed: Cannot connect to host 127.0.0.1:51967 ssl:default [Connect call failed ('127.0.0.1', 51967)] - insert_event:318
+2026-10-15 22:41:38,498 - agos.server - INFO - Task created: 88d55df934be for specialization: analyst - create_task:538
+2026-10-15 22:41:38,499 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-15 22:41:38,499 - storage - WARNING - update_task failed: Cannot connect to host 127.0.0.1:51967 ssl:default [Connect call failed ('127.0.0.1', 51967)] - update_task:236
+2026-10-15 22:41:38,500 - agos.agent_production.memory - INFO - MemorySystem initialized (max_entries=2000) - __init__:105
+2026-10-15 22:41:38,500 - agos.agent_production.learning - INFO - LearningRuntime initialized (decay=0.95) - __init__:90
+2026-10-15 22:41:38,501 - storage - WARNING - update_task failed: Cannot connect to host 127.0.0.1:51967 ssl:default [Connect call failed ('127.0.0.1', 51967)] - update_task:236
+2026-10-15 22:41:38,502 - storage - WARNING - get_tasks failed: Cannot connect to host 127.0.0.1:51967 ssl:default [Connect call failed ('127.0.0.1', 51967)] - get_tasks:252
+2026-10-15 22:41:38,502 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:38,502 - storage - WARNING - upsert_agent_stats failed: Cannot connect to host 127.0.0.1:51967 ssl:default [Connect call failed ('127.0.0.1', 51967)] - upsert_agent_stats:284
+2026-10-15 22:41:38,503 - storage - WARNING - insert_event failed: Cannot connect to host 127.0.0.1:51967 ssl:default [Connect call failed ('127.0.0.1', 51967)] - insert_event:318
+2026-10-15 22:41:38,503 - agos.infrastructure.health - INFO - HealthCheckRegistry initialized - __init__:170
+2026-10-15 22:41:38,505 - agos.infrastructure.redis - INFO - RedisQueue initialized with URL: redis://localhost:6379 - __init__:142
+2026-10-15 22:41:38,505 - agos.infrastructure.redis - INFO - Using Redis: False, Fallback: True - __init__:143
+2026-10-15 22:41:38,505 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+2026-10-15 22:41:38,505 - httpx2 - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:38,506 - httpx2 - INFO - HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:38,509 - storage - WARNING - insert_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-15 22:41:38,510 - storage - WARNING - insert_event rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-15 22:41:38,510 - agos.server - INFO - Task created: 387e7bc848b4 for specialization: analyst - create_task:538
+2026-10-15 22:41:38,511 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-15 22:41:38,512 - storage - WARNING - update_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-15 22:41:38,513 - storage - WARNING - get_tasks rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-15 22:41:38,514 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:38,514 - storage - WARNING - update_task rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-15 22:41:38,516 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+2026-10-15 22:41:38,516 - httpx2 - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:38,517 - storage - WARNING - upsert_agent_stats rejected: HTTP 401 {"code":"PGRST301","message":"JWT expired"} - _accepted:167
+2026-10-15 22:41:38,518 - httpx2 - INFO - HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:38,520 - agos.server - INFO - Task created: 7c58d17271c0 for specialization: analyst - create_task:538
+2026-10-15 22:41:38,520 - httpx2 - INFO - HTTP Request: POST http://testserver/api/tasks "HTTP/1.1 202 Accepted" - _send_single_request:1085
+2026-10-15 22:41:38,523 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:38,525 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+2026-10-15 22:41:38,526 - httpx2 - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:38,527 - httpx2 - INFO - HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK" - _send_single_request:1085
+[1 down (connection refused)] /health=degraded storage=degraded msg='last storage operation failed: insert_event (exception: ClientConnectorError) at 2026-10-15T22:41:38+00:00'
+    details: last_ok=False last_error={"operation": "insert_event", "reason": "exception: ClientConnectorError", "at": "2026-10-15T22:41:38+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 1
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 0
+      agos_storage_operations{operation="insert_event",outcome="failed"} 2
+      agos_storage_operations{operation="insert_event",outcome="ok"} 0
+      agos_storage_operations{operation="insert_task",outcome="failed"} 1
+      agos_storage_operations{operation="insert_task",outcome="ok"} 0
+[2 HTTP 401 (key revoked)] /health=degraded storage=degraded msg='last storage operation failed: update_task (HTTP 401) at 2026-10-15T22:41:38+00:00'
+    details: last_ok=False last_error={"operation": "update_task", "reason": "HTTP 401", "at": "2026-10-15T22:41:38+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 2
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 0
+      agos_storage_operations{operation="insert_event",outcome="failed"} 3
+      agos_storage_operations{operation="insert_event",outcome="ok"} 0
+      agos_storage_operations{operation="insert_task",outcome="failed"} 2
+      agos_storage_operations{operation="insert_task",outcome="ok"} 0
+[3 recovered (201/200)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=True last_error={"operation": "upsert_agent_stats", "reason": "HTTP 401", "at": "2026-10-15T22:41:38+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 2
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 1
+      agos_storage_operations{operation="insert_event",outcome="failed"} 3
+      agos_storage_operations{operation="insert_event",outcome="ok"} 2
+      agos_storage_operations{operation="insert_task",outcome="failed"} 2
+      agos_storage_operations{operation="insert_task",outcome="ok"} 1
+R082_RC=0
+
+$ R-083: venv312 python scripts/run_r083_metrics_probe.py
+Redis not available. Using in-memory fallback.
+2026-10-15 22:41:39,025 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:104
+2026-10-15 22:41:39,025 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:118
+2026-10-15 22:41:39,026 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:213
+2026-10-15 22:41:39,026 - agos.server - INFO - External agents loaded: 0 - <module>:215
+2026-10-15 22:41:39,051 - agos.server - INFO - Civilization routes registered successfully - <module>:755
+2026-10-15 22:41:39,061 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: agos - __init__:100
+2026-10-15 22:41:39,064 - httpx2 - INFO - HTTP Request: GET http://testserver/api "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:39,078 - httpx2 - INFO - HTTP Request: GET http://testserver/api/agents "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:39,090 - httpx2 - INFO - HTTP Request: GET http://testserver/api/agents "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:39,091 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/abc123 "HTTP/1.1 404 Not Found" - _send_single_request:1085
+2026-10-15 22:41:39,092 - httpx2 - INFO - HTTP Request: GET http://testserver/api/tasks/def456 "HTTP/1.1 404 Not Found" - _send_single_request:1085
+2026-10-15 22:41:39,096 - httpx2 - INFO - HTTP Request: GET http://testserver/no/such/page "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:39,098 - httpx2 - INFO - HTTP Request: GET http://testserver/another/random/page "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:39,098 - agos.infrastructure.health - INFO - HealthCheckRegistry initialized - __init__:170
+2026-10-15 22:41:39,099 - agos.infrastructure.redis - INFO - RedisQueue initialized with URL: redis://localhost:6379 - __init__:142
+2026-10-15 22:41:39,099 - agos.infrastructure.redis - INFO - Using Redis: False, Fallback: True - __init__:143
+2026-10-15 22:41:39,099 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+2026-10-15 22:41:39,100 - httpx2 - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:39,101 - httpx2 - INFO - HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 22:41:39,102 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: p83 - __init__:100
+http_requests_total lines: 5
+    agos_http_requests_total{method="GET",endpoint="/api",status="200"} 1.0
+    agos_http_requests_total{method="GET",endpoint="/api/agents",status="200"} 2.0
+    agos_http_requests_total{method="GET",endpoint="/api/tasks/{task_id}",status="404"} 2.0
+    agos_http_requests_total{method="GET",endpoint="/health",status="200"} 1.0
+    agos_http_requests_total{method="GET",endpoint="/{full_path}",status="200"} 2.0
+duration lines: 70 (first 3) ['agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.005"} 1', 'agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.01"} 1', 'agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.025"} 1']
+invalid exposition lines: 0 []
+histogram (2 obs of 0.003s): ['p83_lat_bucket{le="0.005"} 2', 'p83_lat_bucket{le="0.01"} 2', 'p83_lat_bucket{le="0.025"} 2'] ... count line: ['p83_lat_count 2']
+raw values retained after 10002 observations: 1024
+R083_RC=0

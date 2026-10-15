@@ -1,0 +1,37 @@
+# R-134 مراجعة CI منذ الدورة التاسعة (دمج PR #133 — تشغيل 38690597745، 2026-10-15T06:07:46Z) — 2026-10-15T22:44:16Z
+URL: https://github.com/reeveero-tech/All-hand/actions/runs/38690597745
+
+$ gh run list --created 2026-10-15T06:07:47Z~ --limit 100 (كل الأحداث)
+38723795049 success push main e173d15 2026-10-15T10:56:25Z https://github.com/reeveero-tech/All-hand/actions/runs/38723795049
+38723498037 success pull_request m7/r132-thread-pool 515bfd5 2026-10-15T10:53:52Z https://github.com/reeveero-tech/All-hand/actions/runs/38723498037
+38723497939 success pull_request m7/r132-thread-pool 515bfd5 2026-10-15T10:53:52Z https://github.com/reeveero-tech/All-hand/actions/runs/38723497939
+38723167903 failure pull_request m7/r132-thread-pool 23e9d5f 2026-10-15T10:51:03Z https://github.com/reeveero-tech/All-hand/actions/runs/38723167903
+38723167965 success pull_request m7/r132-thread-pool 23e9d5f 2026-10-15T10:51:03Z https://github.com/reeveero-tech/All-hand/actions/runs/38723167965
+38697350940 success push main 5e93d8a 2026-10-15T07:13:51Z https://github.com/reeveero-tech/All-hand/actions/runs/38697350940
+38697034170 success pull_request m7/r131-keyless-http-load 06d419f 2026-10-15T07:10:56Z https://github.com/reeveero-tech/All-hand/actions/runs/38697034170
+38697034207 success pull_request m7/r131-keyless-http-load 06d419f 2026-10-15T07:10:56Z https://github.com/reeveero-tech/All-hand/actions/runs/38697034207
+
+--- خلاصة
+{"failure":1,"success":7}
+
+$ تشغيل main الحالي (38723795049) — كل الوظائف
+https://github.com/reeveero-tech/All-hand/actions/runs/38723795049
+network: success
+build: success
+audit: success
+quality: success
+publish: skipped
+test: success
+docker: success
+storage: success
+
+$ أدلة storage job (R-042) من تشغيل main 38723795049 — عدّ PASS/FAIL
+22
+0
+storage	UNKNOWN STEP	2026-10-15T10:58:22.9449217Z ============================== 3 passed in 1.25s ===============================
+
+$ تنبيهات CI (check-runs) على رأس main e173d15
+0
+
+$ قائمة حماية main (قراءة API فقط)
+{"enforce_admins":false,"required":["quality","test","build","docker","governance","audit"],"strict":true}

@@ -1,0 +1,9 @@
+
+# R-133 فحص ruff (نطاقان) — 2026-10-15T22:44:31Z
+$ نطاق أمر التسليم (يستثني specialists، بلا scripts)
+All checks passed!
+RUFF_HANDOFF_RC=0
+
+$ النطاق الموسع (المذكور في QUALITY: يشمل scripts)
+All checks passed!
+RUFF_EXTENDED_RC=0
