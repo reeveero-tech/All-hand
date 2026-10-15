@@ -1,0 +1,292 @@
+# R-127 (cycle 9/1) dependency + security check — 2026-10-15T05:44:32Z
+HEAD 1c4e8034495e25d13e450087d5c8bd04a6e7761c
+node v20.20.2 npm 10.8.2
+---
+$ uv venv -q -p 3.11 /tmp/v311 && uv pip install -q -p /tmp/v311 -r requirements.txt pip-audit && /tmp/v311/bin/pip-audit -r requirements.txt
+No known vulnerabilities found
+rc=0
+---
+$ npm audit --omit=dev
+found 0 vulnerabilities
+rc=0
+---
+$ npm audit
+found 0 vulnerabilities
+rc=0
+---
+$ (cd web && npm audit --omit=dev)
+found 0 vulnerabilities
+rc=0
+---
+$ (cd web && npm audit)
+found 0 vulnerabilities
+rc=0
+---
+$ npm outdated
+Package                              Current           Wanted           Latest  Location                                  Depended by
+@eslint/js                            9.39.5           9.39.5           10.0.1  node_modules/@eslint/js                   All-hand
+@tanstack/react-start                1.169.1          1.169.2         1.131.50  node_modules/@tanstack/react-start        All-hand
+@tanstack/router-plugin             1.168.45         1.168.46         1.168.46  node_modules/@tanstack/router-plugin      All-hand
+@types/node                          22.20.5          22.20.5           26.6.5  node_modules/@types/node                  All-hand
+@vitejs/plugin-react                   5.2.0            5.2.0            6.1.2  node_modules/@vitejs/plugin-react         All-hand
+eslint                                9.39.5           9.39.5          10.12.0  node_modules/eslint                       All-hand
+eslint-plugin-react-hooks              5.2.0            5.2.0            7.1.1  node_modules/eslint-plugin-react-hooks    All-hand
+eslint-plugin-react-refresh           0.4.26           0.4.26            0.5.7  node_modules/eslint-plugin-react-refresh  All-hand
+globals                              15.15.0          15.15.0          17.13.0  node_modules/globals                      All-hand
+lucide-react                         0.575.0          0.575.0           1.57.0  node_modules/lucide-react                 All-hand
+nitro                        3.0.260603-beta  3.0.260603-beta  3.0.260903-beta  node_modules/nitro                        All-hand
+react                                 19.3.0           19.3.1           19.3.1  node_modules/react                        All-hand
+react-day-picker                      9.14.0           9.14.0           10.0.2  node_modules/react-day-picker             All-hand
+react-dom                             19.3.0           19.3.1           19.3.1  node_modules/react-dom                    All-hand
+recharts                              2.15.4           2.15.4           3.10.1  node_modules/recharts                     All-hand
+typescript                             5.9.3            5.9.3            7.0.2  node_modules/typescript                   All-hand
+zod                                  3.25.76          3.25.76            4.6.7  node_modules/zod                          All-hand
+rc=1
+---
+$ (cd web && npm outdated)
+Package    Current  Wanted  Latest  Location                Depended by
+react       18.3.1  18.3.1  19.3.1  node_modules/react      web
+react-dom   18.3.1  18.3.1  19.3.1  node_modules/react-dom  web
+rc=1
+---
+$ uv pip list -p /tmp/v311 --outdated
+Using Python 3.11.15 environment at: /tmp/v311
+rc=0
+
+## in-range updates (Current != Wanted) applied
+---
+$ npm update @tanstack/react-start @tanstack/router-plugin react react-dom
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@tanstack/start-server-core@1.169.43',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+
+added 1 package, changed 12 packages, and audited 416 packages in 12s
+
+101 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+rc=0
+---
+$ git diff --stat package.json package-lock.json
+ package-lock.json | 123 ++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 68 insertions(+), 55 deletions(-)
+rc=0
+---
+$ npm outdated
+Package                              Current           Wanted           Latest  Location                                  Depended by
+@eslint/js                            9.39.5           9.39.5           10.0.1  node_modules/@eslint/js                   All-hand
+@tanstack/react-start                1.169.2          1.169.2         1.131.50  node_modules/@tanstack/react-start        All-hand
+@types/node                          22.20.5          22.20.5           26.6.5  node_modules/@types/node                  All-hand
+@vitejs/plugin-react                   5.2.0            5.2.0            6.1.2  node_modules/@vitejs/plugin-react         All-hand
+eslint                                9.39.5           9.39.5          10.12.0  node_modules/eslint                       All-hand
+eslint-plugin-react-hooks              5.2.0            5.2.0            7.1.1  node_modules/eslint-plugin-react-hooks    All-hand
+eslint-plugin-react-refresh           0.4.26           0.4.26            0.5.7  node_modules/eslint-plugin-react-refresh  All-hand
+globals                              15.15.0          15.15.0          17.13.0  node_modules/globals                      All-hand
+lucide-react                         0.575.0          0.575.0           1.57.0  node_modules/lucide-react                 All-hand
+nitro                        3.0.260603-beta  3.0.260603-beta  3.0.260903-beta  node_modules/nitro                        All-hand
+react-day-picker                      9.14.0           9.14.0           10.0.2  node_modules/react-day-picker             All-hand
+recharts                              2.15.4           2.15.4           3.10.1  node_modules/recharts                     All-hand
+typescript                             5.9.3            5.9.3            7.0.2  node_modules/typescript                   All-hand
+zod                                  3.25.76          3.25.76            4.6.7  node_modules/zod                          All-hand
+rc=1
+---
+$ npm ci --engine-strict
+npm error code EBADENGINE
+npm error engine Unsupported engine
+npm error engine Not compatible with your version of node/npm: undefined
+npm error notsup Not compatible with your version of node/npm: undefined
+npm error notsup Required: {"node":">=22.12.0"}
+npm error notsup Actual:   {"npm":"10.8.2","node":"v20.20.2"}
+npm error A complete log of this run can be found in: /home/user/.npm/_logs/2026-10-15T05_45_14_263Z-debug-0.log
+rc=1
+---
+$ npx eslint . --max-warnings=0
+rc=0
+---
+$ npm run build
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+✓ built in 279ms
+[nitro] ℹ Using auto generated worker name: reeveero-tech-all-hand
+ℹ Generated .output/server/wrangler.json
+ℹ Generated .wrangler/deploy/config.json
+ℹ Generated .output/public/_headers
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+rc=0
+---
+$ npm audit --omit=dev
+found 0 vulnerabilities
+rc=0
+---
+$ npm audit
+found 0 vulnerabilities
+rc=0
+
+## NOTE: sandbox default node is v20.20.2 (< engines >=22.12.0) — npm ci --engine-strict above failed for that reason (also without the update). Re-run on Node 22 like CI:
+node v22.23.3 npm 10.9.9
+---
+$ npm ci --engine-strict
+npm warn deprecated tsconfck@3.1.6: unmaintained
+npm warn deprecated recharts@2.15.4: 1.x and 2.x branches are no longer active. Bump to Recharts v3 to receive latest features and bugfixes. See https://github.com/recharts/recharts/wiki/3.0-migration-guide
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 415 packages, and audited 416 packages in 3m
+
+101 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+rc=0
+---
+$ npx eslint . --max-warnings=0
+rc=0
+---
+$ npm run build
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+✓ built in 391ms
+[nitro] ℹ Using auto generated worker name: reeveero-tech-all-hand
+ℹ Generated .output/server/wrangler.json
+ℹ Generated .wrangler/deploy/config.json
+ℹ Generated .output/public/_headers
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+rc=0
+---
+$ npm audit --omit=dev
+found 0 vulnerabilities
+rc=0
+---
+$ npm audit
+found 0 vulnerabilities
+rc=0
+---
+$ (cd web && npm ci --engine-strict)
+
+added 23 packages, and audited 24 packages in 4s
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+rc=0
+---
+$ (cd web && npm run build)
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 22 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.77 kB │ gzip:  0.45 kB
+dist/assets/index-B7MkQRhG.css   12.25 kB │ gzip:  2.99 kB
+dist/assets/index-FqdyJxRa.js   166.85 kB │ gzip: 53.08 kB
+
+✓ built in 208ms
+rc=0
+---
+$ (cd web && npm audit)
+found 0 vulnerabilities
+rc=0
+
+## clean venvs with the latest compatible versions (as CI: requirements.txt + pytest pytest-asyncio pytest-cov httpx2)
+---
+$ rm -rf /tmp/c3.11 && uv venv -q -p 3.11 /tmp/c3.11 && uv pip install -q -p /tmp/c3.11 -r requirements.txt pytest pytest-asyncio pytest-cov httpx2 pip-audit && /tmp/c3.11/bin/python -V
+Python 3.11.15
+rc=0
+---
+$ uv pip list -p /tmp/c3.11 | grep -iE '^(fastapi|starlette|pydantic|uvicorn|aiohttp|pyyaml|python-multipart|httpx2|pytest) '
+Using Python 3.11.15 environment at: /tmp/c3.11
+aiohttp                 3.14.5
+fastapi                 0.143.1
+httpx2                  2.13.1
+pydantic                2.14.1
+pytest                  9.1.1
+python-multipart        0.0.32
+pyyaml                  6.0.3
+starlette               1.8.0
+uvicorn                 0.54.0
+rc=0
+---
+$ /tmp/c3.11/bin/python -m pytest tests/ -q -p no:cacheprovider
+tests/test_specialist_runtime.py ..........                              [ 88%]
+tests/test_specialists_package.py ....................................   [ 96%]
+tests/test_storage_payloads.py ......                                    [ 97%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 457 passed, 3 skipped, 4 deselected in 25.02s =================
+rc=0
+---
+$ /tmp/c3.11/bin/pip-audit -l
+No known vulnerabilities found
+rc=0
+---
+$ rm -rf /tmp/c3.12 && uv venv -q -p 3.12 /tmp/c3.12 && uv pip install -q -p /tmp/c3.12 -r requirements.txt pytest pytest-asyncio pytest-cov httpx2 pip-audit && /tmp/c3.12/bin/python -V
+Python 3.12.13
+rc=0
+---
+$ uv pip list -p /tmp/c3.12 | grep -iE '^(fastapi|starlette|pydantic|uvicorn|aiohttp|pyyaml|python-multipart|httpx2|pytest) '
+Using Python 3.12.13 environment at: /tmp/c3.12
+aiohttp                 3.14.5
+fastapi                 0.143.1
+httpx2                  2.13.1
+pydantic                2.14.1
+pytest                  9.1.1
+python-multipart        0.0.32
+pyyaml                  6.0.3
+starlette               1.8.0
+uvicorn                 0.54.0
+rc=0
+---
+$ /tmp/c3.12/bin/python -m pytest tests/ -q -p no:cacheprovider
+tests/test_specialist_runtime.py ..........                              [ 88%]
+tests/test_specialists_package.py ....................................   [ 96%]
+tests/test_storage_payloads.py ......                                    [ 97%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+================ 457 passed, 3 skipped, 4 deselected in 25.42s =================
+rc=0
+---
+$ /tmp/c3.12/bin/pip-audit -l
+No known vulnerabilities found
+rc=0
+
+## GitHub Actions in use (workflow files) vs latest release
+$ rg -o 'uses: [^ ]+' .github/workflows | sort | uniq -c
+      9 actions/checkout@v7
+      4 actions/setup-node@v7
+      7 actions/setup-python@v7
+      2 actions/upload-artifact@v7
+latest actions/checkout: v7.0.1
+latest actions/setup-python: v7.0.0
+latest actions/setup-node: v7.1.0
+latest actions/upload-artifact: v7.0.2
+latest docker/build-push-action: v7.4.0
+latest docker/setup-buildx-action: v4.4.1
+
+## warnings/annotations on the last main push run 38687780665 (head 1c4e803)
+quality success annotations=0
+test success annotations=0
+network success annotations=0
+audit success annotations=0
+docker success annotations=0
+build success annotations=0
+storage success annotations=0
+publish skipped annotations=0

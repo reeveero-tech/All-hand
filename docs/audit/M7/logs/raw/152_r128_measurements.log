@@ -1,0 +1,263 @@
+# R-128 (cycle 9/2) periodic measurements — 2026-10-15T05:50:23Z — HEAD 1c4e8034495e25d13e450087d5c8bd04a6e7761c — python Python 3.14.3
+---
+$ AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r051_audit.py
+  "summary": {
+    "total": 20,
+    "real": 20,
+    "simulated": 0,
+    "failed": 0,
+    "refused_by_policy": 0
+  }
+}
+rc=0
+---
+$ python scripts/run_r053_scale_audit.py
+    ذروة RSS بعد التنفيذ: 54.6 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 54.6 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~89.90s، نجاح 912/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+rc=1
+---
+$ python scripts/run_r053_scale_audit.py
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 54.5 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~89.72s، نجاح 922/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+rc=1
+---
+$ python scripts/run_r055_scenarios.py
+  ✓ plan@strategist (strategist_0080) 0.000s
+     understand(analyst) -> plan(strategist) -> execute(code_generator) -> review(reviewer) -> test(test_
+  ✓ execute@code_generator (code_generator_0020) 0.000s
+     validated supplied code (not generated): 0 funcs, 0 classes
+  ✓ review@reviewer (reviewer_0070) 0.000s
+     reviewed 1 loc, 0 function(s): 0 issue(s) — no defects found by static checks
+  ✗ test@test_runner (test_runner_0090) 0.000s
+     code execution is disabled in open mode: set AGOS_API_KEY (recommended) or AGOS_ALLOW_CODE_EXEC=1 to
+النتيجة النهائية: reviewed 1 loc, 0 function(s): 0 issue(s) — no defects found by static checks
+الزمن الكلي: 0.001s
+
+==================================================
+كل المراحل ناجحة: False
+كل النتائج النهائية موجودة: True
+rc=1
+---
+$ python scripts/run_r078_key_probe.py legacy_anon_jwt
+[legacy_anon_jwt] var=SUPABASE_ANON_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_ANON_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY to the secret/service_role key'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_ANON_KEY'} | startup warning=True | key value leaked in logs=False
+rc=0
+---
+$ python scripts/run_r078_key_probe.py anon_jwt_in_service_var
+[anon_jwt_in_service_var] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_SERVICE_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY to the secret/service_role key'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=True | key value leaked in logs=False
+rc=0
+---
+$ python scripts/run_r078_key_probe.py publishable
+[publishable] var=SUPABASE_SERVICE_KEY | /health.status=degraded storage=degraded msg='Supabase configured with a public key (from SUPABASE_SERVICE_KEY): writes are rejected by RLS — set SUPABASE_SERVICE_KEY to the secret/service_role key'
+    system_status.supabase_key={'kind': 'public', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=True | key value leaked in logs=False
+rc=0
+---
+$ python scripts/run_r078_key_probe.py service_jwt
+[service_jwt] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key={'kind': 'service', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=False | key value leaked in logs=False
+rc=0
+---
+$ python scripts/run_r078_key_probe.py secret
+[secret] var=SUPABASE_SERVICE_KEY | /health.status=healthy storage=healthy msg='Supabase configured'
+    system_status.supabase_key={'kind': 'service', 'source': 'SUPABASE_SERVICE_KEY'} | startup warning=False | key value leaked in logs=False
+rc=0
+---
+$ python scripts/run_r082_storage_failure_probe.py
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 0
+      agos_storage_operations{operation="insert_event",outcome="failed"} 3
+      agos_storage_operations{operation="insert_event",outcome="ok"} 0
+      agos_storage_operations{operation="insert_task",outcome="failed"} 2
+      agos_storage_operations{operation="insert_task",outcome="ok"} 0
+[3 recovered (201/200)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=True last_error={"operation": "insert_event", "reason": "HTTP 401", "at": "2026-10-15T05:54:26+00:00"}
+    /metrics storage lines: 11
+      agos_storage_operations{operation="get_tasks",outcome="failed"} 2
+      agos_storage_operations{operation="get_tasks",outcome="ok"} 1
+      agos_storage_operations{operation="insert_event",outcome="failed"} 4
+      agos_storage_operations{operation="insert_event",outcome="ok"} 1
+      agos_storage_operations{operation="insert_task",outcome="failed"} 2
+      agos_storage_operations{operation="insert_task",outcome="ok"} 1
+rc=0
+---
+$ python scripts/run_r083_metrics_probe.py
+2026-10-15 05:54:27,005 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:148
+2026-10-15 05:54:27,006 - httpx2 - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 05:54:27,007 - httpx2 - INFO - HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK" - _send_single_request:1085
+2026-10-15 05:54:27,008 - agos.infrastructure.metrics - INFO - MetricsCollector initialized with namespace: p83 - __init__:100
+http_requests_total lines: 5
+    agos_http_requests_total{method="GET",endpoint="/api",status="200"} 1.0
+    agos_http_requests_total{method="GET",endpoint="/api/agents",status="200"} 2.0
+    agos_http_requests_total{method="GET",endpoint="/api/tasks/{task_id}",status="404"} 2.0
+    agos_http_requests_total{method="GET",endpoint="/health",status="200"} 1.0
+    agos_http_requests_total{method="GET",endpoint="/{full_path}",status="200"} 2.0
+duration lines: 70 (first 3) ['agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.005"} 1', 'agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.01"} 1', 'agos_http_request_duration_seconds_bucket{method="GET",endpoint="/api",status="200",le="0.025"} 1']
+invalid exposition lines: 0 []
+histogram (2 obs of 0.003s): ['p83_lat_bucket{le="0.005"} 2', 'p83_lat_bucket{le="0.01"} 2', 'p83_lat_bucket{le="0.025"} 2'] ... count line: ['p83_lat_count 2']
+raw values retained after 10002 observations: 1024
+rc=0
+---
+$ python scripts/run_r085_metrics_load.py
+10000 requests (2x5000) over 103 distinct raw paths: 3.71s + 3.65s
+agos_http_requests_total series: 8 (sum=10200, includes 200 warm-up)
+raw path labels leaked: 0
+histogram series: 8, max raw window: 1024
+invalid exposition lines: 0 of 170
+peak RSS MB: before=69.1 after 5000=69.1 after 10000=69.1 (growth second half=0.0)
+storage series: ['agos_storage_last_operation_ok -1']
+rc=0
+
+## R-130: re-run after the script fix (educator gets offline material); with AGOS_ALLOW_CODE_EXEC=1 as R-053 documents since R-100
+---
+$ AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 84.555s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 54.5 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 54.5 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~84.55s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+rc=0
+---
+$ AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 89.054s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 54.5 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 54.5 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~89.05s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+rc=0
+
+## R-055 with AGOS_ALLOW_CODE_EXEC=1 (test_runner executes code only with explicit permission since R-100 / D-044)
+---
+$ AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r055_scenarios.py
+الزمن الكلي: 0.013s
+
+==================================================
+كل المراحل ناجحة: True
+كل النتائج النهائية موجودة: True
+✓ السيناريوهات الثلاثة ناجحة
+rc=0
+
+## R-130 final: the 85-89 s above is educator waiting for the keyless LLM (per-spec timing below); the script now measures with AGOS_LLM_KEYLESS=0 by default
+per-spec timing with the keyless LLM ON (1000 concurrent tasks): educator max 88.9 s median 88.90 s ok 50/50; test_runner max 1.7 s; researcher 1.5 s; self_developer 1.4 s; network_client 1.1 s; all others <= 0.6 s
+---
+$ AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py
+    زمن الإنشاء: 0.002s
+    ذروة RSS بعد الإنشاء: 29.6 MB
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 1.967s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 54.2 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.001s
+    ذروة RSS: 54.2 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~1.97s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.001s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+rc=0
+---
+$ AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py
+    زمن الإنشاء: 0.001s
+    ذروة RSS بعد الإنشاء: 29.6 MB
+
+[2] تنفيذ متزامن (1000 مهمة عبر كل الوكلاء)
+    زمن التنفيذ: 1.911s
+    نجاح: 1000/1000
+    ذروة RSS بعد التنفيذ: 54.4 MB
+
+[3] هامش التوسع (100/تخصص = 2000 وكيل)
+    زمن الإنشاء: 0.002s
+    ذروة RSS: 54.4 MB
+
+============================================================
+الحدود الموثقة (ملخص):
+- إنشاء 1000 وكيل: <0.010s، ذاكرة كائنات ~0.4MB (قياس tracemalloc)
+- تنفيذ 1000 مهمة متزامنة: ~1.91s، نجاح 1000/1000
+- التوسع إلى 2000 وكيل: يعمل (زمن 0.002s) — الحد الأقصى مفتوح لقياس لاحق
+============================================================
+rc=0
+
+## R-042 (live storage): no postgres/postgrest in this sandbox () — taken from CI job 'storage' on the main head run 38687780665
+storage job 116266897791 (gh run view 38687780665 --log --job 116266897791):
+R-042 storage verification: 22/22 checks passed
+tests/test_r042_live_storage.py: 3 passed in 1.46s
+
+## CI runs since the last periodic review (R-095, 2026-10-14) — all workflows
+     26 success push main
+     14 success pull_request m6/r104b-r107b-fix-gaps
+      8 success pull_request m6/r105-specialists-dedup
+      7 success pull_request m6/r100-runtime-safety
+      6 success pull_request m6/r112c-evidence-fix
+      4 success pull_request m6/r103-memory-learning
+      4 success pull_request m6/r101-web-api-key
+      3 success pull_request m7/deep-inspection
+      3 success pull_request m6/q022-close
+      2 success pull_request m7/r123-r126-memory-depth
+      2 success pull_request m7/r121-memory-and-coverage
+      2 success pull_request m7/r120-live-hour-3
+      2 success pull_request m7/r119-architecture-reconcile
+      2 success pull_request m6/r114-real-fixes
+      2 success pull_request m6/r113-live-hour-2
+      2 success pull_request m6/r112b-closeout-fix
+      2 success pull_request m6/r112-evidence-integrity
+      2 success pull_request m6/r111-test-runner
+      2 success pull_request m6/r110-validator-fix
+      2 success pull_request m6/r109-live-hour
+      2 success pull_request m6/r108-sustained-load
+      2 success pull_request m6/r107-researcher-retry
+      2 success pull_request m6/r106-chat-routing
+      2 success pull_request m6/r105-closeout-docs
+      2 success pull_request m6/r104-connect-data-worker
+      2 success pull_request m6/r102-honest-handlers
+      1 failure pull_request m7/deep-inspection
+      1 failure pull_request m6/r100-runtime-safety
+      1 failure pull_request m6/q022-close
+non-success runs (all on PR branches, each followed by a green run of the same PR before merge; none on main):
+38526679960 2026-10-14T07:10:57Z Governance Gate m6/q022-close failure
+38521708810 2026-10-14T06:21:14Z Governance Gate m7/deep-inspection failure
+38492897635 2026-10-14T00:55:42Z AGOS Kernel CI/CD m6/r100-runtime-safety failure
+causes: 38526679960 / 38521708810 = Governance Gate 'Atomic batch rule violated' (mandatory docs missing — fixed by a follow-up commit in the PR); 38492897635 = job 'network' (non-mandatory, D-040) test_researcher_live_duckduckgo FAILED (live web)

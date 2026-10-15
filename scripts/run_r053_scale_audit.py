@@ -14,10 +14,17 @@ R-050 — والافتراضي المؤقت في Q-016: 50/تخصص × 20 = 1000
 4) حدة الانحدار: القياسات محمية باختبارات (tests/test_civilization_scale.py).
 """
 import asyncio
+import os
 import resource
 import sys
 import time
 from pathlib import Path
+
+# R-130: this measures the civilization's own capacity, so the public keyless
+# LLM (one call at a time, 6 s spacing, 90 s budget — D-051) is off unless the
+# operator sets AGOS_LLM_KEYLESS explicitly. With it on, 50 concurrent educator
+# tasks wait ~89 s for it (RISK-028, docs/audit/M7/logs/raw/152_r128_measurements.log).
+os.environ.setdefault("AGOS_LLM_KEYLESS", "0")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -40,6 +47,14 @@ PAYLOADS = {
     "code_generator": {"data": "def hello():\n    return 1"},
     "surgeon": {"data": "def f():\n    try:\n        pass\n    except:\n        pass\n"},
     "modifier": {"data": "x = 1   \n"},
+    # R-130 (cycle 9, found in R-128): since R-116 `educator` with no material
+    # ("demo") asks the keyless LLM, which serves one call at a time (D-051) —
+    # 50 concurrent educator tasks queued behind it (90 s, 35 failures by its
+    # 90 s budget). The scale measure is about the civilization, not the public
+    # LLM's rate: give educator material to explain offline (same payload as
+    # tests/test_routing_pipeline.py) and measure with the keyless LLM off (see
+    # the top of the file). Live LLM use is measured in R-118/R-126.
+    "educator": {"prompt": "Recursion is when a function calls itself. Every recursion needs a base case."},
 }
 
 def rss_mb() -> float:
@@ -71,6 +86,7 @@ def main() -> int:
     # يُشغَّل بـ AGOS_ALLOW_CODE_EXEC=1 (وإلا تُرفض مهام test_runner الـ50).
     allowed, reason = safety.code_execution_policy()
     print(f"سياسة تنفيذ الكود: allowed={allowed} ({reason})")
+    print(f"AGOS_LLM_KEYLESS={os.environ.get('AGOS_LLM_KEYLESS')} OPENROUTER_API_KEY set={bool(os.environ.get('OPENROUTER_API_KEY'))}")
 
     # 1) العدد المستهدف: 50/تخصص = 1000 وكيل
     civ, total, elapsed = create_and_measure(50)
