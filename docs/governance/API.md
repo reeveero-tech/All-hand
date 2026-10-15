@@ -1,6 +1,6 @@
 # الواجهات (API)
 
-> **آخر تحديث**: 2026-10-15 — R-131 (توجيه `/api/chat` مع LLM بلا مفتاح). قبلها 2026-10-14 — بعد R-104c2 (مسار النص في `data_processor`: الحمولة تصل LLM بالتعليمة **والبيانات** معاً — راجع الملاحظات)
+> **آخر تحديث**: 2026-10-15 — R-132 (مجمّعات الخيوط؛ لا تغيير في العقد). قبلها R-131 (توجيه `/api/chat` مع LLM بلا مفتاح). قبلها 2026-10-14 — بعد R-104c2 (مسار النص في `data_processor`: الحمولة تصل LLM بالتعليمة **والبيانات** معاً — راجع الملاحظات)
 > (تحديث سابق: 2026-10-12 — R-041: مصادلة مع الكود الفعلي وتصحيح أوصاف الحماية القديمة)
 > **المصدر**: قراءة مباشرة من `server.py` و`agent_civilization/civilization_routes.py`
 
@@ -89,6 +89,10 @@
 ## R-101 — عقد الواجهة في الوضع المصادَق (2026-10-14)
 - لا تغيير في الخادم. العقد المثبت (`tests/test_r101_web_auth_contract.py`): `GET /api/system/status` → `security.authentication = "enabled"|"disabled"` (تكتشف به الواجهة الوضع بلا مفتاح)؛ مسارات القراءة التي تستطلعها الواجهة (`/api/specializations`، `/api/agents`، `/api/tasks`، `/api/events`، `/api/events/stream`) بلا مفتاح؛ الكتابة: 401 `API key required` بلا مفتاح، 403 `Invalid API key` بمفتاح خاطئ؛ CORS يسمح بترويسة `X-API-Key`.
 - العميل (`web/src/api.js`): يرسل `X-API-Key` إن وُجد في sessionStorage (`agos_api_key`)؛ أخطاؤه من نوع `ApiError` بحقل `status`؛ 401/403 تُطلق حدث `agos-auth-required`.
+
+## R-132 — لا تغيير في العقد (2026-10-15، D-055)
+- `POST /api/agents/external`: فحص عنوان الوكيل الخارجي (`safety.check_url`، DNS) يجري الآن على مجمّع الخيوط `net` بدل المجمّع الافتراضي المشترك؛ الطلب والاستجابة ورموز الحالة بلا تغيير.
+- `/api/chat`: المعالجات الحاجبة تجري على مجمّعات منفصلة (`agent_civilization/core/pools.py`)؛ شكل الاستجابة بلا تغيير. نص خطأ جديد ممكن في `outcome.error` لـeducator: «web: no result within 20s (queue + call, AGOS_WEB_WAIT_S)».
 
 ## R-131 — `/api/chat` لا يوجّه عبر LLM بلا مفتاح (2026-10-15، D-054)
 - **قبل**: مع LLM بلا مفتاح (الافتراضي بلا `OPENROUTER_API_KEY`) كل رسالة تنتظر استدعاء توجيه للمزود العام — حتى «sum these numbers» انتظر وسيط 47–88ث تحت حمل HTTP متزامن (`docs/audit/M7/logs/raw/156`). **بعد**: `routing.method` = `keywords` مع المزود بلا مفتاح؛ `llm` فقط مع مزود بمفتاح. شكل الاستجابة بلا تغيير.

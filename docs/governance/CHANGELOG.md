@@ -9,7 +9,7 @@
 - **بعد**: فحص الوصول وسيط 0.07–0.10ث وأقصى ≤0.32ث؛ «LLM أولاً» أقصى 80.7 → 31.6ث عند 50؛ 778 → 2,349 طلباً.
 - **الاختبارات**: `tests/test_r132_pools.py` (10) — المجموع 473 + 3 + 4.
 - **الأدلة**: `docs/audit/M7/logs/raw/165..179` + `r132_http_load_{before,after_v1,after}.json` و`r132_pools_{before,after_v1,after}.jsonl`.
-- **الوثائق**: ROADMAP، PROJECT_STATE، README، DECISIONS (D-055)، RISKS (RISK-029)، OPERATIONS، ARCHITECTURE، EVIDENCE (M7)، هذا السجل.
+- **الوثائق**: ROADMAP، PROJECT_STATE، README، DECISIONS (D-055)، RISKS (RISK-029)، OPERATIONS، ARCHITECTURE، API (لا تغيير في العقد — أُضيف بعد فشل بوابة الحوكمة على PR #135: «API changed without docs/governance/API.md»)، EVIDENCE (M7)، هذا السجل.
 
 ## 2026-10-15 — R-131: معالجة RISK-028 بقياس حمل HTTP متزامن حقيقي (دفعة m7/r131-keyless-http-load، بطلب المالك)
 
