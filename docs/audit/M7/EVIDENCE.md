@@ -127,3 +127,44 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 - المشروع تجريبي ومؤقت؛ لا نشر إنتاجي على Render بمشروع دائم.
 - الصفوف التي كتبتها اختبارات الخادم بقيت في المشروع المؤقت (سيُحذف بالكامل حسب المالك).
 - لا فحص آلي عند بدء الخادم يرفض المفتاح العام (RISK-018).
+
+---
+
+## R-119 (دفعة m7/r119-architecture-reconcile) — مصالحة ادعاءات ARCHITECTURE.md + DATA_MODEL.md + DOMAIN.md مع الواقع (2026-10-15)
+
+### السياق
+خلل وثائق مقابل واقع: ARCHITECTURE.md وُصف في رأسها بـ"آخر تحديث 2026-10-12 — M0" رغم إضافات لاحقة داخلها، وادعاءات قديمة من M0 بقيت تُقدّم كوصف حالي (بدون وسم تاريخي). كل ادعاء مُتحقق منه بملخص تحقق في السجل الخام أدناه.
+
+### البيئة
+- SHA: `6439e5a1bd68b9d198ca4bb0daca46001cd3a2fa` (فرع `m7/r119-architecture-reconcile`)
+- Python 3.14.3، Node v22.23.3 (قيمة الرأس الأصلية للسجل استُبدلت أثناء التحرير فلا يمكن إسناد توقيتها بثقة؛ الموثوق منه من سجل الأوامر: nvm 22 حُمّل قبل فحوصات npm فجرت تحتها)، بيئة تحرير محلية
+- عدّاد الخارطة (run_r075): 108 بنود، كلها done، صفر تكرار (rc=0)
+- ملخص التحقق: [`docs/audit/M7/logs/raw/124_r119_architecture_reconcile_evidence.log`](logs/raw/124_r119_architecture_reconcile_evidence.log) — ملخص تحقق (ليس سجلاً خاماً كاملاً)؛ المخرجات الكاملة محفوظة في [`r119_full_logs/`](logs/raw/r119_full_logs/)
+
+### الأدلة المُصالحة (9 ادعاءات قديمة أُصلحت في ARCHITECTURE.md)
+| # | الادعاء القديم (M0) | الواقع المُتحقق | السجل |
+|---|---|---|---|
+| 1 | `verify_api_key()` "غير مُستدعى" | **مستدعى فعلاً** في `server.py:520, 587, 633, 698, 729` وممرّر إلى `/civilization/*` عبر `server.py:747` (R-004 أصلحه؛ M0 لم يُصالَح) | السجل § A |
+| 2 | `/health` "HTTP 200 دائماً" | **يعيد 503 عند `unhealthy`** (`server.py:345`) — R-004 أصلحه | السجل § B |
+| 3 | `src/` "فشل البناء" | **بناء ناجح** منذ R-013 (D-017) — `npm ci` + `npm run build` rc=0 | السجل § I |
+| 4 | `agents.yaml` "يُقرأ من سكربتات مستقلة" | **حُذف** في R-031b (D-025) — `ls agents.yaml` → Not found | السجل § O |
+| 5 | `agos-kernel/` (dash) "523 ملفاً" | **حُذف** في R-033 (D-026) — `ls agos-kernel/` → Not found | السجل § P |
+| 6 | `specialists/` "1,021 ملفاً / لا استيراد مُكتشف" | **موصولة اختيارياً** منذ R-032/D-037؛ 1,044 ملفاً متتبعاً | السجل § R |
+| 7 | `auto_route(message)` | **الاسم الأصلي للدالة `route()`** (`agent_civilization/routing/auto_router.py:213`؛ `civilization_routes.py` يستوردها كـalias تحت `auto_route`) | (rg مباشر) |
+| 8 | "Vite 5" | **Vite 8** (`web/package.json:21` — `vite ^8.3.4`) | (rg مباشر) |
+| 9 | "55 دليلاً / 1,981 ملفاً متتبعاً / 29 خارج specialists / 3 ملفات اختبار" | **10 أدلة جذرية متتبعة (بما فيها `.github/` و`.lovable/`) / 1,546 ملفاً متتبعاً / 33 خارج `specialists/` / 29 ملف اختبار `test_*.py`** | السجل §§ D, E, M |
+
+### الفحوص (خط الأساس، رموز خروج)
+| الفحص | النتيجة | rc |
+|---|---|---|
+| `python -m pytest tests/ -q` | `435 passed, 3 skipped, 4 deselected` | 0 |
+| `ruff check --select F,E722 ...` | `All checks passed!` | 0 |
+| `cd web && npm ci --engine-strict && npm run build` | `found 0 vulnerabilities` + `✓ built in 129ms` | 0 |
+| `npm ci --engine-strict && npm run build` (الجذر) | `found 0 vulnerabilities` + `✓ built` | 0 |
+
+مطابقة تماماً لسجل 121 في PROJECT_STATE (دفعة M6/54) — لا انحدار.
+
+### الحدود (صدقاً)
+- لا كود تطبيقي ولا بيانات ولا سكربتات تغيّرت — توثيق خالص.
+- **وثائق إضافية مُصالحة أثناء العمل (اكتشاف إضافي)**: `DATA_MODEL.md` (رأس + `agents.yaml` وسم حذفه)، `DOMAIN.md` (specialists موصولة اختيارياً + الاسم الأصلي للدالة `route()` مع توضيح الاسم المستورد `auto_route`). QUALITY وSECURITY وOPERATIONS وOPEN_QUESTIONS وRISKS فُحصت ولا ادعاءات قديمة فيها تخص هذه المصالحة (QUALITY لديها قسم "الحالة الحالية" يعمل كمرجع).
+- 66 اختباراً فشلوا محلياً قبل تثبيت `pytest-asyncio` — سبب بيئة تحرير (CI يثبته صراحةً؛ OPERATIONS.md يوثق فصل تبعيات الاختبار عن `requirements.txt` بقرار موثق — R-091)؛ بعد التثبيت نجح كل شيء.
