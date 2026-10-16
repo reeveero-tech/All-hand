@@ -59,7 +59,7 @@ async def test_outcomes_recorded_for_http_ok_http_error_and_exception(monkeypatc
         assert st.storage_stats()["last_ok"] is True
         box["code"] = 401
         assert await s.insert_task("t2", "analyst", "p") is False      # layer contract unchanged
-        assert await s.get_tasks() == []
+        assert await s.get_tasks(scope="t1_tenant") == []  # SEC-02: reads are always scoped
         stats = st.storage_stats()
         assert stats["last_ok"] is False
         assert stats["last_error"]["operation"] == "get_tasks"

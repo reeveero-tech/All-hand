@@ -142,7 +142,15 @@ jobs:
           set -o pipefail
           LOG="$GITHUB_WORKSPACE/docker_runtime.log"
           : > "$LOG"
-          docker run -d --name agos-r040 -p 18000:8000 agos:r040-smoke
+          # SEC-02 (R-138): one ephemeral CI tenant (random per run, user role,
+          # no AGOS_API_KEY) so the runtime-safety step can submit a task.
+          CI_TENANT_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')
+          echo "::add-mask::$CI_TENANT_KEY"
+          echo "CI_TENANT_KEY=$CI_TENANT_KEY" >> "$GITHUB_ENV"
+          CI_TENANT_SHA=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(sys.argv[1].encode()).hexdigest())' "$CI_TENANT_KEY")
+          docker run -d --name agos-r040 -p 18000:8000 \
+            -e AGOS_TENANT_KEYS="[{\"tenant\": \"ci\", \"key_sha256\": \"$CI_TENANT_SHA\", \"role\": \"user\"}]" \
+            agos:r040-smoke
           echo "container_started_at=$(date -u +%FT%TZ)" | tee -a "$LOG"
           # Bounded startup wait: poll /health up to ~30s, fail fast on container exit.
           ok=0
@@ -174,17 +182,27 @@ jobs:
           uid=$(docker exec agos-r040 id -u)
           echo "container_uid=$uid" | tee -a "$LOG"
           [ "$uid" != "0" ] || { echo "FAIL: container runs as root" | tee -a "$LOG"; exit 1; }
-          # Open mode (no AGOS_API_KEY): submitted code must NOT run.
+          # SEC-02 (R-138): an anonymous client cannot submit or read tasks at all.
+          code=$(curl -s -o /tmp/anon.json -w '%{http_code}' -X POST http://localhost:18000/api/tasks \
+                 -H 'Content-Type: application/json' -d '{"specialization":"test_runner","prompt":"print(1)"}')
+          echo "anonymous_post_api_tasks=$code $(cat /tmp/anon.json)" | tee -a "$LOG"
+          [ "$code" = "401" ] || { echo "FAIL: anonymous task submission not refused" | tee -a "$LOG"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:18000/api/tasks)
+          echo "anonymous_get_api_tasks=$code" | tee -a "$LOG"
+          [ "$code" = "401" ] || { echo "FAIL: anonymous task listing not refused" | tee -a "$LOG"; exit 1; }
+          # No AGOS_API_KEY (open code-exec policy, R-100): even an authenticated
+          # tenant's submitted code must NOT run.
           tid=$(curl -s -X POST http://localhost:18000/api/tasks -H 'Content-Type: application/json' \
+                -H "X-API-Key: $CI_TENANT_KEY" \
                 -d '{"specialization":"test_runner","prompt":"print(1)"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["task_id"])')
           for i in $(seq 1 20); do
-            curl -s "http://localhost:18000/api/tasks/$tid" > /tmp/task.json
+            curl -s -H "X-API-Key: $CI_TENANT_KEY" "http://localhost:18000/api/tasks/$tid" > /tmp/task.json
             grep -q '"status": *"\(completed\|failed\)"' /tmp/task.json && break
             sleep 0.5
           done
           echo "open_mode_test_runner:" | tee -a "$LOG"; cat /tmp/task.json | tee -a "$LOG"; echo | tee -a "$LOG"
           grep -q 'disabled in open mode' /tmp/task.json || { echo "FAIL: open-mode code execution not refused" | tee -a "$LOG"; exit 1; }
-          echo "PASS: non-root container; open-mode code execution refused" | tee -a "$LOG"
+          echo "PASS: non-root container; anonymous access refused (401); open-mode code execution refused" | tee -a "$LOG"
 
       - name: Collect diagnostics
         if: always()

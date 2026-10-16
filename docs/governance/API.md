@@ -1,6 +1,6 @@
 # الواجهات (API)
 
-> **آخر تحديث**: 2026-10-15 — R-132 (مجمّعات الخيوط؛ لا تغيير في العقد). قبلها R-131 (توجيه `/api/chat` مع LLM بلا مفتاح). قبلها 2026-10-14 — بعد R-104c2 (مسار النص في `data_processor`: الحمولة تصل LLM بالتعليمة **والبيانات** معاً — راجع الملاحظات)
+> **آخر تحديث**: 2026-10-16 — **R-138 (SEC-02، D-056): متعدد المستأجرين** — كل مسار يقرأ أو يغيّر بيانات مستأجر (المهام، الذاكرة، التعلم، الأحداث، تدفق SSE، `/api/chat`، `/civilization/execute`) يتطلب `X-API-Key` صالحاً يربطه الخادم بمستأجر (`AGOS_TENANT_KEYS` أو `AGOS_API_KEY`=المشغّل/admin)؛ المفتاح الخاطئ 401 (كان 403)؛ مهمة مستأجر آخر 404 كالمفقودة؛ `?all_tenants=true` للدور admin فقط (وإلا 403)؛ بلا إعداد مفاتيح كل هذه المسارات 401. تسجيل/حذف الوكلاء الخارجيين للدور admin. قبلها 2026-10-15 — R-132 (مجمّعات الخيوط؛ لا تغيير في العقد). قبلها R-131 (توجيه `/api/chat` مع LLM بلا مفتاح). قبلها 2026-10-14 — بعد R-104c2 (مسار النص في `data_processor`: الحمولة تصل LLM بالتعليمة **والبيانات** معاً — راجع الملاحظات)
 > (تحديث سابق: 2026-10-12 — R-041: مصادلة مع الكود الفعلي وتصحيح أوصاف الحماية القديمة)
 > **المصدر**: قراءة مباشرة من `server.py` و`agent_civilization/civilization_routes.py`
 
@@ -17,21 +17,21 @@
 | 3 | `/health/live` | GET | لا | liveness |
 | 4 | `/health/ready` | GET | لا | readiness |
 | 5 | `/metrics` | GET | لا | Prometheus (تصدير صحي — أُصلح في R-003b) |
-| 6 | `/api/system/status` | GET | لا | healthCheckPath في render.yaml |
+| 6 | `/api/system/status` | GET | لا | healthCheckPath في render.yaml؛ SEC-02: كتلة `experience` إعدادات فقط (`enabled`, `max_entries`, `persistence_file`, `scope`) — لا عدادات ذاكرة/تعلّم؛ العدادات التشغيلية الإجمالية (`tasks_*`، `tasks_in_db`) أعداد بلا محتوى |
 | 7 | `/api/agents` | GET | لا | `?specialization=` اختياري |
 | 8 | `/api/specializations` | GET | لا | |
-| 9 | `/api/tasks` | POST | `verify_api_key` (401/403 إن فُعّل `AGOS_API_KEY`) | 202 Accepted |
-| 10 | `/api/tasks` | GET | لا | `?limit=`, يعود للذاكرة إذا فشل Supabase؛ مع التخزين `source=database` و`result`/`event_data` كائنات JSON (R-042) |
-| 11 | `/api/tasks/{task_id}` | GET | لا | 404 إن لم توجد |
-| 12 | `/api/events` | GET | لا | |
-| 13 | `/api/events/stream` | GET | لا | SSE |
-| 14 | `/api/chat` | POST | `verify_api_key` (401/403 إن فُعّل `AGOS_API_KEY`) | توجيه تلقائي: LLM إن توفر **بمفتاح** وإلا `routing.route()` (R-106؛ R-131: لا توجيه عبر LLM بلا مفتاح)؛ حقل `routing` |
-| 15 | `/api/agents/external` | POST | `verify_api_key` — يفحص قيمة المفتاح (R-004) | 201؛ 400 `url rejected` لعنوان غير عام في الوضع المفتوح (R-100) |
-| 16 | `/api/agents/external/{name}` | **DELETE** | `verify_api_key` — يفحص قيمة المفتاح (R-004) | |
+| 9 | `/api/tasks` | POST | `require_principal` (SEC-02): 401 بلا مفتاح/بمفتاح خاطئ/بلا إعداد مفاتيح | 202 Accepted؛ المالك = مستأجر المفتاح (أي `tenant_id` في الجسم أو الترويسات يُتجاهل) |
+| 10 | `/api/tasks` | GET | `require_principal` (SEC-02) | مهام مستأجر المتصل فقط؛ `?limit=`، `?all_tenants=true` (admin فقط، وإلا 403)؛ يعود للذاكرة إذا فشل Supabase؛ مع التخزين `source=database` و`result`/`event_data` كائنات JSON (R-042)؛ صفوف بلا `tenant_id` لا تظهر لمستأجر |
+| 11 | `/api/tasks/{task_id}` | GET | `require_principal` (SEC-02) | 404 `task not found` إن لم توجد **أو كانت لمستأجر آخر** (رد مطابق لا يكشف الوجود)؛ `?all_tenants=true` admin فقط |
+| 12 | `/api/events` | GET | `require_principal` (SEC-02) | أحداث مستأجر المتصل فقط (`tenant_id=eq.` في PostgREST)؛ `?all_tenants=true` admin فقط |
+| 13 | `/api/events/stream` | GET | `require_principal` (SEC-02) | SSE من طابور مستأجر المتصل فقط؛ الواجهة تقرؤه بـfetch مع `X-API-Key` (`openEventStream`) لأن EventSource لا يرسل ترويسات |
+| 14 | `/api/chat` | POST | `require_principal` (SEC-02) | توجيه تلقائي: LLM إن توفر **بمفتاح** وإلا `routing.route()` (R-106؛ R-131: لا توجيه عبر LLM بلا مفتاح)؛ حقل `routing` |
+| 15 | `/api/agents/external` | POST | `require_admin` (SEC-02): 401 بلا مفتاح صالح، 403 لدور user | 201؛ الوكيل الخارجي مشترك بين المستأجرين (يستقبل مهام `external` للجميع) فالتسجيل للمدير؛ المدير قد يستهدف شبكة خاصة كما كان حامل `AGOS_API_KEY` (R-100) |
+| 16 | `/api/agents/external/{name}` | **DELETE** | `require_admin` (SEC-02) | |
 | 17 | `/{full_path:path}` | GET | لا | catch-all يخدم `web/dist` |
-| 21 | `/api/memory` | GET | لا | R-103: `?q=&specialization=&limit=` (≤100) — ذكريات المهام السابقة |
-| 22 | `/api/learning` | GET | لا | R-103: ما قيس لكل تخصص ونوع مدخل |
-| 23 | `/api/memory` | **DELETE** | يتطلب `AGOS_API_KEY` مهيأً: 403 في الوضع المفتوح، ثم 401/403 للمفتاح | R-103: مسح الذاكرة والتعلم |
+| 21 | `/api/memory` | GET | `require_principal` (SEC-02) | R-103: `?q=&specialization=&limit=` (≤100) — ذكريات مهام مستأجر المتصل فقط؛ `stats` للمستأجر؛ `?all_tenants=true` admin (يضيف `tenant_id` لكل ذكرى و`quarantined_untenanted`) |
+| 22 | `/api/learning` | GET | `require_principal` (SEC-02) | R-103: ما قيس من مهام مستأجر المتصل فقط (`tenant_id` في الرد)؛ `?all_tenants=true` admin |
+| 23 | `/api/memory` | **DELETE** | `require_principal` (SEC-02): 401 بلا مفتاح أو بلا إعداد مفاتيح (كان 403) | يمسح ذاكرة وتعلّم مستأجر المتصل فقط؛ `?all_tenants=true` (admin فقط) يمسح الكل بما فيه المعزول |
 
 ## ملاحظات السلوك الدلالي (R-104c2)
 
@@ -45,7 +45,7 @@
 |---|---|---|---|
 | 18 | `/civilization/registry` | GET | `verify_api_key` إن فُعّل (R-004/D-013) |
 | 19 | `/civilization/plan` | POST | `verify_api_key` إن فُعّل (R-004/D-013) |
-| 20 | `/civilization/execute` | POST | `verify_api_key` إن فُعّل (R-004/D-013) |
+| 20 | `/civilization/execute` | POST | `require_principal` (SEC-02) — يخزّن مهمة بمالكها ويشغّل الذاكرة للمستأجر |
 
 ## ملاحظات مُتحققة
 

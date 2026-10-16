@@ -19,9 +19,10 @@ JWT_SECRET="${JWT_SECRET:-r042-local-test-secret-not-a-real-key-000}"
 PGRST_PORT="${PGRST_PORT:-3000}"
 PROXY_PORT="${PROXY_PORT:-54321}"
 
-echo "== apply schema (Supabase role emulation + docs/sql/001_init.sql)"
+echo "== apply schema (Supabase role emulation + docs/sql/001_init.sql + 002_tenant_isolation.sql)"
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f scripts/r042/supabase_roles.sql
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f docs/sql/001_init.sql
+psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f docs/sql/002_tenant_isolation.sql  # SEC-02
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f scripts/r042/grants_after_schema.sql
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -c "select table_name, column_name, data_type from information_schema.columns where table_schema='public' order by table_name, ordinal_position"
 

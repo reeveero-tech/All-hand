@@ -7,9 +7,10 @@ from fastapi.testclient import TestClient
 
 
 @pytest.fixture
-def client():
+def client(tenant_auth):
     import server
-    return TestClient(server.app)
+    # SEC-02: /civilization/execute needs an authenticated tenant
+    return TestClient(server.app, headers=tenant_auth.headers)
 
 
 def test_civilization_registry(client):

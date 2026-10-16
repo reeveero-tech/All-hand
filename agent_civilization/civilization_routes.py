@@ -29,11 +29,16 @@ class ExecuteRequest(BaseModel):
     data: Optional[Any] = None
 
 
-def register_civilization_routes(app, civilization, tasks_store, prune_tasks, verify_api_key=None):
+def register_civilization_routes(app, civilization, tasks_store, prune_tasks, verify_api_key=None,
+                                 require_principal=None):
     """Attach civilization routes to an existing FastAPI app.
 
     When `verify_api_key` is provided (the server's own helper), the routes
     enforce the API key exactly like the /api routes (R-004).
+
+    SEC-02: /civilization/execute stores a task and runs memory for a tenant,
+    so it needs `require_principal` (the server's identity check). Without it
+    the route refuses every request — it never runs without a tenant.
     """
     api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -59,7 +64,9 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
 
     @app.post("/civilization/execute")
     async def execute(req: ExecuteRequest, api_key: Optional[str] = Security(api_key_header)):
-        _guard(api_key)
+        if require_principal is None:
+            raise HTTPException(401, "authentication is not configured for this route")
+        principal = require_principal(api_key)
         if not req.message.strip():
             raise HTTPException(400, "message is required")
         plan = auto_route(req.message)
@@ -70,6 +77,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             "plan": plan,
             "status": "running",
             "created_at": time.time(),
+            "tenant_id": principal.tenant_id,
         }
         prune_tasks()
         result = await execute_plan(plan, civilization, data=req.data)

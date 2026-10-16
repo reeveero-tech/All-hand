@@ -89,7 +89,7 @@ def test_rejected_write_returns_false_and_logs(monkeypatch, caplog):
 def test_rejected_read_returns_empty_and_logs(monkeypatch, caplog):
     st, _ = _store(monkeypatch, 500)
     with caplog.at_level(logging.WARNING, logger="storage"):
-        assert asyncio.run(st.get_events()) == []
+        assert asyncio.run(st.get_events(scope="some_tenant")) == []  # SEC-02: reads are always scoped
     assert "get_events rejected: HTTP 500" in caplog.text
 
 

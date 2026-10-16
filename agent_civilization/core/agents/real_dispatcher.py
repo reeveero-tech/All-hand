@@ -1445,10 +1445,15 @@ async def _self_developer(work: Dict[str, Any]) -> Dict[str, Any]:
 
     retests: List[Dict[str, Any]] = []
     retired = 0
-    if _exp.enabled():
+    # SEC-02 (R-138): only the requesting tenant's remembered failures are
+    # retested (and shown); with no tenant there is nothing to retest. The
+    # retest runs in the same tenant context, so what it stores stays there.
+    tenant = _exp.tenancy.current_tenant()
+    if _exp.enabled() and tenant is not None:
         mem = _exp.memory()
         failed = [e for e in mem._memories.values()
-                  if e.metadata.get("layer") == "experience" and not e.metadata.get("ok")
+                  if e.metadata.get("tenant_id") == tenant
+                  and e.metadata.get("layer") == "experience" and not e.metadata.get("ok")
                   and e.metadata.get("specialization") != "self_developer" and e.metadata.get("goal")]
         failed.sort(key=lambda e: e.created_at, reverse=True)
         goals: List[str] = []

@@ -1,0 +1,33 @@
+# SEC-02 (R-138) — second CI run of PR #139 (run 38833997132): test job failed on 3.11 with coverage
+# FAILED tests/test_r131_keyless_admission.py::test_keyed_provider_still_routes_by_llm - KeyError: 'routed_to'
+# (passed in the first run 38833456355 and in every local run). Root cause measured below: the
+# module-level rate-limit window server.request_counts['testclient'] (100 req / 60 s) is shared across
+# test files and the whole suite fits in one window.
+
+## probe plugin (/tmp/rl_probe.py): prints the window count before each r106/r131 test
+import pytest
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_setup(item):
+    if "test_r131" in item.nodeid or "test_r106" in item.nodeid:
+        import sys
+        srv = sys.modules.get("server")
+        if srv:
+            n = len(srv.request_counts.get("testclient", []))
+            print(f"\nRLPROBE {item.nodeid.split('::')[-1]} count_in_window={n} limit={srv.RATE_LIMIT_REQUESTS}")
+
+## main 53f9343, Python 3.11.15, CI command (pytest tests/ --cov=agent_civilization --cov=agos_kernel):
+RLPROBE test_chat_does_not_route_through_keyless_llm count_in_window=94 limit=100
+RLPROBE test_keyed_provider_still_routes_by_llm count_in_window=95 limit=100
+## this branch before the fix (R-103 test edits add 3 requests):
+RLPROBE test_chat_does_not_route_through_keyless_llm count_in_window=97 limit=100
+RLPROBE test_keyed_provider_still_routes_by_llm count_in_window=98 limit=100
+# -> a slower runner (more task polls) crosses 100 -> 429 {detail: Rate limit exceeded} -> KeyError.
+# The same mechanism is the hand-picked-order r083 failure noted in 221 (fails on main too).
+
+## fix: tests/conftest.py autouse _fresh_rate_limit_window (clears server.request_counts before each test;
+## rate limiting inside a test unchanged; no test relied on carry-over: grep 429/request_counts in tests/)
+## after, Python 3.11.15:
+RLPROBE test_keyed_provider_still_routes_by_llm count_in_window=1 limit=100
+================ 587 passed, 3 skipped, 4 deselected in 45.58s =================
+## hand-picked order that failed in 221 (security,r101,r100,r103,r125,web_api_contract,r083), 3.14.3:
+============================= 106 passed in 9.77s ==============================

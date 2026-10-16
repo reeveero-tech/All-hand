@@ -98,11 +98,55 @@ test('401 -> clear Arabic message, status kept, auth event dispatched', async ()
   assert.deepEqual(events, [{ status: 401 }]);
 });
 
-test('403 with a stored key -> "key is wrong" message', async () => {
+test('SEC-02: 401 with a stored key -> "key is wrong" message (server answers 401 for an invalid key)', async () => {
   api.setApiKey('wrong');
-  nextResponse = { status: 403, body: { detail: 'Invalid API key' } };
-  await assert.rejects(api.sendChat('x'), (e) => e.status === 403 && /غير صحيح/.test(e.message));
+  nextResponse = { status: 401, body: { detail: 'Invalid API key' } };
+  await assert.rejects(api.sendChat('x'), (e) => e.status === 401 && /غير صحيح/.test(e.message));
+  assert.deepEqual(events, [{ status: 401 }]);
+});
+
+test('SEC-02: 403 with a valid key -> admin role message', async () => {
+  api.setApiKey('user-key');
+  nextResponse = { status: 403, body: { detail: 'admin role required' } };
+  await assert.rejects(api.registerExternalAgent('n', 'https://x.example', '', ''),
+    (e) => e.status === 403 && /صلاحية مدير/.test(e.message));
   assert.deepEqual(events, [{ status: 403 }]);
+});
+
+test('SEC-02: server without credentials -> "authentication not configured" message', async () => {
+  nextResponse = { status: 401, body: { detail: 'authentication is not configured on this server: x' } };
+  await assert.rejects(api.fetchTasks(), (e) => e.status === 401 && /غير مهيأة/.test(e.message));
+});
+
+test('SEC-02: the event stream is not opened without a key', async () => {
+  const s = api.openEventStream(() => {});
+  await new Promise((r) => setTimeout(r, 10));
+  s.close();
+  assert.equal(calls.length, 0);
+});
+
+test('SEC-02: the event stream sends X-API-Key and parses data events', async () => {
+  api.setApiKey('tenant-a-key');
+  const enc = new TextEncoder();
+  const chunks = ['data: {"type":"task_created","task_id":"t1"}\n\nda', 'ta: {"type":"heartbeat"}\n\n'];
+  const prev = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init });
+    let i = 0;
+    return {
+      ok: true, status: 200,
+      body: { getReader: () => ({ read: async () => (i < chunks.length
+        ? { value: enc.encode(chunks[i++]), done: false } : { value: undefined, done: true }) }) },
+    };
+  };
+  const got = [];
+  const s = api.openEventStream((e) => got.push(e), { retryMs: 60000 });
+  await new Promise((r) => setTimeout(r, 20));
+  s.close();
+  globalThis.fetch = prev;
+  assert.equal(calls[0].url, '/api/events/stream');
+  assert.equal(calls[0].init.headers['X-API-Key'], 'tenant-a-key');
+  assert.deepEqual(got, [{ type: 'task_created', task_id: 't1' }, { type: 'heartbeat' }]);
 });
 
 test('other errors keep the server detail', async () => {

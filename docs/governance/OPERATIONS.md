@@ -58,7 +58,8 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 
 | المتغير | المكان | الافتراضي |
 |---|---|---|
-| `AGOS_API_KEY` | server.py | `""` |
+| `AGOS_API_KEY` | server.py | `""` — منذ R-138 مفتاح المشغّل: principal `operator`/`admin` |
+| `AGOS_TENANT_KEYS` (R-138، SEC-02، D-056) | core/tenancy.py | غير مضبوط. قائمة JSON `[{"tenant","key_sha256","role"}]` (تجزئة SHA-256 للمفتاح، الدور `user` افتراضياً أو `admin`). أي خلل → الخادم لا يقلع (`CredentialsError`). بلا هذا ولا `AGOS_API_KEY`: كل مسارات بيانات المستأجرين 401 |
 | `AGOS_ALLOWED_ORIGINS` | server.py | `"*"` |
 | `AGOS_RATE_LIMIT_REQUESTS` | server.py | 100 |
 | `AGOS_RATE_LIMIT_WINDOW` | server.py | 60 |
@@ -88,6 +89,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 
 ## سياسة الأدوات الحقيقية (R-100، D-044)
 
+- **R-138 (SEC-02) — قبل نشره على بيئة قائمة**: (1) طبّق `docs/sql/002_tenant_isolation.sql` على قاعدة Supabase أولاً (وإلا تفشل كتابات المهام والأحداث — الخادم يستمر بالذاكرة). (2) هيّئ المفاتيح: `AGOS_TENANT_KEYS` لكل مستأجر (`python3 -c "import hashlib,sys;print(hashlib.sha256(sys.argv[1].encode()).hexdigest())" '<key>'` ينتج `key_sha256`) و/أو `AGOS_API_KEY` للمشغّل؛ بلا أي منهما تعرض الواجهة «المصادقة غير مهيأة» ولا تُنشأ مهام. (3) المهام والأحداث المخزنة قبل الترحيل `tenant_id = NULL` تبقى معزولة — يراها مفتاح admin عبر `?all_tenants=true` فقط. (4) الواجهة تقرأ تدفق الأحداث بـfetch مع المفتاح؛ مفتاح user لا يسجّل وكلاء خارجيين (403).
 - **قرار المشغّل عند النشر**: لتفعيل `test_runner` اضبط `AGOS_API_KEY` (موصى به — يحمي كل المسارات المنشئة للمهام) أو `AGOS_ALLOW_CODE_EXEC=1` (يسمح للجميع في الوضع المفتوح — غير موصى به على عنوان عام). بلا أي منهما تُرفض مهام `test_runner` برسالة صريحة وتبقى التخصصات الـ19 الأخرى تعمل.
 - **الواجهة مع المفتاح (R-101)**: حين يكون `AGOS_API_KEY` مضبوطاً يظهر في الواجهة شريط «مفتاح API»؛ يدخل المستخدم المفتاح فيُحفظ في sessionStorage للتبويب فقط ويُرسل كـ`X-API-Key`. القراءة (اللوحة، المهام، الأحداث، SSE) تعمل بلا مفتاح؛ الكتابة (مهام، محادثة، وكلاء خارجيون) تتطلبه. **لا تضع المفتاح في `VITE_*`** — يصير جزءاً من الحزمة العامة.
 - **التحقق على أي commit**: `python scripts/run_r100_safety_probe.py` (rc=0 فقط إذا كانت كل المتجهات آمنة) و`GET /api/system/status` → `security.tool_policy`.

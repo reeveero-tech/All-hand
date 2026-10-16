@@ -47,7 +47,7 @@ def test_external_register_rejects_wrong_key(client, monkeypatch):
         headers={"X-API-Key": "wrong-key"},
         json={"name": "x", "url": "https://example.com"},
     )
-    assert r.status_code == 403
+    assert r.status_code == 401  # SEC-02: an invalid key is not an identity -> 401 (was 403)
 
 
 def test_external_register_rejects_no_key(client, monkeypatch):

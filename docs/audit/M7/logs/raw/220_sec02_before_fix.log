@@ -1,0 +1,776 @@
+# SEC-02 (R-138) — اختبارات العزل على الكود القديم قبل الإصلاح
+# base: 53f9343 Merge pull request #138 from reeveero-tech/m7/r137-sec01-redirect-ssrf (git worktree of main; only tests/test_sec02_tenant_isolation.py + the new helper agent_civilization/core/tenancy.py copied in — the old server never imports it)
+# python: Python 3.14.3
+# cmd: python3 -m pytest tests/test_sec02_tenant_isolation.py -q -p no:cacheprovider -rf -k 'not events/stream'
+# (the 6 /api/events/stream parametrizations are deselected on the old code: the anonymous stream is accepted and never ends, so TestClient blocks — shown by the probe at the end instead)
+
+## failure reasons (grouped)
+     41 E    +  where 200 = <Response [200 OK]>.status_code
+     36 E   assert 200 == 401
+     10 E   Failed: DID NOT RAISE CredentialsError
+      9 E   KeyError: 'tenant_id'
+      9 E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+      6 E    +  where 403 = <Response [403 Forbidden]>.status_code
+      6 E     
+      5 E   assert 403 == 401
+      5 E   assert 202 == 401
+      5 E    +  where 202 = <Response [202 Accepted]>.status_code
+      4 E   assert 404 == 401
+      4 E    +  where 404 = <Response [404 Not Found]>.status_code
+      3 E    +      where get = <starlette.testclient.TestClient object at >.get
+      3 E     Use -v to get more diff
+      2 E   AssertionError: assert 200 == 404
+      2 E   AssertionError: /api/tasks
+      1 E   assert False
+      1 E   assert 200 == 404
+      1 E   assert 200 == 403
+      1 E   assert (403 == 200)
+      1 E   assert 'secret-regression' not in '{"count":2,...e":"memory"}'
+      1 E   assert 'secret-old-memory' not in '{"count":1,...ation":{}}}}'
+      1 E   TypeError: event_stream() got an unexpected keyword argument 'api_key'
+      1 E   TypeError: SupabaseStorage.insert_task() got an unexpected keyword argument 'tenant_id'
+      1 E   AttributeError: module 'server' has no attribute 'tenant_events'
+      1 E   AttributeError: module 'server' has no attribute '_publish'
+      1 E   AssertionError: assert {'1a2f9e96f7f...a5ce112cc336'} == {'a376b1d5d65...a5ce112cc336'}
+      1 E   AssertionError: assert [{'memory_id'... 20 30', ...}] == []
+      1 E   AssertionError: assert [{'goal': 'se...memories': 1}] == []
+      1 E   AssertionError: assert 201 == 401
+      1 E   AssertionError: assert 200 == 401
+      1 E   AssertionError: assert ({'memory': {'recalled': [], 'stored_id': 'mem_20261016005420797738_ce3e8b32', 'fallback_used': None}, 'learning': {'pr...samples': 0}, 'after': {'specialization': 'analyst', 'input_kin
+      1 E   AssertionError: ('/civilization/execute', 200, '{"task_id":"13e104d5-51ae-4f0e-9407-aca6e9457b3f","primary":"analyst","reason":"طلب عا...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analys
+      1 E   AssertionError: ('/civilization/execute', 'wrong', '{"task_id":"2f43339a-0c50-4872-a267-484e763cb8ec","primary":"analyst","reason":"طل...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analysis 
+      1 E   AssertionError: ('/civilization/execute', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"task_id":"ab70ebc7-9335-4da8-9117-1594d5af34df","pr...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analysis in
+      1 E   AssertionError: ('/civilization/execute', '', '{"task_id":"dfb9fcac-a21c-4691-aa1f-91b9205e84ea","primary":"analyst","reason":"طلب عام...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analy
+      1 E   AssertionError: ('/civilization/execute', ' ', '{"task_id":"6ca48fba-0b37-4ffd-8f7c-38f0e0ec4389","primary":"analyst","reason":"طلب عا...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analys
+      1 E   AssertionError: ('/api/tasks/{tid}', 200, '{"id":"fe4110e23fae","specialization":"analyst","prompt":"secret-sec02-nocred 4 5 6","statu...rs","samples":1,"success_rate":1.0,"avg_duration_ms":0.1}}}},"agent":"a
+      1 E   AssertionError: ('/api/tasks/{tid}', 'wrong', '{"detail":"task not found"}')
+      1 E   AssertionError: ('/api/tasks/{tid}', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"detail":"task not found"}')
+
+## full pytest output
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /tmp/sec02_old
+configfile: pytest.ini
+plugins: platformdirs-4.13.1, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 105 items / 6 deselected / 99 selected
+
+tests/test_sec02_tenant_isolation.py FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 35%]
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF...FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF         [100%]
+
+=================================== FAILURES ===================================
+___ test_no_credentials_rejected_on_every_tenant_route[get-/api/tasks-None] ____
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/api/tasks', 200, '{"count":1,"tasks":[{"id":"c3e67f740643","specialization":"analyst","prompt":"secret-sec02-nocred...cess_rate":1.0,"avg_duration_ms":0.3}}}},"agent":"analyst_0000","finished_at":1792112057.0843642}],"source":"memory"}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_no_credentials_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None] _
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/api/tasks/{tid}', 200, '{"id":"fe4110e23fae","specialization":"analyst","prompt":"secret-sec02-nocred 4 5 6","statu...rs","samples":1,"success_rate":1.0,"avg_duration_ms":0.1}}}},"agent":"analyst_0000","finished_at":1792112057.1457357}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+___ test_no_credentials_rejected_on_every_tenant_route[get-/api/memory-None] ___
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/api/memory', 200, '{"count":1,"memories":[{"memory_id":"mem_20261016005417185852_56be7dd9","specialization":"analys...samples":1,"by_input_kind":{"numbers":{"samples":1,"success_rate":1.0,"avg_duration_ms":0.1}},"success_rate":1.0}}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+__ test_no_credentials_rejected_on_every_tenant_route[get-/api/learning-None] __
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/api/learning', 200, '{"enabled":true,"memories":1,"max_entries":2000,"persistence_file":false,"learning":{"tasks":1..."samples":1,"by_input_kind":{"numbers":{"samples":1,"success_rate":1.0,"avg_duration_ms":0.1}},"success_rate":1.0}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_no_credentials_rejected_on_every_tenant_route[delete-/api/memory-None] __
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/api/memory', 403, '{"detail":"clearing memory requires AGOS_API_KEY to be configured"}')
+E   assert 403 == 401
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+___ test_no_credentials_rejected_on_every_tenant_route[get-/api/events-None] ___
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/api/events', 200, '{"count":0,"events":[]}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+__ test_no_credentials_rejected_on_every_tenant_route[post-/api/tasks-body7] ___
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/api/tasks', 202, '{"task_id":"e4eb436fb416","status":"queued"}')
+E   assert 202 == 401
+E    +  where 202 = <Response [202 Accepted]>.status_code
+___ test_no_credentials_rejected_on_every_tenant_route[post-/api/chat-body8] ___
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/api/chat', 200, '{"task_id":"cd77d10c3b9d","routed_to":"analyst","routing":{"method":"keywords","reason":"طلب عام —...,"after":{"specialization":"analyst","input_kind":"numbers","samples":2,"success_rate":1.0,"avg_duration_ms":0.1}}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_no_credentials_rejected_on_every_tenant_route[post-/civilization/execute-body9] _
+tests/test_sec02_tenant_isolation.py:127: in test_no_credentials_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, r.status_code, r.text)
+E   AssertionError: ('/civilization/execute', 200, '{"task_id":"13e104d5-51ae-4f0e-9407-aca6e9457b3f","primary":"analyst","reason":"طلب عا...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analysis integrity: 4/4 checks passed","elapsed_s":0.001}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+__ test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks-None-wrong] __
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks', 'wrong', '{"count":0,"tasks":[],"source":"memory"}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____ test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks-None-] _____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks', '', '{"count":0,"tasks":[],"source":"memory"}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____ test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks-None- ] ____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks', ' ', '{"count":0,"tasks":[],"source":"memory"}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"count":0,"tasks":[],"source":"memory"}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None-wrong] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks/{tid}', 'wrong', '{"detail":"task not found"}')
+E   assert 404 == 401
+E    +  where 404 = <Response [404 Not Found]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None-] __
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks/{tid}', '', '{"detail":"task not found"}')
+E   assert 404 == 401
+E    +  where 404 = <Response [404 Not Found]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None- ] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks/{tid}', ' ', '{"detail":"task not found"}')
+E   assert 404 == 401
+E    +  where 404 = <Response [404 Not Found]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks/{tid}', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"detail":"task not found"}')
+E   assert 404 == 401
+E    +  where 404 = <Response [404 Not Found]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/memory-None-wrong] __
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/memory', 'wrong', '{"count":0,"memories":[],"stats":{"enabled":true,"memories":0,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____ test_invalid_key_rejected_on_every_tenant_route[get-/api/memory-None-] ____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/memory', '', '{"count":0,"memories":[],"stats":{"enabled":true,"memories":0,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+___ test_invalid_key_rejected_on_every_tenant_route[get-/api/memory-None- ] ____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/memory', ' ', '{"count":0,"memories":[],"stats":{"enabled":true,"memories":0,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/memory-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/memory', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"count":0,"memories":[],"stats":{"enabled":true,"memories":0,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/learning-None-wrong] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/learning', 'wrong', '{"enabled":true,"memories":0,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+___ test_invalid_key_rejected_on_every_tenant_route[get-/api/learning-None-] ___
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/learning', '', '{"enabled":true,"memories":0,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+__ test_invalid_key_rejected_on_every_tenant_route[get-/api/learning-None- ] ___
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/learning', ' ', '{"enabled":true,"memories":0,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/learning-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/learning', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"enabled":true,"memories":0,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[delete-/api/memory-None-wrong] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/memory', 'wrong', '{"detail":"clearing memory requires AGOS_API_KEY to be configured"}')
+E   assert 403 == 401
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+__ test_invalid_key_rejected_on_every_tenant_route[delete-/api/memory-None-] ___
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/memory', '', '{"detail":"clearing memory requires AGOS_API_KEY to be configured"}')
+E   assert 403 == 401
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+__ test_invalid_key_rejected_on_every_tenant_route[delete-/api/memory-None- ] __
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/memory', ' ', '{"detail":"clearing memory requires AGOS_API_KEY to be configured"}')
+E   assert 403 == 401
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[delete-/api/memory-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/memory', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"detail":"clearing memory requires AGOS_API_KEY to be configured"}')
+E   assert 403 == 401
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/events-None-wrong] __
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/events', 'wrong', '{"count":0,"events":[]}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____ test_invalid_key_rejected_on_every_tenant_route[get-/api/events-None-] ____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/events', '', '{"count":0,"events":[]}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+___ test_invalid_key_rejected_on_every_tenant_route[get-/api/events-None- ] ____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/events', ' ', '{"count":0,"events":[]}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[get-/api/events-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/events', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"count":0,"events":[]}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[post-/api/tasks-body7-wrong] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks', 'wrong', '{"task_id":"80f4c8cecdde","status":"queued"}')
+E   assert 202 == 401
+E    +  where 202 = <Response [202 Accepted]>.status_code
+___ test_invalid_key_rejected_on_every_tenant_route[post-/api/tasks-body7-] ____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks', '', '{"task_id":"1a75c257b684","status":"queued"}')
+E   assert 202 == 401
+E    +  where 202 = <Response [202 Accepted]>.status_code
+___ test_invalid_key_rejected_on_every_tenant_route[post-/api/tasks-body7- ] ___
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks', ' ', '{"task_id":"98a001af5bad","status":"queued"}')
+E   assert 202 == 401
+E    +  where 202 = <Response [202 Accepted]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[post-/api/tasks-body7-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/tasks', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"task_id":"54b98ecb0b88","status":"queued"}')
+E   assert 202 == 401
+E    +  where 202 = <Response [202 Accepted]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[post-/api/chat-body8-wrong] __
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/chat', 'wrong', '{"task_id":"4b958d861130","routed_to":"analyst","routing":{"method":"keywords","reason":"طلب ع...,"after":{"specialization":"analyst","input_kind":"numbers","samples":1,"success_rate":1.0,"avg_duration_ms":0.1}}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____ test_invalid_key_rejected_on_every_tenant_route[post-/api/chat-body8-] ____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/chat', '', '{"task_id":"64543a8dc3d7","routed_to":"analyst","routing":{"method":"keywords","reason":"طلب عام — ...,"after":{"specialization":"analyst","input_kind":"numbers","samples":1,"success_rate":1.0,"avg_duration_ms":0.1}}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+___ test_invalid_key_rejected_on_every_tenant_route[post-/api/chat-body8- ] ____
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/chat', ' ', '{"task_id":"e830321e7637","routed_to":"analyst","routing":{"method":"keywords","reason":"طلب عام —...,"after":{"specialization":"analyst","input_kind":"numbers","samples":1,"success_rate":1.0,"avg_duration_ms":0.1}}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[post-/api/chat-body8-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/api/chat', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"task_id":"7024295c60e1","routed_to":"analyst","routing":{"metho...,"after":{"specialization":"analyst","input_kind":"numbers","samples":1,"success_rate":1.0,"avg_duration_ms":0.1}}}}}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[post-/civilization/execute-body9-wrong] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/civilization/execute', 'wrong', '{"task_id":"2f43339a-0c50-4872-a267-484e763cb8ec","primary":"analyst","reason":"طل...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analysis integrity: 4/4 checks passed","elapsed_s":0.001}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[post-/civilization/execute-body9-] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/civilization/execute', '', '{"task_id":"dfb9fcac-a21c-4691-aa1f-91b9205e84ea","primary":"analyst","reason":"طلب عام...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analysis integrity: 4/4 checks passed","elapsed_s":0.001}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[post-/civilization/execute-body9- ] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/civilization/execute', ' ', '{"task_id":"6ca48fba-0b37-4ffd-8f7c-38f0e0ec4389","primary":"analyst","reason":"طلب عا...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analysis integrity: 4/4 checks passed","elapsed_s":0.001}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_invalid_key_rejected_on_every_tenant_route[post-/civilization/execute-body9-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx] _
+tests/test_sec02_tenant_isolation.py:136: in test_invalid_key_rejected_on_every_tenant_route
+    assert r.status_code == 401, (path, bad, r.text)
+E   AssertionError: ('/civilization/execute', 'a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', '{"task_id":"ab70ebc7-9335-4da8-9117-1594d5af34df","pr...is integrity: 4/4 checks passed","elapsed_s":0.0}],"final":"analysis integrity: 4/4 checks passed","elapsed_s":0.001}')
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_______________________ test_key_hash_as_key_is_rejected _______________________
+tests/test_sec02_tenant_isolation.py:142: in test_key_hash_as_key_is_rejected
+    assert client.get("/api/tasks", headers=H(_sha(keys["A"]))).status_code == 401
+E   AssertionError: assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+E    +    where <Response [200 OK]> = get('/api/tasks', headers={'X-API-Key': '346aa5181638a0463fb6c98184ee4eef8985ee842d17c6058c70ef93b230b61c'})
+E    +      where get = <starlette.testclient.TestClient object at 0x7f68a7f4a250>.get
+E    +      and   {'X-API-Key': '346aa5181638a0463fb6c98184ee4eef8985ee842d17c6058c70ef93b230b61c'} = H('346aa5181638a0463fb6c98184ee4eef8985ee842d17c6058c70ef93b230b61c')
+E    +        where '346aa5181638a0463fb6c98184ee4eef8985ee842d17c6058c70ef93b230b61c' = _sha('a-wATIJvO4pe6i2n9W1j05jgQcKw7V5H9O')
+_______ test_no_auth_configuration_means_no_access[get-/api/tasks-None] ________
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+____ test_no_auth_configuration_means_no_access[get-/api/tasks/{tid}-None] _____
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+_______ test_no_auth_configuration_means_no_access[get-/api/memory-None] _______
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+______ test_no_auth_configuration_means_no_access[get-/api/learning-None] ______
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+_____ test_no_auth_configuration_means_no_access[delete-/api/memory-None] ______
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+_______ test_no_auth_configuration_means_no_access[get-/api/events-None] _______
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+______ test_no_auth_configuration_means_no_access[post-/api/tasks-body7] _______
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+_______ test_no_auth_configuration_means_no_access[post-/api/chat-body8] _______
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+_ test_no_auth_configuration_means_no_access[post-/civilization/execute-body9] _
+tests/test_sec02_tenant_isolation.py:149: in test_no_auth_configuration_means_no_access
+    assert s.CREDENTIALS == {}
+           ^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'CREDENTIALS'
+__________ test_malformed_auth_configuration_fails_startup[not json] ___________
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_____________ test_malformed_auth_configuration_fails_startup[{}] ______________
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_____________ test_malformed_auth_configuration_fails_startup[[]] ______________
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+______ test_malformed_auth_configuration_fails_startup[[{"tenant": "a"}]] ______
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_ test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "abc"}]] _
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_ test_malformed_auth_configuration_fails_startup[[{"tenant": "bad tenant!", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000"}]] _
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_ test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000", "role": "root"}]] _
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_ test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000", "tenant_override": "b"}]] _
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_ test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000"}, {"tenant": "b", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000"}]] _
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_ test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}]] _
+tests/test_sec02_tenant_isolation.py:175: in test_malformed_auth_configuration_fails_startup
+    with pytest.raises(CredentialsError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE CredentialsError
+_____ test_forged_identity_headers_and_params_do_not_authenticate[forged0] _____
+tests/test_sec02_tenant_isolation.py:209: in test_forged_identity_headers_and_params_do_not_authenticate
+    assert r.status_code == 401, (path, q, forged)
+E   AssertionError: ('/api/tasks', '', {'X-Tenant-Id': 'tenant_a'})
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_____ test_forged_identity_headers_and_params_do_not_authenticate[forged1] _____
+tests/test_sec02_tenant_isolation.py:209: in test_forged_identity_headers_and_params_do_not_authenticate
+    assert r.status_code == 401, (path, q, forged)
+E   AssertionError: ('/api/tasks', '', {'X-User-Id': 'tenant_a'})
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_____ test_forged_identity_headers_and_params_do_not_authenticate[forged2] _____
+tests/test_sec02_tenant_isolation.py:209: in test_forged_identity_headers_and_params_do_not_authenticate
+    assert r.status_code == 401, (path, q, forged)
+E   AssertionError: ('/api/tasks', '', {'X-Tenant': 'tenant_a'})
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_____ test_forged_identity_headers_and_params_do_not_authenticate[forged3] _____
+tests/test_sec02_tenant_isolation.py:209: in test_forged_identity_headers_and_params_do_not_authenticate
+    assert r.status_code == 401, (path, q, forged)
+E   AssertionError: ('/api/tasks', '', {'Authorization': 'Bearer tenant_a'})
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+_____ test_forged_identity_headers_and_params_do_not_authenticate[forged4] _____
+tests/test_sec02_tenant_isolation.py:209: in test_forged_identity_headers_and_params_do_not_authenticate
+    assert r.status_code == 401, (path, q, forged)
+E   AssertionError: ('/api/tasks', '', {'X-Forwarded-User': 'tenant_a'})
+E   assert 200 == 401
+E    +  where 200 = <Response [200 OK]>.status_code
+____ test_forged_identity_does_not_change_an_authenticated_tenant[forged0] _____
+tests/test_sec02_tenant_isolation.py:219: in test_forged_identity_does_not_change_an_authenticated_tenant
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_sec02_tenant_isolation.py:219: in <genexpr>
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+               ^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+____ test_forged_identity_does_not_change_an_authenticated_tenant[forged1] _____
+tests/test_sec02_tenant_isolation.py:219: in test_forged_identity_does_not_change_an_authenticated_tenant
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_sec02_tenant_isolation.py:219: in <genexpr>
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+               ^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+____ test_forged_identity_does_not_change_an_authenticated_tenant[forged2] _____
+tests/test_sec02_tenant_isolation.py:219: in test_forged_identity_does_not_change_an_authenticated_tenant
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_sec02_tenant_isolation.py:219: in <genexpr>
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+               ^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+____ test_forged_identity_does_not_change_an_authenticated_tenant[forged3] _____
+tests/test_sec02_tenant_isolation.py:219: in test_forged_identity_does_not_change_an_authenticated_tenant
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_sec02_tenant_isolation.py:219: in <genexpr>
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+               ^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+____ test_forged_identity_does_not_change_an_authenticated_tenant[forged4] _____
+tests/test_sec02_tenant_isolation.py:219: in test_forged_identity_does_not_change_an_authenticated_tenant
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_sec02_tenant_isolation.py:219: in <genexpr>
+    assert all(t["tenant_id"] == "tenant_b" for t in r.json()["tasks"])
+               ^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+__________________ test_each_tenant_lists_only_its_own_tasks ___________________
+tests/test_sec02_tenant_isolation.py:235: in test_each_tenant_lists_only_its_own_tasks
+    assert {t["id"] for t in ra["tasks"]} == {a1, a2}
+E   AssertionError: assert {'1a2f9e96f7f...a5ce112cc336'} == {'a376b1d5d65...a5ce112cc336'}
+E     
+E     Extra items in the left set:
+E     '1a2f9e96f7fd'
+E     Use -v to get more diff
+__ test_reading_another_tenants_task_by_id_is_indistinguishable_from_missing ___
+tests/test_sec02_tenant_isolation.py:248: in test_reading_another_tenants_task_by_id_is_indistinguishable_from_missing
+    assert r_other.status_code == r_missing.status_code == 404
+E   assert 200 == 404
+E    +  where 200 = <Response [200 OK]>.status_code
+E    +  and   404 = <Response [404 Not Found]>.status_code
+___________ test_chat_and_civilization_tasks_are_owned_and_isolated ____________
+tests/test_sec02_tenant_isolation.py:264: in test_chat_and_civilization_tasks_are_owned_and_isolated
+    assert client.get(f"/api/tasks/{tid}", headers=H(keys["B"])).status_code == 404
+E   AssertionError: assert 200 == 404
+E    +  where 200 = <Response [200 OK]>.status_code
+E    +    where <Response [200 OK]> = get('/api/tasks/5c15a6d3cf37', headers={'X-API-Key': 'b-dZTDh3r_qQ0GavmXctDGS0kmupaKLqlT'})
+E    +      where get = <starlette.testclient.TestClient object at 0x7f68a6e93790>.get
+E    +      and   {'X-API-Key': 'b-dZTDh3r_qQ0GavmXctDGS0kmupaKLqlT'} = H('b-dZTDh3r_qQ0GavmXctDGS0kmupaKLqlT')
+__________________ test_forged_ownership_on_create_is_ignored __________________
+tests/test_sec02_tenant_isolation.py:276: in test_forged_ownership_on_create_is_ignored
+    assert srv.TASKS[tid]["tenant_id"] == "tenant_a"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+_______________ test_ownership_cannot_be_changed_through_the_api _______________
+tests/test_sec02_tenant_isolation.py:285: in test_ownership_cannot_be_changed_through_the_api
+    assert srv.TASKS[tid]["tenant_id"] == "tenant_a"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+________________ test_legacy_task_without_owner_is_not_readable ________________
+tests/test_sec02_tenant_isolation.py:294: in test_legacy_task_without_owner_is_not_readable
+    assert client.get("/api/tasks/legacy000001", headers=H(keys[k])).status_code == 404
+E   AssertionError: assert 200 == 404
+E    +  where 200 = <Response [200 OK]>.status_code
+E    +    where <Response [200 OK]> = get('/api/tasks/legacy000001', headers={'X-API-Key': 'a-LXBF5mt3bf9R7vE7EApCHG5R2AcXDohw'})
+E    +      where get = <starlette.testclient.TestClient object at 0x7f68ae0c7bd0>.get
+E    +      and   {'X-API-Key': 'a-LXBF5mt3bf9R7vE7EApCHG5R2AcXDohw'} = H('a-LXBF5mt3bf9R7vE7EApCHG5R2AcXDohw')
+______________ test_cross_tenant_scope_is_admin_only_and_explicit ______________
+tests/test_sec02_tenant_isolation.py:307: in test_cross_tenant_scope_is_admin_only_and_explicit
+    assert r.status_code == 403, path
+E   AssertionError: /api/tasks
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+___________________ test_background_tasks_keep_their_tenant ____________________
+tests/test_sec02_tenant_isolation.py:330: in test_background_tasks_keep_their_tenant
+    assert e.metadata["tenant_id"] == {"A": "tenant_a", "B": "tenant_b"}[who]
+           ^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+____________ test_memory_recall_never_returns_another_tenants_task _____________
+tests/test_sec02_tenant_isolation.py:342: in test_memory_recall_never_returns_another_tenants_task
+    assert other["result"]["experience"]["memory"]["recalled"] == []
+E   AssertionError: assert [{'memory_id'... 20 30', ...}] == []
+E     
+E     Left contains 2 more items, first extra item: {'memory_id': 'mem_20261016005420656911_e0b20f07', 'score': 1.0, 'ok': True, 'prompt': 'secret quarterly revenue numbers 10 20 30', ...}
+E     Use -v to get more diff
+_____________ test_memory_search_filters_and_stats_are_per_tenant ______________
+tests/test_sec02_tenant_isolation.py:352: in test_memory_search_filters_and_stats_are_per_tenant
+    assert all("secret-memory-alpha" not in m["prompt"] for m in rb["memories"])  # B may match its own
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert False
+E    +  where False = all(<generator object test_memory_search_filters_and_stats_are_per_tenant.<locals>.<genexpr> at 0x7f68af84de00>)
+______________ test_delete_memory_only_clears_the_callers_tenant _______________
+tests/test_sec02_tenant_isolation.py:365: in test_delete_memory_only_clears_the_callers_tenant
+    assert r.status_code == 200 and r.json() == {"cleared": 1}
+E   assert (403 == 200)
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+_______________ test_legacy_memory_without_tenant_is_quarantined _______________
+tests/test_sec02_tenant_isolation.py:381: in test_legacy_memory_without_tenant_is_quarantined
+    assert "secret-old-memory" not in client.get("/api/memory", headers=H(keys[k])).text
+E   assert 'secret-old-memory' not in '{"count":1,...ation":{}}}}'
+E     
+E     'secret-old-memory' is contained here:
+E     ?           ^^^^
+E       "prompt":"secret-old-memory 1 2 3","answer":"x","ok":true,"input_kind":"numbers","created_at":"2026-10-16T00:54:20.769850Z"}],"stats":{"enabled":true,"memories":1,"max_entries":2000,"persistence_file":false,"learning":{"tasks":0,"by_specialization":{}}}}
+E     ?           ^^^^^^^^^^^^^^^^^^^^^
+____________________ test_no_tenant_context_means_no_memory ____________________
+tests/test_sec02_tenant_isolation.py:399: in test_no_tenant_context_means_no_memory
+    assert exp is None and experience.memory()._memories == {}
+E   AssertionError: assert ({'memory': {'recalled': [], 'stored_id': 'mem_20261016005420797738_ce3e8b32', 'fallback_used': None}, 'learning': {'pr...samples': 0}, 'after': {'specialization': 'analyst', 'input_kind': 'numbers', 'samples': 1, 'success_rate': 1.0, ...}}} is None)
+____________ test_self_developer_retests_only_the_callers_failures _____________
+tests/test_sec02_tenant_isolation.py:425: in test_self_developer_retests_only_the_callers_failures
+    assert out_b["tool_output"]["retests"] == []
+E   AssertionError: assert [{'goal': 'se...memories': 1}] == []
+E     
+E     Left contains one more item: {'goal': 'secret goal of tenant a 1 2 3', 'fixed': True, 'retired_memories': 1}
+E     Use -v to get more diff
+_______________________ test_event_stream_is_per_tenant ________________________
+tests/test_sec02_tenant_isolation.py:447: in test_event_stream_is_per_tenant
+    chunk_a, chunk_b = asyncio.run(go())
+                       ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_sec02_tenant_isolation.py:442: in go
+    await srv._publish("tenant_b", {"type": "secret-event-b"})
+          ^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute '_publish'
+____________________ test_event_stream_requires_a_valid_key ____________________
+tests/test_sec02_tenant_isolation.py:455: in test_event_stream_requires_a_valid_key
+    asyncio.run(srv.event_stream(api_key=key))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: event_stream() got an unexpected keyword argument 'api_key'
+________________ test_task_events_reach_only_the_owners_stream _________________
+tests/test_sec02_tenant_isolation.py:461: in test_task_events_reach_only_the_owners_stream
+    qa, qb = srv.tenant_events("tenant_a"), srv.tenant_events("tenant_b")
+             ^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'server' has no attribute 'tenant_events'
+___________ test_database_tasks_and_events_are_scoped_to_the_tenant ____________
+tests/test_sec02_tenant_isolation.py:537: in test_database_tasks_and_events_are_scoped_to_the_tenant
+    assert {r["task_id"]: r["tenant_id"] for r in db["tasks"]} == {a: "tenant_a", b: "tenant_b"}
+                          ^^^^^^^^^^^^^^
+E   KeyError: 'tenant_id'
+ERROR    asyncio:base_events.py:1875 Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x7f68ac1670e0>
+__________________ test_storage_layer_refuses_unscoped_reads ___________________
+tests/test_sec02_tenant_isolation.py:573: in test_storage_layer_refuses_unscoped_reads
+    none_t, none_e, other, own, every = asyncio.run(go())
+                                        ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_sec02_tenant_isolation.py:564: in go
+    await st.insert_task("t1", "analyst", "secret", tenant_id="tenant_a")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: SupabaseStorage.insert_task() got an unexpected keyword argument 'tenant_id'
+____________ test_external_agent_registration_needs_the_admin_role _____________
+tests/test_sec02_tenant_isolation.py:582: in test_external_agent_registration_needs_the_admin_role
+    assert client.post("/api/agents/external", json=body).status_code == 401
+E   AssertionError: assert 201 == 401
+E    +  where 201 = <Response [201 Created]>.status_code
+E    +    where <Response [201 Created]> = post('/api/agents/external', json={'name': 'sec02-ext', 'url': 'http://agent.example.org:9/x', 'model': '', 'api_key': ''})
+E    +      where post = <starlette.testclient.TestClient object at 0x7f68a52c5d00>.post
+_______ test_regression_unauthenticated_client_receives_no_private_data ________
+tests/test_sec02_tenant_isolation.py:596: in test_regression_unauthenticated_client_receives_no_private_data
+    assert "secret-regression" not in r.text, path
+E   AssertionError: /api/tasks
+E   assert 'secret-regression' not in '{"count":2,...e":"memory"}'
+E     
+E     'secret-regression' is contained here:
+E       "prompt":"secret-regression-chat 1 2","status":"completed","created_at":1792112062.1383295,"finished_at":1792112062.1383297,"result":{"ok":true,"agent":"analyst_0000","elapsed_s":0.0,"result":{"ok":true,"answer":"n=2 mean=1.500 sd=0.500 trend=up","tool_output":{"n":2,"sum":3.0,"mean":1.5,"median":1.5,"stdev":0.5,"min":1.0,"max":2.0,"outliers":[],"trend":"up","samples":[1.0,2.0]}},"experience":{"memory":{"recalled":[{"memory_id":"mem_20261016005422135870_7f8209e7","score":0.5,"ok":true,"prompt":"secret-regression-zulu 1 2 3","answer":"n=3 m...
+E     
+E     ...Full output truncated (2 lines hidden), use '-vv' to show
+=========================== short test summary info ============================
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[get-/api/tasks-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[get-/api/memory-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[get-/api/learning-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[delete-/api/memory-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[get-/api/events-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[post-/api/tasks-body7]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[post-/api/chat-body8]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_credentials_rejected_on_every_tenant_route[post-/civilization/execute-body9]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks-None-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks-None-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks-None- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/tasks/{tid}-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/memory-None-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/memory-None-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/memory-None- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/memory-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/learning-None-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/learning-None-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/learning-None- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/learning-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[delete-/api/memory-None-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[delete-/api/memory-None-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[delete-/api/memory-None- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[delete-/api/memory-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/events-None-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/events-None-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/events-None- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[get-/api/events-None-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/api/tasks-body7-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/api/tasks-body7-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/api/tasks-body7- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/api/tasks-body7-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/api/chat-body8-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/api/chat-body8-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/api/chat-body8- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/api/chat-body8-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/civilization/execute-body9-wrong]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/civilization/execute-body9-]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/civilization/execute-body9- ]
+FAILED tests/test_sec02_tenant_isolation.py::test_invalid_key_rejected_on_every_tenant_route[post-/civilization/execute-body9-a-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+FAILED tests/test_sec02_tenant_isolation.py::test_key_hash_as_key_is_rejected
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[get-/api/tasks-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[get-/api/tasks/{tid}-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[get-/api/memory-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[get-/api/learning-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[delete-/api/memory-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[get-/api/events-None]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[post-/api/tasks-body7]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[post-/api/chat-body8]
+FAILED tests/test_sec02_tenant_isolation.py::test_no_auth_configuration_means_no_access[post-/civilization/execute-body9]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[not json]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[{}]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[[]]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[[{"tenant": "a"}]]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "abc"}]]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[[{"tenant": "bad tenant!", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000"}]]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000", "role": "root"}]]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000", "tenant_override": "b"}]]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000"}, {"tenant": "b", "key_sha256": "0000000000000000000000000000000000000000000000000000000000000000"}]]
+FAILED tests/test_sec02_tenant_isolation.py::test_malformed_auth_configuration_fails_startup[[{"tenant": "a", "key_sha256": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}]]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_headers_and_params_do_not_authenticate[forged0]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_headers_and_params_do_not_authenticate[forged1]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_headers_and_params_do_not_authenticate[forged2]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_headers_and_params_do_not_authenticate[forged3]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_headers_and_params_do_not_authenticate[forged4]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_does_not_change_an_authenticated_tenant[forged0]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_does_not_change_an_authenticated_tenant[forged1]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_does_not_change_an_authenticated_tenant[forged2]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_does_not_change_an_authenticated_tenant[forged3]
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_identity_does_not_change_an_authenticated_tenant[forged4]
+FAILED tests/test_sec02_tenant_isolation.py::test_each_tenant_lists_only_its_own_tasks
+FAILED tests/test_sec02_tenant_isolation.py::test_reading_another_tenants_task_by_id_is_indistinguishable_from_missing
+FAILED tests/test_sec02_tenant_isolation.py::test_chat_and_civilization_tasks_are_owned_and_isolated
+FAILED tests/test_sec02_tenant_isolation.py::test_forged_ownership_on_create_is_ignored
+FAILED tests/test_sec02_tenant_isolation.py::test_ownership_cannot_be_changed_through_the_api
+FAILED tests/test_sec02_tenant_isolation.py::test_legacy_task_without_owner_is_not_readable
+FAILED tests/test_sec02_tenant_isolation.py::test_cross_tenant_scope_is_admin_only_and_explicit
+FAILED tests/test_sec02_tenant_isolation.py::test_background_tasks_keep_their_tenant
+FAILED tests/test_sec02_tenant_isolation.py::test_memory_recall_never_returns_another_tenants_task
+FAILED tests/test_sec02_tenant_isolation.py::test_memory_search_filters_and_stats_are_per_tenant
+FAILED tests/test_sec02_tenant_isolation.py::test_delete_memory_only_clears_the_callers_tenant
+FAILED tests/test_sec02_tenant_isolation.py::test_legacy_memory_without_tenant_is_quarantined
+FAILED tests/test_sec02_tenant_isolation.py::test_no_tenant_context_means_no_memory
+FAILED tests/test_sec02_tenant_isolation.py::test_self_developer_retests_only_the_callers_failures
+FAILED tests/test_sec02_tenant_isolation.py::test_event_stream_is_per_tenant
+FAILED tests/test_sec02_tenant_isolation.py::test_event_stream_requires_a_valid_key
+FAILED tests/test_sec02_tenant_isolation.py::test_task_events_reach_only_the_owners_stream
+FAILED tests/test_sec02_tenant_isolation.py::test_database_tasks_and_events_are_scoped_to_the_tenant
+FAILED tests/test_sec02_tenant_isolation.py::test_storage_layer_refuses_unscoped_reads
+FAILED tests/test_sec02_tenant_isolation.py::test_external_agent_registration_needs_the_admin_role
+FAILED tests/test_sec02_tenant_isolation.py::test_regression_unauthenticated_client_receives_no_private_data
+================== 96 failed, 3 passed, 6 deselected in 5.54s ==================
+
+## probe: anonymous SSE stream on the old code (/tmp/sec02_old_stream_probe.py)
+import asyncio, os, inspect
+os.environ.pop("AGOS_API_KEY", None)
+import server
+async def main():
+    sig = inspect.signature(server.event_stream)
+    print("event_stream parameters:", list(sig.parameters))
+    await server.TASK_EVENTS.put({"type": "task_created", "task_id": "tenant-b-task", "specialization": "analyst"})
+    resp = await server.event_stream()          # no key at all
+    chunk = await asyncio.wait_for(resp.body_iterator.__anext__(), timeout=3)
+    print("anonymous stream status:", resp.status_code, "first chunk:", chunk.strip())
+asyncio.run(main())
+--- output:
+event_stream parameters: []
+anonymous stream status: 200 first chunk: data: {"type": "task_created", "task_id": "tenant-b-task", "specialization": "analyst"}
