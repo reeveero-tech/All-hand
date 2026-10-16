@@ -56,13 +56,68 @@ def test_api_liveness(client):
 
 
 def test_api_readiness(client):
-    """Test readiness probe."""
+    """Readiness succeeds only when the civilization is initialised with at
+    least one agent: 200 + status "ready" + the existing data fields.
+    BUG-03 (R-142): this test used to accept "not_ready" with 200."""
+    import server
     response = client.get("/health/ready")
-    
+
     assert response.status_code == 200
     data = response.json()
-    
-    assert data["status"] in ["ready", "not_ready"]
+
+    assert data == {
+        "status": "ready",
+        "agents": sum(len(a) for a in server.CIVILIZATION.values()),
+        "specializations": len(server.SPECIALIZATIONS),
+    }
+    assert data["agents"] > 0
+
+
+class _ExplodingCivilization(dict):
+    """Non-empty mapping whose agent count raises (simulated internal failure)."""
+
+    def values(self):
+        raise RuntimeError("readiness-internal-detail SUPABASE_KEY=sb_secret_bug03")
+
+
+@pytest.mark.parametrize("civilization,reason", [
+    ({}, "Civilization not initialized"),                                   # CIVILIZATION empty
+    ({"analyst": [], "researcher": []}, "No agents available"),              # pools present, no agents
+    (_ExplodingCivilization(analyst=["x"]), "readiness check failed"),       # exception while counting
+], ids=["civilization_empty", "zero_agents", "exception"])
+def test_api_readiness_not_ready_is_503(client, monkeypatch, civilization, reason):
+    """BUG-03 (R-142): every not-ready state answers 503 — status code AND body."""
+    import server
+    monkeypatch.setattr(server, "CIVILIZATION", civilization)
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {"status": "not_ready", "reason": reason}
+
+
+def test_api_readiness_exception_does_not_leak_details(client, monkeypatch, caplog):
+    import server
+    monkeypatch.setattr(server, "CIVILIZATION", _ExplodingCivilization(analyst=["x"]))
+    caplog.set_level("WARNING", logger="agos.server")
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    assert "readiness-internal-detail" not in response.text and "sb_secret_bug03" not in response.text
+    # logged internally by exception type only — no message, so nothing it carries
+    assert "readiness check failed: RuntimeError" in caplog.text
+    assert "sb_secret_bug03" not in caplog.text
+
+
+@pytest.mark.parametrize("civilization", [{}, {"analyst": []}, _ExplodingCivilization(analyst=["x"])],
+                         ids=["civilization_empty", "zero_agents", "exception"])
+def test_api_liveness_stays_200_when_not_ready(client, monkeypatch, civilization):
+    """Liveness (process up) and readiness (can serve) are different probes."""
+    import server
+    monkeypatch.setattr(server, "CIVILIZATION", civilization)
+    assert client.get("/health/ready").json()["status"] == "not_ready"  # precondition: not ready
+    live = client.get("/health/live")
+    assert live.status_code == 200
+    assert live.json()["status"] == "alive" and "timestamp" in live.json()
 
 
 def test_api_metrics(client):

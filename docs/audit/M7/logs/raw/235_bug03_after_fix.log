@@ -1,0 +1,22 @@
+# BUG-03 (R-142) — after the fix, branch m7/r142-bug03-readiness-503 (base 090eb92), Python 3.14.3
+# cmd: python3 -m pytest tests/test_api.py -v -p no:cacheprovider -k 'readiness or liveness'
+tests/test_api.py::test_api_liveness PASSED                              [ 11%]
+tests/test_api.py::test_api_readiness PASSED                             [ 22%]
+tests/test_api.py::test_api_readiness_not_ready_is_503[civilization_empty] PASSED [ 33%]
+tests/test_api.py::test_api_readiness_not_ready_is_503[zero_agents] PASSED [ 44%]
+tests/test_api.py::test_api_readiness_not_ready_is_503[exception] PASSED [ 55%]
+tests/test_api.py::test_api_readiness_exception_does_not_leak_details PASSED [ 66%]
+tests/test_api.py::test_api_liveness_stays_200_when_not_ready[civilization_empty] PASSED [ 77%]
+tests/test_api.py::test_api_liveness_stays_200_when_not_ready[zero_agents] PASSED [ 88%]
+tests/test_api.py::test_api_liveness_stays_200_when_not_ready[exception] PASSED [100%]
+======================= 9 passed, 16 deselected in 0.47s =======================
+
+# health/API related tests (every test file touching /health or /metrics): python3 -m pytest tests/conftest.py tests/test_api.py tests/test_r078_supabase_key_kind.py tests/test_r082_storage_outcomes.py tests/test_r083_metrics_middleware.py tests/test_sec02_tenant_isolation.py tests/test_security.py  -q -p no:cacheprovider
+============================= 172 passed in 5.39s ==============================
+
+## probe after the fix (same probe as 234)
+# cmd: PYTHONPATH=. python3 scripts/bug03/probe_readiness.py
+ready (initialised, agents present)    | /health/ready -> 200 {"agents": 1000, "specializations": 20, "status": "ready"} | /health/live -> 200 alive | secret in body: False
+CIVILIZATION empty                     | /health/ready -> 503 {"reason": "Civilization not initialized", "status": "not_ready"} | /health/live -> 200 alive | secret in body: False
+pools present, zero agents             | /health/ready -> 503 {"reason": "No agents available", "status": "not_ready"} | /health/live -> 200 alive | secret in body: False
+exception while counting agents        | /health/ready -> 503 {"reason": "readiness check failed", "status": "not_ready"} | /health/live -> 200 alive | secret in body: False

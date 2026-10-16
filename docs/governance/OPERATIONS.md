@@ -99,7 +99,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 
 ## الفحوصات
 
-`/health`, `/health/live`, `/health/ready`, `/metrics`, `/api/system/status`. `/health` يعيد 503 عند `unhealthy` و200 عند `healthy`/`degraded` (أُصلح في R-004؛ اختباران منذ R-068 — صُحح هنا في R-078، كان يقول "200 دائماً"). **R-078**: فحص `storage` يصير `degraded` إذا كان مفتاح Supabase عاماً، و`/api/system/status` يعرض `supabase_key: {kind, source}` (لا القيمة).
+`/health`, `/health/live`, `/health/ready`, `/metrics`, `/api/system/status`. **`/health/ready` يعيد 503 عند أي حالة `not_ready`** (حضارة غير مهيأة، صفر وكلاء، استثناء أثناء الفحص — يُسجَّل `readiness check failed: <نوع الاستثناء>`) و200 فقط عند `ready` (R-142، BUG-03؛ كان 200 دائماً)؛ `/health/live` 200 ما دامت العملية حية (لا يتبع الجاهزية). فحص صحة Render يبقى `/api/system/status` (`render.yaml`) وفحص CI docker يبقى `/health` — لم يتغير أيهما. `/health` يعيد 503 عند `unhealthy` و200 عند `healthy`/`degraded` (أُصلح في R-004؛ اختباران منذ R-068 — صُحح هنا في R-078، كان يقول "200 دائماً"). **R-078**: فحص `storage` يصير `degraded` إذا كان مفتاح Supabase عاماً، و`/api/system/status` يعرض `supabase_key: {kind, source}` (لا القيمة).
 
 ## الفجوات
 
