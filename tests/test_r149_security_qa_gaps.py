@@ -519,6 +519,76 @@ def test_internal_dependency_timeout_ends_failed_without_leak(
         assert MARKER not in json.dumps(e)
 
 
+def test_connection_error_family_text_is_not_trusted(
+        tenant_auth, published, clean_tasks, monkeypatch, caplog):
+    """R-149 review round 4: the ClientConnectionError FAMILY is not trusted
+    by class — any code can raise it with arbitrary text (e.g. a wrapped
+    backend body echoing the adapter's credential). A dependency of the real
+    adapter's execute() raising aiohttp.ClientConnectionError(marker) must
+    land only the TYPE in the tenant-visible result and the log. Only reasons
+    this module formulates itself (the crafted DNS texts, the redirect-loop
+    bound) keep their text — proven by the SEC-05 tests."""
+    import aiohttp
+    from agent_civilization.agents.external_adapter import ExternalAgentAdapter
+
+    def _marker_request(*a, **kw):
+        raise aiohttp.ClientConnectionError(f"connector said: {MARKER}")
+
+    monkeypatch.setattr(aiohttp.ClientSession, "request", _marker_request)
+    monkeypatch.setattr(server, "EXTERNAL_AGENTS", [
+        ExternalAgentAdapter("r149-conn", "http://127.0.0.1:1/v1/chat",
+                             api_key="unused", allow_private=True)])
+    with TestClient(server.app) as c:
+        r = c.post("/api/tasks", json={"specialization": "external", "prompt": "hi"},
+                   headers=tenant_auth.headers)
+        assert r.status_code == 202
+        tid = r.json()["task_id"]
+        assert _wait_final(tid, published) == "failed"
+        task_text = c.get(f"/api/tasks/{tid}", headers=tenant_auth.headers).text
+    rec = server.TASKS[tid]
+    assert rec["result"]["result"]["error"] == "ClientConnectionError"  # type only
+    assert MARKER not in task_text and MARKER not in caplog.text
+    for _, e in published:
+        assert MARKER not in json.dumps(e)
+
+
+def test_tls_certificate_error_text_is_not_trusted(
+        tenant_auth, published, clean_tasks, monkeypatch, caplog):
+    """R-149 review round 4: a TLS certificate verification failure is
+    reported with a FIXED reason this module formulates (mismatch keeps its
+    distinct text — see the SEC-05 TLS test) — never the ssl verification
+    error's raw text, which is not ours to forward."""
+    import aiohttp
+    import ssl as _ssl
+    from aiohttp.client_reqrep import ConnectionKey
+    from aiohttp.helpers import sentinel
+    from agent_civilization.agents.external_adapter import ExternalAgentAdapter
+
+    key = ConnectionKey(host="example.test", port=443, is_ssl=True, ssl=sentinel,
+                       proxy=None, proxy_auth=None, proxy_headers_hash=None)
+
+    def _marker_request(*a, **kw):
+        raise aiohttp.ClientConnectorCertificateError(
+            key, _ssl.SSLCertVerificationError(f"verify failed: {MARKER}"))
+
+    monkeypatch.setattr(aiohttp.ClientSession, "request", _marker_request)
+    monkeypatch.setattr(server, "EXTERNAL_AGENTS", [
+        ExternalAgentAdapter("r149-tls", "https://example.test/v1/chat",
+                             api_key="unused", allow_private=True)])
+    with TestClient(server.app) as c:
+        r = c.post("/api/tasks", json={"specialization": "external", "prompt": "hi"},
+                   headers=tenant_auth.headers)
+        assert r.status_code == 202
+        tid = r.json()["task_id"]
+        assert _wait_final(tid, published) == "failed"
+        task_text = c.get(f"/api/tasks/{tid}", headers=tenant_auth.headers).text
+    rec = server.TASKS[tid]
+    assert rec["result"]["result"]["error"] == "TLS certificate verification failed"
+    assert MARKER not in task_text and MARKER not in caplog.text
+    for _, e in published:
+        assert MARKER not in json.dumps(e)
+
+
 def test_storage_exception_marker_stays_out_of_responses(
         tenant_auth, postgrest, agent_outcome, caplog, monkeypatch):
     """G3 (storage exception): a marker travels inside an exception raised

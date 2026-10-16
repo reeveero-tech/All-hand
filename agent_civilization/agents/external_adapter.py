@@ -82,10 +82,12 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
             # R-146b: a fixed policy reason — a resolver failure of ANY kind
             # (its text is not ours to forward to logs or responses) fails
             # closed; cancellation still propagates as cancellation.
-            raise aiohttp.ClientConnectionError(
+            # R-149 review round 4: raised as a _FixedClientError — the family
+            # check below trusts only reasons THIS module formulates.
+            raise _FixedClientError(
                 f"DNS resolution failed for {host}") from None
         if not infos:
-            raise aiohttp.ClientConnectionError(f"no addresses for {host}")
+            raise _FixedClientError(f"no addresses for {host}")
         # R-146b: the SAME shared gate as the urllib path (safety.
         # validate_getaddrinfo) — the whole answer is policy-checked and every
         # entry validated (numeric connect target, integer port, family
@@ -147,6 +149,15 @@ class _FixedReasonError(Exception):
     reported as-is. Everything else unexpected is reduced to its TYPE."""
 
 
+class _FixedClientError(_FixedReasonError, aiohttp.ClientConnectionError):
+    """A connection-layer error with OUR OWN fixed text (the crafted DNS
+    reasons). It is still an aiohttp.ClientConnectionError for the transport
+    (R-146b tests assert that type from the resolver), but the reason below
+    trusts only errors this module formulates itself — NOT the whole
+    ClientConnectionError family (any code can raise that family with
+    arbitrary text, e.g. a wrapped backend body)."""
+
+
 class ExternalAgentAdapter:
     """Wraps a real remote agent behind the same execute() contract."""
 
@@ -189,18 +200,26 @@ class ExternalAgentAdapter:
             self.stats["tasks_completed"] += 1
             ok, result = True, {"answer": content, "external_agent": self.name}
         except Exception as e:
-            # R-149 (Security QA): only a fixed safe reason is reported — the
-            # backend's status, UnsafeURLError's refusal message, our own
-            # fixed texts, and the transport layer's connection errors (the
-            # crafted fixed DNS reasons and aiohttp's transport/TLS texts,
-            # proven by the SEC-01/SEC-05 tests). An unexpected exception's
-            # raw text is not trusted (it can echo the backend's body,
-            # including the adapter's own credential): only its TYPE.
+            # R-149 (Security QA, review round 4): only a fixed safe reason is
+            # reported. Trusted as-is: the backend's STATUS, UnsafeURLError's
+            # refusal message, and OUR OWN fixed texts (_FixedReasonError — the
+            # crafted DNS reasons and the redirect-loop bound). A TLS
+            # certificate verification failure gets a fixed reason we formulate
+            # (mismatch keeps its distinct text — the SEC-05 TLS test). The
+            # ClientConnectionError FAMILY is NOT trusted by class: any code
+            # can raise it with arbitrary text (a wrapped backend body can echo
+            # the adapter's own credential); those are reduced to their TYPE.
             if isinstance(e, _HTTPStatusError):
                 error = f"HTTP {e.status}"
-            elif isinstance(e, (safety.UnsafeURLError, aiohttp.ClientConnectionError,
-                               _FixedReasonError)):
+            elif isinstance(e, (safety.UnsafeURLError, _FixedReasonError)):
                 error = str(e)
+            elif isinstance(e, aiohttp.ClientConnectorCertificateError):
+                reason = str(getattr(e, "certificate_error", "")).lower()
+                if "hostname" in reason and "match" in reason:
+                    error = "TLS certificate verification failed: hostname " \
+                           "mismatch"
+                else:
+                    error = "TLS certificate verification failed"
             else:
                 error = type(e).__name__
             logger.warning("external agent %s failed: %s", self.name, error)
