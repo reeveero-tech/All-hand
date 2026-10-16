@@ -1,5 +1,14 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-16 — R-144: SEC-04 — بث SSE بنسخة لكل اتصال وحدود الموارد (دفعة m7/r144-sec04-sse-broadcast-bounds)
+
+- **المصدر**: تقرير التدقيق الخارجي (SEC-04؛ أولوية 2) + تعليمات المالك؛ القرار D-058.
+- **العيب**: طابور SSE واحد غير محدود لكل مستأجر يتشاركه كل مستمعيه؛ تراكم بلا مستمع؛ المسار بلا `@rate_limit` ولا حدود اتصالات/عمر. مثبت (`docs/audit/M7/logs/raw/240`): مستمعان للمستأجر نفسه تقاسما الأحداث (`a0,a2,a4` / `a1,a3,a5`)؛ `qsize=1000, maxsize=0` بلا قارئ؛ 7 اتصالات و12 فتحاً كلها 200.
+- **الإصلاح**: `agent_civilization/core/sse.py` (جديد: `EventBus`، `Subscription`، `SSELimits`)؛ `server.py` (`EVENT_BUS`، `event_stream(request, …)` بـ`@rate_limit` وقبول قبل 200 وعمر أقصى و`_SSEResponse`)؛ `web/src/api.js` (`Retry-After` وتراجع أسي)؛ `web/src/App.jsx` (`stream_gap` ← إعادة قراءة الحالة).
+- **تغيير سلوك مقصود**: كل اتصال يستلم نسخته؛ لا تسليم لأحداث نُشرت بلا مستمع؛ تحت الضغط يُسقط الأقدم ويصل `stream_gap`؛ 429 + `Retry-After` عند تجاوز الحدود؛ البث ينتهي بعد `AGOS_SSE_MAX_LIFETIME`؛ إعداد `AGOS_SSE_*` غير صالح يمنع الإقلاع. المصادقة والعزل وتنسيق الأحداث وheartbeat بلا تغيير.
+- **الاختبار**: `tests/test_sec04_sse_broadcast_bounds.py` (33)؛ `web/tests/api.test.mjs` (+6)؛ 4 اختبارات قائمة عُدّلت لدلالة «الاتصال قبل النشر»؛ مسبار `scripts/sec04/probe_sse.py`. التحقق: `241`، `242` — pytest ‏716+4+4 ×3 إصدارات؛ ruff صفر؛ الواجهة 20/20 + build. لا اختبار حمل حي.
+- **الوثائق**: API، OPERATIONS، DECISIONS (D-058)، ROADMAP (R-144)، PROJECT_STATE، EVIDENCE، `.env.example`.
+
 ## 2026-10-16 — R-143: BUG-04 — استرجاع المهام المحفوظة بمعرّفها بنطاق المستأجر (دفعة m7/r143-bug04-task-by-id-from-storage)
 
 - **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 7؛ أولوية 1) + تعليمات المالك لـBUG-04.

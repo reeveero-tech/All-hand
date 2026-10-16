@@ -1,6 +1,6 @@
 // R-101: behaviour of the real web/src/api.js (no bundler): X-API-Key handling,
 // header merging and 401/403 messages. Run: cd web && npm test
-import { test, beforeEach } from 'node:test';
+import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 class MemoryStorage {
@@ -147,6 +147,118 @@ test('SEC-02: the event stream sends X-API-Key and parses data events', async ()
   assert.equal(calls[0].url, '/api/events/stream');
   assert.equal(calls[0].init.headers['X-API-Key'], 'tenant-a-key');
   assert.deepEqual(got, [{ type: 'task_created', task_id: 't1' }, { type: 'heartbeat' }]);
+});
+
+// ---------------------------------------------------------------- SEC-04 (R-144)
+// openEventStream reconnection policy, with a recording scheduler: no real
+// timers — each scheduled reconnect is run by the test.
+// afterEach always restores fetch and closes the stream, even when an
+// assertion fails mid-test (no leak into later tests).
+let harnessCleanup = [];
+afterEach(() => {
+  for (const fn of harnessCleanup.splice(0)) fn();
+});
+
+function streamHarness(responses) {
+  const delays = [];
+  const pending = [];
+  const prev = globalThis.fetch;
+  let n = 0;
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init });
+    const r = responses[Math.min(n++, responses.length - 1)];
+    if (r === 'network') throw new TypeError('network down');
+    const headers = new Map(Object.entries(r.headers || {}));
+    const enc = new TextEncoder();
+    const chunks = r.chunks || [];
+    let i = 0;
+    return {
+      ok: r.status >= 200 && r.status < 300, status: r.status,
+      headers: { get: (k) => headers.get(k) ?? null },
+      body: r.status === 200 ? { getReader: () => ({ read: async () => (i < chunks.length
+        ? { value: enc.encode(chunks[i++]), done: false } : { value: undefined, done: true }) }) } : null,
+    };
+  };
+  const schedule = (fn, ms) => { delays.push(ms); pending.push(fn); return pending.length; };
+  const tick = () => new Promise((r) => setTimeout(r, 5));
+  const runNext = async () => { const fn = pending.shift(); await fn(); await tick(); };
+  const restore = () => { globalThis.fetch = prev; };
+  harnessCleanup.push(restore);
+  const track = (stream) => { harnessCleanup.unshift(() => stream.close()); return stream; };
+  return { delays, pending, schedule, cancel: () => {}, tick, runNext, restore, track };
+}
+
+test('SEC-04: 429 waits Retry-After, never a fast retry', async () => {
+  api.setApiKey('k');
+  const h = streamHarness([{ status: 429, headers: { 'Retry-After': '120' } }]);
+  const s = h.track(api.openEventStream(() => {}, { retryMs: 5000, schedule: h.schedule, cancel: h.cancel }));
+  await h.tick();
+  assert.equal(calls.length, 1);
+  assert.deepEqual(h.delays, [120000]);           // Retry-After (s) honoured
+  s.close(); h.restore();
+});
+
+test('SEC-04: repeated 429 without Retry-After backs off exponentially, capped', async () => {
+  api.setApiKey('k');
+  const h = streamHarness([{ status: 429 }]);
+  const s = h.track(api.openEventStream(() => {}, { retryMs: 1000, maxRetryMs: 8000, schedule: h.schedule, cancel: h.cancel }));
+  await h.tick();
+  for (let i = 0; i < 5; i++) await h.runNext();
+  assert.deepEqual(h.delays, [1000, 2000, 4000, 8000, 8000, 8000]);
+  assert.equal(calls.length, 6);
+  s.close(); h.restore();
+});
+
+test('SEC-04: short Retry-After never undercuts the backoff', async () => {
+  api.setApiKey('k');
+  const h = streamHarness([{ status: 429, headers: { 'Retry-After': '1' } }]);
+  const s = h.track(api.openEventStream(() => {}, { retryMs: 5000, schedule: h.schedule, cancel: h.cancel }));
+  await h.tick();
+  await h.runNext();
+  assert.deepEqual(h.delays, [5000, 10000]);
+  s.close(); h.restore();
+});
+
+test('SEC-04: 401 / 403 stop reconnecting (no loop on a rejected key)', async () => {
+  for (const status of [401, 403]) {
+    calls.length = 0;
+    api.setApiKey('k');
+    const h = streamHarness([{ status }]);
+    const s = h.track(api.openEventStream(() => {}, { schedule: h.schedule, cancel: h.cancel }));
+    await h.tick();
+    assert.equal(calls.length, 1);
+    assert.deepEqual(h.delays, []);
+    s.close(); h.restore();
+  }
+});
+
+test('SEC-04: network errors back off; an accepted stream that ends (max lifetime) reconnects after retryMs and resets', async () => {
+  api.setApiKey('k');
+  const h = streamHarness(['network', 'network',
+    { status: 200, chunks: ['data: {"type":"task_created","task_id":"t1"}\n\n'] },
+    { status: 200, chunks: [] }]);
+  const got = [];
+  const s = h.track(api.openEventStream((e) => got.push(e), { retryMs: 1000, schedule: h.schedule, cancel: h.cancel }));
+  await h.tick();
+  await h.runNext();   // 2nd network error
+  await h.runNext();   // accepted, one event, then the server ends the stream
+  await h.runNext();   // accepted again, ends
+  assert.deepEqual(h.delays, [1000, 2000, 1000, 1000]);
+  assert.deepEqual(got, [{ type: 'task_created', task_id: 't1' }]);
+  s.close(); h.restore();
+});
+
+test('SEC-04: stream_gap is delivered like any event; close() cancels the pending reconnect', async () => {
+  api.setApiKey('k');
+  const h = streamHarness([{ status: 200, chunks: ['data: {"type":"stream_gap","missed":3,"recover":["/api/tasks","/api/events"]}\n\n'] }]);
+  const got = [];
+  const s = h.track(api.openEventStream((e) => got.push(e), { retryMs: 1000, schedule: h.schedule, cancel: h.cancel }));
+  await h.tick();
+  assert.deepEqual(got, [{ type: 'stream_gap', missed: 3, recover: ['/api/tasks', '/api/events'] }]);
+  s.close();
+  await h.runNext();   // a reconnect that fires after close() does nothing
+  assert.equal(calls.length, 1);
+  h.restore();
 });
 
 test('other errors keep the server detail', async () => {

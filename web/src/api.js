@@ -93,17 +93,43 @@ export const removeExternalAgent = (name) =>
 
 // SEC-02: /api/events/stream carries tenant events, so it needs X-API-Key.
 // EventSource cannot send headers, so the stream is read with fetch and parsed
-// here ("data: <json>" lines). Without a key nothing is opened. Reconnects
-// after `retryMs` like EventSource does; close() stops it for good.
-export function openEventStream(onEvent, { retryMs = 5000 } = {}) {
+// here ("data: <json>" lines). Without a key nothing is opened. close() stops
+// it for good.
+// SEC-04 (R-144) reconnection:
+//  - 401/403: stop (wrong key / no role) — wait for the user, never loop;
+//  - 429: wait Retry-After (seconds, capped at 1 h) — at least the backoff;
+//  - other HTTP errors / network errors: exponential backoff from `retryMs`
+//    (x2 per consecutive failure, capped at `maxRetryMs`);
+//  - a stream that was accepted (200) and then ended — e.g. the server's max
+//    lifetime — reconnects after `retryMs` and resets the backoff.
+// The server may send {"type": "stream_gap", "missed": n} when this listener
+// fell behind: events were dropped; re-read state from /api/tasks, /api/events.
+const MAX_RETRY_AFTER_MS = 3600 * 1000;
+
+function retryAfterMs(res) {
+  const raw = res.headers && typeof res.headers.get === 'function' ? res.headers.get('Retry-After') : null;
+  if (!raw) return 0;
+  const secs = Number(raw);
+  let ms = Number.isFinite(secs) ? secs * 1000 : Date.parse(raw) - Date.now();
+  if (!Number.isFinite(ms) || ms < 0) ms = 0;
+  return Math.min(ms, MAX_RETRY_AFTER_MS);
+}
+
+export function openEventStream(onEvent, {
+  retryMs = 5000, maxRetryMs = 5 * 60 * 1000, schedule = setTimeout, cancel = clearTimeout,
+} = {}) {
   let closed = false;
   let controller = null;
   let timer = null;
+  let failures = 0; // consecutive attempts that were not accepted
+
+  const backoff = () => Math.min(retryMs * 2 ** failures, maxRetryMs);
 
   const connect = async () => {
     const key = getApiKey();
     if (closed || !key) return;
     controller = new AbortController();
+    let delay;
     try {
       const res = await fetch(`${API_BASE}/api/events/stream`, {
         headers: { 'X-API-Key': key, Accept: 'text/event-stream' },
@@ -111,8 +137,11 @@ export function openEventStream(onEvent, { retryMs = 5000 } = {}) {
       });
       if (!res.ok || !res.body) {
         if (res.status === 401 || res.status === 403) return; // wrong key: wait for the user
+        delay = res.status === 429 ? Math.max(retryAfterMs(res), backoff()) : backoff();
+        failures += 1;
         throw new Error(`HTTP ${res.status}`);
       }
+      failures = 0; // accepted
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
@@ -129,17 +158,22 @@ export function openEventStream(onEvent, { retryMs = 5000 } = {}) {
           try { onEvent(JSON.parse(data)); } catch { /* ignore malformed event */ }
         }
       }
+      delay = retryMs; // stream ended after being accepted (e.g. max lifetime)
     } catch {
       /* network error or abort — retry below unless closed */
+      if (delay === undefined) {
+        delay = backoff();
+        failures += 1;
+      }
     }
-    if (!closed) timer = setTimeout(connect, retryMs);
+    if (!closed) timer = schedule(connect, delay);
   };
 
   connect();
   return {
     close() {
       closed = true;
-      if (timer) clearTimeout(timer);
+      if (timer) cancel(timer);
       if (controller) controller.abort();
     },
   };

@@ -29,7 +29,10 @@ export default function App() {
     let es
     try {
       es = openEventStream((data) => {
-        if (data.type !== 'heartbeat') {
+        if (data.type === 'stream_gap') {
+          // SEC-04: events were dropped for this slow listener — re-read state
+          refreshStatus()
+        } else if (data.type !== 'heartbeat') {
           setLiveEvent(data)
           if (data.type === 'task_completed' || data.type === 'task_created') {
             refreshStatus()

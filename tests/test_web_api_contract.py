@@ -150,14 +150,18 @@ async def test_sse_stream_yields_event(tenant_auth):
     TestClient يعلق على stream لانهائي؛ لذا نستدعي endpoint مباشرة (نفس المولد
     الذي يخدمه) مع حدث في طابور المستأجر (SEC-02: طابور لكل مستأجر)، ونقرأ أول chunk بمهلة.
     """
-    # unique tag; drain any leftover events from earlier tests first
+    # SEC-04 (R-144): the stream subscribes when it is admitted (before the
+    # 200); an event published after that reaches it (nothing is queued for a
+    # tenant with no stream — before R-144 the event was put in advance).
+    from starlette.requests import Request
     tag = f"r043_{time.time()}"
-    queue = server.tenant_events(tenant_auth.tenant)
-    while not queue.empty():
-        queue.get_nowait()
-    await queue.put({"type": tag})
-    response = await server.event_stream(api_key=tenant_auth.key)
+    request = Request({"type": "http", "method": "GET", "path": "/api/events/stream", "headers": [],
+                       "query_string": b"", "client": ("127.0.0.1", 1)})
+    response = await server.event_stream(request, api_key=tenant_auth.key)
+    await server._publish(tenant_auth.tenant, {"type": tag})
     aiter = response.body_iterator
     chunk = await asyncio.wait_for(aiter.__anext__(), timeout=3)
     assert chunk.startswith("data: ")
     assert tag in chunk
+    await aiter.aclose()
+    assert server.EVENT_BUS.subscribers(tenant_auth.tenant) == 0

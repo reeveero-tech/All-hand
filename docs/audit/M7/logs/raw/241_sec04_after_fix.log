@@ -1,0 +1,101 @@
+# SEC-04 (R-144) — after the fix, branch m7/r144-sec04-sse-broadcast-bounds (base 1f9fb42), Python 3.14.3
+# cmd: python3 -m pytest tests/test_sec04_sse_broadcast_bounds.py -v -p no:cacheprovider
+tests/test_sec04_sse_broadcast_bounds.py::test_two_listeners_of_one_tenant_each_receive_every_event_and_other_tenant_none PASSED [  3%]
+tests/test_sec04_sse_broadcast_bounds.py::test_real_task_events_reach_both_listeners PASSED [  6%]
+tests/test_sec04_sse_broadcast_bounds.py::test_no_listener_nothing_is_kept PASSED [  9%]
+tests/test_sec04_sse_broadcast_bounds.py::test_per_client_limit_refused_with_429_before_stream PASSED [ 12%]
+tests/test_sec04_sse_broadcast_bounds.py::test_disconnect_releases_capacity PASSED [ 15%]
+tests/test_sec04_sse_broadcast_bounds.py::test_unauthenticated_refused_without_subscription_or_capacity PASSED [ 18%]
+tests/test_sec04_sse_broadcast_bounds.py::test_stream_route_has_general_rate_limit PASSED [ 21%]
+tests/test_sec04_sse_broadcast_bounds.py::test_lifetime_ends_stream_and_releases PASSED [ 24%]
+tests/test_sec04_sse_broadcast_bounds.py::test_heartbeat_when_idle_and_format PASSED [ 27%]
+tests/test_sec04_sse_broadcast_bounds.py::test_full_queue_drops_oldest_reports_gap_and_never_blocks_publisher PASSED [ 30%]
+tests/test_sec04_sse_broadcast_bounds.py::test_capacity_limits_refuse_before_stream[total] PASSED [ 33%]
+tests/test_sec04_sse_broadcast_bounds.py::test_capacity_limits_refuse_before_stream[per_tenant] PASSED [ 36%]
+tests/test_sec04_sse_broadcast_bounds.py::test_capacity_limits_refuse_before_stream[per_client] PASSED [ 39%]
+tests/test_sec04_sse_broadcast_bounds.py::test_open_rate_refuses_then_allows_after_window PASSED [ 42%]
+tests/test_sec04_sse_broadcast_bounds.py::test_cleanup_once_on_cancel_exception_and_unstarted_response PASSED [ 45%]
+tests/test_sec04_sse_broadcast_bounds.py::test_admin_stream_is_own_tenant_only PASSED [ 48%]
+tests/test_sec04_sse_broadcast_bounds.py::test_tracking_map_is_bounded PASSED [ 51%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_QUEUE_SIZE-0] PASSED [ 54%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_QUEUE_SIZE--5] PASSED [ 57%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_QUEUE_SIZE-abc] PASSED [ 60%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_QUEUE_SIZE-100000000] PASSED [ 63%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_CONNECTIONS-0] PASSED [ 66%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_PER_TENANT-0] PASSED [ 69%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_PER_CLIENT--1] PASSED [ 72%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_OPEN_RATE-0] PASSED [ 75%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_OPEN_WINDOW-0] PASSED [ 78%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_LIFETIME-0] PASSED [ 81%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_LIFETIME-9999999] PASSED [ 84%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_HEARTBEAT-0] PASSED [ 87%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_PER_TENANT-500] PASSED [ 90%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_OPEN_RATE-1.5] PASSED [ 93%]
+tests/test_sec04_sse_broadcast_bounds.py::test_defaults_and_valid_override PASSED [ 96%]
+tests/test_sec04_sse_broadcast_bounds.py::test_server_refuses_to_start_with_invalid_limit PASSED [100%]
+============================== 33 passed in 3.99s ==============================
+
+# stability: the same file 20 more times (counts of summary lines)
+     20 ============================== 33 passed ==============================
+
+# related events/tasks/auth/isolation/web-contract tests: python3 -m pytest tests/test_sec04_sse_broadcast_bounds.py tests/test_sec02_tenant_isolation.py tests/test_r083_metrics_middleware.py tests/test_web_api_contract.py tests/test_r101_web_auth_contract.py tests/test_api.py tests/test_security.py tests/test_bug01_external_without_agent.py tests/test_bug02_chat_status_consistency.py tests/test_bug04_task_by_id_from_storage.py tests/test_sec03_production_startup.py tests/test_r042_live_storage.py -q -p no:cacheprovider -rs
+SKIPPED [1] tests/test_r042_live_storage.py:72: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:78: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:122: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:158: R-042 live storage not configured (set R042_LIVE=1)
+======================= 291 passed, 4 skipped in 22.99s ========================
+
+## web client: cd web && npm test
+ok 1 - open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+ok 2 - stored key is sent on every call, write and read
+ok 3 - key never appears in the URL or body
+ok 4 - caller headers are merged, not allowed to drop Content-Type or the key
+ok 5 - clearApiKey / empty value removes the key
+ok 6 - 401 -> clear Arabic message, status kept, auth event dispatched
+ok 7 - SEC-02: 401 with a stored key -> "key is wrong" message (server answers 401 for an invalid key)
+ok 8 - SEC-02: 403 with a valid key -> admin role message
+ok 9 - SEC-02: server without credentials -> "authentication not configured" message
+ok 10 - SEC-02: the event stream is not opened without a key
+ok 11 - SEC-02: the event stream sends X-API-Key and parses data events
+ok 12 - SEC-04: 429 waits Retry-After, never a fast retry
+ok 13 - SEC-04: repeated 429 without Retry-After backs off exponentially, capped
+ok 14 - SEC-04: short Retry-After never undercuts the backoff
+ok 15 - SEC-04: 401 / 403 stop reconnecting (no loop on a rejected key)
+ok 16 - SEC-04: network errors back off; an accepted stream that ends (max lifetime) reconnects after retryMs and resets
+ok 17 - SEC-04: stream_gap is delivered like any event; close() cancels the pending reconnect
+ok 18 - other errors keep the server detail
+ok 19 - external agent names are URL-encoded on delete
+ok 20 - no sessionStorage (blocked) -> calls still work without a key
+# tests 20
+# pass 20
+# fail 0
+
+## probe after the fix (same probe as 240)
+# cmd: PYTHONPATH=. python3 scripts/sec04/probe_sse.py
+code: new (EVENT_BUS); server http://127.0.0.1:50247 AGOS_ENV=production
+
+## 1. broadcast: listeners A1, A2 (tenant_a) and B1 (tenant_b) connected; 6 events to tenant_a, 2 to tenant_b
+A1 status=200 received=['a0', 'a1', 'a2', 'a3', 'a4', 'a5']
+A2 status=200 received=['a0', 'a1', 'a2', 'a3', 'a4', 'a5']
+B1 status=200 received=['b0', 'b1']
+tenant_b events seen by A1/A2: [] | tenant_a events seen by B1: []
+
+## 2. no listener: 5 events to tenant_a while nobody is connected, then a listener connects (0.8 s)
+before connecting: EVENT_BUS: connections=0, subscriptions[tenant_a]=0, queue maxsize=[], stats={'published': 5, 'delivered': 0, 'dropped': 0, 'no_subscriber': 5, 'opened': 0, 'closed': 0, 'refused_rate': 0, 'refused_capacity': 0}
+late listener received=[]
+
+## 3. queue bound / publisher: 1000 events to tenant_b with no reader
+published 1000 in 0.069s; EVENT_BUS: connections=0, subscriptions[tenant_b]=0, queue maxsize=[], stats={'published': 1000, 'delivered': 0, 'dropped': 0, 'no_subscriber': 1000, 'opened': 0, 'closed': 0, 'refused_rate': 0, 'refused_capacity': 0}
+with one non-reading subscriber: published 1000 in 0.042s; its queue qsize=100 maxsize=100 dropped=900
+its next event: {'type': 'stream_gap', 'missed': 900, 'recover': ['/api/tasks', '/api/events']}
+
+## 4. concurrent connections from one client: 7 attempts (tenant_a)
+statuses: [200, 200, 200, 200, 200, 429, 429] | Retry-After: ['30', '30'] | bodies: ['', '{"detail":"too many event streams, retry later"}']
+after disconnect: EVENT_BUS: connections=0, subscriptions[tenant_a]=0, queue maxsize=[], stats={'published': 0, 'delivered': 0, 'dropped': 0, 'no_subscriber': 0, 'opened': 5, 'closed': 5, 'refused_rate': 0, 'refused_capacity': 2}
+
+## 5. open-rate: 12 sequential open+close from one client (tenant_a)
+(status, Retry-After): [(200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (429, '59'), (429, '59')]
+
+## 6. release: capacity after disconnect
+after 5 opened+closed: EVENT_BUS: connections=0, subscriptions[tenant_a]=0, queue maxsize=[], stats={'published': 0, 'delivered': 0, 'dropped': 0, 'no_subscriber': 0, 'opened': 5, 'closed': 5, 'refused_rate': 0, 'refused_capacity': 0}
+5 new connections: [200, 200, 200, 200, 200]
