@@ -78,24 +78,27 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
                 proto=socket.IPPROTO_TCP)
         except asyncio.CancelledError:
             raise
-        except OSError:
-            # R-146b: a fixed policy reason — the raw resolver error text is
-            # not ours to forward to logs or responses.
+        except Exception:
+            # R-146b: a fixed policy reason — a resolver failure of ANY kind
+            # (its text is not ours to forward to logs or responses) fails
+            # closed; cancellation still propagates as cancellation.
             raise aiohttp.ClientConnectionError(
                 f"DNS resolution failed for {host}") from None
         if not infos:
             raise aiohttp.ClientConnectionError(f"no addresses for {host}")
-        addrs = sorted({info[4][0] for info in infos})
-        # Fail closed on any non-public address of the answer (UnsafeURLError);
-        # unusable entries are rejected too (check_resolved validates every
-        # entry parses as an address).
-        safety.check_resolved(host, addrs, self._allow_private)
-        # info = (family, type, proto, canonname, sockaddr): the connector gets
-        # the vetted IP literal as "host" (never a name to re-resolve), the
-        # requested port, the socket family and the protocol from the answer.
-        return [{"hostname": host, "host": info[4][0], "port": info[4][1],
-                 "family": info[0], "proto": info[2], "flags": 0}
-                for info in infos]
+        # R-146b: the SAME shared gate as the urllib path (safety.
+        # validate_getaddrinfo) — the whole answer is policy-checked and every
+        # entry validated (numeric connect target, integer port, family
+        # match); a malformed entry fails closed with the fixed reason, never
+        # with a raw extraction error.  UnsafeURLError (the policy rejection)
+        # propagates as-is: it is already a clean, fixed reason.
+        targets = safety.validate_getaddrinfo(host, infos, self._allow_private)
+        # The connector gets the vetted IP literal as "host" (never a name to
+        # re-resolve), the requested port, the socket family and the protocol
+        # from the validated answer.
+        return [{"hostname": host, "host": ip, "port": port,
+                 "family": family, "proto": proto, "flags": 0}
+                for family, proto, (ip, port) in targets]
 
     async def close(self) -> None:  # aiohttp resolver interface
         return None

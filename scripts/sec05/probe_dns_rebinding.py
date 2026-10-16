@@ -44,27 +44,63 @@ LISTEN_HOST = "127.0.0.2"          # loopback /8: local-only, stays non-public
 FIRST_ANSWER = "192.0.2.1"         # allowed by the policy (documentation range)
 
 
-class _LoopbackOnly:
+def _install_connect_barrier() -> None:
     """A local connection barrier: a non-loopback connect raises.
 
     The probe runs outside pytest, so it does not inherit the suite's offline
-    guard — this restores the same guarantee standalone.
+    guard — this restores the same guarantee standalone.  A plain wrapper
+    function is installed (NOT a pre-bound method: assigning a bound method to
+    the class would leave the wrapper reading the barrier as ``sock`` and
+    break the call).  ``_selfcheck_connect_barrier`` proves the barrier with a
+    real loopback connect AND a refused non-loopback target before the probe
+    relies on it.
     """
+    orig = socket.socket.connect
 
-    def __init__(self):
-        self._orig = socket.socket.connect
-
-    def guarded(self, sock, addr):
-        host = addr[0] if isinstance(addr, tuple) else None
+    def guarded(sock, addr):
         if isinstance(addr, tuple):
             try:
-                loopback = ipaddress.ip_address(str(host).strip("[]")).is_loopback
+                loopback = ipaddress.ip_address(
+                    str(addr[0]).strip("[]")).is_loopback
             except ValueError:
                 loopback = False
             if not loopback:
                 raise OSError(
                     f"probe barrier: non-loopback connect to {addr!r} refused")
-        return self._orig(sock, addr)
+        return orig(sock, addr)
+
+    socket.socket.connect = guarded  # noqa: E501
+
+
+def _selfcheck_connect_barrier() -> None:
+    """Positive + negative control of the barrier itself."""
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    port = server.getsockname()[1]
+    try:
+        ok = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ok.settimeout(3)
+        try:
+            ok.connect(("127.0.0.1", port))   # loopback must pass
+            print("[barrier ] self-check: loopback connect allowed")
+        finally:
+            ok.close()
+        try:
+            bad = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            bad.settimeout(3)
+            try:
+                bad.connect(("192.0.2.254", port))  # non-loopback must refuse
+                raise SystemExit("barrier self-check FAILED: connect allowed")
+            finally:
+                bad.close()
+        except OSError as e:
+            if "probe barrier" not in str(e):
+                raise SystemExit(
+                    f"barrier self-check FAILED: refused by something else: {e}")
+            print("[barrier ] self-check: non-loopback connect refused")
+    finally:
+        server.close()
 
 
 class _Listener(http.server.BaseHTTPRequestHandler):
@@ -112,12 +148,12 @@ class ControlledDNS:
 def main() -> int:
     print("SEC-05 DNS-rebinding probe —", end=" ")
     print("controlled DNS, listener on 127.0.0.2, no external network")
-    barrier = _LoopbackOnly()
-    socket.socket.connect = barrier.guarded  # noqa: deliberate local patch
+    _install_connect_barrier()
+    _selfcheck_connect_barrier()
     srv = _serve()
     port = srv.server_address[1]
     dns = ControlledDNS()
-    socket.getaddrinfo = dns.fake  # noqa: deliberate process-local patch
+    socket.getaddrinfo = dns.fake  # noqa: E501
     blocked = []
     rejections = []
 
