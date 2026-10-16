@@ -475,29 +475,37 @@ async def readiness_probe():
     """
     Kubernetes readiness probe.
     
-    Returns 200 if the application is ready to accept traffic.
-    Checks:
+    Returns 200 only if the application is ready to accept traffic; every
+    not-ready state answers 503 (BUG-03, R-142 — before: 200 with
+    ``status: not_ready``). Checks:
     - API is responsive
     - Civilization is initialized
     """
+    def not_ready(reason: str) -> JSONResponse:
+        return JSONResponse(status_code=503, content={"status": "not_ready", "reason": reason})
+
     try:
         # Check if civilization is initialized
         if not CIVILIZATION:
-            return {"status": "not_ready", "reason": "Civilization not initialized"}
-        
+            return not_ready("Civilization not initialized")
+
         # Check if agents are available
         total_agents = sum(len(agents) for agents in CIVILIZATION.values())
         if total_agents == 0:
-            return {"status": "not_ready", "reason": "No agents available"}
-        
+            return not_ready("No agents available")
+
         return {
             "status": "ready",
             "agents": total_agents,
             "specializations": len(SPECIALIZATIONS)
         }
-        
+
     except Exception as e:
-        return {"status": "not_ready", "reason": str(e)}
+        # The check could not complete: not ready. The response carries a
+        # fixed reason (it used to echo str(e)); the internal log names the
+        # exception type only, so no message content can leak from here.
+        logger.warning("readiness check failed: %s", type(e).__name__)
+        return not_ready("readiness check failed")
 
 
 @app.get("/metrics")

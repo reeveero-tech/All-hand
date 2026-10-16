@@ -1,0 +1,23 @@
+# BUG-03 (R-142) — before the fix: main 090eb92, server.py unchanged; only tests/test_api.py changed
+# python: Python 3.14.3
+# cmd: python3 -m pytest tests/test_api.py -v -p no:cacheprovider -k 'readiness or liveness'
+tests/test_api.py::test_api_liveness PASSED                              [ 11%]
+tests/test_api.py::test_api_readiness PASSED                             [ 22%]
+tests/test_api.py::test_api_readiness_not_ready_is_503[civilization_empty] FAILED [ 33%]
+tests/test_api.py::test_api_readiness_not_ready_is_503[zero_agents] FAILED [ 44%]
+tests/test_api.py::test_api_readiness_not_ready_is_503[exception] FAILED [ 55%]
+tests/test_api.py::test_api_readiness_exception_does_not_leak_details FAILED [ 66%]
+tests/test_api.py::test_api_liveness_stays_200_when_not_ready[civilization_empty] PASSED [ 77%]
+tests/test_api.py::test_api_liveness_stays_200_when_not_ready[zero_agents] PASSED [ 88%]
+tests/test_api.py::test_api_liveness_stays_200_when_not_ready[exception] PASSED [100%]
+================== 4 failed, 5 passed, 16 deselected in 0.54s ==================
+
+## failure reasons
+      4 E   assert 200 == 503
+
+## probe: the four readiness states over the real route (status code + body), and /health/live
+# cmd: PYTHONPATH=. python3 scripts/bug03/probe_readiness.py
+ready (initialised, agents present)    | /health/ready -> 200 {"agents": 1000, "specializations": 20, "status": "ready"} | /health/live -> 200 alive | secret in body: False
+CIVILIZATION empty                     | /health/ready -> 200 {"reason": "Civilization not initialized", "status": "not_ready"} | /health/live -> 200 alive | secret in body: False
+pools present, zero agents             | /health/ready -> 200 {"reason": "No agents available", "status": "not_ready"} | /health/live -> 200 alive | secret in body: False
+exception while counting agents        | /health/ready -> 200 {"reason": "readiness-internal-detail SUPABASE_KEY=sb_secret_probe", "status": "not_ready"} | /health/live -> 200 alive | secret in body: True

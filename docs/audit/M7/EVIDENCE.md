@@ -490,3 +490,19 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 | الاختبار نفسه بعد الإصلاح (-v) + اختبارات API/الأمان/العزل/الإقلاع/التخزين المرتبطة | 9/9؛ 267 passed, 3 skipped (`test_r042_live_storage.py` — تُشغَّل في CI `storage`) | 0 | raw/232 |
 | المسبار نفسه بعد الإصلاح | `failed` في الذاكرة وPOST وPATCH والصف و`event_data.status` و`GET /api/tasks`؛ `ok=false` | 0 | raw/232 |
 | pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff (أمر CI) + الواجهة | 663 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/233 |
+
+## M7 — R-142: BUG-03 — `/health/ready` يرد 503 عند عدم الجاهزية (دفعة m7/r142-bug03-readiness-503، 2026-10-16)
+
+| الحالة | قبل (`090eb92`، raw/234) | بعد (raw/235) |
+|---|---|---|
+| جاهز (حضارة مهيأة، 1000 وكيل) | 200 `{"status": "ready", "agents": 1000, "specializations": 20}` | 200 — الجسم نفسه |
+| `CIVILIZATION` فارغة | **200** `not_ready` «Civilization not initialized» | **503** — الجسم نفسه |
+| تخصصات موجودة وصفر وكلاء | **200** `not_ready` «No agents available» | **503** — الجسم نفسه |
+| استثناء أثناء عدّ الوكلاء | **200** `not_ready` وسببه **نص الاستثناء حرفياً** | **503** `not_ready` «readiness check failed» (لا نص الاستثناء) |
+| `/health/live` في كل الحالات | 200 `alive` | 200 `alive` |
+
+| الفحص | النتيجة | rc | السجل |
+|---|---|---|---|
+| اختبارات الجاهزية/الحياة في `tests/test_api.py` على الكود القديم | 4 failed (`assert 200 == 503`)، 5 passed | 1 | raw/234 |
+| الاختبارات نفسها بعد الإصلاح + كل ملفات الاختبار التي تمس `/health` أو `/metrics` | 9/9؛ 172/172 | 0 | raw/235 |
+| pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff (أمر CI) + الواجهة | 670 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/236 |
