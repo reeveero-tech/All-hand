@@ -15,6 +15,13 @@ Ollama) are allowed.  Agents registered through the API may target internal
 addresses only when the server runs with AGOS_API_KEY or
 AGOS_ALLOW_PRIVATE_NETWORK=1 — otherwise an anonymous client could make the
 server call its own private network (SSRF).
+
+SEC-01: aiohttp follows redirects by default, which skipped that check for
+every hop after the first (a public URL answering ``302 Location:
+http://169.254.169.254/...`` reached the target).  Redirects are now followed
+manually (``allow_redirects=False``) and ``safety.check_url`` is applied to
+every target before it is contacted — the same policy ``safety.safe_urlopen``
+applies to urllib.
 """
 
 import json
@@ -22,6 +29,7 @@ import logging
 import os
 import time
 from typing import Any, Dict, List
+from urllib.parse import urljoin, urlsplit
 
 import aiohttp
 
@@ -32,6 +40,9 @@ logger = logging.getLogger("external_agents")
 
 class ExternalAgentAdapter:
     """Wraps a real remote agent behind the same execute() contract."""
+
+    # SEC-01: same bound as safety._CheckedRedirectHandler (urllib path).
+    MAX_REDIRECTS = 5
 
     def __init__(self, name: str, url: str, model: str = "", api_key: str = "",
                  allow_private: bool = False):
@@ -57,14 +68,11 @@ class ExternalAgentAdapter:
         if self.model:
             payload["model"] = self.model
         try:
-            from agent_civilization.core import pools  # R-132: DNS check on the net pool
-            await pools.run("net", safety.check_url, self.url, self.allow_private)
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120)) as s:
-                async with s.post(self.url, headers=headers, json=payload) as r:
-                    body = await r.text()
-                    if r.status != 200:
-                        raise RuntimeError(f"HTTP {r.status}: {body[:300]}")
-                    data = json.loads(body)
+                status, body = await self._post_checked(s, headers, payload)
+            if status != 200:
+                raise RuntimeError(f"HTTP {status}: {body[:300]}")
+            data = json.loads(body)
             content = data["choices"][0]["message"]["content"]
             self.stats["tasks_completed"] += 1
             ok, result = True, {"answer": content, "external_agent": self.name}
@@ -82,6 +90,39 @@ class ExternalAgentAdapter:
             "elapsed_s": round(elapsed, 2),
             "result": result,
         }
+
+    async def _post_checked(self, session, headers: Dict[str, str],
+                            payload: Dict[str, Any]):
+        """POST ``payload``, following redirects manually (SEC-01).
+
+        ``safety.check_url`` runs on the first URL and on every redirect
+        target BEFORE it is contacted.  Method semantics match aiohttp's own
+        redirect handling: 307/308 keep POST and the body; 303, and 301/302
+        after a POST, switch to GET without a body.  The Authorization header
+        is dropped when the redirect leaves the original origin (aiohttp does
+        the same), so the agent's key is not sent to another host.
+        """
+        from agent_civilization.core import pools  # R-132: DNS check on the net pool
+        url, method, body_json = self.url, "POST", payload
+        headers = dict(headers)
+        origin = urlsplit(self.url)[:2]
+        for _hop in range(self.MAX_REDIRECTS + 1):
+            await pools.run("net", safety.check_url, url, self.allow_private)
+            kwargs: Dict[str, Any] = {"headers": headers, "allow_redirects": False}
+            if body_json is not None:
+                kwargs["json"] = body_json
+            async with session.request(method, url, **kwargs) as r:
+                status = r.status
+                location = r.headers.get("Location")
+                if status not in (301, 302, 303, 307, 308) or not location:
+                    return status, await r.text()
+            url = urljoin(url, location)
+            if status == 303 or (status in (301, 302) and method == "POST"):
+                method, body_json = "GET", None
+                headers.pop("Content-Type", None)
+            if urlsplit(url)[:2] != origin:
+                headers.pop("Authorization", None)
+        raise RuntimeError(f"too many redirects (> {self.MAX_REDIRECTS})")
 
     def snapshot(self) -> Dict[str, Any]:
         return {

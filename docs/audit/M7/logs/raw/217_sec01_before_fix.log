@@ -1,0 +1,57 @@
+# SEC-01 قبل الإصلاح — الاختبار على الكود الحالي faa5b8d — 2026-10-16T00:13:13Z
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/agos
+configfile: pytest.ini
+plugins: platformdirs-4.13.1, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 8 items
+
+tests/test_sec01_external_redirect.py FFFFF.F.                           [100%]
+
+=================================== FAILURES ===================================
+_______________ test_redirect_from_public_to_loopback_is_blocked _______________
+tests/test_sec01_external_redirect.py:120: in test_redirect_from_public_to_loopback_is_blocked
+    assert internal.hits == 0                          # the redirect target never was
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 1 == 0
+E    +  where 1 = <class 'tests.test_sec01_external_redirect._InternalHandler'>.hits
+______ test_redirect_to_non_public_targets_is_blocked[http://10.0.0.5/v1] ______
+tests/test_sec01_external_redirect.py:140: in test_redirect_to_non_public_targets_is_blocked
+    assert "blocked non-public address" in err or "scheme not allowed" in err
+E   AssertionError: assert ('blocked non-public address' in 'Cannot connect to host 10.0.0.5:80 ssl:default [None]' or 'scheme not allowed' in 'Cannot connect to host 10.0.0.5:80 ssl:default [None]')
+------------------------------ Captured log call -------------------------------
+WARNING  external_agents:external_adapter.py:72 external agent sec01 failed: Cannot connect to host 10.0.0.5:80 ssl:default [None]
+_ test_redirect_to_non_public_targets_is_blocked[http://169.254.169.254/latest/meta-data/] _
+tests/test_sec01_external_redirect.py:140: in test_redirect_to_non_public_targets_is_blocked
+    assert "blocked non-public address" in err or "scheme not allowed" in err
+E   AssertionError: assert ('blocked non-public address' in 'Cannot connect to host 169.254.169.254:80 ssl:default [None]' or 'scheme not allowed' in 'Cannot connect to host 169.254.169.254:80 ssl:default [None]')
+------------------------------ Captured log call -------------------------------
+WARNING  external_agents:external_adapter.py:72 external agent sec01 failed: Cannot connect to host 169.254.169.254:80 ssl:default [None]
+_____ test_redirect_to_non_public_targets_is_blocked[http://[::1]:8080/v1] _____
+tests/test_sec01_external_redirect.py:140: in test_redirect_to_non_public_targets_is_blocked
+    assert "blocked non-public address" in err or "scheme not allowed" in err
+E   assert ('blocked non-public address' in "Cannot connect to host ::1:8080 ssl:default [Connect call failed ('::1', 8080, 0, 0)]" or 'scheme not allowed' in "Cannot connect to host ::1:8080 ssl:default [Connect call failed ('::1', 8080, 0, 0)]")
+------------------------------ Captured log call -------------------------------
+WARNING  external_agents:external_adapter.py:72 external agent sec01 failed: Cannot connect to host ::1:8080 ssl:default [Connect call failed ('::1', 8080, 0, 0)]
+______ test_redirect_to_non_public_targets_is_blocked[file:///etc/passwd] ______
+tests/test_sec01_external_redirect.py:140: in test_redirect_to_non_public_targets_is_blocked
+    assert "blocked non-public address" in err or "scheme not allowed" in err
+E   AssertionError: assert ('blocked non-public address' in 'file:///etc/passwd' or 'scheme not allowed' in 'file:///etc/passwd')
+------------------------------ Captured log call -------------------------------
+WARNING  external_agents:external_adapter.py:72 external agent sec01 failed: file:///etc/passwd
+________________________ test_redirect_loop_is_bounded _________________________
+tests/test_sec01_external_redirect.py:163: in test_redirect_loop_is_bounded
+    assert out["ok"] is False and "too many redirects" in out["result"]["error"]
+E   assert (False is False and 'too many redirects' in "0, message='', url='http://127.0.0.1:36603/v1'")
+------------------------------ Captured log call -------------------------------
+WARNING  external_agents:external_adapter.py:72 external agent sec01 failed: 0, message='', url='http://127.0.0.1:36603/v1'
+=========================== short test summary info ============================
+FAILED tests/test_sec01_external_redirect.py::test_redirect_from_public_to_loopback_is_blocked
+FAILED tests/test_sec01_external_redirect.py::test_redirect_to_non_public_targets_is_blocked[http://10.0.0.5/v1]
+FAILED tests/test_sec01_external_redirect.py::test_redirect_to_non_public_targets_is_blocked[http://169.254.169.254/latest/meta-data/]
+FAILED tests/test_sec01_external_redirect.py::test_redirect_to_non_public_targets_is_blocked[http://[::1]:8080/v1]
+FAILED tests/test_sec01_external_redirect.py::test_redirect_to_non_public_targets_is_blocked[file:///etc/passwd]
+FAILED tests/test_sec01_external_redirect.py::test_redirect_loop_is_bounded
+========================= 6 failed, 2 passed in 5.21s ==========================
+PYTEST_RC=1
