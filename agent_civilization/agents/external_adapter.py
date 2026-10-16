@@ -39,7 +39,6 @@ inside one session only reuses a connection that was itself vetted.
 """
 
 import asyncio
-import ipaddress
 import json
 import logging
 import os
@@ -98,43 +97,33 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
         # re-resolve), the requested port, the socket family and the protocol
         # from the validated answer.  The sockaddr is consumed WITHOUT
         # assuming two elements — an IPv6 entry may carry flowinfo/scope_id.
+        # R-146b review round 6 — the representability line, read from the
+        # actual source of every supported Python (3.11/3.12/3.14): the
+        # agent transport rebuilds its connect sockaddr from the host
+        # literal alone.  A PLAIN literal takes asyncio's inet_pton fast
+        # path (socket.connect, no resolution call — structurally safe).
+        # A SCOPED literal ("ip%N") FAILS that fast path ("'%' in host" is
+        # rejected in _ipaddr_info) and falls into loop.getaddrinfo(...,
+        # flags=0) — an unguarded post-gate resolution call, which the
+        # SEC-05 structural rule forbids.  Scoped IPv6 entries (numeric
+        # scope_id, a "%" in the literal, or nonzero flowinfo) are therefore
+        # REFUSED with this fixed reason instead of re-represented as a
+        # string that opens that path; the urllib path keeps the vetted
+        # NUMERIC sockaddr natively and needs no re-representation.
         results = []
         for family, proto, sockaddr in targets:
             ip, port = sockaddr[0], sockaddr[1]
             extras = sockaddr[2:]
             if extras:
-                # R-146b review round 4: this transport builds its connect
-                # sockaddr from the host literal alone (aiohttp's
-                # _convert_hosts_to_addr_infos hardcodes flowinfo/scope_id to
-                # 0), so a NUMERIC IPv6 scope must ride INSIDE the literal to
-                # reach the connect target — and a nonzero flowinfo, which the
-                # transport cannot represent at all, fails closed with a
-                # fixed reason instead of being silently dropped.  A scope
-                # already embedded in the literal ("%eth0") carries the
-                # interface and is passed through unchanged.
                 flowinfo, scope_id = extras
-                if flowinfo:
+                if flowinfo or scope_id:
                     raise safety.UnsafeURLError(
-                        f"IPv6 flowinfo is not representable for {host}")
-                if scope_id:
-                    if "%" in ip:
-                        # BOTH representations are present: they must AGREE
-                        # (the kernel that answered resolves the scope to an
-                        # interface index), else the entry is inconsistent
-                        # and fails closed — the string scope is never
-                        # silently preferred over the numeric one.
-                        scope_str = ip.split("%", 1)[1]
-                        try:
-                            resolved = (int(scope_str) if scope_str.isdigit()
-                                        else socket.if_nametoindex(scope_str))
-                        except (OSError, ValueError):
-                            resolved = None
-                        if resolved != scope_id:
-                            raise safety.UnsafeURLError(
-                                f"conflicting IPv6 scope information for {host}")
-                    else:
-                        ip = f"{ip}%{scope_id}"
-                ipaddress.ip_address(ip)   # the composed literal re-validated
+                        f"IPv6 flowinfo/scope is not representable by the "
+                        f"agent transport for {host}")
+            if "%" in ip:
+                raise safety.UnsafeURLError(
+                    f"IPv6 scope is not representable by the agent "
+                    f"transport for {host}")
             results.append({"hostname": host, "host": ip, "port": port,
                            "family": family, "proto": proto, "flags": 0})
         return results
