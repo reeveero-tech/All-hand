@@ -1,0 +1,13 @@
+R-149 — CI jobs summary on the FINAL head a3ee544962167807f7304697c42f987b57810073 — 2026-10-16
+Run 38963184074 (AGOS Kernel CI/CD): https://github.com/reeveero-tech/All-hand/actions/runs/38963184074
+
+quality	success
+test	success
+network	success
+docker	success
+build	success
+storage	success
+audit	success
+publish	skipped (D-011, expected)
+
+Job logs: build -> docs/audit/M7/logs/raw/288_r149_ci_build_job.log (npm ci + npm run build + vite build for root and web/), docker -> docs/audit/M7/logs/raw/289_r149_ci_docker_job.log
