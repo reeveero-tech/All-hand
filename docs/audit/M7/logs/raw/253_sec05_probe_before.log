@@ -1,0 +1,12 @@
+SEC-05 BEFORE-fix probe — 2026-10-16T07:38Z — branch m7/r146-sec05-dns-rebinding (code unchanged, main 6369b77)
+command: python scripts/sec05/probe_dns_rebinding.py
+
+SEC-05 DNS-rebinding probe — controlled DNS, listener on 127.0.0.2, no external network
+[urllib  ] CONNECTED to listener (HTTP 200, body='{"choices": [{"message": {"content": "IN')
+[urllib  ] internal listener hits: 1
+[urllib  ] resolutions of urllib.probe: 2
+[aiohttp ] ok=True result={"answer": "INTERNAL", "external_agent": "probe"}
+[aiohttp ] internal listener hits: 1
+[aiohttp ] resolutions of aiohttp.probe: 2
+GAP PRESENT (before fix): the internal listener was reached via urllib, aiohttp — DNS rebinding between check and connect is live.
+PROBE_RC=1 (1 = gap present: the pre-fix expected result)

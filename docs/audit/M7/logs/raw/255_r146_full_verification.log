@@ -1,0 +1,38 @@
+R-146 full verification (final) — 2026-10-16T07:46Z — branch m7/r146-sec05-dns-rebinding
+
+== full suite ==
+
+=========== 782 passed, 4 skipped, 4 deselected in 68.05s (0:01:08) ============
+PYTEST_RC=0
+
+== SEC-05 file ==
+============================== 23 passed in 8.07s ==============================
+SEC05_RC=0
+
+== probe (after fix) ==
+external agent probe failed: blocked non-public address for aiohttp.probe: 127.0.0.2 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)
+SEC-05 DNS-rebinding probe — controlled DNS, listener on 127.0.0.2, no external network
+[urllib  ] failed closed: UnsafeURLError: blocked non-public address for urllib.probe: 127.0.0.2 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)
+[urllib  ] internal listener hits: 0
+[urllib  ] resolutions of urllib.probe: 2
+[aiohttp ] ok=False result={"error": "blocked non-public address for aiohttp.probe: 127.0.0.2 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal t
+[aiohttp ] internal listener hits: 0
+[aiohttp ] resolutions of aiohttp.probe: 2
+BLOCKED (after fix): neither path reached the internal listener.
+PROBE_RC=0
+
+== live network tests ==
+====================== 4 passed, 786 deselected in 1.81s =======================
+NETWORK_RC=0
+
+== ruff ==
+All checks passed!
+RUFF_RC=0
+
+== web build ==
+✓ built in 123ms
+WEB_RC=0
+
+== root build ==
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+ROOT_RC=0

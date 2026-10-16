@@ -21,6 +21,8 @@ stdlib and has no side effects at import time.
 
 from __future__ import annotations
 
+import errno
+import http.client
 import ipaddress
 import os
 import signal
@@ -263,6 +265,32 @@ def resolve_host(host: str, port: Optional[int] = None) -> List[str]:
     return sorted({info[4][0] for info in infos})
 
 
+def check_resolved(host: str, addrs: List[str],
+                   allow_private: Optional[bool] = None) -> None:
+    """SEC-05: apply the outbound address policy to an ALREADY-RESOLVED set.
+
+    The single policy decision shared by every transport layer: ALL addresses
+    of the answer are checked (a mixed IPv4/IPv6 answer with one internal
+    address is rejected, not cherry-picked), an empty or unusable answer is
+    rejected, and the caller gets the addresses it may connect to.  This
+    function never resolves anything itself — the transport hands it the exact
+    results it is about to connect to, so the check and the connection cannot
+    drift apart (DNS rebinding).
+    """
+    if not host:
+        raise UnsafeURLError("missing host")
+    if not addrs:
+        raise UnsafeURLError(f"no usable addresses for {host}")
+    if allow_private is None:
+        allow_private = private_network_allowed()
+    if not allow_private:
+        bad = [a for a in addrs if not is_public_address(a)]
+        if bad:
+            raise UnsafeURLError(
+                f"blocked non-public address for {host}: {', '.join(bad)} "
+                "(set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)")
+
+
 def check_host(host: str, port: Optional[int] = None, allow_private: Optional[bool] = None) -> List[str]:
     """Resolve ``host`` and raise UnsafeURLError if any address is non-public."""
     if not host:
@@ -270,12 +298,7 @@ def check_host(host: str, port: Optional[int] = None, allow_private: Optional[bo
     if allow_private is None:
         allow_private = private_network_allowed()
     addrs = resolve_host(host, port)
-    if not allow_private:
-        bad = [a for a in addrs if not is_public_address(a)]
-        if bad:
-            raise UnsafeURLError(
-                f"blocked non-public address for {host}: {', '.join(bad)} "
-                "(set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)")
+    check_resolved(host, addrs, allow_private)
     return addrs
 
 
@@ -326,15 +349,161 @@ def tls_context() -> ssl.SSLContext:
     return _TLS_CONTEXT
 
 
-def safe_urlopen(req: urllib.request.Request, timeout: float, allow_private: Optional[bool] = None):
-    """``urlopen`` with the outbound policy applied to the URL and to redirects.
+def vetted_sockaddrs(host: str, port: Optional[int] = None,
+                      allow_private: Optional[bool] = None) -> List[Tuple[int, tuple]]:
+    """SEC-05: resolve ``host`` ONCE and return the vetted connect targets.
 
-    Residual (documented): resolution and connection are separate steps, so a
-    DNS answer that changes between them (rebinding) is not covered here.
+    ``socket.getaddrinfo`` runs a single time; the outbound address policy is
+    applied to EVERY address of that answer (``check_resolved``); the caller
+    receives the exact ``(family, sockaddr)`` pairs it may open a socket to.
+    A DNS failure raises ``UnsafeURLError`` (fail closed) and an empty answer
+    is rejected — the request never falls back to an unguarded transport.
+    """
+    if not host:
+        raise UnsafeURLError("missing host")
+    try:
+        infos = socket.getaddrinfo(host, port or 0, 0, socket.SOCK_STREAM,
+                                   socket.IPPROTO_TCP)
+    except OSError:
+        raise UnsafeURLError(f"DNS resolution failed for {host}") from None
+    addrs = sorted({info[4][0] for info in infos})
+    check_resolved(host, addrs, allow_private)
+    return [(info[0], info[4]) for info in infos]
+
+
+def _connect_vetted(host: str, port: Optional[int], timeout, source_address,
+                    allow_private: Optional[bool]) -> socket.socket:
+    """Open a socket directly to a vetted sockaddr (SEC-05).
+
+    ``socket.create_connection`` is deliberately NOT used: it re-resolves the
+    hostname, which is exactly the gap this closes.  Every candidate address
+    comes from ``vetted_sockaddrs`` — the same resolution the policy checked.
+    """
+    sockaddrs = vetted_sockaddrs(host, port, allow_private)
+    last_exc: Optional[OSError] = None
+    for family, sockaddr in sockaddrs:
+        s = socket.socket(family, socket.SOCK_STREAM)
+        try:
+            if timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
+                s.settimeout(timeout)
+            if source_address:
+                s.bind(source_address)
+            s.connect(sockaddr)
+            return s
+        except OSError as e:
+            last_exc = e
+            try:
+                s.close()
+            except OSError:
+                pass
+    raise last_exc if last_exc is not None else UnsafeURLError(
+        f"no usable addresses for {host}")
+
+
+class _GuardedHTTPConnection(http.client.HTTPConnection):
+    """``HTTPConnection`` that connects only to policy-vetted addresses.
+
+    The hostname in the request line and the ``Host`` header stays the ORIGINAL
+    URL hostname — only the socket target is pinned to a vetted sockaddr.
+    """
+
+    def __init__(self, host, **kwargs):
+        self._allow_private = kwargs.pop("allow_private", None)
+        super().__init__(host, **kwargs)
+
+    def connect(self):
+        sys.audit("http.client.connect", self, self.host, self.port)
+        self.sock = _connect_vetted(self.host, self.port, self.timeout,
+                                    self.source_address, self._allow_private)
+        try:
+            self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except OSError as e:
+            if e.errno != errno.ENOPROTOOPT:
+                raise
+
+
+class _GuardedHTTPSConnection(http.client.HTTPSConnection):
+    """``HTTPSConnection`` that connects only to policy-vetted addresses.
+
+    TLS keeps using the ORIGINAL URL hostname for SNI and certificate
+    verification (``server_hostname``); connecting to a vetted IP never
+    weakens the identity check.
+    """
+
+    def __init__(self, host, **kwargs):
+        self._allow_private = kwargs.pop("allow_private", None)
+        super().__init__(host, **kwargs)
+
+    def connect(self):
+        sys.audit("http.client.connect", self, self.host, self.port)
+        self.sock = _connect_vetted(self.host, self.port, self.timeout,
+                                    self.source_address, self._allow_private)
+        try:
+            self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except OSError as e:
+            if e.errno != errno.ENOPROTOOPT:
+                raise
+        if self._tunnel_host:
+            self._tunnel()
+            server_hostname = self._tunnel_host
+        else:
+            server_hostname = self.host
+        self.sock = self._context.wrap_socket(self.sock,
+                                              server_hostname=server_hostname)
+
+
+class _GuardedHTTPHandler(urllib.request.HTTPHandler):
+    """HTTP handler whose connections are pinned to vetted addresses."""
+
+    def __init__(self, allow_private: Optional[bool]):
+        super().__init__()
+        self._allow_private = allow_private
+
+    def http_open(self, req):
+        return self.do_open(
+            lambda *a, **k: _GuardedHTTPConnection(
+                *a, allow_private=self._allow_private, **k), req)
+
+
+class _GuardedHTTPSHandler(urllib.request.HTTPSHandler):
+    """HTTPS handler whose connections are pinned to vetted addresses.
+
+    Same shared, verifying TLS context as before (R-121); only the socket
+    target is pinned.  SNI and certificate verification keep the URL hostname.
+    """
+
+    def __init__(self, allow_private: Optional[bool], context=None):
+        super().__init__(context=context)
+        self._allow_private = allow_private
+
+    def https_open(self, req):
+        return self.do_open(
+            lambda *a, **k: _GuardedHTTPSConnection(
+                *a, allow_private=self._allow_private, **k), req,
+            context=self._context)
+
+
+def safe_urlopen(req: urllib.request.Request, timeout: float, allow_private: Optional[bool] = None):
+    """``urlopen`` with the outbound policy pinned to the actual connection.
+
+    SEC-05: the address policy is applied inside the connection layer — the
+    socket is opened directly to an address from the SAME resolution the
+    policy checked, so a DNS answer that changes between a check and the
+    connection (rebinding) cannot make this path reach an unvetted address.
+    The early ``check_url`` is kept as a fast pre-check; the security decision
+    is the vetted connection itself.  Redirects are re-checked per hop
+    (R-100/SEC-01) and every redirected request opens a new guarded connection.
+
+    Proxies from the environment are NOT honored for these protected requests:
+    a proxy would resolve the destination itself and the vetted-address
+    guarantee could not be kept (documented in OPERATIONS.md).
     """
     check_url(req.full_url, allow_private)
-    opener = urllib.request.build_opener(_CheckedRedirectHandler(allow_private),
-                                         urllib.request.HTTPSHandler(context=tls_context()))
+    opener = urllib.request.build_opener(
+        _CheckedRedirectHandler(allow_private),
+        _GuardedHTTPHandler(allow_private),
+        _GuardedHTTPSHandler(allow_private, context=tls_context()),
+        urllib.request.ProxyHandler({}))
     handlers = list(opener.handlers)
     try:
         return opener.open(req, timeout=timeout)
