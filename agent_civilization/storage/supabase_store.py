@@ -158,16 +158,18 @@ def reset_storage_stats() -> None:
 
 
 async def _accepted(r: aiohttp.ClientResponse, op: str, codes: tuple) -> bool:
-    """True if the HTTP status is in ``codes``; otherwise log status + body (RISK-013)."""
+    """True if the HTTP status is in ``codes``; otherwise record the failure.
+
+    R-149 (Security QA): the backend's rejection body is untrusted text — a
+    broken or hostile backend can echo the service key it received — so it is
+    never logged. The diagnosis keeps the operation and the status (the
+    failure stats record the same); that is what RISK-013 needs.
+    """
     if r.status in codes:
         _record(op, True)
         return True
     _record(op, False, f"HTTP {r.status}")
-    try:
-        body = (await r.text())[:300]
-    except Exception:  # pragma: no cover - diagnostic only
-        body = "<unreadable>"
-    logger.warning("%s rejected: HTTP %s %s", op, r.status, body)
+    logger.warning("%s rejected: HTTP %s", op, r.status)
     return False
 
 

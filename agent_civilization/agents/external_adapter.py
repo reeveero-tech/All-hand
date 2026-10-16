@@ -168,7 +168,12 @@ class ExternalAgentAdapter:
                                              connector=connector) as s:
                 status, body = await self._post_checked(s, headers, payload)
             if status != 200:
-                raise RuntimeError(f"HTTP {status}: {body[:300]}")
+                # R-149 (Security QA): the backend's error body is untrusted
+                # text — a hostile backend can echo the adapter's own
+                # credential back in it — so it never enters the error string,
+                # which becomes the tenant-visible task result and the log.
+                # The status is the safe, sufficient reason.
+                raise RuntimeError(f"HTTP {status}")
             data = json.loads(body)
             content = data["choices"][0]["message"]["content"]
             self.stats["tasks_completed"] += 1
