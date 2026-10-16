@@ -29,6 +29,7 @@ import os
 import subprocess
 import sys
 import time
+from contextlib import ExitStack
 from pathlib import Path
 
 import pytest
@@ -394,13 +395,17 @@ def test_system_status_discloses_provider_without_secrets(client, keyless_fake):
 # concurrent isolation, the keyed provider's own path, self_developer retests.
 # ---------------------------------------------------------------------------
 
-def test_no_consent_never_reaches_the_network_layer(keyless_fake, monkeypatch):
-    # Independent of replacing _keyless_post: guards at the real egress choke
-    # points (safety.safe_urlopen and urllib request construction) turn any
-    # outbound attempt into a hard failure. Without consent the gate returns
-    # before any of them is touched.
+def test_no_consent_never_reaches_the_network_layer(monkeypatch):
+    # Independent of the fake-transport tests: the transport is NOT replaced
+    # here. Guards sit at the real egress choke points (safety.safe_urlopen
+    # and urllib request construction) and turn any outbound attempt into a
+    # hard failure. With the provider opted in but no consent, the gate
+    # returns before any of them is touched.
     from agent_civilization.core import safety
     import urllib.request
+
+    monkeypatch.setenv("AGOS_LLM_KEYLESS", "1")  # operator opt-in: the gate is live
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
 
     def _no_egress(*a, **k):
         raise AssertionError("egress attempted without consent")
@@ -412,7 +417,7 @@ def test_no_consent_never_reaches_the_network_layer(keyless_fake, monkeypatch):
         return await L.get_llm().complete("sys", "prompt")
     r = asyncio.run(go())
     assert r["ok"] is False
-    assert "did not consent" in r["error"]
+    assert "did not consent" in r["error"]  # refusal, not an unguarded attempt
 
 
 def test_concurrent_requests_carry_only_their_own_consent(keyless_fake):
@@ -564,15 +569,22 @@ def test_status_fields_distinguish_operator_optin_from_selected_provider(client,
 
 
 def test_civilization_execute_without_consent_reports_the_refusal(client, keyless_fake):
-    # The plan is not silently "completed": the LLM-needing stage reports the
-    # no-consent refusal and the overall result is a visible failure.
+    # The plan is not silently "completed": the LLM-needing stage itself is
+    # marked not-ok and carries the no-consent refusal, and the overall
+    # result is a visible failure (not merely a missing "ok" field).
     r = client.post("/civilization/execute", json={
         "message": "write a function that computes the average"})
     assert r.status_code == 200, r.text
     assert keyless_fake == []  # no public egress happened
     body = r.json()
+    # execute_plan returns {"stages", "final", ...} with no top-level "ok" —
+    # the refusal must surface in the failing stage itself, not be hidden.
     assert body.get("ok") is not True
-    assert "did not consent" in str(body)
+    stages = body.get("stages", [])
+    bad = [st for st in stages if st.get("ok") is False]
+    assert bad, stages  # a failing stage is reported, not hidden
+    assert any("did not consent" in str(st.get("output") or st.get("error") or "")
+               for st in bad)
 
 
 def test_self_developer_retests_do_not_inherit_the_requests_consent(keyless_fake):
@@ -612,3 +624,129 @@ def test_self_developer_retests_do_not_inherit_the_requests_consent(keyless_fake
     assert len(retests) == 1
     assert retests[0]["fixed"] is False
     assert "did not consent" in retests[0]["reason"]
+
+
+def _tenant_clients(monkeypatch, *tenants: str) -> dict:
+    """One credentials map shared by all tenants (each client keeps its own
+    identity — the SEC-02 auth model), with the portal kept alive for the
+    whole test so slow background tasks are not cancelled at request end."""
+    import hashlib
+    import secrets
+
+    from agent_civilization.core.tenancy import Principal
+
+    creds, keys = {}, {}
+    for tenant in tenants:
+        keys[tenant] = f"k-{secrets.token_urlsafe(16)}"
+        creds[hashlib.sha256(keys[tenant].encode()).hexdigest()] = Principal(tenant, "user")
+    monkeypatch.setattr(server, "CREDENTIALS", creds)
+    monkeypatch.setattr(server, "ENABLE_AUTH", True)
+
+    class _Clients:
+        def __init__(self):
+            self._stack = None
+
+        def __enter__(self):
+            self._stack = ExitStack()
+            return {t: self._stack.enter_context(TestClient(
+                server.app, raise_server_exceptions=False,
+                headers={"X-API-Key": keys[t]})) for t in tenants}
+
+        def __exit__(self, *a):
+            return self._stack.__exit__(*a)
+    return _Clients()
+
+
+def _counting_transport(monkeypatch):
+    """Enable the keyless provider and replace the transport with a counter
+    that also returns genuinely usable (valid Python) content."""
+    calls = []
+
+    def fake_post(system, prompt, max_tokens, timeout):
+        calls.append(prompt)
+        return {"choices": [{"message": {"content":
+            "```python\ndef solve():\n    return 1\n```"}}], "model": "fake"}
+
+    monkeypatch.setattr(L, "_keyless_post", fake_post)
+    monkeypatch.setattr(L, "KEYLESS_MIN_SPACING_S", 0.0)
+    monkeypatch.setattr(L, "KEYLESS_BUDGET_S", 5.0)
+    monkeypatch.setattr(L, "_keyless_last", 0.0)
+    monkeypatch.setattr(L, "_keyless_lock", None)
+    monkeypatch.setattr(L, "_keyless_waiting", 0)
+    monkeypatch.setenv("AGOS_LLM_KEYLESS", "1")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    return calls
+
+
+def test_consent_is_isolated_between_tenants_via_the_real_routes(monkeypatch):
+    # Two tenants through the real authenticated routes: only the consenting
+    # tenant's text ever reaches the transport; the other tenant's identical
+    # need is refused; and a later non-consenting request from the first
+    # tenant adds nothing. Consent follows the request, not the process.
+    calls = _counting_transport(monkeypatch)
+
+    with _tenant_clients(monkeypatch, "tenant_a", "tenant_b") as cs:
+        ca, cb = cs["tenant_a"], cs["tenant_b"]
+        ra = ca.post("/api/tasks", json={"specialization": "code_generator",
+                                        "prompt": "goal of tenant a", "allow_public_llm": True})
+        rb = cb.post("/api/tasks", json={"specialization": "code_generator",
+                                         "prompt": "goal of tenant b"})
+        assert ra.status_code == 202 and rb.status_code == 202
+
+        out_a = _poll(ca, ra.json()["task_id"])
+        out_b = _poll(cb, rb.json()["task_id"])
+        assert out_a["status"] == "completed"
+        assert out_b["status"] == "failed"
+        assert "did not consent" in str(out_b["result"])
+        assert calls == ["goal of tenant a"]  # only the consenting tenant's text left
+
+        rc = ca.post("/api/tasks", json={"specialization": "code_generator",
+                                         "prompt": "second goal of tenant a"})
+        assert rc.status_code == 202
+        out_c = _poll(ca, rc.json()["task_id"])
+        assert out_c["status"] == "failed"  # consent did not stick to the tenant
+        assert calls == ["goal of tenant a"]
+
+
+def test_background_task_keeps_its_consent_after_the_request_returns(monkeypatch):
+    # The transport is held on a barrier that only opens AFTER the POST
+    # response has returned: the request context is gone by then, so the
+    # background task must carry the consent on its own (the ContextVar copy
+    # in the spawned task — not the request's lifetime).
+    import threading
+
+    gate = threading.Event()
+    started = threading.Event()
+    calls = []
+
+    def slow_post(system, prompt, max_tokens, timeout):
+        started.set()
+        assert gate.wait(timeout=30), "barrier was never released"
+        calls.append(prompt)
+        return {"choices": [{"message": {"content":
+            "```python\ndef solve():\n    return 1\n```"}}], "model": "fake"}
+
+    monkeypatch.setattr(L, "_keyless_post", slow_post)
+    monkeypatch.setattr(L, "KEYLESS_MIN_SPACING_S", 0.0)
+    monkeypatch.setattr(L, "KEYLESS_BUDGET_S", 10.0)
+    monkeypatch.setattr(L, "_keyless_last", 0.0)
+    monkeypatch.setattr(L, "_keyless_lock", None)
+    monkeypatch.setattr(L, "_keyless_waiting", 0)
+    monkeypatch.setenv("AGOS_LLM_KEYLESS", "1")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+
+    with _tenant_clients(monkeypatch, "tenant_a") as cs:
+        ca = cs["tenant_a"]
+        r = ca.post("/api/tasks", json={"specialization": "code_generator",
+                                        "prompt": "delayed goal", "allow_public_llm": True})
+        assert r.status_code == 202
+        # the background task reached the transport, and the POST had already
+        # returned — the transport is still blocked on the barrier
+        assert started.wait(timeout=15)
+        assert not gate.is_set()
+        assert calls == []
+
+        gate.set()  # release only now, with the request long gone
+        out = _poll(ca, r.json()["task_id"], timeout_s=20)
+        assert out["status"] == "completed"  # consent survived the request
+        assert calls == ["delayed goal"]
