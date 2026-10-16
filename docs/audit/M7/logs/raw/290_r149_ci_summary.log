@@ -1,5 +1,10 @@
-R-149 — CI jobs summary on the FINAL head a3ee544962167807f7304697c42f987b57810073 — 2026-10-16
+R-149 — CI jobs summary on the code head a3ee544962167807f7304697c42f987b57810073 — 2026-10-16
 Run 38963184074 (AGOS Kernel CI/CD): https://github.com/reeveero-tech/All-hand/actions/runs/38963184074
+run headSha (from the run's own data) == a3ee544962167807f7304697c42f987b57810073 (the reviewed code head).
+NOTE the checkout-SHA distinction: for a pull_request event the checkout step tests the
+ephemeral test-merge ref — "HEAD is now at abbae37 Merge a3ee544... into d224652..." —
+i.e. the reviewed head a3ee544 merged into the base d224652; the run's headSha is the
+reviewed head itself.
 
 quality	success
 test	success
@@ -10,4 +15,20 @@ storage	success
 audit	success
 publish	skipped (D-011, expected)
 
-Job logs: build -> docs/audit/M7/logs/raw/288_r149_ci_build_job.log (npm ci + npm run build + vite build for root and web/), docker -> docs/audit/M7/logs/raw/289_r149_ci_docker_job.log
+Job logs (raw, saved in this directory):
+- 288_r149_ci_build_job.log — build job (job id 117184571153). Steps: "Root app — install
+  (clean, from lockfile, engines enforced)", "Root app — lint", "Root app — build",
+  "Build web frontend", "Test web API client", "Build server artifacts". Results read
+  from the log: web frontend "vite v8.3.4 building client environment for production"
+  -> "built in 105ms"; root app build -> client "built in 605ms", ssr "built in 284ms",
+  nitro "built in 227ms". Both the root and the web/ builds completed.
+- 289_r149_ci_docker_job.log — docker job (job id 117184571101). Steps: "Build image",
+  "Run container and verify /health", "Verify production start is refused without
+  credentials (SEC-03)", "Verify runtime safety policy in the container (R-100)",
+  "Upload evidence artifact". Results read from the log: "exporting layers ... done",
+  "naming to docker.io/library/agos:r040-smoke done" — the image built and the container
+  verifications ran.
+
+The docs-only evidence commit (cf1f3d9) re-ran CI green: run 38964122782, headSha
+cf1f3d98ef45507220aedc353c3852b0f7b0fee3, all jobs success (publish skipped, D-011).
+Main's checks on the merge SHA are verified and recorded after the merge.
