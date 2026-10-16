@@ -1,5 +1,12 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-16 — R-150: تدقيق حماية الفرع `main` مقابل الحوكمة (Branch protection، دفعة m7/r150-branch-protection-audit)
+
+- **مهمة قراءة فقط** — لم تُغيَّر أي إعدادات GitHub حية. التدقيق الكامل: `docs/audit/M7/r150_branch_protection_audit.md`؛ الأدلة الخام: السجلات `291`–`294` (`gh api` باعتماد مخوّل للقراءة، 2026-10-16T22:14Z، RC=0 — عالجت حد الـ403 السابق).
+- **النتيجة — تطابق تام** مع GOVERNANCE_GATE.md وR-024: `protected: true` (قاعدة حماية تقليدية؛ `rulesets: []`)؛ الفحوص الإلزامية `quality, test, build, docker, governance, audit`؛ `strict: true`؛ `enforce_admins: false` (حد موثق بقرار المالك)؛ `allow_force_pushes/allow_deletions: false`؛ `restrictions: null`؛ `required_approving_review_count: 0`. فحوص CI الإضافية (network/storage/publish) ليست إلزامية للدمج. لا فجوة ولا توصية تغيير.
+- تصحيح توثيقي مرافق: سطر قبول R-149 في ROADMAP الذي بقي «معلقًا» بعد تسجيل القبول حُدِّث ليعكس القبول المتحقق.
+
+
 ## 2026-10-16 — R-149: سجل القبول (دفعة توثيقية m7/r149-acceptance-record)
 
 - **القبول**: PR #156 دُمجت بـ`--merge` — SHA الدمج `f568b4eaf999048cca573bf829ea34a78e986606` (الرأس المراجَع `4720a75` سلفه — مُتحقق بـmerge-base)، وفحوص main نجحت على SHA الدمج نفسه: التشغيل 38966612978 (quality/test/network/storage/build/docker/audit كلها success؛ publish متخطى D-011 ولا يُحتسب). R-149 تُحوَّل done في ROADMAP/PROJECT_STATE؛ EVIDENCE والمصفوفة تسجلان القبول بالرابط. لا كود — توثيق فقط.
