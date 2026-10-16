@@ -86,8 +86,8 @@ export default function App() {
 
       <main className="app-body">
         {tab === 'dashboard' && <Dashboard status={status} liveEvent={liveEvent} />}
-        {tab === 'chat' && <Chat />}
-        {tab === 'specializations' && <Specializations />}
+        {tab === 'chat' && <Chat status={status} />}
+        {tab === 'specializations' && <Specializations status={status} />}
         {tab === 'agents' && <Agents />}
         {tab === 'tasks' && <Tasks liveEvent={liveEvent} />}
       </main>

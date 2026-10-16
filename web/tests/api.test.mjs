@@ -55,7 +55,21 @@ test('stored key is sent on every call, write and read', async () => {
   await api.fetchTasks();
   for (const c of calls) assert.equal(c.init.headers['X-API-Key'], 'secret-123');
   assert.equal(calls[0].init.method, 'POST');
-  assert.deepEqual(JSON.parse(calls[0].init.body), { specialization: 'analyst', prompt: 'hello' });
+  // SEC-06 (R-145): allow_public_llm defaults to false — an absent consent is refusal
+  assert.deepEqual(JSON.parse(calls[0].init.body), { specialization: 'analyst', prompt: 'hello', allow_public_llm: false });
+  assert.deepEqual(JSON.parse(calls[1].init.body), { message: 'hi', allow_public_llm: false });
+});
+
+test('SEC-06: explicit consent is sent only when the caller passes it (per request)', async () => {
+  // the UI passes true only after the user checks the external-provider warning;
+  // the value is never persisted and applies to exactly one request
+  await api.createTask('analyst', 'hello', null, true);
+  await api.sendChat('hi', true);
+  assert.equal(JSON.parse(calls[0].init.body).allow_public_llm, true);
+  assert.equal(JSON.parse(calls[1].init.body).allow_public_llm, true);
+  // the next call without the flag is refusal again — consent never sticks
+  await api.sendChat('again');
+  assert.equal(JSON.parse(calls[2].init.body).allow_public_llm, false);
 });
 
 test('key never appears in the URL or body', async () => {

@@ -80,7 +80,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `SUPABASE_SERVICE_KEY` (مفضّل — D-039) ثم `SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY` (بديل للتوافق) | supabase_store.py | `""` |
 | `OPENROUTER_API_KEY` | core/llm.py | `""` |
 | `LLM_MODEL` | core/llm.py | `meta-llama/llama-3.3-70b-instruct:free` |
-| `AGOS_LLM_KEYLESS` (R-116، D-051) | core/llm.py | غير مضبوط/`1` = عند غياب `OPENROUTER_API_KEY` يُستخدم مزود LLM عام بلا مفتاح (Pollinations) موسوماً `keyless:<model>`؛ `0` يعطّله. الاختبارات المحلية تعطله افتراضياً (`tests/conftest.py`) |
+| `AGOS_LLM_KEYLESS` (R-116، D-051؛ **SEC-06/R-145، D-059**) | core/llm.py | **معطّل افتراضياً**: غير مضبوط/`0`/`false`/`no` = لا مزود عام (مع غياب `OPENROUTER_API_KEY` → `provider=none` وفشل صريح للمهام التي تحتاج LLM). `1`/`true` فقط يفعّله، وبعدها **كل طلب يحتاج موافقته الصريحة** (`allow_public_llm=true` — البوابة الثانية في `LLMClient.complete`)؛ غير ذلك من القيم **خطأ إقلاع** (`KeylessConfigError` — لا تفسير ضمنياً كتفعيل). الاختبارات المحلية تعطله افتراضياً (`tests/conftest.py`) |
 | `AGOS_LLM_KEYLESS_SPACING_S` / `AGOS_LLM_KEYLESS_BUDGET_S` (R-116) | core/llm.py | 6 ث بين الاستدعاءات / 90 ث ميزانية للاستدعاء (تبدأ عند دوره منذ R-131) مع إعادات 402/429/503 |
 | `AGOS_LLM_KEYLESS_MAX_WAIT_S` (R-131، D-054) | core/llm.py | 30 ث أقصى انتظار للدور؛ إن كان المقدَّر أكبر يُرفض الطلب فوراً بـ«keyless LLM busy» (الاحتياطي يعمل فوراً) |
 | `AGOS_POOL_LLM` / `AGOS_POOL_WEB` / `AGOS_POOL_NET` / `AGOS_POOL_LOCAL` (R-132، D-055) | core/pools.py | 2 / 4 / 8 / 4 خيوط (1..64) لكل نوع استدعاء حاجب |
@@ -173,3 +173,11 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 - **سلوك الازدحام**: لا ينتظر الناشر (تنفيذ المهام) أي مستمع؛ الطابور الممتلئ يُسقط أقدم حدث ويُبلغ المستمع بـ`stream_gap`. بلا مستمعين لا تُحفظ أحداث في الذاكرة — `/api/events` (Supabase) هو السجل الدائم.
 - **حدود معروفة**: الحدود **لكل عملية** (لا تنسيق بين نسخ متعددة)؛ العميل = `request.client.host` — خلف وكيل عكسي قد يتشارك العملاء عنواناً واحداً (حد العميل يصير حداً للوكيل) — لا يُوثق بـ`X-Forwarded-For` لعدم وجود آلية وكلاء موثوقة محددة. خريطة تتبع معدل الفتح محدودة (`MAX_TRACKED_CLIENTS` = 10000، تُنظَّف المدخلات المنتهية؛ عند امتلائها بعملاء نشطين يُرفض الجديد 429).
 
+
+## المزود العام بلا مفتاح: بوابتان ومراقبة (R-145، SEC-06، D-059)
+
+- **البوابة الأولى (المشغّل)**: `AGOS_LLM_KEYLESS` — معطّل افتراضياً؛ `1`/`true` يفعّله، غير مضبوط/`0`/`false`/`no` يعطّله، وأي قيمة أخرى **تمنع الإقلاع** (`KeylessConfigError` عند استيراد `server`). `render.yaml` لا يضبطه (آمن افتراضياً)؛ إن أراد المشغّل تفعيله فليدخل `1` في لوحة Render.
+- **البوابة الثانية (الطلب)**: حتى بعد تفعيل المشغّل، لا يُرسل أي نص إلى المزود العام إلا بموافقة صريحة في الطلب نفسه (`allow_public_llm: true` — boolean صارم)؛ الحارس مركزي في `LLMClient.complete()` فلا مسار يتجاوزه (لا واجهة ولا مهمة خلفية ولا استدعاء مكتبة مباشر). البوابتان مستقلتان: موافقة المستخدم لا تتجاوز تعطيل المشغّل.
+- **عقد الفشل**: مهمة تحتاج LLM بلا موافقة تُقبل (202) وتنتهي `failed` فوراً برسالة صريحة في `result.error` («public LLM provider not used: this request did not consent …»)؛ المهام التي لا تحتاج LLM تنجح كالمعتاد. لا إجابة ملفقة ولا نقطة نهاية بديلة.
+- **المراقبة**: `keyless_stats` (`calls/ok/rate_limited/errors/busy`) كما كانت؛ `GET /api/system/status` يفصح `llm_provider`/`public_llm_enabled`/`public_llm_requires_consent` (غير سرية) لتعرض الواجهة تحذيرها بدقة. لا يُسجَّل نص رسالة ولا `prompt` ولا قيمة موافقة في السجلات.
+- **تدفق البيانات (للإفصاح للمستخدم)**: عند تفعيل المزود العام وموافقة الطلب، يُرسل نص التعليمة ورسالة النظام إلى نقطة النهاية المضبوطة (`AGOS_LLM_KEYLESS_URL`، الافتراضي Pollinations) — وهي تسلمه بدورها لمزودي النماذج خلفها؛ سياسة كل جهة تخصها (راجع SECURITY.md — مراجعة 2026-10-16).

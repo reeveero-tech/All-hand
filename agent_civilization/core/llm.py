@@ -4,6 +4,7 @@ Real LLM client for the Agent Civilization.
 Uses OpenRouter (supports free models). Reads OPENROUTER_API_KEY from env.
 """
 
+import contextvars
 import json
 import logging
 import os
@@ -11,6 +12,96 @@ import os
 import aiohttp
 
 logger = logging.getLogger("llm")
+
+
+# ---------------------------------------------------------------------------
+# SEC-06 (R-145): the public keyless provider is opt-in at two independent
+# levels, and BOTH are required before any text leaves this process:
+#
+# 1. Operator opt-in (``AGOS_LLM_KEYLESS=1``) — the server-side configuration
+#    gate. Off by default: an absent variable, an empty value or ``0``/``false``
+#    keeps the provider disabled, so with no ``OPENROUTER_API_KEY`` the provider
+#    is ``none``. Only the explicit values ``1``/``true`` enable it; anything
+#    else is a configuration error (``KeylessConfigError``) — it never silently
+#    means "on" (validated at import, so an invalid value fails startup).
+# 2. Request consent (``allow_public_llm`` on the request that carries the
+#    text) — carried in a ContextVar that every entry point (HTTP handler,
+#    background task) sets from the request and that ``LLMClient.complete``
+#    requires before it will build or dispatch a keyless request. The default
+#    is False: a direct ``get_llm().complete()`` call, a background job with no
+#    consent, or a forgotten flag cannot send content to the public provider.
+#
+# A consenting request can never override the operator's opt-out: both gates
+# are checked independently. A valid ``OPENROUTER_API_KEY`` keeps its existing
+# behaviour and priority (``openrouter``) and is not affected by either gate.
+# ---------------------------------------------------------------------------
+
+
+class KeylessConfigError(RuntimeError):
+    """AGOS_LLM_KEYLESS is set to a value that is not a supported boolean."""
+
+
+_KEYLESS_ON = ("1", "true")
+_KEYLESS_OFF = ("", "0", "false", "no")
+
+
+def keyless_enabled() -> bool:
+    """Parse AGOS_LLM_KEYLESS strictly (SEC-06, R-145).
+
+    Unset/empty, ``0``, ``false`` and ``no`` (case-insensitive) disable the
+    public provider; ``1`` and ``true`` enable it. Any other value raises
+    ``KeylessConfigError`` — an ambiguous setting must never be interpreted as
+    consent to send text to an external public provider.
+    """
+    raw = os.environ.get("AGOS_LLM_KEYLESS")
+    value = (raw or "").strip().lower()
+    if value in _KEYLESS_OFF:
+        return False
+    if value in _KEYLESS_ON:
+        return True
+    raise KeylessConfigError(
+        "AGOS_LLM_KEYLESS must be one of 1/true (enable) or 0/false/no/unset "
+        "(disable); got an unsupported value (not echoed — it is operator input, "
+        "not user content, and stays out of logs) — the public LLM provider stays "
+        "disabled")
+
+
+# Import-time validation: an invalid value fails startup (the same fail-fast
+# style as SEC-03 / AGENTS_PER_SPEC / AGOS_SSE_*), in every environment.
+keyless_enabled()
+
+
+_public_llm_consent: "contextvars.ContextVar[bool]" = contextvars.ContextVar(
+    "agos_public_llm_consent", default=False)
+
+
+PUBLIC_LLM_NO_CONSENT_ERROR = (
+    "public LLM provider not used: this request did not consent to sending its "
+    "text to the external public provider (send allow_public_llm=true with the "
+    "request, or set OPENROUTER_API_KEY for the keyed provider)")
+
+
+def set_public_llm_consent(consent: bool) -> contextvars.Token:
+    """Mark THIS request's context as consenting to the public provider.
+
+    Consent is per request: a ContextVar set here is visible only to the code
+    running in this context (and copied into background tasks started from it —
+    ``asyncio.create_task`` copies the context); it is never stored on the
+    shared client, in a task record, or across tenants, and it does not persist
+    beyond the request. Reset with the returned token in a ``finally``.
+    """
+    if not isinstance(consent, bool):
+        raise TypeError(f"public LLM consent must be a bool, got {type(consent).__name__}")
+    return _public_llm_consent.set(consent)
+
+
+def reset_public_llm_consent(token: contextvars.Token) -> None:
+    _public_llm_consent.reset(token)
+
+
+def public_llm_consent() -> bool:
+    """Whether the context that entered this text consented to the public provider."""
+    return _public_llm_consent.get()
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = os.environ.get("LLM_MODEL", "meta-llama/llama-3.3-70b-instruct:free")
@@ -27,10 +118,14 @@ class LLMClient:
     @property
     def provider(self) -> str:
         """R-116: which backend answers — ``openrouter`` (key set), ``keyless``
-        (public no-key endpoint, opt-out with AGOS_LLM_KEYLESS=0) or ``none``."""
+        (public no-key endpoint) or ``none``. SEC-06 (R-145): the public
+        endpoint is opt-in — only an explicit ``AGOS_LLM_KEYLESS=1``/``true``
+        enables it; unset/``0``/``false``/``no`` or a missing OPENROUTER_API_KEY
+        with no opt-in means ``none``. A missing key is never consent to use
+        another provider."""
         if self.api_key or os.environ.get("OPENROUTER_API_KEY"):
             return "openrouter"
-        if os.environ.get("AGOS_LLM_KEYLESS", "1").strip() not in ("0", "false", "no", ""):
+        if keyless_enabled():
             return "keyless"
         return "none"
 
@@ -51,6 +146,20 @@ class LLMClient:
         if not self.api_key and os.environ.get("OPENROUTER_API_KEY"):
             self.api_key = os.environ["OPENROUTER_API_KEY"]
         if self.provider == "keyless":
+            # SEC-06 (R-145): the second, per-request gate. The operator's
+            # opt-in alone is not the user's consent to send THIS text to an
+            # external public provider: without explicit request consent no
+            # keyless request is built or dispatched (no _keyless_post, no
+            # alternative transport, no fabricated answer) — the failure is
+            # returned in the normal LLM result contract.
+            if not public_llm_consent():
+                return {
+                    "ok": False,
+                    "content": "",
+                    "error": PUBLIC_LLM_NO_CONSENT_ERROR,
+                    "model": self.model,
+                    "provider": "keyless",
+                }
             return await _keyless_complete(system, prompt, max_tokens, max_wait_s)
         if not self.available:
             return {
@@ -80,7 +189,9 @@ class LLMClient:
             ) as resp:
                 body = await resp.text()
                 if resp.status != 200:
-                    logger.error("LLM error %s: %s", resp.status, body[:500])
+                    # SEC-06 (R-145): provider error bodies may echo user text —
+                    # log the status only, never the body content.
+                    logger.error("LLM error: HTTP %s (provider response body not logged)", resp.status)
                     return {
                         "ok": False,
                         "content": "",
@@ -96,7 +207,10 @@ class LLMClient:
                     "model": data.get("model", self.model),
                 }
         except Exception as e:
-            logger.exception("LLM call failed")
+            # SEC-06 (R-145): exception messages can carry provider response
+            # text — log the exception type only. The message itself is returned
+            # to the calling tenant, never logged.
+            logger.error("LLM call failed: %s", type(e).__name__)
             return {"ok": False, "content": "", "error": str(e), "model": self.model}
 
     async def close(self):
