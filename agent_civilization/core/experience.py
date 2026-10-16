@@ -26,8 +26,13 @@ behavioural effect (the one place memory changes a result)
 What it does NOT do (stated in D-046): handlers are deterministic and are not
 changed by learning; learning measures real outcomes and reports them.
 
-Scope: one memory per server process, shared by all clients — the same
-visibility as GET /api/tasks (single-tenant deployment).  Limits:
+Scope (SEC-02, R-138, D-056): one memory store per process, partitioned by
+tenant. Every entry carries the ``tenant_id`` of the request that produced it
+(``tenancy.current_tenant()``); recall, the researcher fallback, search, stats
+and learning only ever see the current tenant's entries. Code running with no
+tenant stores nothing and recalls nothing. Entries without a tenant (persisted
+before SEC-02) are quarantined: never shown to a tenant, counted for an admin
+only. Learning is kept per tenant and rebuilt per tenant at load.  Limits:
 AGOS_MEMORY_MAX entries (default 2000, least important/oldest pruned), text
 fields truncated, no tool_output kept except researcher's (<= 4 KB).
 AGOS_MEMORY=0 disables the layer (outcomes then carry no ``experience``).
@@ -47,6 +52,8 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from agos_kernel.agent_production.learning_runtime import LearningRuntime
 from agos_kernel.agent_production.memory_system import MemorySystem, MemoryType
+from agent_civilization.core import tenancy
+from agent_civilization.core.tenancy import ALL_TENANTS
 
 logger = logging.getLogger("agos.experience")
 
@@ -59,7 +66,7 @@ _TOOL_OUTPUT_LIMIT = 4096
 _WORD = re.compile(r"[\w\u0600-\u06FF]{2,}")
 
 _memory: Optional[MemorySystem] = None
-_learning: Optional[LearningRuntime] = None
+_learnings: Dict[str, LearningRuntime] = {}
 _stores_since_persist = 0
 _loaded = False
 
@@ -83,17 +90,47 @@ def memory() -> MemorySystem:
     return _memory
 
 
-def learning() -> LearningRuntime:
-    global _learning
-    if _learning is None:
-        _learning = LearningRuntime()
-    return _learning
+def learning(tenant_id: Optional[str] = None) -> LearningRuntime:
+    """The tenant's LearningRuntime (default: the current tenant). SEC-02: there
+    is no shared learning — a tenant only ever reads its own measurements."""
+    tid = tenant_id if tenant_id is not None else tenancy.current_tenant()
+    tenancy.check_scope(tid)
+    if tid is ALL_TENANTS:
+        raise ValueError("learning is per tenant")
+    rt = _learnings.get(tid)
+    if rt is None:
+        rt = _learnings[tid] = LearningRuntime()
+    return rt
+
+
+def _tenant_of(entry) -> Optional[str]:
+    return entry.metadata.get("tenant_id")
+
+
+def _visible(entry, scope) -> bool:
+    return scope is ALL_TENANTS or (_tenant_of(entry) is not None and _tenant_of(entry) == scope)
 
 
 def reset() -> None:
-    """Drop all memory and learning (tests, DELETE /api/memory)."""
-    global _memory, _learning, _stores_since_persist, _loaded
-    _memory, _learning, _stores_since_persist, _loaded = None, None, 0, False
+    """Drop all memory and learning of every tenant (tests, admin DELETE /api/memory?all_tenants=true)."""
+    global _memory, _stores_since_persist, _loaded
+    _memory, _stores_since_persist, _loaded = None, 0, False
+    _learnings.clear()
+
+
+async def forget_tenant(tenant_id: str) -> int:
+    """SEC-02: DELETE /api/memory for one tenant — removes only that tenant's
+    entries and learning; other tenants and quarantined entries are untouched."""
+    tenancy.check_scope(tenant_id)
+    if tenant_id is ALL_TENANTS:
+        raise ValueError("use reset() for all tenants")
+    await _ensure_loaded()
+    mem = memory()
+    ids = [mid for mid, e in list(mem._memories.items()) if _tenant_of(e) == tenant_id]
+    for mid in ids:
+        await mem.forget(mid)
+    _learnings.pop(tenant_id, None)
+    return len(ids)
 
 
 # ---------------------------------------------------------------- helpers
@@ -154,8 +191,8 @@ async def _ensure_loaded() -> None:
     await mem.load()
     for entry in sorted(mem._memories.values(), key=lambda e: e.created_at):
         md = entry.metadata
-        if md.get("layer") == "experience":
-            learning().record_task(agent_id=md.get("agent", "?"), task_type=md["specialization"],
+        if md.get("layer") == "experience" and md.get("tenant_id"):  # untenanted = quarantined
+            learning(md["tenant_id"]).record_task(agent_id=md.get("agent", "?"), task_type=md["specialization"],
                                    approach=md.get("input_kind", "text"), success=bool(md.get("ok")),
                                    duration_ms=float(md.get("elapsed_ms", 0.0)))
 
@@ -167,15 +204,20 @@ async def persist() -> None:
 
 # ---------------------------------------------------------------- recall / learning
 
-async def recall(specialization: str, work: Dict[str, Any], limit: int = RECALL_LIMIT) -> List[Dict[str, Any]]:
+async def recall(specialization: str, work: Dict[str, Any], limit: int = RECALL_LIMIT,
+                 tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    tid = tenant_id if tenant_id is not None else tenancy.current_tenant()
+    if tid is None or tid is ALL_TENANTS:
+        return []  # SEC-02: no tenant, no recall; recall never crosses tenants
+    tenancy.check_scope(tid)
     mem = memory()
     query_words = words(_work_text(work))
-    ids = mem._index_by_tag.get(f"spec:{specialization}", set())
+    ids = mem._index_by_tag.get(f"spec:{specialization}", set()) & mem._index_by_tag.get(f"tenant:{tid}", set())
     now = datetime.utcnow()
     scored = []
     for mid in ids:
         e = mem._memories.get(mid)
-        if e is None:
+        if e is None or _tenant_of(e) != tid:
             continue
         score = jaccard(query_words, set(e.metadata.get("words") or []))
         if score >= MIN_RECALL_SCORE:
@@ -191,9 +233,9 @@ async def recall(specialization: str, work: Dict[str, Any], limit: int = RECALL_
     return out
 
 
-def prior_learning(specialization: str, kind: str) -> Dict[str, Any]:
+def prior_learning(specialization: str, kind: str, tenant_id: Optional[str] = None) -> Dict[str, Any]:
     key = f"{specialization}:{kind}"
-    pattern = learning()._global_patterns.get(key)
+    pattern = learning(tenant_id)._global_patterns.get(key)
     if pattern is None:
         return {"specialization": specialization, "input_kind": kind, "samples": 0}
     return {"specialization": specialization, "input_kind": kind, "samples": pattern.sample_count,
@@ -208,7 +250,8 @@ async def _researcher_fallback(work: Dict[str, Any], result: Dict[str, Any],
     for r in recalled:
         if r["ok"] and r["score"] >= FALLBACK_MIN_SCORE:
             entry = memory()._memories.get(r["memory_id"])
-            if entry is None or "tool_output" not in entry.metadata:
+            if entry is None or "tool_output" not in entry.metadata \
+                    or _tenant_of(entry) is None or _tenant_of(entry) != tenancy.current_tenant():
                 continue
             return {"ok": True, "degraded": True, "source": "memory",
                     "answer": (f"live search failed ({result['error'][:120]}); remembered result "
@@ -220,14 +263,15 @@ async def _researcher_fallback(work: Dict[str, Any], result: Dict[str, Any],
 
 
 async def _store(specialization: str, agent: str, work: Dict[str, Any], result: Dict[str, Any],
-                 kind: str, elapsed_ms: float) -> str:
+                 kind: str, elapsed_ms: float, tenant_id: str) -> str:
     global _stores_since_persist
+    tenancy.check_scope(tenant_id)
     ok = bool(result.get("ok"))
     text = _work_text(work)
     prompt = str(work.get("prompt") or text)[:_TEXT_LIMIT]
     answer = _answer_of(result)
     metadata: Dict[str, Any] = {
-        "layer": "experience", "specialization": specialization, "agent": agent,
+        "layer": "experience", "tenant_id": tenant_id, "specialization": specialization, "agent": agent,
         "prompt": prompt, "answer": answer, "ok": ok, "input_kind": kind,
         "elapsed_ms": round(elapsed_ms, 1), "words": sorted(words(text))[:200],
     }
@@ -240,7 +284,7 @@ async def _store(specialization: str, agent: str, work: Dict[str, Any], result: 
     mid = await memory().store(
         content=f"{specialization}: {prompt[:200]} -> {'ok' if ok else 'failed'}: {answer[:200]}",
         memory_type=MemoryType.EPISODIC,
-        tags={f"spec:{specialization}", "success" if ok else "failure", f"kind:{kind}"},
+        tags={f"spec:{specialization}", "success" if ok else "failure", f"kind:{kind}", f"tenant:{tenant_id}"},
         metadata=metadata, importance=0.7 if ok else 0.9)
     _stores_since_persist += 1
     if _stores_since_persist >= PERSIST_EVERY:
@@ -257,13 +301,15 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
 
     Returns ``(result, experience)``; ``experience`` is None when disabled or if
     the layer itself failed (the task result is never lost because of it)."""
-    if not enabled():
+    tid = tenancy.current_tenant()
+    if not enabled() or tid is None:
+        # SEC-02: no authenticated tenant -> no memory (nothing recalled, nothing stored)
         return await call(), None
     try:
         await _ensure_loaded()
         kind = input_kind(work)
-        recalled = await recall(specialization, work)
-        prior = prior_learning(specialization, kind)
+        recalled = await recall(specialization, work, tenant_id=tid)
+        prior = prior_learning(specialization, kind, tid)
     except Exception as exc:  # noqa: BLE001 — memory must never break a task
         logger.warning("experience recall failed: %s", exc)
         return await call(), None
@@ -278,24 +324,31 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
         if fallback is not None:
             result = fallback
         mid = await _store(specialization, agent, work, live_result if isinstance(live_result, dict) else {},
-                           kind, elapsed_ms)
-        learning().record_task(agent_id=agent, task_type=specialization, approach=kind,
+                           kind, elapsed_ms, tid)
+        learning(tid).record_task(agent_id=agent, task_type=specialization, approach=kind,
                                success=bool(isinstance(live_result, dict) and live_result.get("ok")),
                                duration_ms=elapsed_ms)
         experience = {"memory": {"recalled": recalled, "stored_id": mid,
                                  "fallback_used": fallback["memory_id"] if fallback else None},
                       "learning": {"prior": prior,
-                                   "after": prior_learning(specialization, kind)}}
+                                   "after": prior_learning(specialization, kind, tid)}}
         return result, experience
     except Exception as exc:  # noqa: BLE001
         logger.warning("experience store failed: %s", exc)
         return result, None
 
 
-def stats() -> Dict[str, Any]:
+def public_stats() -> Dict[str, Any]:
+    """What /api/system/status may show without a tenant: configuration only."""
     mem = memory()
+    return {"enabled": enabled(), "max_entries": mem._max_entries,
+            "persistence_file": bool(mem._persistence_file), "scope": "per-tenant"}
+
+
+def _learning_view(runtimes: List[LearningRuntime]) -> Dict[str, Any]:
     by_spec: Dict[str, Dict[str, Any]] = {}
-    for p in learning()._global_patterns.values():
+    patterns = [p for rt in runtimes for p in rt._global_patterns.values()]
+    for p in patterns:
         s = by_spec.setdefault(p.task_type, {"samples": 0, "successes": 0.0, "by_input_kind": {}})
         s["samples"] += p.sample_count
         s["successes"] += p.success_rate * p.sample_count
@@ -303,19 +356,39 @@ def stats() -> Dict[str, Any]:
                                           "avg_duration_ms": round(p.avg_duration_ms, 1)}
     for s in by_spec.values():
         s["success_rate"] = round(s.pop("successes") / s["samples"], 3) if s["samples"] else 0.0
-    return {"enabled": enabled(), "memories": len(mem._memories), "max_entries": mem._max_entries,
-            "persistence_file": bool(mem._persistence_file),
-            "learning": {"tasks": sum(e.total_tasks for e in learning()._experience.values()),
-                         "by_specialization": by_spec}}
+    return {"tasks": sum(e.total_tasks for rt in runtimes for e in rt._experience.values()),
+            "by_specialization": by_spec}
 
 
-async def search(q: str = "", specialization: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
+def stats(scope) -> Dict[str, Any]:
+    """Memory and learning of one tenant, or of all tenants for an admin
+    (``ALL_TENANTS``) — then also the number of quarantined untenanted entries."""
+    tenancy.check_scope(scope)
+    mem = memory()
+    out = {"enabled": enabled(), "max_entries": mem._max_entries, "persistence_file": bool(mem._persistence_file)}
+    if scope is ALL_TENANTS:
+        out["memories"] = len(mem._memories)
+        out["quarantined_untenanted"] = sum(1 for e in mem._memories.values() if _tenant_of(e) is None)
+        out["tenants"] = len({_tenant_of(e) for e in mem._memories.values() if _tenant_of(e)})
+        out["learning"] = _learning_view(list(_learnings.values()))
+    else:
+        out["tenant_id"] = scope
+        out["memories"] = sum(1 for e in mem._memories.values() if _tenant_of(e) == scope)
+        out["learning"] = _learning_view([_learnings[scope]] if scope in _learnings else [])
+    return out
+
+
+async def search(q: str = "", specialization: Optional[str] = None, limit: int = 20, *,
+                 scope=None) -> List[Dict[str, Any]]:
+    """Memories of ``scope`` (a tenant id, or ALL_TENANTS for an admin). No scope -> refused."""
+    tenancy.check_scope(scope)
+    await _ensure_loaded()
     mem = memory()
     qw = words(q)
     out = []
     for e in mem._memories.values():
         md = e.metadata
-        if md.get("layer") != "experience":
+        if md.get("layer") != "experience" or not _visible(e, scope):
             continue
         if specialization and md.get("specialization") != specialization:
             continue
@@ -323,7 +396,8 @@ async def search(q: str = "", specialization: Optional[str] = None, limit: int =
         if qw and not score:
             continue
         out.append((score or 0.0, e.created_at, {
-            "memory_id": e.memory_id, "specialization": md.get("specialization"), "agent": md.get("agent"),
+            "memory_id": e.memory_id, **({"tenant_id": md.get("tenant_id")} if scope is ALL_TENANTS else {}),
+            "specialization": md.get("specialization"), "agent": md.get("agent"),
             "prompt": md.get("prompt"), "answer": md.get("answer"), "ok": md.get("ok"),
             "input_kind": md.get("input_kind"), "created_at": e.created_at.isoformat() + "Z",
             **({"score": round(score, 3)} if qw else {})}))

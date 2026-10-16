@@ -26,8 +26,9 @@ def _requests(text):
     return out
 
 
-def test_server_counts_requests_by_route_template():
-    with TestClient(server.app) as c:
+def test_server_counts_requests_by_route_template(tenant_auth):
+    # SEC-02: authenticated, so a missing task id is still the 404 of the route
+    with TestClient(server.app, headers=tenant_auth.headers) as c:
         before = _requests(c.get("/metrics").text)
         for i in range(25):
             c.get(f"/api/tasks/id-{i}")
@@ -99,13 +100,15 @@ def test_exception_is_recorded_as_500_and_unmatched_label():
     assert 'e83_http_requests_total{method="GET",endpoint="<unmatched>",status="404"} 1.0' in out
 
 
-async def test_sse_stream_passes_through_middleware():
+async def test_sse_stream_passes_through_middleware(tenant_auth):
     """Raw ASGI call through the full middleware stack: the first SSE chunk
-    arrives while the stream is still open, then a disconnect ends it."""
+    arrives while the stream is still open, then a disconnect ends it.
+    SEC-02: the stream needs the tenant's key and reads that tenant's queue."""
     tag = f"r083_{time.time()}"
-    while not server.TASK_EVENTS.empty():
-        server.TASK_EVENTS.get_nowait()
-    await server.TASK_EVENTS.put({"type": tag})
+    queue = server.tenant_events(tenant_auth.tenant)
+    while not queue.empty():
+        queue.get_nowait()
+    await queue.put({"type": tag})
     got_chunk = asyncio.Event()
     messages = []
 
@@ -120,7 +123,8 @@ async def test_sse_stream_passes_through_middleware():
 
     scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": "GET",
              "scheme": "http", "path": "/api/events/stream", "raw_path": b"/api/events/stream",
-             "query_string": b"", "headers": [(b"host", b"testserver")], "client": ("127.0.0.1", 1),
+             "query_string": b"", "headers": [(b"host", b"testserver"), (b"x-api-key", tenant_auth.key.encode())],
+             "client": ("127.0.0.1", 1),
              "server": ("testserver", 80), "root_path": ""}
     key = get_metrics()._make_key("http_requests_total",
                                   {"method": "GET", "endpoint": "/api/events/stream", "status": "200"})

@@ -93,9 +93,10 @@ class _KeylessLLM:
 
 
 @pytest.fixture
-def client(monkeypatch):
+def client(monkeypatch, tenant_auth):
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    with TestClient(server.app, raise_server_exceptions=False) as c:
+    # SEC-02: chat/tasks need an authenticated tenant
+    with TestClient(server.app, raise_server_exceptions=False, headers=tenant_auth.headers) as c:
         yield c
 
 

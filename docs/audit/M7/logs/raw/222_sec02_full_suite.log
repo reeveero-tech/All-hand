@@ -1,0 +1,29 @@
+# SEC-02 (R-138) — الحزمة الكاملة + الجودة، بعد الإصلاح
+# branch: m7/r138-sec02-tenant-isolation (base 53f9343, working tree before commit)
+
+## Python 3.14.3 — cmd: python3 -m pytest -q -p no:cacheprovider
+================ 587 passed, 3 skipped, 4 deselected in 36.11s =================
+
+## Python 3.11.15 — cmd: /tmp/venv311_r133/bin/python -m pytest -q -p no:cacheprovider
+================ 587 passed, 3 skipped, 4 deselected in 37.48s =================
+
+## Python 3.12.13 — cmd: /tmp/venv312_r133/bin/python -m pytest -q -p no:cacheprovider
+================ 587 passed, 3 skipped, 4 deselected in 37.45s =================
+
+## ruff (CI quality scope + changed script) — cmd: ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts/run_r042_storage_verify.py
+ruff 0.17.1
+All checks passed!
+
+## py_compile of changed python files
+py_compile OK
+## bash -n scripts/r042/run_local_stack.sh
+bash -n OK
+
+## web (Node v22.23.3) — cmd: cd web && npm test && npm run build
+# tests 14
+# pass 14
+# fail 0
+
+✓ built in 124ms
+
+## not runnable here: tests/test_r042_live_storage.py + scripts/run_r042_storage_verify.py need PostgreSQL+PostgREST (no docker/psql in this sandbox) — run by the CI 'storage' job on the PR

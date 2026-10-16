@@ -45,7 +45,8 @@ from agent_civilization.agents.external_adapter import (
     ExternalAgentAdapter,
     load_external_agents_from_env,
 )
-from agent_civilization.core import experience, safety
+from agent_civilization.core import experience, safety, tenancy
+from agent_civilization.core.tenancy import ALL_TENANTS, Principal
 from agent_civilization.routing import route as route_request
 from agent_civilization.core.llm import get_llm
 
@@ -66,9 +67,13 @@ logging.basicConfig(
 logger = logging.getLogger("agos.server")
 
 # Security Configuration
-API_KEY = os.getenv("AGOS_API_KEY", "")  # Optional API key
+API_KEY = os.getenv("AGOS_API_KEY", "")  # Legacy operator key (admin principal, SEC-02)
 ALLOWED_ORIGINS = os.getenv("AGOS_ALLOWED_ORIGINS", "*").split(",")  # Default: all origins
-ENABLE_AUTH = bool(API_KEY)  # Enable auth only if API key is set
+# SEC-02 (R-138, D-056): API key -> Principal(tenant_id, role), from
+# AGOS_TENANT_KEYS and/or AGOS_API_KEY. A malformed configuration raises
+# tenancy.CredentialsError here, so the server does not start unprotected.
+CREDENTIALS: Dict[str, Principal] = tenancy.load_credentials()
+ENABLE_AUTH = bool(CREDENTIALS)  # credentials configured (tenant data needs them in any case)
 
 # Rate Limiting Configuration
 RATE_LIMIT_REQUESTS = int(os.getenv("AGOS_RATE_LIMIT_REQUESTS", "100"))
@@ -131,15 +136,55 @@ app.add_middleware(MetricsMiddleware)
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
-def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> Optional[str]:
-    """Verify API key if authentication is enabled."""
+_AUTH_HEADERS = {"WWW-Authenticate": "ApiKey"}
+
+
+def _authenticate(api_key: Optional[str]) -> Principal:
+    """SEC-02: 401 for a missing or invalid key; the principal otherwise."""
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API key required", headers=_AUTH_HEADERS)
+    principal = tenancy.authenticate(api_key, CREDENTIALS)
+    if principal is None:
+        raise HTTPException(status_code=401, detail="Invalid API key", headers=_AUTH_HEADERS)
+    return principal
+
+
+def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> Optional[Principal]:
+    """Routes without tenant data (civilization registry/plan): a valid key is
+    required when credentials are configured; open otherwise."""
     if not ENABLE_AUTH:
         return None
-    if api_key is None:
-        raise HTTPException(status_code=401, detail="API key required")
-    if api_key != API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid API key")
-    return api_key
+    return _authenticate(api_key)
+
+
+def require_principal(api_key: Optional[str]) -> Principal:
+    """SEC-02: every route that reads or changes tenant data. Always needs a
+    valid key — with no credentials configured there is no identity to scope
+    data to, so access is refused (never a default tenant or public data)."""
+    if not ENABLE_AUTH:
+        raise HTTPException(status_code=401, headers=_AUTH_HEADERS, detail=(
+            "authentication is not configured on this server: tenant data is unavailable "
+            "(set AGOS_TENANT_KEYS or AGOS_API_KEY)"))
+    principal = _authenticate(api_key)
+    tenancy.set_tenant(principal.tenant_id)  # this request's context only (copied into its tasks)
+    return principal
+
+
+def require_admin(api_key: Optional[str]) -> Principal:
+    principal = require_principal(api_key)
+    if not principal.is_admin:
+        raise HTTPException(status_code=403, detail="admin role required")
+    return principal
+
+
+def _scope(principal: Principal, all_tenants: bool):
+    """The data scope of a request: the caller's tenant; ALL_TENANTS only for an
+    admin who asks for it explicitly. Never taken from a client-sent tenant id."""
+    if all_tenants:
+        if not principal.is_admin:
+            raise HTTPException(status_code=403, detail="all_tenants requires the admin role")
+        return ALL_TENANTS
+    return principal.tenant_id
 
 
 def check_rate_limit(client_id: str) -> None:
@@ -206,7 +251,28 @@ AGENTS_PER_SPEC = _agents_per_spec()
 CIVILIZATION = create_civilization(AGENTS_PER_SPEC)
 EXTERNAL_AGENTS: List[ExternalAgentAdapter] = load_external_agents_from_env()
 TASKS: Dict[str, Dict[str, Any]] = {}
-TASK_EVENTS: asyncio.Queue = asyncio.Queue()
+# SEC-02: one live-event queue per tenant — a stream only ever reads its own
+# tenant's queue (SEC-04, broadcast/bounds, is a separate audit item).
+TASK_EVENTS: Dict[str, asyncio.Queue] = {}
+
+
+def tenant_events(tenant_id: str) -> asyncio.Queue:
+    tenancy.check_scope(tenant_id)
+    q = TASK_EVENTS.get(tenant_id)
+    if q is None:
+        q = TASK_EVENTS[tenant_id] = asyncio.Queue()
+    return q
+
+
+async def _publish(tenant_id: Optional[str], event: Dict[str, Any]) -> None:
+    if tenant_id is not None:
+        await tenant_events(tenant_id).put(event)
+
+
+def _visible_task(task: Optional[Dict[str, Any]], scope) -> bool:
+    if task is None:
+        return False
+    return scope is ALL_TENANTS or (task.get("tenant_id") is not None and task.get("tenant_id") == scope)
 STARTED_AT = time.time()
 MAX_TASKS_KEPT = 500
 
@@ -238,13 +304,18 @@ def _prune_tasks():
 
 
 async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
+    # SEC-02: the background task runs as the tenant that owns the record
+    # (explicit, not only inherited), so memory and events stay in that tenant.
+    tenant_id = TASKS[task_id]["tenant_id"]
+    tenancy.set_tenant(tenant_id)
     agent = _pick_agent(specialization)
     TASKS[task_id]["status"] = "running"
     TASKS[task_id]["agent"] = agent.name
     storage = get_storage()
     await storage.update_task(task_id, "running", agent_name=agent.name)
 
-    await TASK_EVENTS.put({"type": "task_started", "task_id": task_id, "agent": agent.name, "specialization": specialization})
+    await _publish(tenant_id, {"type": "task_started", "task_id": task_id, "agent": agent.name,
+                               "specialization": specialization})
 
     outcome = await agent.execute({"prompt": prompt, "data": data})
     TASKS[task_id]["status"] = "completed" if outcome["ok"] else "failed"
@@ -259,9 +330,9 @@ async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
     )
     await storage.insert_event("task_completed", {
         "task_id": task_id, "agent": agent.name, "specialization": specialization, "ok": outcome["ok"]
-    })
+    }, tenant_id=tenant_id)
 
-    await TASK_EVENTS.put({
+    await _publish(tenant_id, {
         "type": "task_completed",
         "task_id": task_id,
         "agent": agent.name,
@@ -459,7 +530,8 @@ async def system_status(request: Request):
     completed = sum(a["stats"]["tasks_completed"] for a in agents)
     failed = sum(a["stats"]["tasks_failed"] for a in agents)
     storage = get_storage()
-    db_tasks = await storage.get_tasks(limit=500)
+    # operational count across tenants (no content) — SEC-02, docs/governance/SECURITY.md
+    db_tasks = await storage.get_tasks(limit=500, scope=ALL_TENANTS)
     return {
         "status": "healthy",
         "uptime_s": round(time.time() - STARTED_AT),
@@ -480,8 +552,9 @@ async def system_status(request: Request):
             # R-100 (D-044): what real tools are allowed to do in this process.
             "tool_policy": safety.policy_snapshot(),
         },
-        # R-103 (D-046): memory and learning on the live path
-        "experience": experience.stats(),
+        # R-103 (D-046): memory and learning on the live path. SEC-02: config
+        # only here; a tenant's own memory/learning is at /api/memory, /api/learning.
+        "experience": experience.public_stats(),
     }
 
 
@@ -516,8 +589,9 @@ async def list_specializations(request: Request):
 @app.post("/api/tasks", status_code=202)
 @rate_limit
 async def create_task(request: Request, req: TaskRequest, api_key: Optional[str] = Security(api_key_header)):
-    # R-004: actually enforce the API key (was received but not checked).
-    verify_api_key(api_key)
+    # SEC-02: the owner is the authenticated tenant; any tenant field in the
+    # body is ignored (TaskRequest has none; extra fields are dropped).
+    principal = require_principal(api_key)
     if req.specialization not in SPECIALIZATIONS and req.specialization != "external":
         raise HTTPException(400, f"Unknown specialization '{req.specialization}'. Valid: {list(SPECIALIZATIONS)} + ['external']")
     task_id = uuid.uuid4().hex[:12]
@@ -528,12 +602,15 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
         "status": "queued",
         "created_at": time.time(),
         "result": None,
+        "tenant_id": principal.tenant_id,
     }
     _prune_tasks()
     storage = get_storage()
-    await storage.insert_task(task_id, req.specialization, req.prompt, "queued")
-    await storage.insert_event("task_created", {"task_id": task_id, "specialization": req.specialization})
-    await TASK_EVENTS.put({"type": "task_created", "task_id": task_id, "specialization": req.specialization})
+    await storage.insert_task(task_id, req.specialization, req.prompt, "queued", tenant_id=principal.tenant_id)
+    await storage.insert_event("task_created", {"task_id": task_id, "specialization": req.specialization},
+                               tenant_id=principal.tenant_id)
+    await _publish(principal.tenant_id, {"type": "task_created", "task_id": task_id,
+                                         "specialization": req.specialization})
     asyncio.create_task(_run_task(task_id, req.specialization, req.prompt, req.data))
     logger.info(f"Task created: {task_id} for specialization: {req.specialization}")
     return {"task_id": task_id, "status": "queued"}
@@ -541,72 +618,90 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
 
 @app.get("/api/tasks")
 @rate_limit
-async def list_tasks(request: Request, limit: int = 50):
-    """List recent tasks."""
+async def list_tasks(request: Request, limit: int = 50, all_tenants: bool = False,
+                     api_key: Optional[str] = Security(api_key_header)):
+    """List recent tasks of the caller's tenant (SEC-02)."""
+    scope = _scope(require_principal(api_key), all_tenants)
     storage = get_storage()
     if supabase_configured():
-        db_tasks = await storage.get_tasks(limit=limit)
+        db_tasks = await storage.get_tasks(limit=limit, scope=scope)
         if db_tasks:
             return {"count": len(db_tasks), "tasks": db_tasks, "source": "database"}
-    items = sorted(TASKS.values(), key=lambda t: t["created_at"], reverse=True)[: min(limit, 200)]
+    mine = [t for t in TASKS.values() if _visible_task(t, scope)]
+    items = sorted(mine, key=lambda t: t["created_at"], reverse=True)[: min(limit, 200)]
     return {"count": len(items), "tasks": items, "source": "memory"}
 
 
 @app.get("/api/tasks/{task_id}")
 @rate_limit
-async def get_task(request: Request, task_id: str):
-    """Get task details by ID."""
+async def get_task(request: Request, task_id: str, all_tenants: bool = False,
+                   api_key: Optional[str] = Security(api_key_header)):
+    """Get task details by ID — only a task of the caller's tenant (SEC-02).
+    Another tenant's task answers exactly like a missing one (404)."""
+    scope = _scope(require_principal(api_key), all_tenants)
     task = TASKS.get(task_id)
-    if not task:
+    if not _visible_task(task, scope):
         raise HTTPException(404, "task not found")
     return task
 
 
 @app.get("/api/memory")
 @rate_limit
-async def get_memory(request: Request, q: str = "", specialization: Optional[str] = None, limit: int = 20):
-    """R-103: what the civilization remembers of earlier tasks (newest/most similar first)."""
-    items = await experience.search(q, specialization, limit)
-    return {"count": len(items), "memories": items, "stats": experience.stats()}
+async def get_memory(request: Request, q: str = "", specialization: Optional[str] = None, limit: int = 20,
+                     all_tenants: bool = False, api_key: Optional[str] = Security(api_key_header)):
+    """R-103: what the civilization remembers of the caller tenant's earlier tasks (SEC-02)."""
+    scope = _scope(require_principal(api_key), all_tenants)
+    items = await experience.search(q, specialization, limit, scope=scope)
+    return {"count": len(items), "memories": items, "stats": experience.stats(scope)}
 
 
 @app.get("/api/learning")
 @rate_limit
-async def get_learning(request: Request):
-    """R-103: outcomes measured per specialization and input kind from real tasks."""
-    return experience.stats()
+async def get_learning(request: Request, all_tenants: bool = False,
+                       api_key: Optional[str] = Security(api_key_header)):
+    """R-103: outcomes measured from the caller tenant's real tasks (SEC-02)."""
+    scope = _scope(require_principal(api_key), all_tenants)
+    return experience.stats(scope)
 
 
 @app.delete("/api/memory")
 @rate_limit
-async def clear_memory(request: Request, api_key: Optional[str] = Security(api_key_header)):
-    """R-103: forget everything. Destructive, so it needs AGOS_API_KEY configured
-    (refused in open mode, unlike task creation)."""
-    if not ENABLE_AUTH:
-        raise HTTPException(403, "clearing memory requires AGOS_API_KEY to be configured")
-    verify_api_key(api_key)
-    before = experience.stats()["memories"]
-    experience.reset()
+async def clear_memory(request: Request, all_tenants: bool = False,
+                       api_key: Optional[str] = Security(api_key_header)):
+    """R-103: forget the caller tenant's memory and learning (SEC-02). Only an
+    admin with all_tenants=true clears everything (incl. quarantined entries)."""
+    scope = _scope(require_principal(api_key), all_tenants)
+    if scope is ALL_TENANTS:
+        before = experience.stats(ALL_TENANTS)["memories"]
+        experience.reset()
+    else:
+        before = await experience.forget_tenant(scope)
     await experience.persist()
     return {"cleared": before}
 
 
 @app.get("/api/events")
 @rate_limit
-async def list_events(request: Request, limit: int = 50):
-    """List recent events."""
+async def list_events(request: Request, limit: int = 50, all_tenants: bool = False,
+                      api_key: Optional[str] = Security(api_key_header)):
+    """List recent events of the caller's tenant (SEC-02)."""
+    scope = _scope(require_principal(api_key), all_tenants)
     storage = get_storage()
-    events = await storage.get_events(limit=limit)
+    events = await storage.get_events(limit=limit, scope=scope)
     return {"count": len(events), "events": events}
 
 
 @app.get("/api/events/stream")
-async def event_stream():
-    """Server-Sent Events stream for real-time task updates."""
+async def event_stream(api_key: Optional[str] = Security(api_key_header)):
+    """Server-Sent Events stream of the caller tenant's task updates (SEC-02).
+    Needs X-API-Key like every tenant-data route (the web UI reads it with
+    fetch, not EventSource, so it can send the header)."""
+    queue = tenant_events(require_principal(api_key).tenant_id)
+
     async def generate():
         while True:
             try:
-                event = await asyncio.wait_for(TASK_EVENTS.get(), timeout=30)
+                event = await asyncio.wait_for(queue.get(), timeout=30)
                 yield f"data: {json.dumps(event)}\n\n"
             except asyncio.TimeoutError:
                 yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
@@ -629,8 +724,8 @@ ROUTER_SYSTEM = (
 @app.post("/api/chat")
 @rate_limit
 async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Security(api_key_header)):
-    # R-004: actually enforce the API key (was received but not checked).
-    verify_api_key(api_key)
+    # SEC-02: identity first; memory recall/storage below runs as this tenant.
+    principal = require_principal(api_key)
     """Natural-language command: route to the best specialist and execute."""
     # R-106: the LLM picks the specialist when configured; otherwise (or when
     # its answer names no specialization) the deterministic keyword router
@@ -667,11 +762,12 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
         "finished_at": time.time(),
         "result": outcome,
         "agent": agent.name,
+        "tenant_id": principal.tenant_id,
     }
     _prune_tasks()
 
     storage = get_storage()
-    await storage.insert_task(task_id, spec, req.message, "completed")
+    await storage.insert_task(task_id, spec, req.message, "completed", tenant_id=principal.tenant_id)
     await storage.update_task(task_id, "completed", agent_name=agent.name,
                               result=outcome, elapsed_s=outcome.get("elapsed_s", 0))
     await storage.upsert_agent_stats(
@@ -680,7 +776,7 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
     )
     await storage.insert_event("chat_completed", {
         "task_id": task_id, "agent": agent.name, "specialization": spec, "ok": outcome["ok"]
-    })
+    }, tenant_id=principal.tenant_id)
 
     logger.info(f"Chat processed: {task_id} routed to {spec} by agent {agent.name}")
     return {
@@ -699,17 +795,19 @@ async def register_external_agent(
     req: ExternalAgentRequest,
     api_key: Optional[str] = Security(api_key_header)
 ):
-    """Register an external agent (requires admin API key for auth)."""
-    # R-004: validate the key value, not just whether auth is enabled.
-    verify_api_key(api_key)
-    
+    """Register an external agent (requires the admin role)."""
+    # SEC-02: an external agent is shared by every tenant — the prompts of all
+    # tenants' "external" tasks are sent to it — so only an admin may add one.
+    require_admin(api_key)
+
     if not req.url.startswith(("http://", "https://")):
         raise HTTPException(400, "url must be http(s)")
     if any(a.name == req.name for a in EXTERNAL_AGENTS):
         raise HTTPException(409, f"external agent '{req.name}' already registered")
-    # R-100 (D-044): in open mode an anonymous client must not point the server
-    # at its own private network; with AGOS_API_KEY the key holder may.
-    allow_private = ENABLE_AUTH or safety.private_network_allowed()
+    # R-100 (D-044): an anonymous client never reaches this point (admin role
+    # required above); the admin may target its own private network, as the
+    # AGOS_API_KEY holder could before SEC-02.
+    allow_private = True
     try:
         from agent_civilization.core import pools  # R-132: DNS check on the net pool
         await pools.run("net", safety.check_url, req.url, allow_private)
@@ -731,10 +829,9 @@ async def remove_external_agent(
     name: str,
     api_key: Optional[str] = Security(api_key_header)
 ):
-    """Remove an external agent (requires admin API key for auth)."""
-    # R-004: validate the key value, not just whether auth is enabled.
-    verify_api_key(api_key)
-    
+    """Remove an external agent (requires the admin role)."""
+    require_admin(api_key)
+
     for i, a in enumerate(EXTERNAL_AGENTS):
         if a.name == name:
             EXTERNAL_AGENTS.pop(i)
@@ -751,7 +848,7 @@ async def remove_external_agent(
 # ---------------------------------------------------------------------------
 try:
     from agent_civilization.civilization_routes import register_civilization_routes
-    register_civilization_routes(app, CIVILIZATION, TASKS, _prune_tasks, verify_api_key)
+    register_civilization_routes(app, CIVILIZATION, TASKS, _prune_tasks, verify_api_key, require_principal)
     logger.info("Civilization routes registered successfully")
 except ImportError as e:
     logger.warning(f"Civilization routes not available: {e}")

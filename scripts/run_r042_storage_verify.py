@@ -54,7 +54,8 @@ async def main() -> int:
     async with aiohttp.ClientSession(headers=headers) as http:
         try:
             # --- tasks: insert -> select
-            ok = await store.insert_task(task_id, "analysis", "R-042 live check", "queued")
+            # SEC-02: rows carry their tenant; reads are scoped to one tenant
+            ok = await store.insert_task(task_id, "analysis", "R-042 live check", "queued", tenant_id="r042a")
             check("tasks.insert_task returns True", ok)
             st, rows = await fetch(http, f"tasks?task_id=eq.{task_id}")
             check("tasks row readable after insert", st == 200 and len(rows) == 1, f"http={st} rows={rows}")
@@ -62,9 +63,13 @@ async def main() -> int:
                 check("tasks.created_at defaulted", rows[0].get("created_at") is not None)
                 check("tasks.status == queued", rows[0].get("status") == "queued")
 
-            listed = await store.get_tasks(limit=500)
+            listed = await store.get_tasks(limit=500, scope="r042a")
             check("tasks.get_tasks includes row", any(t.get("task_id") == task_id for t in listed),
                   f"{len(listed)} rows")
+            check("tasks.tenant_id stored", rows[:1] and rows[0].get("tenant_id") == "r042a", f"rows={rows[:1]}")
+            other = await store.get_tasks(limit=500, scope="r042b")
+            check("SEC-02: other tenant's get_tasks excludes row", not any(t.get("task_id") == task_id for t in other))
+            check("SEC-02: get_tasks without scope returns nothing", await store.get_tasks(limit=500) == [])
 
             # --- tasks: running -> completed with result/elapsed
             ok = await store.update_task(task_id, "running", agent_name=agent)
@@ -99,9 +104,13 @@ async def main() -> int:
 
             # --- events: insert -> select
             data = {"task_id": task_id, "ok": True, "n": 3}
-            ok = await store.insert_event("r042_check", data)
+            ok = await store.insert_event("r042_check", data, tenant_id="r042a")
             check("events.insert_event returns True", ok)
-            events = await store.get_events(limit=500)
+            others = await store.get_events(limit=500, scope="r042b")
+            check("SEC-02: other tenant's get_events excludes event",
+                  not any(isinstance(e.get("event_data"), dict) and e["event_data"].get("task_id") == task_id
+                          for e in others))
+            events = await store.get_events(limit=500, scope="r042a")
             mine = [e for e in events if e.get("event_type") == "r042_check"
                     and isinstance(e.get("event_data"), dict) and e["event_data"].get("task_id") == task_id]
             raw = [e for e in events if e.get("event_type") == "r042_check"]

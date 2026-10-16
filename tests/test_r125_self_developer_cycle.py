@@ -24,7 +24,8 @@ async def _remember_failure(spec, goal, error):
 
 
 @pytest.fixture(autouse=True)
-def fresh_memory(monkeypatch):
+def fresh_memory(monkeypatch, tenant_context):
+    # SEC-02: the cycle runs as one tenant; it only retests that tenant's failures
     monkeypatch.setenv("AGOS_MEMORY", "1")
     monkeypatch.delenv("AGOS_MEMORY_FILE", raising=False)
     experience.reset()

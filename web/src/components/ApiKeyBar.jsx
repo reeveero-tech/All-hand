@@ -36,14 +36,16 @@ export default function ApiKeyBar({ authEnabled }) {
     setSaved(false)
   }
 
-  let note = saved ? 'المفتاح محفوظ لهذه الجلسة فقط' : 'الخادم يعمل بوضع المصادقة — أدخل مفتاح API لإنشاء المهام'
-  if (rejected === 403) note = 'المفتاح مرفوض — أدخل المفتاح الصحيح'
-  else if (rejected === 401 && !saved) note = 'هذه العملية تتطلب مفتاح API'
+  let note = saved ? 'المفتاح محفوظ لهذه الجلسة فقط' : 'الخادم يعمل بوضع المصادقة — أدخل مفتاح API لعرض بياناتك وإنشاء المهام'
+  // SEC-02: 401 = no/invalid key; 403 = valid key without the admin role
+  if (rejected === 401 && saved) note = 'المفتاح مرفوض — أدخل المفتاح الصحيح'
+  else if (rejected === 401) note = 'هذه العملية تتطلب مفتاح API'
+  else if (rejected === 403) note = 'هذه العملية تتطلب صلاحية مدير'
   else if (rejected === 'storage') note = 'تخزين الجلسة معطل في المتصفح — لا يمكن حفظ المفتاح'
 
   return (
     <form className="api-key-bar" onSubmit={save} aria-label="مفتاح API">
-      <span className={`badge ${saved && rejected !== 403 ? 'badge-success' : 'badge-warning'}`}>
+      <span className={`badge ${saved && rejected !== 401 ? 'badge-success' : 'badge-warning'}`}>
         {saved ? 'مفتاح مضبوط' : 'بلا مفتاح'}
       </span>
       <input

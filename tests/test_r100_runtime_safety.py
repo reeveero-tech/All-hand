@@ -97,9 +97,12 @@ def test_open_mode_test_runner_does_not_execute(tmp_path):
     assert not marker.exists()
 
 
-def test_open_mode_api_does_not_leak_secrets(open_mode_server, monkeypatch):
+def test_open_mode_api_does_not_leak_secrets(open_mode_server, monkeypatch, request):
+    # SEC-02: no anonymous tasks any more; a tenant user key (AGOS_TENANT_KEYS,
+    # no AGOS_API_KEY) is used — code execution must still be off (R-100 policy).
+    auth = request.getfixturevalue("tenant_auth")
     monkeypatch.setenv("R100_PROBE_SECRET", "must-not-leak-7f3a")
-    with TestClient(open_mode_server.app) as c:
+    with TestClient(open_mode_server.app, headers=auth.headers) as c:
         t = _run_task(c, "test_runner", "```python\nimport os; print(os.environ.get('R100_PROBE_SECRET'))\n```")
         assert "must-not-leak-7f3a" not in str(t)
         assert "disabled in open mode" in t["result"]["result"]["error"]
@@ -218,13 +221,16 @@ def test_api_registered_external_agent_is_checked_on_every_call(internal_server)
 
 
 def test_open_mode_registration_of_loopback_agent_is_rejected(open_mode_server, monkeypatch):
+    # SEC-02: external agents are shared by all tenants, so registration needs
+    # the admin role — an anonymous client is refused before any URL handling,
+    # even with AGOS_ALLOW_PRIVATE_NETWORK=1 (stricter than the R-100 400).
     with TestClient(open_mode_server.app) as c:
         r = c.post("/api/agents/external", json={"name": "r100-loop", "url": "http://127.0.0.1:9/v1"})
-        assert r.status_code == 400 and "url rejected" in r.json()["detail"]
+        assert r.status_code == 401
         monkeypatch.setenv("AGOS_ALLOW_PRIVATE_NETWORK", "1")
         r = c.post("/api/agents/external", json={"name": "r100-loop", "url": "http://127.0.0.1:9/v1"})
-        assert r.status_code == 201
-        assert c.delete("/api/agents/external/r100-loop").status_code == 200
+        assert r.status_code == 401
+        assert "r100-loop" not in open_mode_server.EXTERNAL_AGENTS
 
 
 # ---------------------------------------------------------------- 4. SQLite

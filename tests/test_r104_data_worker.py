@@ -111,7 +111,7 @@ def test_process_data_success_counts_and_failure_does_not(monkeypatch):
     asyncio.run(go())
 
 
-def test_live_api_data_processor_text_only_reaches_process_text(monkeypatch):
+def test_live_api_data_processor_text_only_reaches_process_text(monkeypatch, tenant_auth):
     """R-104b: through the real FastAPI TestClient (POST /api/tasks), a text-only
     data_processor task must reach process_text (the wired path) — not just import it."""
     from fastapi.testclient import TestClient
@@ -129,7 +129,7 @@ def test_live_api_data_processor_text_only_reaches_process_text(monkeypatch):
     dw_mod.process_text = spy_process_text
     experience.reset()  # clean memory for this test
     try:
-        with TestClient(server_mod.app) as c:
+        with TestClient(server_mod.app, headers=tenant_auth.headers) as c:  # SEC-02: authenticated tenant
             r = c.post("/api/tasks", json={
                 "specialization": "data_processor",
                 "prompt": "summarize this note for me",
@@ -205,7 +205,7 @@ def test_success_is_deterministic_and_counters_increment(monkeypatch):
     asyncio.run(a.shutdown_async())
 
 
-def test_api_level_task_with_real_data_field_reaches_llm(monkeypatch):
+def test_api_level_task_with_real_data_field_reaches_llm(tenant_auth, monkeypatch):
     """R-104c: an API task with a prompt AND real data — the LLM must receive the
     prompt (the instruction), and the honest failure is stored (nested result)."""
     from fastapi.testclient import TestClient
@@ -223,7 +223,7 @@ def test_api_level_task_with_real_data_field_reaches_llm(monkeypatch):
     dw_mod.process_text = spy_process_text
     experience.reset()
     try:
-        with TestClient(server_mod.app) as c:
+        with TestClient(server_mod.app, headers=tenant_auth.headers) as c:  # SEC-02: authenticated tenant
             # data is a dict of TEXT values (no numbers anywhere) so the numeric
             # aggregation has nothing to do and the task goes down the LLM path.
             r = c.post("/api/tasks", json={

@@ -22,8 +22,9 @@ from agos_kernel.agent_production.memory_system import MemorySystem, MemoryType
 
 
 @pytest.fixture
-def client():
-    with TestClient(server.app) as c:
+def client(tenant_auth):
+    # SEC-02: memory belongs to the authenticated tenant; API calls authenticate
+    with TestClient(server.app, headers=tenant_auth.headers) as c:
         yield c
 
 
@@ -77,8 +78,12 @@ def test_learning_prior_reflects_earlier_outcomes(client):
 
 def test_status_reports_experience(client):
     _task(client, "analyst", "avg", [1, 2])
+    # SEC-02: the public status shows only the layer's configuration; the
+    # counts are the tenant's own, at /api/learning (authenticated)
     exp = client.get("/api/system/status").json()["experience"]
-    assert exp["enabled"] is True and exp["memories"] == 1 and exp["learning"]["tasks"] == 1
+    assert exp["enabled"] is True and "memories" not in exp and "learning" not in exp
+    mine = client.get("/api/learning").json()
+    assert mine["memories"] == 1 and mine["learning"]["tasks"] == 1
 
 
 # ------------------------------------------------- behavioural effect: researcher
@@ -117,7 +122,7 @@ def test_only_researcher_gets_a_fallback(client, monkeypatch):
 
 
 # ------------------------------------------------------- both implementations
-def test_specialists_implementation_has_the_same_experience():
+def test_specialists_implementation_has_the_same_experience(tenant_context):
     civ = create_civilization(1, impl="specialists")
     agent = civ["analyst"][0]
 
@@ -166,13 +171,18 @@ def test_a_broken_memory_never_breaks_the_task(client, monkeypatch):
     assert r["ok"] and r["result"]["tool_output"]["mean"] == 2.0 and "experience" not in r
 
 
-def test_clearing_memory_needs_a_configured_key(client, monkeypatch):
+def test_clearing_memory_needs_a_configured_key(client, tenant_auth):
     _task(client, "analyst", "avg", [1, 2])
-    assert client.delete("/api/memory").status_code == 403          # open mode
-    monkeypatch.setattr(server, "ENABLE_AUTH", True)
-    monkeypatch.setattr(server, "API_KEY", "k")
-    assert client.delete("/api/memory").status_code == 401
-    assert client.delete("/api/memory", headers={"X-API-Key": "k"}).json() == {"cleared": 1}
+    assert client.delete("/api/memory", headers={"X-API-Key": ""}).status_code == 401   # no key
+    assert client.delete("/api/memory", headers={"X-API-Key": "k"}).status_code == 401  # wrong key
+    creds = server.CREDENTIALS
+    server.CREDENTIALS, server.ENABLE_AUTH = {}, False              # open mode (no credentials)
+    try:
+        assert client.delete("/api/memory").status_code == 401      # SEC-02: refused (was 403)
+    finally:
+        server.CREDENTIALS, server.ENABLE_AUTH = creds, True
+    assert client.get("/api/learning").json()["memories"] == 1      # nothing was cleared
+    assert client.delete("/api/memory").json() == {"cleared": 1}   # the tenant's own memory
     assert client.get("/api/learning").json()["memories"] == 0
 
 

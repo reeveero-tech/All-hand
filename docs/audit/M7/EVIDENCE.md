@@ -444,3 +444,14 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 | pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff نطاق CI | 482 passed, 3 skipped, 4 deselected ×3؛ ruff صفر | 0 | raw/219 |
 
 حد موثق: DNS rebinding بين الفحص والاتصال (SEC-05) خارج نطاق المهمة وقائم.
+
+## M7 — R-138: SEC-02 — مصادقة إلزامية وعزل المستأجرين (دفعة m7/r138-sec02-tenant-isolation، 2026-10-16، بقرار المالك D-056)
+
+| الفحص | النتيجة | rc | السجل |
+|---|---|---|---|
+| `tests/test_sec02_tenant_isolation.py` على الكود القديم `53f9343` (worktree؛ مع الوحدة المساعدة `tenancy.py` التي لا يستوردها الخادم القديم؛ 6 حالات SSE مستبعدة لأن التدفق المجهول لا ينتهي) + مسبار SSE | 96 فشلاً / 3 نجاح — 200 بدل 401 على كل مسار، ذاكرة A في `recalled` لنتيجة B، أهداف A في self_developer لـB؛ المسبار: تدفق بلا مفتاح 200 مع حدث مستأجر آخر | 1 | raw/220 |
+| الاختبار نفسه بعد الإصلاح + 18 ملف اختبار مرتبطاً (بترتيب الحزمة) | 105/105؛ المرتبطة 210 passed, 3 skipped | 0 | raw/221 |
+| pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff + py_compile + `bash -n` + الواجهة (`npm test`، `npm run build`) | 587 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ الواجهة 14/14؛ build ناجح | 0 | raw/222 |
+
+لم يُشغَّل محلياً: `tests/test_r042_live_storage.py` و`scripts/run_r042_storage_verify.py` (يتطلبان PostgreSQL+PostgREST) — وظيفة CI `storage` على الـPR. قضية جانبية خارج النطاق موثقة في `221`: عداد rate limit مشترك بين ملفات الاختبار.
+

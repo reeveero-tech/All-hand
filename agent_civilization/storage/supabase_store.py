@@ -15,6 +15,8 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 
+from agent_civilization.core.tenancy import ALL_TENANTS, check_scope
+
 logger = logging.getLogger("storage")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL", "")
@@ -168,6 +170,13 @@ async def _accepted(r: aiohttp.ClientResponse, op: str, codes: tuple) -> bool:
     return False
 
 
+def _scoped_params(limit: int, scope) -> Dict[str, str]:
+    params = {"order": "created_at.desc", "limit": str(int(limit))}
+    if scope is not ALL_TENANTS:
+        params["tenant_id"] = f"eq.{scope}"  # scope validated by check_scope: [A-Za-z0-9_-]
+    return params
+
+
 def is_configured() -> bool:
     return bool(SUPABASE_URL and SUPABASE_KEY)
 
@@ -192,7 +201,11 @@ class SupabaseStorage:
             )
         return self._session
 
-    async def insert_task(self, task_id: str, specialization: str, prompt: str, status: str = "queued") -> bool:
+    async def insert_task(self, task_id: str, specialization: str, prompt: str, status: str = "queued",
+                          *, tenant_id: Optional[str] = None) -> bool:
+        """SEC-02: ``tenant_id`` is the owner, fixed at insert (``update_task``
+        never changes it). A row inserted without one is untenanted: no tenant
+        can read it (quarantined, admin ``ALL_TENANTS`` only)."""
         if not is_configured():
             return False
         try:
@@ -204,6 +217,7 @@ class SupabaseStorage:
                     "specialization": specialization,
                     "prompt": prompt[:500],
                     "status": status,
+                    "tenant_id": tenant_id,
                 },
             ) as r:
                 return await _accepted(r, "insert_task", (200, 201))
@@ -237,13 +251,17 @@ class SupabaseStorage:
             _record_exception("update_task", e)
             return False
 
-    async def get_tasks(self, limit: int = 50) -> List[Dict[str, Any]]:
-        if not is_configured():
+    async def get_tasks(self, limit: int = 50, *, scope=None) -> List[Dict[str, Any]]:
+        """SEC-02: rows of ``scope`` only — a tenant id, or ALL_TENANTS for an
+        admin. No scope -> no rows (default deny). Untenanted rows (NULL) never
+        match a tenant filter."""
+        if not is_configured() or scope is None:
             return []
+        check_scope(scope)
         try:
             session = await self._get_session()
             async with session.get(
-                f"{self.url}/rest/v1/tasks?order=created_at.desc&limit={limit}",
+                f"{self.url}/rest/v1/tasks", params=_scoped_params(limit, scope),
             ) as r:
                 if await _accepted(r, "get_tasks", (200,)):
                     return await r.json()
@@ -301,7 +319,8 @@ class SupabaseStorage:
             _record_exception("get_agent_stats", e)
             return []
 
-    async def insert_event(self, event_type: str, event_data: Dict[str, Any]) -> bool:
+    async def insert_event(self, event_type: str, event_data: Dict[str, Any], *,
+                           tenant_id: Optional[str] = None) -> bool:
         if not is_configured():
             return False
         try:
@@ -311,6 +330,7 @@ class SupabaseStorage:
                 json={
                     "event_type": event_type,
                     "event_data": _jsonable(event_data),
+                    "tenant_id": tenant_id,
                 },
             ) as r:
                 return await _accepted(r, "insert_event", (200, 201))
@@ -319,13 +339,15 @@ class SupabaseStorage:
             _record_exception("insert_event", e)
             return False
 
-    async def get_events(self, limit: int = 50) -> List[Dict[str, Any]]:
-        if not is_configured():
+    async def get_events(self, limit: int = 50, *, scope=None) -> List[Dict[str, Any]]:
+        """SEC-02: same scoping rule as ``get_tasks``."""
+        if not is_configured() or scope is None:
             return []
+        check_scope(scope)
         try:
             session = await self._get_session()
             async with session.get(
-                f"{self.url}/rest/v1/events?order=created_at.desc&limit={limit}",
+                f"{self.url}/rest/v1/events", params=_scoped_params(limit, scope),
             ) as r:
                 if await _accepted(r, "get_events", (200,)):
                     return await r.json()

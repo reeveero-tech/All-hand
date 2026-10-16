@@ -131,11 +131,12 @@ def specialists_server(monkeypatch):
     importlib.reload(srv)  # restore default runtime for later tests
 
 
-def test_live_server_routes_with_specialists(specialists_server):
+def test_live_server_routes_with_specialists(specialists_server, request):
     srv = specialists_server
     agent = srv.CIVILIZATION["analyst"][0]
     assert isinstance(agent, SpecialistBackedAgent)
-    c = TestClient(srv.app)
+    auth = request.getfixturevalue("tenant_auth")  # SEC-02: after the reload
+    c = TestClient(srv.app, headers=auth.headers)
     r = c.post("/civilization/execute",
                json={"message": "analyze the data for trends", "data": [1, 2, 3, 4, 5]})
     assert r.status_code == 200, r.text

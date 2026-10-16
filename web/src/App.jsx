@@ -5,7 +5,7 @@ import Specializations from './components/Specializations.jsx'
 import Agents from './components/Agents.jsx'
 import Tasks from './components/Tasks.jsx'
 import ApiKeyBar from './components/ApiKeyBar.jsx'
-import { fetchSystemStatus, createEventSource } from './api.js'
+import { fetchSystemStatus, openEventStream } from './api.js'
 
 export default function App() {
   const [tab, setTab] = useState('dashboard')
@@ -25,21 +25,17 @@ export default function App() {
     refreshStatus()
     const interval = setInterval(refreshStatus, 10000)
 
+    // SEC-02: the live stream is per tenant and needs the key (fetch, not EventSource)
     let es
     try {
-      es = createEventSource()
-      es.onmessage = (e) => {
-        try {
-          const data = JSON.parse(e.data)
-          if (data.type !== 'heartbeat') {
-            setLiveEvent(data)
-            if (data.type === 'task_completed' || data.type === 'task_created') {
-              refreshStatus()
-            }
+      es = openEventStream((data) => {
+        if (data.type !== 'heartbeat') {
+          setLiveEvent(data)
+          if (data.type === 'task_completed' || data.type === 'task_created') {
+            refreshStatus()
           }
-        } catch {}
-      }
-      es.onerror = () => {}
+        }
+      })
     } catch {}
 
     return () => {

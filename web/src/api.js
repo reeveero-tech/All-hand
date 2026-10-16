@@ -1,6 +1,8 @@
 // R-101: the server may run with AGOS_API_KEY (authenticated mode — since
 // R-100/D-044 the recommended way to enable test_runner). Write routes then
-// require the X-API-Key header. The key is typed by the user in the UI and kept
+// require the X-API-Key header. SEC-02 (R-138): the server is multi-tenant —
+// every route with tenant data (tasks, events, memory, the live stream) needs
+// the key, which also decides whose data is shown. The key is typed by the user in the UI and kept
 // only in sessionStorage for this tab: never bundled into the build, never in
 // the repository, gone when the tab closes.
 const API_BASE = (import.meta.env && import.meta.env.VITE_API_BASE) || '';
@@ -41,10 +43,18 @@ export class ApiError extends Error {
   }
 }
 
-function authMessage(status, hasKey) {
-  if (status === 401) return 'هذا الخادم يتطلب مفتاح API — أدخله في حقل المفتاح أعلى الصفحة';
+function authMessage(status, hasKey, detail) {
+  if (status === 401 && String(detail || '').startsWith('authentication is not configured')) {
+    return 'المصادقة غير مهيأة على هذا الخادم — لا تُعرض البيانات ولا تُنشأ المهام حتى يضبط المشغّل المفاتيح';
+  }
+  // SEC-02: a wrong key is 401 too (no valid identity); 403 = valid key, role not allowed.
+  if (status === 401) {
+    return hasKey
+      ? 'مفتاح API غير صحيح — صحّحه في حقل المفتاح أعلى الصفحة'
+      : 'هذا الخادم يتطلب مفتاح API — أدخله في حقل المفتاح أعلى الصفحة';
+  }
   return hasKey
-    ? 'مفتاح API غير صحيح — صحّحه في حقل المفتاح أعلى الصفحة'
+    ? 'هذه العملية تتطلب صلاحية مدير — مفتاحك لا يملكها'
     : 'الوصول مرفوض — أدخل مفتاح API في حقل المفتاح أعلى الصفحة';
 }
 
@@ -60,7 +70,7 @@ export async function api(path, options = {}) {
       if (typeof globalThis.dispatchEvent === 'function' && typeof globalThis.CustomEvent === 'function') {
         globalThis.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { status: res.status } }));
       }
-      throw new ApiError(authMessage(res.status, Boolean(key)), res.status);
+      throw new ApiError(authMessage(res.status, Boolean(key), err.detail), res.status);
     }
     throw new ApiError(err.detail || `HTTP ${res.status}`, res.status);
   }
@@ -81,8 +91,56 @@ export const registerExternalAgent = (name, url, model, apiKey) =>
 export const removeExternalAgent = (name) =>
   api(`/api/agents/external/${encodeURIComponent(name)}`, { method: 'DELETE' });
 
-// EventSource cannot send headers; /api/events/stream is a read route that
-// does not require the key (tests/test_r101_web_auth_contract.py).
-export function createEventSource() {
-  return new EventSource(`${API_BASE}/api/events/stream`);
+// SEC-02: /api/events/stream carries tenant events, so it needs X-API-Key.
+// EventSource cannot send headers, so the stream is read with fetch and parsed
+// here ("data: <json>" lines). Without a key nothing is opened. Reconnects
+// after `retryMs` like EventSource does; close() stops it for good.
+export function openEventStream(onEvent, { retryMs = 5000 } = {}) {
+  let closed = false;
+  let controller = null;
+  let timer = null;
+
+  const connect = async () => {
+    const key = getApiKey();
+    if (closed || !key) return;
+    controller = new AbortController();
+    try {
+      const res = await fetch(`${API_BASE}/api/events/stream`, {
+        headers: { 'X-API-Key': key, Accept: 'text/event-stream' },
+        signal: controller.signal,
+      });
+      if (!res.ok || !res.body) {
+        if (res.status === 401 || res.status === 403) return; // wrong key: wait for the user
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf('\n\n')) >= 0) {
+          const block = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          const data = block.split('\n').filter((l) => l.startsWith('data: ')).map((l) => l.slice(6)).join('\n');
+          if (!data) continue;
+          try { onEvent(JSON.parse(data)); } catch { /* ignore malformed event */ }
+        }
+      }
+    } catch {
+      /* network error or abort — retry below unless closed */
+    }
+    if (!closed) timer = setTimeout(connect, retryMs);
+  };
+
+  connect();
+  return {
+    close() {
+      closed = true;
+      if (timer) clearTimeout(timer);
+      if (controller) controller.abort();
+    },
+  };
 }

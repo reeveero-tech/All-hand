@@ -16,10 +16,10 @@ from fastapi.testclient import TestClient
 import server
 
 
-@pytest.fixture(scope="module")
-def client():
-    # client مع scope=module — استيراد server يبني الحضارة (1000 وكيل) مرة واحدة
-    return TestClient(server.app, raise_server_exceptions=False)
+@pytest.fixture
+def client(tenant_auth):
+    # SEC-02: الواجهة ترسل X-API-Key، فالعميل مصادَق كمستأجر الاختبار (server مستورد مرة واحدة أعلاه)
+    return TestClient(server.app, raise_server_exceptions=False, headers=tenant_auth.headers)
 
 
 def test_system_status_fields_dashboard_reads(client):
@@ -117,11 +117,15 @@ def test_chat_frontend_contract(client):
     assert isinstance(d["outcome"]["ok"], bool)
 
 
-def test_external_agent_register_and_remove(client):
-    """Agents.jsx يسجل ويحذف وكيلاً خارجياً."""
-    # R-100: a public host (resolved by the offline test DNS to TEST-NET); a
-    # loopback URL is refused in open mode — see tests/test_r100_runtime_safety.py.
+def test_external_agent_register_and_remove(client, tenant_auth):
+    """Agents.jsx يسجل ويحذف وكيلاً خارجياً.
+
+    SEC-02: الوكيل الخارجي مشترك بين المستأجرين (يستقبل مهام "external" للجميع)،
+    فالتسجيل والحذف لصلاحية المدير فقط؛ مفتاح المستأجر العادي يُرفض 403."""
+    # R-100: a public host (resolved by the offline test DNS to TEST-NET).
     payload = {"name": "test_ext_r043", "url": "http://agent.example.org:9/x", "model": "m", "api_key": ""}
+    assert client.post("/api/agents/external", json=payload).status_code == 403
+    client.headers.update(tenant_auth.admin_headers)
     r = client.post("/api/agents/external", json=payload)
     assert r.status_code == 201, r.text
     assert r.json()["registered"]["name"] == "test_ext_r043"
@@ -140,18 +144,19 @@ def test_unknown_specialization_rejected(client):
 
 
 @pytest.mark.asyncio
-async def test_sse_stream_yields_event():
-    """createEventSource يفتح /api/events/stream — نتحقق أن المولد يصدر حدثاً فعلياً.
+async def test_sse_stream_yields_event(tenant_auth):
+    """openEventStream يفتح /api/events/stream بمفتاح المستأجر — نتحقق أن المولد يصدر حدثاً فعلياً.
 
     TestClient يعلق على stream لانهائي؛ لذا نستدعي endpoint مباشرة (نفس المولد
-    الذي يخدمه) مع حدث في الطابور، ونقرأ أول chunk بمهلة.
+    الذي يخدمه) مع حدث في طابور المستأجر (SEC-02: طابور لكل مستأجر)، ونقرأ أول chunk بمهلة.
     """
     # unique tag; drain any leftover events from earlier tests first
     tag = f"r043_{time.time()}"
-    while not server.TASK_EVENTS.empty():
-        server.TASK_EVENTS.get_nowait()
-    await server.TASK_EVENTS.put({"type": tag})
-    response = await server.event_stream()
+    queue = server.tenant_events(tenant_auth.tenant)
+    while not queue.empty():
+        queue.get_nowait()
+    await queue.put({"type": tag})
+    response = await server.event_stream(api_key=tenant_auth.key)
     aiter = response.body_iterator
     chunk = await asyncio.wait_for(aiter.__anext__(), timeout=3)
     assert chunk.startswith("data: ")

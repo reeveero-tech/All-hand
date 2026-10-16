@@ -115,19 +115,21 @@ def test_scenario_report_contains_timing_and_outputs():
 
 
 @pytest.fixture
-def e2e_client(monkeypatch):
-    """Client with auth disabled and feature flag set (R-055 e2e).
+def e2e_client(monkeypatch, request):
+    """Client with the feature flag set (R-055 e2e), authenticated as the test
+    tenant (SEC-02: /civilization/execute and /api/tasks/{id} need a tenant).
 
     A prior test (tests/test_security.py) may have left `server` reloaded
-    with AGOS_API_KEY set (ENABLE_AUTH=True). We reload server explicitly
-    with the env cleared so auth is off for this test.
+    with AGOS_API_KEY set. We reload server explicitly with the env cleared,
+    then install the per-test tenant credentials (after the reload).
     """
     monkeypatch.delenv("AGOS_API_KEY", raising=False)
     monkeypatch.setenv("ROUTES_FEATURE", "1")
     import importlib
     import server as srv
     importlib.reload(srv)
-    return TestClient(app=srv.app)
+    auth = request.getfixturevalue("tenant_auth")
+    return TestClient(app=srv.app, headers=auth.headers)
 
 
 def test_scenario_full_pipeline_stores_result_in_task_store(e2e_client):

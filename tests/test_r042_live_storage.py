@@ -1,7 +1,7 @@
 """R-042: server end-to-end against LIVE storage (PostgREST/Supabase).
 
 Skipped unless R042_LIVE=1 and SUPABASE_URL/SUPABASE_ANON_KEY point at a live
-endpoint with docs/sql/001_init.sql applied (CI job `storage`, or
+endpoint with docs/sql/001_init.sql + 002_tenant_isolation.sql applied (CI job `storage`, or
 scripts/r042/run_local_stack.sh, or a real Supabase project).
 
 Covers what the unit suite cannot: the real HTTP round-trip of every storage
@@ -23,13 +23,30 @@ pytestmark = [
 ]
 
 
+_KEYS = {}
+
+
 @pytest.fixture(scope="module")
 def client():
+    """SEC-02: authenticated as tenant ``r042_live``; a second tenant
+    ``r042_other`` is configured to prove the live rows are tenant-scoped."""
+    import hashlib
+    import secrets
+
     from fastapi.testclient import TestClient
 
     import server
-    with TestClient(server.app) as c:
-        yield c
+    from agent_civilization.core.tenancy import Principal
+    _KEYS.update(own="r042-" + secrets.token_urlsafe(16), other="r042o-" + secrets.token_urlsafe(16))
+    saved = (server.CREDENTIALS, server.ENABLE_AUTH)
+    server.CREDENTIALS = {hashlib.sha256(_KEYS["own"].encode()).hexdigest(): Principal("r042_live"),
+                          hashlib.sha256(_KEYS["other"].encode()).hexdigest(): Principal("r042_other")}
+    server.ENABLE_AUTH = True
+    try:
+        with TestClient(server.app, headers={"X-API-Key": _KEYS["own"]}) as c:
+            yield c
+    finally:
+        server.CREDENTIALS, server.ENABLE_AUTH = saved
 
 
 def _rest(path):
@@ -79,6 +96,12 @@ def test_task_lifecycle_persisted(client):
     assert isinstance(row["result"], dict), f"result stored as {type(row['result']).__name__}"
     assert row["result"]["ok"] == mem["result"]["ok"]
     assert row["finished_at"] is not None
+    # SEC-02: the live row carries its owner; another tenant does not see it
+    assert row["tenant_id"] == "r042_live"
+    other = {"X-API-Key": _KEYS["other"]}
+    assert not any(t["task_id"] == task_id for t in client.get("/api/tasks?limit=200", headers=other).json()["tasks"])
+    assert client.get(f"/api/tasks/{task_id}", headers=other).status_code == 404
+    assert client.get("/api/tasks?limit=200", headers={"X-API-Key": ""}).status_code == 401
 
     # task_completed is written after update_task + upsert_agent_stats; over a
     # real network (hosted Supabase) that lands later — poll, don't read once.
@@ -91,6 +114,9 @@ def test_task_lifecycle_persisted(client):
             break
         time.sleep(0.1)
     assert {"task_created", "task_completed"} <= types, f"events for task: {types}"
+    other_events = client.get("/api/events?limit=200", headers=other).json()["events"]
+    assert not any(isinstance(e.get("event_data"), dict) and e["event_data"].get("task_id") == task_id
+                   for e in other_events)
 
 
 def test_chat_persists_and_agent_stats_upserted(client):

@@ -9,8 +9,8 @@ from fastapi.testclient import TestClient
 
 
 @pytest.fixture
-def client():
-    """Create test client."""
+def client(tenant_auth):
+    """Create test client (SEC-02: authenticated as the test tenant)."""
     import os
     
     # Mock the environment
@@ -18,7 +18,7 @@ def client():
     
     # Import after mocking
     from server import app
-    return TestClient(app)
+    return TestClient(app, headers=tenant_auth.headers)
 
 
 def test_api_root(client):

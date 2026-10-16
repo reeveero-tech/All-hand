@@ -228,3 +228,38 @@ def _no_keyless_llm_by_default(request, monkeypatch):
     if not request.node.get_closest_marker("network"):
         monkeypatch.setenv("AGOS_LLM_KEYLESS", "0")
     yield
+
+
+@pytest.fixture
+def tenant_auth(monkeypatch):
+    """SEC-02 (R-138): an authenticated identity for tests that exercise the
+    tenant-data API (tasks, chat, memory, events). Every tenant-data route now
+    refuses anonymous requests, so such tests must authenticate like a real
+    client. Patches the imported server's credentials with random per-test keys:
+    a user of tenant ``test_tenant`` and an admin of tenant ``test_admin``.
+    Code execution policy is unaffected (it still follows AGOS_API_KEY / R-100)."""
+    import hashlib
+    import secrets
+    from types import SimpleNamespace
+
+    import server
+    from agent_civilization.core.tenancy import Principal
+
+    key, admin_key = "tt-" + secrets.token_urlsafe(16), "ta-" + secrets.token_urlsafe(16)
+    creds = {hashlib.sha256(key.encode()).hexdigest(): Principal("test_tenant", "user"),
+             hashlib.sha256(admin_key.encode()).hexdigest(): Principal("test_admin", "admin")}
+    monkeypatch.setattr(server, "CREDENTIALS", creds)
+    monkeypatch.setattr(server, "ENABLE_AUTH", True)
+    return SimpleNamespace(key=key, admin_key=admin_key, tenant="test_tenant",
+                           headers={"X-API-Key": key}, admin_headers={"X-API-Key": admin_key})
+
+
+@pytest.fixture
+def tenant_context():
+    """SEC-02: code that calls the experience layer directly (not through HTTP)
+    runs as tenant ``test_tenant`` — with no tenant the layer stores and recalls
+    nothing by design. asyncio.run() copies this context into the test's loop."""
+    from agent_civilization.core import tenancy
+    token = tenancy.set_tenant("test_tenant")
+    yield "test_tenant"
+    tenancy.reset_tenant(token)

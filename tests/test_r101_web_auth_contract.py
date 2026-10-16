@@ -5,10 +5,12 @@ recommended way to enable test_runner since R-100 (D-044) — broke every write
 from the UI.  These tests pin the server half of the contract the UI now relies
 on, using the exact payloads web/src/api.js sends:
 
-* the UI can detect the mode (``security.authentication``) and keep reading
-  without a key (status, specializations, agents, tasks, events, SSE stream);
-* writes answer 401 without a key and 403 with a wrong key (the UI maps these
-  to its two messages) and succeed with the key in ``X-API-Key``;
+* the UI can detect the mode (``security.authentication``) and read the public
+  catalogue without a key (status, specializations, agents);
+* SEC-02 (R-138): tenant data — tasks, events, the SSE stream — needs the key
+  (before SEC-02 these read routes were open: that was the vulnerability);
+* writes answer 401 without a key and 401 with a wrong key (SEC-02: an invalid
+  key is no identity; it was 403 before) and succeed with the key in ``X-API-Key``;
 * CORS lets a browser send the ``X-API-Key`` header;
 * with the key, test_runner really executes (R-100 policy: authenticated mode).
 
@@ -45,7 +47,7 @@ def client(auth_server):
 def _poll(client, task_id, headers=None, timeout=15):
     deadline = time.time() + timeout
     while time.time() < deadline:
-        resp = client.get(f"/api/tasks/{task_id}", headers=headers or {})
+        resp = client.get(f"/api/tasks/{task_id}", headers=headers or {"X-API-Key": KEY})
         assert resp.status_code in (200, 429), resp.text
         t = resp.json()
         if resp.status_code == 200 and t["status"] in ("completed", "failed"):
@@ -60,15 +62,29 @@ def test_ui_can_detect_authenticated_mode_without_a_key(client):
     assert r.json()["security"]["authentication"] == "enabled"
 
 
-@pytest.mark.parametrize("path", ["/api/specializations", "/api/agents", "/api/tasks?limit=50",
-                                  "/api/events?limit=50"])
-def test_read_routes_the_ui_polls_do_not_require_the_key(client, path):
+@pytest.mark.parametrize("path", ["/api/specializations", "/api/agents"])
+def test_public_catalogue_routes_do_not_require_the_key(client, path):
     assert client.get(path).status_code == 200
 
 
-def test_sse_stream_needs_no_key_because_eventsource_cannot_send_headers(auth_server):
+@pytest.mark.parametrize("path", ["/api/tasks?limit=50", "/api/events?limit=50"])
+def test_tenant_read_routes_the_ui_polls_require_the_key(client, path):
+    # SEC-02: inverted from R-101 ("do not require the key") — that openness was the leak
+    r = client.get(path)
+    assert r.status_code == 401 and r.json()["detail"] == "API key required"
+    assert client.get(path, headers={"X-API-Key": KEY}).status_code == 200
+
+
+def test_sse_stream_requires_the_key_sent_by_the_fetch_based_reader(auth_server):
+    # SEC-02: the UI reads the stream with fetch (openEventStream) so it can send
+    # X-API-Key; the endpoint takes and checks it (EventSource could not).
     route = next(r for r in auth_server.app.routes if getattr(r, "path", "") == "/api/events/stream")
-    assert "api_key" not in inspect.signature(route.endpoint).parameters
+    assert "api_key" in inspect.signature(route.endpoint).parameters
+    import asyncio
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException) as e:
+        asyncio.run(route.endpoint(api_key=None))
+    assert e.value.status_code == 401
 
 
 @pytest.mark.parametrize("method,path,body", [
@@ -78,12 +94,12 @@ def test_sse_stream_needs_no_key_because_eventsource_cannot_send_headers(auth_se
                                       "model": "", "api_key": ""}),
     ("delete", "/api/agents/external/r101-x", None),
 ])
-def test_writes_401_without_key_and_403_with_wrong_key(client, method, path, body):
+def test_writes_401_without_key_and_401_with_wrong_key(client, method, path, body):
     kw = {"json": body} if body is not None else {}
     r = getattr(client, method)(path, **kw)
     assert r.status_code == 401 and r.json()["detail"] == "API key required"
     r = getattr(client, method)(path, headers={"X-API-Key": "wrong"}, **kw)
-    assert r.status_code == 403 and r.json()["detail"] == "Invalid API key"
+    assert r.status_code == 401 and r.json()["detail"] == "Invalid API key"
 
 
 def test_ui_flows_succeed_with_the_key(client):
