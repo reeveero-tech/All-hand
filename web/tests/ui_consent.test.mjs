@@ -20,13 +20,18 @@ import { transformWithEsbuild } from 'vite';
 
 // ---------------------------------------------------------------- jsdom setup
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
+// Node >= 21 defines `navigator` on globalThis as a getter-only property, so
+// assignments are best-effort: skip what the platform will not let us replace
+// (React's render path here does not depend on it).
 for (const [k, v] of Object.entries({
   window: dom.window, document: dom.window.document, navigator: dom.window.navigator,
   HTMLElement: dom.window.HTMLElement, Element: dom.window.Element, Node: dom.window.Node,
   Event: dom.window.Event, CustomEvent: dom.window.CustomEvent,
   getComputedStyle: dom.window.getComputedStyle, sessionStorage: dom.window.sessionStorage,
   requestAnimationFrame: (cb) => setTimeout(cb, 0),
-})) globalThis[k] = v;
+})) {
+  try { globalThis[k] = v; } catch { /* read-only global (e.g. Node 22 navigator) */ }
+}
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 // jsdom lacks scrollIntoView (used by Chat's messagesEnd ref)
 dom.window.HTMLElement.prototype.scrollIntoView = function () {};
