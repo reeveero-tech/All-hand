@@ -470,3 +470,13 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 | pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff + yaml + الواجهة (`npm test`، `npm run build`) | 644 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/227 |
 
 لم يُشغَّل محلياً: docker (لا خادم docker في البيئة) — خطوة CI `docker` الجديدة «Verify production start is refused without credentials (SEC-03)» تشغّل الصورة المبنية بلا مفاتيح، ثم بـ`development`+`RENDER=true` (artifact `docker_startup_refusal.log`).
+
+## M7 — R-140: BUG-01 — رفض مهام `external` بلا وكيل خارجي قبل إنشائها (دفعة m7/r140-bug01-external-without-agent، 2026-10-16)
+
+| الفحص | النتيجة | rc | السجل |
+|---|---|---|---|
+| `tests/test_bug01_external_without_agent.py` على الكود القديم `97080cc` (الملف وحده مضاف) | 4 failed, 6 passed (202 بدل 409؛ `HTTPException: 404: Unknown specialization: external` من `_run_task`) | 1 | raw/228 |
+| مسبار `scripts/bug01/probe_external_without_agent.py` على الكود القديم (إنتاج، مفتاح مستأجر عشوائي، بلا وكلاء خارجيين) | 202؛ بعد 1 ث `queued`/`result=None`؛ كتابات `insert_task`,`insert_event`؛ SSE `task_created`؛ استثناء غير معالج في الحلقة | 0 | raw/228 |
+| الاختبار نفسه بعد الإصلاح (-v) + اختبارات API/المصادقة/العزل/SSRF/الإقلاع المرتبطة | 10/10؛ 266/266 | 0 | raw/229 |
+| المسبار نفسه بعد الإصلاح | 409 برسالة بلا أسرار؛ مهام المستأجر 0؛ كتابات `[]`؛ SSE `[]`؛ استثناءات `[]` | 0 | raw/229 |
+| pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff (أمر CI) + الواجهة (`npm test`، `npm run build`) | 654 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/230 |

@@ -81,7 +81,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `AGOS_WEB_WAIT_S` (R-132) | core/agents/real_dispatcher.py | 20 ث أقصى انتظار (طابور + نداء) لاحتياطي ويب educator وترجمة communicator |
 | `AGOS_LLM_KEYLESS_URL` / `AGOS_LLM_KEYLESS_MODEL` (R-116) | core/llm.py | `https://text.pollinations.ai/openai` / `openai` |
 | `AGOS_AGENT_IMPL` | agents/real/real_agents.py | غير مضبوط = `real` (الافتراضي)؛ `specialists` يبني الحضارة من أصناف `specialists/` (D-037). (R-104: `process_text()` — دالة وحدة لا صنف — مُفوَّضة إليها من `_data_processor` لمدخل نصي فقط؛ بلا `OPENROUTER_API_KEY` يُنشر فشل LLM صراحةً) |
-| `EXTERNAL_AGENTS` | agents/external_adapter.py | `""` |
+| `EXTERNAL_AGENTS` | agents/external_adapter.py | `""` — بلا وكيل خارجي (لا هنا ولا عبر `POST /api/agents/external`) ترد مهام `external` بـ409 فوراً (R-140، BUG-01) |
 | `REDIS_URL` | agos_kernel/infrastructure/redis_queue.py | `redis://localhost:6379` |
 | `METRICS_NAMESPACE` | agos_kernel/infrastructure/metrics.py | `agos` |
 | `CIRCUIT_BREAKER_*` (4 متغيرات) | agos_kernel/infrastructure | 5/3/60/3 |
@@ -137,6 +137,7 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | 429 من api.github.com في اختبار api_integrator | تسريب اختبار خارجي | `grep api.github.com tests/` | بُدل إلى `https://example.com` (R-055) |
 | اختبار e2e فشل بـ401 | تسريب حالة (اختبار سابق حمّل `server` بوضع auth-on) | راجع `tests/test_e2e_scenarios.py::test_scenario_full_pipeline_stores_result_in_task_store` | fixture يعيد استيراد `server` مع حذف `AGOS_API_KEY` (R-055) |
 | القياسات تتوقف | 1000 وكيل/1000 مهمة غير مستقرين | `AGOS_ALLOW_CODE_EXEC=1 python3 scripts/run_r053_scale_audit.py` (يسمّي التخصص الفاشل وخطأه منذ R-100) | راجع R-053 |
+| `POST /api/tasks` بـ`external` يرد 409 «no external agent is registered…» | لا وكيل خارجي مسجّل (R-140، BUG-01) | `GET /api/system/status` → `external_agents` | سجّل وكيلاً بمفتاح admin (`POST /api/agents/external`) أو `EXTERNAL_AGENTS` عند الإقلاع؛ لا مهمة ولا أثر نتجا عن الرفض |
 | `test_runner` يعيد «code execution is disabled in open mode» | سياسة R-100 الافتراضية (لا `AGOS_API_KEY`) | `GET /api/system/status` → `security.tool_policy.code_execution` | اضبط `AGOS_API_KEY` (أو `AGOS_ALLOW_CODE_EXEC=1` بوعي) — D-044 |
 | أداة شبكية تعيد `blocked: blocked non-public address` | الهدف داخلي/خاص (R-100) | العنوان المحلول في الرسالة | مقصود؛ `AGOS_ALLOW_PRIVATE_NETWORK=1` لبيئة داخلية موثوقة |
 

@@ -1,0 +1,21 @@
+# BUG-01 (R-140) — tests/test_bug01_external_without_agent.py on the old code (main 97080cc, server.py unchanged; only the test file added)
+# python: Python 3.14.3
+# cmd: python3 -m pytest tests/test_bug01_external_without_agent.py -q -p no:cacheprovider -rf
+E   assert 202 == 409
+E   assert 202 == 409
+E   fastapi.exceptions.HTTPException: 404: Unknown specialization: external
+E   AssertionError: assert 202 == 409
+FAILED tests/test_bug01_external_without_agent.py::test_external_without_agent_is_refused_with_409_and_no_side_effect
+FAILED tests/test_bug01_external_without_agent.py::test_no_task_is_left_queued_and_no_background_exception
+FAILED tests/test_bug01_external_without_agent.py::test_agent_removed_after_acceptance_fails_the_task_instead_of_leaving_it_queued
+FAILED tests/test_bug01_external_without_agent.py::test_external_task_through_an_agent_registered_via_the_admin_api
+========================= 4 failed, 6 passed in 2.44s ==========================
+
+## probe: real route, production mode, one tenant key, EXTERNAL_AGENTS empty
+# cmd: PYTHONPATH=. python3 scripts/bug01/probe_external_without_agent.py
+external agents registered: 0
+POST /api/tasks {specialization: external} -> 202 {'task_id': '526209d8faf2', 'status': 'queued'}
+after 1 s: status = queued | result = None | agent = None
+tasks of the tenant: 1
+storage writes: ['insert_task', 'insert_event'] | SSE events published: ['task_created']
+unhandled background exceptions reported by the loop: ["HTTPException(status_code=404, detail='Unknown specialization: external')"]
