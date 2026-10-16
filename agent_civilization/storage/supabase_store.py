@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -177,6 +178,18 @@ def _scoped_params(limit: int, scope) -> Dict[str, str]:
     return params
 
 
+_TASK_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _task_by_id_params(task_id: str, scope) -> Dict[str, str]:
+    """BUG-04 (R-143): one row by primary key, scope enforced in the query
+    (tenant_id=eq.<t>; never matches NULL). No order: it is not a list."""
+    params = {"task_id": f"eq.{task_id}", "limit": "1"}
+    if scope is not ALL_TENANTS:
+        params["tenant_id"] = f"eq.{scope}"  # scope validated by check_scope: [A-Za-z0-9_-]
+    return params
+
+
 def is_configured() -> bool:
     return bool(SUPABASE_URL and SUPABASE_KEY)
 
@@ -270,6 +283,31 @@ class SupabaseStorage:
             logger.warning("get_tasks failed: %s", e)
             _record_exception("get_tasks", e)
             return []
+
+    async def get_task(self, task_id: str, *, scope=None) -> Optional[Dict[str, Any]]:
+        """BUG-04 (R-143): the stored row of ``task_id`` within ``scope`` — a
+        tenant id, or ALL_TENANTS for an admin — or None. The tenant filter is
+        part of the PostgREST query (no unscoped fetch). No scope -> None with
+        no network call (default deny); an id outside the task-id alphabet is
+        never sent as a filter."""
+        if not is_configured() or scope is None:
+            return None
+        check_scope(scope)
+        if not isinstance(task_id, str) or not _TASK_ID_RE.match(task_id):
+            return None
+        try:
+            session = await self._get_session()
+            async with session.get(
+                f"{self.url}/rest/v1/tasks", params=_task_by_id_params(task_id, scope),
+            ) as r:
+                if await _accepted(r, "get_task", (200,)):
+                    rows = await r.json()
+                    return rows[0] if rows else None
+                return None
+        except Exception as e:
+            logger.warning("get_task failed: %s", e)
+            _record_exception("get_task", e)
+            return None
 
     async def upsert_agent_stats(self, agent_name: str, specialization: str,
                                   tasks_completed: int, tasks_failed: int,

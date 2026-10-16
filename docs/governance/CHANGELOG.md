@@ -1,5 +1,14 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-16 — R-143: BUG-04 — استرجاع المهام المحفوظة بمعرّفها بنطاق المستأجر (دفعة m7/r143-bug04-task-by-id-from-storage)
+
+- **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 7؛ أولوية 1) + تعليمات المالك لـBUG-04.
+- **العيب**: `GET /api/tasks/{task_id}` يقرأ `TASKS` فقط؛ بعد إعادة التشغيل تُعرض المهمة في `GET /api/tasks` (database) ويعيد تفصيلها 404. مثبت (`docs/audit/M7/logs/raw/237`).
+- **الإصلاح**: `SupabaseStorage.get_task(task_id, scope=)` — استعلام بالمعرّف مع مرشح المستأجر داخله (`task_id=eq.&tenant_id=eq.&limit=1`؛ لا مرشح مستأجر لـ`ALL_TENANTS` فقط)؛ `server.get_task` يستخدمه حين تغيب المهمة عن الذاكرة. خارج النطاق في الذاكرة 404 بلا رجوع للتخزين.
+- **تغيير سلوك مقصود**: مهمة مخزنة غائبة عن الذاكرة ← 200 بصف التخزين + `id` + `source: "database"` (كانت 404). مهمة مستأجر آخر وصفوف NULL ← 404 مطابق للمجهول كما كان. سلوك الذاكرة وعقد الخطأ بلا تغيير.
+- **الاختبار**: `tests/test_bug04_task_by_id_from_storage.py` (13)؛ `tests/test_r042_live_storage.py::test_task_read_by_id_from_storage_after_memory_loss` على PostgreSQL الحقيقي (CI `storage`)؛ مسبار `scripts/bug04/probe_task_by_id.py`. التحقق: `238`، `239` — pytest ‏683+4+4 ×3 إصدارات؛ ruff صفر.
+- **الوثائق**: API، DATA_MODEL، ROADMAP (R-143)، PROJECT_STATE، EVIDENCE.
+
 ## 2026-10-16 — R-142: BUG-03 — `/health/ready` يرد 503 عند فشل فحوص الجاهزية (دفعة m7/r142-bug03-readiness-503)
 
 - **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 6؛ أولوية 1) + تعليمات المالك لـBUG-03.
