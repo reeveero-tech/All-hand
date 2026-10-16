@@ -20,9 +20,13 @@ and returns a combined result.
 ```bash
 pip install -r requirements.txt
 python run.py
-# or
-uvicorn server:app --host 0.0.0.0 --port 8000
+# or (SEC-03: without keys the server only starts in an explicit development environment)
+AGOS_ENV=development uvicorn server:app --host 0.0.0.0 --port 8000
 ```
+
+Production (`AGOS_ENV` unset or `production`, as in `render.yaml` and the
+Dockerfile) refuses to start without `AGOS_TENANT_KEYS` and/or `AGOS_API_KEY` —
+see `docs/governance/OPERATIONS.md`.
 
 Optional environment variables:
 

@@ -1,0 +1,83 @@
+# SEC-03 (R-139) — after the fix, branch m7/r139-sec03-production-fail-closed (base 7ac2cda), Python 3.14.3
+# cmd: python3 -m pytest tests/test_sec03_production_startup.py -v -p no:cacheprovider
+tests/test_sec03_production_startup.py::test_process_without_any_setting_is_production_and_refuses_to_start PASSED [  1%]
+tests/test_sec03_production_startup.py::test_process_production_with_tenant_keys_starts PASSED [  3%]
+tests/test_sec03_production_startup.py::test_process_on_render_with_development_refuses_to_start PASSED [  5%]
+tests/test_sec03_production_startup.py::test_process_explicit_development_starts_without_keys PASSED [  7%]
+tests/test_sec03_production_startup.py::test_production_without_credentials_fails PASSED [  8%]
+tests/test_sec03_production_startup.py::test_production_with_empty_tenant_keys_and_no_api_key_fails[] PASSED [ 10%]
+tests/test_sec03_production_startup.py::test_production_with_empty_tenant_keys_and_no_api_key_fails[   ] PASSED [ 12%]
+tests/test_sec03_production_startup.py::test_production_with_valid_tenant_keys_starts_and_enforces_auth PASSED [ 14%]
+tests/test_sec03_production_startup.py::test_production_with_valid_legacy_api_key_starts_as_operator_admin PASSED [ 15%]
+tests/test_sec03_production_startup.py::test_production_key_rotation_two_keys_one_tenant PASSED [ 17%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[bad_hash_short] PASSED [ 19%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[bad_hash_upper] PASSED [ 21%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[bad_role] PASSED [ 22%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[bad_tenant] PASSED [ 24%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[broken_json] PASSED [ 26%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[duplicate_key] PASSED [ 28%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[empty_list] PASSED [ 29%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[not_a_list] PASSED [ 31%]
+tests/test_sec03_production_startup.py::test_production_with_malformed_credentials_fails[plain_key_instead_of_hash] PASSED [ 33%]
+tests/test_sec03_production_startup.py::test_production_with_weak_or_padded_api_key_fails[short-key] PASSED [ 35%]
+tests/test_sec03_production_startup.py::test_production_with_weak_or_padded_api_key_fails[                    ] PASSED [ 36%]
+tests/test_sec03_production_startup.py::test_production_with_weak_or_padded_api_key_fails[op-yqbpxGn7O8RNocvI4ddd6V33YVi3Rm2T\n] PASSED [ 38%]
+tests/test_sec03_production_startup.py::test_production_with_weak_or_padded_api_key_fails[ op-XM_BbTS1l7CI5wvAsmVzyiI9hM03Geie] PASSED [ 40%]
+tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[prod] PASSED [ 42%]
+tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[Production] PASSED [ 43%]
+tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[dev] PASSED [ 45%]
+tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[staging] PASSED [ 47%]
+tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[local] PASSED [ 49%]
+tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[true] PASSED [ 50%]
+tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_TENANT_KEY] PASSED [ 52%]
+tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_TENANTS_KEYS] PASSED [ 54%]
+tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_APIKEY] PASSED [ 56%]
+tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_API_KEYS] PASSED [ 57%]
+tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_KEY] PASSED [ 59%]
+tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[TENANT_KEYS] PASSED [ 61%]
+tests/test_sec03_production_startup.py::test_misspelled_environment_variable_stays_production[AGOS_ENVIRONMENT] PASSED [ 63%]
+tests/test_sec03_production_startup.py::test_misspelled_environment_variable_stays_production[AGOS_MODE] PASSED [ 64%]
+tests/test_sec03_production_startup.py::test_misspelled_environment_variable_stays_production[ENV] PASSED [ 66%]
+tests/test_sec03_production_startup.py::test_misspelled_environment_variable_stays_production[APP_ENV] PASSED [ 68%]
+tests/test_sec03_production_startup.py::test_explicit_non_production_starts_without_keys_but_serves_no_tenant_data[development] PASSED [ 70%]
+tests/test_sec03_production_startup.py::test_explicit_non_production_starts_without_keys_but_serves_no_tenant_data[test] PASSED [ 71%]
+tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[true-development] PASSED [ 73%]
+tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[true-test] PASSED [ 75%]
+tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[TRUE-development] PASSED [ 77%]
+tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[TRUE-test] PASSED [ 78%]
+tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[ true -development] PASSED [ 80%]
+tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[ true -test] PASSED [ 82%]
+tests/test_sec03_production_startup.py::test_render_production_with_keys_starts_and_without_keys_fails PASSED [ 84%]
+tests/test_sec03_production_startup.py::test_startup_decision_reads_only_the_process_environment PASSED [ 85%]
+tests/test_sec03_production_startup.py::test_errors_and_logs_never_contain_keys_or_hashes PASSED [ 87%]
+tests/test_sec03_production_startup.py::test_process_failure_output_contains_no_key PASSED [ 89%]
+tests/test_sec03_production_startup.py::test_tenant_isolation_still_holds_in_production PASSED [ 91%]
+tests/test_sec03_production_startup.py::test_external_agent_registration_needs_documented_authority_in_production PASSED [ 92%]
+tests/test_sec03_production_startup.py::test_render_blueprint_is_production_and_declares_both_credential_inputs PASSED [ 94%]
+tests/test_sec03_production_startup.py::test_render_blueprint_has_no_misspelled_agos_variable PASSED [ 96%]
+tests/test_sec03_production_startup.py::test_render_blueprint_sets_no_non_production_override PASSED [ 98%]
+tests/test_sec03_production_startup.py::test_dockerfile_does_not_select_a_non_production_environment PASSED [100%]
+============================== 57 passed in 3.62s ==============================
+
+# SEC-02 regression: python3 -m pytest tests/test_sec02_tenant_isolation.py tests/test_security.py tests/test_r101_web_auth_contract.py tests/test_r100_runtime_safety.py -q -p no:cacheprovider
+============================= 172 passed in 13.51s =============================
+
+## real uvicorn start, empty environment (simulates the container/Render process)
+# cmd: env -i PATH=$PATH HOME=$HOME AGOS_ENV=production uvicorn server:app --host 127.0.0.1 --port 18555   AGOS_ENV=production
+rc=1
+agent_civilization.core.tenancy.CredentialsError: production start refused: no credentials configured — set AGOS_TENANT_KEYS and/or AGOS_API_KEY (see docs/governance/OPERATIONS.md). For local development without keys set AGOS_ENV=development explicitly
+# 64-hex hashes in output: 0
+# cmd: env -i PATH=$PATH HOME=$HOME  uvicorn server:app --host 127.0.0.1 --port 18557   (AGOS_ENV unset = production)
+rc=1
+agent_civilization.core.tenancy.CredentialsError: production start refused: no credentials configured — set AGOS_TENANT_KEYS and/or AGOS_API_KEY (see docs/governance/OPERATIONS.md). For local development without keys set AGOS_ENV=development explicitly
+# 64-hex hashes in output: 0
+# cmd: env -i PATH=$PATH HOME=$HOME AGOS_ENV=development RENDER=true uvicorn server:app --host 127.0.0.1 --port 18556   AGOS_ENV=development RENDER=true
+rc=1
+agent_civilization.core.tenancy.CredentialsError: AGOS_ENV=development is not allowed on a deployed platform (RENDER=true): deployments always run as production
+# 64-hex hashes in output: 0
+# cmd: env -i PATH=$PATH HOME=$HOME AGOS_ENV=production AGOS_TENANT_KEYS=<1 random tenant key, hash only> uvicorn server:app --port 18558  (then curl)
+GET /health -> 200
+GET /api/tasks (no key) -> 401
+GET /api/tasks (tenant key) -> 200
+startup: AGOS_ENV=production, 1 credential(s) for 1 tenant(s) - <module>:81
+# the key appears in server output: 0 times

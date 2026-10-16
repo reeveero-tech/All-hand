@@ -1,0 +1,82 @@
+# SEC-03 (R-139) — tests/test_sec03_production_startup.py on the old code (main 7ac2cda, git worktree; only the test file copied in)
+# python: Python 3.14.3
+# cmd: python3 -m pytest tests/test_sec03_production_startup.py -q -p no:cacheprovider -rf
+
+## probe: production-like process, empty environment (env -i), 'import server' as uvicorn does
+# cmd: env -i PATH=$PATH HOME=$HOME PYTHONPATH=<old worktree> python3 -c "import server; ..."
+STARTED: CREDENTIALS = 0 ENABLE_AUTH = False
+rc=0
+# -> the old server STARTS with zero credentials (rc=0): the vulnerability
+
+## failure reasons (grouped)
+     30 E   Failed: DID NOT RAISE CredentialsError
+      5 E   AttributeError: module 'server' has no attribute 'RUNTIME_ENV'
+      4 E    +  where 1 = CompletedProcess(args=['/usr/local/bin/python3', '-c', "import server; print('STARTED', server.RUNTIME_ENV)"], returnc...                             ^^^^^^^^^^^^^^^^^^\nAttributeErr
+      2 E   assert 1 == 0
+      2 E     Traceback (most recent call last):
+      2 E     AttributeError: module 'server' has no attribute 'RUNTIME_ENV'
+      2 E       File "<string>", line 1, in <module>
+      2 E         import server; print('STARTED', server.RUNTIME_ENV)
+      2 E                                         ^^^^^^^^^^^^^^^^^^
+      2 E     
+      1 E   assert None
+      1 E   assert (1 != 0 and 'shorter than 16' in "2026-10-16 02:13:06,687 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for productio...                                  ^
+      1 E   assert (1 != 0 and 'not allowed on a deployed platform' in "2026-10-16 02:13:03,902 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for productio...                
+      1 E   assert 'production start refused: no credentials configured' in "2026-10-16 02:13:02,921 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for productio...           
+      1 E   KeyError: 'AGOS_ENV'
+      1 E   AttributeError: module 'agent_civilization.core.tenancy' has no attribute 'runtime_environment'
+      1 E   AssertionError: 2026-10-16 02:13:04,367 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:109
+      1 E   AssertionError: 2026-10-16 02:13:03,432 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:109
+      1 E    +  where None = <function search at >('^ENV AGOS_ENV=production$', '# R-089 (D-042): Node 22 (Node 20 EOL 2026-04-30); clean install from the lockfile,\n# engines enforced — no silent f...in ag
+      1 E    +  where "2026-10-16 02:13:02,921 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for productio...                                  ^^^^^^^^^^^^^^^^^^\nAttributeEr
+      1 E    +  and   "2026-10-16 02:13:06,687 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for productio...                                  ^^^^^^^^^^^^^^^^^^\nAttributeEr
+      1 E    +  and   "2026-10-16 02:13:03,902 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for productio...                                  ^^^^^^^^^^^^^^^^^^\nAttributeEr
+      1 E    +    where <function search at > = re.search
+      1 E    +    and   re.MULTILINE = re.M
+      1 E     2026-10-16 02:13:04,402 - agos.server - INFO - Civilization routes registered successfully - <module>:852
+
+## result
+FAILED tests/test_sec03_production_startup.py::test_process_without_any_setting_is_production_and_refuses_to_start
+FAILED tests/test_sec03_production_startup.py::test_process_production_with_tenant_keys_starts
+FAILED tests/test_sec03_production_startup.py::test_process_on_render_with_development_refuses_to_start
+FAILED tests/test_sec03_production_startup.py::test_process_explicit_development_starts_without_keys
+FAILED tests/test_sec03_production_startup.py::test_production_without_credentials_fails
+FAILED tests/test_sec03_production_startup.py::test_production_with_empty_tenant_keys_and_no_api_key_fails[]
+FAILED tests/test_sec03_production_startup.py::test_production_with_empty_tenant_keys_and_no_api_key_fails[   ]
+FAILED tests/test_sec03_production_startup.py::test_production_with_valid_tenant_keys_starts_and_enforces_auth
+FAILED tests/test_sec03_production_startup.py::test_production_with_valid_legacy_api_key_starts_as_operator_admin
+FAILED tests/test_sec03_production_startup.py::test_production_with_weak_or_padded_api_key_fails[short-key]
+FAILED tests/test_sec03_production_startup.py::test_production_with_weak_or_padded_api_key_fails[                    ]
+FAILED tests/test_sec03_production_startup.py::test_production_with_weak_or_padded_api_key_fails[op-lDn7degVFB9Hjp0Oq-xLWXGLMg-CLc8S\n]
+FAILED tests/test_sec03_production_startup.py::test_production_with_weak_or_padded_api_key_fails[ op-_KVa6CPMC3uHjmrTM8MEv-m87MlAQeWp]
+FAILED tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[prod]
+FAILED tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[Production]
+FAILED tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[dev]
+FAILED tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[staging]
+FAILED tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[local]
+FAILED tests/test_sec03_production_startup.py::test_unknown_agos_env_value_fails_instead_of_being_guessed[true]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_TENANT_KEY]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_TENANTS_KEYS]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_APIKEY]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_API_KEYS]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[AGOS_KEY]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_credential_variable_leaves_production_closed[TENANT_KEYS]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_environment_variable_stays_production[AGOS_ENVIRONMENT]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_environment_variable_stays_production[AGOS_MODE]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_environment_variable_stays_production[ENV]
+FAILED tests/test_sec03_production_startup.py::test_misspelled_environment_variable_stays_production[APP_ENV]
+FAILED tests/test_sec03_production_startup.py::test_explicit_non_production_starts_without_keys_but_serves_no_tenant_data[development]
+FAILED tests/test_sec03_production_startup.py::test_explicit_non_production_starts_without_keys_but_serves_no_tenant_data[test]
+FAILED tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[true-development]
+FAILED tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[true-test]
+FAILED tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[TRUE-development]
+FAILED tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[TRUE-test]
+FAILED tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[ true -development]
+FAILED tests/test_sec03_production_startup.py::test_non_production_is_refused_on_render[ true -test]
+FAILED tests/test_sec03_production_startup.py::test_render_production_with_keys_starts_and_without_keys_fails
+FAILED tests/test_sec03_production_startup.py::test_startup_decision_reads_only_the_process_environment
+FAILED tests/test_sec03_production_startup.py::test_errors_and_logs_never_contain_keys_or_hashes
+FAILED tests/test_sec03_production_startup.py::test_process_failure_output_contains_no_key
+FAILED tests/test_sec03_production_startup.py::test_render_blueprint_is_production_and_declares_both_credential_inputs
+FAILED tests/test_sec03_production_startup.py::test_dockerfile_does_not_select_a_non_production_environment
+======================== 43 failed, 14 passed in 4.58s =========================

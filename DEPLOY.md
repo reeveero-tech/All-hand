@@ -12,8 +12,11 @@
 4. أدخل قيمة `OPENROUTER_API_KEY` (اختياري — يفعّل التوجيه بالـLLM):
    - أنشئ مفتاحاً مجانياً من [openrouter.ai/keys](https://openrouter.ai/keys)
    - النموذج الافتراضي المعلن في الكود هو `meta-llama/llama-3.3-70b-instruct:free`
-5. لتشغيل المصادقة: أدخل `AGOS_API_KEY` في لوحة Render (مدخل موجود في
-   `render.yaml` كـ`sync: false`). تركه فارغاً = وضع مفتوح (سلوك R-004).
+5. **إلزامي (SEC-03، R-139)**: أدخل بيانات الاعتماد في لوحة Render — `AGOS_TENANT_KEYS`
+   (قائمة JSON بتجزئات SHA-256 لمفاتيح المستأجرين) و/أو `AGOS_API_KEY` (مفتاح المشغّل،
+   ≥16 حرفاً). كلاهما في `render.yaml` كـ`sync: false`. **تركهما فارغين = الخادم لا يقلع**
+   (`render.yaml` يضبط `AGOS_ENV=production`؛ لا وضع مفتوح). التفاصيل في
+   `docs/governance/OPERATIONS.md`. قبل نشر R-138 على قاعدة قائمة طبّق `docs/sql/002_tenant_isolation.sql`.
 6. انتظر اكتمال النشر — رابطك سيكون مثل: `https://agos-civilization.onrender.com`
 
 ## التحقق
@@ -51,7 +54,9 @@ curl https://YOUR-APP.onrender.com/health
 | `AGENTS_PER_SPEC` | عدد الوكلاء لكل تخصص (يُقرأ منذ R-041) | `50` (أي 1000 وكيل) |
 | `OPENROUTER_API_KEY` | مفتاح LLM (للذكاء الحقيقي) | — |
 | `LLM_MODEL` | النموذج المستخدم | `meta-llama/llama-3.3-70b-instruct:free` |
-| `AGOS_API_KEY` | مفتاح المصادقة (فارغ = وضع مفتوح) | — |
+| `AGOS_ENV` | `production` (الافتراضي عند الغياب) / `development` / `test` — غير الإنتاج مرفوض على Render (R-139) | `production` |
+| `AGOS_TENANT_KEYS` | مفاتيح المستأجرين (تجزئات SHA-256، R-138) — مع `AGOS_API_KEY` أحدهما إلزامي في الإنتاج | — |
+| `AGOS_API_KEY` | مفتاح المشغّل (admin)؛ في الإنتاج ≥16 حرفاً — بلا أي مفتاح لا يقلع الإنتاج (R-139) | — |
 | `AGOS_ALLOWED_ORIGINS` | قائمة CORS (غير مضبوط = `*` بلا credentials) | `*` |
 | `AGOS_RATE_LIMIT_REQUESTS` / `AGOS_RATE_LIMIT_WINDOW` | تحديد معدل الطلبات | `100` / `60` |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | تخزين دائم (فارغ = ذاكرة مؤقتة، حالة `degraded`) | — |
@@ -70,7 +75,8 @@ curl https://YOUR-APP.onrender.com/health
 ```bash
 pip install -r requirements.txt
 export OPENROUTER_API_KEY=sk-or-...   # اختياري
-uvicorn server:app --reload
+# R-139: بلا مفاتيح يلزم إعلان بيئة التطوير صراحةً (وإلا يُعامل كإنتاج ويرفض الإقلاع)
+AGOS_ENV=development uvicorn server:app --reload
 ```
 
 الواجهة: `cd web && npm install && npm run build` ثم تُخدم تلقائياً من `web/dist`.

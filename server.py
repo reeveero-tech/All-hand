@@ -73,7 +73,15 @@ ALLOWED_ORIGINS = os.getenv("AGOS_ALLOWED_ORIGINS", "*").split(",")  # Default: 
 # AGOS_TENANT_KEYS and/or AGOS_API_KEY. A malformed configuration raises
 # tenancy.CredentialsError here, so the server does not start unprotected.
 CREDENTIALS: Dict[str, Principal] = tenancy.load_credentials()
+# SEC-03 (R-139): production (the default — AGOS_ENV unset) does not start
+# without valid credentials; only an explicit AGOS_ENV=development|test may,
+# and never on a deployed platform (RENDER=true). Raises CredentialsError.
+RUNTIME_ENV = tenancy.enforce_startup(CREDENTIALS)
 ENABLE_AUTH = bool(CREDENTIALS)  # credentials configured (tenant data needs them in any case)
+logger.info("startup: AGOS_ENV=%s, %d credential(s) for %d tenant(s)", RUNTIME_ENV, len(CREDENTIALS),
+            len({p.tenant_id for p in CREDENTIALS.values()}))
+if not CREDENTIALS:
+    logger.warning("startup: no credentials (AGOS_ENV=%s) — every tenant-data route answers 401", RUNTIME_ENV)
 
 # Rate Limiting Configuration
 RATE_LIMIT_REQUESTS = int(os.getenv("AGOS_RATE_LIMIT_REQUESTS", "100"))

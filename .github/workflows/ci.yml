@@ -137,6 +137,26 @@ jobs:
           docker build -t agos:r040-smoke . 2>&1 | tee "$GITHUB_WORKSPACE/docker_build.log"
           echo "image_size=$(docker image inspect agos:r040-smoke --format '{{.Size}}')" | tee -a "$GITHUB_WORKSPACE/docker_build.log"
 
+      - name: Verify production start is refused without credentials (SEC-03)
+        run: |
+          # SEC-03 (R-139): the image is production (ENV AGOS_ENV=production);
+          # with neither AGOS_TENANT_KEYS nor AGOS_API_KEY it must exit with an
+          # error instead of serving. Then: an explicit non-production value on a
+          # deployed platform (RENDER=true) must be refused too.
+          LOG="$GITHUB_WORKSPACE/docker_startup_refusal.log"
+          set +e
+          timeout 120 docker run --rm agos:r040-smoke > "$LOG" 2>&1; rc=$?
+          timeout 120 docker run --rm -e AGOS_ENV=development -e RENDER=true agos:r040-smoke > "$LOG.render" 2>&1; rc2=$?
+          set -e
+          tail -5 "$LOG"; tail -5 "$LOG.render"
+          echo "no_credentials_rc=$rc render_development_rc=$rc2" | tee -a "$LOG"
+          { [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; } || { echo "FAIL: container without credentials did not refuse to start"; exit 1; }
+          grep -q "production start refused: no credentials configured" "$LOG" || { echo "FAIL: refusal reason missing"; exit 1; }
+          { [ "$rc2" -ne 0 ] && [ "$rc2" -ne 124 ]; } || { echo "FAIL: AGOS_ENV=development accepted with RENDER=true"; exit 1; }
+          grep -q "not allowed on a deployed platform" "$LOG.render" || { echo "FAIL: platform refusal reason missing"; exit 1; }
+          cat "$LOG.render" >> "$LOG"
+          echo "PASS: production container refuses to start without credentials; development refused on RENDER=true" | tee -a "$LOG"
+
       - name: Run container and verify /health
         run: |
           set -o pipefail
@@ -218,6 +238,7 @@ jobs:
           path: |
             docker_build.log
             docker_runtime.log
+            docker_startup_refusal.log
             docker_container.log
             docker_ps.log
             docker_inspect.json

@@ -31,12 +31,21 @@ hosted Supabase project when R042_LIVE=1).
 import io
 import ipaddress
 import json
+import os
 import socket
 import urllib.parse
 import urllib.request
 from email.message import Message
 
 import pytest
+
+# SEC-03 (R-139): production (AGOS_ENV unset) refuses to start without
+# credentials. The test suite is an explicit non-production environment, set
+# here before any test module imports ``server``. Production start-up itself is
+# tested in tests/test_sec03_production_startup.py (it sets
+# AGOS_ENV=production). A platform marker leaking into the test process would
+# make every import fail loudly (RENDER=true forbids AGOS_ENV=test) — intended.
+os.environ["AGOS_ENV"] = "test"
 
 _LOOPBACK_NAMES = {"localhost", "127.0.0.1", "::1", "testserver"}
 _ORIG_URLOPEN = urllib.request.urlopen
