@@ -451,9 +451,10 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 |---|---|---|---|
 | `tests/test_sec02_tenant_isolation.py` على الكود القديم `53f9343` (worktree؛ مع الوحدة المساعدة `tenancy.py` التي لا يستوردها الخادم القديم؛ 6 حالات SSE مستبعدة لأن التدفق المجهول لا ينتهي) + مسبار SSE | 96 فشلاً / 3 نجاح — 200 بدل 401 على كل مسار، ذاكرة A في `recalled` لنتيجة B، أهداف A في self_developer لـB؛ المسبار: تدفق بلا مفتاح 200 مع حدث مستأجر آخر | 1 | raw/220 |
 | الاختبار نفسه بعد الإصلاح + 18 ملف اختبار مرتبطاً (بترتيب الحزمة) | 105/105؛ المرتبطة 210 passed, 3 skipped | 0 | raw/221 |
-| pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff + py_compile + `bash -n` + الواجهة (`npm test`، `npm run build`) | 587 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ الواجهة 14/14؛ build ناجح | 0 | raw/222 |
+| pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff + py_compile + `bash -n` + yaml + الواجهة (`npm test`، `npm run build`) — أُعيد بعد fixture العزل | 587 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ الواجهة 14/14؛ build ناجح | 0 | raw/222 |
 
 | أول تشغيل CI للـPR #139 (run 38833456355): وظيفة `docker` فشلت — خطوة R-100 ترسل مهمة مجهولة فتُرفض 401 بعد SEC-02 (متوقع)؛ أُصلحت الخطوة في `ci.yml` (مستأجر CI عشوائي + إثبات 401 للمجهول + الكود لا يُنفَّذ). باقي الفحوص نجحت ومنها `storage` (الترحيل 002 والعزل الحي) | فشل ثم إصلاح | 1 | raw/223 |
+| التشغيل الثاني (run 38833997132): وظيفة `test` فشلت على 3.11+coverage (`test_r131…keyed_provider_still_routes_by_llm` — 429)؛ مقيس: نافذة rate limit المشتركة 95/100 على main و98/100 على الفرع قبل الاختبار → fixture عزل في `conftest.py` → 1/100، 587 passed مع coverage، والترتيب اليدوي لـr083 106 passed | فشل ثم إصلاح | 1→0 | raw/224 |
 
-لم يُشغَّل محلياً: `tests/test_r042_live_storage.py` و`scripts/run_r042_storage_verify.py` (يتطلبان PostgreSQL+PostgREST) — وظيفة CI `storage` على الـPR (نجحت في run 38833456355). قضية جانبية خارج النطاق موثقة في `221`: عداد rate limit مشترك بين ملفات الاختبار.
+لم يُشغَّل محلياً: `tests/test_r042_live_storage.py` و`scripts/run_r042_storage_verify.py` (يتطلبان PostgreSQL+PostgREST) — وظيفة CI `storage` على الـPR (نجحت في run 38833456355). القضية الجانبية في `221` (نافذة rate limit مشتركة بين ملفات الاختبار) ظهرت في CI وأُصلحت كعزل اختبارات (`224`).
 

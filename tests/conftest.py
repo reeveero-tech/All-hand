@@ -263,3 +263,19 @@ def tenant_context():
     token = tenancy.set_tenant("test_tenant")
     yield "test_tenant"
     tenancy.reset_tenant(token)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_rate_limit_window():
+    """Test isolation: the rate limiter's per-client window
+    (``server.request_counts``, 100 requests / 60 s for "testclient") used to
+    carry over between test files. The whole suite runs inside one window, so
+    the count stood at 95/100 before tests/test_r131_keyless_admission.py on
+    main 53f9343 and slower CI runners crossed it (429 instead of the route's
+    answer). Each test starts with an empty window; rate-limit behaviour inside
+    a test is unchanged. Measured in docs/audit/M7/logs/raw/224."""
+    import sys
+    srv = sys.modules.get("server")
+    if srv is not None and hasattr(srv, "request_counts"):
+        srv.request_counts.clear()
+    yield

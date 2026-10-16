@@ -119,3 +119,6 @@ tests/test_sec02_tenant_isolation.py::test_regression_unauthenticated_client_rec
 ## test_server_metrics_exposition_is_valid fail on main 53f9343 too (2 failed, 104 passed) — the
 ## module-level rate-limit counter (server.request_counts) is shared across test files. Recorded as a
 ## separate test-isolation issue; not changed here.
+
+## update (later in the same batch): this side issue then failed CI run 38833997132 (test_r131, 429) and was fixed
+## as test isolation in tests/conftest.py (_fresh_rate_limit_window) — measurement and re-run in 224.
