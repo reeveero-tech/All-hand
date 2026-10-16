@@ -743,6 +743,12 @@ MALFORMED_CASES = [
     # non-integer sockaddr extras
     [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
       ("2001:db8::1", 80, "0", 42))],
+    # 3-element IPv6 sockaddr (flowinfo without scope_id): unsupported shape
+    [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80, 0))],
+    # 5-element IPv6 sockaddr: unsupported shape
+    [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80, 0, 0, 0))],
 ]
 
 
@@ -818,12 +824,38 @@ def test_guarded_resolver_embeds_the_numeric_ipv6_scope(dns):
                     .resolve(CONTROL_HOST, 8080))
     assert "flowinfo" in str(ei.value)
 
-    # a scope already embedded in the literal passes through unchanged
+    # BOTH representations present: they must AGREE.  A matching pair
+    # (the kernel resolves the string scope to the same interface index)
+    # passes through unchanged — numeric string scopes are compared as
+    # integers, interface names via if_nametoindex.
+    lo_ifindex = socket.if_nametoindex("lo")
     dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
-                     "", ("fe80::1%eth0", 8080, 0, 42))])
+                     "", ("fe80::1%lo", 8080, 0, lo_ifindex))])
     out = asyncio.run(GuardedResolver(allow_private=True)
                       .resolve(CONTROL_HOST, 8080))
-    assert [r["host"] for r in out] == ["fe80::1%eth0"]
+    assert [r["host"] for r in out] == ["fe80::1%lo"]
+
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1%42", 8080, 0, 42))])
+    out = asyncio.run(GuardedResolver(allow_private=True)
+                      .resolve(CONTROL_HOST, 8080))
+    assert [r["host"] for r in out] == ["fe80::1%42"]
+
+    # a CONFLICTING pair is rejected with a fixed reason — the string scope
+    # is never silently preferred over the numeric one (and vice versa).
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1%lo", 8080, 0, 999))])
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        asyncio.run(GuardedResolver(allow_private=True)
+                    .resolve(CONTROL_HOST, 8080))
+    assert "conflicting IPv6 scope" in str(ei.value)
+
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1%42", 8080, 0, 7))])
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        asyncio.run(GuardedResolver(allow_private=True)
+                    .resolve(CONTROL_HOST, 8080))
+    assert "conflicting IPv6 scope" in str(ei.value)
 
 
 def test_aiohttp_scoped_ipv6_reaches_the_vetted_address(dns, loopback_is_public):
@@ -849,6 +881,106 @@ def test_aiohttp_scoped_ipv6_reaches_the_vetted_address(dns, loopback_is_public)
     finally:
         srv.shutdown()
         srv.server_close()
+
+
+def test_urllib_connect_target_carries_the_numeric_scope(dns, loopback_is_public,
+                                                         monkeypatch):
+    # R-146b review round 5: the SUCCESS of a ::1 connection alone would not
+    # prove scope preservation (::1%99 connects too on this kernel) — a
+    # test-level observer records the address the REAL urllib transport
+    # actually hands to socket.connect, and the recorded target is the
+    # proof: the full 4-tuple with the expected scope_id, then the local
+    # listener completes the request.
+    lo_ifindex = socket.if_nametoindex("lo")
+    recorded = []
+    orig_connect = socket.socket.connect
+
+    def record_connect(sock, addr):
+        recorded.append(addr)
+        return orig_connect(sock, addr)
+
+    monkeypatch.setattr(socket.socket, "connect", record_connect)
+    srv = _serve("::1", _JSONHandler)
+    port = srv.server_address[1]
+    _JSONHandler.hits = 0
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("::1", port, 0, lo_ifindex))])
+    try:
+        with safety.safe_urlopen(
+                urllib.request.Request(f"http://{CONTROL_HOST}:{port}/x"),
+                timeout=5) as r:
+            assert r.status == 200
+        assert recorded == [("::1", port, 0, lo_ifindex)]
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_aiohttp_connect_target_carries_the_numeric_scope(dns, loopback_is_public,
+                                                           monkeypatch):
+    # Same observer discipline on the agent transport: the address the REAL
+    # adapter hands to socket.connect is recorded — the numeric scope must
+    # ride INSIDE the literal (aiohttp's transport builds the sockaddr from
+    # the host literal alone), so the recorded host is "::1%<ifindex>".
+    lo_ifindex = socket.if_nametoindex("lo")
+    recorded = []
+    orig_connect = socket.socket.connect
+
+    def record_connect(sock, addr):
+        recorded.append(addr)
+        return orig_connect(sock, addr)
+
+    monkeypatch.setattr(socket.socket, "connect", record_connect)
+    srv = _serve("::1", _JSONHandler)
+    port = srv.server_address[1]
+    _JSONHandler.hits = 0
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("::1", port, 0, lo_ifindex))])
+    try:
+        out = asyncio.run(_adapter(f"http://{CONTROL_HOST}:{port}/v1/chat/"
+                                   "completions").execute({"prompt": "hi"}))
+        assert out["ok"] is True
+        # The FINAL connect target carries the expected numeric scope_id:
+        # the literal "::1%<ifindex>" is handed to the transport, asyncio
+        # normalizes it through the address-resolution layer, and the
+        # sockaddr that reaches socket.connect is ("::1", port, 0,
+        # <ifindex>) — the scope is IN the kernel-bound target, not merely
+        # in the string.
+        assert recorded == [("::1", port, 0, lo_ifindex)]
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_aiohttp_fe80_numeric_scope_recorded_and_refused(dns, monkeypatch):
+    # The fe80::1 case from the review: the connect attempt is INTERCEPTED,
+    # its target RECORDED and the connection REFUSED — no socket ever opens,
+    # no external network is touched.  The recorded host proves the numeric
+    # scope (42) reached the connect target inside the literal.
+    recorded = []
+
+    async def refuse_sock_connect(loop, sock, address):
+        recorded.append(address)
+        raise OSError("test barrier: connect refused")
+
+    monkeypatch.setattr(asyncio.SelectorEventLoop, "sock_connect",
+                        refuse_sock_connect)
+
+    def refuse_connect(sock, addr):
+        raise OSError("test barrier: connect refused")
+
+    monkeypatch.setattr(socket.socket, "connect", refuse_connect)
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1", 8080, 0, 42))])
+    out = asyncio.run(_adapter(f"http://{CONTROL_HOST}:8080/v1/chat/"
+                              "completions",
+                              allow_private=True).execute({"prompt": "hi"}))
+    assert out["ok"] is False                      # refused, never connected
+    # The transport's connect target (what aiohappyeyeballs hands to
+    # loop.sock_connect) carries the numeric scope INSIDE the literal —
+    # the address that would be normalized into a kernel sockaddr with
+    # scope_id 42.  No socket ever opened.
+    assert recorded == [("fe80::1%42", 8080, 0, 0)]
 
 
 def test_connection_layer_dns_error_is_cleaned(dns, loopback_is_public, caplog):

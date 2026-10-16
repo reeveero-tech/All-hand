@@ -430,6 +430,13 @@ def validate_getaddrinfo(host, infos, allow_private=False):
             extras = sockaddr[2:]
             if parsed.version == 4 and extras:
                 raise ValueError("IPv6 sockaddr extras on an IPv4 entry")
+            # R-146b review round 5: the SUPPORTED shape is fixed here — an
+            # IPv6 sockaddr carries either no extras or exactly (flowinfo,
+            # scope_id); anything else (a 3- or 5-element sockaddr) fails
+            # closed with the fixed reason instead of reaching a consumer
+            # that unpacks a raw error.
+            if extras and len(extras) != 2:
+                raise ValueError("unsupported IPv6 sockaddr shape")
             if any(not isinstance(x, int) for x in extras):
                 raise ValueError("non-integer sockaddr extras")
             target = (str(parsed), port_i, *extras)

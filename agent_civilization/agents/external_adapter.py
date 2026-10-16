@@ -116,8 +116,24 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
                 if flowinfo:
                     raise safety.UnsafeURLError(
                         f"IPv6 flowinfo is not representable for {host}")
-                if scope_id and "%" not in ip:
-                    ip = f"{ip}%{scope_id}"
+                if scope_id:
+                    if "%" in ip:
+                        # BOTH representations are present: they must AGREE
+                        # (the kernel that answered resolves the scope to an
+                        # interface index), else the entry is inconsistent
+                        # and fails closed — the string scope is never
+                        # silently preferred over the numeric one.
+                        scope_str = ip.split("%", 1)[1]
+                        try:
+                            resolved = (int(scope_str) if scope_str.isdigit()
+                                        else socket.if_nametoindex(scope_str))
+                        except (OSError, ValueError):
+                            resolved = None
+                        if resolved != scope_id:
+                            raise safety.UnsafeURLError(
+                                f"conflicting IPv6 scope information for {host}")
+                    else:
+                        ip = f"{ip}%{scope_id}"
                 ipaddress.ip_address(ip)   # the composed literal re-validated
             results.append({"hostname": host, "host": ip, "port": port,
                            "family": family, "proto": proto, "flags": 0})
