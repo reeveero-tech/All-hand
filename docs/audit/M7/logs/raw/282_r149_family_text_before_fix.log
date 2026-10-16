@@ -1,0 +1,39 @@
+R-149 review round 4 — connection-error family text NOT trusted: failing run BEFORE the fix — 2026-10-16
+Code under test: commit 9a66ccb (the ClientConnectionError-family whitelist passed str(e) through)
+Command: AGOS_ENV=test python -m pytest tests/test_r149_security_qa_gaps.py::test_connection_error_family_text_is_not_trusted tests/test_r149_security_qa_gaps.py::test_tls_certificate_error_text_is_not_trusted -q
+
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 2 items
+
+tests/test_r149_security_qa_gaps.py FF                                   [100%]
+
+=================================== FAILURES ===================================
+_______________ test_connection_error_family_text_is_not_trusted _______________
+tests/test_r149_security_qa_gaps.py:549: in test_connection_error_family_text_is_not_trusted
+    assert rec["result"]["result"]["error"] == "ClientConnectionError"  # type only
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'connector sa...MARKER-7f3a9c' == 'ClientConnectionError'
+E     
+E     - ClientConnectionError
+E     + connector said: R149-SECRET-MARKER-7f3a9c
+------------------------------ Captured log call -------------------------------
+WARNING  external_agents:external_adapter.py:206 external agent r149-conn failed: connector said: R149-SECRET-MARKER-7f3a9c
+________________ test_tls_certificate_error_text_is_not_trusted ________________
+tests/test_r149_security_qa_gaps.py:586: in test_tls_certificate_error_text_is_not_trusted
+    assert rec["result"]["result"]["error"] == "TLS certificate verification failed"
+E   assert "Cannot conne...ER-7f3a9c',)]" == 'TLS certific...cation failed'
+E     
+E     - TLS certificate verification failed
+E     + Cannot connect to host example.test:443 ssl:True [SSLCertVerificationError: ('verify failed: R149-SECRET-MARKER-7f3a9c',)]
+------------------------------ Captured log call -------------------------------
+WARNING  external_agents:external_adapter.py:206 external agent r149-tls failed: Cannot connect to host example.test:443 ssl:True [SSLCertVerificationError: ('verify failed: R149-SECRET-MARKER-7f3a9c',)]
+=========================== short test summary info ============================
+FAILED tests/test_r149_security_qa_gaps.py::test_connection_error_family_text_is_not_trusted
+FAILED tests/test_r149_security_qa_gaps.py::test_tls_certificate_error_text_is_not_trusted
+============================== 2 failed in 0.58s ===============================
+RC=1

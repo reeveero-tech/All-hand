@@ -82,10 +82,12 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
             # R-146b: a fixed policy reason — a resolver failure of ANY kind
             # (its text is not ours to forward to logs or responses) fails
             # closed; cancellation still propagates as cancellation.
-            raise aiohttp.ClientConnectionError(
+            # R-149 review round 4: raised as a _FixedClientError — the family
+            # check below trusts only reasons THIS module formulates.
+            raise _FixedClientError(
                 f"DNS resolution failed for {host}") from None
         if not infos:
-            raise aiohttp.ClientConnectionError(f"no addresses for {host}")
+            raise _FixedClientError(f"no addresses for {host}")
         # R-146b: the SAME shared gate as the urllib path (safety.
         # validate_getaddrinfo) — the whole answer is policy-checked and every
         # entry validated (numeric connect target, integer port, family
@@ -132,6 +134,30 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
         return None
 
 
+class _HTTPStatusError(Exception):
+    """The external backend answered a non-200 status. The status is the
+    safe, sufficient reason (R-149); the backend's error body never enters
+    the message — it becomes the tenant-visible result and the log."""
+
+    def __init__(self, status: int):
+        self.status = status
+        super().__init__(f"HTTP {status}")
+
+
+class _FixedReasonError(Exception):
+    """An error whose message is OUR OWN fixed, safe text (R-149): it is
+    reported as-is. Everything else unexpected is reduced to its TYPE."""
+
+
+class _FixedClientError(_FixedReasonError, aiohttp.ClientConnectionError):
+    """A connection-layer error with OUR OWN fixed text (the crafted DNS
+    reasons). It is still an aiohttp.ClientConnectionError for the transport
+    (R-146b tests assert that type from the resolver), but the reason below
+    trusts only errors this module formulates itself — NOT the whole
+    ClientConnectionError family (any code can raise that family with
+    arbitrary text, e.g. a wrapped backend body)."""
+
+
 class ExternalAgentAdapter:
     """Wraps a real remote agent behind the same execute() contract."""
 
@@ -168,15 +194,37 @@ class ExternalAgentAdapter:
                                              connector=connector) as s:
                 status, body = await self._post_checked(s, headers, payload)
             if status != 200:
-                raise RuntimeError(f"HTTP {status}: {body[:300]}")
+                raise _HTTPStatusError(status)
             data = json.loads(body)
             content = data["choices"][0]["message"]["content"]
             self.stats["tasks_completed"] += 1
             ok, result = True, {"answer": content, "external_agent": self.name}
         except Exception as e:
-            logger.warning("external agent %s failed: %s", self.name, e)
+            # R-149 (Security QA, review round 4): only a fixed safe reason is
+            # reported. Trusted as-is: the backend's STATUS, UnsafeURLError's
+            # refusal message, and OUR OWN fixed texts (_FixedReasonError — the
+            # crafted DNS reasons and the redirect-loop bound). A TLS
+            # certificate verification failure gets a fixed reason we formulate
+            # (mismatch keeps its distinct text — the SEC-05 TLS test). The
+            # ClientConnectionError FAMILY is NOT trusted by class: any code
+            # can raise it with arbitrary text (a wrapped backend body can echo
+            # the adapter's own credential); those are reduced to their TYPE.
+            if isinstance(e, _HTTPStatusError):
+                error = f"HTTP {e.status}"
+            elif isinstance(e, (safety.UnsafeURLError, _FixedReasonError)):
+                error = str(e)
+            elif isinstance(e, aiohttp.ClientConnectorCertificateError):
+                reason = str(getattr(e, "certificate_error", "")).lower()
+                if "hostname" in reason and "match" in reason:
+                    error = "TLS certificate verification failed: hostname " \
+                           "mismatch"
+                else:
+                    error = "TLS certificate verification failed"
+            else:
+                error = type(e).__name__
+            logger.warning("external agent %s failed: %s", self.name, error)
             self.stats["tasks_failed"] += 1
-            ok, result = False, {"error": str(e)}
+            ok, result = False, {"error": error}
         elapsed = time.time() - started
         self.stats["total_time_s"] += elapsed
         self.status = "idle"
@@ -235,7 +283,7 @@ class ExternalAgentAdapter:
                 headers.pop("Content-Type", None)
             if urlsplit(url)[:2] != origin:
                 headers.pop("Authorization", None)
-        raise RuntimeError(f"too many redirects (> {self.MAX_REDIRECTS})")
+        raise _FixedReasonError(f"too many redirects (> {self.MAX_REDIRECTS})")
 
     def snapshot(self) -> Dict[str, Any]:
         return {

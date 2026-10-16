@@ -1,0 +1,67 @@
+R-149 — FULL suite on Python 3.12.13 from R-148 lockfiles — 2026-10-16 (final tree before second commit, 20 gap tests + exception-handling fix)
+Branch: m7/r149-security-qa-regression-matrix
+Command: /tmp/fr312/bin/python -m pytest -q -m 'not network'
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 853 items / 4 deselected / 849 selected
+
+tests/test_agent_production.py ........................                  [  2%]
+tests/test_agents_per_spec.py ...                                        [  3%]
+tests/test_api.py .........................                              [  6%]
+tests/test_bug01_external_without_agent.py ..........                    [  7%]
+tests/test_bug02_chat_status_consistency.py .........                    [  8%]
+tests/test_bug04_task_by_id_from_storage.py .............                [  9%]
+tests/test_bug05_startup_agent_count.py ....                             [ 10%]
+tests/test_civilization_routes.py ......                                 [ 11%]
+tests/test_civilization_scale.py .....                                   [ 11%]
+tests/test_e2e_scenarios.py ............                                 [ 13%]
+tests/test_infrastructure.py ...................                         [ 15%]
+tests/test_memory_learning_comm.py .........                             [ 16%]
+tests/test_network_isolation.py ......                                   [ 17%]
+tests/test_r042_live_storage.py ssss                                     [ 17%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 19%]
+tests/test_r082_storage_outcomes.py ........                             [ 20%]
+tests/test_r083_metrics_middleware.py ......                             [ 21%]
+tests/test_r100_runtime_safety.py ...................................... [ 25%]
+......                                                                   [ 26%]
+tests/test_r101_web_auth_contract.py .............                       [ 28%]
+tests/test_r102_honest_handlers.py .............................         [ 31%]
+tests/test_r103_memory_learning.py .................                     [ 33%]
+tests/test_r104_data_worker.py ................                          [ 35%]
+tests/test_r106_chat_routing.py .............                            [ 36%]
+tests/test_r107_researcher_retry.py ...............                      [ 38%]
+tests/test_r114_r118_real_fixes.py ..................................... [ 42%]
+......                                                                   [ 43%]
+tests/test_r121_tls_context.py ....                                      [ 44%]
+tests/test_r122_specialization_coverage.py ............                  [ 45%]
+tests/test_r125_self_developer_cycle.py ......                           [ 46%]
+tests/test_r131_keyless_admission.py ......                              [ 46%]
+tests/test_r132_pools.py ..........                                      [ 48%]
+tests/test_r149_security_qa_gaps.py ....................                 [ 50%]
+tests/test_real_dispatch_audit.py ......                                 [ 51%]
+tests/test_routing_pipeline.py .................................         [ 55%]
+tests/test_sec01_external_redirect.py .........                          [ 56%]
+tests/test_sec02_tenant_isolation.py ................................... [ 60%]
+......................................................................   [ 68%]
+tests/test_sec03_production_startup.py ................................. [ 72%]
+........................                                                 [ 75%]
+tests/test_sec04_sse_broadcast_bounds.py ............................... [ 78%]
+..                                                                       [ 79%]
+tests/test_sec05_dns_rebinding.py ...................................... [ 83%]
+........................                                                 [ 86%]
+tests/test_sec06_public_llm_consent.py ................................. [ 90%]
+..........                                                               [ 91%]
+tests/test_security.py ..........                                        [ 92%]
+tests/test_specialist_runtime.py ..........                              [ 93%]
+tests/test_specialists_package.py ....................................   [ 98%]
+tests/test_storage_payloads.py ......                                    [ 98%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+=========== 845 passed, 4 skipped, 4 deselected in 89.95s (0:01:29) ============
+RC=0

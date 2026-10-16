@@ -1,0 +1,49 @@
+R-149 — security QA gap tests BEFORE any production fix — 2026-10-16T19:44Z
+Branch: m7/r149-security-qa-regression-matrix (base main d224652, PR #155)
+Command: AGOS_ENV=test python -m pytest tests/test_r149_security_qa_gaps.py -q
+Purpose: first behavioral proof of the two leak defects found by the coverage audit (saved BEFORE any production change, per the review process). The file also pins the already-green contracts: storage-failure request paths (G1), scoped failed reads (G2), handler-exception inside a real agent (G4 — PASSES: the real agents' own except ends the task failed; no server fix needed for the in-contract case).
+
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 13 items
+
+tests/test_r149_security_qa_gaps.py ........FF...                        [100%]
+
+=================================== FAILURES ===================================
+__________ test_external_agent_error_must_not_echo_its_key_to_tenants __________
+tests/test_r149_security_qa_gaps.py:435: in test_external_agent_error_must_not_echo_its_key_to_tenants
+    assert secret not in task_text          # never tenant-visible
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 'r149-external-key-9d2e5a' not in '{"id":"3aad...877.4299252}'
+E     
+E     'r149-external-key-9d2e5a' is contained here:
+E       ed Bearer r149-external-key-9d2e5a\"}"}},"tenant_id":"test_tenant","agent":"r149-echo","finished_at":1792179877.4299252}
+E     ?           ++++++++++++++++++++++++
+------------------------------ Captured log call -------------------------------
+WARNING  external_agents:external_adapter.py:177 external agent r149-echo failed: HTTP 401: {"error": "unauthorized Bearer r149-external-key-9d2e5a"}
+___________ test_rejected_storage_body_must_not_log_the_storage_key ____________
+tests/test_r149_security_qa_gaps.py:452: in test_rejected_storage_body_must_not_log_the_storage_key
+    assert ss.SUPABASE_KEY not in caplog.text       # and so does the log
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   assert 'r149-test-storage-key' not in 'WARNING  st...rage-key"}\n'
+E     
+E     'r149-test-storage-key' is contained here:
+E       d apikey: r149-test-storage-key"}
+E       WARNING  storage:supabase_store.py:170 update_task rejected: HTTP 401 {"message": "invalid apikey: r149-test-storage-key"}
+E       WARNING  storage:supabase_store.py:170 upsert_agent_stats rejected: HTTP 401 {"message": "invalid apikey: r149-test-storage-key"}
+E       WARNING  storage:supabase_store.py:170 insert_event rejected: HTTP 401 {"message": "invalid apikey: r149-test-storage-key"}
+------------------------------ Captured log call -------------------------------
+WARNING  storage:supabase_store.py:99 Supabase key format not recognised (from SUPABASE_SERVICE_KEY) — cannot tell whether writes will pass RLS; run scripts/run_r042_storage_verify.py after deploy.
+WARNING  storage:supabase_store.py:170 insert_task rejected: HTTP 401 {"message": "invalid apikey: r149-test-storage-key"}
+WARNING  storage:supabase_store.py:170 update_task rejected: HTTP 401 {"message": "invalid apikey: r149-test-storage-key"}
+WARNING  storage:supabase_store.py:170 upsert_agent_stats rejected: HTTP 401 {"message": "invalid apikey: r149-test-storage-key"}
+WARNING  storage:supabase_store.py:170 insert_event rejected: HTTP 401 {"message": "invalid apikey: r149-test-storage-key"}
+=========================== short test summary info ============================
+FAILED tests/test_r149_security_qa_gaps.py::test_external_agent_error_must_not_echo_its_key_to_tenants
+FAILED tests/test_r149_security_qa_gaps.py::test_rejected_storage_body_must_not_log_the_storage_key
+========================= 2 failed, 11 passed in 7.06s =========================
+PYTEST_RC=1

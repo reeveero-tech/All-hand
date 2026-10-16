@@ -1,0 +1,550 @@
+R-149 — CI evidence on head a3ee544962167807f7304697c42f987b57810073 (the code head; a docs-only evidence commit follows and CI re-runs on it) — 2026-10-16
+Run: https://github.com/reeveero-tech/All-hand/actions/runs/38963184074 (AGOS Kernel CI/CD, pull_request, all jobs: quality/test/network/docker/build/storage/audit success; publish skipped per D-011)
+headSha verified == a3ee544962167807f7304697c42f987b57810073 (the reviewed head)
+
+=== docker job (117184571101) — Docker image build ===
+docker	Set up job	﻿2026-10-16T20:38:00.1506848Z Current runner version: '2.337.0'
+docker	Set up job	2026-10-16T20:38:00.1533704Z ##[group]Runner Image Provisioner
+docker	Set up job	2026-10-16T20:38:00.1534602Z Hosted Compute Agent
+docker	Set up job	2026-10-16T20:38:00.1535302Z Version: 20261012.601
+docker	Set up job	2026-10-16T20:38:00.1536000Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+docker	Set up job	2026-10-16T20:38:00.1536795Z Build Date: 2026-10-12T17:48:21Z
+docker	Set up job	2026-10-16T20:38:00.1537850Z Worker ID: {3c4c328c-8351-406f-af41-0c7f48ded432}
+docker	Set up job	2026-10-16T20:38:00.1538573Z Region: eastus2
+docker	Set up job	2026-10-16T20:38:00.1539214Z Cloud: Azure
+docker	Set up job	2026-10-16T20:38:00.1539823Z ##[endgroup]
+docker	Set up job	2026-10-16T20:38:00.1541742Z ##[group]Operating System
+docker	Set up job	2026-10-16T20:38:00.1542437Z Ubuntu
+docker	Set up job	2026-10-16T20:38:00.1542981Z 26.04.1
+docker	Set up job	2026-10-16T20:38:00.1543583Z LTS
+docker	Set up job	2026-10-16T20:38:00.1544184Z ##[endgroup]
+docker	Set up job	2026-10-16T20:38:00.1544760Z ##[group]Runner Image
+docker	Set up job	2026-10-16T20:38:00.1545505Z Image: ubuntu-26.04
+docker	Set up job	2026-10-16T20:38:00.1546100Z Version: 20261012.163.1
+docker	Set up job	2026-10-16T20:38:00.1547296Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261012.163/images/ubuntu/Ubuntu2604-Readme.md
+docker	Set up job	2026-10-16T20:38:00.1549503Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261012.163
+docker	Set up job	2026-10-16T20:38:00.1550487Z ##[endgroup]
+docker	Set up job	2026-10-16T20:38:00.1551679Z ##[group]GITHUB_TOKEN Permissions
+docker	Set up job	2026-10-16T20:38:00.1554106Z Contents: read
+docker	Set up job	2026-10-16T20:38:00.1554758Z Metadata: read
+docker	Set up job	2026-10-16T20:38:00.1555429Z Packages: read
+docker	Set up job	2026-10-16T20:38:00.1556014Z ##[endgroup]
+docker	Set up job	2026-10-16T20:38:00.1558471Z Secret source: Actions
+docker	Set up job	2026-10-16T20:38:00.1559641Z Cache mode: write
+docker	Set up job	2026-10-16T20:38:00.1560352Z Prepare workflow directory
+docker	Set up job	2026-10-16T20:38:00.1914044Z Prepare all required actions
+docker	Set up job	2026-10-16T20:38:00.1963531Z Getting action download info
+docker	Set up job	2026-10-16T20:38:00.3824049Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+docker	Set up job	2026-10-16T20:38:00.4629032Z Download action repository 'actions/upload-artifact@v7' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+docker	Set up job	2026-10-16T20:38:00.7673967Z Complete job name: docker
+docker	Run actions/checkout@v7	﻿2026-10-16T20:38:00.8469572Z ##[group]Run actions/checkout@v7
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8470470Z with:
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8470941Z   repository: reeveero-tech/All-hand
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8474828Z   token: ***
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8475292Z   ssh-strict: true
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8475742Z   ssh-user: git
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8476200Z   persist-credentials: true
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8476712Z   clean: true
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8477175Z   sparse-checkout-cone-mode: true
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8477868Z   fetch-depth: 1
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8478316Z   fetch-tags: false
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8478772Z   show-progress: true
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8479228Z   lfs: false
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8479709Z   submodules: false
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8480182Z   set-safe-directory: true
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8480709Z   allow-unsafe-pr-checkout: false
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.8481424Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9513148Z Syncing repository: reeveero-tech/All-hand
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9515952Z ##[group]Getting Git version info
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9517171Z Working directory is '/home/runner/work/All-hand/All-hand'
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9519267Z [command]/usr/bin/git version
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9521163Z git version 2.55.0
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9573916Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9586166Z Temporarily overriding HOME='/home/runner/work/_temp/95d1b50c-3908-467e-8f42-fc961eff5a58' before making global git config changes
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9588753Z Adding repository directory to the temporary git global config as a safe directory
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9592540Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9662040Z Deleting the contents of '/home/runner/work/All-hand/All-hand'
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9666854Z ##[group]Determining repository object format
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9669077Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9670358Z ##[group]Initializing the repository
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9676188Z [command]/usr/bin/git init /home/runner/work/All-hand/All-hand
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9763037Z hint: Using 'master' as the name for the initial branch. This default branch name
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9765555Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9767373Z hint: to use in all of your new repositories, which will suppress this warning,
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9768768Z hint: call:
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9769279Z hint:
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9769979Z hint: 	git config --global init.defaultBranch <name>
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9771014Z hint:
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9771739Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9772737Z hint: 'development'. The just-created branch can be renamed via this command:
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9773534Z hint:
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9774017Z hint: 	git branch -m <name>
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9774557Z hint:
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9775441Z hint: Disable this message with "git config set advice.defaultBranchName false"
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9776967Z Initialized empty Git repository in /home/runner/work/All-hand/All-hand/.git/
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9779091Z [command]/usr/bin/git remote add origin https://github.com/reeveero-tech/All-hand
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9826595Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9827444Z ##[group]Disabling automatic garbage collection
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9831115Z [command]/usr/bin/git config --local gc.auto 0
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9871388Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9872734Z ##[group]Setting up auth
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9873496Z Removing SSH command configuration
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9879411Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+docker	Run actions/checkout@v7	2026-10-16T20:38:00.9919679Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.0339410Z Removing HTTP extra header
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.0347304Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.0387283Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.0683765Z Removing includeIf entries pointing to credentials config files
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.0689172Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.0724601Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.1023561Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.1063954Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git.path /home/runner/work/_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.1097892Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.1135073Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.1171542Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.1208163Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.1209800Z ##[group]Fetching the repository
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.1217014Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +abbae37f81cb6f8c1e5199bbf89b777e6be3a047:refs/remotes/pull/156/merge
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7420464Z From https://github.com/reeveero-tech/All-hand
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7422570Z  * [new ref]         abbae37f81cb6f8c1e5199bbf89b777e6be3a047 -> pull/156/merge
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7429016Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7430700Z ##[group]Determining the checkout info
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7432298Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7450050Z [command]/usr/bin/git sparse-checkout disable
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7505948Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7547821Z ##[group]Checking out the ref
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.7551122Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/156/merge
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8784573Z Note: switching to 'refs/remotes/pull/156/merge'.
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8785552Z 
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8786305Z You are in 'detached HEAD' state. You can look around, make experimental
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8787936Z changes and commit them, and you can discard any commits you make in this
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8789508Z state without impacting any branches by switching back to a branch.
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8790307Z 
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8791015Z If you want to create a new branch to retain commits you create, you may
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8792651Z do so (now or later) by using -c with the switch command. Example:
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8793524Z 
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8794032Z   git switch -c <new-branch-name>
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8794682Z 
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8795215Z Or undo this operation with:
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8795801Z 
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8796333Z   git switch -
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8796782Z 
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8797842Z Turn off this advice by setting config variable advice.detachedHead to false
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8798899Z 
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8800519Z HEAD is now at abbae37 Merge a3ee544962167807f7304697c42f987b57810073 into d224652b4b338fbd989c9214eb542f75d48fdf83
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8805516Z ##[endgroup]
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8855980Z [command]/usr/bin/git log -1 --format=%H
+docker	Run actions/checkout@v7	2026-10-16T20:38:01.8886099Z abbae37f81cb6f8c1e5199bbf89b777e6be3a047
+docker	Build image	﻿2026-10-16T20:38:01.9180113Z ##[group]Run set -o pipefail
+docker	Build image	2026-10-16T20:38:01.9181657Z ^[[36;1mset -o pipefail^[[0m
+docker	Build image	2026-10-16T20:38:01.9183725Z ^[[36;1mdocker build --no-cache -t agos:r040-smoke . 2>&1 | tee "$GITHUB_WORKSPACE/docker_build.log"^[[0m
+docker	Build image	2026-10-16T20:38:01.9186845Z ^[[36;1mecho "image_size=$(docker image inspect agos:r040-smoke --format '{{.Size}}')" | tee -a "$GITHUB_WORKSPACE/docker_build.log"^[[0m
+docker	Build image	2026-10-16T20:38:01.9339218Z shell: /usr/bin/bash -e {0}
+docker	Build image	2026-10-16T20:38:01.9340869Z ##[endgroup]
+docker	Build image	2026-10-16T20:38:03.5408120Z #0 building with "default" instance using docker driver
+docker	Build image	2026-10-16T20:38:03.5409399Z 
+docker	Build image	2026-10-16T20:38:03.5409705Z #1 [internal] load build definition from Dockerfile
+docker	Build image	2026-10-16T20:38:03.5410208Z #1 transferring dockerfile: 1.28kB done
+docker	Build image	2026-10-16T20:38:03.5410634Z #1 DONE 0.0s
+docker	Build image	2026-10-16T20:38:03.5410810Z 
+docker	Build image	2026-10-16T20:38:03.5411079Z #2 [auth] library/node:pull token for registry-1.docker.io
+docker	Build image	2026-10-16T20:38:03.5411580Z #2 DONE 0.0s
+docker	Build image	2026-10-16T20:38:03.5411753Z 
+docker	Build image	2026-10-16T20:38:03.5412015Z #3 [auth] library/python:pull token for registry-1.docker.io
+docker	Build image	2026-10-16T20:38:03.5412622Z #3 DONE 0.0s
+docker	Build image	2026-10-16T20:38:03.5412790Z 
+docker	Build image	2026-10-16T20:38:03.5413089Z #4 [internal] load metadata for docker.io/library/python:3.12-slim
+docker	Build image	2026-10-16T20:38:03.7512913Z #4 DONE 0.4s
+docker	Build image	2026-10-16T20:38:03.7513312Z 
+docker	Build image	2026-10-16T20:38:03.7513563Z #5 [internal] load metadata for docker.io/library/node:22-slim
+docker	Build image	2026-10-16T20:38:03.8829876Z #5 DONE 0.4s
+docker	Build image	2026-10-16T20:38:03.8843230Z 
+docker	Build image	2026-10-16T20:38:03.8847839Z #6 [internal] load .dockerignore
+docker	Build image	2026-10-16T20:38:03.8879491Z #6 transferring context: 448B done
+docker	Build image	2026-10-16T20:38:03.8899945Z #6 DONE 0.0s
+docker	Build image	2026-10-16T20:38:03.8900719Z 
+docker	Build image	2026-10-16T20:38:03.8903259Z #7 [frontend-build 1/6] FROM docker.io/library/node:22-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+docker	Build image	2026-10-16T20:38:03.8904926Z #7 resolve docker.io/library/node:22-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392 0.0s done
+docker	Build image	2026-10-16T20:38:03.8906152Z #7 DONE 0.1s
+docker	Build image	2026-10-16T20:38:03.8908361Z 
+docker	Build image	2026-10-16T20:38:03.8940330Z #8 [stage-1 1/7] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+docker	Build image	2026-10-16T20:38:03.8946340Z #8 resolve docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 0.0s done
+docker	Build image	2026-10-16T20:38:03.8951058Z #8 DONE 0.1s
+docker	Build image	2026-10-16T20:38:03.8951868Z 
+docker	Build image	2026-10-16T20:38:03.8952266Z #9 [internal] load build context
+docker	Build image	2026-10-16T20:38:04.3583187Z #9 transferring context: 23.97MB 0.4s done
+docker	Build image	2026-10-16T20:38:04.3583778Z #9 DONE 0.4s
+docker	Build image	2026-10-16T20:38:04.3584128Z 
+docker	Build image	2026-10-16T20:38:04.3584854Z #8 [stage-1 1/7] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+docker	Build image	2026-10-16T20:38:04.3585937Z #8 sha256:bbc5a12237474ec0b23b5051260d56d6436a24d70d9cad961adebe7a037ed813 249B / 249B 0.0s done
+docker	Build image	2026-10-16T20:38:04.3586863Z #8 sha256:75b6a36c64a1cf3520fc4b4aae4739d5caa8a6a05c27835a920a61784c9c32f8 1.29MB / 1.29MB 0.1s done
+docker	Build image	2026-10-16T20:38:04.3588171Z #8 sha256:6912e23eb44595b44dc6d9882b34f305ad6f6e9667cec70b13e5dbc4f8cd97f4 12.12MB / 12.12MB 0.2s done
+docker	Build image	2026-10-16T20:38:04.3589189Z #8 sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 29.84MB / 29.84MB 0.3s done
+docker	Build image	2026-10-16T20:38:04.3590199Z #8 extracting sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e
+docker	Build image	2026-10-16T20:38:05.2021072Z #8 extracting sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 0.9s done
+docker	Build image	2026-10-16T20:38:05.2021932Z #8 DONE 1.4s
+docker	Build image	2026-10-16T20:38:05.2022278Z 
+docker	Build image	2026-10-16T20:38:05.2022912Z #7 [frontend-build 1/6] FROM docker.io/library/node:22-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+docker	Build image	2026-10-16T20:38:05.2024182Z #7 sha256:a8de9fa052209313d8e45435a8486e29b20eebaa820e2e7f63a7c3c94b4fa567 448B / 448B 0.1s done
+docker	Build image	2026-10-16T20:38:05.2025393Z #7 sha256:2cfab517365cfc6b4bd1f8c4cb01754884ef75bc38758b3c41e291c696f019f5 1.71MB / 1.71MB 0.1s done
+docker	Build image	2026-10-16T20:38:05.2026148Z #7 sha256:d22c69a95cf463f4cb74462bd2899597ce505d82bd4c01ceddf7845e12f13856 49.84MB / 49.84MB 0.4s done
+docker	Build image	2026-10-16T20:38:05.2027332Z #7 sha256:f0400f4b55b0ad346bf6167a1b64a258e4d73db608c457798ce35e4ffeebfaaf 3.31kB / 3.31kB 0.0s done
+docker	Build image	2026-10-16T20:38:05.2028518Z #7 sha256:7fd1ebe418b5079d4aa36f416af9b143d127bc75b0155d71cb5fd559b5e04d39 28.25MB / 28.25MB 0.2s done
+docker	Build image	2026-10-16T20:38:05.2029470Z #7 extracting sha256:7fd1ebe418b5079d4aa36f416af9b143d127bc75b0155d71cb5fd559b5e04d39
+docker	Build image	2026-10-16T20:38:05.4420623Z #7 extracting sha256:7fd1ebe418b5079d4aa36f416af9b143d127bc75b0155d71cb5fd559b5e04d39 1.0s done
+docker	Build image	2026-10-16T20:38:05.4421826Z #7 extracting sha256:f0400f4b55b0ad346bf6167a1b64a258e4d73db608c457798ce35e4ffeebfaaf 0.0s done
+docker	Build image	2026-10-16T20:38:05.4422848Z #7 extracting sha256:d22c69a95cf463f4cb74462bd2899597ce505d82bd4c01ceddf7845e12f13856
+docker	Build image	2026-10-16T20:38:05.6934266Z #7 ...
+docker	Build image	2026-10-16T20:38:05.6934943Z 
+docker	Build image	2026-10-16T20:38:05.6935730Z #8 [stage-1 1/7] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+docker	Build image	2026-10-16T20:38:05.6937058Z #8 extracting sha256:75b6a36c64a1cf3520fc4b4aae4739d5caa8a6a05c27835a920a61784c9c32f8 0.1s done
+docker	Build image	2026-10-16T20:38:05.6938326Z #8 extracting sha256:6912e23eb44595b44dc6d9882b34f305ad6f6e9667cec70b13e5dbc4f8cd97f4 0.4s done
+docker	Build image	2026-10-16T20:38:05.6939034Z #8 DONE 1.9s
+docker	Build image	2026-10-16T20:38:05.8535378Z 
+docker	Build image	2026-10-16T20:38:05.8537117Z #8 [stage-1 1/7] FROM docker.io/library/python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+docker	Build image	2026-10-16T20:38:05.8538528Z #8 extracting sha256:bbc5a12237474ec0b23b5051260d56d6436a24d70d9cad961adebe7a037ed813 done
+docker	Build image	2026-10-16T20:38:05.8539224Z #8 DONE 1.9s
+docker	Build image	2026-10-16T20:38:05.8539365Z 
+docker	Build image	2026-10-16T20:38:05.8539474Z #10 [stage-1 2/7] WORKDIR /app
+docker	Build image	2026-10-16T20:38:06.3937926Z #10 ...
+docker	Build image	2026-10-16T20:38:06.3939131Z 
+docker	Build image	2026-10-16T20:38:06.3968063Z #7 [frontend-build 1/6] FROM docker.io/library/node:22-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+docker	Build image	2026-10-16T20:38:06.3969526Z #7 extracting sha256:d22c69a95cf463f4cb74462bd2899597ce505d82bd4c01ceddf7845e12f13856 1.1s done
+docker	Build image	2026-10-16T20:38:06.3970561Z #7 DONE 2.6s
+docker	Build image	2026-10-16T20:38:06.5406702Z 
+docker	Build image	2026-10-16T20:38:06.5408373Z #10 [stage-1 2/7] WORKDIR /app
+docker	Build image	2026-10-16T20:38:06.5418475Z #10 DONE 0.7s
+docker	Build image	2026-10-16T20:38:06.5419383Z 
+docker	Build image	2026-10-16T20:38:06.5420361Z #7 [frontend-build 1/6] FROM docker.io/library/node:22-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+docker	Build image	2026-10-16T20:38:06.5421876Z #7 extracting sha256:2cfab517365cfc6b4bd1f8c4cb01754884ef75bc38758b3c41e291c696f019f5 0.0s done
+docker	Build image	2026-10-16T20:38:06.5425429Z #7 extracting sha256:a8de9fa052209313d8e45435a8486e29b20eebaa820e2e7f63a7c3c94b4fa567 done
+docker	Build image	2026-10-16T20:38:06.5426650Z #7 DONE 2.6s
+docker	Build image	2026-10-16T20:38:06.5427113Z 
+docker	Build image	2026-10-16T20:38:06.5427303Z #11 [frontend-build 2/6] WORKDIR /app/web
+docker	Build image	2026-10-16T20:38:06.5428126Z #11 DONE 0.1s
+docker	Build image	2026-10-16T20:38:06.5428321Z 
+docker	Build image	2026-10-16T20:38:06.5428872Z #12 [stage-1 3/7] COPY requirements.txt requirements.lock ./
+docker	Build image	2026-10-16T20:38:06.7069719Z #12 DONE 0.1s
+docker	Build image	2026-10-16T20:38:06.7070318Z 
+docker	Build image	2026-10-16T20:38:06.7071078Z #13 [frontend-build 3/6] COPY web/package.json web/package-lock.json ./
+docker	Build image	2026-10-16T20:38:06.7071981Z #13 DONE 0.0s
+docker	Build image	2026-10-16T20:38:06.7072336Z 
+docker	Build image	2026-10-16T20:38:06.7072911Z #14 [frontend-build 4/6] RUN npm ci --engine-strict --no-audit --no-fund
+docker	Build image	2026-10-16T20:38:09.2786362Z #14 2.722 
+docker	Build image	2026-10-16T20:38:09.2788890Z #14 2.722 added 63 packages in 2s
+docker	Build image	2026-10-16T20:38:09.4919699Z #14 2.723 npm notice
+docker	Build image	2026-10-16T20:38:09.4920685Z #14 2.723 npm notice New major version of npm available! 10.9.9 -> 12.2.0
+docker	Build image	2026-10-16T20:38:09.4921970Z #14 2.723 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+docker	Build image	2026-10-16T20:38:09.4923097Z #14 2.723 npm notice To update run: npm install -g npm@12.2.0
+docker	Build image	2026-10-16T20:38:09.4923936Z #14 2.723 npm notice
+docker	Build image	2026-10-16T20:38:09.4948347Z #14 DONE 2.8s
+docker	Build image	2026-10-16T20:38:09.4968054Z 
+docker	Build image	2026-10-16T20:38:09.4968651Z #15 [frontend-build 5/6] COPY web/ ./
+docker	Build image	2026-10-16T20:38:09.6045160Z #15 DONE 0.2s
+docker	Build image	2026-10-16T20:38:09.6046793Z 
+docker	Build image	2026-10-16T20:38:09.6047274Z #16 [frontend-build 6/6] RUN npm run build
+docker	Build image	2026-10-16T20:38:09.8268596Z #16 0.277 
+docker	Build image	2026-10-16T20:38:09.8269529Z #16 0.277 > agos-civilization-web@3.0.0 build
+docker	Build image	2026-10-16T20:38:09.8270271Z #16 0.277 > vite build
+docker	Build image	2026-10-16T20:38:09.8271001Z #16 0.277 
+docker	Build image	2026-10-16T20:38:10.1723186Z #16 0.540 vite v8.3.4 building client environment for production...
+docker	Build image	2026-10-16T20:38:10.1724110Z #16 0.551 transforming...
+docker	Build image	2026-10-16T20:38:10.1725056Z #16 0.623 ✓ 22 modules transformed.
+docker	Build image	2026-10-16T20:38:10.2741906Z #16 0.648 rendering chunks...
+docker	Build image	2026-10-16T20:38:10.2747422Z #16 0.683 computing gzip size...
+docker	Build image	2026-10-16T20:38:10.2756025Z #16 0.688 dist/index.html                   0.77 kB │ gzip:  0.45 kB
+docker	Build image	2026-10-16T20:38:10.2757886Z #16 0.688 dist/assets/index-B6dOodBA.css   12.26 kB │ gzip:  2.99 kB
+docker	Build image	2026-10-16T20:38:10.2760857Z #16 0.688 dist/assets/index-DixFQaVY.js   172.32 kB │ gzip: 54.45 kB
+docker	Build image	2026-10-16T20:38:10.2761958Z #16 0.688 
+docker	Build image	2026-10-16T20:38:10.2763100Z #16 0.689 ✓ built in 147ms
+docker	Build image	2026-10-16T20:38:10.2765594Z #16 DONE 0.7s
+docker	Build image	2026-10-16T20:38:10.2767911Z 
+docker	Build image	2026-10-16T20:38:10.2768583Z #17 [stage-1 4/7] RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+docker	Build image	2026-10-16T20:38:10.2770925Z #17 2.136 Collecting aiohappyeyeballs==2.7.1 (from -r requirements.lock (line 7))
+docker	Build image	2026-10-16T20:38:10.2772229Z #17 2.178   Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+docker	Build image	2026-10-16T20:38:10.2773250Z #17 2.941 Collecting aiohttp==3.14.5 (from -r requirements.lock (line 11))
+docker	Build image	2026-10-16T20:38:10.2774583Z #17 2.956   Downloading aiohttp-3.14.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.9 MB)
+docker	Build image	2026-10-16T20:38:10.2776229Z #17 2.990      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.9/1.9 MB 114.8 MB/s eta 0:00:00
+docker	Build image	2026-10-16T20:38:10.2777226Z #17 3.020 Collecting aiosignal==1.4.0 (from -r requirements.lock (line 174))
+docker	Build image	2026-10-16T20:38:10.2778339Z #17 3.027   Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+docker	Build image	2026-10-16T20:38:10.2779716Z #17 3.062 Collecting annotated-doc==0.0.5 (from -r requirements.lock (line 178))
+docker	Build image	2026-10-16T20:38:10.2781339Z #17 3.077   Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+docker	Build image	2026-10-16T20:38:10.2782491Z #17 3.102 Collecting annotated-types==0.8.0 (from -r requirements.lock (line 182))
+docker	Build image	2026-10-16T20:38:10.2783819Z #17 3.120   Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+docker	Build image	2026-10-16T20:38:10.2784916Z #17 3.142 Collecting anyio==4.15.1 (from -r requirements.lock (line 186))
+docker	Build image	2026-10-16T20:38:10.2786127Z #17 3.150   Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+docker	Build image	2026-10-16T20:38:10.2787135Z #17 3.180 Collecting attrs==26.1.0 (from -r requirements.lock (line 192))
+docker	Build image	2026-10-16T20:38:10.2788236Z #17 3.187   Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+docker	Build image	2026-10-16T20:38:10.2789431Z #17 3.220 Collecting click==8.5.0 (from -r requirements.lock (line 196))
+docker	Build image	2026-10-16T20:38:10.2790504Z #17 3.228   Downloading click-8.5.0-py3-none-any.whl (125 kB)
+docker	Build image	2026-10-16T20:38:10.2791732Z #17 3.295 Collecting fastapi==0.143.3 (from -r requirements.lock (line 200))
+docker	Build image	2026-10-16T20:38:10.2792841Z #17 3.304   Downloading fastapi-0.143.3-py3-none-any.whl (144 kB)
+docker	Build image	2026-10-16T20:38:10.2793933Z #17 3.393 Collecting frozenlist==1.8.0 (from -r requirements.lock (line 204))
+docker	Build image	2026-10-16T20:38:10.2795534Z #17 3.401   Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (242 kB)
+docker	Build image	2026-10-16T20:38:10.2797068Z #17 3.425 Collecting h11==0.16.0 (from -r requirements.lock (line 338))
+docker	Build image	2026-10-16T20:38:10.2798297Z #17 3.433   Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+docker	Build image	2026-10-16T20:38:10.2799517Z #17 3.487 Collecting httptools==0.9.0 (from -r requirements.lock (line 342))
+docker	Build image	2026-10-16T20:38:10.2801121Z #17 3.496   Downloading httptools-0.9.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (552 kB)
+docker	Build image	2026-10-16T20:38:10.2802922Z #17 3.502      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 552.8/552.8 kB 487.9 MB/s eta 0:00:00
+docker	Build image	2026-10-16T20:38:10.2804177Z #17 3.531 Collecting idna==3.20 (from -r requirements.lock (line 462))
+docker	Build image	2026-10-16T20:38:10.2805436Z #17 3.540   Downloading idna-3.20-py3-none-any.whl (69 kB)
+docker	Build image	2026-10-16T20:38:10.4182938Z #17 3.876 Collecting multidict==7.1.0 (from -r requirements.lock (line 468))
+docker	Build image	2026-10-16T20:38:10.5256804Z #17 3.882   Downloading multidict-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (483 kB)
+docker	Build image	2026-10-16T20:38:10.5259209Z #17 3.911 Collecting opentelemetry-api==1.45.1 (from -r requirements.lock (line 643))
+docker	Build image	2026-10-16T20:38:10.5260371Z #17 3.919   Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+docker	Build image	2026-10-16T20:38:10.5261379Z #17 3.983 Collecting propcache==0.5.4 (from -r requirements.lock (line 647))
+docker	Build image	2026-10-16T20:38:10.6366649Z #17 3.991   Downloading propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (250 kB)
+docker	Build image	2026-10-16T20:38:10.6368508Z #17 4.094 Collecting pydantic==2.14.1 (from -r requirements.lock (line 789))
+docker	Build image	2026-10-16T20:38:10.7957176Z #17 4.102   Downloading pydantic-2.14.1-py3-none-any.whl (488 kB)
+docker	Build image	2026-10-16T20:38:11.2382664Z #17 4.695 Collecting pydantic-core==2.50.1 (from -r requirements.lock (line 795))
+docker	Build image	2026-10-16T20:38:11.3600689Z #17 4.703   Downloading pydantic_core-2.50.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+docker	Build image	2026-10-16T20:38:11.3602480Z #17 4.712      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 287.0 MB/s eta 0:00:00
+docker	Build image	2026-10-16T20:38:11.3603797Z #17 4.738 Collecting python-dotenv==1.2.4 (from -r requirements.lock (line 934))
+docker	Build image	2026-10-16T20:38:11.3604876Z #17 4.747   Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+docker	Build image	2026-10-16T20:38:11.3605922Z #17 4.770 Collecting python-multipart==0.0.32 (from -r requirements.lock (line 938))
+docker	Build image	2026-10-16T20:38:11.3606966Z #17 4.779   Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
+docker	Build image	2026-10-16T20:38:11.3608115Z #17 4.817 Collecting pyyaml==6.0.3 (from -r requirements.lock (line 942))
+docker	Build image	2026-10-16T20:38:11.4647291Z #17 4.825   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+docker	Build image	2026-10-16T20:38:11.4669911Z #17 4.829      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 547.1 MB/s eta 0:00:00
+docker	Build image	2026-10-16T20:38:11.4671054Z #17 4.889 Collecting starlette==1.8.0 (from -r requirements.lock (line 1019))
+docker	Build image	2026-10-16T20:38:11.4672059Z #17 4.897   Downloading starlette-1.8.0-py3-none-any.whl (79 kB)
+docker	Build image	2026-10-16T20:38:11.4673001Z #17 4.922 Collecting typing-extensions==4.16.0 (from -r requirements.lock (line 1023))
+docker	Build image	2026-10-16T20:38:11.5884689Z #17 4.930   Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+docker	Build image	2026-10-16T20:38:11.5885734Z #17 4.948 Collecting typing-inspection==0.4.4 (from -r requirements.lock (line 1036))
+docker	Build image	2026-10-16T20:38:11.5886830Z #17 4.956   Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+docker	Build image	2026-10-16T20:38:11.5890779Z #17 4.991 Collecting uvicorn==0.54.0 (from uvicorn[standard]==0.54.0->-r requirements.lock (line 1042))
+docker	Build image	2026-10-16T20:38:11.5891774Z #17 5.000   Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+docker	Build image	2026-10-16T20:38:11.5892555Z #17 5.046 Collecting uvloop==0.23.0 (from -r requirements.lock (line 1046))
+docker	Build image	2026-10-16T20:38:11.6926451Z #17 5.057   Downloading uvloop-0.23.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.5 MB)
+docker	Build image	2026-10-16T20:38:11.6928466Z #17 5.074      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 292.6 MB/s eta 0:00:00
+docker	Build image	2026-10-16T20:38:11.6929608Z #17 5.150 Collecting watchfiles==1.3.0 (from -r requirements.lock (line 1109))
+docker	Build image	2026-10-16T20:38:11.8030084Z #17 5.158   Downloading watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (458 kB)
+docker	Build image	2026-10-16T20:38:11.8031802Z #17 5.260 Collecting websockets==17.2 (from -r requirements.lock (line 1144))
+docker	Build image	2026-10-16T20:38:11.9620606Z #17 5.269   Downloading websockets-17.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
+docker	Build image	2026-10-16T20:38:12.0724693Z #17 5.530 Collecting yarl==1.25.1 (from -r requirements.lock (line 1294))
+docker	Build image	2026-10-16T20:38:12.2314106Z #17 5.538   Downloading yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (117 kB)
+docker	Build image	2026-10-16T20:38:12.2785446Z #17 5.736 Installing collected packages: websockets, uvloop, typing-extensions, pyyaml, python-multipart, python-dotenv, propcache, multidict, idna, httptools, h11, frozenlist, click, attrs, annotated-types, annotated-doc, aiohappyeyeballs, yarl, uvicorn, typing-inspection, pydantic-core, opentelemetry-api, anyio, aiosignal, watchfiles, starlette, pydantic, aiohttp, fastapi
+docker	Build image	2026-10-16T20:38:13.8107272Z #17 7.268 Successfully installed aiohappyeyeballs-2.7.1 aiohttp-3.14.5 aiosignal-1.4.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 click-8.5.0 fastapi-0.143.3 frozenlist-1.8.0 h11-0.16.0 httptools-0.9.0 idna-3.20 multidict-7.1.0 opentelemetry-api-1.45.1 propcache-0.5.4 pydantic-2.14.1 pydantic-core-2.50.1 python-dotenv-1.2.4 python-multipart-0.0.32 pyyaml-6.0.3 starlette-1.8.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0 uvloop-0.23.0 watchfiles-1.3.0 websockets-17.2 yarl-1.25.1
+docker	Build image	2026-10-16T20:38:14.0591817Z #17 7.268 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+docker	Build image	2026-10-16T20:38:14.0594092Z #17 7.366 
+docker	Build image	2026-10-16T20:38:14.0594846Z #17 7.366 [notice] A new release of pip is available: 25.0.1 -> 26.2.1
+docker	Build image	2026-10-16T20:38:14.0595498Z #17 7.366 [notice] To update, run: pip install --upgrade pip
+docker	Build image	2026-10-16T20:38:14.0830384Z #17 DONE 7.5s
+docker	Build image	2026-10-16T20:38:14.2338650Z 
+docker	Build image	2026-10-16T20:38:14.2339233Z #18 [stage-1 5/7] COPY . .
+docker	Build image	2026-10-16T20:38:14.3358564Z #18 DONE 0.3s
+docker	Build image	2026-10-16T20:38:14.4939412Z 
+docker	Build image	2026-10-16T20:38:14.4940203Z #19 [stage-1 6/7] COPY --from=frontend-build /app/web/dist /app/web/dist
+docker	Build image	2026-10-16T20:38:14.4940795Z #19 DONE 0.0s
+docker	Build image	2026-10-16T20:38:14.4941162Z 
+docker	Build image	2026-10-16T20:38:14.4941471Z #20 [stage-1 7/7] RUN useradd --system --uid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin agos
+docker	Build image	2026-10-16T20:38:14.4942324Z #20 0.138 useradd warning: agos's uid 10001 is greater than SYS_UID_MAX 999
+docker	Build image	2026-10-16T20:38:14.6594104Z #20 DONE 0.2s
+docker	Build image	2026-10-16T20:38:14.6594502Z 
+docker	Build image	2026-10-16T20:38:14.6594663Z #21 exporting to image
+docker	Build image	2026-10-16T20:38:14.6595025Z #21 exporting layers
+docker	Build image	2026-10-16T20:38:17.0497261Z #21 exporting layers 2.5s done
+docker	Build image	2026-10-16T20:38:17.2208984Z #21 exporting manifest sha256:63432658871370e11c72723a020c36550bd0029d2bec82e9c3ba90c665ffc307 done
+docker	Build image	2026-10-16T20:38:17.2209758Z #21 exporting config sha256:07488e4b0dc802b3c4933d79f94c99706873a5465b164ac55eaedbce345555e5 done
+docker	Build image	2026-10-16T20:38:17.2210487Z #21 exporting attestation manifest sha256:f8951f3f31b86980497df988f2584a7ee16823edcce35364190050e171a47d97 done
+docker	Build image	2026-10-16T20:38:17.2211207Z #21 exporting manifest list sha256:f23fbe680b668bb87cf1c69633caf61f6326a854e10a3e3e12e2c84998a1c35a done
+docker	Build image	2026-10-16T20:38:17.2211761Z #21 naming to docker.io/library/agos:r040-smoke done
+docker	Build image	2026-10-16T20:38:17.2212099Z #21 unpacking to docker.io/library/agos:r040-smoke
+docker	Build image	2026-10-16T20:38:17.8329999Z #21 unpacking to docker.io/library/agos:r040-smoke 0.8s done
+docker	Build image	2026-10-16T20:38:17.9038630Z #21 DONE 3.3s
+docker	Build image	2026-10-16T20:38:17.9528653Z image_size=66267822
+docker	Verify production start is refused without credentials (SEC-03)	﻿2026-10-16T20:38:17.9583433Z ##[group]Run # SEC-03 (R-139): the image is production (ENV AGOS_ENV=production);
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9584064Z ^[[36;1m# SEC-03 (R-139): the image is production (ENV AGOS_ENV=production);^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9584567Z ^[[36;1m# with neither AGOS_TENANT_KEYS nor AGOS_API_KEY it must exit with an^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9585072Z ^[[36;1m# error instead of serving. Then: an explicit non-production value on a^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9585531Z ^[[36;1m# deployed platform (RENDER=true) must be refused too.^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9585933Z ^[[36;1mLOG="$GITHUB_WORKSPACE/docker_startup_refusal.log"^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9586513Z ^[[36;1mset +e^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9586892Z ^[[36;1mtimeout 120 docker run --rm agos:r040-smoke > "$LOG" 2>&1; rc=$?^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9587757Z ^[[36;1mtimeout 120 docker run --rm -e AGOS_ENV=development -e RENDER=true agos:r040-smoke > "$LOG.render" 2>&1; rc2=$?^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9588323Z ^[[36;1mset -e^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9588566Z ^[[36;1mtail -5 "$LOG"; tail -5 "$LOG.render"^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9589014Z ^[[36;1mecho "no_credentials_rc=$rc render_development_rc=$rc2" | tee -a "$LOG"^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9589640Z ^[[36;1m{ [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; } || { echo "FAIL: container without credentials did not refuse to start"; exit 1; }^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9590391Z ^[[36;1mgrep -q "production start refused: no credentials configured" "$LOG" || { echo "FAIL: refusal reason missing"; exit 1; }^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9591108Z ^[[36;1m{ [ "$rc2" -ne 0 ] && [ "$rc2" -ne 124 ]; } || { echo "FAIL: AGOS_ENV=development accepted with RENDER=true"; exit 1; }^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9591819Z ^[[36;1mgrep -q "not allowed on a deployed platform" "$LOG.render" || { echo "FAIL: platform refusal reason missing"; exit 1; }^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9592339Z ^[[36;1mcat "$LOG.render" >> "$LOG"^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9592915Z ^[[36;1mecho "PASS: production container refuses to start without credentials; development refused on RENDER=true" | tee -a "$LOG"^[[0m
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9669283Z shell: /usr/bin/bash -e {0}
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:17.9669718Z ##[endgroup]
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9566685Z     RUNTIME_ENV = tenancy.enforce_startup(CREDENTIALS)
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9567151Z                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9567811Z   File "/app/agent_civilization/core/tenancy.py", line 173, in enforce_startup
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9568272Z     raise CredentialsError(
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9569629Z agent_civilization.core.tenancy.CredentialsError: production start refused: no credentials configured — set AGOS_TENANT_KEYS and/or AGOS_API_KEY (see docs/governance/OPERATIONS.md). For local development without keys set AGOS_ENV=development explicitly
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9595677Z     RUNTIME_ENV = tenancy.enforce_startup(CREDENTIALS)
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9596125Z                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9596524Z   File "/app/agent_civilization/core/tenancy.py", line 167, in enforce_startup
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9596926Z     raise CredentialsError(
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9597924Z agent_civilization.core.tenancy.CredentialsError: AGOS_ENV=development is not allowed on a deployed platform (RENDER=true): deployments always run as production
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9627355Z no_credentials_rc=1 render_development_rc=1
+docker	Verify production start is refused without credentials (SEC-03)	2026-10-16T20:38:19.9717738Z PASS: production container refuses to start without credentials; development refused on RENDER=true
+docker	Run container and verify /health	﻿2026-10-16T20:38:19.9758181Z ##[group]Run set -o pipefail
+docker	Run container and verify /health	2026-10-16T20:38:19.9758538Z ^[[36;1mset -o pipefail^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9758830Z ^[[36;1mLOG="$GITHUB_WORKSPACE/docker_runtime.log"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9759151Z ^[[36;1m: > "$LOG"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9759495Z ^[[36;1m# SEC-02 (R-138): one ephemeral CI tenant (random per run, user role,^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9759965Z ^[[36;1m# no AGOS_API_KEY) so the runtime-safety step can submit a task.^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9760468Z ^[[36;1mCI_TENANT_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9760923Z ^[[36;1mecho "::add-mask::$CI_TENANT_KEY"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9761280Z ^[[36;1mecho "CI_TENANT_KEY=$CI_TENANT_KEY" >> "$GITHUB_ENV"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9761885Z ^[[36;1mCI_TENANT_SHA=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(sys.argv[1].encode()).hexdigest())' "$CI_TENANT_KEY")^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9762469Z ^[[36;1mdocker run -d --name agos-r040 -p 18000:8000 \^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9762953Z ^[[36;1m  -e AGOS_TENANT_KEYS="[{\"tenant\": \"ci\", \"key_sha256\": \"$CI_TENANT_SHA\", \"role\": \"user\"}]" \^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9763441Z ^[[36;1m  agos:r040-smoke^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9763783Z ^[[36;1mecho "container_started_at=$(date -u +%FT%TZ)" | tee -a "$LOG"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9764274Z ^[[36;1m# Bounded startup wait: poll /health up to ~30s, fail fast on container exit.^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9764680Z ^[[36;1mok=0^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9764896Z ^[[36;1mfor i in $(seq 1 30); do^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9765271Z ^[[36;1m  if ! docker inspect -f '{{.State.Running}}' agos-r040 | grep -q true; then^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9765805Z ^[[36;1m    echo "container exited before answering; rc=container-failure" | tee -a "$LOG"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9766215Z ^[[36;1m    break^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9766428Z ^[[36;1m  fi^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9766843Z ^[[36;1m  code=$(curl -s -o /tmp/health_body.json -w '%{http_code}' http://localhost:18000/health || echo 000)^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9767341Z ^[[36;1m  echo "attempt=$i http_code=$code" >> "$LOG"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9767961Z ^[[36;1m  if [ "$code" = "200" ]; then ok=1; break; fi^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9768244Z ^[[36;1m  sleep 1^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9768449Z ^[[36;1mdone^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9768789Z ^[[36;1mdocker logs agos-r040 > "$GITHUB_WORKSPACE/docker_container.log" 2>&1 || true^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9769196Z ^[[36;1mif [ "$ok" != "1" ]; then^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9769508Z ^[[36;1m  echo "FAIL: /health did not return 200" | tee -a "$LOG"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9769835Z ^[[36;1m  exit 1^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9770038Z ^[[36;1mfi^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9770344Z ^[[36;1m# Assert the response is the health JSON, not a frontend fallback.^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9770982Z ^[[36;1mgrep -q '"status"' /tmp/health_body.json || { echo "FAIL: /health body is not health JSON"; cat /tmp/health_body.json; exit 1; }^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9771532Z ^[[36;1mecho "health_body:" | tee -a "$LOG"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9771850Z ^[[36;1mcat /tmp/health_body.json | tee -a "$LOG"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9772242Z ^[[36;1mecho "PASS: /health returned 200 with health JSON" | tee -a "$LOG"^[[0m
+docker	Run container and verify /health	2026-10-16T20:38:19.9838409Z shell: /usr/bin/bash -e {0}
+docker	Run container and verify /health	2026-10-16T20:38:19.9838691Z ##[endgroup]
+docker	Run container and verify /health	2026-10-16T20:38:20.0718884Z 531ddf892b8e725ed990e509231a605d67cb6757a148f2e91ddb45c676161c4b
+docker	Run container and verify /health	2026-10-16T20:38:20.2212057Z container_started_at=2026-10-16T20:38:20Z
+docker	Run container and verify /health	2026-10-16T20:38:21.3083405Z health_body:
+docker	Run container and verify /health	2026-10-16T20:38:21.3154047Z {"status":"degraded","uptime_seconds":0.0,"checks":{"api":{"component":"api","status":"healthy","message":"API is responding","duration_ms":0.05,"timestamp":"2026-10-16T20:38:21.282397","details":{"status":"healthy","message":"API is responding"}},"civilization":{"component":"civilization","status":"healthy","message":"Civilization active with 1000 agents","duration_ms":1.42,"timestamp":"2026-10-16T20:38:21.283834","details":{"status":"healthy","message":"Civilization active with 1000 agents","agent_count":1000}},"storage":{"component":"storage","status":"degraded","message":"Using in-memory storage","duration_ms":0.03,"timestamp":"2026-10-16T20:38:21.283871","details":{"status":"degraded","message":"Using in-memory storage","supabase_configured":false,"supabase_key":"none","last_ok":null,"last_error":null,"last_success_at":null,"total_ok":0,"total_failed":0}},"redis":{"component":"redis","status":"healthy","message":"Redis connected: False","duration_ms":0.18,"timestamp":"2026-10-16T20:38:21.284059","details":{"status":"healthy","message":"Redis connected: False","connected":false,"using_fallback":true,"queue_size":0,"total_tasks":0,"completed":0,"failed":0}}},"summary":{"total":4,"healthy":3,"degraded":1,"unhealthy":0,"unknown":0}}PASS: /health returned 200 with health JSON
+docker	Verify runtime safety policy in the container (R-100)	﻿2026-10-16T20:38:21.3202766Z ##[group]Run set -o pipefail
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3203128Z ^[[36;1mset -o pipefail^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3203422Z ^[[36;1mLOG="$GITHUB_WORKSPACE/docker_runtime.log"^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3203765Z ^[[36;1muid=$(docker exec agos-r040 id -u)^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3204086Z ^[[36;1mecho "container_uid=$uid" | tee -a "$LOG"^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3204512Z ^[[36;1m[ "$uid" != "0" ] || { echo "FAIL: container runs as root" | tee -a "$LOG"; exit 1; }^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3205020Z ^[[36;1m# SEC-02 (R-138): an anonymous client cannot submit or read tasks at all.^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3205625Z ^[[36;1mcode=$(curl -s -o /tmp/anon.json -w '%{http_code}' -X POST http://localhost:18000/api/tasks \^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3206308Z ^[[36;1m       -H 'Content-Type: application/json' -d '{"specialization":"test_runner","prompt":"print(1)"}')^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3206943Z ^[[36;1mecho "anonymous_post_api_tasks=$code $(cat /tmp/anon.json)" | tee -a "$LOG"^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3207807Z ^[[36;1m[ "$code" = "401" ] || { echo "FAIL: anonymous task submission not refused" | tee -a "$LOG"; exit 1; }^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3208462Z ^[[36;1mcode=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:18000/api/tasks)^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3208971Z ^[[36;1mecho "anonymous_get_api_tasks=$code" | tee -a "$LOG"^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3209478Z ^[[36;1m[ "$code" = "401" ] || { echo "FAIL: anonymous task listing not refused" | tee -a "$LOG"; exit 1; }^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3210034Z ^[[36;1m# No AGOS_API_KEY (open code-exec policy, R-100): even an authenticated^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3210445Z ^[[36;1m# tenant's submitted code must NOT run.^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3210929Z ^[[36;1mtid=$(curl -s -X POST http://localhost:18000/api/tasks -H 'Content-Type: application/json' \^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3211412Z ^[[36;1m      -H "X-API-Key: $CI_TENANT_KEY" \^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3211985Z ^[[36;1m      -d '{"specialization":"test_runner","prompt":"print(1)"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["task_id"])')^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3212546Z ^[[36;1mfor i in $(seq 1 20); do^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3212986Z ^[[36;1m  curl -s -H "X-API-Key: $CI_TENANT_KEY" "http://localhost:18000/api/tasks/$tid" > /tmp/task.json^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3213519Z ^[[36;1m  grep -q '"status": *"\(completed\|failed\)"' /tmp/task.json && break^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3213882Z ^[[36;1m  sleep 0.5^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3214098Z ^[[36;1mdone^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3214506Z ^[[36;1mecho "open_mode_test_runner:" | tee -a "$LOG"; cat /tmp/task.json | tee -a "$LOG"; echo | tee -a "$LOG"^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3215474Z ^[[36;1mgrep -q 'disabled in open mode' /tmp/task.json || { echo "FAIL: open-mode code execution not refused" | tee -a "$LOG"; exit 1; }^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3216258Z ^[[36;1mecho "PASS: non-root container; anonymous access refused (401); open-mode code execution refused" | tee -a "$LOG"^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3283105Z shell: /usr/bin/bash -e {0}
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3283388Z env:
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3284041Z   CI_TENANT_KEY: ***
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3284289Z ##[endgroup]
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.3976345Z container_uid=10001
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.4107730Z anonymous_post_api_tasks=401 {"detail":"API key required"}
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.4223932Z anonymous_get_api_tasks=401
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.4618714Z open_mode_test_runner:
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.4682948Z {"id":"7707e3f3c1a9","specialization":"test_runner","prompt":"print(1)","status":"failed","created_at":1792183101.429494,"result":{"ok":false,"agent":"test_runner_0900","elapsed_s":0.001,"result":{"ok":false,"error":"code execution is disabled in open mode: set AGOS_API_KEY (recommended) or AGOS_ALLOW_CODE_EXEC=1 to enable test_runner","tool_output":{"executed":false}},"experience":{"memory":{"recalled":[],"stored_id":"mem_20261016203821430931_adf55a1c","fallback_used":null},"learning":{"prior":{"specialization":"test_runner","input_kind":"text","samples":0},"after":{"specialization":"test_runner","input_kind":"text","samples":1,"success_rate":0.0,"avg_duration_ms":0.4}}}},"tenant_id":"ci","agent":"test_runner_0900","finished_at":1792183101.431048}
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T20:38:21.4726731Z PASS: non-root container; anonymous access refused (401); open-mode code execution refused
+docker	Collect diagnostics	﻿2026-10-16T20:38:21.4768939Z ##[group]Run docker ps -a | tee "$GITHUB_WORKSPACE/docker_ps.log" || true
+docker	Collect diagnostics	2026-10-16T20:38:21.4769471Z ^[[36;1mdocker ps -a | tee "$GITHUB_WORKSPACE/docker_ps.log" || true^[[0m
+docker	Collect diagnostics	2026-10-16T20:38:21.4769980Z ^[[36;1mdocker inspect agos-r040 > "$GITHUB_WORKSPACE/docker_inspect.json" 2>&1 || true^[[0m
+docker	Collect diagnostics	2026-10-16T20:38:21.4836354Z shell: /usr/bin/bash -e {0}
+docker	Collect diagnostics	2026-10-16T20:38:21.4836648Z env:
+docker	Collect diagnostics	2026-10-16T20:38:21.4837014Z   CI_TENANT_KEY: ***
+docker	Collect diagnostics	2026-10-16T20:38:21.4837248Z ##[endgroup]
+docker	Collect diagnostics	2026-10-16T20:38:21.5173797Z CONTAINER ID   IMAGE             COMMAND                  CREATED        STATUS        PORTS                                           NAMES
+docker	Collect diagnostics	2026-10-16T20:38:21.5180381Z 531ddf892b8e   agos:r040-smoke   "sh -c 'uvicorn serv…"   1 second ago   Up 1 second   0.0.0.0:18000->8000/tcp, [::]:18000->8000/tcp   agos-r040
+docker	Upload evidence artifact	﻿2026-10-16T20:38:21.5434485Z ##[group]Run actions/upload-artifact@v7
+docker	Upload evidence artifact	2026-10-16T20:38:21.5434806Z with:
+docker	Upload evidence artifact	2026-10-16T20:38:21.5435031Z   name: docker-verification-logs
+docker	Upload evidence artifact	2026-10-16T20:38:21.5435587Z   path: docker_build.log
+docker	Upload evidence artifact	docker_runtime.log
+docker	Upload evidence artifact	docker_startup_refusal.log
+docker	Upload evidence artifact	docker_container.log
+docker	Upload evidence artifact	docker_ps.log
+docker	Upload evidence artifact	docker_inspect.json
+docker	Upload evidence artifact	
+docker	Upload evidence artifact	2026-10-16T20:38:21.5436148Z   if-no-files-found: error
+docker	Upload evidence artifact	2026-10-16T20:38:21.5436396Z   compression-level: 6
+docker	Upload evidence artifact	2026-10-16T20:38:21.5436630Z   overwrite: false
+docker	Upload evidence artifact	2026-10-16T20:38:21.5436858Z   include-hidden-files: false
+docker	Upload evidence artifact	2026-10-16T20:38:21.5437122Z   archive: true
+docker	Upload evidence artifact	2026-10-16T20:38:21.5437321Z env:
+docker	Upload evidence artifact	2026-10-16T20:38:21.5437896Z   CI_TENANT_KEY: ***
+docker	Upload evidence artifact	2026-10-16T20:38:21.5438124Z ##[endgroup]
+docker	Upload evidence artifact	2026-10-16T20:38:21.6962236Z Multiple search paths detected. Calculating the least common ancestor of all paths
+docker	Upload evidence artifact	2026-10-16T20:38:21.6964929Z The least common ancestor is /home/runner/work/All-hand/All-hand. This will be the root directory of the artifact
+docker	Upload evidence artifact	2026-10-16T20:38:21.6965673Z With the provided path, there will be 6 files uploaded
+docker	Upload evidence artifact	2026-10-16T20:38:21.6972312Z Artifact name is valid!
+docker	Upload evidence artifact	2026-10-16T20:38:21.6972859Z Root directory input is valid!
+docker	Upload evidence artifact	2026-10-16T20:38:21.9032349Z Uploading artifact: docker-verification-logs.zip
+docker	Upload evidence artifact	2026-10-16T20:38:21.9075744Z Beginning upload of artifact content to blob storage
+docker	Upload evidence artifact	2026-10-16T20:38:21.9718187Z Uploaded bytes 9631
+docker	Upload evidence artifact	2026-10-16T20:38:21.9826038Z Finished uploading artifact content to blob storage!
+docker	Upload evidence artifact	2026-10-16T20:38:21.9827021Z SHA256 digest of uploaded artifact is 51139d587f204fb90c0ef1845c4ef1d29dc954dc8ce77cb4c73c7882636c53e4
+docker	Upload evidence artifact	2026-10-16T20:38:21.9828610Z Finalizing artifact upload
+docker	Upload evidence artifact	2026-10-16T20:38:22.2188627Z Artifact docker-verification-logs successfully finalized. Artifact ID 12073966548
+docker	Upload evidence artifact	2026-10-16T20:38:22.2189906Z Artifact docker-verification-logs has been successfully uploaded! Final size is 9631 bytes. Artifact ID is 12073966548
+docker	Upload evidence artifact	2026-10-16T20:38:22.2195195Z Artifact download URL: https://github.com/reeveero-tech/All-hand/actions/runs/38963184074/artifacts/12073966548
+docker	Clean up	﻿2026-10-16T20:38:22.2357864Z ##[group]Run docker rm -f agos-r040 || true
+docker	Clean up	2026-10-16T20:38:22.2358278Z ^[[36;1mdocker rm -f agos-r040 || true^[[0m
+docker	Clean up	2026-10-16T20:38:22.2358604Z ^[[36;1mdocker rmi agos:r040-smoke || true^[[0m
+docker	Clean up	2026-10-16T20:38:22.2422911Z shell: /usr/bin/bash -e {0}
+docker	Clean up	2026-10-16T20:38:22.2423194Z env:
+docker	Clean up	2026-10-16T20:38:22.2423575Z   CI_TENANT_KEY: ***
+docker	Clean up	2026-10-16T20:38:22.2423813Z ##[endgroup]
+docker	Clean up	2026-10-16T20:38:22.3820440Z agos-r040
+docker	Clean up	2026-10-16T20:38:22.6515080Z Untagged: agos:r040-smoke
+docker	Clean up	2026-10-16T20:38:22.6515987Z Deleted: sha256:f23fbe680b668bb87cf1c69633caf61f6326a854e10a3e3e12e2c84998a1c35a
+docker	Post Run actions/checkout@v7	﻿2026-10-16T20:38:22.6670695Z Post job cleanup.
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.7551464Z [command]/usr/bin/git version
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.7597441Z git version 2.55.0
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.7635680Z Temporarily overriding HOME='/home/runner/work/_temp/bc1bd646-a2eb-499f-9293-2ec467bb0fd0' before making global git config changes
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.7637202Z Adding repository directory to the temporary git global config as a safe directory
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.7641785Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.7691763Z Removing SSH command configuration
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.7698558Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.7744129Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8190431Z Removing HTTP extra header
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8191472Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8254083Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8671920Z Removing includeIf entries pointing to credentials config files
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8681126Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8716384Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8717195Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8718325Z includeif.gitdir:/github/workspace/.git.path
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8719051Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8728524Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8757018Z /home/runner/work/_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8769876Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-ea1f05cb\-0034\-452a\-9950\-26cc8130d60b\.config
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8813705Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8847322Z /home/runner/work/_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8858734Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-ea1f05cb\-0034\-452a\-9950\-26cc8130d60b\.config
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8901605Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8929257Z /github/runner_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8938105Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-ea1f05cb\-0034\-452a\-9950\-26cc8130d60b\.config
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.8978088Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.9005324Z /github/runner_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.9014494Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-ea1f05cb\-0034\-452a\-9950\-26cc8130d60b\.config
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.9060293Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+docker	Post Run actions/checkout@v7	2026-10-16T20:38:22.9367297Z Removing credentials config '/home/runner/work/_temp/git-credentials-ea1f05cb-0034-452a-9950-26cc8130d60b.config'
+docker	Complete job	﻿2026-10-16T20:38:22.9567157Z Cleaning up orphan processes
