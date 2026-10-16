@@ -15,3 +15,6 @@ build/
 .output/
 .wrangler/
 src/routeTree.gen.ts
+
+# SEC-06 UI tests: transpiled component temp files (removed by the cleanup test)
+web/tests/.ui-tmp-*/
