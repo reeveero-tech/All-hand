@@ -41,15 +41,16 @@ npm ci --engine-strict && npm run build   # R-148: تثبيت نظيف من مل
 ```bash
 pip-compile --generate-hashes --no-strip-extras --output-file=requirements.lock requirements.txt
 pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock --output-file=requirements-dev.lock requirements-dev.in
-pip-compile --generate-hashes --no-strip-extras --output-file=requirements-audit.lock requirements-audit.in
+pip-compile --generate-hashes --no-strip-extras --allow-unsafe --output-file=requirements-audit.lock requirements-audit.in
 ```
+(قفل التدقيق بـ`--allow-unsafe` لأن `pip-audit` تعتمد على `pip` نفسها وpip-compile يستبعدها افتراضيًا باعتبارها unsafe — بدونها يبقى القفل ناقصًا ويعتمد على pip الموجودة مسبقًا.)
 - **التحديث المقصود** (رفع الإصدارات داخل النطاقات المسموحة — لا يعتمد على وصول عشوائي لحظة البناء):
 ```bash
 pip-compile --generate-hashes --no-strip-extras --upgrade --output-file=requirements.lock requirements.txt
 # أو رفع حزمة محددة فقط: --upgrade-package aiohttp (ويكرر للحزم المطلوبة)
 pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock --output-file=requirements-dev.lock requirements-dev.in
 ```
-- **القاعدة**: جدّد `requirements.lock` أولًا ثم `requirements-dev.lock` (القيد `-c` يضمن ألا تعيد أدوات الاختبار حل إصدارات الإنتاج). لا يُعدَّل أي قفل يدويًا. **ملاحظة ترويسة القفل**: قد تظهر `--no-index` في سطر «by the following command» رغم أنها لم تُمرَّر — أثر عرض معروف في ترويسة pip-tools 7.6.1 (مُتحقق منه: لا متغير PIP_ في البيئة ولا إعداد pip، والحل نجح ضد فهرس PyPI الكامل بتجزئات كل الحزم؛ ومع `--index-url` صريحة تظهر الاثنتان معًا — تناقض عرضي). الوصفة أعلاه تعمل في بيئة نظيفة كما هي.
+- **القاعدة**: جدّد `requirements.lock` أولًا ثم `requirements-dev.lock` (القيد `-c` يضمن ألا تعيد أدوات الاختبار حل إصدارات الإنتاج). لا يُعدَّل أي قفل يدويًا. **ملاحظة ترويسة القفل**: قد تظهر `--no-index` في سطر «by the following command» رغم أنها لم تُمرَّر — **أثر عرض مثبت بالتشغيل في pip-tools 7.6.1**: تشغيل توليد معزول بنسخة معدّاة من الأداة أثبت أن `no_index=False` فعليًا وأن الوسائط الممررة للمحلل لا تحوي `--no-index` إطلاقًا (الفهرس الافتراضي PyPI هو المستخدم) بينما تعرضه الترويسة (السجل `268`). الوصفة أعلاه تعمل في بيئة نظيفة كما هي.
 - **الاستهلاك**: CI (test/storage/network) وDocker وRender وأوامر التشغيل المحلي كلها تثبّت من الأقفال بـ`--require-hashes`؛ ترقية pip نفسها في CI مثبتة (`pip==26.2.1`)، وأداة الفحص `pip-audit` من قفلها — لا يوجد أي مسار يثبّت بحل عائم.
 
 ## النشر
