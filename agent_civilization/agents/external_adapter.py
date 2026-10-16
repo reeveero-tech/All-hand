@@ -39,6 +39,7 @@ inside one session only reuses a connection that was itself vetted.
 """
 
 import asyncio
+import ipaddress
 import json
 import logging
 import os
@@ -95,10 +96,32 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
         targets = safety.validate_getaddrinfo(host, infos, self._allow_private)
         # The connector gets the vetted IP literal as "host" (never a name to
         # re-resolve), the requested port, the socket family and the protocol
-        # from the validated answer.
-        return [{"hostname": host, "host": ip, "port": port,
-                 "family": family, "proto": proto, "flags": 0}
-                for family, proto, (ip, port) in targets]
+        # from the validated answer.  The sockaddr is consumed WITHOUT
+        # assuming two elements — an IPv6 entry may carry flowinfo/scope_id.
+        results = []
+        for family, proto, sockaddr in targets:
+            ip, port = sockaddr[0], sockaddr[1]
+            extras = sockaddr[2:]
+            if extras:
+                # R-146b review round 4: this transport builds its connect
+                # sockaddr from the host literal alone (aiohttp's
+                # _convert_hosts_to_addr_infos hardcodes flowinfo/scope_id to
+                # 0), so a NUMERIC IPv6 scope must ride INSIDE the literal to
+                # reach the connect target — and a nonzero flowinfo, which the
+                # transport cannot represent at all, fails closed with a
+                # fixed reason instead of being silently dropped.  A scope
+                # already embedded in the literal ("%eth0") carries the
+                # interface and is passed through unchanged.
+                flowinfo, scope_id = extras
+                if flowinfo:
+                    raise safety.UnsafeURLError(
+                        f"IPv6 flowinfo is not representable for {host}")
+                if scope_id and "%" not in ip:
+                    ip = f"{ip}%{scope_id}"
+                ipaddress.ip_address(ip)   # the composed literal re-validated
+            results.append({"hostname": host, "host": ip, "port": port,
+                           "family": family, "proto": proto, "flags": 0})
+        return results
 
     async def close(self) -> None:  # aiohttp resolver interface
         return None

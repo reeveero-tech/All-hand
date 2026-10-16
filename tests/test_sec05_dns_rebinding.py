@@ -82,9 +82,16 @@ class ControlledDNS:
             answer = self.answers[min(call - 1, max(0, len(self.answers) - 1))]
             out = []
             for ip in answer:
-                family = socket.AF_INET6 if ":" in ip else socket.AF_INET
-                out.append((family, socket.SOCK_STREAM, socket.IPPROTO_TCP,
-                            "", (ip, int(port or 0))))
+                if ":" in ip:
+                    # like the system resolver: IPv6 sockaddrs are 4-tuples
+                    # (ip, port, flowinfo, scope_id)
+                    out.append((socket.AF_INET6, socket.SOCK_STREAM,
+                                socket.IPPROTO_TCP, "",
+                                (ip, int(port or 0), 0, 0)))
+                else:
+                    out.append((socket.AF_INET, socket.SOCK_STREAM,
+                                socket.IPPROTO_TCP, "",
+                                (ip, int(port or 0))))
             return out
         return self._orig(host, *args, **kwargs)
 
@@ -647,40 +654,45 @@ def test_explicit_proxy_on_the_request_is_refused(dns, loopback_is_public,
     # An explicit proxy on the Request (set_proxy rewrites req.host; for HTTPS
     # it also sets a tunnel) would make the PROXY resolve the destination and
     # void the vetted-address guarantee.  No trusted-proxy design exists, so
-    # both schemes are refused BEFORE any connection.
+    # every proxy signature is refused BEFORE any connection — and a REAL
+    # proxy listener proves, per case, that neither a request was served to
+    # the proxy NOR a TCP socket ever opened to it.
     dns.script(["127.0.0.1"])           # the early check passes...
-    req = urllib.request.Request(f"http://{CONTROL_HOST}:{internal_listener}/x")
-    req.set_proxy("127.0.0.1:9999", "http")
-    with pytest.raises(safety.UnsafeURLError) as ei:
-        safety.safe_urlopen(req, timeout=5)
-    assert "explicit proxies are not supported" in str(ei.value)
-
-    req = urllib.request.Request(f"https://{CONTROL_HOST}:{internal_listener}/x")
-    req.set_proxy("127.0.0.1:9999", "https")
-    with pytest.raises(safety.UnsafeURLError) as ei:
-        safety.safe_urlopen(req, timeout=5)
-    assert "explicit proxies are not supported" in str(ei.value)
-    assert _JSONHandler.hits == 0 and _JSONHandler.connections == 0
-
-    # The MATCHING-ADDRESS proxy: set_proxy to the request's OWN host keeps
-    # req.host == netloc, so a host-comparison check alone would miss it —
-    # has_proxy() (the absolute-form selector) is what catches it.  A REAL
-    # proxy listener proves no connection is ever made to the proxy.
     _ProxySink.hits = 0
     _ProxySink.connections = 0
     sink = _serve("127.0.0.1", _ProxySink)
     sink_port = sink.server_address[1]
     try:
+        # a) http proxy at a DIFFERENT address than the destination
+        req = urllib.request.Request(f"http://{CONTROL_HOST}:{internal_listener}/x")
+        req.set_proxy(f"127.0.0.1:{sink_port}", "http")
+        with pytest.raises(safety.UnsafeURLError) as ei:
+            safety.safe_urlopen(req, timeout=5)
+        assert "explicit proxies are not supported" in str(ei.value)
+        assert _ProxySink.hits == 0 and _ProxySink.connections == 0
+
+        # b) the HTTPS tunnel (set_proxy stores the destination in
+        #    _tunnel_host and would CONNECT through the proxy)
+        req = urllib.request.Request(f"https://{CONTROL_HOST}:{internal_listener}/x")
+        req.set_proxy(f"127.0.0.1:{sink_port}", "https")
+        with pytest.raises(safety.UnsafeURLError) as ei:
+            safety.safe_urlopen(req, timeout=5)
+        assert "explicit proxies are not supported" in str(ei.value)
+        assert _ProxySink.hits == 0 and _ProxySink.connections == 0
+
+        # c) the MATCHING-ADDRESS proxy: set_proxy to the request's OWN host
+        #    keeps req.host == netloc, so a host-comparison check alone would
+        #    miss it — has_proxy() (the absolute-form selector) catches it.
         req = urllib.request.Request(f"http://{CONTROL_HOST}:{sink_port}/x")
         req.set_proxy(req.host, "http")
         with pytest.raises(safety.UnsafeURLError) as ei:
             safety.safe_urlopen(req, timeout=5)
         assert "explicit proxies are not supported" in str(ei.value)
-        assert _ProxySink.hits == 0                # no request was ever served
-        assert _ProxySink.connections == 0         # ... and no TCP socket opened
+        assert _ProxySink.hits == 0 and _ProxySink.connections == 0
     finally:
         sink.shutdown()
         sink.server_close()
+    assert _JSONHandler.hits == 0 and _JSONHandler.connections == 0
 
 
 def test_non_ip_entries_in_the_answer_fail_closed(dns):
@@ -704,6 +716,8 @@ def test_non_ip_entries_in_the_answer_fail_closed(dns):
 # per the address policy), so with allow_private=False the request still
 # reaches the STRUCTURE validation — the rejection reason is the usability
 # one for every case, on both transports.
+
+
 MALFORMED_CASES = [
     # truncated tuple (no sockaddr element at all)
     [("AF_INET", socket.SOCK_STREAM, socket.IPPROTO_TCP, "")],
@@ -773,6 +787,69 @@ def test_vetted_sockaddr_preserves_ipv6_scope_information(dns):
     out = safety.vetted_sockaddrs(CONTROL_HOST, 8080)
     assert out == [(socket.AF_INET6, socket.IPPROTO_TCP, ("2001:db8::1", 8080))]
 
+    # a BARE literal with a numeric scope_id (no "%scope" in the string):
+    # the urllib path keeps the full sockaddr — the numeric scope IS the
+    # connect target's scope_id element, nothing is dropped.
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1", 8080, 0, 42))])
+    out = safety.vetted_sockaddrs(CONTROL_HOST, 8080, allow_private=True)
+    assert out == [(socket.AF_INET6, socket.IPPROTO_TCP,
+                   ("fe80::1", 8080, 0, 42))]
+
+
+def test_guarded_resolver_embeds_the_numeric_ipv6_scope(dns):
+    # R-146b review round 4: the agent transport builds its connect sockaddr
+    # from the host literal alone (aiohttp hardcodes flowinfo/scope_id to 0),
+    # so a numeric IPv6 scope must ride INSIDE the literal to reach the
+    # connect target — and a nonzero flowinfo, which that transport cannot
+    # represent at all, fails closed with a fixed reason instead of being
+    # silently dropped.
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1", 8080, 0, 42))])
+    out = asyncio.run(GuardedResolver(allow_private=True)
+                      .resolve(CONTROL_HOST, 8080))
+    assert [r["host"] for r in out] == ["fe80::1%42"]   # scope rides inside
+
+    # nonzero flowinfo: not representable by the transport -> fixed reason
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1", 8080, 7, 42))])
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        asyncio.run(GuardedResolver(allow_private=True)
+                    .resolve(CONTROL_HOST, 8080))
+    assert "flowinfo" in str(ei.value)
+
+    # a scope already embedded in the literal passes through unchanged
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1%eth0", 8080, 0, 42))])
+    out = asyncio.run(GuardedResolver(allow_private=True)
+                      .resolve(CONTROL_HOST, 8080))
+    assert [r["host"] for r in out] == ["fe80::1%eth0"]
+
+
+def test_aiohttp_scoped_ipv6_reaches_the_vetted_address(dns, loopback_is_public):
+    # End-to-end proof that a numeric IPv6 scope reaches the CONNECT TARGET
+    # itself on the agent transport: the answer is a BARE ::1 with the
+    # loopback interface's real index as scope_id, the guarded resolver
+    # embeds it in the literal, and the REAL adapter connects to a live ::1
+    # listener through it.  Entirely local — no external network.
+    lo_ifindex = next(i for i, name in socket.if_nameindex() if name == "lo")
+    srv = _serve("::1", _JSONHandler)
+    port = srv.server_address[1]
+    _JSONHandler.hits = 0
+    _JSONHandler.seen_hosts = []
+    try:
+        dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM,
+                         socket.IPPROTO_TCP, "",
+                         ("::1", port, 0, lo_ifindex))])
+        out = asyncio.run(_adapter(f"http://{CONTROL_HOST}:{port}/v1/chat/"
+                                  "completions").execute({"prompt": "hi"}))
+        assert out["ok"] is True and out["result"]["answer"] == "public answer"
+        assert _JSONHandler.hits == 1
+        assert _JSONHandler.seen_hosts == [f"{CONTROL_HOST}:{port}"]
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
 
 def test_connection_layer_dns_error_is_cleaned(dns, loopback_is_public, caplog):
     # R-146b review rounds 2+3: the EARLY check sees a valid allowed answer
@@ -799,7 +876,7 @@ def test_connection_layer_dns_error_is_cleaned(dns, loopback_is_public, caplog):
 
     def non_oserror():
         dns.fail_from = 2
-        dns.exc = ValueError("val-err-XYZ-raw")
+        dns.exc = ValueError(f"{SECRET} non-oserror")
 
     def corrupt_answer():
         # the connection-layer resolution returns a corrupted entry whose

@@ -854,3 +854,26 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 ### حقائق CI المستخرجة من سجل وظيفة `test` نفسها (لا من لون الوظيفة)
 
 من تشغيل 38873342143 (جولة الإصلاح الثانية — قبل التزامات الجولة الثالثة): خطوة «Run tests (live test suite)» على **Python 3.11.17** انتهت بـ«798 passed, 4 skipped, 4 deselected in 83.41s»؛ خطوة «Set up Python 3.12 (runtime version)» (python-version: 3.12) ثم «Run tests on Python 3.12» انتهت بـ«798 passed, 4 skipped, 4 deselected in 77.02s». حقائق تشغيل التزامات الجولة الثالثة (التشغيل 38874944468 — فحوص PR كلها خضراء: audit/build/docker/governance/quality/storage/network/test؛ `publish` متروك بقرار D-011): خطوة «Run tests (live test suite)» على **Python 3.11.17** انتهت بـ«813 passed, 4 skipped, 4 deselected in 86.26s»؛ وخطوة «Run tests on Python 3.12» على **Python 3.12.15** انتهت بـ«813 passed, 4 skipped, 4 deselected in 77.56s». رابط التشغيل: https://github.com/reeveero-tech/All-hand/actions/runs/38874944468
+
+
+### M7 — R-146b جولة المراجعة الرابعة (نفس PR #153)
+
+| العائق | الإصلاح | الإثبات |
+|---|---|---|
+| مستهلك IPv6 في `GuardedResolver` يفكّ `for family, proto, (ip, port)` فيفشل على sockaddr رباعي؛ والزائف كان يبني ثنائيات للـIPv6 بخلاف `getaddrinfo` الحقيقي | المستهلك صار يقرأ sockaddr بلا افتراض عنصرين؛ الزائف يبني رباعيات للـIPv6 مثل النظام؛ وإعادة اختبار المحوّل الحقيقي مع مستمع `::1` | رباعيات الزائف + `test_aiohttp_allowed_ipv6_connection_reaches_the_vetted_address` |
+| النطاق الرقمي (`scope_id`) غير ممثَّل في واجهة aiohttp (المصدر: `_convert_hosts_to_addr_infos` يبني `(host, port, 0, 0)` حرفياً) | نطاق رقمي بلا نطاق نصي في الحرفي يُضمَّن داخله (`ip%N` — يصل هدف الاتصال لأن النقل يبني sockaddr من الحرفي وحده)؛ flowinfo غير الصفري لا يمكن تمثيله فيرفض بسبب ثابت (لا إسقاط صامت)؛ نطاق نصي موجود يمر كما هو | `test_guarded_resolver_embeds_the_numeric_ipv6_scope` + إثبات محلي طرف-إلى-طرف: مستمع `::1` حي ووصل عبر `::1%<ifindex الحقيقي>` (`test_aiohttp_scoped_ipv6_reaches_the_vetted_address`) |
+| فرع ValueError كان يفحص غياب علامة غير نصه | صار النص يحمل `SECRET` نفسه وتُفحص غيابه من الاستثناء والاستجابة وcaplog | `test_connection_layer_dns_error_is_cleaned` |
+| رصد الوكيل للحالتين الأصليتين كان على مستمع الوجهة لا الوكيل | مستمع وكيل حقيقي واحد للحالات الثلاث (مختلف العنوان، نفق HTTPS، والعنوان المطابق) — صفر طلبات وصفر اتصالات TCP لكل حالة | `test_explicit_proxy_on_the_request_is_refused` |
+
+### فحوص الجولة الرابعة (سجل `raw/259`)
+
+| الفحص | النتيجة | rc |
+|---|---|---|
+| الحزمة الكاملة | 815 passed, 4 skipped, 4 deselected (759 + 56) | 0 |
+| ملف SEC-05 | 56/56 | 0 |
+| المسبار (فحص الحاجز الذاتي + المعايير المشددة) | كلا المسارين رفض السياسة المتوقع، صفر وصول | 0 |
+| الشبكة الحية (`-m network`) | 4/4 | 0 |
+| اختبارات الواجهة (`npm test`) | 31/31 (TAP: tests 31, pass 31, fail 0) | 0 |
+| ruff / بناء web / بناء الجذر | صفر / ناجح / ناجح | 0 / 0 / 0 |
+
+حقائق CI لالتزامات هذه الجولة تُستخرج من سجل وظيفة `test` نفسها بعد اكتمال التشغيل وتُضاف هنا.
