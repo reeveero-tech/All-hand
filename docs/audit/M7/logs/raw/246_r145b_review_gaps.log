@@ -1,52 +1,67 @@
-R-145b (SEC-06 review gaps) verification — 2026-10-16T06:07Z — branch m7/r145b-sec06-review-gaps
+R-145b/R-145c verification (regenerated complete) — 2026-10-16T06:30Z — branch m7/r145c-sec06-visual-consent-fixes
+NOTE: the R-145b version of this log ran only the SEC-06 file — the full-suite row it claimed is now actually captured here (correction recorded in EVIDENCE).
 
-== SEC-06 python tests (43) — full output ==
+== full suite ==
 ============================= test session starts ==============================
-platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
-cachedir: .pytest_cache
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
 rootdir: /home/user/workspace/All-hand
 configfile: pytest.ini
 plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 43 items
+collected 767 items / 4 deselected / 763 selected
 
-tests/test_sec06_public_llm_consent.py::test_fresh_process_without_key_or_optin_is_none PASSED [  2%]
-tests/test_sec06_public_llm_consent.py::test_fresh_process_zero_disables_keyless PASSED [  4%]
-tests/test_sec06_public_llm_consent.py::test_fresh_process_explicit_one_enables_keyless PASSED [  6%]
-tests/test_sec06_public_llm_consent.py::test_fresh_process_true_enables_keyless PASSED [  9%]
-tests/test_sec06_public_llm_consent.py::test_invalid_values_never_implicitly_enable_and_fail_startup[on] PASSED [ 11%]
-tests/test_sec06_public_llm_consent.py::test_invalid_values_never_implicitly_enable_and_fail_startup[enabled] PASSED [ 13%]
-tests/test_sec06_public_llm_consent.py::test_invalid_values_never_implicitly_enable_and_fail_startup[yes please] PASSED [ 16%]
-tests/test_sec06_public_llm_consent.py::test_invalid_values_never_implicitly_enable_and_fail_startup[yes ] PASSED [ 18%]
-tests/test_sec06_public_llm_consent.py::test_invalid_values_never_implicitly_enable_and_fail_startup[2] PASSED [ 20%]
-tests/test_sec06_public_llm_consent.py::test_invalid_values_never_implicitly_enable_and_fail_startup[maybe] PASSED [ 23%]
-tests/test_sec06_public_llm_consent.py::test_invalid_values_never_implicitly_enable_and_fail_startup[opt-in] PASSED [ 25%]
-tests/test_sec06_public_llm_consent.py::test_production_default_is_safe_and_invalid_fails_startup PASSED [ 27%]
-tests/test_sec06_public_llm_consent.py::test_openrouter_key_keeps_precedence PASSED [ 30%]
-tests/test_sec06_public_llm_consent.py::test_missing_key_is_not_consent_for_another_provider PASSED [ 32%]
-tests/test_sec06_public_llm_consent.py::test_no_consent_blocks_transport_before_request_is_built PASSED [ 34%]
-tests/test_sec06_public_llm_consent.py::test_direct_get_llm_call_stays_closed PASSED [ 37%]
-tests/test_sec06_public_llm_consent.py::test_explicit_consent_reaches_fake_provider_only PASSED [ 39%]
-tests/test_sec06_public_llm_consent.py::test_user_consent_does_not_override_operator_optout PASSED [ 41%]
-tests/test_sec06_public_llm_consent.py::test_consent_not_inferred_from_api_key PASSED [ 44%]
-tests/test_sec06_public_llm_consent.py::test_invalid_consent_values_are_rejected_not_coerced PASSED [ 46%]
-tests/test_sec06_public_llm_consent.py::test_consent_does_not_leak_to_later_requests PASSED [ 48%]
-tests/test_sec06_public_llm_consent.py::test_consent_is_isolated_per_asyncio_task PASSED [ 51%]
-tests/test_sec06_public_llm_consent.py::test_nothing_about_text_or_consent_is_logged PASSED [ 53%]
-tests/test_sec06_public_llm_consent.py::test_tasks_route_without_consent_blocks_transport PASSED [ 55%]
-tests/test_sec06_public_llm_consent.py::test_tasks_route_with_consent_carries_it_to_the_background_run PASSED [ 58%]
-tests/test_sec06_public_llm_consent.py::test_consent_of_one_task_does_not_leak_to_the_next PASSED [ 60%]
-tests/test_sec06_public_llm_consent.py::test_chat_route_without_consent_blocks_transport PASSED [ 62%]
-tests/test_sec06_public_llm_consent.py::test_chat_route_with_consent_reaches_fake_provider PASSED [ 65%]
-tests/test_sec06_public_llm_consent.py::test_civilization_execute_without_consent_blocks_transport PASSED [ 67%]
-tests/test_sec06_public_llm_consent.py::test_civilization_execute_with_consent_allows_the_pipeline PASSED [ 69%]
-tests/test_sec06_public_llm_consent.py::test_non_boolean_consent_in_body_is_rejected PASSED [ 72%]
-tests/test_sec06_public_llm_consent.py::test_system_status_discloses_provider_without_secrets PASSED [ 74%]
-tests/test_sec06_public_llm_consent.py::test_no_consent_never_reaches_the_network_layer PASSED [ 76%]
-tests/test_sec06_public_llm_consent.py::test_concurrent_requests_carry_only_their_own_consent PASSED [ 79%]
-tests/test_sec06_public_llm_consent.py::test_openrouter_path_succeeds_without_public_consent PASSED [ 81%]
-tests/test_sec06_public_llm_consent.py::test_provider_error_and_exception_text_never_logged PASSED [ 83%]
-tests/test_sec06_public_llm_consent.py::test_invalid_keyless_value_is_not_echoed_in_the_error PASSED [ 86%]
+tests/test_agent_production.py ........................                  [  3%]
+tests/test_agents_per_spec.py ...                                        [  3%]
+tests/test_api.py .........................                              [  6%]
+tests/test_bug01_external_without_agent.py ..........                    [  8%]
+tests/test_bug02_chat_status_consistency.py .........                    [  9%]
+tests/test_bug04_task_by_id_from_storage.py .............                [ 11%]
+tests/test_civilization_routes.py ......                                 [ 11%]
+tests/test_civilization_scale.py .....                                   [ 12%]
+tests/test_e2e_scenarios.py ............                                 [ 14%]
+tests/test_infrastructure.py ...................                         [ 16%]
+tests/test_memory_learning_comm.py .........                             [ 17%]
+tests/test_network_isolation.py ......                                   [ 18%]
+tests/test_r042_live_storage.py ssss                                     [ 19%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 21%]
+tests/test_r082_storage_outcomes.py ........                             [ 22%]
+tests/test_r083_metrics_middleware.py ......                             [ 23%]
+tests/test_r100_runtime_safety.py ...................................... [ 28%]
+......                                                                   [ 28%]
+tests/test_r101_web_auth_contract.py .............                       [ 30%]
+tests/test_r102_honest_handlers.py .............................         [ 34%]
+tests/test_r103_memory_learning.py .................                     [ 36%]
+tests/test_r104_data_worker.py ................                          [ 38%]
+tests/test_r106_chat_routing.py .............                            [ 40%]
+tests/test_r107_researcher_retry.py ...............                      [ 42%]
+tests/test_r114_r118_real_fixes.py ..................................... [ 47%]
+......                                                                   [ 48%]
+tests/test_r121_tls_context.py ....                                      [ 48%]
+tests/test_r122_specialization_coverage.py ............                  [ 50%]
+tests/test_r125_self_developer_cycle.py ......                           [ 50%]
+tests/test_r131_keyless_admission.py ......                              [ 51%]
+tests/test_r132_pools.py ..........                                      [ 53%]
+tests/test_real_dispatch_audit.py ......                                 [ 53%]
+tests/test_routing_pipeline.py .................................         [ 58%]
+tests/test_sec01_external_redirect.py .........                          [ 59%]
+tests/test_sec02_tenant_isolation.py ................................... [ 63%]
+......................................................................   [ 73%]
+tests/test_sec03_production_startup.py ................................. [ 77%]
+........................                                                 [ 80%]
+tests/test_sec04_sse_broadcast_bounds.py ............................... [ 84%]
+..                                                                       [ 84%]
+tests/test_sec06_public_llm_consent.py ................................. [ 89%]
+..........                                                               [ 90%]
+tests/test_security.py ..........                                        [ 91%]
+tests/test_specialist_runtime.py ..........                              [ 93%]
+tests/test_specialists_package.py ....................................   [ 97%]
+tests/test_storage_payloads.py ......                                    [ 98%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+=========== 759 passed, 4 skipped, 4 deselected in 60.95s (0:01:00) ============
+PYTEST_RC=0
+
+== SEC-06 file (verbose) ==
 tests/test_sec06_public_llm_consent.py::test_production_env_fully_unset_and_explicit_value_are_safe PASSED [ 88%]
 tests/test_sec06_public_llm_consent.py::test_status_fields_distinguish_operator_optin_from_selected_provider PASSED [ 90%]
 tests/test_sec06_public_llm_consent.py::test_civilization_execute_without_consent_reports_the_refusal PASSED [ 93%]
@@ -54,226 +69,16 @@ tests/test_sec06_public_llm_consent.py::test_self_developer_retests_do_not_inher
 tests/test_sec06_public_llm_consent.py::test_consent_is_isolated_between_tenants_via_the_real_routes PASSED [ 97%]
 tests/test_sec06_public_llm_consent.py::test_background_task_keeps_its_consent_after_the_request_returns PASSED [100%]
 
-============================== 43 passed in 7.38s ==============================
-SEC06_PYTEST_RC=0
+============================== 43 passed in 7.33s ==============================
+SEC06_RC=0
 
-== web tests (29 = 21 api + 8 UI behavioural) — full output ==
-
-> agos-civilization-web@3.0.0 test
-> node --test tests/*.test.mjs
-
-TAP version 13
-# Subtest: open mode: no key stored -> no X-API-Key header (behaviour unchanged)
-ok 1 - open mode: no key stored -> no X-API-Key header (behaviour unchanged)
-  ---
-  duration_ms: 1.376502
-  ...
-# Subtest: stored key is sent on every call, write and read
-ok 2 - stored key is sent on every call, write and read
-  ---
-  duration_ms: 1.055775
-  ...
-# Subtest: SEC-06: explicit consent is sent only when the caller passes it (per request)
-ok 3 - SEC-06: explicit consent is sent only when the caller passes it (per request)
-  ---
-  duration_ms: 0.446757
-  ...
-# Subtest: key never appears in the URL or body
-ok 4 - key never appears in the URL or body
-  ---
-  duration_ms: 0.477436
-  ...
-# Subtest: caller headers are merged, not allowed to drop Content-Type or the key
-ok 5 - caller headers are merged, not allowed to drop Content-Type or the key
-  ---
-  duration_ms: 0.390427
-  ...
-# Subtest: clearApiKey / empty value removes the key
-ok 6 - clearApiKey / empty value removes the key
-  ---
-  duration_ms: 1.295869
-  ...
-# Subtest: 401 -> clear Arabic message, status kept, auth event dispatched
-ok 7 - 401 -> clear Arabic message, status kept, auth event dispatched
-  ---
-  duration_ms: 1.239919
-  ...
-# Subtest: SEC-02: 401 with a stored key -> "key is wrong" message (server answers 401 for an invalid key)
-ok 8 - SEC-02: 401 with a stored key -> "key is wrong" message (server answers 401 for an invalid key)
-  ---
-  duration_ms: 0.345929
-  ...
-# Subtest: SEC-02: 403 with a valid key -> admin role message
-ok 9 - SEC-02: 403 with a valid key -> admin role message
-  ---
-  duration_ms: 0.396825
-  ...
-# Subtest: SEC-02: server without credentials -> "authentication not configured" message
-ok 10 - SEC-02: server without credentials -> "authentication not configured" message
-  ---
-  duration_ms: 0.310986
-  ...
-# Subtest: SEC-02: the event stream is not opened without a key
-ok 11 - SEC-02: the event stream is not opened without a key
-  ---
-  duration_ms: 19.394336
-  ...
-# Subtest: SEC-02: the event stream sends X-API-Key and parses data events
-ok 12 - SEC-02: the event stream sends X-API-Key and parses data events
-  ---
-  duration_ms: 21.477754
-  ...
-# Subtest: SEC-04: 429 waits Retry-After, never a fast retry
-ok 13 - SEC-04: 429 waits Retry-After, never a fast retry
-  ---
-  duration_ms: 5.050691
-  ...
-# Subtest: SEC-04: repeated 429 without Retry-After backs off exponentially, capped
-ok 14 - SEC-04: repeated 429 without Retry-After backs off exponentially, capped
-  ---
-  duration_ms: 29.670186
-  ...
-# Subtest: SEC-04: short Retry-After never undercuts the backoff
-ok 15 - SEC-04: short Retry-After never undercuts the backoff
-  ---
-  duration_ms: 10.08119
-  ...
-# Subtest: SEC-04: 401 / 403 stop reconnecting (no loop on a rejected key)
-ok 16 - SEC-04: 401 / 403 stop reconnecting (no loop on a rejected key)
-  ---
-  duration_ms: 10.003844
-  ...
-# Subtest: SEC-04: network errors back off; an accepted stream that ends (max lifetime) reconnects after retryMs and resets
-ok 17 - SEC-04: network errors back off; an accepted stream that ends (max lifetime) reconnects after retryMs and resets
-  ---
-  duration_ms: 21.618512
-  ...
-# Subtest: SEC-04: stream_gap is delivered like any event; close() cancels the pending reconnect
-ok 18 - SEC-04: stream_gap is delivered like any event; close() cancels the pending reconnect
-  ---
-  duration_ms: 11.099971
-  ...
-# Subtest: other errors keep the server detail
-ok 19 - other errors keep the server detail
-  ---
-  duration_ms: 1.638486
-  ...
-# Subtest: external agent names are URL-encoded on delete
-ok 20 - external agent names are URL-encoded on delete
-  ---
-  duration_ms: 0.328213
-  ...
-# Subtest: no sessionStorage (blocked) -> calls still work without a key
-ok 21 - no sessionStorage (blocked) -> calls still work without a key
-  ---
-  duration_ms: 0.193096
-  ...
-# `transformWithEsbuild` is deprecated and will be removed in the future. Please migrate to `transformWithOxc`.
-# Warning: An update to Chat inside a test was not wrapped in act(...).
-# When testing, code that causes React state updates should be wrapped into act(...):
-# act(() => {
-#   /* fire events that update state */
-# });
-# /* assert on the output */
-# This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-#     at Chat (file:///home/user/workspace/All-hand/web/tests/.ui-tmp-LUXh7e/c1.mjs:11:32)
-# Subtest: SEC-06: keyless provider — warning + unchecked checkbox near the input; send without consent leaves the browser (no fetch) and shows the reason
-ok 22 - SEC-06: keyless provider — warning + unchecked checkbox near the input; send without consent leaves the browser (no fetch) and shows the reason
-  ---
-  duration_ms: 68.117751
-  ...
-# Subtest: SEC-06: quick prompts are blocked the same way (no send without consent)
-ok 23 - SEC-06: quick prompts are blocked the same way (no send without consent)
-  ---
-  duration_ms: 8.121639
-  ...
-# Warning: An update to Chat inside a test was not wrapped in act(...).
-# When testing, code that causes React state updates should be wrapped into act(...):
-# act(() => {
-#   /* fire events that update state */
-# });
-# /* assert on the output */
-# This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-#     at Chat (file:///home/user/workspace/All-hand/web/tests/.ui-tmp-LUXh7e/c1.mjs:11:32)
-# Subtest: SEC-06: Enter key is blocked the same way (no send without consent)
-ok 24 - SEC-06: Enter key is blocked the same way (no send without consent)
-  ---
-  duration_ms: 8.828828
-  ...
-# Warning: An update to Chat inside a test was not wrapped in act(...).
-# When testing, code that causes React state updates should be wrapped into act(...):
-# act(() => {
-#   /* fire events that update state */
-# });
-# /* assert on the output */
-# This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-#     at Chat (file:///home/user/workspace/All-hand/web/tests/.ui-tmp-LUXh7e/c1.mjs:11:32)
-# Subtest: SEC-06: with consent the request carries allow_public_llm=true — and the checkbox is cleared again after the send
-ok 25 - SEC-06: with consent the request carries allow_public_llm=true — and the checkbox is cleared again after the send
-  ---
-  duration_ms: 15.178709
-  ...
-# Warning: An update to Chat inside a test was not wrapped in act(...).
-# When testing, code that causes React state updates should be wrapped into act(...):
-# act(() => {
-#   /* fire events that update state */
-# });
-# /* assert on the output */
-# This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-#     at Chat (file:///home/user/workspace/All-hand/web/tests/.ui-tmp-LUXh7e/c1.mjs:11:32)
-# Subtest: SEC-06: no warning, no checkbox and no consent flag for the keyed provider (openrouter) — stale consent is never sent
-ok 26 - SEC-06: no warning, no checkbox and no consent flag for the keyed provider (openrouter) — stale consent is never sent
-  ---
-  duration_ms: 13.184001
-  ...
-# Warning: An update to Chat inside a test was not wrapped in act(...).
-# When testing, code that causes React state updates should be wrapped into act(...):
-# act(() => {
-#   /* fire events that update state */
-# });
-# /* assert on the output */
-# This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-#     at Chat (file:///home/user/workspace/All-hand/web/tests/.ui-tmp-LUXh7e/c1.mjs:11:32)
-# Subtest: SEC-06: provider none — no warning, no consent flag in the request
-ok 27 - SEC-06: provider none — no warning, no consent flag in the request
-  ---
-  duration_ms: 10.738597
-  ...
-# Warning: An update to Specializations inside a test was not wrapped in act(...).
-# When testing, code that causes React state updates should be wrapped into act(...):
-# act(() => {
-#   /* fire events that update state */
-# });
-# /* assert on the output */
-# This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-#     at Specializations (file:///home/user/workspace/All-hand/web/tests/.ui-tmp-LUXh7e/c2.mjs:27:43)
-# Warning: An update to Specializations inside a test was not wrapped in act(...).
-# When testing, code that causes React state updates should be wrapped into act(...):
-# act(() => {
-#   /* fire events that update state */
-# });
-# /* assert on the output */
-# This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
-#     at Specializations (file:///home/user/workspace/All-hand/web/tests/.ui-tmp-LUXh7e/c2.mjs:27:43)
-# Subtest: SEC-06: Specializations — task form blocks submission without consent, carries consent when given, clears it after
-ok 28 - SEC-06: Specializations — task form blocks submission without consent, carries consent when given, clears it after
-  ---
-  duration_ms: 30.217272
-  ...
-# Subtest: cleanup: transpiled temp files removed
-ok 29 - cleanup: transpiled temp files removed
-  ---
-  duration_ms: 1.364927
-  ...
-1..29
-# tests 29
-# suites 0
-# pass 29
+== web tests (npm test: 21 api + 10 UI) ==
+# pass 31
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 1248.107155
+# duration_ms 1429.223571
 WEB_TESTS_RC=0
 
 == ruff ==
@@ -282,461 +87,10 @@ RUFF_RC=0
 
 == web build ==
 
-> agos-civilization-web@3.0.0 build
-> vite build
-
-vite v8.3.4 building client environment for production...
-transforming...
-✓ 22 modules transformed.
-rendering chunks...
-computing gzip size...
-dist/index.html                   0.77 kB │ gzip:  0.45 kB
-dist/assets/index-B7MkQRhG.css   12.25 kB │ gzip:  2.99 kB
-dist/assets/index-C2kLTIjr.js   172.21 kB │ gzip: 54.44 kB
-
-✓ built in 114ms
+✓ built in 126ms
 WEB_BUILD_RC=0
 
 == root build ==
-
-> build
-> vite build
-
-The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
-vite v8.3.4 building client environment for production...
-transforming...
-✓ 207 modules transformed.
-rendering chunks...
-computing gzip size...
-.output/public/assets/styles-DgakcMqb.css       23.37 kB │ gzip:   5.21 kB
-.output/public/assets/api-n2O7kJ-w.js            1.90 kB │ gzip:   1.12 kB
-.output/public/assets/agents-DxM38KbM.js         2.35 kB │ gzip:   0.98 kB
-.output/public/assets/chat-yiyJXsFw.js           3.59 kB │ gzip:   1.72 kB
-.output/public/assets/settings-CVScxVj7.js       3.68 kB │ gzip:   1.58 kB
-.output/public/assets/routes-CGejzuZS.js         3.80 kB │ gzip:   1.45 kB
-.output/public/assets/command-QvXgVuKe.js        5.19 kB │ gzip:   2.02 kB
-.output/public/assets/useBackend-BDmBBjyr.js     8.36 kB │ gzip:   3.11 kB
-.output/public/assets/jsx-runtime-ByaQ0wya.js    8.77 kB │ gzip:   3.33 kB
-.output/public/assets/index-4riCIjax.js        362.96 kB │ gzip: 115.66 kB
-
-✓ built in 681ms
-vite v8.3.4 building ssr environment for production...
-transforming...
-✓ 73 modules transformed.
-rendering chunks...
-computing gzip size...
-node_modules/.nitro/vite/services/ssr/assets/styles-DgakcMqb.css                     23.37 kB │ gzip:  5.21 kB
-node_modules/.nitro/vite/services/ssr/assets/empty-plugin-adapters-D9UWiqvJ.js        0.22 kB │ gzip:  0.16 kB
-node_modules/.nitro/vite/services/ssr/assets/rolldown-runtime-D7D4PA-g.js             0.36 kB │ gzip:  0.25 kB
-node_modules/.nitro/vite/services/ssr/assets/useBackend-CTM-MADi.js                   0.86 kB │ gzip:  0.46 kB
-node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-DeGRMMz6.js   1.54 kB │ gzip:  0.50 kB
-node_modules/.nitro/vite/services/ssr/assets/start-Du9EfcKF.js                        1.58 kB │ gzip:  0.71 kB
-node_modules/.nitro/vite/services/ssr/index.js                                        2.19 kB │ gzip:  0.97 kB
-node_modules/.nitro/vite/services/ssr/assets/api-D1T-sVu6.js                          2.85 kB │ gzip:  1.50 kB
-node_modules/.nitro/vite/services/ssr/assets/agents-A--DMm3S.js                       3.52 kB │ gzip:  1.24 kB
-node_modules/.nitro/vite/services/ssr/assets/chat-FxcUdkYS.js                         5.19 kB │ gzip:  2.06 kB
-node_modules/.nitro/vite/services/ssr/assets/routes-NvKu0P0g.js                       5.22 kB │ gzip:  1.71 kB
-node_modules/.nitro/vite/services/ssr/assets/settings-Ddu_WzgK.js                     5.42 kB │ gzip:  1.89 kB
-node_modules/.nitro/vite/services/ssr/assets/command-D-hBUhQa.js                      7.51 kB │ gzip:  2.46 kB
-node_modules/.nitro/vite/services/ssr/assets/router-JmfzJEID.js                      11.16 kB │ gzip:  3.43 kB
-node_modules/.nitro/vite/services/ssr/assets/server-Daz3s4tD.js                      93.12 kB │ gzip: 23.53 kB
-
-✓ built in 359ms
-
-[nitro] ◐ Building [Nitro] (preset: cloudflare-module, compatibility: 2026-10-16)
-[nitro] ✔ Generated public .output/public
-vite v8.3.4 building nitro environment for production...
-
- WARN  inlineDynamicImports option is ignored because the codeSplitting option is specified.
-
-`output.codeSplitting.groups[0].name` is a function. Set `output.codeSplitting.groups[0].debugName` so the bundler timing report can identify this group.
-transforming...
-✓ 262 modules transformed.
-rendering chunks...
-computing gzip size...
-.output/server/_libs/srvx.mjs                             0.12 kB │ gzip:   0.12 kB
-.output/server/_ssr/empty-plugin-adapters-D9UWiqvJ.mjs    0.23 kB │ gzip:   0.16 kB
-.output/server/_ssr/rolldown-runtime-D7D4PA-g.mjs         0.41 kB │ gzip:   0.29 kB
-.output/server/_chunks/ssr-renderer.mjs                   0.60 kB │ gzip:   0.36 kB
-.output/server/_ssr/useBackend-CTM-MADi.mjs               1.07 kB │ gzip:   0.56 kB
-.output/server/_libs/hookable.mjs                         1.17 kB │ gzip:   0.52 kB
-.output/server/_runtime.mjs                               1.18 kB │ gzip:   0.57 kB
-.output/server/_ssr/start-Du9EfcKF.mjs                    1.57 kB │ gzip:   0.72 kB
-.output/server/_tanstack-start-manifest_v-DeGRMMz6.mjs    1.60 kB │ gzip:   0.53 kB
-.output/server/_ssr/ssr.mjs                               2.12 kB │ gzip:   0.97 kB
-.output/server/_ssr/api-D1T-sVu6.mjs                      2.90 kB │ gzip:   1.54 kB
-.output/server/_ssr/agents-A--DMm3S.mjs                   4.13 kB │ gzip:   1.33 kB
-.output/server/_ssr/chat-FxcUdkYS.mjs                     6.01 kB │ gzip:   2.17 kB
-.output/server/_ssr/routes-NvKu0P0g.mjs                   6.10 kB │ gzip:   1.80 kB
-.output/server/_ssr/settings-Ddu_WzgK.mjs                 6.26 kB │ gzip:   2.01 kB
-.output/server/_ssr/command-D-hBUhQa.mjs                  8.63 kB │ gzip:   2.59 kB
-.output/server/index.mjs                                 11.12 kB │ gzip:   3.47 kB
-.output/server/_ssr/router-JmfzJEID.mjs                  11.77 kB │ gzip:   3.50 kB
-.output/server/_libs/tanstack__history.mjs               12.33 kB │ gzip:   3.66 kB
-.output/server/_libs/h3+rou3+srvx.mjs                    17.31 kB │ gzip:   4.99 kB
-.output/server/_libs/react+tanstack__react-query.mjs     29.31 kB │ gzip:   7.93 kB
-.output/server/_libs/@tanstack/router-core+[...].mjs     32.87 kB │ gzip:   8.99 kB
-.output/server/_ssr/server-Daz3s4tD.mjs                  91.11 kB │ gzip:  23.37 kB
-.output/server/_libs/tanstack__query-core.mjs           135.99 kB │ gzip:  32.36 kB
-.output/server/_libs/@tanstack/react-router+[...].mjs   785.90 kB │ gzip: 165.63 kB
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/index.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/index.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useBlocker.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useBlocker.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/HeadContent.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/HeadContent.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Match.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Match.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useLocation.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useLocation.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useNavigate.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useNavigate.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Matches.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Matches.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Transitioner.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Transitioner.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/RouterProvider.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/RouterProvider.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/routerContext.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/routerContext.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Asset.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Asset.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouterState.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouterState.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/utils.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/utils.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouter.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouter.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useMatch.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useMatch.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/ClientOnly.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/ClientOnly.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/link.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/link.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/matchContext.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/matchContext.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQueries.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQueries.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useIsFetching.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useIsFetching.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutationState.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutationState.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useBaseQuery.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useBaseQuery.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutation.js" may not be preserved when bundling.
-   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutation.js:1:1 [38;5;246m][0m
-   [38;5;246m│[0m
- [38;5;246m1 │[0m "use client";
- [38;5;240m  │[0m ──────┬──────  
- [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
- [38;5;240m  │[0m 
- [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
-[38;5;246m───╯[0m
-
-✓ built in 270ms
-[nitro] ℹ Using auto generated worker name: reeveero-tech-all-hand
-ℹ Generated .output/server/wrangler.json
-ℹ Generated .wrangler/deploy/config.json
-ℹ Generated .output/public/_headers
-ℹ Generated .output/nitro.json
-
 [nitro] ✔ You can preview this build using npx vite preview
 [nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
 ROOT_BUILD_RC=0

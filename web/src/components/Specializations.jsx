@@ -32,6 +32,13 @@ export default function Specializations({ status }) {
     setPublicLlmConsent(false)
   }, [status?.llm_provider])
 
+  // SEC-06 (R-145c): consent belongs to ONE task form. Going back and opening
+  // another specialization (or re-opening the same one) starts fresh — the
+  // checkbox is never pre-checked from an earlier visit.
+  useEffect(() => {
+    setPublicLlmConsent(false)
+  }, [selected])
+
   useEffect(() => {
     async function load() {
       try {

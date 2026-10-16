@@ -224,6 +224,59 @@ test('SEC-06: Specializations — task form blocks submission without consent, c
   } finally { await teardown(ui); }
 });
 
+test('SEC-06: consent does not survive a provider change on the same component (keyless -> openrouter -> keyless)', async () => {
+  const ui = await render(Chat, { status: KEYLESS });
+  try {
+    let box = ui.container.querySelector('input[type="checkbox"]');
+    await act(async () => { box.click(); }); // consent given under keyless
+    assert.equal(box.checked, true);
+    // provider switches to the keyed one: the checkbox disappears and the
+    // stored consent must be cleared...
+    await act(async () => { ui.root.render(React.createElement(Chat, { status: OPENROUTER })); });
+    assert.equal(ui.container.querySelectorAll('input[type="checkbox"]').length, 0);
+    // ...and it must NOT come back pre-checked when the public provider returns
+    await act(async () => { ui.root.render(React.createElement(Chat, { status: KEYLESS })); });
+    box = ui.container.querySelector('input[type="checkbox"]');
+    assert.ok(box, 'checkbox must reappear with the public provider');
+    assert.equal(box.checked, false, 'consent must not survive the provider change');
+    setNativeValue(ui.container.querySelector('textarea.chat-input'), 'بعد العودة');
+    await act(async () => { sendButton(ui.container).click(); });
+    assert.equal(calls.length, 0, 'send after returning must be blocked again until re-consent');
+    assert.ok(refusalShown(ui.container));
+  } finally { await teardown(ui); }
+});
+
+test('SEC-06: task form consent does not survive going back and opening another specialization', async () => {
+  const ui = await render(Specializations, { status: KEYLESS });
+  try {
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    let card = ui.container.querySelector('.spec-card');
+    await act(async () => { card.click(); });
+    let box = ui.container.querySelector('input[type="checkbox"]');
+    await act(async () => { box.click(); }); // consent given on this form
+    assert.equal(box.checked, true);
+    // back to the catalog…
+    const back = [...ui.container.querySelectorAll('button')].find((b) => b.textContent.trim() === 'رجوع');
+    assert.ok(back, 'back button missing');
+    await act(async () => { back.click(); });
+    // …and open a (different) specialization form again
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    const cards = ui.container.querySelectorAll('.spec-card');
+    const other = cards[cards.length - 1] === card ? cards[0] : cards[cards.length - 1];
+    await act(async () => { other.click(); });
+    box = ui.container.querySelector('input[type="checkbox"]');
+    assert.ok(box, 'checkbox missing on the new form');
+    assert.equal(box.checked, false, 'consent must not survive navigating between task forms');
+    const ta = ui.container.querySelector('textarea.form-input');
+    const submit = [...ui.container.querySelectorAll('button')].find((b) => b.textContent.trim() === 'إرسال المهمة');
+    calls.length = 0;
+    setNativeValue(ta, 'نموذج جديد');
+    await act(async () => { submit.click(); });
+    assert.equal(calls.length, 0, 'submission must be blocked until fresh consent');
+    assert.ok(refusalShown(ui.container));
+  } finally { await teardown(ui); }
+});
+
 // cleanup the transpiled temp files (evidence hygiene: nothing is left behind)
 test('cleanup: transpiled temp files removed', () => {
   rmSync(tmp, { recursive: true, force: true });
