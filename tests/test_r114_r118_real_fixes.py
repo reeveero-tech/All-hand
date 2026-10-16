@@ -337,9 +337,18 @@ def test_keyless_provider_is_selected_without_a_key(monkeypatch):
 
 
 @pytest.mark.network
-def test_live_keyless_llm_and_translation():
+def test_live_keyless_llm_and_translation(monkeypatch):
+    # SEC-06 (R-145): the public keyless provider is now opt-in on TWO gates —
+    # the operator flag AND this request's explicit consent. This live check
+    # exercises both, exactly like a real consenting request would.
+    from agent_civilization.core import llm as _L
     from agent_civilization.core.llm import LLMClient
-    out = run(LLMClient(api_key="").complete("Reply with one word.", "Say hello.", max_tokens=20))
+    monkeypatch.setenv("AGOS_LLM_KEYLESS", "1")
+    token = _L.set_public_llm_consent(True)
+    try:
+        out = run(LLMClient(api_key="").complete("Reply with one word.", "Say hello.", max_tokens=20))
+    finally:
+        _L.reset_public_llm_consent(token)
     assert out["ok"] and out["content"].strip() and out["model"].startswith("keyless:")
     assert "monde" in rd._mymemory("hello world", "en", "fr").lower()
 

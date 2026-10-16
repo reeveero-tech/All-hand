@@ -1,18 +1,19 @@
-SEC-06 (R-145) quality/web/build — 2026-10-16T05:35Z — branch m7/r145-sec06-public-llm-opt-in
+SEC-06 (R-145) quality/web/build — 2026-10-16T05:46Z — branch m7/r145-sec06-public-llm-opt-in (final tree, incl. CI network-test adaptation)
 
 == ruff (delivery command: F,E722, specialists excluded) ==
 All checks passed!
 RUFF_RC=0
 
 == web tests ==
+# cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 230.325708
+# duration_ms 242.845607
 WEB_TESTS_RC=0
 
 == web build ==
 
-✓ built in 96ms
+✓ built in 130ms
 WEB_BUILD_RC=0
 
 == root build ==
@@ -20,7 +21,7 @@ WEB_BUILD_RC=0
 [nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
 ROOT_BUILD_RC=0
 
-== sec06 tests (verbose count) ==
+== live network test (adapted to the two gates — real public provider) ==
 
-============================== 41 passed in 7.20s ==============================
-SEC06_RC=0
+============================== 1 passed in 1.21s ===============================
+LIVE_RC=0
