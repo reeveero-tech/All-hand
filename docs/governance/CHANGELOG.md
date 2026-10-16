@@ -1,5 +1,9 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-16 — R-150: سجل القبول (دفعة توثيقية m7/r150-acceptance-record)
+
+- **القبول**: PR #159 دُمجت بـ`--merge` — SHA الدمج `eff3c0b590611e5528a624439774225bdc7e9289` (الرأس المراجَع `4ef984b` سلفه — مُتحقق بmerge-base)، وفحوص main نجحت على SHA الدمج نفسه: التشغيل 38975156637 (quality/test/network/storage/build/docker/audit كلها success؛ publish متخطى D-011 ولا يُحتسب). R-150 يُحوَّل done في ROADMAP/PROJECT_STATE؛ EVIDENCE ووثيقة التدقيق تسجلان القبول بالرابط. لا كود — توثيق فقط. 145/145 بنود فريدة.
+
 ## 2026-10-16 — R-150: تدقيق حماية الفرع `main` مقابل الحوكمة (Branch protection، دفعة m7/r150-branch-protection-audit)
 
 - **مهمة قراءة فقط** — لم تُغيَّر أي إعدادات GitHub حية. التدقيق الكامل: `docs/audit/M7/r150_branch_protection_audit.md`؛ الأدلة الخام: السجلات `291`–`294` (`gh api` باعتماد مخوّل للقراءة، 2026-10-16T22:14Z، RC=0 — عالجت حد الـ403 السابق).
