@@ -19,6 +19,7 @@ from agent_civilization.core.agents.real_dispatcher import (
     coverage as _coverage,
     dispatch as _dispatch,
 )
+from agent_civilization.core.safety import UnsafeURLError
 
 SPECIALIZATIONS: Dict[str, str] = {
     "analyst": "Analyze numeric/textual evidence and extract measurable patterns.",
@@ -105,11 +106,16 @@ class RealSpecialistAgent:
             elapsed = round(time.time() - started, 3)
             self.stats["tasks_failed"] += 1
             self.stats["total_time_s"] += elapsed
+            # R-149 (Security QA): an unexpected exception's raw text is not
+            # trusted — it can carry internal details into the tenant-visible
+            # result — so only its TYPE is reported. UnsafeURLError keeps its
+            # fixed refusal message (SEC-01/SEC-05, proven by their tests).
+            error = str(exc) if isinstance(exc, UnsafeURLError) else type(exc).__name__
             return {
                 "ok": False,
                 "agent": self.name,
                 "elapsed_s": elapsed,
-                "result": {"ok": False, "error": f"{type(exc).__name__}: {exc}"},
+                "result": {"ok": False, "error": error},
             }
         finally:
             self.status = "idle"

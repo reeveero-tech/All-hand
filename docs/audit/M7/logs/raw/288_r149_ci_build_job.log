@@ -1,0 +1,1030 @@
+R-149 — CI evidence on head a3ee544962167807f7304697c42f987b57810073 (the code head; a docs-only evidence commit follows and CI re-runs on it) — 2026-10-16
+Run: https://github.com/reeveero-tech/All-hand/actions/runs/38963184074 (AGOS Kernel CI/CD, pull_request, all jobs: quality/test/network/docker/build/storage/audit success; publish skipped per D-011)
+headSha verified == a3ee544962167807f7304697c42f987b57810073 (the reviewed head)
+
+=== build job (117184571153) — root + web builds ===
+build	Set up job	﻿2026-10-16T20:37:59.6157015Z Current runner version: '2.337.0'
+build	Set up job	2026-10-16T20:37:59.6184439Z ##[group]Runner Image Provisioner
+build	Set up job	2026-10-16T20:37:59.6185505Z Hosted Compute Agent
+build	Set up job	2026-10-16T20:37:59.6186103Z Version: 20261012.601
+build	Set up job	2026-10-16T20:37:59.6186721Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+build	Set up job	2026-10-16T20:37:59.6187563Z Build Date: 2026-10-12T17:48:21Z
+build	Set up job	2026-10-16T20:37:59.6188257Z Worker ID: {abe7ead9-6975-440c-8e1b-6fb2ece1e656}
+build	Set up job	2026-10-16T20:37:59.6189053Z Region: westus2
+build	Set up job	2026-10-16T20:37:59.6189595Z Cloud: Azure
+build	Set up job	2026-10-16T20:37:59.6190111Z ##[endgroup]
+build	Set up job	2026-10-16T20:37:59.6191701Z ##[group]Operating System
+build	Set up job	2026-10-16T20:37:59.6192362Z Ubuntu
+build	Set up job	2026-10-16T20:37:59.6192947Z 26.04.1
+build	Set up job	2026-10-16T20:37:59.6193483Z LTS
+build	Set up job	2026-10-16T20:37:59.6194409Z ##[endgroup]
+build	Set up job	2026-10-16T20:37:59.6195154Z ##[group]Runner Image
+build	Set up job	2026-10-16T20:37:59.6195793Z Image: ubuntu-26.04
+build	Set up job	2026-10-16T20:37:59.6196428Z Version: 20261012.163.1
+build	Set up job	2026-10-16T20:37:59.6197536Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261012.163/images/ubuntu/Ubuntu2604-Readme.md
+build	Set up job	2026-10-16T20:37:59.6199376Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261012.163
+build	Set up job	2026-10-16T20:37:59.6200408Z ##[endgroup]
+build	Set up job	2026-10-16T20:37:59.6201624Z ##[group]GITHUB_TOKEN Permissions
+build	Set up job	2026-10-16T20:37:59.6203606Z Contents: read
+build	Set up job	2026-10-16T20:37:59.6204650Z Metadata: read
+build	Set up job	2026-10-16T20:37:59.6205295Z Packages: read
+build	Set up job	2026-10-16T20:37:59.6205852Z ##[endgroup]
+build	Set up job	2026-10-16T20:37:59.6208096Z Secret source: Actions
+build	Set up job	2026-10-16T20:37:59.6209070Z Cache mode: write
+build	Set up job	2026-10-16T20:37:59.6209878Z Prepare workflow directory
+build	Set up job	2026-10-16T20:37:59.6601107Z Prepare all required actions
+build	Set up job	2026-10-16T20:37:59.6660668Z Getting action download info
+build	Set up job	2026-10-16T20:38:00.0237614Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+build	Set up job	2026-10-16T20:38:00.1273353Z Download action repository 'actions/setup-python@v7' (SHA:5fda3b95a4ea91299a34e894583c3862153e4b97)
+build	Set up job	2026-10-16T20:38:00.1835139Z Download action repository 'actions/setup-node@v7' (SHA:949feb2413d6458794dcd2491c4babbbce0c15c1)
+build	Set up job	2026-10-16T20:38:00.5746616Z Complete job name: build
+build	Run actions/checkout@v7	﻿2026-10-16T20:38:00.6562686Z ##[group]Run actions/checkout@v7
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6563595Z with:
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6564288Z   repository: reeveero-tech/All-hand
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6568543Z   token: ***
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6568984Z   ssh-strict: true
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6569423Z   ssh-user: git
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6569879Z   persist-credentials: true
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6570367Z   clean: true
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6570804Z   sparse-checkout-cone-mode: true
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6571325Z   fetch-depth: 1
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6571750Z   fetch-tags: false
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6572206Z   show-progress: true
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6572651Z   lfs: false
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6573060Z   submodules: false
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6573507Z   set-safe-directory: true
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6574321Z   allow-unsafe-pr-checkout: false
+build	Run actions/checkout@v7	2026-10-16T20:38:00.6575168Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7617975Z Syncing repository: reeveero-tech/All-hand
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7620700Z ##[group]Getting Git version info
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7621920Z Working directory is '/home/runner/work/All-hand/All-hand'
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7623739Z [command]/usr/bin/git version
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7634881Z git version 2.55.0
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7659196Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7670877Z Temporarily overriding HOME='/home/runner/work/_temp/f87703c9-7e2a-4e47-b025-5e9ac68ce12a' before making global git config changes
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7673352Z Adding repository directory to the temporary git global config as a safe directory
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7676760Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7740104Z Deleting the contents of '/home/runner/work/All-hand/All-hand'
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7743372Z ##[group]Determining repository object format
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7745348Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7746700Z ##[group]Initializing the repository
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7749525Z [command]/usr/bin/git init /home/runner/work/All-hand/All-hand
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7894590Z hint: Using 'master' as the name for the initial branch. This default branch name
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7896785Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7898965Z hint: to use in all of your new repositories, which will suppress this warning,
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7900632Z hint: call:
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7901540Z hint:
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7902492Z hint: 	git config --global init.defaultBranch <name>
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7903607Z hint:
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7905055Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7907028Z hint: 'development'. The just-created branch can be renamed via this command:
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7908457Z hint:
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7909270Z hint: 	git branch -m <name>
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7910279Z hint:
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7911487Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7913383Z Initialized empty Git repository in /home/runner/work/All-hand/All-hand/.git/
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7916636Z [command]/usr/bin/git remote add origin https://github.com/reeveero-tech/All-hand
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7968176Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7969696Z ##[group]Disabling automatic garbage collection
+build	Run actions/checkout@v7	2026-10-16T20:38:00.7972377Z [command]/usr/bin/git config --local gc.auto 0
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8010279Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8011450Z ##[group]Setting up auth
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8012269Z Removing SSH command configuration
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8016606Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8053341Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8538453Z Removing HTTP extra header
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8546009Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8582701Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8855453Z Removing includeIf entries pointing to credentials config files
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8861193Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Run actions/checkout@v7	2026-10-16T20:38:00.8981673Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	Run actions/checkout@v7	2026-10-16T20:38:00.9186234Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build	Run actions/checkout@v7	2026-10-16T20:38:00.9228246Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git.path /home/runner/work/_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config
+build	Run actions/checkout@v7	2026-10-16T20:38:00.9260336Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config
+build	Run actions/checkout@v7	2026-10-16T20:38:00.9298193Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config
+build	Run actions/checkout@v7	2026-10-16T20:38:00.9331264Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config
+build	Run actions/checkout@v7	2026-10-16T20:38:00.9360982Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:00.9361847Z ##[group]Fetching the repository
+build	Run actions/checkout@v7	2026-10-16T20:38:00.9370017Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +abbae37f81cb6f8c1e5199bbf89b777e6be3a047:refs/remotes/pull/156/merge
+build	Run actions/checkout@v7	2026-10-16T20:38:01.4916565Z From https://github.com/reeveero-tech/All-hand
+build	Run actions/checkout@v7	2026-10-16T20:38:01.4919540Z  * [new ref]         abbae37f81cb6f8c1e5199bbf89b777e6be3a047 -> pull/156/merge
+build	Run actions/checkout@v7	2026-10-16T20:38:01.4925988Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:01.4927952Z ##[group]Determining the checkout info
+build	Run actions/checkout@v7	2026-10-16T20:38:01.4930356Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:01.4931653Z [command]/usr/bin/git sparse-checkout disable
+build	Run actions/checkout@v7	2026-10-16T20:38:01.4987213Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+build	Run actions/checkout@v7	2026-10-16T20:38:01.5018597Z ##[group]Checking out the ref
+build	Run actions/checkout@v7	2026-10-16T20:38:01.5021909Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/156/merge
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6252761Z Note: switching to 'refs/remotes/pull/156/merge'.
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6254483Z 
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6255626Z You are in 'detached HEAD' state. You can look around, make experimental
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6258290Z changes and commit them, and you can discard any commits you make in this
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6260831Z state without impacting any branches by switching back to a branch.
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6262526Z 
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6263660Z If you want to create a new branch to retain commits you create, you may
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6266548Z do so (now or later) by using -c with the switch command. Example:
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6268169Z 
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6268852Z   git switch -c <new-branch-name>
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6269654Z 
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6270256Z Or undo this operation with:
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6271072Z 
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6271596Z   git switch -
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6272230Z 
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6273547Z Turn off this advice by setting config variable advice.detachedHead to false
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6275453Z 
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6277229Z HEAD is now at abbae37 Merge a3ee544962167807f7304697c42f987b57810073 into d224652b4b338fbd989c9214eb542f75d48fdf83
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6282837Z ##[endgroup]
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6333478Z [command]/usr/bin/git log -1 --format=%H
+build	Run actions/checkout@v7	2026-10-16T20:38:01.6362151Z abbae37f81cb6f8c1e5199bbf89b777e6be3a047
+build	Set up Python	﻿2026-10-16T20:38:01.6764991Z ##[group]Run actions/setup-python@v7
+build	Set up Python	2026-10-16T20:38:01.6766209Z with:
+build	Set up Python	2026-10-16T20:38:01.6767015Z   python-version: 3.11
+build	Set up Python	2026-10-16T20:38:01.6767953Z   check-latest: false
+build	Set up Python	2026-10-16T20:38:01.6779020Z   token: ***
+build	Set up Python	2026-10-16T20:38:01.6779901Z   update-environment: true
+build	Set up Python	2026-10-16T20:38:01.6780919Z   allow-prereleases: false
+build	Set up Python	2026-10-16T20:38:01.6781925Z   freethreaded: false
+build	Set up Python	2026-10-16T20:38:01.6782839Z ##[endgroup]
+build	Set up Python	2026-10-16T20:38:01.8064347Z ##[group]Installed versions
+build	Set up Python	2026-10-16T20:38:01.8167429Z Successfully set up CPython (3.11.17)
+build	Set up Python	2026-10-16T20:38:01.8170859Z ##[endgroup]
+build	Build server artifacts	﻿2026-10-16T20:38:01.8443293Z ##[group]Run # No packaging configured for the Python server yet — see ROADMAP R-012.
+build	Build server artifacts	2026-10-16T20:38:01.8447664Z ^[[36;1m# No packaging configured for the Python server yet — see ROADMAP R-012.^[[0m
+build	Build server artifacts	2026-10-16T20:38:01.8450875Z ^[[36;1mecho "Server artifacts: no packaging configured yet."^[[0m
+build	Build server artifacts	2026-10-16T20:38:01.8679476Z shell: /usr/bin/bash -e {0}
+build	Build server artifacts	2026-10-16T20:38:01.8680722Z env:
+build	Build server artifacts	2026-10-16T20:38:01.8681948Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Build server artifacts	2026-10-16T20:38:01.8684333Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+build	Build server artifacts	2026-10-16T20:38:01.8686541Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Build server artifacts	2026-10-16T20:38:01.8688475Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Build server artifacts	2026-10-16T20:38:01.8690426Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Build server artifacts	2026-10-16T20:38:01.8692347Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+build	Build server artifacts	2026-10-16T20:38:01.8693690Z ##[endgroup]
+build	Build server artifacts	2026-10-16T20:38:01.8822083Z Server artifacts: no packaging configured yet.
+build	Set up Node	﻿2026-10-16T20:38:01.9067983Z ##[group]Run actions/setup-node@v7
+build	Set up Node	2026-10-16T20:38:01.9069073Z with:
+build	Set up Node	2026-10-16T20:38:01.9069797Z   node-version: 22
+build	Set up Node	2026-10-16T20:38:01.9070620Z   check-latest: false
+build	Set up Node	2026-10-16T20:38:01.9080691Z   token: ***
+build	Set up Node	2026-10-16T20:38:01.9081528Z   package-manager-cache: true
+build	Set up Node	2026-10-16T20:38:01.9082476Z env:
+build	Set up Node	2026-10-16T20:38:01.9083646Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Set up Node	2026-10-16T20:38:01.9085715Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+build	Set up Node	2026-10-16T20:38:01.9087424Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Set up Node	2026-10-16T20:38:01.9088964Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Set up Node	2026-10-16T20:38:01.9090497Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Set up Node	2026-10-16T20:38:01.9092067Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+build	Set up Node	2026-10-16T20:38:01.9093374Z ##[endgroup]
+build	Set up Node	2026-10-16T20:38:02.0478500Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+build	Set up Node	2026-10-16T20:38:02.1388187Z ##[group]Environment details
+build	Set up Node	2026-10-16T20:38:02.5061627Z node: v22.23.3
+build	Set up Node	2026-10-16T20:38:02.5062210Z npm: 10.9.9
+build	Set up Node	2026-10-16T20:38:02.5062598Z yarn: 1.22.22
+build	Set up Node	2026-10-16T20:38:02.5063633Z ##[endgroup]
+build	Build web frontend	﻿2026-10-16T20:38:02.5208540Z ##[group]Run node --version
+build	Build web frontend	2026-10-16T20:38:02.5209328Z ^[[36;1mnode --version^[[0m
+build	Build web frontend	2026-10-16T20:38:02.5209997Z ^[[36;1mnpm ci --engine-strict --no-audit --no-fund^[[0m
+build	Build web frontend	2026-10-16T20:38:02.5210698Z ^[[36;1mnpm run build^[[0m
+build	Build web frontend	2026-10-16T20:38:02.5283657Z shell: /usr/bin/bash -e {0}
+build	Build web frontend	2026-10-16T20:38:02.5284488Z env:
+build	Build web frontend	2026-10-16T20:38:02.5285177Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Build web frontend	2026-10-16T20:38:02.5286162Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+build	Build web frontend	2026-10-16T20:38:02.5287151Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Build web frontend	2026-10-16T20:38:02.5288061Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Build web frontend	2026-10-16T20:38:02.5288960Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Build web frontend	2026-10-16T20:38:02.5289870Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+build	Build web frontend	2026-10-16T20:38:02.5290656Z ##[endgroup]
+build	Build web frontend	2026-10-16T20:38:02.5422782Z v22.23.3
+build	Build web frontend	2026-10-16T20:38:05.0664099Z 
+build	Build web frontend	2026-10-16T20:38:05.0665600Z added 63 packages in 2s
+build	Build web frontend	2026-10-16T20:38:05.1899644Z 
+build	Build web frontend	2026-10-16T20:38:05.1900956Z > agos-civilization-web@3.0.0 build
+build	Build web frontend	2026-10-16T20:38:05.1901851Z > vite build
+build	Build web frontend	2026-10-16T20:38:05.1902196Z 
+build	Build web frontend	2026-10-16T20:38:05.4292668Z ^[[36mvite v8.3.4 ^[[32mbuilding client environment for production...^[[36m^[[39m
+build	Build web frontend	2026-10-16T20:38:05.4432868Z transforming...
+build	Build web frontend	2026-10-16T20:38:05.4869661Z ✓ 22 modules transformed.
+build	Build web frontend	2026-10-16T20:38:05.5043487Z rendering chunks...
+build	Build web frontend	2026-10-16T20:38:05.5325266Z computing gzip size...
+build	Build web frontend	2026-10-16T20:38:05.5356684Z dist/index.html                   0.77 kB │ gzip:  0.45 kB
+build	Build web frontend	2026-10-16T20:38:05.5357627Z dist/assets/index-B6dOodBA.css   12.26 kB │ gzip:  2.99 kB
+build	Build web frontend	2026-10-16T20:38:05.5359003Z dist/assets/index-DixFQaVY.js   172.32 kB │ gzip: 54.45 kB
+build	Build web frontend	2026-10-16T20:38:05.5359562Z 
+build	Build web frontend	2026-10-16T20:38:05.5360093Z ^[[32m✓ built in 105ms^[[39m
+build	Test web API client	﻿2026-10-16T20:38:05.5629534Z ##[group]Run npm test
+build	Test web API client	2026-10-16T20:38:05.5629862Z ^[[36;1mnpm test^[[0m
+build	Test web API client	2026-10-16T20:38:05.5719415Z shell: /usr/bin/bash -e {0}
+build	Test web API client	2026-10-16T20:38:05.5719759Z env:
+build	Test web API client	2026-10-16T20:38:05.5720063Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Test web API client	2026-10-16T20:38:05.5720576Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+build	Test web API client	2026-10-16T20:38:05.5721088Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Test web API client	2026-10-16T20:38:05.5721529Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Test web API client	2026-10-16T20:38:05.5721974Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Test web API client	2026-10-16T20:38:05.5722425Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+build	Test web API client	2026-10-16T20:38:05.5722799Z ##[endgroup]
+build	Test web API client	2026-10-16T20:38:05.7032038Z 
+build	Test web API client	2026-10-16T20:38:05.7033048Z > agos-civilization-web@3.0.0 test
+build	Test web API client	2026-10-16T20:38:05.7034180Z > node --test tests/*.test.mjs
+build	Test web API client	2026-10-16T20:38:05.7034593Z 
+build	Test web API client	2026-10-16T20:38:05.7545911Z TAP version 13
+build	Test web API client	2026-10-16T20:38:05.8065898Z # Subtest: open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+build	Test web API client	2026-10-16T20:38:05.8095353Z ok 1 - open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+build	Test web API client	2026-10-16T20:38:05.8096430Z   ---
+build	Test web API client	2026-10-16T20:38:05.8126590Z   duration_ms: 1.906883
+build	Test web API client	2026-10-16T20:38:05.8128378Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8129103Z   ...
+build	Test web API client	2026-10-16T20:38:05.8130055Z # Subtest: stored key is sent on every call, write and read
+build	Test web API client	2026-10-16T20:38:05.8131300Z ok 2 - stored key is sent on every call, write and read
+build	Test web API client	2026-10-16T20:38:05.8132261Z   ---
+build	Test web API client	2026-10-16T20:38:05.8132891Z   duration_ms: 1.336733
+build	Test web API client	2026-10-16T20:38:05.8133561Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8134462Z   ...
+build	Test web API client	2026-10-16T20:38:05.8135598Z # Subtest: SEC-06: explicit consent is sent only when the caller passes it (per request)
+build	Test web API client	2026-10-16T20:38:05.8137135Z ok 3 - SEC-06: explicit consent is sent only when the caller passes it (per request)
+build	Test web API client	2026-10-16T20:38:05.8138273Z   ---
+build	Test web API client	2026-10-16T20:38:05.8138933Z   duration_ms: 0.622477
+build	Test web API client	2026-10-16T20:38:05.8139630Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8140232Z   ...
+build	Test web API client	2026-10-16T20:38:05.8140997Z # Subtest: key never appears in the URL or body
+build	Test web API client	2026-10-16T20:38:05.8142087Z ok 4 - key never appears in the URL or body
+build	Test web API client	2026-10-16T20:38:05.8142835Z   ---
+build	Test web API client	2026-10-16T20:38:05.8143414Z   duration_ms: 0.71598
+build	Test web API client	2026-10-16T20:38:05.8144632Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8145296Z   ...
+build	Test web API client	2026-10-16T20:38:05.8146310Z # Subtest: caller headers are merged, not allowed to drop Content-Type or the key
+build	Test web API client	2026-10-16T20:38:05.8147732Z ok 5 - caller headers are merged, not allowed to drop Content-Type or the key
+build	Test web API client	2026-10-16T20:38:05.8148700Z   ---
+build	Test web API client	2026-10-16T20:38:05.8149305Z   duration_ms: 0.453272
+build	Test web API client	2026-10-16T20:38:05.8149959Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8150548Z   ...
+build	Test web API client	2026-10-16T20:38:05.8151324Z # Subtest: clearApiKey / empty value removes the key
+build	Test web API client	2026-10-16T20:38:05.8152319Z ok 6 - clearApiKey / empty value removes the key
+build	Test web API client	2026-10-16T20:38:05.8153114Z   ---
+build	Test web API client	2026-10-16T20:38:05.8153739Z   duration_ms: 1.239763
+build	Test web API client	2026-10-16T20:38:05.8154636Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8155184Z   ...
+build	Test web API client	2026-10-16T20:38:05.8156062Z # Subtest: 401 -> clear Arabic message, status kept, auth event dispatched
+build	Test web API client	2026-10-16T20:38:05.8157278Z ok 7 - 401 -> clear Arabic message, status kept, auth event dispatched
+build	Test web API client	2026-10-16T20:38:05.8158153Z   ---
+build	Test web API client	2026-10-16T20:38:05.8158731Z   duration_ms: 0.876389
+build	Test web API client	2026-10-16T20:38:05.8159338Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8159991Z   ...
+build	Test web API client	2026-10-16T20:38:05.8161097Z # Subtest: SEC-02: 401 with a stored key -> "key is wrong" message (server answers 401 for an invalid key)
+build	Test web API client	2026-10-16T20:38:05.8162754Z ok 8 - SEC-02: 401 with a stored key -> "key is wrong" message (server answers 401 for an invalid key)
+build	Test web API client	2026-10-16T20:38:05.8164105Z   ---
+build	Test web API client	2026-10-16T20:38:05.8164909Z   duration_ms: 0.421693
+build	Test web API client	2026-10-16T20:38:05.8165554Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8166154Z   ...
+build	Test web API client	2026-10-16T20:38:05.8167020Z # Subtest: SEC-02: 403 with a valid key -> admin role message
+build	Test web API client	2026-10-16T20:38:05.8168137Z ok 9 - SEC-02: 403 with a valid key -> admin role message
+build	Test web API client	2026-10-16T20:38:05.8169477Z   ---
+build	Test web API client	2026-10-16T20:38:05.8170091Z   duration_ms: 0.473319
+build	Test web API client	2026-10-16T20:38:05.8170749Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8171347Z   ...
+build	Test web API client	2026-10-16T20:38:05.8172429Z # Subtest: SEC-02: server without credentials -> "authentication not configured" message
+build	Test web API client	2026-10-16T20:38:05.8174245Z ok 10 - SEC-02: server without credentials -> "authentication not configured" message
+build	Test web API client	2026-10-16T20:38:05.8175301Z   ---
+build	Test web API client	2026-10-16T20:38:05.8175985Z   duration_ms: 0.564471
+build	Test web API client	2026-10-16T20:38:05.8176758Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8177097Z   ...
+build	Test web API client	2026-10-16T20:38:05.8177590Z # Subtest: SEC-02: the event stream is not opened without a key
+build	Test web API client	2026-10-16T20:38:05.8178235Z ok 11 - SEC-02: the event stream is not opened without a key
+build	Test web API client	2026-10-16T20:38:05.8178695Z   ---
+build	Test web API client	2026-10-16T20:38:05.8179088Z   duration_ms: 13.690378
+build	Test web API client	2026-10-16T20:38:05.8179392Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8179657Z   ...
+build	Test web API client	2026-10-16T20:38:05.8335741Z # Subtest: SEC-02: the event stream sends X-API-Key and parses data events
+build	Test web API client	2026-10-16T20:38:05.8345427Z ok 12 - SEC-02: the event stream sends X-API-Key and parses data events
+build	Test web API client	2026-10-16T20:38:05.8352249Z   ---
+build	Test web API client	2026-10-16T20:38:05.8352650Z   duration_ms: 21.129772
+build	Test web API client	2026-10-16T20:38:05.8353073Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8353418Z   ...
+build	Test web API client	2026-10-16T20:38:05.8386703Z # Subtest: SEC-04: 429 waits Retry-After, never a fast retry
+build	Test web API client	2026-10-16T20:38:05.8387972Z ok 13 - SEC-04: 429 waits Retry-After, never a fast retry
+build	Test web API client	2026-10-16T20:38:05.8388842Z   ---
+build	Test web API client	2026-10-16T20:38:05.8389421Z   duration_ms: 5.660307
+build	Test web API client	2026-10-16T20:38:05.8389863Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8390249Z   ...
+build	Test web API client	2026-10-16T20:38:05.8703006Z # Subtest: SEC-04: repeated 429 without Retry-After backs off exponentially, capped
+build	Test web API client	2026-10-16T20:38:05.8704808Z ok 14 - SEC-04: repeated 429 without Retry-After backs off exponentially, capped
+build	Test web API client	2026-10-16T20:38:05.8705628Z   ---
+build	Test web API client	2026-10-16T20:38:05.8706027Z   duration_ms: 31.427776
+build	Test web API client	2026-10-16T20:38:05.8706475Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8706857Z   ...
+build	Test web API client	2026-10-16T20:38:05.8805988Z # Subtest: SEC-04: short Retry-After never undercuts the backoff
+build	Test web API client	2026-10-16T20:38:05.8807560Z ok 15 - SEC-04: short Retry-After never undercuts the backoff
+build	Test web API client	2026-10-16T20:38:05.8808650Z   ---
+build	Test web API client	2026-10-16T20:38:05.8809435Z   duration_ms: 10.456159
+build	Test web API client	2026-10-16T20:38:05.8809993Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8810362Z   ...
+build	Test web API client	2026-10-16T20:38:05.8912889Z # Subtest: SEC-04: 401 / 403 stop reconnecting (no loop on a rejected key)
+build	Test web API client	2026-10-16T20:38:05.8935170Z ok 16 - SEC-04: 401 / 403 stop reconnecting (no loop on a rejected key)
+build	Test web API client	2026-10-16T20:38:05.8936356Z   ---
+build	Test web API client	2026-10-16T20:38:05.8936724Z   duration_ms: 10.400595
+build	Test web API client	2026-10-16T20:38:05.8937102Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.8937496Z   ...
+build	Test web API client	2026-10-16T20:38:05.9135292Z # Subtest: SEC-04: network errors back off; an accepted stream that ends (max lifetime) reconnects after retryMs and resets
+build	Test web API client	2026-10-16T20:38:05.9136664Z ok 17 - SEC-04: network errors back off; an accepted stream that ends (max lifetime) reconnects after retryMs and resets
+build	Test web API client	2026-10-16T20:38:05.9137377Z   ---
+build	Test web API client	2026-10-16T20:38:05.9137670Z   duration_ms: 21.536608
+build	Test web API client	2026-10-16T20:38:05.9137988Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.9138255Z   ...
+build	Test web API client	2026-10-16T20:38:05.9262142Z # Subtest: SEC-04: stream_gap is delivered like any event; close() cancels the pending reconnect
+build	Test web API client	2026-10-16T20:38:05.9272875Z ok 18 - SEC-04: stream_gap is delivered like any event; close() cancels the pending reconnect
+build	Test web API client	2026-10-16T20:38:05.9274369Z   ---
+build	Test web API client	2026-10-16T20:38:05.9275073Z   duration_ms: 10.59681
+build	Test web API client	2026-10-16T20:38:05.9275844Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.9276503Z   ...
+build	Test web API client	2026-10-16T20:38:05.9277346Z # Subtest: other errors keep the server detail
+build	Test web API client	2026-10-16T20:38:05.9278348Z ok 19 - other errors keep the server detail
+build	Test web API client	2026-10-16T20:38:05.9279230Z   ---
+build	Test web API client	2026-10-16T20:38:05.9279866Z   duration_ms: 0.565941
+build	Test web API client	2026-10-16T20:38:05.9280582Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.9281247Z   ...
+build	Test web API client	2026-10-16T20:38:05.9282190Z # Subtest: external agent names are URL-encoded on delete
+build	Test web API client	2026-10-16T20:38:05.9283377Z ok 20 - external agent names are URL-encoded on delete
+build	Test web API client	2026-10-16T20:38:05.9285274Z   ---
+build	Test web API client	2026-10-16T20:38:05.9285974Z   duration_ms: 0.377201
+build	Test web API client	2026-10-16T20:38:05.9286676Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.9287347Z   ...
+build	Test web API client	2026-10-16T20:38:05.9288390Z # Subtest: no sessionStorage (blocked) -> calls still work without a key
+build	Test web API client	2026-10-16T20:38:05.9289838Z ok 21 - no sessionStorage (blocked) -> calls still work without a key
+build	Test web API client	2026-10-16T20:38:05.9290833Z   ---
+build	Test web API client	2026-10-16T20:38:05.9291462Z   duration_ms: 0.283357
+build	Test web API client	2026-10-16T20:38:05.9292118Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:05.9292728Z   ...
+build	Test web API client	2026-10-16T20:38:06.6565919Z # ^[[33m`transformWithEsbuild` is deprecated and will be removed in the future. Please migrate to `transformWithOxc`.^[[39m
+build	Test web API client	2026-10-16T20:38:06.7456466Z # Warning: An update to Chat inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.7457965Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.7458985Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.7461507Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.7462236Z # });
+build	Test web API client	2026-10-16T20:38:06.7462680Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.7464511Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.7467132Z #     at Chat (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c1.mjs:11:32)
+build	Test web API client	2026-10-16T20:38:06.7627248Z # Subtest: SEC-06: keyless provider — warning + unchecked checkbox near the input; send without consent leaves the browser (no fetch) and shows the reason
+build	Test web API client	2026-10-16T20:38:06.7630099Z ok 22 - SEC-06: keyless provider — warning + unchecked checkbox near the input; send without consent leaves the browser (no fetch) and shows the reason
+build	Test web API client	2026-10-16T20:38:06.7631330Z   ---
+build	Test web API client	2026-10-16T20:38:06.7631720Z   duration_ms: 64.92044
+build	Test web API client	2026-10-16T20:38:06.7632149Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.7632498Z   ...
+build	Test web API client	2026-10-16T20:38:06.7711924Z # Subtest: SEC-06: quick prompts are blocked the same way (no send without consent)
+build	Test web API client	2026-10-16T20:38:06.7713235Z ok 23 - SEC-06: quick prompts are blocked the same way (no send without consent)
+build	Test web API client	2026-10-16T20:38:06.7714266Z   ---
+build	Test web API client	2026-10-16T20:38:06.7714676Z   duration_ms: 8.862447
+build	Test web API client	2026-10-16T20:38:06.7715109Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.7715518Z   ...
+build	Test web API client	2026-10-16T20:38:06.7729690Z # Warning: An update to Chat inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.7730927Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.7731758Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.7732282Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.7732795Z # });
+build	Test web API client	2026-10-16T20:38:06.7733203Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.7734810Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.7736531Z #     at Chat (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c1.mjs:11:32)
+build	Test web API client	2026-10-16T20:38:06.7825165Z # Subtest: SEC-06: Enter key is blocked the same way (no send without consent)
+build	Test web API client	2026-10-16T20:38:06.7826376Z ok 24 - SEC-06: Enter key is blocked the same way (no send without consent)
+build	Test web API client	2026-10-16T20:38:06.7827059Z   ---
+build	Test web API client	2026-10-16T20:38:06.7827470Z   duration_ms: 11.528872
+build	Test web API client	2026-10-16T20:38:06.7827895Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.7828236Z   ...
+build	Test web API client	2026-10-16T20:38:06.7858979Z # Warning: An update to Chat inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.7860497Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.7861868Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.7863189Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.7864526Z # });
+build	Test web API client	2026-10-16T20:38:06.7865445Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.7868170Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.7869718Z #     at Chat (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c1.mjs:11:32)
+build	Test web API client	2026-10-16T20:38:06.7969508Z # Subtest: SEC-06: with consent the request carries allow_public_llm=true — and the checkbox is cleared again after the send
+build	Test web API client	2026-10-16T20:38:06.7971638Z ok 25 - SEC-06: with consent the request carries allow_public_llm=true — and the checkbox is cleared again after the send
+build	Test web API client	2026-10-16T20:38:06.7972575Z   ---
+build	Test web API client	2026-10-16T20:38:06.7973162Z   duration_ms: 15.262419
+build	Test web API client	2026-10-16T20:38:06.7973618Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.7974202Z   ...
+build	Test web API client	2026-10-16T20:38:06.8026746Z # Warning: An update to Chat inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.8028028Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.8028872Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.8029751Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.8030593Z # });
+build	Test web API client	2026-10-16T20:38:06.8031690Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.8034197Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.8035968Z #     at Chat (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c1.mjs:11:32)
+build	Test web API client	2026-10-16T20:38:06.8107756Z # Subtest: SEC-06: no warning, no checkbox and no consent flag for the keyed provider (openrouter) — stale consent is never sent
+build	Test web API client	2026-10-16T20:38:06.8109874Z ok 26 - SEC-06: no warning, no checkbox and no consent flag for the keyed provider (openrouter) — stale consent is never sent
+build	Test web API client	2026-10-16T20:38:06.8110944Z   ---
+build	Test web API client	2026-10-16T20:38:06.8111351Z   duration_ms: 14.535259
+build	Test web API client	2026-10-16T20:38:06.8111793Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.8112150Z   ...
+build	Test web API client	2026-10-16T20:38:06.8115447Z # Warning: An update to Chat inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.8116819Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.8117780Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.8118451Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.8119138Z # });
+build	Test web API client	2026-10-16T20:38:06.8119900Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.8121781Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.8123526Z #     at Chat (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c1.mjs:11:32)
+build	Test web API client	2026-10-16T20:38:06.8217326Z # Subtest: SEC-06: provider none — no warning, no consent flag in the request
+build	Test web API client	2026-10-16T20:38:06.8219497Z ok 27 - SEC-06: provider none — no warning, no consent flag in the request
+build	Test web API client	2026-10-16T20:38:06.8220641Z   ---
+build	Test web API client	2026-10-16T20:38:06.8221357Z   duration_ms: 11.774037
+build	Test web API client	2026-10-16T20:38:06.8221702Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.8221922Z   ...
+build	Test web API client	2026-10-16T20:38:06.8357871Z # Warning: An update to Specializations inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.8360155Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.8361628Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.8362484Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.8363291Z # });
+build	Test web API client	2026-10-16T20:38:06.8366351Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.8368053Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.8370304Z #     at Specializations (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c2.mjs:27:43)
+build	Test web API client	2026-10-16T20:38:06.8391319Z # Warning: An update to Specializations inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.8393019Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.8394694Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.8395554Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.8396344Z # });
+build	Test web API client	2026-10-16T20:38:06.8397024Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.8398746Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.8401457Z #     at Specializations (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c2.mjs:27:43)
+build	Test web API client	2026-10-16T20:38:06.8469881Z # Subtest: SEC-06: Specializations — task form blocks submission without consent, carries consent when given, clears it after
+build	Test web API client	2026-10-16T20:38:06.8472396Z ok 28 - SEC-06: Specializations — task form blocks submission without consent, carries consent when given, clears it after
+build	Test web API client	2026-10-16T20:38:06.8474073Z   ---
+build	Test web API client	2026-10-16T20:38:06.8474678Z   duration_ms: 23.194037
+build	Test web API client	2026-10-16T20:38:06.8474974Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.8475192Z   ...
+build	Test web API client	2026-10-16T20:38:06.8521454Z # Warning: An update to Chat inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.8522998Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.8524287Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.8525308Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.8526330Z # });
+build	Test web API client	2026-10-16T20:38:06.8527391Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.8529788Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.8532238Z #     at Chat (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c1.mjs:11:32)
+build	Test web API client	2026-10-16T20:38:06.8565211Z # Subtest: SEC-06: consent does not survive a provider change on the same component (keyless -> openrouter -> keyless)
+build	Test web API client	2026-10-16T20:38:06.8567017Z ok 29 - SEC-06: consent does not survive a provider change on the same component (keyless -> openrouter -> keyless)
+build	Test web API client	2026-10-16T20:38:06.8568032Z   ---
+build	Test web API client	2026-10-16T20:38:06.8568421Z   duration_ms: 11.930248
+build	Test web API client	2026-10-16T20:38:06.8568867Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.8569249Z   ...
+build	Test web API client	2026-10-16T20:38:06.9747679Z # Warning: An update to Specializations inside a test was not wrapped in act(...).
+build	Test web API client	2026-10-16T20:38:06.9749579Z # When testing, code that causes React state updates should be wrapped into act(...):
+build	Test web API client	2026-10-16T20:38:06.9750787Z # act(() => {
+build	Test web API client	2026-10-16T20:38:06.9751629Z #   /* fire events that update state */
+build	Test web API client	2026-10-16T20:38:06.9752202Z # });
+build	Test web API client	2026-10-16T20:38:06.9752642Z # /* assert on the output */
+build	Test web API client	2026-10-16T20:38:06.9754411Z # This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+build	Test web API client	2026-10-16T20:38:06.9756270Z #     at Specializations (file:///home/runner/work/All-hand/All-hand/web/tests/.ui-tmp-iGEYL5/c2.mjs:27:43)
+build	Test web API client	2026-10-16T20:38:06.9778679Z # Subtest: SEC-06: task form consent does not survive going back and opening another specialization
+build	Test web API client	2026-10-16T20:38:06.9780767Z ok 30 - SEC-06: task form consent does not survive going back and opening another specialization
+build	Test web API client	2026-10-16T20:38:06.9781793Z   ---
+build	Test web API client	2026-10-16T20:38:06.9782399Z   duration_ms: 121.228217
+build	Test web API client	2026-10-16T20:38:06.9782971Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.9783526Z   ...
+build	Test web API client	2026-10-16T20:38:06.9784521Z # Subtest: cleanup: transpiled temp files removed
+build	Test web API client	2026-10-16T20:38:06.9787588Z ok 31 - cleanup: transpiled temp files removed
+build	Test web API client	2026-10-16T20:38:06.9787952Z   ---
+build	Test web API client	2026-10-16T20:38:06.9788174Z   duration_ms: 1.062354
+build	Test web API client	2026-10-16T20:38:06.9788423Z   type: 'test'
+build	Test web API client	2026-10-16T20:38:06.9788638Z   ...
+build	Test web API client	2026-10-16T20:38:07.0051311Z 1..31
+build	Test web API client	2026-10-16T20:38:07.0051901Z # tests 31
+build	Test web API client	2026-10-16T20:38:07.0052394Z # suites 0
+build	Test web API client	2026-10-16T20:38:07.0052884Z # pass 31
+build	Test web API client	2026-10-16T20:38:07.0053364Z # fail 0
+build	Test web API client	2026-10-16T20:38:07.0054050Z # cancelled 0
+build	Test web API client	2026-10-16T20:38:07.0054592Z # skipped 0
+build	Test web API client	2026-10-16T20:38:07.0055088Z # todo 0
+build	Test web API client	2026-10-16T20:38:07.0055783Z # duration_ms 1267.664088
+build	Set up Node for the root app (>=22.12)	﻿2026-10-16T20:38:07.0271708Z ##[group]Run actions/setup-node@v7
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0272025Z with:
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0272227Z   node-version: 22
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0272452Z   check-latest: false
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0275702Z   token: ***
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0275947Z   package-manager-cache: true
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0276207Z env:
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0276467Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0276936Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0277394Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0277819Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0278223Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0278634Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.0278971Z ##[endgroup]
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.1575965Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.1825669Z ##[group]Environment details
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.4002009Z node: v22.23.3
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.4002358Z npm: 10.9.9
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.4002586Z yarn: 1.22.22
+build	Set up Node for the root app (>=22.12)	2026-10-16T20:38:07.4003493Z ##[endgroup]
+build	Root app — install (clean, from lockfile, engines enforced)	﻿2026-10-16T20:38:07.4178117Z ##[group]Run node --version
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4178487Z ^[[36;1mnode --version^[[0m
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4178824Z ^[[36;1mnpm ci --engine-strict --no-audit --no-fund^[[0m
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4242824Z shell: /usr/bin/bash -e {0}
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4243155Z env:
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4243497Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4244445Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4245235Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4245731Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4246195Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4246661Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4247049Z ##[endgroup]
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:07.4372687Z v22.23.3
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:09.9366018Z npm warn deprecated tsconfck@3.1.6: unmaintained
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:13.2990888Z npm warn deprecated recharts@2.15.4: 1.x and 2.x branches are no longer active. Bump to Recharts v3 to receive latest features and bugfixes. See https://github.com/recharts/recharts/wiki/3.0-migration-guide
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:13.7375340Z npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:16.4406002Z 
+build	Root app — install (clean, from lockfile, engines enforced)	2026-10-16T20:38:16.4406712Z added 415 packages in 9s
+build	Root app — lint (no warnings allowed)	﻿2026-10-16T20:38:16.4826113Z ##[group]Run npx eslint . --max-warnings=0
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4826598Z ^[[36;1mnpx eslint . --max-warnings=0^[[0m
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4888581Z shell: /usr/bin/bash -e {0}
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4888902Z env:
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4889243Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4889825Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4890397Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4890902Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4891414Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4891936Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+build	Root app — lint (no warnings allowed)	2026-10-16T20:38:16.4892369Z ##[endgroup]
+build	Root app — build	﻿2026-10-16T20:38:18.2412623Z ##[group]Run npm run build
+build	Root app — build	2026-10-16T20:38:18.2412936Z ^[[36;1mnpm run build^[[0m
+build	Root app — build	2026-10-16T20:38:18.2473438Z shell: /usr/bin/bash -e {0}
+build	Root app — build	2026-10-16T20:38:18.2473741Z env:
+build	Root app — build	2026-10-16T20:38:18.2474303Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — build	2026-10-16T20:38:18.2474834Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+build	Root app — build	2026-10-16T20:38:18.2475324Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — build	2026-10-16T20:38:18.2475752Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — build	2026-10-16T20:38:18.2476184Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+build	Root app — build	2026-10-16T20:38:18.2476622Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+build	Root app — build	2026-10-16T20:38:18.2477003Z ##[endgroup]
+build	Root app — build	2026-10-16T20:38:18.3487439Z 
+build	Root app — build	2026-10-16T20:38:18.3488026Z > build
+build	Root app — build	2026-10-16T20:38:18.3488409Z > vite build
+build	Root app — build	2026-10-16T20:38:18.3488613Z 
+build	Root app — build	2026-10-16T20:38:19.5396341Z ^[[33mThe plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the ^[[1mresolve.tsconfigPaths^[[22m option. You can remove the plugin and set ^[[1mresolve.tsconfigPaths: true^[[22m in your Vite config instead.^[[39m
+build	Root app — build	2026-10-16T20:38:19.7258943Z ^[[36mvite v8.3.4 ^[[32mbuilding client environment for production...^[[36m^[[39m
+build	Root app — build	2026-10-16T20:38:19.7404281Z transforming...
+build	Root app — build	2026-10-16T20:38:20.2118648Z ✓ 207 modules transformed.
+build	Root app — build	2026-10-16T20:38:20.2451347Z rendering chunks...
+build	Root app — build	2026-10-16T20:38:20.3221781Z computing gzip size...
+build	Root app — build	2026-10-16T20:38:20.3285676Z .output/public/assets/styles-DgakcMqb.css       23.37 kB │ gzip:   5.21 kB
+build	Root app — build	2026-10-16T20:38:20.3286817Z .output/public/assets/api-n2O7kJ-w.js            1.90 kB │ gzip:   1.12 kB
+build	Root app — build	2026-10-16T20:38:20.3287757Z .output/public/assets/agents-DxM38KbM.js         2.35 kB │ gzip:   0.98 kB
+build	Root app — build	2026-10-16T20:38:20.3288673Z .output/public/assets/chat-yiyJXsFw.js           3.59 kB │ gzip:   1.72 kB
+build	Root app — build	2026-10-16T20:38:20.3289580Z .output/public/assets/settings-CVScxVj7.js       3.68 kB │ gzip:   1.58 kB
+build	Root app — build	2026-10-16T20:38:20.3290664Z .output/public/assets/routes-CGejzuZS.js         3.80 kB │ gzip:   1.45 kB
+build	Root app — build	2026-10-16T20:38:20.3291615Z .output/public/assets/command-QvXgVuKe.js        5.19 kB │ gzip:   2.02 kB
+build	Root app — build	2026-10-16T20:38:20.3292851Z .output/public/assets/useBackend-BDmBBjyr.js     8.36 kB │ gzip:   3.11 kB
+build	Root app — build	2026-10-16T20:38:20.3293772Z .output/public/assets/jsx-runtime-ByaQ0wya.js    8.77 kB │ gzip:   3.33 kB
+build	Root app — build	2026-10-16T20:38:20.3295029Z .output/public/assets/index-4riCIjax.js        362.96 kB │ gzip: 115.66 kB
+build	Root app — build	2026-10-16T20:38:20.3295476Z 
+build	Root app — build	2026-10-16T20:38:20.3326879Z ^[[32m✓ built in 605ms^[[39m
+build	Root app — build	2026-10-16T20:38:20.3330829Z ^[[36mvite v8.3.4 ^[[32mbuilding ssr environment for production...^[[36m^[[39m
+build	Root app — build	2026-10-16T20:38:20.3421770Z transforming...
+build	Root app — build	2026-10-16T20:38:20.5956812Z ✓ 73 modules transformed.
+build	Root app — build	2026-10-16T20:38:20.6050810Z rendering chunks...
+build	Root app — build	2026-10-16T20:38:20.6155192Z computing gzip size...
+build	Root app — build	2026-10-16T20:38:20.6161172Z node_modules/.nitro/vite/services/ssr/assets/styles-DgakcMqb.css                     23.37 kB │ gzip:  5.21 kB
+build	Root app — build	2026-10-16T20:38:20.6162304Z node_modules/.nitro/vite/services/ssr/assets/empty-plugin-adapters-D9UWiqvJ.js        0.22 kB │ gzip:  0.16 kB
+build	Root app — build	2026-10-16T20:38:20.6163369Z node_modules/.nitro/vite/services/ssr/assets/rolldown-runtime-D7D4PA-g.js             0.36 kB │ gzip:  0.25 kB
+build	Root app — build	2026-10-16T20:38:20.6164766Z node_modules/.nitro/vite/services/ssr/assets/useBackend-CTM-MADi.js                   0.86 kB │ gzip:  0.46 kB
+build	Root app — build	2026-10-16T20:38:20.6165794Z node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-BMr7xPsC.js   1.58 kB │ gzip:  0.50 kB
+build	Root app — build	2026-10-16T20:38:20.6166785Z node_modules/.nitro/vite/services/ssr/assets/start-Bv9pd0Me.js                        1.58 kB │ gzip:  0.71 kB
+build	Root app — build	2026-10-16T20:38:20.6167701Z node_modules/.nitro/vite/services/ssr/index.js                                        2.19 kB │ gzip:  0.97 kB
+build	Root app — build	2026-10-16T20:38:20.6168602Z node_modules/.nitro/vite/services/ssr/assets/api-D1T-sVu6.js                          2.85 kB │ gzip:  1.50 kB
+build	Root app — build	2026-10-16T20:38:20.6169548Z node_modules/.nitro/vite/services/ssr/assets/agents-A--DMm3S.js                       3.52 kB │ gzip:  1.24 kB
+build	Root app — build	2026-10-16T20:38:20.6170821Z node_modules/.nitro/vite/services/ssr/assets/chat-FxcUdkYS.js                         5.19 kB │ gzip:  2.06 kB
+build	Root app — build	2026-10-16T20:38:20.6171833Z node_modules/.nitro/vite/services/ssr/assets/routes-NvKu0P0g.js                       5.22 kB │ gzip:  1.71 kB
+build	Root app — build	2026-10-16T20:38:20.6172798Z node_modules/.nitro/vite/services/ssr/assets/settings-Ddu_WzgK.js                     5.42 kB │ gzip:  1.89 kB
+build	Root app — build	2026-10-16T20:38:20.6173736Z node_modules/.nitro/vite/services/ssr/assets/command-D-hBUhQa.js                      7.51 kB │ gzip:  2.46 kB
+build	Root app — build	2026-10-16T20:38:20.6175139Z node_modules/.nitro/vite/services/ssr/assets/router-JmfzJEID.js                      11.16 kB │ gzip:  3.43 kB
+build	Root app — build	2026-10-16T20:38:20.6176072Z node_modules/.nitro/vite/services/ssr/assets/server-C6c8tPDs.js                      93.12 kB │ gzip: 23.53 kB
+build	Root app — build	2026-10-16T20:38:20.6176489Z 
+build	Root app — build	2026-10-16T20:38:20.6178035Z ^[[32m✓ built in 284ms^[[39m
+build	Root app — build	2026-10-16T20:38:20.6190921Z [start] [nitro] Building [^[[35mNitro^[[39m] ^[[2m(preset: `cloudflare-module`, compatibility: `2026-10-16`)^[[22m
+build	Root app — build	2026-10-16T20:38:20.6243449Z [success] [nitro] Generated public ^[[36m.output/public^[[39m
+build	Root app — build	2026-10-16T20:38:20.6254407Z ^[[36mvite v8.3.4 ^[[32mbuilding nitro environment for production...^[[36m^[[39m
+build	Root app — build	2026-10-16T20:38:20.6283044Z [warn] `inlineDynamicImports` option is ignored because the `codeSplitting` option is specified.
+build	Root app — build	2026-10-16T20:38:20.6288282Z ^[[33m`output.codeSplitting.groups[0].name` is a function. Set `output.codeSplitting.groups[0].debugName` so the bundler timing report can identify this group.^[[39m
+build	Root app — build	2026-10-16T20:38:20.6354519Z transforming...
+build	Root app — build	2026-10-16T20:38:20.7255231Z ✓ 262 modules transformed.
+build	Root app — build	2026-10-16T20:38:20.7709767Z rendering chunks...
+build	Root app — build	2026-10-16T20:38:20.8349193Z computing gzip size...
+build	Root app — build	2026-10-16T20:38:20.8453650Z .output/server/_libs/srvx.mjs                             0.12 kB │ gzip:   0.12 kB
+build	Root app — build	2026-10-16T20:38:20.8455689Z .output/server/_ssr/empty-plugin-adapters-D9UWiqvJ.mjs    0.23 kB │ gzip:   0.16 kB
+build	Root app — build	2026-10-16T20:38:20.8457450Z .output/server/_ssr/rolldown-runtime-D7D4PA-g.mjs         0.41 kB │ gzip:   0.29 kB
+build	Root app — build	2026-10-16T20:38:20.8459328Z .output/server/_chunks/ssr-renderer.mjs                   0.60 kB │ gzip:   0.36 kB
+build	Root app — build	2026-10-16T20:38:20.8460779Z .output/server/_ssr/useBackend-CTM-MADi.mjs               1.07 kB │ gzip:   0.56 kB
+build	Root app — build	2026-10-16T20:38:20.8462334Z .output/server/_libs/hookable.mjs                         1.17 kB │ gzip:   0.52 kB
+build	Root app — build	2026-10-16T20:38:20.8464029Z .output/server/_runtime.mjs                               1.18 kB │ gzip:   0.57 kB
+build	Root app — build	2026-10-16T20:38:20.8465600Z .output/server/_ssr/start-Bv9pd0Me.mjs                    1.57 kB │ gzip:   0.72 kB
+build	Root app — build	2026-10-16T20:38:20.8467023Z .output/server/_tanstack-start-manifest_v-BMr7xPsC.mjs    1.64 kB │ gzip:   0.53 kB
+build	Root app — build	2026-10-16T20:38:20.8467748Z .output/server/_ssr/ssr.mjs                               2.12 kB │ gzip:   0.97 kB
+build	Root app — build	2026-10-16T20:38:20.8468519Z .output/server/_ssr/api-D1T-sVu6.mjs                      2.90 kB │ gzip:   1.54 kB
+build	Root app — build	2026-10-16T20:38:20.8469363Z .output/server/_ssr/agents-A--DMm3S.mjs                   4.13 kB │ gzip:   1.33 kB
+build	Root app — build	2026-10-16T20:38:20.8470061Z .output/server/_ssr/chat-FxcUdkYS.mjs                     6.01 kB │ gzip:   2.17 kB
+build	Root app — build	2026-10-16T20:38:20.8470725Z .output/server/_ssr/routes-NvKu0P0g.mjs                   6.10 kB │ gzip:   1.80 kB
+build	Root app — build	2026-10-16T20:38:20.8472009Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/index.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8473259Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/index.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8473795Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8474830Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8475412Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8476218Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8477223Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8478332Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8479261Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8479503Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8480520Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useMatch.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8481708Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/useMatch.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8482245Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8482519Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8482844Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8483291Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8483671Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8484783Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8485459Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8485892Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8486770Z .output/server/_ssr/settings-Ddu_WzgK.mjs                 6.26 kB │ gzip:   2.01 kB
+build	Root app — build	2026-10-16T20:38:20.8488053Z .output/server/_ssr/command-D-hBUhQa.mjs                  8.63 kB │ gzip:   2.59 kB
+build	Root app — build	2026-10-16T20:38:20.8489261Z .output/server/index.mjs                                 11.12 kB │ gzip:   3.47 kB
+build	Root app — build	2026-10-16T20:38:20.8490447Z .output/server/_ssr/router-JmfzJEID.mjs                  11.77 kB │ gzip:   3.50 kB
+build	Root app — build	2026-10-16T20:38:20.8491686Z .output/server/_libs/tanstack__history.mjs               12.33 kB │ gzip:   3.66 kB
+build	Root app — build	2026-10-16T20:38:20.8492928Z .output/server/_libs/h3+rou3+srvx.mjs                    17.31 kB │ gzip:   4.99 kB
+build	Root app — build	2026-10-16T20:38:20.8494403Z .output/server/_libs/react+tanstack__react-query.mjs     29.31 kB │ gzip:   7.93 kB
+build	Root app — build	2026-10-16T20:38:20.8495679Z .output/server/_libs/@tanstack/router-core+[...].mjs     32.87 kB │ gzip:   8.99 kB
+build	Root app — build	2026-10-16T20:38:20.8497295Z .output/server/_ssr/server-C6c8tPDs.mjs                  91.11 kB │ gzip:  23.37 kB
+build	Root app — build	2026-10-16T20:38:20.8498689Z .output/server/_libs/tanstack__query-core.mjs           135.99 kB │ gzip:  32.36 kB
+build	Root app — build	2026-10-16T20:38:20.8500157Z .output/server/_libs/@tanstack/react-router+[...].mjs   785.90 kB │ gzip: 165.63 kB
+build	Root app — build	2026-10-16T20:38:20.8500813Z 
+build	Root app — build	2026-10-16T20:38:20.8502687Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/ClientOnly.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8505281Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/ClientOnly.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8506286Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8506765Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8507326Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8508143Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8508839Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8509942Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8510942Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8511349Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8513185Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/utils.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8515512Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/utils.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8516452Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8516920Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8517479Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8518270Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8519198Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8520314Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8521307Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8521686Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8523576Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useBlocker.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8526163Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/useBlocker.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8527156Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8527625Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8528111Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8528571Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8528979Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8529605Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8530208Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8530435Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8531464Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouter.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8532651Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/useRouter.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8533186Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8533450Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8533776Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8534555Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8534940Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8535571Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8536411Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8536770Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8537812Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouterState.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8539047Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/useRouterState.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8539601Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8539862Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8540168Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8540603Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8540975Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8541594Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8542192Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8542424Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8543430Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Matches.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8544937Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/Matches.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8545486Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8545754Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8546070Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8546526Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8546915Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8547529Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8548277Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8548486Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8549701Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Match.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8550926Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/Match.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8551448Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8551708Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8552019Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8552463Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8552838Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8553712Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8554861Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8555097Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8556191Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/HeadContent.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8557743Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/HeadContent.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8558298Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8558570Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8558879Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8559393Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8560079Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8560867Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8561441Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8561656Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8562692Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8564609Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8565187Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8565461Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8566069Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8566805Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8567201Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8567829Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8568406Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8568624Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8569609Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Asset.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8570779Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/Asset.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8571511Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8571957Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8572386Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8572831Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8573212Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8574049Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8574701Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8574915Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8575923Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useNavigate.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8577328Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/useNavigate.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8577887Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8578149Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8578459Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8578897Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8579267Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8579868Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8580421Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8580630Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8581646Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useLocation.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8582844Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/useLocation.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8583570Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8584104Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8584452Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8584996Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8585676Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8586428Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8586989Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8587196Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8588218Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/RouterProvider.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8589440Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/RouterProvider.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8590006Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8590500Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8591037Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8591652Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8592025Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8592631Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8593183Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8593391Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8594651Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/link.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8595802Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/link.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8596523Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8596782Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8597100Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8597536Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8597906Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8598554Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8599093Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8599297Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8600348Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/matchContext.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8601556Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/matchContext.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8602103Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8602371Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8602673Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8603111Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8603484Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8606028Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8606873Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8607181Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8608823Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8610211Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8610815Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8611080Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8611412Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8611866Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8612440Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8613053Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8613609Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8614231Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8615597Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Transitioner.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8616843Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/Transitioner.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8617393Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8617656Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8617971Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8618430Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8618822Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8619427Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8619980Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8620207Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8621229Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/routerContext.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8622438Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-router/dist/esm/routerContext.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8622982Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8623239Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8623552Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8624297Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8624897Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8625524Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8626088Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8626307Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8627392Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8628703Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8629295Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8629559Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8629877Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8630315Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8630706Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8631317Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8631880Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8632108Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8633187Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8634770Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8635354Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8635621Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8635933Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8636374Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8636764Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8637370Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8638073Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8638295Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8639299Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQuery.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8640481Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useQuery.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8641014Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8641276Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8641587Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8642018Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8642393Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8643010Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8643575Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8643994Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8645096Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8646370Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8646979Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8647255Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8647565Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8647997Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8648371Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8648966Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8649676Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8649899Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8650959Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8652227Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8652795Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8653062Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8653365Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8654054Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8654469Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8655078Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8655649Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8655858Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8656959Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8658277Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8658875Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8659143Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8659456Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8659889Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8660261Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8660859Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8661426Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8661641Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8662655Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQueries.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8664299Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useQueries.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8664873Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8665142Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8665456Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8665891Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8666263Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8666861Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8667419Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8667641Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8668690Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutationState.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8669967Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useMutationState.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8670533Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8670798Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8671101Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8671533Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8671905Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8672496Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8673047Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8673251Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8674762Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8676134Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8676747Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8677011Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8677313Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8677744Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8678121Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8678720Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8679275Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8679484Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8680543Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8681966Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8682547Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8682808Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8683111Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8683539Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8684160Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8684778Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8685336Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8685546Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8686586Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useIsFetching.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8687827Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useIsFetching.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8688378Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8688630Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8688930Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8689359Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8689727Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8690327Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8690879Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8691090Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8692115Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutation.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8693470Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useMutation.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8694292Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8694555Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8694859Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8695286Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8695657Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8696247Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8696794Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8696999Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8698042Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8699313Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8699895Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8700194Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8700504Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8700937Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8701308Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8701914Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8702463Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8702674Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8703735Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8705265Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8706000Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8706261Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8706573Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8707010Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8707386Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8707992Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8708539Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8708752Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8709779Z ^[[33m^[[33m[MODULE_LEVEL_DIRECTIVE] ^[[0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useBaseQuery.js" may not be preserved when bundling.
+build	Root app — build	2026-10-16T20:38:20.8710998Z    ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m node_modules/@tanstack/react-query/build/modern/useBaseQuery.js:1:1 ^[[38;5;246m]^[[0m
+build	Root app — build	2026-10-16T20:38:20.8711569Z    ^[[38;5;246m│^[[0m
+build	Root app — build	2026-10-16T20:38:20.8711828Z  ^[[38;5;246m1 │^[[0m "use client";
+build	Root app — build	2026-10-16T20:38:20.8712139Z  ^[[38;5;240m  │^[[0m ──────┬──────  
+build	Root app — build	2026-10-16T20:38:20.8712567Z  ^[[38;5;240m  │^[[0m       ╰──────── module level directive may not be preserved
+build	Root app — build	2026-10-16T20:38:20.8712942Z  ^[[38;5;240m  │^[[0m 
+build	Root app — build	2026-10-16T20:38:20.8713546Z  ^[[38;5;240m  │^[[0m ^[[38;5;115mHelp^[[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+build	Root app — build	2026-10-16T20:38:20.8714409Z ^[[38;5;246m───╯^[[0m
+build	Root app — build	2026-10-16T20:38:20.8714623Z ^[[39m
+build	Root app — build	2026-10-16T20:38:20.8714901Z ^[[32m✓ built in 227ms^[[39m
+build	Root app — build	2026-10-16T20:38:20.8715338Z [info] [nitro] Using auto generated worker name: `reeveero-tech-all-hand`
+build	Root app — build	2026-10-16T20:38:20.8715882Z [info] Generated ^[[36m.output/server/wrangler.json^[[39m
+build	Root app — build	2026-10-16T20:38:20.8716357Z [info] Generated ^[[36m.wrangler/deploy/config.json^[[39m
+build	Root app — build	2026-10-16T20:38:20.8716950Z [info] Generated ^[[36m.output/public/_headers^[[39m
+build	Root app — build	2026-10-16T20:38:20.8717369Z [info] Generated ^[[36m.output/nitro.json^[[39m
+build	Root app — build	2026-10-16T20:38:20.8717828Z [success] [nitro] You can preview this build using `npx vite preview`
+build	Root app — build	2026-10-16T20:38:20.8718440Z [success] [nitro] You can deploy this build using `npx nitro deploy --prebuilt`
+build	Post Set up Node for the root app (>=22.12)	﻿2026-10-16T20:38:20.9305136Z Post job cleanup.
+build	Post Set up Node	﻿2026-10-16T20:38:21.0574052Z Post job cleanup.
+build	Post Set up Python	﻿2026-10-16T20:38:21.2001104Z Post job cleanup.
+build	Post Run actions/checkout@v7	﻿2026-10-16T20:38:21.3459241Z Post job cleanup.
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4395897Z [command]/usr/bin/git version
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4447175Z git version 2.55.0
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4489974Z Temporarily overriding HOME='/home/runner/work/_temp/841bb935-51e4-48de-ad78-3d4bac1d5f28' before making global git config changes
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4491824Z Adding repository directory to the temporary git global config as a safe directory
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4496144Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4544815Z Removing SSH command configuration
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4546066Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4588052Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4909370Z Removing HTTP extra header
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4917769Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.4976565Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5287908Z Removing includeIf entries pointing to credentials config files
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5295000Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5323221Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5324756Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5325293Z includeif.gitdir:/github/workspace/.git.path
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5325739Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5335376Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5358696Z /home/runner/work/_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5369011Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-87dfde1f\-bd4e\-4e3c\-b1f2\-daefc8ba293c\.config
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5411443Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5437763Z /home/runner/work/_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5447590Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-87dfde1f\-bd4e\-4e3c\-b1f2\-daefc8ba293c\.config
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5481219Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5505211Z /github/runner_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5512440Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-87dfde1f\-bd4e\-4e3c\-b1f2\-daefc8ba293c\.config
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5545868Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5572497Z /github/runner_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5583648Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-87dfde1f\-bd4e\-4e3c\-b1f2\-daefc8ba293c\.config
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5627330Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	Post Run actions/checkout@v7	2026-10-16T20:38:21.5939647Z Removing credentials config '/home/runner/work/_temp/git-credentials-87dfde1f-bd4e-4e3c-b1f2-daefc8ba293c.config'
+build	Complete job	﻿2026-10-16T20:38:21.6121058Z Cleaning up orphan processes

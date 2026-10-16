@@ -1,0 +1,19 @@
+R-149 — final targeted battery (SEC-01 + SEC-05 + gaps) after the exception-handling fix — 2026-10-16
+Branch: m7/r149-security-qa-regression-matrix (work tree before second commit; fix: agent results carry exception type only, storage failure logs op+type only, safe fixed reasons whitelisted: UnsafeURLError, ClientConnectionError, _FixedReasonError, HTTP status)
+Command: AGOS_ENV=test python -m pytest tests/test_sec01_external_redirect.py tests/test_sec05_dns_rebinding.py tests/test_r149_security_qa_gaps.py -q
+
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 91 items
+
+tests/test_sec01_external_redirect.py .........                          [  9%]
+tests/test_sec05_dns_rebinding.py ...................................... [ 51%]
+........................                                                 [ 78%]
+tests/test_r149_security_qa_gaps.py ....................                 [100%]
+
+============================= 91 passed in 29.82s ==============================
+RC=0
