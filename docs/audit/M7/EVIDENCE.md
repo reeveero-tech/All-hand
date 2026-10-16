@@ -899,4 +899,4 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 | اختبارات الواجهة (`npm test`) | 31/31 (TAP: tests 31, pass 31, fail 0) | 0 |
 | ruff / بناء web / بناء الجذر | صفر / ناجح / ناجح | 0 / 0 / 0 |
 
-حقائق CI لالتزامات هذه الجولة تُستخرج من سجل وظيفة `test` نفسها بعد اكتمال التشغيل وتُضاف هنا.
+حقائق CI لالتزامات هذه الجولة (التشغيل 38878911922 — فحوص PR كلها خضراء): خطوة «Run tests (live test suite)» على **Python 3.11.17** انتهت بـ«822 passed, 4 skipped, 4 deselected in 91.38s»؛ وخطوة «Run tests on Python 3.12» على **Python 3.12.15** انتهت بـ«822 passed, 4 skipped, 4 deselected in 82.17s». رابط التشغيل: https://github.com/reeveero-tech/All-hand/actions/runs/38878911922
