@@ -7,24 +7,24 @@
 ### تشغيل الاختبارات محلياً (R-091 — نفس أوامر CI job `test`)
 ```bash
 python3.11 -m venv .venv && . .venv/bin/activate        # CI: 3.11 ثم 3.12 (D-043)
-pip install -r requirements.txt
-pip install pytest pytest-asyncio pytest-cov httpx2       # httpx2 لا httpx — starlette.testclient يستورده
+pip install --require-hashes -r requirements.lock         # R-148: الإنتاج مقفول بالتجزئات
+pip install --require-hashes -r requirements-dev.lock    # R-148: أدوات الاختبار منفصلة ومقيدة بالإنتاج
 pytest tests/ -q                                           # 230 + 3 متخطاة + 3 مستبعدة (network)
 pytest -m network -q                                       # يحتاج إنترنت (CI job network)
 ```
-- تبعيات الاختبار ليست في `requirements.txt` (تبعيات التشغيل فقط). تثبيت `httpx` بدل `httpx2` يعطي `StarletteDeprecationWarning` (logs/82).
+- تبعيات الاختبار ليست في `requirements.txt` (تبعيات التشغيل فقط) — منذ R-148 هي في `requirements-dev.in/lock` منفصلة ومقيدة بإصدارات الإنتاج نفسها. تثبيت `httpx` بدل `httpx2` يعطي `StarletteDeprecationWarning` (logs/82).
 - قبل الدفع: جرّب أيضاً بلا `web/dist` (job `test` لا يبني الواجهة) وعلى 3.11 (درسا R-083 في QUALITY).
 
 ### الواجهة (`web/`)
-- اختبارات عميل API (R-101): `cd web && npm test` (Node ≥22.12، بلا تبعيات إضافية).
+- اختبارات عميل API (R-101): `cd web && npm test` (Node ≥22.13، بلا تبعيات إضافية).
 ```bash
-cd web && npm ci --engine-strict && npm run build   # Node >=22.12.0 (R-089)
+cd web && npm ci --engine-strict && npm run build   # Node >=22.13.0 (R-089/R-148)
 ```
-- مُتحقق: نجاح في 902ms ([log 08](../audit/M0/logs/08_web_build.log)). منذ R-089: `engines.node >=22.12.0` في `web/package.json` — Node 20 (منتهي الدعم) يُرفض بـ`EBADENGINE` (logs/74).
+- مُتحقق: نجاح في 902ms ([log 08](../audit/M0/logs/08_web_build.log)). منذ R-089: `engines.node` في `web/package.json` — Node 20 (منتهي الدعم) يُرفض بـ`EBADENGINE` (logs/74). منذ R-148: الحد المُعلن صُحّح إلى `>=22.13.0` — القياس الفعلي (`npm ci --engine-strict` على 22.12.0 يفشل بـ`notsup` من jsdom 29) أثبت أن الحد الفعلي ^22.13.0 وليس 22.12.0.
 
 ### الخادم
 ```bash
-pip install -r requirements.txt
+pip install --require-hashes -r requirements.lock    # R-148: التثبيت من القفل المقفل بالتجزئات
 python -c "import server"   # ينجح (R-001 أصلح استيراد utc)
 uvicorn server:app --host 0.0.0.0 --port 8000
 # AGENTS_PER_SPEC=3 uvicorn server:app   # 60 وكيلاً بدل 1000 (R-041)
@@ -32,8 +32,26 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 
 ### واجهة الجذر (TanStack)
 ```bash
-npm install && npm run build   # ناجح منذ M2/4 (rc=0)
+npm ci --engine-strict && npm run build   # R-148: تثبيت نظيف من ملف القفل (كان npm install)
 ```
+
+### تجديد قفل Python (R-148)
+- **التعريف مقابل القفل**: `requirements.txt` هو تعريف التبعيات المباشرة (يُحرَّر يدويًا). `requirements.lock` هو المُثبَّت القابل للإنتاج: الإصدارات المحلولة لكل التبعيات المباشرة والانتقالية مع تجزئات SHA-256 (`--require-hashes` يفرضها). `requirements-dev.in` هو تعريف أدوات الاختبار و`requirements-dev.lock` قفلها **مقيد بإصدارات الإنتاج**؛ و`requirements-audit.in/lock` لأداة فحص الثغرات (بيئة مستقلة).
+- **التوليد**: أداة التوليد مثبتة الإصدار: `pip-tools==7.6.1` على Python 3.11. **النطاق المثبت**: منصات Linux المستهدفة على Python 3.11 و3.12 فقط (ما أثبتته الفحوص — بيئات 3.11.15 و3.12.13 محليًا و3.11.17 و3.12.15 في CI، كلها Linux x86_64). توليد أولي (يحترم القفل الموجود عند وجوده):
+```bash
+pip-compile --generate-hashes --no-strip-extras --output-file=requirements.lock requirements.txt
+pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock --output-file=requirements-dev.lock requirements-dev.in
+pip-compile --generate-hashes --no-strip-extras --allow-unsafe --output-file=requirements-audit.lock requirements-audit.in
+```
+(قفل التدقيق بـ`--allow-unsafe` لأن `pip-audit` تعتمد على `pip` نفسها وpip-compile يستبعدها افتراضيًا باعتبارها unsafe — بدونها يبقى القفل ناقصًا ويعتمد على pip الموجودة مسبقًا.)
+- **التحديث المقصود** (رفع الإصدارات داخل النطاقات المسموحة — لا يعتمد على وصول عشوائي لحظة البناء):
+```bash
+pip-compile --generate-hashes --no-strip-extras --upgrade --output-file=requirements.lock requirements.txt
+# أو رفع حزمة محددة فقط: --upgrade-package aiohttp (ويكرر للحزم المطلوبة)
+pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock --output-file=requirements-dev.lock requirements-dev.in
+```
+- **القاعدة**: جدّد `requirements.lock` أولًا ثم `requirements-dev.lock` (القيد `-c` يضمن ألا تعيد أدوات الاختبار حل إصدارات الإنتاج). لا يُعدَّل أي قفل يدويًا. **ملاحظة ترويسة القفل**: قد تظهر `--no-index` في سطر «by the following command» رغم أنها لم تُمرَّر — **أثر عرض مثبت بالتشغيل في pip-tools 7.6.1**: تشغيل توليد معزول بنسخة معدّاة من الأداة أثبت أن `no_index=False` فعليًا وأن الوسائط الممررة للمحلل لا تحوي `--no-index` إطلاقًا (الفهرس الافتراضي PyPI هو المستخدم) بينما تعرضه الترويسة (السجل `268`). الوصفة أعلاه تعمل في بيئة نظيفة كما هي.
+- **الاستهلاك**: CI (test/storage/network) وDocker وRender وأوامر التشغيل المحلي كلها تثبّت من الأقفال بـ`--require-hashes`؛ ترقية pip نفسها في CI مثبتة (`pip==26.2.1`)، وأداة الفحص `pip-audit` من قفلها — لا يوجد أي مسار يثبّت بحل عائم.
 
 ## النشر
 

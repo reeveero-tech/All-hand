@@ -9,8 +9,10 @@ RUN npm run build
 
 FROM python:3.12-slim
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements.lock ./
+# R-148: reproducible install — the hashed production lock, not the floating
+# requirements.txt (which stays the clear direct-dependency definition).
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 COPY . .
 COPY --from=frontend-build /app/web/dist /app/web/dist
 # R-100 (D-044): run as an unprivileged user. Sandbox rlimits (hard == soft)

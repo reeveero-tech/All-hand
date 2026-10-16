@@ -1,0 +1,680 @@
+R-148 review round 2 — supplementary evidence — 2026-10-16T18:23Z — branch m7/r148-build-python-lockfile
+Covers: (a) FULL outputs of the steps log 267 truncated; (b) the audit-lock pip exclusion warning and its resolution; (c) the runtime no_index verification; (d) CI excerpts proving --no-cache, the audit tool's locked install, and the transient network failure + rerun.
+
+== (a1) FULL output: prod lock install on a FRESH 3.11.15 venv (was tail -2 in 267) ==
+Activate with: source /tmp/s311/bin/activate
+Collecting aiohappyeyeballs==2.7.1 (from -r requirements.lock (line 7))
+  Using cached aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+Collecting aiohttp==3.14.5 (from -r requirements.lock (line 11))
+  Using cached aiohttp-3.14.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.9 MB)
+Collecting aiosignal==1.4.0 (from -r requirements.lock (line 174))
+  Using cached aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+Collecting annotated-doc==0.0.5 (from -r requirements.lock (line 178))
+  Using cached annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+Collecting annotated-types==0.8.0 (from -r requirements.lock (line 182))
+  Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Collecting anyio==4.15.1 (from -r requirements.lock (line 186))
+  Using cached anyio-4.15.1-py3-none-any.whl (132 kB)
+Collecting attrs==26.1.0 (from -r requirements.lock (line 192))
+  Using cached attrs-26.1.0-py3-none-any.whl (67 kB)
+Collecting click==8.5.0 (from -r requirements.lock (line 196))
+  Using cached click-8.5.0-py3-none-any.whl (125 kB)
+Collecting fastapi==0.143.3 (from -r requirements.lock (line 200))
+  Using cached fastapi-0.143.3-py3-none-any.whl (144 kB)
+Collecting frozenlist==1.8.0 (from -r requirements.lock (line 204))
+  Using cached frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+Collecting h11==0.16.0 (from -r requirements.lock (line 338))
+  Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting httptools==0.9.0 (from -r requirements.lock (line 342))
+  Using cached httptools-0.9.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (499 kB)
+Collecting idna==3.20 (from -r requirements.lock (line 462))
+  Using cached idna-3.20-py3-none-any.whl (69 kB)
+Collecting multidict==7.1.0 (from -r requirements.lock (line 468))
+  Using cached multidict-7.1.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (480 kB)
+Collecting opentelemetry-api==1.45.1 (from -r requirements.lock (line 643))
+  Using cached opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+Collecting propcache==0.5.4 (from -r requirements.lock (line 647))
+  Using cached propcache-0.5.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (235 kB)
+Collecting pydantic==2.14.1 (from -r requirements.lock (line 789))
+  Using cached pydantic-2.14.1-py3-none-any.whl (488 kB)
+Collecting pydantic-core==2.50.1 (from -r requirements.lock (line 795))
+  Using cached pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+Collecting python-dotenv==1.2.4 (from -r requirements.lock (line 934))
+  Using cached python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+Collecting python-multipart==0.0.32 (from -r requirements.lock (line 938))
+  Using cached python_multipart-0.0.32-py3-none-any.whl (30 kB)
+Collecting pyyaml==6.0.3 (from -r requirements.lock (line 942))
+  Using cached pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+Collecting starlette==1.8.0 (from -r requirements.lock (line 1019))
+  Using cached starlette-1.8.0-py3-none-any.whl (79 kB)
+Collecting typing-extensions==4.16.0 (from -r requirements.lock (line 1023))
+  Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting typing-inspection==0.4.4 (from -r requirements.lock (line 1036))
+  Using cached typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Collecting uvicorn==0.54.0 (from uvicorn[standard]==0.54.0->-r requirements.lock (line 1042))
+  Using cached uvicorn-0.54.0-py3-none-any.whl (87 kB)
+Collecting uvloop==0.23.0 (from -r requirements.lock (line 1046))
+  Using cached uvloop-0.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.0 MB)
+Collecting watchfiles==1.3.0 (from -r requirements.lock (line 1109))
+  Using cached watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (458 kB)
+Collecting websockets==17.2 (from -r requirements.lock (line 1144))
+  Using cached websockets-17.2-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
+Collecting yarl==1.25.1 (from -r requirements.lock (line 1294))
+  Using cached yarl-1.25.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (117 kB)
+Installing collected packages: websockets, uvloop, typing-extensions, pyyaml, python-multipart, python-dotenv, propcache, multidict, idna, httptools, h11, frozenlist, click, attrs, annotated-types, annotated-doc, aiohappyeyeballs, yarl, uvicorn, typing-inspection, pydantic-core, opentelemetry-api, anyio, aiosignal, watchfiles, starlette, pydantic, aiohttp, fastapi
+
+Successfully installed aiohappyeyeballs-2.7.1 aiohttp-3.14.5 aiosignal-1.4.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 click-8.5.0 fastapi-0.143.3 frozenlist-1.8.0 h11-0.16.0 httptools-0.9.0 idna-3.20 multidict-7.1.0 opentelemetry-api-1.45.1 propcache-0.5.4 pydantic-2.14.1 pydantic-core-2.50.1 python-dotenv-1.2.4 python-multipart-0.0.32 pyyaml-6.0.3 starlette-1.8.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0 uvloop-0.23.0 watchfiles-1.3.0 websockets-17.2 yarl-1.25.1
+PROD_INSTALL_311_RC=0
+
+== (a2) FULL output: dev lock install (same env) ==
+Requirement already satisfied: anyio==4.15.1 in /tmp/s311/lib/python3.11/site-packages (from -r requirements-dev.lock (line 7)) (4.15.1)
+Collecting coverage==7.16.2 (from coverage[toml]==7.16.2->-r requirements-dev.lock (line 13))
+  Using cached coverage-7.16.2-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (256 kB)
+Requirement already satisfied: h11==0.16.0 in /tmp/s311/lib/python3.11/site-packages (from -r requirements-dev.lock (line 136)) (0.16.0)
+Collecting httpcore2==2.13.1 (from -r requirements-dev.lock (line 142))
+  Using cached httpcore2-2.13.1-py3-none-any.whl (83 kB)
+Collecting httpx2==2.13.1 (from -r requirements-dev.lock (line 146))
+  Using cached httpx2-2.13.1-py3-none-any.whl (95 kB)
+Requirement already satisfied: idna==3.20 in /tmp/s311/lib/python3.11/site-packages (from -r requirements-dev.lock (line 150)) (3.20)
+Collecting iniconfig==2.3.1 (from -r requirements-dev.lock (line 157))
+  Using cached iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+Requirement already satisfied: packaging==26.3 in /tmp/s311/lib/python3.11/site-packages (from -r requirements-dev.lock (line 161)) (26.3)
+Collecting pluggy==1.7.0 (from -r requirements-dev.lock (line 165))
+  Using cached pluggy-1.7.0-py3-none-any.whl (27 kB)
+Collecting pygments==2.21.0 (from -r requirements-dev.lock (line 171))
+  Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+Collecting pytest==9.1.1 (from -r requirements-dev.lock (line 175))
+  Using cached pytest-9.1.1-py3-none-any.whl (386 kB)
+Collecting pytest-asyncio==1.4.0 (from -r requirements-dev.lock (line 182))
+  Using cached pytest_asyncio-1.4.0-py3-none-any.whl (16 kB)
+Collecting pytest-cov==7.1.0 (from -r requirements-dev.lock (line 186))
+  Using cached pytest_cov-7.1.0-py3-none-any.whl (22 kB)
+Collecting truststore==0.10.5 (from -r requirements-dev.lock (line 190))
+  Using cached truststore-0.10.5-py3-none-any.whl (19 kB)
+Requirement already satisfied: typing-extensions==4.16.0 in /tmp/s311/lib/python3.11/site-packages (from -r requirements-dev.lock (line 196)) (4.16.0)
+Installing collected packages: truststore, pygments, pluggy, iniconfig, coverage, pytest, httpcore2, pytest-cov, pytest-asyncio, httpx2
+
+Successfully installed coverage-7.16.2 httpcore2-2.13.1 httpx2-2.13.1 iniconfig-2.3.1 pluggy-1.7.0 pygments-2.21.0 pytest-9.1.1 pytest-asyncio-1.4.0 pytest-cov-7.1.0 truststore-0.10.5
+DEV_INSTALL_311_RC=0
+No broken requirements found.
+PIPCHECK_RC=0
+
+== (a3) FULL output: reinstall from the same lock (fresh 3.11 venv, both locks) ==
+Activate with: source /tmp/s311b/bin/activate
+Collecting aiohappyeyeballs==2.7.1 (from -r requirements.lock (line 7))
+  Using cached aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+Collecting aiohttp==3.14.5 (from -r requirements.lock (line 11))
+  Using cached aiohttp-3.14.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.9 MB)
+Collecting aiosignal==1.4.0 (from -r requirements.lock (line 174))
+  Using cached aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+Collecting annotated-doc==0.0.5 (from -r requirements.lock (line 178))
+  Using cached annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+Collecting annotated-types==0.8.0 (from -r requirements.lock (line 182))
+  Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Collecting anyio==4.15.1 (from -r requirements.lock (line 186))
+  Using cached anyio-4.15.1-py3-none-any.whl (132 kB)
+Collecting attrs==26.1.0 (from -r requirements.lock (line 192))
+  Using cached attrs-26.1.0-py3-none-any.whl (67 kB)
+Collecting click==8.5.0 (from -r requirements.lock (line 196))
+  Using cached click-8.5.0-py3-none-any.whl (125 kB)
+Collecting fastapi==0.143.3 (from -r requirements.lock (line 200))
+  Using cached fastapi-0.143.3-py3-none-any.whl (144 kB)
+Collecting frozenlist==1.8.0 (from -r requirements.lock (line 204))
+  Using cached frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+Collecting h11==0.16.0 (from -r requirements.lock (line 338))
+  Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting httptools==0.9.0 (from -r requirements.lock (line 342))
+  Using cached httptools-0.9.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (499 kB)
+Collecting idna==3.20 (from -r requirements.lock (line 462))
+  Using cached idna-3.20-py3-none-any.whl (69 kB)
+Collecting multidict==7.1.0 (from -r requirements.lock (line 468))
+  Using cached multidict-7.1.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (480 kB)
+Collecting opentelemetry-api==1.45.1 (from -r requirements.lock (line 643))
+  Using cached opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+Collecting propcache==0.5.4 (from -r requirements.lock (line 647))
+  Using cached propcache-0.5.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (235 kB)
+Collecting pydantic==2.14.1 (from -r requirements.lock (line 789))
+  Using cached pydantic-2.14.1-py3-none-any.whl (488 kB)
+Collecting pydantic-core==2.50.1 (from -r requirements.lock (line 795))
+  Using cached pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+Collecting python-dotenv==1.2.4 (from -r requirements.lock (line 934))
+  Using cached python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+Collecting python-multipart==0.0.32 (from -r requirements.lock (line 938))
+  Using cached python_multipart-0.0.32-py3-none-any.whl (30 kB)
+Collecting pyyaml==6.0.3 (from -r requirements.lock (line 942))
+  Using cached pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+Collecting starlette==1.8.0 (from -r requirements.lock (line 1019))
+  Using cached starlette-1.8.0-py3-none-any.whl (79 kB)
+Collecting typing-extensions==4.16.0 (from -r requirements.lock (line 1023))
+  Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting typing-inspection==0.4.4 (from -r requirements.lock (line 1036))
+  Using cached typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Collecting uvicorn==0.54.0 (from uvicorn[standard]==0.54.0->-r requirements.lock (line 1042))
+  Using cached uvicorn-0.54.0-py3-none-any.whl (87 kB)
+Collecting uvloop==0.23.0 (from -r requirements.lock (line 1046))
+  Using cached uvloop-0.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.0 MB)
+Collecting watchfiles==1.3.0 (from -r requirements.lock (line 1109))
+  Using cached watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (458 kB)
+Collecting websockets==17.2 (from -r requirements.lock (line 1144))
+  Using cached websockets-17.2-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
+Collecting yarl==1.25.1 (from -r requirements.lock (line 1294))
+  Using cached yarl-1.25.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (117 kB)
+Collecting coverage==7.16.2 (from coverage[toml]==7.16.2->-r requirements-dev.lock (line 13))
+  Using cached coverage-7.16.2-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (256 kB)
+Collecting httpcore2==2.13.1 (from -r requirements-dev.lock (line 142))
+  Using cached httpcore2-2.13.1-py3-none-any.whl (83 kB)
+Collecting httpx2==2.13.1 (from -r requirements-dev.lock (line 146))
+  Using cached httpx2-2.13.1-py3-none-any.whl (95 kB)
+Collecting iniconfig==2.3.1 (from -r requirements-dev.lock (line 157))
+  Using cached iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+Requirement already satisfied: packaging==26.3 in /tmp/s311b/lib/python3.11/site-packages (from -r requirements-dev.lock (line 161)) (26.3)
+Collecting pluggy==1.7.0 (from -r requirements-dev.lock (line 165))
+  Using cached pluggy-1.7.0-py3-none-any.whl (27 kB)
+Collecting pygments==2.21.0 (from -r requirements-dev.lock (line 171))
+  Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+Collecting pytest==9.1.1 (from -r requirements-dev.lock (line 175))
+  Using cached pytest-9.1.1-py3-none-any.whl (386 kB)
+Collecting pytest-asyncio==1.4.0 (from -r requirements-dev.lock (line 182))
+  Using cached pytest_asyncio-1.4.0-py3-none-any.whl (16 kB)
+Collecting pytest-cov==7.1.0 (from -r requirements-dev.lock (line 186))
+  Using cached pytest_cov-7.1.0-py3-none-any.whl (22 kB)
+Collecting truststore==0.10.5 (from -r requirements-dev.lock (line 190))
+  Using cached truststore-0.10.5-py3-none-any.whl (19 kB)
+Installing collected packages: websockets, uvloop, typing-extensions, truststore, pyyaml, python-multipart, python-dotenv, pygments, propcache, pluggy, multidict, iniconfig, idna, httptools, h11, frozenlist, coverage, click, attrs, annotated-types, annotated-doc, aiohappyeyeballs, yarl, uvicorn, typing-inspection, pytest, pydantic-core, opentelemetry-api, httpcore2, anyio, aiosignal, watchfiles, starlette, pytest-cov, pytest-asyncio, pydantic, httpx2, aiohttp, fastapi
+
+Successfully installed aiohappyeyeballs-2.7.1 aiohttp-3.14.5 aiosignal-1.4.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 click-8.5.0 coverage-7.16.2 fastapi-0.143.3 frozenlist-1.8.0 h11-0.16.0 httpcore2-2.13.1 httptools-0.9.0 httpx2-2.13.1 idna-3.20 iniconfig-2.3.1 multidict-7.1.0 opentelemetry-api-1.45.1 pluggy-1.7.0 propcache-0.5.4 pydantic-2.14.1 pydantic-core-2.50.1 pygments-2.21.0 pytest-9.1.1 pytest-asyncio-1.4.0 pytest-cov-7.1.0 python-dotenv-1.2.4 python-multipart-0.0.32 pyyaml-6.0.3 starlette-1.8.0 truststore-0.10.5 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0 uvloop-0.23.0 watchfiles-1.3.0 websockets-17.2 yarl-1.25.1
+REINSTALL_RC=0
+DIFF_RC=0
+
+== (a4) FULL output: root npm ci (was tail -3 in 267) ==
+npm warn deprecated tsconfck@3.1.6: unmaintained
+npm warn deprecated recharts@2.15.4: 1.x and 2.x branches are no longer active. Bump to Recharts v3 to receive latest features and bugfixes. See https://github.com/recharts/recharts/wiki/3.0-migration-guide
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 415 packages in 2m
+ROOT_CI_RC=0
+
+== (a5) FULL output: root build (was tail -6 in 267) ==
+
+> build
+> vite build
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 207 modules transformed.
+rendering chunks...
+computing gzip size...
+.output/public/assets/styles-DgakcMqb.css       23.37 kB │ gzip:   5.21 kB
+.output/public/assets/api-n2O7kJ-w.js            1.90 kB │ gzip:   1.12 kB
+.output/public/assets/agents-DxM38KbM.js         2.35 kB │ gzip:   0.98 kB
+.output/public/assets/chat-yiyJXsFw.js           3.59 kB │ gzip:   1.72 kB
+.output/public/assets/settings-CVScxVj7.js       3.68 kB │ gzip:   1.58 kB
+.output/public/assets/routes-CGejzuZS.js         3.80 kB │ gzip:   1.45 kB
+.output/public/assets/command-QvXgVuKe.js        5.19 kB │ gzip:   2.02 kB
+.output/public/assets/useBackend-BDmBBjyr.js     8.36 kB │ gzip:   3.11 kB
+.output/public/assets/jsx-runtime-ByaQ0wya.js    8.77 kB │ gzip:   3.33 kB
+.output/public/assets/index-4riCIjax.js        362.96 kB │ gzip: 115.66 kB
+
+✓ built in 881ms
+vite v8.3.4 building ssr environment for production...
+transforming...
+✓ 73 modules transformed.
+rendering chunks...
+computing gzip size...
+node_modules/.nitro/vite/services/ssr/assets/styles-DgakcMqb.css                     23.37 kB │ gzip:  5.21 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-plugin-adapters-D9UWiqvJ.js        0.22 kB │ gzip:  0.16 kB
+node_modules/.nitro/vite/services/ssr/assets/rolldown-runtime-D7D4PA-g.js             0.36 kB │ gzip:  0.25 kB
+node_modules/.nitro/vite/services/ssr/assets/useBackend-CTM-MADi.js                   0.86 kB │ gzip:  0.46 kB
+node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-DeGRMMz6.js   1.54 kB │ gzip:  0.50 kB
+node_modules/.nitro/vite/services/ssr/assets/start-Du9EfcKF.js                        1.58 kB │ gzip:  0.71 kB
+node_modules/.nitro/vite/services/ssr/index.js                                        2.19 kB │ gzip:  0.97 kB
+node_modules/.nitro/vite/services/ssr/assets/api-D1T-sVu6.js                          2.85 kB │ gzip:  1.50 kB
+node_modules/.nitro/vite/services/ssr/assets/agents-A--DMm3S.js                       3.52 kB │ gzip:  1.24 kB
+node_modules/.nitro/vite/services/ssr/assets/chat-FxcUdkYS.js                         5.19 kB │ gzip:  2.06 kB
+node_modules/.nitro/vite/services/ssr/assets/routes-NvKu0P0g.js                       5.22 kB │ gzip:  1.71 kB
+node_modules/.nitro/vite/services/ssr/assets/settings-Ddu_WzgK.js                     5.42 kB │ gzip:  1.89 kB
+node_modules/.nitro/vite/services/ssr/assets/command-D-hBUhQa.js                      7.51 kB │ gzip:  2.46 kB
+node_modules/.nitro/vite/services/ssr/assets/router-JmfzJEID.js                      11.16 kB │ gzip:  3.43 kB
+node_modules/.nitro/vite/services/ssr/assets/server-Daz3s4tD.js                      93.12 kB │ gzip: 23.53 kB
+
+✓ built in 283ms
+
+[nitro] ◐ Building [Nitro] (preset: cloudflare-module, compatibility: 2026-10-16)
+[nitro] ✔ Generated public .output/public
+vite v8.3.4 building nitro environment for production...
+
+ WARN  inlineDynamicImports option is ignored because the codeSplitting option is specified.
+
+`output.codeSplitting.groups[0].name` is a function. Set `output.codeSplitting.groups[0].debugName` so the bundler timing report can identify this group.
+transforming...
+✓ 262 modules transformed.
+rendering chunks...
+computing gzip size...
+.output/server/_libs/srvx.mjs                             0.12 kB │ gzip:   0.12 kB
+.output/server/_ssr/empty-plugin-adapters-D9UWiqvJ.mjs    0.23 kB │ gzip:   0.16 kB
+.output/server/_ssr/rolldown-runtime-D7D4PA-g.mjs         0.41 kB │ gzip:   0.29 kB
+.output/server/_chunks/ssr-renderer.mjs                   0.60 kB │ gzip:   0.36 kB
+.output/server/_ssr/useBackend-CTM-MADi.mjs               1.07 kB │ gzip:   0.56 kB
+.output/server/_libs/hookable.mjs                         1.17 kB │ gzip:   0.52 kB
+.output/server/_runtime.mjs                               1.18 kB │ gzip:   0.57 kB
+.output/server/_ssr/start-Du9EfcKF.mjs                    1.57 kB │ gzip:   0.72 kB
+.output/server/_tanstack-start-manifest_v-DeGRMMz6.mjs    1.60 kB │ gzip:   0.53 kB
+.output/server/_ssr/ssr.mjs                               2.12 kB │ gzip:   0.97 kB
+.output/server/_ssr/api-D1T-sVu6.mjs                      2.90 kB │ gzip:   1.54 kB
+.output/server/_ssr/agents-A--DMm3S.mjs                   4.13 kB │ gzip:   1.33 kB
+.output/server/_ssr/chat-FxcUdkYS.mjs                     6.01 kB │ gzip:   2.17 kB
+.output/server/_ssr/routes-NvKu0P0g.mjs                   6.10 kB │ gzip:   1.80 kB
+.output/server/_ssr/settings-Ddu_WzgK.mjs                 6.26 kB │ gzip:   2.01 kB
+.output/server/_ssr/command-D-hBUhQa.mjs                  8.63 kB │ gzip:   2.59 kB
+.output/server/index.mjs                                 11.12 kB │ gzip:   3.47 kB
+.output/server/_ssr/router-JmfzJEID.mjs                  11.77 kB │ gzip:   3.50 kB
+.output/server/_libs/tanstack__history.mjs               12.33 kB │ gzip:   3.66 kB
+.output/server/_libs/h3+rou3+srvx.mjs                    17.31 kB │ gzip:   4.99 kB
+.output/server/_libs/react+tanstack__react-query.mjs     29.31 kB │ gzip:   7.93 kB
+.output/server/_libs/@tanstack/router-core+[...].mjs     32.87 kB │ gzip:   8.99 kB
+.output/server/_ssr/server-Daz3s4tD.mjs                  91.11 kB │ gzip:  23.37 kB
+.output/server/_libs/tanstack__query-core.mjs           135.99 kB │ gzip:  32.36 kB
+.output/server/_libs/@tanstack/react-router+[...].mjs   785.90 kB │ gzip: 165.63 kB
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/index.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/index.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/utils.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/utils.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouterState.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouterState.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useLocation.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useLocation.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useBlocker.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useBlocker.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useNavigate.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useNavigate.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Asset.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Asset.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/link.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/link.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/ClientOnly.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/ClientOnly.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/matchContext.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/matchContext.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/HeadContent.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/HeadContent.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Matches.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Matches.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/RouterProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/RouterProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Match.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Match.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouter.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useRouter.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useMatch.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/useMatch.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Transitioner.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/Transitioner.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/routerContext.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-router/dist/esm/routerContext.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQueries.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useQueries.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutationState.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutationState.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useIsFetching.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useIsFetching.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutation.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useMutation.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useBaseQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m node_modules/@tanstack/react-query/build/modern/useBaseQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+
+✓ built in 417ms
+[nitro] ℹ Using auto generated worker name: reeveero-tech-all-hand
+ℹ Generated .output/server/wrangler.json
+ℹ Generated .wrangler/deploy/config.json
+ℹ Generated .output/public/_headers
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+ROOT_BUILD_RC=0
+
+== (b) audit lock: the pip-exclusion warning and its resolution ==
+-- before regeneration, requirements-audit.lock carried (git show of the committed version):
+# WARNING: The following packages were not pinned, but pip requires them to be
+# pinned when the requirements file includes hashes and the requirement is not
+# satisfied by a package already installed. Consider using the --allow-unsafe flag.
+# pip
+-- regenerated WITH --allow-unsafe: pip now pinned explicitly, zero warnings:
+pip-audit==2.10.1 \
+pip==26.2.1 \
+0
+(0 = no warnings left)
+
+-- fresh-env test of the audit lock (install + pip check + version):
+No broken requirements found.
+PIPCHECK_RC=0
+pip-audit 2.10.1
+AUDIT_LOCK_TEST_RC=0
+
+== (c) no_index runtime verification (isolated instrumented copy of pip-tools 7.6.1; same venv) ==
+command: PYTHONPATH=/tmp/dbg pip-compile --generate-hashes --no-strip-extras --output-file=/tmp/dbgout.lock requirements.txt
+-- debug output (stderr):
+[DEBUG-NO-INDEX] no_index=False index_url=None extra_index_url=() find_links=()
+[DEBUG-NO-INDEX] pip_args BEFORE no_index handling: []
+[DEBUG-NO-INDEX] FINAL pip_args passed to resolver: ['--cache-dir', '/home/user/.cache/pip-tools']
+NOINDEX_VERIFY_RC=0
+-- conclusion: no_index=False at runtime; the pip_args passed to the resolver contain NO --no-index (default PyPI index used); the header's --no-index is a rendering artifact of get_compile_command (proven, not inferred).
+
+== (d) CI excerpts (run 38945685655, head 2bfd917 — all checks green after the network rerun) ==
+-- docker job: explicit --no-cache build step:
+docker	UNKNOWN STEP	2026-10-16T18:16:45.9299406Z ^[[36;1mdocker build --no-cache -t agos:r040-smoke . 2>&1 | tee "$GITHUB_WORKSPACE/docker_build.log"^[[0m
+-- docker job: the locked install inside the image build:
+docker	UNKNOWN STEP	2026-10-16T18:16:53.4487928Z #17 [stage-1 4/7] RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+-- audit job: the scanner installed from its own hashed lock:
+audit	UNKNOWN STEP	2026-10-16T18:16:47.0490732Z ##[group]Run pip install --require-hashes -r requirements-audit.lock
+audit	UNKNOWN STEP	2026-10-16T18:16:47.0492830Z ^[[36;1mpip install --require-hashes -r requirements-audit.lock^[[0m
+audit	UNKNOWN STEP	2026-10-16T18:16:49.2491926Z Collecting boolean-py==5.0 (from -r requirements-audit.lock (line 7))
+-- network job, first run: the transient live failure (non-required job by design):
+-- network job, rerun (same run id, job 117126224718): passed:
+network	Live network tests	2026-10-16T18:18:49.9287602Z ====================== 4 passed, 829 deselected in 4.14s =======================
+CI_EXCERPTS_RC=0

@@ -1,0 +1,7 @@
+# R-148: أدوات اختبار CI فقط — منفصلة عن تبعيات الإنتاج.
+# تُولَّد بقيادة requirements.lock (constraint) كي لا تعيد حل إصدارات الإنتاج
+# إلى إصدارات مختلفة. جدّد requirements.lock أولاً ثم هذا الملف.
+pytest
+pytest-asyncio
+pytest-cov
+httpx2
