@@ -1,6 +1,6 @@
 # التشغيل والنشر (OPERATIONS)
 
-> **آخر تحديث**: 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
+> **آخر تحديث**: 2026-10-16 — R-144 (SEC-04): حدود بث SSE `AGOS_SSE_*` ومراقبتها (القسم «حدود بث SSE»). قبلها 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
 
 ## البناء والتشغيل المحلي
 
@@ -64,6 +64,13 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 | `AGOS_ALLOWED_ORIGINS` | server.py | `"*"` |
 | `AGOS_RATE_LIMIT_REQUESTS` | server.py | 100 |
 | `AGOS_RATE_LIMIT_WINDOW` | server.py | 60 |
+| `AGOS_SSE_QUEUE_SIZE` (R-144) | core/sse.py | 100 أحداث لكل اتصال SSE [1–10000] |
+| `AGOS_SSE_MAX_CONNECTIONS` (R-144) | core/sse.py | 100 اتصال SSE متزامن للعملية [1–10000] |
+| `AGOS_SSE_MAX_PER_TENANT` (R-144) | core/sse.py | 10 [1–10000، ≤ الإجمالي] |
+| `AGOS_SSE_MAX_PER_CLIENT` (R-144) | core/sse.py | 5 لكل `request.client.host` [1–10000، ≤ الإجمالي] |
+| `AGOS_SSE_OPEN_RATE` / `AGOS_SSE_OPEN_WINDOW` (R-144) | core/sse.py | 10 فتحات خلال 60 ث لكل عميل [1–10000] / [1–3600] |
+| `AGOS_SSE_MAX_LIFETIME` (R-144) | core/sse.py | 3600 ث [10–86400] |
+| `AGOS_SSE_HEARTBEAT` (R-144) | core/sse.py | 30 ث [1–300] (كما كان ثابتاً) |
 | `AGOS_ALLOW_CODE_EXEC` (R-100، D-044) | core/safety.py | غير مضبوط = تنفيذ `test_runner` فقط إن ضُبط `AGOS_API_KEY`؛ `1` يسمح؛ `0` يرفض دائماً |
 | `AGOS_MEMORY` (R-103، D-046) | core/experience.py | غير مضبوط/`1` = الذاكرة والتعلم مفعّلان؛ `0` يعطّلهما (لا حقل `experience`) |
 | `AGOS_MEMORY_MAX` (R-103) | core/experience.py | 2000 مدخلاً (حد أدنى 10)؛ الأقل أهمية/الأقدم يُحذف |
@@ -158,3 +165,11 @@ npm install && npm run build   # ناجح منذ M2/4 (rc=0)
 - معدل الطلبات والأخطاء: `agos_http_requests_total` بحسب `endpoint` (قالب المسار — عدد السلاسل محدود بعدد المسارات × الطرق × الرموز).
 - الكمون: `agos_http_request_duration_seconds_bucket` (الحدود 0.005…10 ثانية). الذاكرة محدودة: تجميعات لكل سلسلة + نافذة خام 1024 قيمة.
 - الكلفة المقاسة ~18µs/طلب (TestClient، logs/63).
+
+## حدود بث SSE (R-144، SEC-04)
+
+- **الضبط**: متغيرات `AGOS_SSE_*` (الجدول أعلاه) تُقرأ عند الإقلاع (`SSELimits.from_env`). أي قيمة غير صحيحة العدد أو صفرية أو سالبة أو خارج المدى، أو حد مستأجر/عميل أكبر من الإجمالي → **الخادم لا يقلع** برسالة تسمّي المتغير (لا تجاهل صامت ولا تعطيل للضابط). القيم الافتراضية ابتدائية، **لم تُقَس بحمل حي**؛ تُراجع حسب عدد المستأجرين والعملاء الفعلي.
+- **المراقبة** (`/metrics`): `agos_sse_connections` (مقياس: الاتصالات المفتوحة الآن)، `agos_sse_connections_opened_total`، `agos_sse_refused_total` (رفض 429 لمعدل الفتح أو السعة)، `agos_sse_events_dropped_total` (أحداث أُسقطت لمستمعين بطيئين). السجل: `sse: connection refused (<reason>)` و`sse: slow listener, dropped …` (لا مفاتيح ولا معرّفات مستأجرين).
+- **سلوك الازدحام**: لا ينتظر الناشر (تنفيذ المهام) أي مستمع؛ الطابور الممتلئ يُسقط أقدم حدث ويُبلغ المستمع بـ`stream_gap`. بلا مستمعين لا تُحفظ أحداث في الذاكرة — `/api/events` (Supabase) هو السجل الدائم.
+- **حدود معروفة**: الحدود **لكل عملية** (لا تنسيق بين نسخ متعددة)؛ العميل = `request.client.host` — خلف وكيل عكسي قد يتشارك العملاء عنواناً واحداً (حد العميل يصير حداً للوكيل) — لا يُوثق بـ`X-Forwarded-For` لعدم وجود آلية وكلاء موثوقة محددة. خريطة تتبع معدل الفتح محدودة (`MAX_TRACKED_CLIENTS` = 10000، تُنظَّف المدخلات المنتهية؛ عند امتلائها بعملاء نشطين يُرفض الجديد 429).
+

@@ -82,8 +82,11 @@ def test_sse_stream_requires_the_key_sent_by_the_fetch_based_reader(auth_server)
     assert "api_key" in inspect.signature(route.endpoint).parameters
     import asyncio
     from fastapi import HTTPException
+    from starlette.requests import Request
+    request = Request({"type": "http", "method": "GET", "path": "/api/events/stream", "headers": [],
+                       "query_string": b"", "client": ("127.0.0.1", 1)})
     with pytest.raises(HTTPException) as e:
-        asyncio.run(route.endpoint(api_key=None))
+        asyncio.run(route.endpoint(request, api_key=None))   # SEC-04: takes the Request (rate_limit)
     assert e.value.status_code == 401
 
 

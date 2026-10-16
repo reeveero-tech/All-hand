@@ -432,17 +432,24 @@ def test_self_developer_retests_only_the_callers_failures(keys):
 
 # ------------------------------------------------------------------ events: stream + database
 
-async def _first_chunk(srv, key):
-    resp = await srv.event_stream(api_key=key)
-    return await asyncio.wait_for(resp.body_iterator.__anext__(), timeout=3)
+def _sse_request():
+    from starlette.requests import Request
+    return Request({"type": "http", "method": "GET", "path": "/api/events/stream", "headers": [],
+                    "query_string": b"", "client": ("127.0.0.1", 1)})
 
 
 def test_event_stream_is_per_tenant(srv, keys):
+    # SEC-04 (R-144): both streams are connected first; events are broadcast
+    # to connected streams only (before R-144 they were queued in advance).
     async def go():
+        resp_a = await srv.event_stream(_sse_request(), api_key=keys["A"])
+        resp_b = await srv.event_stream(_sse_request(), api_key=keys["B"])
         await srv._publish("tenant_b", {"type": "secret-event-b"})
         await srv._publish("tenant_a", {"type": "event-a"})
-        chunk_a = await _first_chunk(srv, keys["A"])
-        chunk_b = await _first_chunk(srv, keys["B"])
+        chunk_a = await asyncio.wait_for(resp_a.body_iterator.__anext__(), timeout=3)
+        chunk_b = await asyncio.wait_for(resp_b.body_iterator.__anext__(), timeout=3)
+        await resp_a.body_iterator.aclose()
+        await resp_b.body_iterator.aclose()
         return chunk_a, chunk_b
     chunk_a, chunk_b = asyncio.run(go())
     assert "event-a" in chunk_a and "secret-event-b" not in chunk_a
@@ -452,16 +459,23 @@ def test_event_stream_is_per_tenant(srv, keys):
 def test_event_stream_requires_a_valid_key(srv):
     for key in (None, "", "wrong"):
         with pytest.raises(HTTPException) as e:
-            asyncio.run(srv.event_stream(api_key=key))
+            asyncio.run(srv.event_stream(_sse_request(), api_key=key))
         assert e.value.status_code == 401
 
 
 def test_task_events_reach_only_the_owners_stream(client, keys, srv):
-    tid, _ = _task(client, keys["A"], "secret-evt 1 2 3")
-    qa, qb = srv.tenant_events("tenant_a"), srv.tenant_events("tenant_b")
-    seen_a = [qa.get_nowait()["task_id"] for _ in range(qa.qsize())]
-    assert seen_a and set(seen_a) == {tid}
-    assert qb.qsize() == 0
+    # SEC-04 (R-144): one subscription per tenant, registered on the bus the
+    # stream route uses, before the task runs
+    sub_a, sub_b = srv.EVENT_BUS.open("tenant_a", "t-a"), srv.EVENT_BUS.open("tenant_b", "t-b")
+    try:
+        tid, _ = _task(client, keys["A"], "secret-evt 1 2 3")
+        qa, qb = sub_a.queue, sub_b.queue
+        seen_a = [qa.get_nowait()["task_id"] for _ in range(qa.qsize())]
+        assert seen_a and set(seen_a) == {tid}
+        assert qb.qsize() == 0
+    finally:
+        srv.EVENT_BUS.close(sub_a)
+        srv.EVENT_BUS.close(sub_b)
 
 
 class _PostgREST(BaseHTTPRequestHandler):

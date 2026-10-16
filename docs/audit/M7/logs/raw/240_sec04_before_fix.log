@@ -1,0 +1,112 @@
+# SEC-04 (R-144) — before the fix: main 1f9fb42 (clean worktree), server.py / web/src unchanged; only the final new tests + probe copied in
+# python: Python 3.14.3; node: v22.23.3
+# cmd: python3 -m pytest tests/test_sec04_sse_broadcast_bounds.py -v -p no:cacheprovider
+tests/test_sec04_sse_broadcast_bounds.py::test_two_listeners_of_one_tenant_each_receive_every_event_and_other_tenant_none FAILED [  3%]
+tests/test_sec04_sse_broadcast_bounds.py::test_real_task_events_reach_both_listeners FAILED [  6%]
+tests/test_sec04_sse_broadcast_bounds.py::test_no_listener_nothing_is_kept FAILED [  9%]
+tests/test_sec04_sse_broadcast_bounds.py::test_per_client_limit_refused_with_429_before_stream FAILED [ 12%]
+tests/test_sec04_sse_broadcast_bounds.py::test_disconnect_releases_capacity FAILED [ 15%]
+tests/test_sec04_sse_broadcast_bounds.py::test_unauthenticated_refused_without_subscription_or_capacity PASSED [ 18%]
+tests/test_sec04_sse_broadcast_bounds.py::test_stream_route_has_general_rate_limit FAILED [ 21%]
+tests/test_sec04_sse_broadcast_bounds.py::test_lifetime_ends_stream_and_releases FAILED [ 24%]
+tests/test_sec04_sse_broadcast_bounds.py::test_heartbeat_when_idle_and_format FAILED [ 27%]
+tests/test_sec04_sse_broadcast_bounds.py::test_full_queue_drops_oldest_reports_gap_and_never_blocks_publisher FAILED [ 30%]
+tests/test_sec04_sse_broadcast_bounds.py::test_capacity_limits_refuse_before_stream[total] FAILED [ 33%]
+tests/test_sec04_sse_broadcast_bounds.py::test_capacity_limits_refuse_before_stream[per_tenant] FAILED [ 36%]
+tests/test_sec04_sse_broadcast_bounds.py::test_capacity_limits_refuse_before_stream[per_client] FAILED [ 39%]
+tests/test_sec04_sse_broadcast_bounds.py::test_open_rate_refuses_then_allows_after_window FAILED [ 42%]
+tests/test_sec04_sse_broadcast_bounds.py::test_cleanup_once_on_cancel_exception_and_unstarted_response FAILED [ 45%]
+tests/test_sec04_sse_broadcast_bounds.py::test_admin_stream_is_own_tenant_only FAILED [ 48%]
+tests/test_sec04_sse_broadcast_bounds.py::test_tracking_map_is_bounded FAILED [ 51%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_QUEUE_SIZE-0] FAILED [ 54%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_QUEUE_SIZE--5] FAILED [ 57%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_QUEUE_SIZE-abc] FAILED [ 60%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_QUEUE_SIZE-100000000] FAILED [ 63%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_CONNECTIONS-0] FAILED [ 66%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_PER_TENANT-0] FAILED [ 69%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_PER_CLIENT--1] FAILED [ 72%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_OPEN_RATE-0] FAILED [ 75%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_OPEN_WINDOW-0] FAILED [ 78%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_LIFETIME-0] FAILED [ 81%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_LIFETIME-9999999] FAILED [ 84%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_HEARTBEAT-0] FAILED [ 87%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_MAX_PER_TENANT-500] FAILED [ 90%]
+tests/test_sec04_sse_broadcast_bounds.py::test_invalid_limits_rejected[AGOS_SSE_OPEN_RATE-1.5] FAILED [ 93%]
+tests/test_sec04_sse_broadcast_bounds.py::test_defaults_and_valid_override FAILED [ 96%]
+tests/test_sec04_sse_broadcast_bounds.py::test_server_refuses_to_start_with_invalid_limit FAILED [100%]
+======================== 32 failed, 1 passed in 17.05s =========================
+
+## failure reasons of the behavioural (real-HTTP / real-route) tests
+# test_two_listeners_of_one_tenant_each_receive_every_event_and_other_tenant_none
+E   AssertionError: assert ['a-0', 'a-2', 'a-4'] == ['a-0', 'a-1'... 'a-3', 'a-4']
+E     
+# test_real_task_events_reach_both_listeners
+E   AssertionError: ['task_created']
+E   assert ['task_created'] == ['task_create...sk_completed']
+# test_no_listener_nothing_is_kept
+E   AssertionError: ['backlog-0', 'backlog-1', 'backlog-2', 'backlog-3', 'backlog-4']
+E   assert ['backlog-0',..., 'backlog-4'] == []
+# test_per_client_limit_refused_with_429_before_stream
+E   assert 200 == 429
+E    +  where 200 = <tests.test_sec04_sse_broadcast_bounds._Listener object at 0x7fde79696450>.status
+# test_stream_route_has_general_rate_limit
+E   assert [401, 401, 401] == [401, 401, 429]
+E     
+# test_heartbeat_when_idle_and_format
+E   TypeError: event_stream() got multiple values for argument 'api_key'
+# the remaining failures: the old code has no EventBus / SSELimits (AttributeError / ImportError: agent_civilization.core.sse) — bounds, admission, cleanup and config did not exist
+# test_unauthenticated_refused_without_subscription_or_capacity PASSED on the old code too: SEC-02 authentication was already in place
+
+## web client (cd web && npm test) with the new tests
+ok 1 - open mode: no key stored -> no X-API-Key header (behaviour unchanged)
+ok 2 - stored key is sent on every call, write and read
+ok 3 - key never appears in the URL or body
+ok 4 - caller headers are merged, not allowed to drop Content-Type or the key
+ok 5 - clearApiKey / empty value removes the key
+ok 6 - 401 -> clear Arabic message, status kept, auth event dispatched
+ok 7 - SEC-02: 401 with a stored key -> "key is wrong" message (server answers 401 for an invalid key)
+ok 8 - SEC-02: 403 with a valid key -> admin role message
+ok 9 - SEC-02: server without credentials -> "authentication not configured" message
+ok 10 - SEC-02: the event stream is not opened without a key
+ok 11 - SEC-02: the event stream sends X-API-Key and parses data events
+not ok 12 - SEC-04: 429 waits Retry-After, never a fast retry
+not ok 13 - SEC-04: repeated 429 without Retry-After backs off exponentially, capped
+not ok 14 - SEC-04: short Retry-After never undercuts the backoff
+ok 15 - SEC-04: 401 / 403 stop reconnecting (no loop on a rejected key)
+not ok 16 - SEC-04: network errors back off; an accepted stream that ends (max lifetime) reconnects after retryMs and resets
+not ok 17 - SEC-04: stream_gap is delivered like any event; close() cancels the pending reconnect
+ok 18 - other errors keep the server detail
+ok 19 - external agent names are URL-encoded on delete
+ok 20 - no sessionStorage (blocked) -> calls still work without a key
+# tests 20
+# pass 15
+# fail 5
+# 'SEC-04: 401 / 403 stop reconnecting' passes on the old code too (it already stopped); the old client retried every retryMs (5 s) on 429 / errors, ignoring Retry-After
+
+## probe (production mode, real uvicorn on loopback, real concurrent SSE connections)
+# cmd: PYTHONPATH=. python3 scripts/sec04/probe_sse.py
+code: old (TASK_EVENTS shared queue); server http://127.0.0.1:60659 AGOS_ENV=production
+
+## 1. broadcast: listeners A1, A2 (tenant_a) and B1 (tenant_b) connected; 6 events to tenant_a, 2 to tenant_b
+A1 status=200 received=['a0', 'a2', 'a4']
+A2 status=200 received=['a1', 'a3', 'a5']
+B1 status=200 received=['b0', 'b1']
+tenant_b events seen by A1/A2: [] | tenant_a events seen by B1: []
+
+## 2. no listener: 5 events to tenant_a while nobody is connected, then a listener connects (0.8 s)
+before connecting: TASK_EVENTS[tenant_a]: qsize=5, maxsize=0 (0 = unbounded)
+late listener received=['backlog0', 'backlog1', 'backlog2', 'backlog3', 'backlog4']
+
+## 3. queue bound / publisher: 1000 events to tenant_b with no reader
+published 1000 in 0.037s; TASK_EVENTS[tenant_b]: qsize=1000, maxsize=0 (0 = unbounded)
+
+## 4. concurrent connections from one client: 7 attempts (tenant_a)
+statuses: [200, 200, 200, 200, 200, 200, 200] | Retry-After: [] | bodies: []
+after disconnect: TASK_EVENTS[tenant_a]: qsize=0, maxsize=0 (0 = unbounded)
+
+## 5. open-rate: 12 sequential open+close from one client (tenant_a)
+(status, Retry-After): [(200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None), (200, None)]
+
+## 6. release: capacity after disconnect
+after 5 opened+closed: TASK_EVENTS[tenant_a]: qsize=0, maxsize=0 (0 = unbounded)
+5 new connections: [200, 200, 200, 200, 200]

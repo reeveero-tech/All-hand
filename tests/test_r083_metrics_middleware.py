@@ -103,12 +103,11 @@ def test_exception_is_recorded_as_500_and_unmatched_label():
 async def test_sse_stream_passes_through_middleware(tenant_auth):
     """Raw ASGI call through the full middleware stack: the first SSE chunk
     arrives while the stream is still open, then a disconnect ends it.
-    SEC-02: the stream needs the tenant's key and reads that tenant's queue."""
+    SEC-02: the stream needs the tenant's key and reads that tenant's events.
+    SEC-04 (R-144): events are broadcast to connected streams only (nothing
+    is kept for a tenant with no stream), so the event is published once the
+    stream has subscribed — before R-144 it was queued in advance."""
     tag = f"r083_{time.time()}"
-    queue = server.tenant_events(tenant_auth.tenant)
-    while not queue.empty():
-        queue.get_nowait()
-    await queue.put({"type": tag})
     got_chunk = asyncio.Event()
     messages = []
 
@@ -129,7 +128,14 @@ async def test_sse_stream_passes_through_middleware(tenant_auth):
     key = get_metrics()._make_key("http_requests_total",
                                   {"method": "GET", "endpoint": "/api/events/stream", "status": "200"})
     before = get_metrics()._counters.get(key, 0)
-    await asyncio.wait_for(server.app(scope, receive, send), timeout=5)
+    app_call = asyncio.ensure_future(server.app(scope, receive, send))
+    for _ in range(500):
+        if server.EVENT_BUS.subscribers(tenant_auth.tenant):
+            break
+        await asyncio.sleep(0.01)
+    await server._publish(tenant_auth.tenant, {"type": tag})
+    await asyncio.wait_for(app_call, timeout=5)
+    assert server.EVENT_BUS.subscribers(tenant_auth.tenant) == 0   # released on disconnect
     start = next(m for m in messages if m["type"] == "http.response.start")
     assert start["status"] == 200
     assert (b"content-type", b"text/event-stream; charset=utf-8") in start["headers"]

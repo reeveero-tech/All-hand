@@ -47,6 +47,7 @@ from agent_civilization.agents.external_adapter import (
 )
 from agent_civilization.core import experience, safety, tenancy
 from agent_civilization.core.tenancy import ALL_TENANTS, Principal
+from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
 from agent_civilization.routing import route as route_request
 from agent_civilization.core.llm import get_llm
 
@@ -259,22 +260,28 @@ AGENTS_PER_SPEC = _agents_per_spec()
 CIVILIZATION = create_civilization(AGENTS_PER_SPEC)
 EXTERNAL_AGENTS: List[ExternalAgentAdapter] = load_external_agents_from_env()
 TASKS: Dict[str, Dict[str, Any]] = {}
-# SEC-02: one live-event queue per tenant — a stream only ever reads its own
-# tenant's queue (SEC-04, broadcast/bounds, is a separate audit item).
-TASK_EVENTS: Dict[str, asyncio.Queue] = {}
+# SEC-04 (R-144): live events are broadcast in process — every SSE connection
+# of a tenant has its own bounded queue and receives its own copy; nothing is
+# kept for a tenant with no connection (SEC-02: a stream only ever subscribes
+# to its own tenant). Limits: AGOS_SSE_* (agent_civilization/core/sse.py);
+# an invalid value is a startup error.
+def _sse_metric(name: str, value: float) -> None:
+    from agos_kernel.infrastructure.metrics import get_metrics
+    if name == "sse_connections":
+        get_metrics().set_gauge(name, value)
+    else:
+        get_metrics().inc_counter(name, value)
 
 
-def tenant_events(tenant_id: str) -> asyncio.Queue:
-    tenancy.check_scope(tenant_id)
-    q = TASK_EVENTS.get(tenant_id)
-    if q is None:
-        q = TASK_EVENTS[tenant_id] = asyncio.Queue()
-    return q
+SSE_LIMITS = SSELimits.from_env()
+EVENT_BUS = EventBus(SSE_LIMITS, on_metric=_sse_metric)
 
 
 async def _publish(tenant_id: Optional[str], event: Dict[str, Any]) -> None:
+    """Never waits for a listener (a full listener queue drops its oldest event)."""
     if tenant_id is not None:
-        await tenant_events(tenant_id).put(event)
+        tenancy.check_scope(tenant_id)
+        EVENT_BUS.publish(tenant_id, event)
 
 
 def _visible_task(task: Optional[Dict[str, Any]], scope) -> bool:
@@ -747,22 +754,62 @@ async def list_events(request: Request, limit: int = 50, all_tenants: bool = Fal
     return {"count": len(events), "events": events}
 
 
+SSE_LIMIT_DETAIL = "too many event streams, retry later"
+
+
+class _SSEResponse(StreamingResponse):
+    """Releases the subscription however the response ends (normal end,
+    lifetime, client disconnect, cancellation, error) — even if the body
+    generator never started."""
+
+    def __init__(self, content, release: Callable[[], Any], **kw):
+        super().__init__(content, **kw)
+        self._release = release
+
+    async def __call__(self, scope, receive, send):
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            self._release()
+
+
 @app.get("/api/events/stream")
-async def event_stream(api_key: Optional[str] = Security(api_key_header)):
+@rate_limit
+async def event_stream(request: Request, api_key: Optional[str] = Security(api_key_header)):
     """Server-Sent Events stream of the caller tenant's task updates (SEC-02).
     Needs X-API-Key like every tenant-data route (the web UI reads it with
-    fetch, not EventSource, so it can send the header)."""
-    queue = tenant_events(require_principal(api_key).tenant_id)
+    fetch, not EventSource, so it can send the header).
+    SEC-04 (R-144): admission (open-rate per client, total / per-tenant /
+    per-client connections) is decided here, before the 200 — refusal is 429
+    + Retry-After with a fixed message; the stream ends at AGOS_SSE_MAX_LIFETIME."""
+    tenant = require_principal(api_key).tenant_id
+    client = request.client.host if request.client else "unknown"
+    try:
+        sub = EVENT_BUS.open(tenant, client)
+    except StreamLimit as e:
+        logger.warning("sse: connection refused (%s), retry after %ss", e.reason, e.retry_after)
+        raise HTTPException(429, SSE_LIMIT_DETAIL, headers={"Retry-After": str(e.retry_after)})
+
+    def release() -> None:
+        sub.bus.close(sub)  # the bus it was opened on (idempotent)
 
     async def generate():
-        while True:
-            try:
-                event = await asyncio.wait_for(queue.get(), timeout=30)
-                yield f"data: {json.dumps(event)}\n\n"
-            except asyncio.TimeoutError:
-                yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+        try:
+            while True:
+                left = sub.bus.lifetime_left(sub)
+                if left <= 0:
+                    return  # max lifetime: end the stream; the client reconnects
+                event = await sub.next(timeout=min(sub.bus.limits.heartbeat_s, left))
+                if event is None:
+                    if sub.bus.lifetime_left(sub) <= 0:
+                        return
+                    yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+                else:
+                    yield f"data: {json.dumps(event)}\n\n"
+        finally:
+            release()
 
-    return StreamingResponse(generate(), media_type="text/event-stream", headers={
+    return _SSEResponse(generate(), release, media_type="text/event-stream", headers={
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
         "X-Accel-Buffering": "no",
