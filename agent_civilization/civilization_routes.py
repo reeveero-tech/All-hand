@@ -17,7 +17,7 @@ from typing import Any, Optional
 
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from agent_civilization.registry import AGENTS, as_list, total_agents
 from agent_civilization.routing import route as auto_route
@@ -27,6 +27,9 @@ from agent_civilization.pipeline import execute_plan
 class ExecuteRequest(BaseModel):
     message: str
     data: Optional[Any] = None
+    # SEC-06 (R-145): explicit per-request consent to the public (keyless) LLM
+    # provider — strict bool, default False (a missing field is refusal).
+    allow_public_llm: bool = Field(False, strict=True)
 
 
 def register_civilization_routes(app, civilization, tasks_store, prune_tasks, verify_api_key=None,
@@ -80,7 +83,15 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             "tenant_id": principal.tenant_id,
         }
         prune_tasks()
-        result = await execute_plan(plan, civilization, data=req.data)
+        # SEC-06 (R-145): this request's consent governs only the LLM calls made
+        # while executing its plan (execute_plan may reach the public keyless
+        # provider); reset right after — it never leaks to another request.
+        from agent_civilization.core.llm import reset_public_llm_consent, set_public_llm_consent
+        token = set_public_llm_consent(req.allow_public_llm)
+        try:
+            result = await execute_plan(plan, civilization, data=req.data)
+        finally:
+            reset_public_llm_consent(token)
         tasks_store[task_id]["status"] = "completed"
         tasks_store[task_id]["result"] = result
         return {"task_id": task_id, **result}

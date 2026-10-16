@@ -1467,29 +1467,39 @@ async def _self_developer(work: Dict[str, Any]) -> Dict[str, Any]:
             from agent_civilization.routing.auto_router import route
             if _SELF_CIV is None:
                 _SELF_CIV = create_civilization(1)
-            for goal in goals[:_self_retest_max()]:
-                plan = route(goal)
-                if any(st.get("specialization") == "self_developer" for st in plan.get("stages", [])):
-                    continue
-                try:
-                    res = await asyncio.wait_for(execute_plan(plan, _SELF_CIV), timeout=120)
-                    stages = res.get("stages", [])
-                except Exception as e:  # noqa: BLE001
-                    stages = [{"name": "retest", "ok": False, "output": f"{type(e).__name__}: {e}"}]
-                bad = next((s for s in stages if not s.get("ok")), None)
-                item = {"goal": goal[:160], "fixed": bool(stages) and bad is None}
-                if item["fixed"]:
-                    ids = [e.memory_id for e in failed if e.metadata.get("goal") == goal]
-                    for mid in ids:
-                        if await mem.forget(mid):
-                            retired += 1
-                    item["retired_memories"] = len(ids)
-                else:
-                    reason = str((bad or {}).get("output") or "no stages")[:200]
-                    item.update(stage=(bad or {}).get("name"), specialization=(bad or {}).get("specialization"),
-                                reason=reason,
-                                cause="external" if any(h in reason.lower() for h in _EXTERNAL_HINTS) else "internal")
-                retests.append(item)
+            # SEC-06 (R-145): remembered goals are texts from *other, past*
+            # requests. The current request's public-LLM consent must not flow
+            # into their re-execution — retests run without public-provider
+            # consent (under the keyless provider they fail closed with the
+            # no-consent error instead of silently re-sending old text).
+            from agent_civilization.core import llm as _llm_mod
+            _consent_token = _llm_mod.set_public_llm_consent(False)
+            try:
+                for goal in goals[:_self_retest_max()]:
+                    plan = route(goal)
+                    if any(st.get("specialization") == "self_developer" for st in plan.get("stages", [])):
+                        continue
+                    try:
+                        res = await asyncio.wait_for(execute_plan(plan, _SELF_CIV), timeout=120)
+                        stages = res.get("stages", [])
+                    except Exception as e:  # noqa: BLE001
+                        stages = [{"name": "retest", "ok": False, "output": f"{type(e).__name__}: {e}"}]
+                    bad = next((s for s in stages if not s.get("ok")), None)
+                    item = {"goal": goal[:160], "fixed": bool(stages) and bad is None}
+                    if item["fixed"]:
+                        ids = [e.memory_id for e in failed if e.metadata.get("goal") == goal]
+                        for mid in ids:
+                            if await mem.forget(mid):
+                                retired += 1
+                        item["retired_memories"] = len(ids)
+                    else:
+                        reason = str((bad or {}).get("output") or "no stages")[:200]
+                        item.update(stage=(bad or {}).get("name"), specialization=(bad or {}).get("specialization"),
+                                    reason=reason,
+                                    cause="external" if any(h in reason.lower() for h in _EXTERNAL_HINTS) else "internal")
+                    retests.append(item)
+            finally:
+                _llm_mod.reset_public_llm_consent(_consent_token)
 
     fixed = sum(1 for r in retests if r["fixed"])
     still = [r for r in retests if not r["fixed"]]

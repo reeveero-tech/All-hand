@@ -10,7 +10,7 @@ const ICONS = {
   'robot': '🤖',
 }
 
-export default function Specializations() {
+export default function Specializations({ status }) {
   const [specs, setSpecs] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
@@ -18,6 +18,19 @@ export default function Specializations() {
   const [taskData, setTaskData] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
+  const [publicLlmConsent, setPublicLlmConsent] = useState(false)
+
+  // SEC-06 (R-145): same per-request consent gate as the chat — the public
+  // (keyless) LLM provider is operator-enabled: warn and require an explicit,
+  // unpersisted, per-task consent before anything is sent.
+  const publicLlmActive = status?.llm_provider === 'keyless'
+
+  // Stale consent is never sent (see Chat.jsx): the checkbox is cleared
+  // whenever the active provider changes, so allow_public_llm is only sent
+  // while the public provider is actually serving this request.
+  useEffect(() => {
+    setPublicLlmConsent(false)
+  }, [status?.llm_provider])
 
   useEffect(() => {
     async function load() {
@@ -35,6 +48,12 @@ export default function Specializations() {
 
   const handleSubmit = async () => {
     if (!selected || !prompt.trim()) return
+    if (publicLlmActive && !publicLlmConsent) {
+      // Refusal: nothing is sent; the reason is shown, not hidden behind
+      // a spinner or a fake success.
+      setResult({ ok: false, error: 'لم يُرسل الطلب: مزود LLM عام خارجي مفعّل على هذا الخادم ويحتاج موافقتك الصريحة (أسفل النموذج) قبل إرسال نص المهمة إليه' })
+      return
+    }
     setSubmitting(true)
     setResult(null)
     try {
@@ -42,12 +61,14 @@ export default function Specializations() {
       if (taskData.trim()) {
         try { data = JSON.parse(taskData) } catch { data = taskData }
       }
-      const res = await createTask(selected, prompt, data)
+      const res = await createTask(selected, prompt, data, publicLlmActive && publicLlmConsent)
       setResult({ ok: true, task_id: res.task_id, status: res.status })
     } catch (e) {
       setResult({ ok: false, error: e.message })
     } finally {
       setSubmitting(false)
+      // per-request consent: never carries over to the next task
+      setPublicLlmConsent(false)
     }
   }
 
@@ -102,6 +123,32 @@ export default function Specializations() {
                 onChange={(e) => setTaskData(e.target.value)}
                 rows={4}
               />
+            </div>
+          )}
+
+          {publicLlmActive && (
+            <div style={{
+              padding: '10px 14px', background: 'var(--bg-elevated)',
+              borderRadius: 'var(--radius-sm)', border: '1px solid var(--warning, #e6a700)',
+              fontSize: '13px', marginBottom: '12px',
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: '6px' }}>
+                تنبيه: مزود LLM عام خارجي (بلا مفتاح) مفعّل على هذا الخادم
+              </div>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                بموافقتك قد يُرسل نص هذه المهمة والتعليمات ذات الصلة إلى مزود خارجي (Pollinations
+                ومزودو النماذج خلفه). لا ترسل كلمات مرور أو مفاتيح أو بيانات سرية أو شخصية
+                حساسة إلا إذا كان لديك تفويض وسياسة بيانات مناسبة. موافقتك تخص هذه المهمة وحدها.
+              </div>
+              <label style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={publicLlmConsent}
+                  onChange={(e) => setPublicLlmConsent(e.target.checked)}
+                  disabled={submitting}
+                />
+                <span>أوافق على إرسال نص هذه المهمة إلى المزود العام الخارجي</span>
+              </label>
             </div>
           )}
 

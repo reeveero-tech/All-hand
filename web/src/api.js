@@ -82,10 +82,14 @@ export const fetchSpecializations = () => api('/api/specializations');
 export const fetchAgents = (spec) => api(`/api/agents${spec ? `?specialization=${spec}` : ''}`);
 export const fetchTasks = (limit = 50) => api(`/api/tasks?limit=${limit}`);
 export const fetchEvents = (limit = 50) => api(`/api/events?limit=${limit}`);
-export const createTask = (specialization, prompt, data) =>
-  api('/api/tasks', { method: 'POST', body: JSON.stringify({ specialization, prompt, data }) });
-export const sendChat = (message) =>
-  api('/api/chat', { method: 'POST', body: JSON.stringify({ message }) });
+// SEC-06 (R-145): allow_public_llm is the explicit per-request consent to the
+// public (keyless) LLM provider. Default false (absent = refusal); the UI only
+// sends it after the user confirms the external-data warning, and never
+// persists it — it applies to this one request only.
+export const createTask = (specialization, prompt, data, allowPublicLlm = false) =>
+  api('/api/tasks', { method: 'POST', body: JSON.stringify({ specialization, prompt, data, allow_public_llm: allowPublicLlm }) });
+export const sendChat = (message, allowPublicLlm = false) =>
+  api('/api/chat', { method: 'POST', body: JSON.stringify({ message, allow_public_llm: allowPublicLlm }) });
 export const registerExternalAgent = (name, url, model, apiKey) =>
   api('/api/agents/external', { method: 'POST', body: JSON.stringify({ name, url, model, api_key: apiKey }) });
 export const removeExternalAgent = (name) =>

@@ -1,0 +1,65 @@
+SEC-06 (R-145) before/after probe — 2026-10-16T05:33Z
+probe: scripts/sec06/probe_public_llm.py
+
+############ BEFORE: pristine tree at f64a4b6 (merge of PR #145, pre R-145) ############
+tree under test: /tmp/sec06_before_tree
+--- no key, no AGOS_LLM_KEYLESS (operator default) (rc=1) ---
+provider: keyless
+endpoint: https://text.pollinations.ai/openai
+no-consent complete ok: True
+transport calls without consent: 1
+STDERR: Traceback (most recent call last):
+  File "<string>", line 23, in <module>
+    token = L.set_public_llm_consent(True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'agent_civilization.core.llm' has no attribute 'set_public_llm_consent'
+
+--- AGOS_LLM_KEYLESS=1 (explicit opt-in) (rc=1) ---
+provider: keyless
+endpoint: https://text.pollinations.ai/openai
+no-consent complete ok: True
+transport calls without consent: 1
+STDERR: Traceback (most recent call last):
+  File "<string>", line 23, in <module>
+    token = L.set_public_llm_consent(True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'agent_civilization.core.llm' has no attribute 'set_public_llm_consent'
+
+--- AGOS_LLM_KEYLESS=on (ambiguous value) (rc=1) ---
+provider: keyless
+endpoint: https://text.pollinations.ai/openai
+no-consent complete ok: True
+transport calls without consent: 1
+STDERR: Traceback (most recent call last):
+  File "<string>", line 23, in <module>
+    token = L.set_public_llm_consent(True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'agent_civilization.core.llm' has no attribute 'set_public_llm_consent'
+
+BEFORE_PROBE_RC=0
+
+############ AFTER: branch m7/r145-sec06-public-llm-opt-in (working tree) ############
+tree under test: /home/user/workspace/All-hand
+--- no key, no AGOS_LLM_KEYLESS (operator default) (rc=0) ---
+provider: none
+endpoint: https://text.pollinations.ai/openai
+no-consent complete ok: False
+transport calls without consent: 0
+with-consent complete ok: False
+transport calls with consent: 0
+
+--- AGOS_LLM_KEYLESS=1 (explicit opt-in) (rc=0) ---
+provider: keyless
+endpoint: https://text.pollinations.ai/openai
+no-consent complete ok: False
+transport calls without consent: 0
+with-consent complete ok: True
+transport calls with consent: 1
+
+--- AGOS_LLM_KEYLESS=on (ambiguous value) (rc=1) ---
+
+STDERR:  lines>...
+        "disabled")
+agent_civilization.core.llm.KeylessConfigError: AGOS_LLM_KEYLESS must be one of 1/true (enable) or 0/false/no/unset (disable); got an unsupported value (not echoed — it is operator input, not user content, and stays out of logs) — the public LLM provider stays disabled
+
+AFTER_PROBE_RC=0

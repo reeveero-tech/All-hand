@@ -49,7 +49,9 @@ from agent_civilization.core import experience, safety, tenancy
 from agent_civilization.core.tenancy import ALL_TENANTS, Principal
 from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
 from agent_civilization.routing import route as route_request
-from agent_civilization.core.llm import get_llm
+from agent_civilization.core.llm import (
+    get_llm, keyless_enabled, reset_public_llm_consent, set_public_llm_consent,
+)
 
 # R-100 (D-044): make /proc/<pid>/environ of the server unreadable to any child
 # (including test_runner code) before anything else runs.
@@ -387,10 +389,19 @@ class TaskRequest(BaseModel):
     specialization: str = Field(..., description="One of the 20 specializations, or 'external'")
     prompt: str = Field(..., min_length=1, max_length=20000)
     data: Optional[Any] = Field(None, description="Optional payload for tool-enabled specializations")
+    # SEC-06 (R-145): explicit per-request consent to the public (keyless) LLM
+    # provider. Strict bool: only a JSON true is consent — a missing field,
+    # false, or a non-boolean value (422) never enables it. Never inferred from
+    # the prompt text, the API key or the operator's AGOS_LLM_KEYLESS.
+    allow_public_llm: bool = Field(False, strict=True,
+                                  description="Consent to send this request's text to the external public LLM provider")
 
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=20000)
+    # SEC-06 (R-145): same explicit per-request consent as TaskRequest.
+    allow_public_llm: bool = Field(False, strict=True,
+                                  description="Consent to send this message's text to the external public LLM provider")
 
 
 class ExternalAgentRequest(BaseModel):
@@ -583,6 +594,17 @@ async def system_status(request: Request):
         "uptime_s": round(time.time() - STARTED_AT),
         "llm_configured": get_llm().available,
         "llm_model": get_llm().model,
+        # SEC-06 (R-145): non-secret provider disclosure so the UI can warn and
+        # ask for consent accurately: which provider is selected, whether the
+        # public (keyless) provider is operator-enabled, and that using it
+        # additionally requires the request's explicit consent. No keys, no
+        # endpoints' secrets, no request content is ever exposed or logged here.
+        "llm_provider": get_llm().provider,
+        # SEC-06 (R-145): operator opt-in flag, independent of which provider
+        # the OpenRouter key selects (with a key AND keyless enabled, the keyed
+        # provider wins and no consent is required).
+        "public_llm_enabled": keyless_enabled(),
+        "public_llm_requires_consent": get_llm().provider == "keyless",
         "supabase_configured": supabase_configured(),
         "supabase_key": key_status(),  # R-078: {"kind": service|public|unknown|none, "source": var} — never the value
         "specializations": len(SPECIALIZATIONS),
@@ -662,7 +684,15 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
                                tenant_id=principal.tenant_id)
     await _publish(principal.tenant_id, {"type": "task_created", "task_id": task_id,
                                          "specialization": req.specialization})
-    asyncio.create_task(_run_task(task_id, req.specialization, req.prompt, req.data))
+    # SEC-06 (R-145): the consent of THIS request is carried into the background
+    # execution (asyncio.create_task copies the current context), so the agent
+    # that later calls the LLM sees it — and only it. It is never written to the
+    # task record, the event or storage, and it does not outlive the request.
+    token = set_public_llm_consent(req.allow_public_llm)
+    try:
+        asyncio.create_task(_run_task(task_id, req.specialization, req.prompt, req.data))
+    finally:
+        reset_public_llm_consent(token)
     logger.info(f"Task created: {task_id} for specialization: {req.specialization}")
     return {"task_id": task_id, "status": "queued"}
 
@@ -853,7 +883,15 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
         plan = route_request(req.message)
         spec, reason = plan["primary"], plan["reason"]
     agent = _pick_agent(spec)
-    outcome = await agent.execute({"prompt": req.message})
+    # SEC-06 (R-145): the consent of THIS chat request governs only the LLM
+    # calls made while executing it (the routing LLM is only used with a keyed
+    # provider — R-131/D-054 — so the keyless provider can appear only inside
+    # agent execution). Reset in finally: consent never leaks past this request.
+    token = set_public_llm_consent(req.allow_public_llm)
+    try:
+        outcome = await agent.execute({"prompt": req.message})
+    finally:
+        reset_public_llm_consent(token)
     # BUG-02 (R-141): one status derived from the outcome, used for the memory
     # record, both storage writes and the chat_completed event.
     chat_status = "completed" if outcome["ok"] else "failed"

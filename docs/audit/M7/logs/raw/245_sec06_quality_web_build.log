@@ -1,0 +1,26 @@
+SEC-06 (R-145) quality/web/build — 2026-10-16T05:35Z — branch m7/r145-sec06-public-llm-opt-in
+
+== ruff (delivery command: F,E722, specialists excluded) ==
+All checks passed!
+RUFF_RC=0
+
+== web tests ==
+# skipped 0
+# todo 0
+# duration_ms 230.325708
+WEB_TESTS_RC=0
+
+== web build ==
+
+✓ built in 96ms
+WEB_BUILD_RC=0
+
+== root build ==
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+ROOT_BUILD_RC=0
+
+== sec06 tests (verbose count) ==
+
+============================== 41 passed in 7.20s ==============================
+SEC06_RC=0

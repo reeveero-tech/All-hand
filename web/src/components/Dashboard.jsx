@@ -49,12 +49,20 @@ export default function Dashboard({ status, liveEvent }) {
         <div className="stat-card">
           <div className="stat-label">نموذج LLM</div>
           <div className="stat-value" style={{ fontSize: '14px' }}>
-            {status.llm_configured ? status.llm_model : 'غير مُهيأ'}
+            {/* SEC-06 (R-145): the provider is disclosed honestly — a public
+                keyless provider is shown as what it is, never as a keyed one. */}
+            {status.llm_provider === 'openrouter'
+              ? (status.llm_model || 'OpenRouter')
+              : status.llm_provider === 'keyless' ? 'مزود عام (بلا مفتاح)' : 'غير مُهيأ'}
           </div>
           <div className="stat-sub">
-            {status.llm_configured
-              ? <span className="badge badge-success"><span className="badge-dot pulse" /> متصل</span>
-              : <span className="badge badge-warning"><span className="badge-dot" /> يحتاج مفتاح API</span>}
+            {status.llm_provider === 'openrouter' ? (
+              <span className="badge badge-success"><span className="badge-dot pulse" /> متصل (OpenRouter)</span>
+            ) : status.llm_provider === 'keyless' ? (
+              <span className="badge badge-warning"><span className="badge-dot" /> عام · يتطلب موافقتك لكل طلب</span>
+            ) : (
+              <span className="badge badge-warning"><span className="badge-dot" /> لا مزود — يحتاج OPENROUTER_API_KEY أو تفعيل المشغّل للمزود العام</span>
+            )}
           </div>
         </div>
 

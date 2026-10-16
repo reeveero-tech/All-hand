@@ -33,6 +33,12 @@ services:
         sync: false
       - key: AGOS_API_KEY
         sync: false
+      # SEC-06 (R-145، D-059): المزود العام بلا مفتاح معطّل افتراضياً — الإنتاج
+      # الآمن لا يحتاج ضبطه إطلاقاً. تفعيله قرار مشغّل صريح (القيمة 1 هنا في
+      # لوحة Render)، وكل طلب يحتاج موافقته الصريحة (allow_public_llm) بعدها.
+      # القيم غير الصالحة تمنع الإقلاع (لا تفسير ضمنياً كتفعيل).
+      - key: AGOS_LLM_KEYLESS
+        sync: false
       - key: AGOS_ALLOWED_ORIGINS
         sync: false
       # R-100 (D-044): اختياريان — تركهما فارغين هو الآمن. بلا AGOS_API_KEY يُرفض
