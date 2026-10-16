@@ -6,7 +6,7 @@ scripts/r042/run_local_stack.sh, or a real Supabase project).
 
 Covers what the unit suite cannot: the real HTTP round-trip of every storage
 call made by server.py (insert_task, update_task, upsert_agent_stats,
-insert_event, get_tasks, get_events) and the stored column types.
+insert_event, get_tasks, get_task, get_events) and the stored column types.
 """
 import os
 import time
@@ -117,6 +117,42 @@ def test_task_lifecycle_persisted(client):
     other_events = client.get("/api/events?limit=200", headers=other).json()["events"]
     assert not any(isinstance(e.get("event_data"), dict) and e["event_data"].get("task_id") == task_id
                    for e in other_events)
+
+
+def test_task_read_by_id_from_storage_after_memory_loss(client):
+    """BUG-04 (R-143): with the record gone from process memory (restart), the
+    real route reads the task by ID from real PostgreSQL/PostgREST — for its
+    owner only; another tenant gets exactly the missing-ID 404."""
+    import server
+    r = client.post("/api/tasks", json={"specialization": "analyst", "prompt": "BUG-04 live: summarise 4 5 6"})
+    assert r.status_code == 202, r.text
+    task_id = r.json()["task_id"]
+    mem = _wait_done(client, task_id)
+    stored = []
+    for _ in range(100):  # the final update_task follows the memory update
+        stored = _rest(f"tasks?task_id=eq.{task_id}")
+        if stored and stored[0]["status"] == mem["status"] and stored[0].get("result") is not None:
+            break
+        time.sleep(0.1)
+    assert stored and stored[0]["tenant_id"] == "r042_live"
+
+    server.TASKS.pop(task_id)                                  # memory lost
+    assert task_id not in server.TASKS
+    got = client.get(f"/api/tasks/{task_id}")
+    assert got.status_code == 200, got.text
+    body = got.json()
+    assert body["source"] == "database"
+    assert body["id"] == body["task_id"] == task_id
+    assert body["status"] == mem["status"]
+    assert body["result"] == mem["result"]
+    assert body["tenant_id"] == "r042_live" and body["agent_name"] == mem["agent"]
+    assert task_id not in server.TASKS                         # read, not re-cached
+
+    other = {"X-API-Key": _KEYS["other"]}
+    cross = client.get(f"/api/tasks/{task_id}", headers=other)
+    missing = client.get("/api/tasks/r042nosuchid", headers=other)
+    assert cross.status_code == missing.status_code == 404
+    assert cross.content == missing.content and cross.json() == {"detail": "task not found"}
 
 
 def test_chat_persists_and_agent_stats_upserted(client):

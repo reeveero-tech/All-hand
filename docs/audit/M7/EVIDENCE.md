@@ -506,3 +506,26 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 | اختبارات الجاهزية/الحياة في `tests/test_api.py` على الكود القديم | 4 failed (`assert 200 == 503`)، 5 passed | 1 | raw/234 |
 | الاختبارات نفسها بعد الإصلاح + كل ملفات الاختبار التي تمس `/health` أو `/metrics` | 9/9؛ 172/172 | 0 | raw/235 |
 | pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff (أمر CI) + الواجهة | 670 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/236 |
+
+## M7 — R-143: BUG-04 — استرجاع المهام المحفوظة بمعرّفها بنطاق المستأجر (دفعة m7/r143-bug04-task-by-id-from-storage، 2026-10-16)
+
+مهمة أُنشئت عبر `POST /api/tasks` كـ`tenant_a` ونُفذت وخُزنت، ثم أُفرغ `server.TASKS` (`len = 0`)؛ `GET /api/tasks` يعرضها من قاعدة البيانات في الحالتين.
+
+| الطلب `GET /api/tasks/{id}` | قبل (`bc4e07b`، raw/237) | بعد (raw/238) | استعلام التخزين بعد الإصلاح |
+|---|---|---|---|
+| `tenant_a` (المالك) | **404** — لا استعلام | **200** الصف المخزن (`status`, `result`, `tenant_id=tenant_a`) | `task_id=eq.<id>`, `tenant_id=eq.tenant_a`, `limit=1` |
+| admin بـ`all_tenants=true` | **404** | **200** | `task_id=eq.<id>`, `limit=1` |
+| `tenant_b` على مهمة `tenant_a` | 404 | 404 `{"detail": "task not found"}` — مطابق بايتاً للمجهول | `tenant_id=eq.tenant_b` |
+| `tenant_b` على معرّف مجهول | 404 | 404 — الجسم نفسه | `tenant_id=eq.tenant_b` |
+| admin بالنطاق الافتراضي | 404 | 404 | `tenant_id=eq.ops_admin` |
+| `tenant_b` بـ`all_tenants=true` | 403 | 403 | لا استعلام |
+| بلا مفتاح | 401 | 401 | لا استعلام |
+| صف قديم `tenant_id` NULL — `tenant_a`/`tenant_b` | 404 / 404 | 404 / 404 | مرشح المستأجر (لا يطابق NULL) |
+| صف قديم NULL — admin بـ`all_tenants=true` | 404 | 200 | بلا مرشح مستأجر |
+
+| الفحص | النتيجة | rc | السجل |
+|---|---|---|---|
+| `tests/test_bug04_task_by_id_from_storage.py` على الكود القديم | 8 failed (`404 == 200`؛ لا `get_task`؛ لا استعلام مقيد)، 5 passed (الذاكرة، المجهول، 401، بلا تخزين) | 1 | raw/237 |
+| الاختبار نفسه بعد الإصلاح + اختبارات التخزين/API/المصادقة/العزل المرتبطة | 13/13؛ 280 passed, 4 skipped (`test_r042_live_storage.py` — تُشغَّل في CI `storage`) | 0 | raw/238 |
+| المسبار بعد الإصلاح (استرجاع بعد إفراغ الذاكرة + قسم منفصل لرفض عبر المستأجرين) | كما في الجدول أعلاه؛ `cross-tenant == missing-id: True` | 0 | raw/238 |
+| pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff (أمر CI) + الواجهة | 683 passed, 4 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/239 |

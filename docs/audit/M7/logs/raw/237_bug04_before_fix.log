@@ -1,0 +1,58 @@
+# BUG-04 (R-143) — before the fix: main bc4e07b, server.py/storage unchanged; only the new test file + probe added
+# python: Python 3.14.3
+# cmd: python3 -m pytest tests/test_bug04_task_by_id_from_storage.py -v -p no:cacheprovider
+tests/test_bug04_task_by_id_from_storage.py::test_task_created_through_api_is_readable_by_id_after_memory_loss FAILED [  7%]
+tests/test_bug04_task_by_id_from_storage.py::test_storage_only_task_returns_status_and_result[completed-True] FAILED [ 15%]
+tests/test_bug04_task_by_id_from_storage.py::test_storage_only_task_returns_status_and_result[failed-False] FAILED [ 23%]
+tests/test_bug04_task_by_id_from_storage.py::test_memory_task_returned_without_db_query PASSED [ 30%]
+tests/test_bug04_task_by_id_from_storage.py::test_memory_task_of_other_tenant_is_404_without_db_fallback PASSED [ 38%]
+tests/test_bug04_task_by_id_from_storage.py::test_other_tenant_stored_task_is_identical_to_missing FAILED [ 46%]
+tests/test_bug04_task_by_id_from_storage.py::test_admin_default_scope_vs_all_tenants FAILED [ 53%]
+tests/test_bug04_task_by_id_from_storage.py::test_legacy_null_owner_row_is_unreadable_by_tenants FAILED [ 61%]
+tests/test_bug04_task_by_id_from_storage.py::test_missing_id_is_404_same_format PASSED [ 69%]
+tests/test_bug04_task_by_id_from_storage.py::test_anonymous_is_401_and_never_reaches_storage PASSED [ 76%]
+tests/test_bug04_task_by_id_from_storage.py::test_exact_query_by_id_independent_of_list_limit_and_order FAILED [ 84%]
+tests/test_bug04_task_by_id_from_storage.py::test_storage_get_task_refuses_without_scope_and_bad_ids FAILED [ 92%]
+tests/test_bug04_task_by_id_from_storage.py::test_storage_not_configured_keeps_memory_behaviour PASSED [100%]
+________ test_storage_only_task_returns_status_and_result[failed-False] ________
+========================= 8 failed, 5 passed in 6.49s ==========================
+
+## failure reasons (pytest -q, assertion lines)
+      6 E    +  where 404 = <Response [404 Not Found]>.status_code
+      3 E   AssertionError: {"detail":"task not found"}
+      1 E   AttributeError: 'SupabaseStorage' object has no attribute 'get_task'. Did you mean: 'get_tasks'?
+      1 E   IndexError: list index out of range
+      3 E   assert (404 == 200)
+      3 E   assert 404 == 200
+# note: the isolation tests fail on the old code only on their positive parts (the scoped storage query is asserted, admin all_tenants=true must find the stored row); their 404 parts already held because the old route never read storage at all
+
+## probe (production mode, real SupabaseStorage -> local PostgREST)
+# cmd: PYTHONPATH=. python3 scripts/bug04/probe_task_by_id.py
+created task 39df96b1dc37 as tenant_a; memory status=completed; stored row status=completed tenant_id=tenant_a
+process memory cleared: len(server.TASKS) = 0; 39df96b1dc37 in TASKS: False
+GET /api/tasks as tenant_a: source=database; 39df96b1dc37 listed: True
+
+## retrieval after clearing process memory
+tenant_a (owner)                             -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: []
+admin all_tenants=true                       -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: []
+
+## cross-tenant refusal (must equal a missing id)
+tenant_b on tenant_a's task                  -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: []
+tenant_b on a missing id                     -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: []
+admin default scope on tenant_a's task       -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: []
+tenant_b all_tenants=true (not admin)        -> 403 {"detail":"all_tenants requires the admin role"}
+                                                storage GET /rest/v1/tasks queries: []
+anonymous                                    -> 401 {"detail":"API key required"}
+                                                storage GET /rest/v1/tasks queries: []
+tenant_a on legacy NULL-owner row            -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: []
+tenant_b on legacy NULL-owner row            -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: []
+admin all_tenants=true on legacy row         -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: []
+cross-tenant response == missing-id response (code+body bytes): True

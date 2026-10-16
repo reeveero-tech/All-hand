@@ -1,6 +1,6 @@
 # نموذج البيانات (DATA_MODEL)
 
-> **آخر تحديث**: 2026-10-16 — R-141 (BUG-02): صفوف `tasks` الناتجة عن `/api/chat` تحمل الحالة المشتقة من النتيجة (`completed`/`failed`) في الإدراج والتحديث معاً — كانت `completed` دائماً؛ و`event_data` لحدث `chat_completed` يضيف `status` بجانب `ok`. قبلها 2026-10-15 — R-119 (مصالحة ادعاءات قديمة: `agents.yaml` حُذف في R-031b/D-025؛ فجوات M0 حُلت أو وُضحت في R-022/R-042/R-042b؛ قبلها تحديث 2026-10-12 — M0)
+> **آخر تحديث**: 2026-10-16 — R-143 (BUG-04): قراءة جديدة `get_task(task_id, scope=)` — صف واحد بالمفتاح الأساسي ضمن نطاق المستأجر (`task_id=eq.<id>&tenant_id=eq.<t>&limit=1`)؛ عدّاد `get_task` في `_STATS`. قبلها R-141 (BUG-02): صفوف `tasks` الناتجة عن `/api/chat` تحمل الحالة المشتقة من النتيجة (`completed`/`failed`) في الإدراج والتحديث معاً — كانت `completed` دائماً؛ و`event_data` لحدث `chat_completed` يضيف `status` بجانب `ok`. قبلها 2026-10-15 — R-119 (مصالحة ادعاءات قديمة: `agents.yaml` حُذف في R-031b/D-025؛ فجوات M0 حُلت أو وُضحت في R-022/R-042/R-042b؛ قبلها تحديث 2026-10-12 — M0)
 > **ملاحظة منهجية**: ما يلي مستخرج من قراءة الكود (الحمولات الفعلية والـ dataclasses)، وهو "مرصود من الاستخدام" لا مخطط معلن؛ لكن الأنواع والقيود **مُتحققة حياً** في R-042/R-042b — راجع قسم "التحقق الحي" أدناه.
 
 ## الكيانات المرصودة من الاستخدام
@@ -63,7 +63,7 @@
 - **مسار الكتابة بلا تغيير**: نفس المفتاح ونفس الطلبات؛ R-042 محلياً 22/22 + 3/3 بعد التغيير (logs/51).
 
 ## R-082 — تسجيل نتائج العمليات في طبقة التخزين
-- `supabase_store.py`: `_STATS` على مستوى العملية — لكل عملية (`insert_task`، `update_task`، `get_tasks`، `upsert_agent_stats`، `get_agent_stats`، `insert_event`، `get_events`) عدّاد ok/failed، و`last_ok`/`last_error`/`last_success_at`. يُسجَّل في `_accepted` (رمز HTTP) وفي معالجات الاستثناءات (نوع الاستثناء فقط).
+- `supabase_store.py`: `_STATS` على مستوى العملية — لكل عملية (`insert_task`، `update_task`، `get_tasks`، `get_task` (R-143)، `upsert_agent_stats`، `get_agent_stats`، `insert_event`، `get_events`) عدّاد ok/failed، و`last_ok`/`last_error`/`last_success_at`. يُسجَّل في `_accepted` (رمز HTTP) وفي معالجات الاستثناءات (نوع الاستثناء فقط).
 - **لا يُحفظ**: أجسام الردود، العناوين، المفاتيح، الحمولات (اختبار صريح).
 - عقد الطبقة بلا تغيير: نفس القيم المعادة (`True`/`False`/`[]`)، نفس الطلبات؛ R-042 محلياً 22/22 + 3/3 بعد التغيير.
 - حد: `get_tasks`/`get_agent_stats`/`get_events` قد تُسجَّل نجاحاً ثم فشلاً إن نجح HTTP وفشل تحليل JSON — العدادان صحيحان كحدثين، و`last_ok` يعكس الأخير.
@@ -71,6 +71,7 @@
 ## R-138 — ملكية المستأجر للمهام والأحداث (SEC-02، D-056، 2026-10-16)
 - **الترحيل**: `docs/sql/002_tenant_isolation.sql` (متكرر الأمان) — عمود `tenant_id text` (يقبل NULL) في `tasks` و`events`، وفهرسان `(tenant_id, created_at desc)`. يُطبَّق بعد `001_init.sql` (`scripts/r042/run_local_stack.sh` يطبقه في وظيفة CI `storage`). **يجب تطبيقه على قاعدة الإنتاج قبل نشر R-138**: بدونه يرفض PostgREST الإدراج (عمود مجهول) — تُسجَّل الإخفاقات في `storage_stats` ويستمر الخادم بالذاكرة.
 - **الكتابة**: `insert_task(..., tenant_id=)`، `insert_event(..., tenant_id=)` — المالك من الهوية الموثقة عند الإدراج؛ `update_task` لا يلمس `tenant_id` (لا نقل ملكية).
+- **القراءة بالمعرّف (R-143، BUG-04)**: `get_task(task_id, scope=)` ← صف `tasks` واحد أو `None`. الاستعلام `GET /rest/v1/tasks?task_id=eq.<id>&limit=1` ويضاف `tenant_id=eq.<t>` لنطاق مستأجر (لا يضاف لـ`ALL_TENANTS` — admin مع `all_tenants=true` فقط)؛ لا `order` ولا اعتماد على حد القائمة. بلا `scope` ← `None` دون نداء شبكي؛ نطاق غير صالح ← `ValueError` (`check_scope`)؛ معرّف خارج `[A-Za-z0-9_-]{1,64}` ← `None` دون إرساله مرشحاً. صفوف `tenant_id` NULL لا تطابق مرشح مستأجر. يستخدمها `GET /api/tasks/{task_id}` حين تغيب المهمة عن الذاكرة. الفهرس: المفتاح الأساسي `task_id`.
 - **القراءة**: `get_tasks(limit, scope=)`، `get_events(limit, scope=)` — بلا `scope` تعيدان `[]` دون نداء شبكي (رفض افتراضي)؛ `scope` نص مستأجر يُتحقق منه (`[A-Za-z0-9_-]{1,64}`) فيصير `tenant_id=eq.<t>`؛ `ALL_TENANTS` (كائن حارس) بلا مرشح للمدير والعداد التشغيلي في `/api/system/status`. `eq.` لا يطابق NULL في PostgREST، فالصفوف القديمة لا تظهر لمستأجر.
 - **الصفوف القديمة**: `tenant_id = NULL` = معزولة (لا مالك مثبت) — لا تُنسب تلقائياً؛ يراها المدير عبر `all_tenants=true`؛ النسبة اليدوية عند إثبات الملكية مثال في رأس ملف الترحيل.
 - **الذاكرة** (`AGOS_MEMORY_FILE`): كل مدخل `metadata.tenant_id` + وسم `tenant:<t>`؛ المدخلات القديمة بلا `tenant_id` تبقى في الملف (لا حذف) ولا تُسترجع لأحد ولا تدخل التعلّم.

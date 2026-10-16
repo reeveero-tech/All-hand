@@ -681,12 +681,24 @@ async def list_tasks(request: Request, limit: int = 50, all_tenants: bool = Fals
 async def get_task(request: Request, task_id: str, all_tenants: bool = False,
                    api_key: Optional[str] = Security(api_key_header)):
     """Get task details by ID — only a task of the caller's tenant (SEC-02).
-    Another tenant's task answers exactly like a missing one (404)."""
+    Another tenant's task answers exactly like a missing one (404).
+    BUG-04 (R-143): a task absent from process memory (e.g. after a restart)
+    is read from storage by ID, the tenant scope enforced in the query."""
     scope = _scope(require_principal(api_key), all_tenants)
     task = TASKS.get(task_id)
-    if not _visible_task(task, scope):
-        raise HTTPException(404, "task not found")
-    return task
+    if task is not None:
+        # in memory: the memory record decides — out of scope is 404, never
+        # retried in storage
+        if not _visible_task(task, scope):
+            raise HTTPException(404, "task not found")
+        return task
+    if supabase_configured():
+        row = await get_storage().get_task(task_id, scope=scope)
+        if row is not None:
+            # the stored row as is, plus ``id`` (= task_id, the memory record's
+            # key) and ``source`` — no other field is added or invented
+            return {**row, "id": row["task_id"], "source": "database"}
+    raise HTTPException(404, "task not found")
 
 
 @app.get("/api/memory")

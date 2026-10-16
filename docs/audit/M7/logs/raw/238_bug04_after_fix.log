@@ -1,0 +1,54 @@
+# BUG-04 (R-143) — after the fix, branch m7/r143-bug04-task-by-id-from-storage (base bc4e07b), Python 3.14.3
+# cmd: python3 -m pytest tests/test_bug04_task_by_id_from_storage.py -v -p no:cacheprovider
+tests/test_bug04_task_by_id_from_storage.py::test_task_created_through_api_is_readable_by_id_after_memory_loss PASSED [  7%]
+tests/test_bug04_task_by_id_from_storage.py::test_storage_only_task_returns_status_and_result[completed-True] PASSED [ 15%]
+tests/test_bug04_task_by_id_from_storage.py::test_storage_only_task_returns_status_and_result[failed-False] PASSED [ 23%]
+tests/test_bug04_task_by_id_from_storage.py::test_memory_task_returned_without_db_query PASSED [ 30%]
+tests/test_bug04_task_by_id_from_storage.py::test_memory_task_of_other_tenant_is_404_without_db_fallback PASSED [ 38%]
+tests/test_bug04_task_by_id_from_storage.py::test_other_tenant_stored_task_is_identical_to_missing PASSED [ 46%]
+tests/test_bug04_task_by_id_from_storage.py::test_admin_default_scope_vs_all_tenants PASSED [ 53%]
+tests/test_bug04_task_by_id_from_storage.py::test_legacy_null_owner_row_is_unreadable_by_tenants PASSED [ 61%]
+tests/test_bug04_task_by_id_from_storage.py::test_missing_id_is_404_same_format PASSED [ 69%]
+tests/test_bug04_task_by_id_from_storage.py::test_anonymous_is_401_and_never_reaches_storage PASSED [ 76%]
+tests/test_bug04_task_by_id_from_storage.py::test_exact_query_by_id_independent_of_list_limit_and_order PASSED [ 84%]
+tests/test_bug04_task_by_id_from_storage.py::test_storage_get_task_refuses_without_scope_and_bad_ids PASSED [ 92%]
+tests/test_bug04_task_by_id_from_storage.py::test_storage_not_configured_keeps_memory_behaviour PASSED [100%]Unclosed client session
+============================== 13 passed in 6.57s ==============================
+
+# related storage/API/auth/isolation tests: python3 -m pytest tests/test_api.py tests/test_bug01_external_without_agent.py tests/test_bug02_chat_status_consistency.py tests/test_r042_live_storage.py tests/test_r078_supabase_key_kind.py tests/test_r082_storage_outcomes.py tests/test_r101_web_auth_contract.py tests/test_sec01_external_redirect.py tests/test_sec02_tenant_isolation.py tests/test_sec03_production_startup.py tests/test_security.py tests/test_storage_payloads.py tests/test_web_api_contract.py -q -p no:cacheprovider
+SKIPPED [1] tests/test_r042_live_storage.py:72: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:78: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:122: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:158: R-042 live storage not configured (set R042_LIVE=1)
+======================= 280 passed, 4 skipped in 18.62s ========================
+
+## probe after the fix (same probe as 237)
+# cmd: PYTHONPATH=. python3 scripts/bug04/probe_task_by_id.py
+created task 08fa4b996b14 as tenant_a; memory status=completed; stored row status=completed tenant_id=tenant_a
+process memory cleared: len(server.TASKS) = 0; 08fa4b996b14 in TASKS: False
+GET /api/tasks as tenant_a: source=database; 08fa4b996b14 listed: True
+
+## retrieval after clearing process memory
+tenant_a (owner)                             -> 200 {"task_id":"08fa4b996b14","specialization":"analyst","prompt":"BUG-04 probe: summarise 1 2 3","status":"completed","tenant_id":"tenant_a","created_at"
+                                                storage GET /rest/v1/tasks queries: [{'task_id': 'eq.08fa4b996b14', 'limit': '1', 'tenant_id': 'eq.tenant_a'}]
+admin all_tenants=true                       -> 200 {"task_id":"08fa4b996b14","specialization":"analyst","prompt":"BUG-04 probe: summarise 1 2 3","status":"completed","tenant_id":"tenant_a","created_at"
+                                                storage GET /rest/v1/tasks queries: [{'task_id': 'eq.08fa4b996b14', 'limit': '1'}]
+
+## cross-tenant refusal (must equal a missing id)
+tenant_b on tenant_a's task                  -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: [{'task_id': 'eq.08fa4b996b14', 'limit': '1', 'tenant_id': 'eq.tenant_b'}]
+tenant_b on a missing id                     -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: [{'task_id': 'eq.doesnotexist', 'limit': '1', 'tenant_id': 'eq.tenant_b'}]
+admin default scope on tenant_a's task       -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: [{'task_id': 'eq.08fa4b996b14', 'limit': '1', 'tenant_id': 'eq.ops_admin'}]
+tenant_b all_tenants=true (not admin)        -> 403 {"detail":"all_tenants requires the admin role"}
+                                                storage GET /rest/v1/tasks queries: []
+anonymous                                    -> 401 {"detail":"API key required"}
+                                                storage GET /rest/v1/tasks queries: []
+tenant_a on legacy NULL-owner row            -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: [{'task_id': 'eq.legacy_null_1', 'limit': '1', 'tenant_id': 'eq.tenant_a'}]
+tenant_b on legacy NULL-owner row            -> 404 {"detail":"task not found"}
+                                                storage GET /rest/v1/tasks queries: [{'task_id': 'eq.legacy_null_1', 'limit': '1', 'tenant_id': 'eq.tenant_b'}]
+admin all_tenants=true on legacy row         -> 200 {"task_id":"legacy_null_1","specialization":"analyst","prompt":"pre-SEC-02 row","status":"completed","tenant_id":null,"result":{"ok":true},"created_at
+                                                storage GET /rest/v1/tasks queries: [{'task_id': 'eq.legacy_null_1', 'limit': '1'}]
+cross-tenant response == missing-id response (code+body bytes): True
