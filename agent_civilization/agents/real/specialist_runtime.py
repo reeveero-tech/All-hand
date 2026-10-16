@@ -19,6 +19,7 @@ import time
 from typing import Any, Dict, List
 
 from agent_civilization.core import experience as _experience
+from agent_civilization.core.safety import UnsafeURLError
 # R-104c2: the canonical public messaging API lives in agent_civilization.communication
 from agent_civilization.communication import CommunicationHub
 
@@ -76,8 +77,12 @@ class SpecialistBackedAgent:
             elapsed = round(time.time() - started, 3)
             self.stats["tasks_failed"] += 1
             self.stats["total_time_s"] += elapsed
+            # R-149 (Security QA): an unexpected exception's raw text is not
+            # trusted — only its TYPE is reported; UnsafeURLError keeps its
+            # fixed refusal message (SEC-01/SEC-05, proven by their tests).
+            error = str(exc) if isinstance(exc, UnsafeURLError) else type(exc).__name__
             return {"ok": False, "agent": self.name, "elapsed_s": elapsed,
-                    "result": {"ok": False, "error": f"{type(exc).__name__}: {exc}"},
+                    "result": {"ok": False, "error": error},
                     "impl": self.impl_class}
         finally:
             self.status = "idle"

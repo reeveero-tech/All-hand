@@ -1,0 +1,71 @@
+R-149 — review round 2: leak tests set to the REQUIRED no-leak contract, run BEFORE fixing the exception pass-through — 2026-10-16T20:03Z
+Commit under test: a5c7a93 (the exception handling is NOT yet fixed — the failing tests below are the proof the raw exception text reaches the tenant-visible result and the log)
+Command: AGOS_ENV=test python -m pytest tests/test_r149_security_qa_gaps.py -q
+
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 20 items
+
+tests/test_r149_security_qa_gaps.py ........FFFF........                 [100%]
+
+=================================== FAILURES ===================================
+__________ test_handler_exception_inside_real_agent_ends_task_failed ___________
+tests/test_r149_security_qa_gaps.py:459: in test_handler_exception_inside_real_agent_ends_task_failed
+    assert rec["result"]["result"]["error"] == "RuntimeError"
+E   AssertionError: assert 'RuntimeError...handler crash' == 'RuntimeError'
+E     
+E     - RuntimeError
+E     + RuntimeError: R-149 controlled handler crash
+------------------------------ Captured log call -------------------------------
+WARNING  storage:supabase_store.py:99 Supabase key format not recognised (from SUPABASE_SERVICE_KEY) — cannot tell whether writes will pass RLS; run scripts/run_r042_storage_verify.py after deploy.
+________________ test_internal_exception_marker_reaches_nowhere ________________
+tests/test_r149_security_qa_gaps.py:489: in test_internal_exception_marker_reaches_nowhere
+    assert rec["result"]["result"]["error"] == "RuntimeError"   # the type only
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'RuntimeError...MARKER-7f3a9c' == 'RuntimeError'
+E     
+E     - RuntimeError
+E     + RuntimeError: handler crashed: R149-SECRET-MARKER-7f3a9c
+------------------------------ Captured log call -------------------------------
+WARNING  storage:supabase_store.py:99 Supabase key format not recognised (from SUPABASE_SERVICE_KEY) — cannot tell whether writes will pass RLS; run scripts/run_r042_storage_verify.py after deploy.
+__________ test_internal_dependency_timeout_ends_failed_without_leak ___________
+tests/test_r149_security_qa_gaps.py:516: in test_internal_dependency_timeout_ends_failed_without_leak
+    assert rec["result"]["result"]["error"] == "TimeoutError"    # the type only
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'TimeoutError...MARKER-7f3a9c' == 'TimeoutError'
+E     
+E     - TimeoutError
+E     + TimeoutError: internal dependency timed out: R149-SECRET-MARKER-7f3a9c
+------------------------------ Captured log call -------------------------------
+WARNING  storage:supabase_store.py:99 Supabase key format not recognised (from SUPABASE_SERVICE_KEY) — cannot tell whether writes will pass RLS; run scripts/run_r042_storage_verify.py after deploy.
+_____________ test_storage_exception_marker_stays_out_of_responses _____________
+tests/test_r149_security_qa_gaps.py:545: in test_storage_exception_marker_stays_out_of_responses
+    assert MARKER not in caplog.text
+E   AssertionError: assert 'R149-SECRET-MARKER-7f3a9c' not in 'WARNING  st...KER-7f3a9c\n'
+E     
+E     'R149-SECRET-MARKER-7f3a9c' is contained here:
+E       t failed: R149-SECRET-MARKER-7f3a9c
+E       WARNING  storage:supabase_store.py:265 update_task failed: transport failed: R149-SECRET-MARKER-7f3a9c
+E       WARNING  storage:supabase_store.py:342 upsert_agent_stats failed: transport failed: R149-SECRET-MARKER-7f3a9c
+E       WARNING  storage:supabase_store.py:378 insert_event failed: transport failed: R149-SECRET-MARKER-7f3a9c
+E       WARNING  storage:supabase_store.py:285 get_tasks failed: transport failed: R149-SECRET-MARKER-7f3a9c
+E       WARNING  storage:supabase_store.py:396 get_events failed: transport failed: R149-SECRET-MARKER-7f3a9c
+------------------------------ Captured log call -------------------------------
+WARNING  storage:supabase_store.py:99 Supabase key format not recognised (from SUPABASE_SERVICE_KEY) — cannot tell whether writes will pass RLS; run scripts/run_r042_storage_verify.py after deploy.
+WARNING  storage:supabase_store.py:240 insert_task failed: transport failed: R149-SECRET-MARKER-7f3a9c
+WARNING  storage:supabase_store.py:265 update_task failed: transport failed: R149-SECRET-MARKER-7f3a9c
+WARNING  storage:supabase_store.py:342 upsert_agent_stats failed: transport failed: R149-SECRET-MARKER-7f3a9c
+WARNING  storage:supabase_store.py:378 insert_event failed: transport failed: R149-SECRET-MARKER-7f3a9c
+WARNING  storage:supabase_store.py:285 get_tasks failed: transport failed: R149-SECRET-MARKER-7f3a9c
+WARNING  storage:supabase_store.py:396 get_events failed: transport failed: R149-SECRET-MARKER-7f3a9c
+=========================== short test summary info ============================
+FAILED tests/test_r149_security_qa_gaps.py::test_handler_exception_inside_real_agent_ends_task_failed
+FAILED tests/test_r149_security_qa_gaps.py::test_internal_exception_marker_reaches_nowhere
+FAILED tests/test_r149_security_qa_gaps.py::test_internal_dependency_timeout_ends_failed_without_leak
+FAILED tests/test_r149_security_qa_gaps.py::test_storage_exception_marker_stays_out_of_responses
+======================== 4 failed, 16 passed in 10.63s =========================
+PYTEST_RC=1

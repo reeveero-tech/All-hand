@@ -132,6 +132,21 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
         return None
 
 
+class _HTTPStatusError(Exception):
+    """The external backend answered a non-200 status. The status is the
+    safe, sufficient reason (R-149); the backend's error body never enters
+    the message — it becomes the tenant-visible result and the log."""
+
+    def __init__(self, status: int):
+        self.status = status
+        super().__init__(f"HTTP {status}")
+
+
+class _FixedReasonError(Exception):
+    """An error whose message is OUR OWN fixed, safe text (R-149): it is
+    reported as-is. Everything else unexpected is reduced to its TYPE."""
+
+
 class ExternalAgentAdapter:
     """Wraps a real remote agent behind the same execute() contract."""
 
@@ -168,20 +183,29 @@ class ExternalAgentAdapter:
                                              connector=connector) as s:
                 status, body = await self._post_checked(s, headers, payload)
             if status != 200:
-                # R-149 (Security QA): the backend's error body is untrusted
-                # text — a hostile backend can echo the adapter's own
-                # credential back in it — so it never enters the error string,
-                # which becomes the tenant-visible task result and the log.
-                # The status is the safe, sufficient reason.
-                raise RuntimeError(f"HTTP {status}")
+                raise _HTTPStatusError(status)
             data = json.loads(body)
             content = data["choices"][0]["message"]["content"]
             self.stats["tasks_completed"] += 1
             ok, result = True, {"answer": content, "external_agent": self.name}
         except Exception as e:
-            logger.warning("external agent %s failed: %s", self.name, e)
+            # R-149 (Security QA): only a fixed safe reason is reported — the
+            # backend's status, UnsafeURLError's refusal message, our own
+            # fixed texts, and the transport layer's connection errors (the
+            # crafted fixed DNS reasons and aiohttp's transport/TLS texts,
+            # proven by the SEC-01/SEC-05 tests). An unexpected exception's
+            # raw text is not trusted (it can echo the backend's body,
+            # including the adapter's own credential): only its TYPE.
+            if isinstance(e, _HTTPStatusError):
+                error = f"HTTP {e.status}"
+            elif isinstance(e, (safety.UnsafeURLError, aiohttp.ClientConnectionError,
+                               _FixedReasonError)):
+                error = str(e)
+            else:
+                error = type(e).__name__
+            logger.warning("external agent %s failed: %s", self.name, error)
             self.stats["tasks_failed"] += 1
-            ok, result = False, {"error": str(e)}
+            ok, result = False, {"error": error}
         elapsed = time.time() - started
         self.stats["total_time_s"] += elapsed
         self.status = "idle"
@@ -240,7 +264,7 @@ class ExternalAgentAdapter:
                 headers.pop("Content-Type", None)
             if urlsplit(url)[:2] != origin:
                 headers.pop("Authorization", None)
-        raise RuntimeError(f"too many redirects (> {self.MAX_REDIRECTS})")
+        raise _FixedReasonError(f"too many redirects (> {self.MAX_REDIRECTS})")
 
     def snapshot(self) -> Dict[str, Any]:
         return {

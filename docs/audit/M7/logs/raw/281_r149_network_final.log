@@ -1,0 +1,18 @@
+R-149 — live network tests (final tree before second commit) — 2026-10-16
+Branch: m7/r149-security-qa-regression-matrix
+Command: AGOS_ENV=test python -m pytest -m network -q
+
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+testpaths: tests
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 853 items / 849 deselected / 4 selected
+
+tests/test_network_live.py ...                                           [ 75%]
+tests/test_r114_r118_real_fixes.py .                                     [100%]
+
+====================== 4 passed, 849 deselected in 2.33s =======================
+RC=0

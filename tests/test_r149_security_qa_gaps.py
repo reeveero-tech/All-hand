@@ -455,7 +455,9 @@ def test_handler_exception_inside_real_agent_ends_task_failed(
     rec = server.TASKS[tid]
     assert rec["status"] == "failed"
     assert rec["result"]["ok"] is False
-    assert "R-149 controlled handler crash" in str(rec["result"]["result"])
+    # only the exception TYPE is reported (R-149: raw text is untrusted)
+    assert rec["result"]["result"]["error"] == "RuntimeError"
+    assert "R-149 controlled handler crash" not in str(rec["result"]["result"])
     assert ("test_tenant", "task_completed", False) in [(t, e["type"], e.get("ok"))
                                                        for t, e in published]
     # the stored attempt and the stored event (accepted here) carry the same truth
@@ -465,12 +467,13 @@ def test_handler_exception_inside_real_agent_ends_task_failed(
     assert event["event_data"]["ok"] is False and event["tenant_id"] == "test_tenant"
 
 
-def test_internal_exception_marker_stays_out_of_events_and_logs(
+def test_internal_exception_marker_reaches_nowhere(
         tenant_auth, postgrest, published, clean_tasks, monkeypatch, caplog):
     """G3 (internal exception): a marker travels inside an exception raised
-    by a handler the real agent calls. Where may it surface? The task result
-    is the documented error-reporting channel (the failure reason belongs to
-    the tenant); it must NOT surface anywhere else: the events, the logs."""
+    by a handler the real agent calls. An unexpected exception's raw text is
+    not trusted — it can carry internal details — so only the exception TYPE
+    may be reported; the marker must not surface anywhere: the response, the
+    task result, the events, the logs. The task still ends failed."""
     import agent_civilization.agents.real.real_agents as ra
     def crashing_dispatch(specialization, work):
         raise RuntimeError(f"handler crashed: {MARKER}")
@@ -481,12 +484,39 @@ def test_internal_exception_marker_stays_out_of_events_and_logs(
         tid = r.json()["task_id"]
         assert _wait_final(tid, published) == "failed"
         task_text = c.get(f"/api/tasks/{tid}", headers=tenant_auth.headers).text
-    assert MARKER in task_text                            # the failure reason (documented)
-    assert MARKER not in caplog.text                      # never in the logs
+    rec = server.TASKS[tid]
+    assert rec["status"] == "failed" and rec["result"]["ok"] is False
+    assert rec["result"]["result"]["error"] == "RuntimeError"   # the type only
+    assert MARKER not in task_text                       # never tenant-visible
+    assert MARKER not in caplog.text                     # never in the logs
     for _, e in published:
-        assert MARKER not in json.dumps(e)                # never in the events
+        assert MARKER not in json.dumps(e)               # never in the events
     (event,) = [e for e in _R149PostgREST.rows["events"] if e["event_type"] == "task_completed"]
     assert MARKER not in json.dumps(event)               # nor in the stored event
+
+
+def test_internal_dependency_timeout_ends_failed_without_leak(
+        tenant_auth, postgrest, published, clean_tasks, monkeypatch, caplog):
+    """Deterministic execution-timeout case (no live waiting): an internal
+    dependency raises TimeoutError carrying a marker; ``execute()`` stays
+    real. The task ends failed with the TYPE only — the marker reaches
+    nowhere."""
+    import agent_civilization.agents.real.real_agents as ra
+    def timing_out_dispatch(specialization, work):
+        raise TimeoutError(f"internal dependency timed out: {MARKER}")
+    monkeypatch.setattr(ra, "_dispatch", timing_out_dispatch)
+    with TestClient(server.app) as c:
+        r = c.post("/api/tasks", json={"specialization": SPEC, "prompt": MESSAGE},
+                   headers=tenant_auth.headers)
+        tid = r.json()["task_id"]
+        assert _wait_final(tid, published) == "failed"
+        task_text = c.get(f"/api/tasks/{tid}", headers=tenant_auth.headers).text
+    rec = server.TASKS[tid]
+    assert rec["status"] == "failed" and rec["result"]["ok"] is False
+    assert rec["result"]["result"]["error"] == "TimeoutError"    # the type only
+    assert MARKER not in task_text and MARKER not in caplog.text
+    for _, e in published:
+        assert MARKER not in json.dumps(e)
 
 
 def test_storage_exception_marker_stays_out_of_responses(
@@ -510,10 +540,10 @@ def test_storage_exception_marker_stays_out_of_responses(
     assert ss.storage_stats()["last_ok"] is False
     # the failure stats keep only the exception TYPE (never the raw text)
     assert ss.storage_stats()["last_error"]["reason"] == "exception: RuntimeError"
-    # the raw text reaches the operator-side log only (pinned: this is where
-    # exception text stops — transport exception texts carry no credentials by
-    # construction; the key travels in headers, never in exception messages)
-    assert MARKER in caplog.text
+    # the layer's log keeps the operation + the exception TYPE only — the
+    # raw text (which can carry internal details) must not be logged either
+    assert MARKER not in caplog.text
+    assert "insert_task failed: RuntimeError" in caplog.text   # the diagnosis stays
 
 
 def test_storage_read_timeout_is_degraded_404(tenant_auth, postgrest, clean_tasks,
@@ -540,7 +570,7 @@ def test_storage_read_timeout_is_degraded_404(tenant_auth, postgrest, clean_task
 # ------------------------------------------------------------------ G3: leaks
 
 def test_external_agent_error_must_not_echo_its_key_to_tenants(
-        tenant_auth, clean_tasks, monkeypatch, caplog):
+        tenant_auth, published, clean_tasks, monkeypatch, caplog):
     """A failing external agent must not reflect its own credential in the
     tenant-visible result. The (admin-configured) key is sent in the
     Authorization header; a backend that echoes it in its error body used to
@@ -573,9 +603,14 @@ def test_external_agent_error_must_not_echo_its_key_to_tenants(
                        headers=tenant_auth.headers)
             assert r.status_code == 202
             tid = r.json()["task_id"]
+            # wait for the full end: final status AND the task_completed
+            # event for this id (the status is set before the trailing
+            # storage write and publish)
             deadline = time.time() + 10.0
-            while time.time() < deadline:                 # no publish shim here: poll
-                if server.TASKS[tid]["status"] in ("completed", "failed"):
+            while time.time() < deadline:
+                if (server.TASKS[tid]["status"] in ("completed", "failed")
+                        and any(e["type"] == "task_completed" and e.get("task_id") == tid
+                                for _, e in published)):
                     break
                 time.sleep(0.05)
             task_text = c.get(f"/api/tasks/{tid}", headers=tenant_auth.headers).text

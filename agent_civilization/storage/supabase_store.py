@@ -237,7 +237,9 @@ class SupabaseStorage:
             ) as r:
                 return await _accepted(r, "insert_task", (200, 201))
         except Exception as e:
-            logger.warning("insert_task failed: %s", e)
+            logger.warning("insert_task failed: %s", type(e).__name__)
+            # R-149 (Security QA): the exception TYPE is the diagnosis — the
+            # raw text is not trusted (all handlers below log the same way).
             _record_exception("insert_task", e)
             return False
 
@@ -262,7 +264,7 @@ class SupabaseStorage:
             ) as r:
                 return await _accepted(r, "update_task", (200, 204))
         except Exception as e:
-            logger.warning("update_task failed: %s", e)
+            logger.warning("update_task failed: %s", type(e).__name__)
             _record_exception("update_task", e)
             return False
 
@@ -282,7 +284,7 @@ class SupabaseStorage:
                     return await r.json()
                 return []
         except Exception as e:
-            logger.warning("get_tasks failed: %s", e)
+            logger.warning("get_tasks failed: %s", type(e).__name__)
             _record_exception("get_tasks", e)
             return []
 
@@ -307,7 +309,7 @@ class SupabaseStorage:
                     return rows[0] if rows else None
                 return None
         except Exception as e:
-            logger.warning("get_task failed: %s", e)
+            logger.warning("get_task failed: %s", type(e).__name__)
             _record_exception("get_task", e)
             return None
 
@@ -339,7 +341,7 @@ class SupabaseStorage:
             ) as r:
                 return await _accepted(r, "upsert_agent_stats", (200, 201))
         except Exception as e:
-            logger.warning("upsert_agent_stats failed: %s", e)
+            logger.warning("upsert_agent_stats failed: %s", type(e).__name__)
             _record_exception("upsert_agent_stats", e)
             return False
 
@@ -355,7 +357,7 @@ class SupabaseStorage:
                     return await r.json()
                 return []
         except Exception as e:
-            logger.warning("get_agent_stats failed: %s", e)
+            logger.warning("get_agent_stats failed: %s", type(e).__name__)
             _record_exception("get_agent_stats", e)
             return []
 
@@ -375,7 +377,7 @@ class SupabaseStorage:
             ) as r:
                 return await _accepted(r, "insert_event", (200, 201))
         except Exception as e:
-            logger.warning("insert_event failed: %s", e)
+            logger.warning("insert_event failed: %s", type(e).__name__)
             _record_exception("insert_event", e)
             return False
 
@@ -393,7 +395,7 @@ class SupabaseStorage:
                     return await r.json()
                 return []
         except Exception as e:
-            logger.warning("get_events failed: %s", e)
+            logger.warning("get_events failed: %s", type(e).__name__)
             _record_exception("get_events", e)
             return []
 
