@@ -474,15 +474,17 @@ def test_environment_proxies_are_ignored(dns, loopback_is_public, monkeypatch):
         with plain.open(f"http://{CONTROL_HOST}:{srv.server_address[1]}/x",
                         timeout=5) as r:
             assert r.status == 200
-        assert _ProxySink.hits == 1
+        assert _ProxySink.hits == 1 and _ProxySink.connections >= 1
         # the protected path: same environment, same destination — the proxy
         # is ignored and the VETTED destination is reached directly.
         _ProxySink.hits = 0
+        _ProxySink.connections = 0
         with safety.safe_urlopen(
                 urllib.request.Request(f"http://{CONTROL_HOST}:{srv.server_address[1]}/x"),
                 timeout=5) as r:
             assert r.status == 200
-        assert _ProxySink.hits == 0                 # the proxy was never contacted
+        assert _ProxySink.hits == 0                 # no request was ever served
+        assert _ProxySink.connections == 0         # ... and no TCP socket opened
         assert _JSONHandler.hits == 1               # the real vetted destination was
     finally:
         for x in (proxy, srv):
@@ -491,7 +493,15 @@ def test_environment_proxies_are_ignored(dns, loopback_is_public, monkeypatch):
 
 
 class _ProxySink(http.server.BaseHTTPRequestHandler):
+    """A would-be proxy: counts SERVED requests AND TCP connections — a
+    served-request counter alone cannot prove that no socket ever opened."""
+
     hits = 0
+    connections = 0
+
+    def setup(self):
+        type(self).connections += 1
+        super().setup()
 
     def _serve(self):
         type(self).hits += 1
@@ -657,6 +667,7 @@ def test_explicit_proxy_on_the_request_is_refused(dns, loopback_is_public,
     # has_proxy() (the absolute-form selector) is what catches it.  A REAL
     # proxy listener proves no connection is ever made to the proxy.
     _ProxySink.hits = 0
+    _ProxySink.connections = 0
     sink = _serve("127.0.0.1", _ProxySink)
     sink_port = sink.server_address[1]
     try:
@@ -665,7 +676,8 @@ def test_explicit_proxy_on_the_request_is_refused(dns, loopback_is_public,
         with pytest.raises(safety.UnsafeURLError) as ei:
             safety.safe_urlopen(req, timeout=5)
         assert "explicit proxies are not supported" in str(ei.value)
-        assert _ProxySink.hits == 0
+        assert _ProxySink.hits == 0                # no request was ever served
+        assert _ProxySink.connections == 0         # ... and no TCP socket opened
     finally:
         sink.shutdown()
         sink.server_close()
@@ -688,92 +700,142 @@ def test_non_ip_entries_in_the_answer_fail_closed(dns):
         safety.check_resolved(CONTROL_HOST, ["not-an-ip"])
 
 
-def test_malformed_getaddrinfo_results_fail_closed(dns, loopback_is_public):
-    # R-146b review round 2: the COMPLETE getaddrinfo entry is validated — a
-    # truncated tuple, a non-string address, a family that contradicts the
-    # address, an IPv4 literal carrying a scope suffix, or a non-integer port
-    # all fail closed with the FIXED policy reason (never a raw extraction
-    # error), and the private exception never disables the structure check.
-    cases = [
-        # truncated tuple (no sockaddr element at all)
-        [("AF_INET", socket.SOCK_STREAM, socket.IPPROTO_TCP, "")],
-        # non-string address inside the sockaddr
-        [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
-          (None, 80))],
-        # family contradicts the address (AF_INET entry carrying an IPv6)
-        [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
-          ("::1", 80))],
-        # IPv4 literal with a scope suffix: NOT a usable connect target
-        [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
-          ("192.0.2.1%eth0", 80))],
-        # non-integer port
-        [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
-          ("192.0.2.1", "80"))],
-    ]
-    for entry in cases:
-        for kwargs in ({}, {"allow_private": True}):
-            dns.script_raw(entry)
-            with pytest.raises(safety.UnsafeURLError) as ei:
-                safety.vetted_sockaddrs(CONTROL_HOST, 80, **kwargs)
-            assert "unusable" in str(ei.value), entry
+# All entries use POLICY-ALLOWED addresses (documentation ranges are public
+# per the address policy), so with allow_private=False the request still
+# reaches the STRUCTURE validation — the rejection reason is the usability
+# one for every case, on both transports.
+MALFORMED_CASES = [
+    # truncated tuple (no sockaddr element at all)
+    [("AF_INET", socket.SOCK_STREAM, socket.IPPROTO_TCP, "")],
+    # non-string address inside the sockaddr
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      (None, 80))],
+    # family contradicts the address: AF_INET entry carrying an IPv6
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80))],
+    # family contradicts the address: AF_UNSPEC entry carrying an IPv6
+    # (an explicit family match — "not AF_INET" alone would let this pass)
+    [(socket.AF_UNSPEC, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80))],
+    # IPv4 literal with a scope suffix: NOT a usable connect target
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("192.0.2.1%eth0", 80))],
+    # non-integer port
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("192.0.2.1", "80"))],
+    # IPv6 extras (flowinfo/scope_id) on an IPv4 sockaddr
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("192.0.2.1", 80, 0, 42))],
+    # non-integer sockaddr extras
+    [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80, "0", 42))],
+]
 
 
-def test_guarded_resolver_rejects_malformed_results(dns):
-    # The SAME shared gate on the aiohttp path: the resolver never hands the
-    # connector a malformed entry — it fails closed with the fixed reason
-    # (an UnsafeURLError: already a clean policy message, never raw text).
-    dns.script_raw([("AF_INET", socket.SOCK_STREAM, socket.IPPROTO_TCP, "")])
+@pytest.mark.parametrize("allow_private", [False, True])
+@pytest.mark.parametrize("entry", MALFORMED_CASES)
+def test_malformed_getaddrinfo_results_fail_closed_on_both_paths(
+        dns, entry, allow_private):
+    # R-146b review rounds 2+3: the COMPLETE getaddrinfo entry is validated
+    # by the SHARED gate both transports use — a truncated tuple, a
+    # non-string address, a family that contradicts the address (including
+    # AF_UNSPEC), an IPv4 literal with a scope suffix, a non-integer port,
+    # IPv6 extras on an IPv4 sockaddr or non-integer extras all fail closed
+    # with the FIXED policy reason (never a raw extraction error), and the
+    # private exception never disables the structure check — on the urllib
+    # path AND the resolver path alike.
+    dns.script_raw(entry)
     with pytest.raises(safety.UnsafeURLError) as ei:
-        asyncio.run(GuardedResolver(allow_private=True).resolve(CONTROL_HOST, 80))
-    assert "unusable DNS answer" in str(ei.value)
+        safety.vetted_sockaddrs(CONTROL_HOST, 80, allow_private=allow_private)
+    assert "unusable" in str(ei.value)
 
-    dns.script_raw([(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
-                     "", ("192.0.2.1%eth0", 80))])
+    dns.script_raw(entry)
     with pytest.raises(safety.UnsafeURLError) as ei:
-        asyncio.run(GuardedResolver(allow_private=True).resolve(CONTROL_HOST, 80))
-    assert "unusable address" in str(ei.value)
+        asyncio.run(GuardedResolver(allow_private=allow_private)
+                    .resolve(CONTROL_HOST, 80))
+    assert "unusable" in str(ei.value)
+
+
+def test_vetted_sockaddr_preserves_ipv6_scope_information(dns):
+    # R-146b review round 3: an IPv6 sockaddr may carry flowinfo and
+    # scope_id — they are validated as integers and PRESERVED in the connect
+    # target, and a scope embedded in the address literal survives too (the
+    # socket layer gets the full sockaddr, never a re-resolvable name).
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1%eth0", 8080, 0, 42))])
+    out = safety.vetted_sockaddrs(CONTROL_HOST, 8080, allow_private=True)
+    assert out == [(socket.AF_INET6, socket.IPPROTO_TCP,
+                   ("fe80::1%eth0", 8080, 0, 42))]
+
+    # a 2-element IPv6 sockaddr (no extras) stays valid
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("2001:db8::1", 8080))])
+    out = safety.vetted_sockaddrs(CONTROL_HOST, 8080)
+    assert out == [(socket.AF_INET6, socket.IPPROTO_TCP, ("2001:db8::1", 8080))]
 
 
 def test_connection_layer_dns_error_is_cleaned(dns, loopback_is_public, caplog):
-    # R-146b review round 2: the early check sees a VALID allowed answer, and
-    # the error carrying the fake secret is raised by the resolution used FOR
-    # THE CONNECTION — proving the transport layer (not just the pre-check)
-    # converts resolver errors to the fixed reason.  A NON-OSError resolver
-    # exception is covered too: it must not leak its text either.
-    dns.script(["127.0.0.1"])
-    dns.fail_from = 2                        # 1st: early check; 2nd: connect
-    dns.error_text = "fake-secret-token-XYZ"
-    with pytest.raises(safety.UnsafeURLError) as ei:
-        safety.safe_urlopen(
-            urllib.request.Request(f"http://{CONTROL_HOST}:8081/x"), timeout=5)
-    assert "DNS resolution failed" in str(ei.value)
-    assert "fake-secret-token-XYZ" not in str(ei.value)
-    assert len(dns.calls) == 2                # the early check AND the connect
+    # R-146b review rounds 2+3: the EARLY check sees a valid allowed answer
+    # and the failure is raised by the resolution used FOR THE CONNECTION —
+    # proving the TRANSPORT layer (not just the pre-check) converts
+    # resolver errors to the fixed reason.  The sequence is re-armed for
+    # EVERY path and EVERY error type, with the call count asserted after
+    # each attempt (1 = the early check, 2 = the connection resolution).
+    SECRET = "fake-secret-token-XYZ"
 
-    out = asyncio.run(_adapter(
-        f"http://{CONTROL_HOST}:8081/v1/chat/completions").execute(
-        {"prompt": "hi"}))
-    assert out["ok"] is False
-    assert "DNS resolution failed" in out["result"]["error"]
-    assert "fake-secret-token-XYZ" not in json.dumps(out)
-    assert "fake-secret-token-XYZ" not in caplog.text
+    def arm(error):
+        """A fresh 2-step sequence: an allowed first answer, then `error`."""
+        dns.calls.clear()
+        dns.fail = False
+        dns.fail_from = 0
+        dns.exc = None
+        dns.raw = None
+        dns.script(["127.0.0.1"])
+        error()
 
-    # a non-OSError resolver exception: same fixed reason, no raw text
-    dns.fail = True
-    dns.fail_from = 0
-    dns.exc = ValueError("val-err-XYZ-raw")
-    with pytest.raises(safety.UnsafeURLError) as ei:
-        safety.safe_urlopen(
-            urllib.request.Request(f"http://{CONTROL_HOST}:8081/x"), timeout=5)
-    assert "DNS resolution failed" in str(ei.value)
-    assert "val-err-XYZ-raw" not in str(ei.value)
-    out = asyncio.run(_adapter(
-        f"http://{CONTROL_HOST}:8081/v1/chat/completions").execute(
-        {"prompt": "hi"}))
-    assert out["ok"] is False
-    assert "DNS resolution failed" in out["result"]["error"]
-    assert "val-err-XYZ-raw" not in json.dumps(out)
-    assert "val-err-XYZ-raw" not in caplog.text
+    def secret_gaierror():
+        dns.fail_from = 2
+        dns.error_text = SECRET
+
+    def non_oserror():
+        dns.fail_from = 2
+        dns.exc = ValueError("val-err-XYZ-raw")
+
+    def corrupt_answer():
+        # the connection-layer resolution returns a corrupted entry whose
+        # payload carries the secret — the fixed reason, never the payload
+        good = [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                 "", ("127.0.0.1", 8081))]
+        corrupt = [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", (SECRET, 8081))]
+        dns.script_raw(good, corrupt)
+
+    for arm_error, reason in ((secret_gaierror, "DNS resolution failed"),
+                             (non_oserror, "DNS resolution failed"),
+                             (corrupt_answer, "unusable")):
+        # urllib path: the early check consumes call 1, the guarded
+        # connection's resolution is call 2 and raises/returns the failure.
+        arm(arm_error)
+        with pytest.raises(safety.UnsafeURLError) as ei:
+            safety.safe_urlopen(
+                urllib.request.Request(f"http://{CONTROL_HOST}:8081/x"),
+                timeout=5)
+        assert reason in str(ei.value)
+        assert SECRET not in str(ei.value)
+        assert len(dns.calls) == 2
+
+        # adapter path: the SAME fresh sequence (its early check is call 1,
+        # the connector's guarded resolution is call 2).
+        arm(arm_error)
+        out = asyncio.run(_adapter(
+            f"http://{CONTROL_HOST}:8081/v1/chat/completions").execute(
+            {"prompt": "hi"}))
+        assert out["ok"] is False
+        assert reason in out["result"]["error"]
+        assert SECRET not in json.dumps(out)
+        assert SECRET not in caplog.text
+        assert len(dns.calls) == 2
+
 
 
 def test_guarded_resolver_hands_the_connector_vetted_ip_literals(dns,
@@ -830,7 +892,6 @@ def test_raw_dns_error_text_is_not_forwarded(dns, caplog):
     assert "DNS resolution failed" in out["result"]["error"]
     assert "fake-secret-token-XYZ" not in json.dumps(out)
     assert "fake-secret-token-XYZ" not in caplog.text
-
 
 @pytest.fixture
 def tls_material(tmp_path):

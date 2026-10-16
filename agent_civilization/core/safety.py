@@ -399,10 +399,12 @@ def validate_getaddrinfo(host, infos, allow_private=False):
     agent adapter) run their resolver output through this single gate: the
     whole answer is policy-checked (``check_resolved``), and every entry is
     validated as a whole — the connect target is the parsed numeric literal
-    (never a string the socket layer could re-resolve), the port must be an
-    integer, and the family must match the address version.  A truncated or
+    (never a string the socket layer could re-resolve; a scoped IPv6 keeps
+    its scope in the literal), the port must be an integer, the family must
+    be the address's OWN family, and IPv6 flowinfo/scope_id (when present)
+    are validated as integers and preserved in the target.  A truncated or
     malformed entry fails closed with the fixed policy reason, never with a
-    raw extraction error.  Returns ``[(family, proto, (ip, port)), ...]``.
+    raw extraction error.  Returns ``[(family, proto, sockaddr), ...]``.
     """
     try:
         addrs = sorted({info[4][0] for info in infos})
@@ -414,9 +416,24 @@ def validate_getaddrinfo(host, infos, allow_private=False):
             if not isinstance(port_i, int):
                 raise ValueError("non-integer port")
             parsed = ipaddress.ip_address(ip)
-            if (parsed.version == 4) != (family == socket.AF_INET):
+            # R-146b review round 3: an EXPLICIT family match — anything but
+            # the address's own family (AF_UNSPEC, a wrong family, an
+            # unsupported one) fails closed; IPv6 must not sneak through a
+            # mere "not AF_INET" test.
+            expected = socket.AF_INET if parsed.version == 4 else socket.AF_INET6
+            if family != expected:
                 raise ValueError("address/family mismatch")
-            targets.append((family, proto, (str(parsed), port_i)))
+            # R-146b review round 3: the FULL sockaddr is validated and kept
+            # as the connect target — an IPv6 entry may carry flowinfo and
+            # scope_id (both must be integers), and they must survive into
+            # the target; an IPv4 entry must not carry IPv6 extras.
+            extras = sockaddr[2:]
+            if parsed.version == 4 and extras:
+                raise ValueError("IPv6 sockaddr extras on an IPv4 entry")
+            if any(not isinstance(x, int) for x in extras):
+                raise ValueError("non-integer sockaddr extras")
+            target = (str(parsed), port_i, *extras)
+            targets.append((family, proto, target))
     except UnsafeURLError:
         raise
     except Exception:
