@@ -1,0 +1,16 @@
+BUG-05 BEFORE — POST-HOC verification from the BASE tree (7ecd098bf8bd348e79172ba6b1ae4068bcd9c380 = main after PR #153) — 2026-10-16T10:56Z
+
+This is a supplementary verification of the base version (NOT an additional run that happened before the fix — the original before-proof is log 263, produced on this branch before the fix was applied). It completes the attribution: the diagnostic below reads server.CIVILIZATION in the SAME process that emitted the startup log, and records the exit code explicitly.
+
+== old source line (base tree, server.py) ==
+297:            f"{len(CIVILIZATION) * 50} agents total")
+
+== command ==
+env -i PATH="$PATH" AGOS_ENV=test AGENTS_PER_SPEC=3 python -c "import server; print(...server.CIVILIZATION...)"
+
+== output (stderr log lines + stdout diagnostic) ==
+DIAG specializations=20 civilization_agents=60 external_agents=0
+IMPORT_RC=0
+-- stderr --
+2026-10-16 10:56:21,898 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:296
+2026-10-16 10:56:21,898 - agos.server - INFO - External agents loaded: 0 - <module>:298
