@@ -33,6 +33,7 @@ import pytest
 from agent_civilization.agents.external_adapter import ExternalAgentAdapter, GuardedResolver
 from agent_civilization.core import safety
 
+_bodies: list = []
 CONTROL_HOST = "localhost"      # loopback name: the offline guard lets it run
 ALLOWED_FIRST = "192.0.2.1"      # RFC 5737 documentation range: policy-allowed
 INTERNAL = "127.0.0.2"           # loopback /8: local-only, non-public
@@ -48,43 +49,78 @@ class ControlledDNS:
     def __init__(self, monkeypatch):
         self._orig = socket.getaddrinfo
         self.answers: list = []      # each item: list of address strings
+        self.raw: list | None = None  # prebuilt getaddrinfo entries, as-is
         self.calls: list = []
-        self.fail = False            # True: resolution raises (DNS failure)
+        self.fail = False            # True: every resolution raises
+        self.fail_from = 0           # >0: raise from that call (1-based)
+        self.error_text = "Name or service not known"
+        self.exc: BaseException | None = None  # raise this instead of gaierror
         monkeypatch.setattr(socket, "getaddrinfo", self._fake)
 
     def script(self, *answers):
         self.answers = [list(a) for a in answers]
+        self.raw = None
+
+    def script_raw(self, *entries):
+        """Prebuilt getaddrinfo entries, passed through UNVALIDATED (malformed
+        structure tests: the GUARD must reject them, not the fake)."""
+        self.raw = [list(e) for e in entries]
+        self.answers = []
 
     def _fake(self, host, *args, **kwargs):
         host = str(host)
         if host == CONTROL_HOST:
-            if self.fail:
-                raise socket.gaierror(2, "Name or service not known")
+            call = len(self.calls) + 1
+            self.calls.append(call - 1)
+            if self.fail or (self.fail_from and call >= self.fail_from):
+                if self.exc is not None:
+                    raise self.exc
+                raise socket.gaierror(2, self.error_text)
+            if self.raw is not None:
+                return self.raw[min(call - 1, max(0, len(self.raw) - 1))]
             port = args[0] if args else kwargs.get("port", 0)
-            self.calls.append(len(self.calls))
-            answer = self.answers[min(len(self.calls) - 1,
-                                      max(0, len(self.answers) - 1))]
+            answer = self.answers[min(call - 1, max(0, len(self.answers) - 1))]
             out = []
             for ip in answer:
-                family = socket.AF_INET6 if ":" in ip else socket.AF_INET
-                out.append((family, socket.SOCK_STREAM, socket.IPPROTO_TCP,
-                            "", (ip, int(port or 0))))
+                if ":" in ip:
+                    # like the system resolver: IPv6 sockaddrs are 4-tuples
+                    # (ip, port, flowinfo, scope_id)
+                    out.append((socket.AF_INET6, socket.SOCK_STREAM,
+                                socket.IPPROTO_TCP, "",
+                                (ip, int(port or 0), 0, 0)))
+                else:
+                    out.append((socket.AF_INET, socket.SOCK_STREAM,
+                                socket.IPPROTO_TCP, "",
+                                (ip, int(port or 0))))
             return out
         return self._orig(host, *args, **kwargs)
 
 
 class _JSONHandler(http.server.BaseHTTPRequestHandler):
-    """Serves the OpenAI-ish answer; records Host header and request line."""
+    """Serves the OpenAI-ish answer; records Host header and request line.
+
+    ``connections`` counts TCP connections (setup runs once per connection,
+    before any request is parsed) — a served-request counter alone cannot
+    prove that a socket never opened.
+    """
 
     hits = 0
+    connections = 0
     seen_hosts: list = []
+    last_request = None            # (method, path, authorization, body)
+
+    def setup(self):
+        type(self).connections += 1
+        super().setup()
 
     def _serve(self):
         length = int(self.headers.get("Content-Length") or 0)
-        if length:
-            self.rfile.read(length)
+        _bodies.append(self.rfile.read(length) if length else b"")
         type(self).hits += 1
         type(self).seen_hosts.append(self.headers.get("Host"))
+        type(self).last_request = (self.command, self.path,
+                                   self.headers.get("Authorization"),
+                                   _bodies[-1] if _bodies else b"")
         body = json.dumps({"choices": [{"message": {"content": "public answer"}}]}).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -136,6 +172,7 @@ def dns(monkeypatch):
 @pytest.fixture
 def internal_listener():
     _JSONHandler.hits = 0
+    _JSONHandler.connections = 0
     _JSONHandler.seen_hosts = []
     srv = _serve(INTERNAL, _JSONHandler)
     yield srv.server_address[1]
@@ -172,6 +209,7 @@ def test_urllib_rebinding_is_blocked_before_the_socket(dns, internal_listener):
         safety.safe_urlopen(req, timeout=5)
     assert "blocked non-public address" in str(ei.value)
     assert _JSONHandler.hits == 0                    # the listener was never reached
+    assert _JSONHandler.connections == 0             # ... and no TCP connection opened
 
 
 def test_aiohttp_rebinding_is_blocked_before_the_socket(dns, internal_listener):
@@ -182,6 +220,7 @@ def test_aiohttp_rebinding_is_blocked_before_the_socket(dns, internal_listener):
     assert out["ok"] is False
     assert "blocked non-public address" in out["result"]["error"]
     assert _JSONHandler.hits == 0
+    assert _JSONHandler.connections == 0            # no TCP connection opened
 
 
 def test_urllib_error_does_not_leak_the_url_or_credentials(dns, internal_listener):
@@ -239,8 +278,9 @@ def test_aiohttp_allowed_connection_uses_the_vetted_address(dns, loopback_is_pub
 def test_vetted_sockaddrs_return_the_checked_targets(dns, loopback_is_public):
     dns.script(["127.0.0.1"])
     out = safety.vetted_sockaddrs(CONTROL_HOST, 8080)
-    assert [sa for _, sa in out] == [("127.0.0.1", 8080)]
+    assert [sa for _, _, sa in out] == [("127.0.0.1", 8080)]
     assert out[0][0] == socket.AF_INET
+    assert out[0][1] == socket.IPPROTO_TCP
 
 
 # --------------------------------------------------------------------------- #
@@ -399,12 +439,15 @@ def test_https_rejects_a_certificate_for_another_hostname(dns, loopback_is_publi
     _JSONHandler.seen_hosts = []
     dns.script(["127.0.0.1"])
     try:
-        # urllib wraps the transport failure in URLError; the reason is the
-        # certificate verification failure against the ORIGINAL hostname.
+        # urllib wraps the transport failure in URLError; the REASON is the
+        # certificate verification failure against the ORIGINAL hostname —
+        # specifically the hostname mismatch (a trusted CA is used, so a
+        # generic trust failure would mean the test itself is broken).
         with pytest.raises(urllib.error.URLError) as ei:
             safety.safe_urlopen(
                 urllib.request.Request(f"https://{CONTROL_HOST}:{port}/x"), timeout=5)
-        assert "Hostname mismatch" in str(ei.value) or "CERTIFICATE_VERIFY_FAILED" in str(ei.value)
+        assert isinstance(ei.value.reason, ssl.SSLCertVerificationError)
+        assert "Hostname mismatch" in str(ei.value.reason)
         assert _JSONHandler.hits == 0            # no request was ever served
     finally:
         srv.shutdown()
@@ -419,27 +462,53 @@ def test_environment_proxies_are_ignored(dns, loopback_is_public, monkeypatch):
     _ProxySink.hits = 0
     proxy = _serve("127.0.0.1", _ProxySink)
     _JSONHandler.hits = 0
+    _JSONHandler.connections = 0
     _JSONHandler.seen_hosts = []
     dns.script(["127.0.0.1"])
     srv = _serve("127.0.0.1", _JSONHandler)
     for var in ("http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY",
                 "HTTPS_PROXY", "ALL_PROXY"):
         monkeypatch.setenv(var, f"http://127.0.0.1:{proxy.server_address[1]}")
+    # the proxy bypass vars must NOT hide the effect of the proxy vars
+    for var in ("no_proxy", "NO_PROXY"):
+        monkeypatch.delenv(var, raising=False)
     try:
+        # positive control under the SAME environment: a DEFAULT opener
+        # (env proxies honored) really routes the request through the proxy —
+        # proves the environment is effective, so the protected path ignoring
+        # it is our handler's doing, not a bypassed setting.
+        plain = urllib.request.build_opener()
+        with plain.open(f"http://{CONTROL_HOST}:{srv.server_address[1]}/x",
+                        timeout=5) as r:
+            assert r.status == 200
+        assert _ProxySink.hits == 1 and _ProxySink.connections >= 1
+        # the protected path: same environment, same destination — the proxy
+        # is ignored and the VETTED destination is reached directly.
+        _ProxySink.hits = 0
+        _ProxySink.connections = 0
         with safety.safe_urlopen(
                 urllib.request.Request(f"http://{CONTROL_HOST}:{srv.server_address[1]}/x"),
                 timeout=5) as r:
             assert r.status == 200
+        assert _ProxySink.hits == 0                 # no request was ever served
+        assert _ProxySink.connections == 0         # ... and no TCP socket opened
+        assert _JSONHandler.hits == 1               # the real vetted destination was
     finally:
         for x in (proxy, srv):
             x.shutdown()
             x.server_close()
-    assert _ProxySink.hits == 0                 # the proxy was never contacted
-    assert _JSONHandler.hits == 1               # the real vetted destination was
 
 
 class _ProxySink(http.server.BaseHTTPRequestHandler):
+    """A would-be proxy: counts SERVED requests AND TCP connections — a
+    served-request counter alone cannot prove that no socket ever opened."""
+
     hits = 0
+    connections = 0
+
+    def setup(self):
+        type(self).connections += 1
+        super().setup()
 
     def _serve(self):
         type(self).hits += 1
@@ -498,6 +567,7 @@ def test_aiohttp_redirect_target_goes_through_the_guarded_resolver(
     assert out["ok"] is False
     assert "blocked non-public address" in out["result"]["error"]
     assert _JSONHandler.hits == 0
+    assert _JSONHandler.connections == 0            # no TCP connection opened
 
 
 def test_urllib_redirect_loop_stays_bounded(loopback_is_public):
@@ -572,3 +642,628 @@ def test_allow_private_does_not_skip_url_or_redirect_checks(dns):
         safety.safe_urlopen(
             urllib.request.Request("file:///etc/passwd"), timeout=5,
             allow_private=True)
+
+
+# --------------------------------------------------------------------------- #
+# G. R-146b review round: explicit proxies, corrupt answers, clean errors,
+#    aiohttp-side TLS/IPv6/DNS-failure, redirect method semantics
+# --------------------------------------------------------------------------- #
+
+def test_explicit_proxy_on_the_request_is_refused(dns, loopback_is_public,
+                                                  internal_listener):
+    # An explicit proxy on the Request (set_proxy rewrites req.host; for HTTPS
+    # it also sets a tunnel) would make the PROXY resolve the destination and
+    # void the vetted-address guarantee.  No trusted-proxy design exists, so
+    # every proxy signature is refused BEFORE any connection — and a REAL
+    # proxy listener proves, per case, that neither a request was served to
+    # the proxy NOR a TCP socket ever opened to it.
+    dns.script(["127.0.0.1"])           # the early check passes...
+    _ProxySink.hits = 0
+    _ProxySink.connections = 0
+    sink = _serve("127.0.0.1", _ProxySink)
+    sink_port = sink.server_address[1]
+    try:
+        # a) http proxy at a DIFFERENT address than the destination
+        req = urllib.request.Request(f"http://{CONTROL_HOST}:{internal_listener}/x")
+        req.set_proxy(f"127.0.0.1:{sink_port}", "http")
+        with pytest.raises(safety.UnsafeURLError) as ei:
+            safety.safe_urlopen(req, timeout=5)
+        assert "explicit proxies are not supported" in str(ei.value)
+        assert _ProxySink.hits == 0 and _ProxySink.connections == 0
+
+        # b) the HTTPS tunnel (set_proxy stores the destination in
+        #    _tunnel_host and would CONNECT through the proxy)
+        req = urllib.request.Request(f"https://{CONTROL_HOST}:{internal_listener}/x")
+        req.set_proxy(f"127.0.0.1:{sink_port}", "https")
+        with pytest.raises(safety.UnsafeURLError) as ei:
+            safety.safe_urlopen(req, timeout=5)
+        assert "explicit proxies are not supported" in str(ei.value)
+        assert _ProxySink.hits == 0 and _ProxySink.connections == 0
+
+        # c) the MATCHING-ADDRESS proxy: set_proxy to the request's OWN host
+        #    keeps req.host == netloc, so a host-comparison check alone would
+        #    miss it — has_proxy() (the absolute-form selector) catches it.
+        req = urllib.request.Request(f"http://{CONTROL_HOST}:{sink_port}/x")
+        req.set_proxy(req.host, "http")
+        with pytest.raises(safety.UnsafeURLError) as ei:
+            safety.safe_urlopen(req, timeout=5)
+        assert "explicit proxies are not supported" in str(ei.value)
+        assert _ProxySink.hits == 0 and _ProxySink.connections == 0
+    finally:
+        sink.shutdown()
+        sink.server_close()
+    assert _JSONHandler.hits == 0 and _JSONHandler.connections == 0
+
+
+def test_non_ip_entries_in_the_answer_fail_closed(dns):
+    # A hostname/garbage inside the DNS answer would make socket.connect
+    # resolve it AGAIN — outside the guard.  Rejected regardless of the
+    # private exception (allow_private reclassifies an address, it never
+    # disables the usability check).
+    dns.script(["attacker-controlled.example"])
+    for kwargs in ({}, {"allow_private": True}):
+        with pytest.raises(safety.UnsafeURLError) as ei:
+            safety.vetted_sockaddrs(CONTROL_HOST, 80, **kwargs)
+        assert "unusable address" in str(ei.value)
+    with pytest.raises(safety.UnsafeURLError):
+        safety.check_url(f"http://{CONTROL_HOST}:80/x")
+    # a literal-IP policy check still rejects garbage the same way
+    with pytest.raises(safety.UnsafeURLError):
+        safety.check_resolved(CONTROL_HOST, ["not-an-ip"])
+
+
+# All entries use POLICY-ALLOWED addresses (documentation ranges are public
+# per the address policy), so with allow_private=False the request still
+# reaches the STRUCTURE validation — the rejection reason is the usability
+# one for every case, on both transports.
+
+
+MALFORMED_CASES = [
+    # truncated tuple (no sockaddr element at all)
+    [("AF_INET", socket.SOCK_STREAM, socket.IPPROTO_TCP, "")],
+    # non-string address inside the sockaddr
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      (None, 80))],
+    # family contradicts the address: AF_INET entry carrying an IPv6
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80))],
+    # family contradicts the address: AF_UNSPEC entry carrying an IPv6
+    # (an explicit family match — "not AF_INET" alone would let this pass)
+    [(socket.AF_UNSPEC, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80))],
+    # IPv4 literal with a scope suffix: NOT a usable connect target
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("192.0.2.1%eth0", 80))],
+    # non-integer port
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("192.0.2.1", "80"))],
+    # IPv6 extras (flowinfo/scope_id) on an IPv4 sockaddr
+    [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("192.0.2.1", 80, 0, 42))],
+    # non-integer sockaddr extras
+    [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80, "0", 42))],
+    # 3-element IPv6 sockaddr (flowinfo without scope_id): unsupported shape
+    [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80, 0))],
+    # 5-element IPv6 sockaddr: unsupported shape
+    [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+      ("2001:db8::1", 80, 0, 0, 0))],
+]
+
+
+@pytest.mark.parametrize("allow_private", [False, True])
+@pytest.mark.parametrize("entry", MALFORMED_CASES)
+def test_malformed_getaddrinfo_results_fail_closed_on_both_paths(
+        dns, entry, allow_private):
+    # R-146b review rounds 2+3: the COMPLETE getaddrinfo entry is validated
+    # by the SHARED gate both transports use — a truncated tuple, a
+    # non-string address, a family that contradicts the address (including
+    # AF_UNSPEC), an IPv4 literal with a scope suffix, a non-integer port,
+    # IPv6 extras on an IPv4 sockaddr or non-integer extras all fail closed
+    # with the FIXED policy reason (never a raw extraction error), and the
+    # private exception never disables the structure check — on the urllib
+    # path AND the resolver path alike.
+    dns.script_raw(entry)
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        safety.vetted_sockaddrs(CONTROL_HOST, 80, allow_private=allow_private)
+    assert "unusable" in str(ei.value)
+
+    dns.script_raw(entry)
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        asyncio.run(GuardedResolver(allow_private=allow_private)
+                    .resolve(CONTROL_HOST, 80))
+    assert "unusable" in str(ei.value)
+
+
+def test_vetted_sockaddr_preserves_ipv6_scope_information(dns):
+    # R-146b review round 3: an IPv6 sockaddr may carry flowinfo and
+    # scope_id — they are validated as integers and PRESERVED in the connect
+    # target, and a scope embedded in the address literal survives too (the
+    # socket layer gets the full sockaddr, never a re-resolvable name).
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1%eth0", 8080, 0, 42))])
+    out = safety.vetted_sockaddrs(CONTROL_HOST, 8080, allow_private=True)
+    assert out == [(socket.AF_INET6, socket.IPPROTO_TCP,
+                   ("fe80::1%eth0", 8080, 0, 42))]
+
+    # a 2-element IPv6 sockaddr (no extras) stays valid
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("2001:db8::1", 8080))])
+    out = safety.vetted_sockaddrs(CONTROL_HOST, 8080)
+    assert out == [(socket.AF_INET6, socket.IPPROTO_TCP, ("2001:db8::1", 8080))]
+
+    # a BARE literal with a numeric scope_id (no "%scope" in the string):
+    # the urllib path keeps the full sockaddr — the numeric scope IS the
+    # connect target's scope_id element, nothing is dropped.
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("fe80::1", 8080, 0, 42))])
+    out = safety.vetted_sockaddrs(CONTROL_HOST, 8080, allow_private=True)
+    assert out == [(socket.AF_INET6, socket.IPPROTO_TCP,
+                   ("fe80::1", 8080, 0, 42))]
+
+
+def test_guarded_resolver_refuses_scoped_ipv6(dns):
+    # R-146b review round 6 — the representability line, read from the
+    # actual asyncio source of every supported Python (3.11/3.12/3.14):
+    # a PLAIN literal takes the inet_pton fast path in sock_connect (no
+    # resolution call — structurally safe); a SCOPED literal fails that
+    # fast path ("'%' in host" is rejected in _ipaddr_info) and falls into
+    # loop.getaddrinfo(flags=0) — an UNGUARDED post-gate resolution call.
+    # Scoped IPv6 entries are therefore REFUSED with this fixed reason on
+    # the agent path — never re-represented as a "%N" string that opens
+    # that path, and never silently stripped of their scope.
+    def entry(ip, port, flowinfo=0, scope_id=0):
+        return [(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                 "", (ip, port, flowinfo, scope_id))]
+
+    dns.script_raw(entry("fe80::1", 8080, 0, 42))       # numeric scope_id
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        asyncio.run(GuardedResolver(allow_private=True)
+                    .resolve(CONTROL_HOST, 8080))
+    assert "not representable by the agent transport" in str(ei.value)
+
+    dns.script_raw(entry("fe80::1%eth0", 8080))          # scope in the literal
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        asyncio.run(GuardedResolver(allow_private=True)
+                    .resolve(CONTROL_HOST, 8080))
+    assert "not representable by the agent transport" in str(ei.value)
+
+    dns.script_raw(entry("fe80::1%lo", 8080, 0, socket.if_nametoindex("lo")))
+    with pytest.raises(safety.UnsafeURLError) as ei:    # matching pair too
+        asyncio.run(GuardedResolver(allow_private=True)
+                    .resolve(CONTROL_HOST, 8080))
+    assert "not representable by the agent transport" in str(ei.value)
+
+    dns.script_raw(entry("fe80::1", 8080, 7, 42))        # nonzero flowinfo
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        asyncio.run(GuardedResolver(allow_private=True)
+                    .resolve(CONTROL_HOST, 8080))
+    assert "not representable by the agent transport" in str(ei.value)
+
+    # a PLAIN IPv6 answer (no scope) still passes through — the fast path
+    dns.script_raw(entry("2001:db8::1", 8080))
+    out = asyncio.run(GuardedResolver(allow_private=False)
+                      .resolve(CONTROL_HOST, 8080))
+    assert [r["host"] for r in out] == ["2001:db8::1"]
+
+
+def test_aiohttp_scoped_ipv6_is_refused_before_any_connection(
+        dns, loopback_is_public, monkeypatch):
+    # The agent transport REFUSES a scoped IPv6 answer with the fixed
+    # reason BEFORE any transport involvement: no socket.connect call is
+    # ever made (observed), the local listener records neither a request
+    # nor a TCP connection.  The ::1 case uses the loopback interface's
+    # REAL ifindex as the scope_id; the fe80::1 case is the review's
+    # numeric-scope scenario.
+    recorded = []
+    orig_connect = socket.socket.connect
+
+    def record_connect(sock, addr):
+        recorded.append(addr)
+        return orig_connect(sock, addr)
+
+    monkeypatch.setattr(socket.socket, "connect", record_connect)
+
+    async def refuse_sock_connect(loop, sock, address):
+        recorded.append(address)
+        raise OSError("test barrier: connect refused")
+
+    monkeypatch.setattr(asyncio.SelectorEventLoop, "sock_connect",
+                        refuse_sock_connect)
+
+    lo_ifindex = socket.if_nametoindex("lo")
+    for ip, port in (("::1", None), ("fe80::1", 8080)):
+        if port is None:  # the ::1 scenario uses a live listener
+            srv = _serve("::1", _JSONHandler)
+            port = srv.server_address[1]
+            _JSONHandler.hits = 0
+            _JSONHandler.connections = 0
+        try:
+            dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM,
+                             socket.IPPROTO_TCP, "",
+                             (ip, port, 0,
+                              lo_ifindex if ip == "::1" else 42))])
+            out = asyncio.run(_adapter(
+                f"http://{CONTROL_HOST}:{port}/v1/chat/completions",
+                allow_private=True).execute({"prompt": "hi"}))
+            assert out["ok"] is False
+            assert ("not representable by the agent transport"
+                    in out["result"]["error"])
+        finally:
+            if ip == "::1":
+                srv.shutdown()
+                srv.server_close()
+    assert recorded == []                     # no connect attempt at all
+    assert _JSONHandler.hits == 0 and _JSONHandler.connections == 0
+
+
+def test_adapter_literal_scoped_ipv6_url_is_refused(dns, monkeypatch):
+    # R-146b review round 7 — the decisive literal test: a URL whose host is
+    # a scoped IPv6 literal (the form yarl accepts, "[fe80::1%42]") never
+    # reaches this transport's resolver — the connector short-circuits IP
+    # literals (is_ip_address("fe80::1%42") is True) — and the scoped
+    # string would fall into an unguarded getaddrinfo(flags=0) inside the
+    # connect path.  With allow_private=True (so the early policy check
+    # passes for another reason), the request must be REFUSED with the
+    # fixed representation reason BEFORE any transport involvement: no
+    # post-policy resolution call, no socket.connect at all.
+    resolver_calls = []
+    orig_resolve = GuardedResolver.resolve
+
+    async def spy_resolve(resolver_self, host, port=0, family=0):
+        resolver_calls.append(str(host))
+        return await orig_resolve(resolver_self, host, port, family)
+
+    monkeypatch.setattr(GuardedResolver, "resolve", spy_resolve)
+
+    gai_calls = []
+    real_gai = socket.getaddrinfo
+
+    def spy_gai(host, *args, **kwargs):
+        gai_calls.append(str(host))
+        return real_gai(host, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "getaddrinfo", spy_gai)
+
+    connects = []
+
+    def record_and_refuse(sock, addr):
+        connects.append(addr)
+        raise OSError("test barrier: connect refused")
+
+    monkeypatch.setattr(socket.socket, "connect", record_and_refuse)
+
+    out = asyncio.run(_adapter(
+        "http://[fe80::1%42]:8081/v1/chat/completions",
+        allow_private=True).execute({"prompt": "hi"}))
+    assert out["ok"] is False
+    assert ("not representable by the agent transport"
+            in out["result"]["error"])
+    # the literal never reached the guarded resolver (the connector would
+    # short-circuit it) — and the refusal happened before the request
+    assert resolver_calls == []
+    # NO getaddrinfo at all: the early policy check resolves an IP literal
+    # NUMERICALLY (safety.resolve_host's ipaddress fast path — scoped
+    # literals parse), so the scoped string never touches the resolution
+    # layer, before or after the policy decision
+    assert gai_calls == []
+    # no connect attempt of any kind
+    assert connects == []
+
+
+def test_urllib_connect_target_carries_the_numeric_scope(dns, loopback_is_public,
+                                                         monkeypatch):
+    # R-146b review round 5: the SUCCESS of a ::1 connection alone would not
+    # prove scope preservation (::1%99 connects too on this kernel) — a
+    # test-level observer records the address the REAL urllib transport
+    # actually hands to socket.connect, and the recorded target is the
+    # proof: the full 4-tuple with the expected scope_id, then the local
+    # listener completes the request.
+    lo_ifindex = socket.if_nametoindex("lo")
+    recorded = []
+    orig_connect = socket.socket.connect
+
+    def record_connect(sock, addr):
+        recorded.append(addr)
+        return orig_connect(sock, addr)
+
+    monkeypatch.setattr(socket.socket, "connect", record_connect)
+    srv = _serve("::1", _JSONHandler)
+    port = srv.server_address[1]
+    _JSONHandler.hits = 0
+    dns.script_raw([(socket.AF_INET6, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", ("::1", port, 0, lo_ifindex))])
+    try:
+        with safety.safe_urlopen(
+                urllib.request.Request(f"http://{CONTROL_HOST}:{port}/x"),
+                timeout=5) as r:
+            assert r.status == 200
+        assert recorded == [("::1", port, 0, lo_ifindex)]
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_connection_layer_dns_error_is_cleaned(dns, loopback_is_public, caplog):
+    # R-146b review rounds 2+3: the EARLY check sees a valid allowed answer
+    # and the failure is raised by the resolution used FOR THE CONNECTION —
+    # proving the TRANSPORT layer (not just the pre-check) converts
+    # resolver errors to the fixed reason.  The sequence is re-armed for
+    # EVERY path and EVERY error type, with the call count asserted after
+    # each attempt (1 = the early check, 2 = the connection resolution).
+    SECRET = "fake-secret-token-XYZ"
+
+    def arm(error):
+        """A fresh 2-step sequence: an allowed first answer, then `error`."""
+        dns.calls.clear()
+        dns.fail = False
+        dns.fail_from = 0
+        dns.exc = None
+        dns.raw = None
+        dns.script(["127.0.0.1"])
+        error()
+
+    def secret_gaierror():
+        dns.fail_from = 2
+        dns.error_text = SECRET
+
+    def non_oserror():
+        dns.fail_from = 2
+        dns.exc = ValueError(f"{SECRET} non-oserror")
+
+    def corrupt_answer():
+        # the connection-layer resolution returns a corrupted entry whose
+        # payload carries the secret — the fixed reason, never the payload
+        good = [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                 "", ("127.0.0.1", 8081))]
+        corrupt = [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                     "", (SECRET, 8081))]
+        dns.script_raw(good, corrupt)
+
+    for arm_error, reason in ((secret_gaierror, "DNS resolution failed"),
+                             (non_oserror, "DNS resolution failed"),
+                             (corrupt_answer, "unusable")):
+        # urllib path: the early check consumes call 1, the guarded
+        # connection's resolution is call 2 and raises/returns the failure.
+        arm(arm_error)
+        with pytest.raises(safety.UnsafeURLError) as ei:
+            safety.safe_urlopen(
+                urllib.request.Request(f"http://{CONTROL_HOST}:8081/x"),
+                timeout=5)
+        assert reason in str(ei.value)
+        assert SECRET not in str(ei.value)
+        assert len(dns.calls) == 2
+
+        # adapter path: the SAME fresh sequence (its early check is call 1,
+        # the connector's guarded resolution is call 2).
+        arm(arm_error)
+        out = asyncio.run(_adapter(
+            f"http://{CONTROL_HOST}:8081/v1/chat/completions").execute(
+            {"prompt": "hi"}))
+        assert out["ok"] is False
+        assert reason in out["result"]["error"]
+        assert SECRET not in json.dumps(out)
+        assert SECRET not in caplog.text
+        assert len(dns.calls) == 2
+
+
+
+def test_guarded_resolver_hands_the_connector_vetted_ip_literals(dns,
+                                                                 loopback_is_public):
+    # The connector receives IP LITERALS (never a name it could re-resolve),
+    # the requested port, the family, and proto from the getaddrinfo answer.
+    dns.script(["127.0.0.1", "::1"])
+
+    async def resolve():
+        return await GuardedResolver(allow_private=False).resolve(CONTROL_HOST, 8080)
+
+    out = asyncio.run(resolve())
+    assert out, "resolver returned nothing"
+    for r in out:
+        assert r["host"] in ("127.0.0.1", "::1")   # IP literal, never a name
+        assert r["port"] == 8080
+        assert r["proto"] == socket.IPPROTO_TCP    # the answer's protocol field
+        assert r["family"] in (socket.AF_INET, socket.AF_INET6)
+        assert r["hostname"] == CONTROL_HOST
+
+
+def test_guarded_resolver_wraps_dns_failure_and_empty_answer(dns):
+    async def resolve():
+        return await GuardedResolver(allow_private=False).resolve(CONTROL_HOST, 80)
+
+    import aiohttp
+    dns.fail = True
+    with pytest.raises(aiohttp.ClientConnectionError) as ei:
+        asyncio.run(resolve())
+    assert "DNS resolution failed" in str(ei.value)
+
+    dns.fail = False
+    dns.script([])
+    with pytest.raises(aiohttp.ClientConnectionError) as ei:
+        asyncio.run(resolve())
+    assert "no addresses" in str(ei.value)
+
+
+def test_raw_dns_error_text_is_not_forwarded(dns, caplog):
+    # The controlled resolver raises an error whose TEXT carries a fake
+    # secret: neither path may forward that text to the result or the log.
+    dns.fail = True
+    dns.error_text = "fake-secret-token-XYZ"
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        safety.safe_urlopen(
+            urllib.request.Request(f"http://{CONTROL_HOST}:80/x"), timeout=5)
+    assert "DNS resolution failed" in str(ei.value)
+    assert "fake-secret-token-XYZ" not in str(ei.value)
+
+    out = asyncio.run(_adapter(
+        f"http://{CONTROL_HOST}:80/v1/chat/completions").execute(
+        {"prompt": "hi"}))
+    assert out["ok"] is False
+    assert "DNS resolution failed" in out["result"]["error"]
+    assert "fake-secret-token-XYZ" not in json.dumps(out)
+    assert "fake-secret-token-XYZ" not in caplog.text
+
+@pytest.fixture
+def tls_material(tmp_path):
+    """A local CA + a leaf certificate for ``localhost`` (openssl CLI)."""
+    ca_crt, leaf_crt, leaf_key = _make_certs(tmp_path, "localhost")
+    return ca_crt, leaf_crt, leaf_key
+
+
+def _tls_server_for(ca_crt, leaf_crt, leaf_key, handler=_JSONHandler):
+    server_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    server_ctx.load_cert_chain(leaf_crt, leaf_key)
+    sni: list = []
+
+    def record_sni(sslos, server_name, ctx):
+        sni.append(server_name)
+        return None
+
+    server_ctx.sni_callback = record_sni
+    srv = _serve("127.0.0.1", handler)
+    srv.socket = server_ctx.wrap_socket(srv.socket, server_side=True)
+    return srv, sni
+
+
+def test_aiohttp_https_keeps_hostname_sni_and_verification(
+        dns, loopback_is_public, tls_material, monkeypatch):
+    # The REAL adapter over HTTPS.  aiohttp builds its verified context at
+    # IMPORT time (ssl.create_default_context), so SSL_CERT_FILE cannot reach
+    # it: the test patches the connector's verified context with one that
+    # trusts the local CA.  Verification itself (CERT_REQUIRED + hostname
+    # check) is untouched; the guarded resolver pins the connection to the
+    # vetted IP and the server records the ORIGINAL hostname in Host and SNI.
+    ca_crt, leaf_crt, leaf_key = tls_material
+    import aiohttp.connector
+    monkeypatch.setattr(aiohttp.connector, "_SSL_CONTEXT_VERIFIED",
+                        ssl.create_default_context(cafile=ca_crt))
+    _JSONHandler.hits = 0
+    _JSONHandler.connections = 0
+    _JSONHandler.seen_hosts = []
+    srv, sni = _tls_server_for(ca_crt, leaf_crt, leaf_key)
+    port = srv.server_address[1]
+    dns.script(["127.0.0.1"])
+    try:
+        out = asyncio.run(_adapter(
+            f"https://{CONTROL_HOST}:{port}/v1/chat/completions").execute(
+            {"prompt": "hi"}))
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert out["ok"] is True and out["result"]["answer"] == "public answer"
+    assert _JSONHandler.seen_hosts == [f"{CONTROL_HOST}:{port}"]   # Host: original
+    assert sni == [CONTROL_HOST]                                   # SNI: original
+
+
+def test_aiohttp_https_rejects_a_certificate_for_another_hostname(
+        dns, loopback_is_public, tmp_path, monkeypatch):
+    # Same CA (trusted), but the leaf is for another name: the handshake must
+    # fail specifically on HOSTNAME MISMATCH — verification targets the
+    # original URL hostname, not the vetted IP.
+    ca_crt, _crt, _key = _make_certs(tmp_path, "localhost")
+    _, leaf_crt, leaf_key = _make_certs(tmp_path, "other.test")
+    import aiohttp.connector
+    monkeypatch.setattr(aiohttp.connector, "_SSL_CONTEXT_VERIFIED",
+                        ssl.create_default_context(cafile=ca_crt))
+    _JSONHandler.hits = 0
+    _JSONHandler.connections = 0
+    srv, _sni = _tls_server_for(ca_crt, leaf_crt, leaf_key)
+    port = srv.server_address[1]
+    dns.script(["127.0.0.1"])
+    try:
+        out = asyncio.run(_adapter(
+            f"https://{CONTROL_HOST}:{port}/v1/chat/completions").execute(
+            {"prompt": "hi"}))
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert out["ok"] is False
+    err = str(out["result"]["error"])
+    assert "Hostname mismatch" in err or "hostname mismatch" in err.lower()
+    assert _JSONHandler.hits == 0            # no request was ever served
+
+
+def test_aiohttp_allowed_ipv6_connection_reaches_the_vetted_address(
+        dns, loopback_is_public):
+    _JSONHandler.hits = 0
+    _JSONHandler.connections = 0
+    _JSONHandler.seen_hosts = []
+    dns.script(["::1"])
+    srv = _serve("::1", _JSONHandler)
+    port = srv.server_address[1]
+    try:
+        out = asyncio.run(_adapter(
+            f"http://{CONTROL_HOST}:{port}/v1/chat/completions").execute(
+            {"prompt": "hi"}))
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert out["ok"] is True and out["result"]["answer"] == "public answer"
+    assert _JSONHandler.hits == 1
+    assert _JSONHandler.seen_hosts == [f"{CONTROL_HOST}:{port}"]
+
+
+@pytest.mark.parametrize("code,final_method", [
+    (301, "GET"), (302, "GET"), (303, "GET"),   # after a POST -> GET, no body
+    (307, "POST"), (308, "POST"),               # keep the method and the body
+])
+def test_all_redirect_codes_keep_their_method_semantics(
+        code, final_method, dns, loopback_is_public):
+    # The full SEC-01 method matrix through the guarded transport.  The
+    # redirect stays SAME-ORIGIN (same host and port, different path), so the
+    # agent key must survive the hop; 307/308 keep POST + body + the key,
+    # 301/302/303 after a POST switch to GET without a body.
+    class _RedirectThenJSON(http.server.BaseHTTPRequestHandler):
+        def _serve(self):
+            length = int(self.headers.get("Content-Length") or 0)
+            body = self.rfile.read(length) if length else b""
+            if self.path.endswith("/final"):
+                type(self).hits += 1
+                type(self).seen_hosts.append(self.headers.get("Host"))
+                type(self).last_request = (self.command, self.path,
+                                           self.headers.get("Authorization"),
+                                           self.headers.get("Content-Type"),
+                                           body)
+                out = json.dumps({"choices": [{"message": {"content": "public answer"}}]}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+                return
+            self.send_response(code)
+            self.send_header("Location", "/v1/chat/completions/final")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        do_GET = do_POST = _serve
+
+        def log_message(self, *a):
+            pass
+
+    _RedirectThenJSON.hits = 0
+    _RedirectThenJSON.seen_hosts = []
+    _RedirectThenJSON.last_request = None
+    srv = _serve("127.0.0.1", _RedirectThenJSON)
+    port = srv.server_address[1]
+    try:
+        out = asyncio.run(_adapter(
+            f"http://127.0.0.1:{port}/v1/chat/completions",
+            api_key="k").execute({"prompt": "hi"}))
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert out["ok"] is True and out["result"]["answer"] == "public answer"
+    assert _RedirectThenJSON.seen_hosts == [f"127.0.0.1:{port}"]
+    method, path, auth, ctype, body = _RedirectThenJSON.last_request
+    assert method == final_method
+    assert auth == "Bearer k"                     # same origin keeps the key
+    if final_method == "POST":
+        # 307/308: the method, the body AND the content type all survive
+        assert json.loads(body)["messages"][0]["content"] == "hi"
+        assert ctype == "application/json"
+    else:
+        # 301/302/303 after a POST: GET without a body or a body content type
+        assert body == b""
+        assert ctype is None                        # GET carries no body

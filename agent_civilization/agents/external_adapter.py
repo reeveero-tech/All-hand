@@ -76,19 +76,57 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
             infos = await asyncio.get_running_loop().getaddrinfo(
                 host, port or 0, family=family or 0, type=socket.SOCK_STREAM,
                 proto=socket.IPPROTO_TCP)
-        except (OSError, asyncio.CancelledError):
+        except asyncio.CancelledError:
             raise
-        except Exception as e:  # pragma: no cover — getaddrinfo raises OSError
+        except Exception:
+            # R-146b: a fixed policy reason — a resolver failure of ANY kind
+            # (its text is not ours to forward to logs or responses) fails
+            # closed; cancellation still propagates as cancellation.
             raise aiohttp.ClientConnectionError(
-                f"DNS resolution failed for {host}") from e
+                f"DNS resolution failed for {host}") from None
         if not infos:
             raise aiohttp.ClientConnectionError(f"no addresses for {host}")
-        addrs = sorted({info[4][0] for info in infos})
-        # Fail closed on any non-public address of the answer (UnsafeURLError).
-        safety.check_resolved(host, addrs, self._allow_private)
-        return [{"hostname": host, "host": info[4][0], "port": info[4][1],
-                 "family": info[0], "proto": info[1], "flags": 0}
-                for info in infos]
+        # R-146b: the SAME shared gate as the urllib path (safety.
+        # validate_getaddrinfo) — the whole answer is policy-checked and every
+        # entry validated (numeric connect target, integer port, family
+        # match); a malformed entry fails closed with the fixed reason, never
+        # with a raw extraction error.  UnsafeURLError (the policy rejection)
+        # propagates as-is: it is already a clean, fixed reason.
+        targets = safety.validate_getaddrinfo(host, infos, self._allow_private)
+        # The connector gets the vetted IP literal as "host" (never a name to
+        # re-resolve), the requested port, the socket family and the protocol
+        # from the validated answer.  The sockaddr is consumed WITHOUT
+        # assuming two elements — an IPv6 entry may carry flowinfo/scope_id.
+        # R-146b review round 6 — the representability line, read from the
+        # actual source of every supported Python (3.11/3.12/3.14): the
+        # agent transport rebuilds its connect sockaddr from the host
+        # literal alone.  A PLAIN literal takes asyncio's inet_pton fast
+        # path (socket.connect, no resolution call — structurally safe).
+        # A SCOPED literal ("ip%N") FAILS that fast path ("'%' in host" is
+        # rejected in _ipaddr_info) and falls into loop.getaddrinfo(...,
+        # flags=0) — an unguarded post-gate resolution call, which the
+        # SEC-05 structural rule forbids.  Scoped IPv6 entries (numeric
+        # scope_id, a "%" in the literal, or nonzero flowinfo) are therefore
+        # REFUSED with this fixed reason instead of re-represented as a
+        # string that opens that path; the urllib path keeps the vetted
+        # NUMERIC sockaddr natively and needs no re-representation.
+        results = []
+        for family, proto, sockaddr in targets:
+            ip, port = sockaddr[0], sockaddr[1]
+            extras = sockaddr[2:]
+            if extras:
+                flowinfo, scope_id = extras
+                if flowinfo or scope_id:
+                    raise safety.UnsafeURLError(
+                        f"IPv6 flowinfo/scope is not representable by the "
+                        f"agent transport for {host}")
+            if "%" in ip:
+                raise safety.UnsafeURLError(
+                    f"IPv6 scope is not representable by the agent "
+                    f"transport for {host}")
+            results.append({"hostname": host, "host": ip, "port": port,
+                           "family": family, "proto": proto, "flags": 0})
+        return results
 
     async def close(self) -> None:  # aiohttp resolver interface
         return None
@@ -169,6 +207,20 @@ class ExternalAgentAdapter:
         origin = urlsplit(self.url)[:2]
         for _hop in range(self.MAX_REDIRECTS + 1):
             await pools.run("net", safety.check_url, url, self.allow_private)
+            # R-146b review round 7: a literal IPv6 address carrying a scope
+            # in the URL ("%42") never reaches this transport's resolver —
+            # the connector short-circuits IP literals — and the scoped
+            # string would fall into an unguarded getaddrinfo(flags=0)
+            # inside the connect path (the representability line read from
+            # the asyncio source).  It is refused with the same fixed
+            # reason here, for the first URL and EVERY redirect target,
+            # BEFORE the request is sent.  The GuardedResolver remains the
+            # final decision-maker for DNS answers.
+            host = urlsplit(url).hostname or ""
+            if "%" in host:
+                raise safety.UnsafeURLError(
+                    "IPv6 scope is not representable by the agent "
+                    f"transport for {host}")
             kwargs: Dict[str, Any] = {"headers": headers, "allow_redirects": False}
             if body_json is not None:
                 kwargs["json"] = body_json

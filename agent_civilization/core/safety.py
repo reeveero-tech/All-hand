@@ -276,11 +276,27 @@ def check_resolved(host: str, addrs: List[str],
     function never resolves anything itself — the transport hands it the exact
     results it is about to connect to, so the check and the connection cannot
     drift apart (DNS rebinding).
+
+    Every entry must be a usable IP literal: a hostname or garbage inside the
+    answer would make ``socket.connect`` resolve it AGAIN — outside this guard
+    — so anything that does not parse as an address fails closed.  The FULL
+    entry is parsed as-is (an IPv4 address carrying a scope suffix is NOT a
+    usable connect target; a scoped IPv6 address is).  The ``allow_private``
+    exception only reclassifies an address (public vs internal); it never
+    disables this usability check.
     """
     if not host:
         raise UnsafeURLError("missing host")
     if not addrs:
         raise UnsafeURLError(f"no usable addresses for {host}")
+    for a in addrs:
+        if not isinstance(a, str):
+            raise UnsafeURLError(f"unusable address in DNS answer for {host}")
+        try:
+            ipaddress.ip_address(a)
+        except ValueError:
+            raise UnsafeURLError(
+                f"unusable address in DNS answer for {host}") from None
     if allow_private is None:
         allow_private = private_network_allowed()
     if not allow_private:
@@ -297,7 +313,12 @@ def check_host(host: str, port: Optional[int] = None, allow_private: Optional[bo
         raise UnsafeURLError("missing host")
     if allow_private is None:
         allow_private = private_network_allowed()
-    addrs = resolve_host(host, port)
+    try:
+        addrs = resolve_host(host, port)
+    except Exception:
+        # R-146b: a raw resolver error of ANY kind (its text is not ours to
+        # forward) is converted to a fixed policy reason — fail closed.
+        raise UnsafeURLError(f"DNS resolution failed for {host}") from None
     check_resolved(host, addrs, allow_private)
     return addrs
 
@@ -364,11 +385,67 @@ def vetted_sockaddrs(host: str, port: Optional[int] = None,
     try:
         infos = socket.getaddrinfo(host, port or 0, 0, socket.SOCK_STREAM,
                                    socket.IPPROTO_TCP)
-    except OSError:
+    except Exception:
+        # R-146b: any resolver failure (its text is not ours to forward) is a
+        # fixed policy reason — fail closed.
         raise UnsafeURLError(f"DNS resolution failed for {host}") from None
-    addrs = sorted({info[4][0] for info in infos})
-    check_resolved(host, addrs, allow_private)
-    return [(info[0], info[4]) for info in infos]
+    return validate_getaddrinfo(host, infos, allow_private)
+
+
+def validate_getaddrinfo(host, infos, allow_private=False):
+    """R-146b: shared validation of a COMPLETE getaddrinfo answer.
+
+    Both transports (``vetted_sockaddrs`` here, ``GuardedResolver`` in the
+    agent adapter) run their resolver output through this single gate: the
+    whole answer is policy-checked (``check_resolved``), and every entry is
+    validated as a whole — the connect target is the parsed numeric literal
+    (never a string the socket layer could re-resolve; a scoped IPv6 keeps
+    its scope in the literal), the port must be an integer, the family must
+    be the address's OWN family, and IPv6 flowinfo/scope_id (when present)
+    are validated as integers and preserved in the target.  A truncated or
+    malformed entry fails closed with the fixed policy reason, never with a
+    raw extraction error.  Returns ``[(family, proto, sockaddr), ...]``.
+    """
+    try:
+        addrs = sorted({info[4][0] for info in infos})
+        check_resolved(host, addrs, allow_private)
+        targets: List[Tuple[int, int, tuple]] = []
+        for family, _type, proto, _canon, sockaddr in infos:
+            ip = sockaddr[0]
+            port_i = sockaddr[1]
+            if not isinstance(port_i, int):
+                raise ValueError("non-integer port")
+            parsed = ipaddress.ip_address(ip)
+            # R-146b review round 3: an EXPLICIT family match — anything but
+            # the address's own family (AF_UNSPEC, a wrong family, an
+            # unsupported one) fails closed; IPv6 must not sneak through a
+            # mere "not AF_INET" test.
+            expected = socket.AF_INET if parsed.version == 4 else socket.AF_INET6
+            if family != expected:
+                raise ValueError("address/family mismatch")
+            # R-146b review round 3: the FULL sockaddr is validated and kept
+            # as the connect target — an IPv6 entry may carry flowinfo and
+            # scope_id (both must be integers), and they must survive into
+            # the target; an IPv4 entry must not carry IPv6 extras.
+            extras = sockaddr[2:]
+            if parsed.version == 4 and extras:
+                raise ValueError("IPv6 sockaddr extras on an IPv4 entry")
+            # R-146b review round 5: the SUPPORTED shape is fixed here — an
+            # IPv6 sockaddr carries either no extras or exactly (flowinfo,
+            # scope_id); anything else (a 3- or 5-element sockaddr) fails
+            # closed with the fixed reason instead of reaching a consumer
+            # that unpacks a raw error.
+            if extras and len(extras) != 2:
+                raise ValueError("unsupported IPv6 sockaddr shape")
+            if any(not isinstance(x, int) for x in extras):
+                raise ValueError("non-integer sockaddr extras")
+            target = (str(parsed), port_i, *extras)
+            targets.append((family, proto, target))
+    except UnsafeURLError:
+        raise
+    except Exception:
+        raise UnsafeURLError(f"unusable DNS answer for {host}") from None
+    return targets
 
 
 def _connect_vetted(host: str, port: Optional[int], timeout, source_address,
@@ -381,7 +458,7 @@ def _connect_vetted(host: str, port: Optional[int], timeout, source_address,
     """
     sockaddrs = vetted_sockaddrs(host, port, allow_private)
     last_exc: Optional[OSError] = None
-    for family, sockaddr in sockaddrs:
+    for family, _proto, sockaddr in sockaddrs:
         s = socket.socket(family, socket.SOCK_STREAM)
         try:
             if timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
@@ -499,6 +576,18 @@ def safe_urlopen(req: urllib.request.Request, timeout: float, allow_private: Opt
     guarantee could not be kept (documented in OPERATIONS.md).
     """
     check_url(req.full_url, allow_private)
+    # R-146b: an explicit proxy on the Request would make the PROXY resolve
+    # the destination — voiding the vetted-address guarantee.  No
+    # trusted-proxy design exists, so such requests are refused before any
+    # connection.  All three proxy signatures are covered: the HTTPS tunnel
+    # (set_proxy stores the destination in _tunnel_host), the absolute-form
+    # selector (has_proxy(): selector == full_url — includes a proxy whose
+    # address EQUALS the destination's, which a host comparison alone misses),
+    # and a rewritten host that no longer matches the URL's netloc.
+    if (getattr(req, "_tunnel_host", None) is not None
+            or req.has_proxy()
+            or req.host != urllib.parse.urlsplit(req.full_url).netloc):
+        raise UnsafeURLError("explicit proxies are not supported for protected requests")
     opener = urllib.request.build_opener(
         _CheckedRedirectHandler(allow_private),
         _GuardedHTTPHandler(allow_private),
