@@ -1,0 +1,65 @@
+# BUG-02 (R-141) — before the fix: main 3188bc3, server.py unchanged; only the test file and the probe added
+# python: Python 3.14.3
+# cmd: python3 -m pytest tests/test_bug02_chat_status_consistency.py -v -p no:cacheprovider
+tests/test_bug02_chat_status_consistency.py::test_chat_success_is_completed_in_memory_and_storage PASSED [ 11%]
+tests/test_bug02_chat_status_consistency.py::test_chat_success_event_carries_status_completed FAILED [ 22%]
+tests/test_bug02_chat_status_consistency.py::test_chat_failure_is_failed_in_memory_storage_and_event FAILED [ 33%]
+tests/test_bug02_chat_status_consistency.py::test_real_agent_failure_without_any_agent_double FAILED [ 44%]
+tests/test_bug02_chat_status_consistency.py::test_unauthenticated_chat_still_401_and_writes_nothing PASSED [ 55%]
+tests/test_bug02_chat_status_consistency.py::test_stored_task_row_matches_memory[True-completed] PASSED [ 66%]
+tests/test_bug02_chat_status_consistency.py::test_stored_task_row_matches_memory[False-failed] FAILED [ 77%]
+tests/test_bug02_chat_status_consistency.py::test_stored_task_and_stored_event_match_memory[True-completed] FAILED [ 88%]
+tests/test_bug02_chat_status_consistency.py::test_stored_task_and_stored_event_match_memory[False-failed] FAILED [100%]
+___________ test_chat_failure_is_failed_in_memory_storage_and_event ____________
+tests/test_bug02_chat_status_consistency.py:159: in test_chat_failure_is_failed_in_memory_storage_and_event
+    _assert_task_status(body, rec_storage, tenant_auth.tenant, "failed", False)
+E   AssertionError: assert (('a1196bd96e8d', 'test_runner', 'run unit tests', 'completed') == ('a1196bd96e8d', 'test_runner', 'run unit tests', 'failed')
+E     At index 3 diff: 'completed' != 'failed'
+E     -     'failed',
+    _assert_task_status(body, rec_storage, tenant_auth.tenant, "failed", False)
+E   AssertionError: assert (('1c43504b0555', 'test_runner', 'run unit tests', 'completed') == ('1c43504b0555', 'test_runner', 'run unit tests', 'failed')
+E     At index 3 diff: 'completed' != 'failed'
+E     -     'failed',
+______________ test_stored_task_row_matches_memory[False-failed] _______________
+E   AssertionError: assert ('completed' == 'failed'
+E     - failed
+_________ test_stored_task_and_stored_event_match_memory[False-failed] _________
+E   AssertionError: assert ('completed' == 'failed'
+E     - failed
+FAILED tests/test_bug02_chat_status_consistency.py::test_chat_success_event_carries_status_completed - AssertionError: assert ('chat_completed', {'task_id': 'c06681fb6c56', 'agent': 'test_runner_0900', 'specialization': 'test_runner', 'ok': True}) == ('chat_completed', {'task_id': 'c06681fb6c56', 'agent': 'test_runner_0900', 'specialization': 'test_runner', 'ok': True, 'status': 'completed'})
+FAILED tests/test_bug02_chat_status_consistency.py::test_chat_failure_is_failed_in_memory_storage_and_event - AssertionError: assert (('a1196bd96e8d', 'test_runner', 'run unit tests', 'completed') == ('a1196bd96e8d', 'test_runner', 'run unit tests', 'failed')
+  At index 3 diff: 'completed' != 'failed'
+  -     'failed',
+FAILED tests/test_bug02_chat_status_consistency.py::test_real_agent_failure_without_any_agent_double - AssertionError: assert (('1c43504b0555', 'test_runner', 'run unit tests', 'completed') == ('1c43504b0555', 'test_runner', 'run unit tests', 'failed')
+  At index 3 diff: 'completed' != 'failed'
+  -     'failed',
+FAILED tests/test_bug02_chat_status_consistency.py::test_stored_task_row_matches_memory[False-failed] - AssertionError: assert ('completed' == 'failed'
+  - failed
+FAILED tests/test_bug02_chat_status_consistency.py::test_stored_task_and_stored_event_match_memory[True-completed] - AssertionError: assert {'task_id': 'c5f63f878887', 'agent': 'test_runner_0900', 'specialization': 'test_runner', 'ok': True} == {'task_id': 'c5f63f878887', 'agent': 'test_runner_0900', 'specialization': 'test_runner', 'ok': True, 'status': 'completed'}
+FAILED tests/test_bug02_chat_status_consistency.py::test_stored_task_and_stored_event_match_memory[False-failed] - AssertionError: assert ('completed' == 'failed'
+  - failed
+========================= 6 failed, 3 passed in 2.53s ==========================
+
+## failure reasons
+      1 E     At index 1 diff: {'task_id': '<task_id>', 'agent': 'test_runner_0900', 'specialization': 'test_runner', 'ok': True} != {'task_id': '<task_id>', 'agent': 'test_runner_0900', 'specialization': 'te
+      2 E     At index 3 diff: 'completed' != 'failed'
+      1 E     Right contains 1 more item:
+      1 E     {'status': 'completed'}
+      1 E   AssertionError: assert ('chat_comple..., 'ok': True}) == ('chat_comple...': True, ...})
+      2 E   AssertionError: assert ('completed' == 'failed'
+      1 E   AssertionError: assert (('73a4759cd48..., 'completed') == ('73a4759cd48...ts', 'failed')
+      1 E   AssertionError: assert (('e710af9f7ab..., 'completed') == ('e710af9f7ab...ts', 'failed')
+      1 E   AssertionError: assert {'task_id': '...', 'ok': True} == {'task_id': '...k': True, ...}
+# reading: the success path's memory/storage checks pass (it was already 'completed' everywhere);
+#          every failure-path check fails with 'completed' != 'failed' (the defect);
+#          the event checks also fail because chat_completed has no 'status' field yet (new field).
+
+## probe: one real failing chat (real test_runner, no code), real SupabaseStorage -> local PostgREST
+# cmd: PYTHONPATH=. python3 scripts/bug02/probe_chat_status.py
+POST /api/chat -> 200 | response keys: ['agent', 'outcome', 'routed_to', 'routing', 'task_id'] | routed_to: test_runner | outcome.ok: False | outcome error: no code to run
+memory  TASKS[...].status           : failed
+storage POST  /rest/v1/tasks status : completed
+storage PATCH /rest/v1/tasks status : completed
+database stored task row status     : completed
+database chat_completed event_data  : {"agent": "test_runner_0900", "ok": false, "specialization": "test_runner", "task_id": "237b9f02473b"}
+GET /api/tasks (source=database) status   : ['completed']

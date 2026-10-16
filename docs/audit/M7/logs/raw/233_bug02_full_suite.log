@@ -1,0 +1,18 @@
+# BUG-02 (R-141) — full suite + quality, branch m7/r141-bug02-chat-status-consistency
+## Python 3.14.3 — cmd: python3 -m pytest -q -p no:cacheprovider
+================ 663 passed, 3 skipped, 4 deselected in 44.98s =================
+## Python 3.11.15 — cmd: /tmp/venv311_r133/bin/python -m pytest -q -p no:cacheprovider
+================ 663 passed, 3 skipped, 4 deselected in 45.32s =================
+## Python 3.12.13 — cmd: /tmp/venv312_r133/bin/python -m pytest -q -p no:cacheprovider
+================ 663 passed, 3 skipped, 4 deselected in 45.65s =================
+## cmd (CI quality job): ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts/run_r042_storage_verify.py
+All checks passed!
+## cmd: ruff check --select F,E722 scripts/bug02
+All checks passed!
+## web: npm test && npm run build (web/ unchanged)
+# tests 14
+# pass 14
+# fail 0
+✓ built in 141ms
+# roadmap audit: item headings: 130
+# roadmap audit: status counts: {'done': 130}

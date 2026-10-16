@@ -1,6 +1,6 @@
 # نموذج البيانات (DATA_MODEL)
 
-> **آخر تحديث**: 2026-10-15 — R-119 (مصالحة ادعاءات قديمة: `agents.yaml` حُذف في R-031b/D-025؛ فجوات M0 حُلت أو وُضحت في R-022/R-042/R-042b؛ قبلها تحديث 2026-10-12 — M0)
+> **آخر تحديث**: 2026-10-16 — R-141 (BUG-02): صفوف `tasks` الناتجة عن `/api/chat` تحمل الحالة المشتقة من النتيجة (`completed`/`failed`) في الإدراج والتحديث معاً — كانت `completed` دائماً؛ و`event_data` لحدث `chat_completed` يضيف `status` بجانب `ok`. قبلها 2026-10-15 — R-119 (مصالحة ادعاءات قديمة: `agents.yaml` حُذف في R-031b/D-025؛ فجوات M0 حُلت أو وُضحت في R-022/R-042/R-042b؛ قبلها تحديث 2026-10-12 — M0)
 > **ملاحظة منهجية**: ما يلي مستخرج من قراءة الكود (الحمولات الفعلية والـ dataclasses)، وهو "مرصود من الاستخدام" لا مخطط معلن؛ لكن الأنواع والقيود **مُتحققة حياً** في R-042/R-042b — راجع قسم "التحقق الحي" أدناه.
 
 ## الكيانات المرصودة من الاستخدام
@@ -13,6 +13,7 @@
 ### Event (حدث)
 - **in-memory**: `TASK_EVENTS: asyncio.Queue`.
 - **Supabase**: جدول `events`؛ الحقول المُرسلة: `event_type`, `event_data` (كائن JSON منذ R-042 — كان نصاً عبر `json.dumps` فيُخزَّن نصاً داخل `jsonb`).
+- **حالة مهام `/api/chat` (R-141، BUG-02)**: حالة واحدة `chat_status = "completed" if outcome["ok"] else "failed"` تُكتب في `TASKS` وفي `insert_task` و`update_task` (قبلها: `completed` ثابتة في التخزين حتى عند الفشل). `event_data` لـ`chat_completed`: `{task_id, agent, specialization, ok, status}` — النوع `chat_completed` باقٍ (انتهاء المعالجة)، و`status` يصف نجاح التنفيذ. الصفوف المخزنة قبل R-141 قد تحمل `completed` لتنفيذ فاشل (لا ترحيل؛ `result.ok` فيها هو المرجع).
 
 ### AgentStat (إحصاءات وكيل)
 - **Supabase**: جدول `agent_stats` — الحمولة المرسلة فعلياً (`upsert_agent_stats`، on_conflict=`agent_name`): `agent_name, specialization, tasks_completed, tasks_failed, total_time_s, last_active_at, updated_at`. تُستدعى من `_run_task` و`/api/chat` في `server.py`. (الأنواع في `docs/sql/001_init.sql` — مُتحققة حياً في R-042.)
