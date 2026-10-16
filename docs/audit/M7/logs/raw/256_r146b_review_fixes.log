@@ -1,0 +1,43 @@
+R-146b review-fixes verification — 2026-10-16T08:04Z — branch m7/r146b-sec05-review-fixes
+
+== full suite ==
+
+=========== 795 passed, 4 skipped, 4 deselected in 73.33s (0:01:13) ============
+PYTEST_RC=0
+
+== SEC-05 file (36) ==
+============================= 36 passed in 13.47s ==============================
+SEC05_RC=0
+
+== probe (after fix, tightened criteria) ==
+external agent probe failed: blocked non-public address for aiohttp.probe: 127.0.0.2 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)
+SEC-05 DNS-rebinding probe — controlled DNS, listener on 127.0.0.2, no external network
+[urllib  ] failed closed: UnsafeURLError: blocked non-public address for urllib.probe: 127.0.0.2 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)
+[urllib  ] internal listener hits: 0
+[urllib  ] resolutions of urllib.probe: 2
+[aiohttp ] ok=False result={"error": "blocked non-public address for aiohttp.probe: 127.0.0.2 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal t
+[aiohttp ] internal listener hits: 0
+[aiohttp ] resolutions of aiohttp.probe: 2
+BLOCKED (after fix): neither path reached the internal listener; both failed with the expected policy rejection.
+PROBE_RC=0
+
+== live network tests ==
+====================== 4 passed, 799 deselected in 1.90s =======================
+NETWORK_RC=0
+
+== web tests ==
+# skipped 0
+# todo 0
+# duration_ms 1354.436081
+WEB_RC=0
+
+== ruff ==
+warning: Invalid `# noqa` directive on scripts/sec05/probe_dns_rebinding.py:116: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+warning: Invalid `# noqa` directive on scripts/sec05/probe_dns_rebinding.py:120: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+All checks passed!
+RUFF_RC=0
+
+== builds ==
+✓ built in 123ms
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+BUILDS_RC=0

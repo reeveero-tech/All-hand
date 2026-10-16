@@ -276,11 +276,23 @@ def check_resolved(host: str, addrs: List[str],
     function never resolves anything itself — the transport hands it the exact
     results it is about to connect to, so the check and the connection cannot
     drift apart (DNS rebinding).
+
+    Every entry must be a usable IP literal: a hostname or garbage inside the
+    answer would make ``socket.connect`` resolve it AGAIN — outside this guard
+    — so anything that does not parse as an address fails closed.  The
+    ``allow_private`` exception only reclassifies an address (public vs
+    internal); it never disables this usability check.
     """
     if not host:
         raise UnsafeURLError("missing host")
     if not addrs:
         raise UnsafeURLError(f"no usable addresses for {host}")
+    for a in addrs:
+        try:
+            ipaddress.ip_address(a.split("%", 1)[0])
+        except ValueError:
+            raise UnsafeURLError(
+                f"unusable address in DNS answer for {host}") from None
     if allow_private is None:
         allow_private = private_network_allowed()
     if not allow_private:
@@ -297,7 +309,12 @@ def check_host(host: str, port: Optional[int] = None, allow_private: Optional[bo
         raise UnsafeURLError("missing host")
     if allow_private is None:
         allow_private = private_network_allowed()
-    addrs = resolve_host(host, port)
+    try:
+        addrs = resolve_host(host, port)
+    except OSError:
+        # R-146b: a raw resolver error (its text is not ours to forward) is
+        # converted to a fixed policy reason — the request fails closed.
+        raise UnsafeURLError(f"DNS resolution failed for {host}") from None
     check_resolved(host, addrs, allow_private)
     return addrs
 
@@ -499,6 +516,14 @@ def safe_urlopen(req: urllib.request.Request, timeout: float, allow_private: Opt
     guarantee could not be kept (documented in OPERATIONS.md).
     """
     check_url(req.full_url, allow_private)
+    # R-146b: an explicit proxy on the Request (set_proxy rewrites req.host and
+    # sets a tunnel for HTTPS) would make the PROXY resolve the destination —
+    # voiding the vetted-address guarantee.  No trusted-proxy design exists,
+    # so such requests are refused before any connection.
+    if getattr(req, "_tunnel_host", None) is not None:
+        raise UnsafeURLError("explicit proxies are not supported for protected requests")
+    if req.host != urllib.parse.urlsplit(req.full_url).netloc:
+        raise UnsafeURLError("explicit proxies are not supported for protected requests")
     opener = urllib.request.build_opener(
         _CheckedRedirectHandler(allow_private),
         _GuardedHTTPHandler(allow_private),

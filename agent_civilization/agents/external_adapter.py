@@ -76,18 +76,25 @@ class GuardedResolver(aiohttp.abc.AbstractResolver):
             infos = await asyncio.get_running_loop().getaddrinfo(
                 host, port or 0, family=family or 0, type=socket.SOCK_STREAM,
                 proto=socket.IPPROTO_TCP)
-        except (OSError, asyncio.CancelledError):
+        except asyncio.CancelledError:
             raise
-        except Exception as e:  # pragma: no cover — getaddrinfo raises OSError
+        except OSError:
+            # R-146b: a fixed policy reason — the raw resolver error text is
+            # not ours to forward to logs or responses.
             raise aiohttp.ClientConnectionError(
-                f"DNS resolution failed for {host}") from e
+                f"DNS resolution failed for {host}") from None
         if not infos:
             raise aiohttp.ClientConnectionError(f"no addresses for {host}")
         addrs = sorted({info[4][0] for info in infos})
-        # Fail closed on any non-public address of the answer (UnsafeURLError).
+        # Fail closed on any non-public address of the answer (UnsafeURLError);
+        # unusable entries are rejected too (check_resolved validates every
+        # entry parses as an address).
         safety.check_resolved(host, addrs, self._allow_private)
+        # info = (family, type, proto, canonname, sockaddr): the connector gets
+        # the vetted IP literal as "host" (never a name to re-resolve), the
+        # requested port, the socket family and the protocol from the answer.
         return [{"hostname": host, "host": info[4][0], "port": info[4][1],
-                 "family": info[0], "proto": info[1], "flags": 0}
+                 "family": info[0], "proto": info[2], "flags": 0}
                 for info in infos]
 
     async def close(self) -> None:  # aiohttp resolver interface

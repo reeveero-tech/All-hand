@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import asyncio
 import http.server
+import ipaddress
 import json
 import socket
 import threading
@@ -41,6 +42,29 @@ from agent_civilization.core import safety  # noqa: E402
 
 LISTEN_HOST = "127.0.0.2"          # loopback /8: local-only, stays non-public
 FIRST_ANSWER = "192.0.2.1"         # allowed by the policy (documentation range)
+
+
+class _LoopbackOnly:
+    """A local connection barrier: a non-loopback connect raises.
+
+    The probe runs outside pytest, so it does not inherit the suite's offline
+    guard — this restores the same guarantee standalone.
+    """
+
+    def __init__(self):
+        self._orig = socket.socket.connect
+
+    def guarded(self, sock, addr):
+        host = addr[0] if isinstance(addr, tuple) else None
+        if isinstance(addr, tuple):
+            try:
+                loopback = ipaddress.ip_address(str(host).strip("[]")).is_loopback
+            except ValueError:
+                loopback = False
+            if not loopback:
+                raise OSError(
+                    f"probe barrier: non-loopback connect to {addr!r} refused")
+        return self._orig(sock, addr)
 
 
 class _Listener(http.server.BaseHTTPRequestHandler):
@@ -88,11 +112,14 @@ class ControlledDNS:
 def main() -> int:
     print("SEC-05 DNS-rebinding probe —", end=" ")
     print("controlled DNS, listener on 127.0.0.2, no external network")
+    barrier = _LoopbackOnly()
+    socket.socket.connect = barrier.guarded  # noqa: deliberate local patch
     srv = _serve()
     port = srv.server_address[1]
     dns = ControlledDNS()
     socket.getaddrinfo = dns.fake  # noqa: deliberate process-local patch
     blocked = []
+    rejections = []
 
     # --- path 1: safety.safe_urlopen (urllib) ------------------------------
     _Listener.hits = 0
@@ -101,8 +128,11 @@ def main() -> int:
                 urllib.request.Request(f"http://urllib.probe:{port}/x"), timeout=5) as r:
             body = r.read().decode()
         result = f"CONNECTED to listener (HTTP {r.status}, body={body[:40]!r})"
-    except Exception as e:  # noqa: BLE001 — the probe reports any failure
+    except safety.UnsafeURLError as e:
         result = f"failed closed: {type(e).__name__}: {e}"
+        rejections.append(("urllib", str(e)))
+    except Exception as e:  # noqa: BLE001 — the probe reports any failure
+        result = f"UNEXPECTED failure: {type(e).__name__}: {e}"
     print(f"[urllib  ] {result}")
     print(f"[urllib  ] internal listener hits: {_Listener.hits}")
     if _Listener.hits:
@@ -119,6 +149,8 @@ def main() -> int:
     print(f"[aiohttp ] internal listener hits: {_Listener.hits}")
     if _Listener.hits:
         blocked.append("aiohttp")
+    if not ok:
+        rejections.append(("aiohttp", str(out["result"].get("error", ""))))
     print(f"[aiohttp ] resolutions of aiohttp.probe: "
           f"{dns.calls.count('aiohttp.probe')}")
 
@@ -130,7 +162,14 @@ def main() -> int:
               f"via {', '.join(blocked)} — DNS rebinding between check and "
               "connect is live.")
         return 1
-    print("BLOCKED (after fix): neither path reached the internal listener.")
+    # The fixed behavior is the EXPECTED POLICY REJECTION on both paths — not
+    # just any failure — with the internal listener never reached.
+    if len(rejections) != 2 or not all(
+            "blocked non-public address" in r for _, r in rejections):
+        print(f"UNEXPECTED: not the policy rejection. {rejections}")
+        return 1
+    print("BLOCKED (after fix): neither path reached the internal listener; "
+          "both failed with the expected policy rejection.")
     return 0
 
 
