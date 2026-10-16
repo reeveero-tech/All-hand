@@ -295,6 +295,12 @@ def _all_agents():
     yield from EXTERNAL_AGENTS
 
 
+# BUG-01 (R-140): message for an "external" task with no registered external
+# agent — names no agent, URL or key.
+NO_EXTERNAL_AGENT = ("no external agent is registered: an 'external' task cannot run now "
+                     "(an admin registers one via POST /api/agents/external)")
+
+
 def _pick_agent(specialization: str):
     if specialization == "external" and EXTERNAL_AGENTS:
         return min(EXTERNAL_AGENTS, key=lambda a: a.stats["tasks_completed"])
@@ -316,7 +322,24 @@ async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
     # (explicit, not only inherited), so memory and events stay in that tenant.
     tenant_id = TASKS[task_id]["tenant_id"]
     tenancy.set_tenant(tenant_id)
-    agent = _pick_agent(specialization)
+    try:
+        agent = _pick_agent(specialization)
+    except HTTPException as e:
+        # BUG-01: create_task refuses "external" with no agent (409), but the last
+        # agent may be removed between the 202 and this run — end the task as
+        # failed with a result instead of leaving it queued with an unhandled error.
+        reason = NO_EXTERNAL_AGENT if specialization == "external" else str(e.detail)
+        outcome = {"ok": False, "agent": None, "specialization": specialization, "elapsed_s": 0,
+                   "result": {"error": reason}}
+        TASKS[task_id].update(status="failed", result=outcome, finished_at=time.time())
+        storage = get_storage()
+        await storage.update_task(task_id, "failed", result=outcome, elapsed_s=0)
+        await storage.insert_event("task_completed", {"task_id": task_id, "agent": None,
+                                                      "specialization": specialization, "ok": False},
+                                   tenant_id=tenant_id)
+        await _publish(tenant_id, {"type": "task_completed", "task_id": task_id, "agent": None,
+                                   "specialization": specialization, "ok": False, "elapsed_s": 0})
+        return
     TASKS[task_id]["status"] = "running"
     TASKS[task_id]["agent"] = agent.name
     storage = get_storage()
@@ -602,6 +625,11 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
     principal = require_principal(api_key)
     if req.specialization not in SPECIALIZATIONS and req.specialization != "external":
         raise HTTPException(400, f"Unknown specialization '{req.specialization}'. Valid: {list(SPECIALIZATIONS)} + ['external']")
+    if req.specialization == "external" and not EXTERNAL_AGENTS:
+        # BUG-01 (R-140): after authentication (an anonymous caller learns
+        # nothing about the configuration) and before any side effect — no
+        # task_id, TASKS record, storage write, event, SSE or background run.
+        raise HTTPException(409, NO_EXTERNAL_AGENT)
     task_id = uuid.uuid4().hex[:12]
     TASKS[task_id] = {
         "id": task_id,

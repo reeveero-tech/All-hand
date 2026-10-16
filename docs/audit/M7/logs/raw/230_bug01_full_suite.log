@@ -1,0 +1,18 @@
+# BUG-01 (R-140) — full suite + quality, branch m7/r140-bug01-external-without-agent
+## Python 3.14.3 — cmd: python3 -m pytest -q -p no:cacheprovider
+================ 654 passed, 3 skipped, 4 deselected in 42.54s =================
+## Python 3.11.15 — cmd: /tmp/venv311_r133/bin/python -m pytest -q -p no:cacheprovider
+================ 654 passed, 3 skipped, 4 deselected in 42.72s =================
+## Python 3.12.13 — cmd: /tmp/venv312_r133/bin/python -m pytest -q -p no:cacheprovider
+================ 654 passed, 3 skipped, 4 deselected in 43.73s =================
+## cmd (CI quality job): ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts/run_r042_storage_verify.py
+All checks passed!
+## cmd: ruff check --select F,E722 scripts/bug01
+All checks passed!
+## web: npm test && npm run build (web/ unchanged)
+# tests 14
+# pass 14
+# fail 0
+✓ built in 187ms
+# roadmap audit: item headings: 129
+# roadmap audit: status counts: {'done': 129}

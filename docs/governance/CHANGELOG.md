@@ -1,5 +1,14 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-16 — R-140: BUG-01 — رفض مهام `external` قبل إنشائها عند غياب الوكلاء الخارجيين (دفعة m7/r140-bug01-external-without-agent)
+
+- **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 4؛ أولوية 1) + تعليمات المالك لـBUG-01.
+- **العيب**: `POST /api/tasks` بـ`specialization=external` و`EXTERNAL_AGENTS` فارغة → 202، ثم المهمة `queued` بلا نتيجة إلى الأبد واستثناء خلفي غير معالج. مثبت (`docs/audit/M7/logs/raw/228`): كتابتا تخزين وحدث SSE ثم `HTTPException(404, 'Unknown specialization: external')` في الحلقة.
+- **الإصلاح** (`server.py`): 409 «no external agent is registered…» بعد `require_principal` وقبل أي أثر جانبي؛ `_run_task` ينهي المهمة `failed` بنتيجة إن فشل اختيار الوكيل بعد القبول.
+- **تغيير سلوك مقصود**: `external` بلا وكيل: 409 بدل 202 (المجهول يبقى 401؛ التخصص المجهول 400 كما هو).
+- **الاختبار**: `tests/test_bug01_external_without_agent.py` (10)؛ مسبار `scripts/bug01/probe_external_without_agent.py`. التحقق: `229`، `230` — pytest ‏654+3+4 ×3 إصدارات؛ ruff صفر.
+- **الوثائق**: API، OPERATIONS، ROADMAP (R-140)، PROJECT_STATE، EVIDENCE.
+
 ## 2026-10-16 — R-139: SEC-03 — الإنتاج لا يقلع بلا بيانات اعتماد صالحة (دفعة m7/r139-sec03-production-fail-closed، D-057)
 
 - **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 3؛ أولوية 0) + تعليمات المالك لـSEC-03.
