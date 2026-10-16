@@ -1,0 +1,73 @@
+R-145d test-stability verification — 2026-10-16T06:45Z — branch m7/r145d-sec06-test-stability
+
+== SEC-06 file ×5 consecutive runs (stability) ==
+============================== 43 passed in 7.26s ==============================
+============================== 43 passed in 7.41s ==============================
+============================== 43 passed in 7.26s ==============================
+============================== 43 passed in 7.27s ==============================
+============================== 43 passed in 7.31s ==============================
+STABILITY_RC=0
+
+== full suite ==
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 767 items / 4 deselected / 763 selected
+
+tests/test_agent_production.py ........................                  [  3%]
+tests/test_agents_per_spec.py ...                                        [  3%]
+tests/test_api.py .........................                              [  6%]
+tests/test_bug01_external_without_agent.py ..........                    [  8%]
+tests/test_bug02_chat_status_consistency.py .........                    [  9%]
+tests/test_bug04_task_by_id_from_storage.py .............                [ 11%]
+tests/test_civilization_routes.py ......                                 [ 11%]
+tests/test_civilization_scale.py .....                                   [ 12%]
+tests/test_e2e_scenarios.py ............                                 [ 14%]
+tests/test_infrastructure.py ...................                         [ 16%]
+tests/test_memory_learning_comm.py .........                             [ 17%]
+tests/test_network_isolation.py ......                                   [ 18%]
+tests/test_r042_live_storage.py ssss                                     [ 19%]
+tests/test_r078_supabase_key_kind.py ..................                  [ 21%]
+tests/test_r082_storage_outcomes.py ........                             [ 22%]
+tests/test_r083_metrics_middleware.py ......                             [ 23%]
+tests/test_r100_runtime_safety.py ...................................... [ 28%]
+......                                                                   [ 28%]
+tests/test_r101_web_auth_contract.py .............                       [ 30%]
+tests/test_r102_honest_handlers.py .............................         [ 34%]
+tests/test_r103_memory_learning.py .................                     [ 36%]
+tests/test_r104_data_worker.py ................                          [ 38%]
+tests/test_r106_chat_routing.py .............                            [ 40%]
+tests/test_r107_researcher_retry.py ...............                      [ 42%]
+tests/test_r114_r118_real_fixes.py ..................................... [ 47%]
+......                                                                   [ 48%]
+tests/test_r121_tls_context.py ....                                      [ 48%]
+tests/test_r122_specialization_coverage.py ............                  [ 50%]
+tests/test_r125_self_developer_cycle.py ......                           [ 50%]
+tests/test_r131_keyless_admission.py ......                              [ 51%]
+tests/test_r132_pools.py ..........                                      [ 53%]
+tests/test_real_dispatch_audit.py ......                                 [ 53%]
+tests/test_routing_pipeline.py .................................         [ 58%]
+tests/test_sec01_external_redirect.py .........                          [ 59%]
+tests/test_sec02_tenant_isolation.py ................................... [ 63%]
+......................................................................   [ 73%]
+tests/test_sec03_production_startup.py ................................. [ 77%]
+........................                                                 [ 80%]
+tests/test_sec04_sse_broadcast_bounds.py ............................... [ 84%]
+..                                                                       [ 84%]
+tests/test_sec06_public_llm_consent.py ................................. [ 89%]
+..........                                                               [ 90%]
+tests/test_security.py ..........                                        [ 91%]
+tests/test_specialist_runtime.py ..........                              [ 93%]
+tests/test_specialists_package.py ....................................   [ 97%]
+tests/test_storage_payloads.py ......                                    [ 98%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+=========== 759 passed, 4 skipped, 4 deselected in 60.91s (0:01:00) ============
+PYTEST_RC=0
+
+== ruff ==
+All checks passed!
+RUFF_RC=0

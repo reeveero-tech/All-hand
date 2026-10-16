@@ -279,7 +279,13 @@ def test_nothing_about_text_or_consent_is_logged(keyless_fake, caplog):
 
 @pytest.fixture
 def client(tenant_auth):
-    return TestClient(server.app, raise_server_exceptions=False, headers=tenant_auth.headers)
+    # R-145d: a context-managed TestClient keeps the portal (and its event
+    # loop) alive for the whole test. Without it a slow background task can
+    # be cancelled when its request ends — the exact flake seen on main
+    # (run 38862435979: "task did not finish in time", same commit that
+    # passed its PR run). The same discovery is documented in D-060/D-061.
+    with TestClient(server.app, raise_server_exceptions=False, headers=tenant_auth.headers) as c:
+        yield c
 
 
 def _poll(client, task_id, timeout_s=10.0):
