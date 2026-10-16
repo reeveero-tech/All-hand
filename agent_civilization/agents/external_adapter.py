@@ -207,6 +207,20 @@ class ExternalAgentAdapter:
         origin = urlsplit(self.url)[:2]
         for _hop in range(self.MAX_REDIRECTS + 1):
             await pools.run("net", safety.check_url, url, self.allow_private)
+            # R-146b review round 7: a literal IPv6 address carrying a scope
+            # in the URL ("%42") never reaches this transport's resolver —
+            # the connector short-circuits IP literals — and the scoped
+            # string would fall into an unguarded getaddrinfo(flags=0)
+            # inside the connect path (the representability line read from
+            # the asyncio source).  It is refused with the same fixed
+            # reason here, for the first URL and EVERY redirect target,
+            # BEFORE the request is sent.  The GuardedResolver remains the
+            # final decision-maker for DNS answers.
+            host = urlsplit(url).hostname or ""
+            if "%" in host:
+                raise safety.UnsafeURLError(
+                    "IPv6 scope is not representable by the agent "
+                    f"transport for {host}")
             kwargs: Dict[str, Any] = {"headers": headers, "allow_redirects": False}
             if body_json is not None:
                 kwargs["json"] = body_json

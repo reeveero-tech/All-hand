@@ -898,6 +898,60 @@ def test_aiohttp_scoped_ipv6_is_refused_before_any_connection(
     assert _JSONHandler.hits == 0 and _JSONHandler.connections == 0
 
 
+def test_adapter_literal_scoped_ipv6_url_is_refused(dns, monkeypatch):
+    # R-146b review round 7 — the decisive literal test: a URL whose host is
+    # a scoped IPv6 literal (the form yarl accepts, "[fe80::1%42]") never
+    # reaches this transport's resolver — the connector short-circuits IP
+    # literals (is_ip_address("fe80::1%42") is True) — and the scoped
+    # string would fall into an unguarded getaddrinfo(flags=0) inside the
+    # connect path.  With allow_private=True (so the early policy check
+    # passes for another reason), the request must be REFUSED with the
+    # fixed representation reason BEFORE any transport involvement: no
+    # post-policy resolution call, no socket.connect at all.
+    resolver_calls = []
+    orig_resolve = GuardedResolver.resolve
+
+    async def spy_resolve(resolver_self, host, port=0, family=0):
+        resolver_calls.append(str(host))
+        return await orig_resolve(resolver_self, host, port, family)
+
+    monkeypatch.setattr(GuardedResolver, "resolve", spy_resolve)
+
+    gai_calls = []
+    real_gai = socket.getaddrinfo
+
+    def spy_gai(host, *args, **kwargs):
+        gai_calls.append(str(host))
+        return real_gai(host, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "getaddrinfo", spy_gai)
+
+    connects = []
+
+    def record_and_refuse(sock, addr):
+        connects.append(addr)
+        raise OSError("test barrier: connect refused")
+
+    monkeypatch.setattr(socket.socket, "connect", record_and_refuse)
+
+    out = asyncio.run(_adapter(
+        "http://[fe80::1%42]:8081/v1/chat/completions",
+        allow_private=True).execute({"prompt": "hi"}))
+    assert out["ok"] is False
+    assert ("not representable by the agent transport"
+            in out["result"]["error"])
+    # the literal never reached the guarded resolver (the connector would
+    # short-circuit it) — and the refusal happened before the request
+    assert resolver_calls == []
+    # NO getaddrinfo at all: the early policy check resolves an IP literal
+    # NUMERICALLY (safety.resolve_host's ipaddress fast path — scoped
+    # literals parse), so the scoped string never touches the resolution
+    # layer, before or after the policy decision
+    assert gai_calls == []
+    # no connect attempt of any kind
+    assert connects == []
+
+
 def test_urllib_connect_target_carries_the_numeric_scope(dns, loopback_is_public,
                                                          monkeypatch):
     # R-146b review round 5: the SUCCESS of a ::1 connection alone would not
