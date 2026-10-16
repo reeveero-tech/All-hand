@@ -410,6 +410,10 @@ html, body {
 
 .chat-input-area {
   display: flex;
+  /* SEC-06 (R-145c): the consent warning (width 100%) must sit on its own
+     row above the input row — without wrap the flex row squeezes the
+     textarea next to the warning box. */
+  flex-wrap: wrap;
   gap: 12px;
   padding: 16px 0 0;
   border-top: 1px solid var(--border);

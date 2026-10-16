@@ -157,18 +157,23 @@ export default function Chat({ status }) {
             </label>
           </div>
         )}
-        <textarea
-          className="chat-input"
-          placeholder="اكتب رسالتك هنا... (Enter للإرسال، Shift+Enter لسطر جديد)"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={1}
-          disabled={loading}
-        />
-        <button className="btn btn-primary" onClick={() => handleSend()} disabled={loading || !input.trim()}>
-          إرسال
-        </button>
+        {/* the input area is a flex ROW (index.css): the warning must not
+            become a flex child next to the textarea — it stacks above the
+            input row, which keeps the textarea and send button usable. */}
+        <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+          <textarea
+            className="chat-input"
+            placeholder="اكتب رسالتك هنا... (Enter للإرسال، Shift+Enter لسطر جديد)"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            disabled={loading}
+          />
+          <button className="btn btn-primary" onClick={() => handleSend()} disabled={loading || !input.trim()}>
+            إرسال
+          </button>
+        </div>
       </div>
     </div>
   )
