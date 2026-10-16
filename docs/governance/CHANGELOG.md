@@ -1,5 +1,14 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-16 — R-141: BUG-02 — حالة واحدة لنتيجة `/api/chat` بين الذاكرة والتخزين والأحداث (دفعة m7/r141-bug02-chat-status-consistency)
+
+- **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 5؛ أولوية 1) + تعليمات المالك لـBUG-02.
+- **العيب**: تنفيذ chat فاشل: `failed` في `TASKS` لكن `completed` في `insert_task` و`update_task` (ثابتة)؛ `chat_completed` بلا `status`. مثبت (`docs/audit/M7/logs/raw/231`): الصف في PostgREST و`GET /api/tasks` من قاعدة البيانات `completed` لتنفيذ `ok=false`.
+- **الإصلاح** (`server.py`): `chat_status` واحدة من `outcome["ok"]` في الذاكرة والتخزين والحدث.
+- **تغيير سلوك مقصود**: صفوف chat الفاشلة تُخزن `failed`؛ `event_data` لـ`chat_completed` يضيف `status`. رمز HTTP وبنية استجابة `/api/chat` ونوع الحدث بلا تغيير.
+- **الاختبار**: `tests/test_bug02_chat_status_consistency.py` (9)؛ `tests/test_r042_live_storage.py` يفحص الحالة المخزنة وحالة الحدث على PostgreSQL الحقيقي (CI `storage`)؛ مسبار `scripts/bug02/probe_chat_status.py`. التحقق: `232`، `233` — pytest ‏663+3+4 ×3 إصدارات؛ ruff صفر.
+- **الوثائق**: API، DATA_MODEL، ROADMAP (R-141)، PROJECT_STATE، EVIDENCE.
+
 ## 2026-10-16 — R-140: BUG-01 — رفض مهام `external` قبل إنشائها عند غياب الوكلاء الخارجيين (دفعة m7/r140-bug01-external-without-agent)
 
 - **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 4؛ أولوية 1) + تعليمات المالك لـBUG-01.

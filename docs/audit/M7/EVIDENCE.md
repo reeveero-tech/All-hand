@@ -480,3 +480,13 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 | الاختبار نفسه بعد الإصلاح (-v) + اختبارات API/المصادقة/العزل/SSRF/الإقلاع المرتبطة | 10/10؛ 266/266 | 0 | raw/229 |
 | المسبار نفسه بعد الإصلاح | 409 برسالة بلا أسرار؛ مهام المستأجر 0؛ كتابات `[]`؛ SSE `[]`؛ استثناءات `[]` | 0 | raw/229 |
 | pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff (أمر CI) + الواجهة (`npm test`، `npm run build`) | 654 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/230 |
+
+## M7 — R-141: BUG-02 — حالة واحدة لنتيجة `/api/chat` (دفعة m7/r141-bug02-chat-status-consistency، 2026-10-16)
+
+| الفحص | النتيجة | rc | السجل |
+|---|---|---|---|
+| `tests/test_bug02_chat_status_consistency.py` على الكود القديم `3188bc3` (الملف وحده مضاف) | 6 failed, 3 passed — فحوص الفشل: `'completed' != 'failed'`؛ فحوص `status` في الحدث: الحقل غائب؛ فحوص النجاح للذاكرة والتخزين نجحت | 1 | raw/231 |
+| مسبار `scripts/bug02/probe_chat_status.py` على الكود القديم (فشل حقيقي لـ`test_runner`، `SupabaseStorage` الحقيقي ← PostgREST محلي) | الذاكرة `failed`؛ POST `completed`؛ PATCH `completed`؛ الصف `completed`؛ `GET /api/tasks` (database) `completed`؛ `event_data` بلا `status` | 0 | raw/231 |
+| الاختبار نفسه بعد الإصلاح (-v) + اختبارات API/الأمان/العزل/الإقلاع/التخزين المرتبطة | 9/9؛ 267 passed, 3 skipped (`test_r042_live_storage.py` — تُشغَّل في CI `storage`) | 0 | raw/232 |
+| المسبار نفسه بعد الإصلاح | `failed` في الذاكرة وPOST وPATCH والصف و`event_data.status` و`GET /api/tasks`؛ `ok=false` | 0 | raw/232 |
+| pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff (أمر CI) + الواجهة | 663 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/233 |

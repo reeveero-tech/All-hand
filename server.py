@@ -787,13 +787,16 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
         spec, reason = plan["primary"], plan["reason"]
     agent = _pick_agent(spec)
     outcome = await agent.execute({"prompt": req.message})
+    # BUG-02 (R-141): one status derived from the outcome, used for the memory
+    # record, both storage writes and the chat_completed event.
+    chat_status = "completed" if outcome["ok"] else "failed"
 
     task_id = uuid.uuid4().hex[:12]
     TASKS[task_id] = {
         "id": task_id,
         "specialization": spec,
         "prompt": req.message[:500],
-        "status": "completed" if outcome["ok"] else "failed",
+        "status": chat_status,
         "created_at": time.time(),
         "finished_at": time.time(),
         "result": outcome,
@@ -803,15 +806,18 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
     _prune_tasks()
 
     storage = get_storage()
-    await storage.insert_task(task_id, spec, req.message, "completed", tenant_id=principal.tenant_id)
-    await storage.update_task(task_id, "completed", agent_name=agent.name,
+    await storage.insert_task(task_id, spec, req.message, chat_status, tenant_id=principal.tenant_id)
+    await storage.update_task(task_id, chat_status, agent_name=agent.name,
                               result=outcome, elapsed_s=outcome.get("elapsed_s", 0))
     await storage.upsert_agent_stats(
         agent.name, spec,
         agent.stats["tasks_completed"], agent.stats["tasks_failed"], agent.stats["total_time_s"]
     )
+    # The event type stays chat_completed (end of processing, for existing
+    # consumers); "status" says whether the execution succeeded.
     await storage.insert_event("chat_completed", {
-        "task_id": task_id, "agent": agent.name, "specialization": spec, "ok": outcome["ok"]
+        "task_id": task_id, "agent": agent.name, "specialization": spec, "ok": outcome["ok"],
+        "status": chat_status,
     }, tenant_id=principal.tenant_id)
 
     logger.info(f"Chat processed: {task_id} routed to {spec} by agent {agent.name}")

@@ -128,6 +128,14 @@ def test_chat_persists_and_agent_stats_upserted(client):
     row = next((t for t in listed["tasks"] if t["task_id"] == task_id), None)
     assert row is not None and row["status"] in ("completed", "failed")
     assert isinstance(row["result"], dict)
+    # BUG-02 (R-141): the stored status is the one derived from the outcome
+    # (before: always "completed", even for a failed execution)
+    expected = "completed" if body["outcome"]["ok"] else "failed"
+    assert row["status"] == expected, (row["status"], body["outcome"]["ok"])
+    ev = [e for e in _rest("events?event_type=eq.chat_completed&order=created_at.desc&limit=50")
+          if isinstance(e.get("event_data"), dict) and e["event_data"].get("task_id") == task_id]
+    assert len(ev) == 1 and ev[0]["event_data"]["ok"] is body["outcome"]["ok"]
+    assert ev[0]["event_data"]["status"] == expected
 
     # read agent_stats straight from the REST endpoint (independent of the server's client)
     rows = _rest(f"agent_stats?agent_name=eq.{agent}")
