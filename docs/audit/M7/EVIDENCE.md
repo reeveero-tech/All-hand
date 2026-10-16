@@ -938,4 +938,4 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 - اختبار رفض النطاقات على المحوّل هو **رفض مبكر مُثبت قبل كلا الاستدعاءين** (`sock_connect` و`socket.connect`) — لا «منع تنفيذ عند socket.connect»: مراقب `socket.connect` يستدعي الأصل، والمسبار عند `sock_connect` يرفض.
 - رصد urllib عند `socket.connect` يغطي حالة `::1` (محاولة اتصال نهائية فعلية)؛ حالة `fe80::1` المذكورة معه تثبت **حفظ عائد البوابة** (الـsockaddr المتحقق منه) لا محاولة اتصال نهائية.
 
-حقائق CI لالتزامات هذه الجولة تُستخرج من سجل وظيفة `test` نفسها بعد اكتمال التشغيل وتُضاف هنا.
+حقائق CI لالتزامات هذه الجولة (التشغيل 38882292796 — فحوص PR كلها خضراء): خطوة «Run tests (live test suite)» على **Python 3.11.17** انتهت بـ«821 passed, 4 skipped, 4 deselected in 89.76s»؛ وخطوة «Run tests on Python 3.12» على **Python 3.12.15** انتهت بـ«821 passed, 4 skipped, 4 deselected in 80.58s». رابط التشغيل: https://github.com/reeveero-tech/All-hand/actions/runs/38882292796
