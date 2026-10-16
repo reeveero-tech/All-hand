@@ -1,5 +1,12 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-16 — R-148: قفل التبعيات وتوحيد بناء Render (Build، دفعة m7/r148-build-python-lockfile)
+
+- **قفل Python**: `requirements.lock` — الإصدارات المحلولة الكاملة (مباشرة + انتقالية، 29 حزمة) بتجزئات SHA-256، مولّد بـpip-compile (pip-tools==7.6.1 على 3.11)؛ `requirements.txt` بقي تعريفًا مباشرًا؛ `requirements-dev.in/lock` لأدوات الاختبار مقيد بالإنتاج. وصفة التجديد في OPERATIONS.
+- **المسارات**: CI (test على 3.11/3.12، storage، network) وDocker وRender والأوامر المحلية كلها `pip install --require-hashes -r requirements.lock` — لا يوجد حل عائم في أي مسار تنفيذي؛ `pip-audit` يفحص القفل كاملًا.
+- **الواجهة**: Render صار `npm ci --engine-strict --no-audit --no-fund` (كان `npm install`) مع `NODE_VERSION=22.23.3`؛ حد engines صُحّح من `>=22.12.0` إلى `>=22.13.0` (قياس: jsdom 29 يرفض 22.12.0 بـnotsup — في web والجذر معًا).
+- **التحقق (السجل `266`)**: تثبيت نظيف + `pip check` + الحزمة 825 على 3.11.15 و3.12.13 من القفل نفسه؛ إعادة تثبيت مستقلة بجرد مطابق؛ الواجهة والجذر على Node 22.23.3 نظيفان (اختبارات 31/31 + بناءان + eslint)؛ ruff صفر. بناء Docker يثبته فحص `docker` في CI؛ بناء Render الحي لم يُزعم.
+
 ## 2026-10-16 — R-147: سجل الإقلاع يعلن العدد الفعلي للوكلاء (BUG-05، دفعة m7/r147-bug05-correct-startup-agent-count)
 
 - **الخلل**: سطر الإقلاع حسب وكلاء الحضارة بـ`len(CIVILIZATION) * 50` (ثابت 50 لكل تخصص) رغم أن `AGENTS_PER_SPEC` يتحكم في العدد فعليًا منذ R-041 (D-029) — مع `AGENTS_PER_SPEC=3` سجل 1000 بينما الوكلاء 60 فعلاً (مثبت قبل الإصلاح من استيراد حقيقي في عملية فرعية ببيئة نظيفة: `263`).

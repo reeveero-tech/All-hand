@@ -40,11 +40,14 @@ jobs:
         with:
           python-version: '3.11'
       
-      - name: Install dependencies
+      # R-148: reproducible installs — the production lock (hashes enforced)
+      # plus the separately-locked test tools (constrained to the same prod
+      # versions). No floating resolution anywhere in CI.
+      - name: Install dependencies (locked)
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio pytest-cov httpx2
+          pip install --require-hashes -r requirements.lock
+          pip install --require-hashes -r requirements-dev.lock
       
       - name: Run tests (live test suite)
         run: pytest tests/ -v --cov=agent_civilization --cov=agos_kernel --cov-report=xml
@@ -61,8 +64,8 @@ jobs:
         run: |
           python --version
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio httpx2
+          pip install --require-hashes -r requirements.lock
+          pip install --require-hashes -r requirements-dev.lock
           python -m pytest tests/ -q
 
   build:
@@ -266,11 +269,12 @@ jobs:
       - name: Install pip-audit
         run: pip install pip-audit
 
-      - name: Python dependency audit (requirements.txt)
+      - name: Python dependency audit (requirements.lock — full resolved set)
         run: |
           set -o pipefail
-          pip-audit -r requirements.txt 2>&1 | tee "$GITHUB_WORKSPACE/pip_audit.log"
-          # pip-audit exits 1 if vulnerabilities found — already blocking.
+          pip-audit -r requirements.lock 2>&1 | tee "$GITHUB_WORKSPACE/pip_audit.log"
+          # R-148: audits the locked resolved set (all transitives), not just the
+          # direct requirements. pip-audit exits 1 if vulnerabilities found — blocking.
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -340,11 +344,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install dependencies (locked)
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio httpx2
+          pip install --require-hashes -r requirements.lock
+          pip install --require-hashes -r requirements-dev.lock
 
       - name: Install PostgREST v12.2.3 (checksum-pinned)
         run: |
@@ -382,11 +386,11 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: '3.11'
-      - name: Install dependencies
+      - name: Install dependencies (locked)
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio httpx2  # httpx2: starlette.testclient, needed at collection
+          pip install --require-hashes -r requirements.lock
+          pip install --require-hashes -r requirements-dev.lock  # httpx2: starlette.testclient, needed at collection
       - name: Live network tests
         run: pytest tests/ -m network -v
 
