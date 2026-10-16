@@ -1,0 +1,24 @@
+R-146 baseline — 2026-10-16T07:29Z — main 6369b77
+
+== pytest full ==
+
+=========== 759 passed, 4 skipped, 4 deselected in 60.62s (0:01:00) ============
+PYTEST_RC=0
+
+== ruff ==
+All checks passed!
+RUFF_RC=0
+
+== web build ==
+✓ built in 122ms
+WEB_RC=0
+
+== root build ==
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+ROOT_RC=0
+
+== aiohttp version ==
+3.14.5
+
+== python ==
+Python 3.14.3

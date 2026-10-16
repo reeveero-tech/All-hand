@@ -22,11 +22,27 @@ http://169.254.169.254/...`` reached the target).  Redirects are now followed
 manually (``allow_redirects=False``) and ``safety.check_url`` is applied to
 every target before it is contacted — the same policy ``safety.safe_urlopen``
 applies to urllib.
+
+SEC-05 (R-146): the session's ``TCPConnector`` uses ``GuardedResolver`` —
+the addresses aiohttp connects to are exactly the ones the outbound policy
+checked.  The resolver performs the DNS resolution, applies the policy to
+EVERY address of that answer and hands the vetted IPs to the connector;
+aiohttp opens the socket to a vetted result without resolving the hostname
+again, so a DNS answer that changes between the early ``check_url`` and the
+connection (rebinding) cannot reach an unvetted address.  Literal-IP URLs
+never involve DNS (aiohttp bypasses the resolver for them) — the address is
+deterministic and the early ``check_url`` already vets it.  The URL hostname
+stays in the request, the ``Host`` header and TLS (SNI + certificate
+verification).  DNS answers are not cached (``use_dns_cache=False``) so every
+new connection resolves through the guarded resolver; a keep-alive reuse
+inside one session only reuses a connection that was itself vetted.
 """
 
+import asyncio
 import json
 import logging
 import os
+import socket
 import time
 from typing import Any, Dict, List
 from urllib.parse import urljoin, urlsplit
@@ -36,6 +52,46 @@ import aiohttp
 from agent_civilization.core import safety
 
 logger = logging.getLogger("external_agents")
+
+
+class GuardedResolver(aiohttp.abc.AbstractResolver):
+    """SEC-05 (R-146): resolve once, vet EVERY address, connect to vetted IPs.
+
+    ``resolve`` is the last security decision before the socket: it performs
+    the single DNS resolution for the connection, applies the outbound
+    address policy (``safety.check_resolved``) to ALL addresses of that answer
+    and returns the vetted addresses to the connector — the connector then
+    connects without resolving again.  A mixed answer (one public + one
+    internal address) is rejected as a whole; DNS failure or an empty answer
+    fails closed.  The URL hostname is untouched: aiohttp keeps it for the
+    ``Host`` header and for TLS SNI + certificate verification.
+    """
+
+    def __init__(self, allow_private: bool):
+        self._allow_private = allow_private
+
+    async def resolve(self, host: str, port: int = 0,
+                       family: int = 0) -> list:
+        try:
+            infos = await asyncio.get_running_loop().getaddrinfo(
+                host, port or 0, family=family or 0, type=socket.SOCK_STREAM,
+                proto=socket.IPPROTO_TCP)
+        except (OSError, asyncio.CancelledError):
+            raise
+        except Exception as e:  # pragma: no cover — getaddrinfo raises OSError
+            raise aiohttp.ClientConnectionError(
+                f"DNS resolution failed for {host}") from e
+        if not infos:
+            raise aiohttp.ClientConnectionError(f"no addresses for {host}")
+        addrs = sorted({info[4][0] for info in infos})
+        # Fail closed on any non-public address of the answer (UnsafeURLError).
+        safety.check_resolved(host, addrs, self._allow_private)
+        return [{"hostname": host, "host": info[4][0], "port": info[4][1],
+                 "family": info[0], "proto": info[1], "flags": 0}
+                for info in infos]
+
+    async def close(self) -> None:  # aiohttp resolver interface
+        return None
 
 
 class ExternalAgentAdapter:
@@ -68,7 +124,10 @@ class ExternalAgentAdapter:
         if self.model:
             payload["model"] = self.model
         try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120)) as s:
+            connector = aiohttp.TCPConnector(
+                resolver=GuardedResolver(self.allow_private), use_dns_cache=False)
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=120),
+                                             connector=connector) as s:
                 status, body = await self._post_checked(s, headers, payload)
             if status != 200:
                 raise RuntimeError(f"HTTP {status}: {body[:300]}")
@@ -96,7 +155,9 @@ class ExternalAgentAdapter:
         """POST ``payload``, following redirects manually (SEC-01).
 
         ``safety.check_url`` runs on the first URL and on every redirect
-        target BEFORE it is contacted.  Method semantics match aiohttp's own
+        target BEFORE it is contacted (an early, redundant pre-check; the
+        binding security decision is the ``GuardedResolver`` in the session's
+        connector, SEC-05).  Method semantics match aiohttp's own
         redirect handling: 307/308 keep POST and the body; 303, and 301/302
         after a POST, switch to GET without a body.  The Authorization header
         is dropped when the redirect leaves the original origin (aiohttp does

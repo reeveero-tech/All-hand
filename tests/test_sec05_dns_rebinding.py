@@ -1,0 +1,574 @@
+"""SEC-05 (R-146): outbound connections are pinned to vetted DNS results.
+
+The gap this closes: ``safety.check_url`` resolved a hostname and checked the
+answer, then the transport (``http.client`` via ``socket.create_connection``,
+aiohttp via its default resolver) resolved the SAME hostname again for the
+actual TCP connection.  A DNS answer that changed between the two resolutions
+(rebinding) made the protected paths reach an unvetted address — proven live
+on the pre-fix tree by ``scripts/sec05/probe_dns_rebinding.py`` (raw log 253).
+
+Everything here is deterministic and local-only:
+* a controlled ``socket.getaddrinfo`` answers for the test hostname
+  (``localhost`` — a loopback name, so the suite's offline guard lets the real
+  transport run): the first resolution returns an address the policy allows,
+  later resolutions return the rebinding answer;
+* the "internal" listener runs on 127.0.0.2 (loopback /8, non-public) and
+  counts the requests it receives — a hit means an unvetted address was
+  reached, which is the vulnerability;
+* the suite's autouse guard still blocks any real non-loopback connection, so
+  the tests cannot touch an external network even if a check is removed.
+"""
+import asyncio
+import http.server
+import json
+import socket
+import ssl
+import subprocess
+import threading
+import urllib.error
+import urllib.request
+
+import pytest
+
+from agent_civilization.agents.external_adapter import ExternalAgentAdapter, GuardedResolver
+from agent_civilization.core import safety
+
+CONTROL_HOST = "localhost"      # loopback name: the offline guard lets it run
+ALLOWED_FIRST = "192.0.2.1"      # RFC 5737 documentation range: policy-allowed
+INTERNAL = "127.0.0.2"           # loopback /8: local-only, non-public
+
+
+# --------------------------------------------------------------------------- #
+# controlled DNS + local servers
+# --------------------------------------------------------------------------- #
+
+class ControlledDNS:
+    """``socket.getaddrinfo`` with a scripted answer sequence for CONTROL_HOST."""
+
+    def __init__(self, monkeypatch):
+        self._orig = socket.getaddrinfo
+        self.answers: list = []      # each item: list of address strings
+        self.calls: list = []
+        self.fail = False            # True: resolution raises (DNS failure)
+        monkeypatch.setattr(socket, "getaddrinfo", self._fake)
+
+    def script(self, *answers):
+        self.answers = [list(a) for a in answers]
+
+    def _fake(self, host, *args, **kwargs):
+        host = str(host)
+        if host == CONTROL_HOST:
+            if self.fail:
+                raise socket.gaierror(2, "Name or service not known")
+            port = args[0] if args else kwargs.get("port", 0)
+            self.calls.append(len(self.calls))
+            answer = self.answers[min(len(self.calls) - 1,
+                                      max(0, len(self.answers) - 1))]
+            out = []
+            for ip in answer:
+                family = socket.AF_INET6 if ":" in ip else socket.AF_INET
+                out.append((family, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                            "", (ip, int(port or 0))))
+            return out
+        return self._orig(host, *args, **kwargs)
+
+
+class _JSONHandler(http.server.BaseHTTPRequestHandler):
+    """Serves the OpenAI-ish answer; records Host header and request line."""
+
+    hits = 0
+    seen_hosts: list = []
+
+    def _serve(self):
+        length = int(self.headers.get("Content-Length") or 0)
+        if length:
+            self.rfile.read(length)
+        type(self).hits += 1
+        type(self).seen_hosts.append(self.headers.get("Host"))
+        body = json.dumps({"choices": [{"message": {"content": "public answer"}}]}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    do_GET = do_POST = _serve
+
+    def log_message(self, *a):
+        pass
+
+
+class _RedirectHandler(http.server.BaseHTTPRequestHandler):
+    """Answers a redirect to ``target`` with ``status_code``."""
+
+    target = ""
+    status_code = 302
+
+    def _serve(self):
+        length = int(self.headers.get("Content-Length") or 0)
+        if length:
+            self.rfile.read(length)
+        self.send_response(self.status_code)
+        self.send_header("Location", self.target)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    do_GET = do_POST = _serve
+
+    def log_message(self, *a):
+        pass
+
+
+def _serve(host, handler):
+    base = (http.server.ThreadingHTTPServer if ":" not in host
+            else type("_V6Server", (http.server.ThreadingHTTPServer,),
+                      {"address_family": socket.AF_INET6}))
+    srv = base((host, 0), handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv
+
+
+@pytest.fixture
+def dns(monkeypatch):
+    return ControlledDNS(monkeypatch)
+
+
+@pytest.fixture
+def internal_listener():
+    _JSONHandler.hits = 0
+    _JSONHandler.seen_hosts = []
+    srv = _serve(INTERNAL, _JSONHandler)
+    yield srv.server_address[1]
+    srv.shutdown()
+    srv.server_close()
+
+
+@pytest.fixture
+def loopback_is_public(monkeypatch):
+    """Marks 127.0.0.1 (and ::1) as public, like the SEC-01 suite — the local
+    server then plays an allowed destination without touching real DNS."""
+    real = safety.is_public_address
+
+    def fake(ip):
+        if ip in ("127.0.0.1", "::1"):
+            return True
+        return real(ip)
+
+    monkeypatch.setattr(safety, "is_public_address", fake)
+
+
+def _adapter(url, **kw):
+    return ExternalAgentAdapter("sec05", url, **kw)
+
+
+# --------------------------------------------------------------------------- #
+# A. the rebinding gap is closed on both paths
+# --------------------------------------------------------------------------- #
+
+def test_urllib_rebinding_is_blocked_before_the_socket(dns, internal_listener):
+    dns.script([ALLOWED_FIRST], [INTERNAL])
+    req = urllib.request.Request(f"http://{CONTROL_HOST}:{internal_listener}/x")
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        safety.safe_urlopen(req, timeout=5)
+    assert "blocked non-public address" in str(ei.value)
+    assert _JSONHandler.hits == 0                    # the listener was never reached
+
+
+def test_aiohttp_rebinding_is_blocked_before_the_socket(dns, internal_listener):
+    dns.script([ALLOWED_FIRST], [INTERNAL])
+    out = asyncio.run(_adapter(
+        f"http://{CONTROL_HOST}:{internal_listener}/v1/chat/completions").execute(
+        {"prompt": "hi"}))
+    assert out["ok"] is False
+    assert "blocked non-public address" in out["result"]["error"]
+    assert _JSONHandler.hits == 0
+
+
+def test_urllib_error_does_not_leak_the_url_or_credentials(dns, internal_listener):
+    dns.script([ALLOWED_FIRST], [INTERNAL])
+    req = urllib.request.Request(
+        f"http://{CONTROL_HOST}:{internal_listener}/x?token=secret-token-123")
+    req.add_header("Authorization", "Bearer agent-key")
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        safety.safe_urlopen(req, timeout=5)
+    msg = str(ei.value)
+    assert "token" not in msg and "agent-key" not in msg and "/x" not in msg
+
+
+# --------------------------------------------------------------------------- #
+# B. the allowed path connects to the address the policy vetted
+# --------------------------------------------------------------------------- #
+
+def test_urllib_allowed_connection_uses_the_vetted_address(dns, loopback_is_public):
+    _JSONHandler.hits = 0
+    _JSONHandler.seen_hosts = []
+    dns.script([ALLOWED_FIRST], ["127.0.0.1"])
+    srv = _serve("127.0.0.1", _JSONHandler)
+    port = srv.server_address[1]
+    try:
+        with safety.safe_urlopen(
+                urllib.request.Request(f"http://{CONTROL_HOST}:{port}/x"), timeout=5) as r:
+            assert r.status == 200
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert _JSONHandler.hits == 1                   # connected, to the vetted IP
+    assert _JSONHandler.seen_hosts == [f"{CONTROL_HOST}:{port}"]   # Host = original name
+    assert len(dns.calls) == 2                      # check + connection: no hidden extra
+
+
+def test_aiohttp_allowed_connection_uses_the_vetted_address(dns, loopback_is_public):
+    _JSONHandler.hits = 0
+    _JSONHandler.seen_hosts = []
+    dns.script([ALLOWED_FIRST], ["127.0.0.1"])
+    srv = _serve("127.0.0.1", _JSONHandler)
+    port = srv.server_address[1]
+    try:
+        out = asyncio.run(_adapter(
+            f"http://{CONTROL_HOST}:{port}/v1/chat/completions").execute(
+            {"prompt": "hi"}))
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert out["ok"] is True and out["result"]["answer"] == "public answer"
+    assert _JSONHandler.hits == 1
+    assert _JSONHandler.seen_hosts == [f"{CONTROL_HOST}:{port}"]
+    assert len(dns.calls) == 2                       # early check + guarded resolver only
+
+
+def test_vetted_sockaddrs_return_the_checked_targets(dns, loopback_is_public):
+    dns.script(["127.0.0.1"])
+    out = safety.vetted_sockaddrs(CONTROL_HOST, 8080)
+    assert [sa for _, sa in out] == [("127.0.0.1", 8080)]
+    assert out[0][0] == socket.AF_INET
+
+
+# --------------------------------------------------------------------------- #
+# C. address policy: every address of the answer is checked
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize("answer", [
+    [ALLOWED_FIRST, INTERNAL],                 # mixed IPv4: one internal -> reject
+    ["2001:db8::1", "::1"],                  # mixed IPv6
+    ["::1"],                                 # IPv6 loopback alone
+    [INTERNAL],                              # internal alone
+])
+def test_mixed_or_internal_answers_are_rejected_as_a_whole(dns, answer):
+    dns.script(answer)
+    with pytest.raises(safety.UnsafeURLError):
+        safety.vetted_sockaddrs(CONTROL_HOST, 80)
+    with pytest.raises(safety.UnsafeURLError):
+        safety.check_url(f"http://{CONTROL_HOST}:80/x")
+
+
+def test_guarded_resolver_rejects_a_mixed_answer(dns):
+    dns.script(["2001:db8::1", INTERNAL])
+
+    async def resolve():
+        return await GuardedResolver(allow_private=False).resolve(CONTROL_HOST, 80)
+
+    with pytest.raises(safety.UnsafeURLError):
+        asyncio.run(resolve())
+
+
+def test_allowed_ipv6_connection_reaches_the_vetted_address(dns, loopback_is_public):
+    _JSONHandler.hits = 0
+    _JSONHandler.seen_hosts = []
+    dns.script(["::1"])
+    srv = _serve("::1", _JSONHandler)
+    port = srv.server_address[1]
+    try:
+        with safety.safe_urlopen(
+                urllib.request.Request(f"http://{CONTROL_HOST}:{port}/x"), timeout=5) as r:
+            assert r.status == 200
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert _JSONHandler.hits == 1
+    assert _JSONHandler.seen_hosts == [f"{CONTROL_HOST}:{port}"]
+
+
+def test_dns_failure_and_empty_answer_fail_closed(dns):
+    dns.fail = True
+    # the transport layer wraps the failure in the policy error (fail closed)
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        safety.vetted_sockaddrs(CONTROL_HOST, 80)
+    assert "DNS resolution failed" in str(ei.value)
+    # the full request path fails too — never falls back to a plain urlopen
+    with pytest.raises((safety.UnsafeURLError, socket.gaierror)):
+        safety.safe_urlopen(
+            urllib.request.Request(f"http://{CONTROL_HOST}:80/x"), timeout=5)
+
+    dns.fail = False
+    dns.script([])                 # one answer: the empty set
+    with pytest.raises(safety.UnsafeURLError) as ei:
+        safety.vetted_sockaddrs(CONTROL_HOST, 80)
+    assert "no usable addresses" in str(ei.value)
+    with pytest.raises(safety.UnsafeURLError):
+        safety.safe_urlopen(
+            urllib.request.Request(f"http://{CONTROL_HOST}:80/x"), timeout=5)
+
+
+# --------------------------------------------------------------------------- #
+# D. HTTPS: original hostname keeps SNI and certificate verification
+# --------------------------------------------------------------------------- #
+
+def _make_certs(tmp_path, hostname):
+    """A local CA + a leaf certificate for ``hostname`` (openssl CLI)."""
+    ca_key = tmp_path / "ca.key"
+    ca_crt = tmp_path / "ca.crt"
+    leaf_key = tmp_path / "leaf.key"
+    leaf_csr = tmp_path / "leaf.csr"
+    leaf_crt = tmp_path / "leaf.crt"
+    leaf_ext = tmp_path / "leaf.ext"
+    leaf_ext.write_text(
+        f"subjectAltName=DNS:{hostname}\nbasicConstraints=CA:FALSE\n"
+        "keyUsage=digitalSignature,keyEncipherment\n")
+    common = [
+        ["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2",
+         "-subj", "/CN=sec05-test-ca", "-keyout", str(ca_key), "-out", str(ca_crt),
+         "-addext", "basicConstraints=critical,CA:TRUE",
+         "-addext", "keyUsage=critical,keyCertSign,cRLSign,digitalSignature"],
+        ["openssl", "req", "-newkey", "rsa:2048", "-nodes",
+         "-subj", f"/CN={hostname}", "-keyout", str(leaf_key), "-out", str(leaf_csr)],
+        ["openssl", "x509", "-req", "-in", str(leaf_csr), "-CA", str(ca_crt),
+         "-CAkey", str(ca_key), "-CAcreateserial", "-days", "2",
+         "-extfile", str(leaf_ext), "-out", str(leaf_crt)],
+    ]
+    for cmd in common:
+        subprocess.run(cmd, check=True, capture_output=True)
+    return str(ca_crt), str(leaf_crt), str(leaf_key)
+
+
+@pytest.fixture
+def tls_server(tmp_path, monkeypatch):
+    """A verifying local HTTPS server for ``localhost`` + a client CA context.
+
+    Records the SNI the client sent.  ``safety.tls_context`` is pointed at the
+    test CA — the same verifying context the guarded HTTPS connection uses.
+    """
+    ca_crt, leaf_crt, leaf_key = _make_certs(tmp_path, "localhost")
+    client_ctx = ssl.create_default_context(cafile=ca_crt)
+    monkeypatch.setattr(safety, "tls_context", lambda: client_ctx)
+
+    server_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    server_ctx.load_cert_chain(leaf_crt, leaf_key)
+    sni: list = []
+
+    def record_sni(sslos, server_name, ctx):
+        sni.append(server_name)
+        return None
+
+    server_ctx.sni_callback = record_sni
+
+    plain = _serve("127.0.0.1", _JSONHandler)
+    plain.socket = server_ctx.wrap_socket(plain.socket, server_side=True)
+    _JSONHandler.hits = 0
+    _JSONHandler.seen_hosts = []
+    yield plain.server_address[1], sni
+    plain.shutdown()
+    plain.server_close()
+
+
+def test_https_keeps_hostname_sni_and_verification(dns, loopback_is_public, tls_server):
+    port, sni = tls_server
+    dns.script(["127.0.0.1"])
+    with safety.safe_urlopen(
+            urllib.request.Request(f"https://{CONTROL_HOST}:{port}/x"), timeout=5) as r:
+        assert r.status == 200
+    assert _JSONHandler.hits == 1
+    assert _JSONHandler.seen_hosts == [f"{CONTROL_HOST}:{port}"]   # Host: original name
+    assert sni == [CONTROL_HOST]                                   # SNI: original name
+
+
+def test_https_rejects_a_certificate_for_another_hostname(dns, loopback_is_public,
+                                                          tmp_path, monkeypatch):
+    # The server presents a certificate for "other.test": verification against
+    # the ORIGINAL hostname (localhost) must fail — connecting to a vetted IP
+    # never weakens the identity check.  The TCP connection may be established
+    # before the handshake fails; the request itself never completes.
+    ca_crt, leaf_crt, leaf_key = _make_certs(tmp_path, "other.test")
+    client_ctx = ssl.create_default_context(cafile=ca_crt)
+    monkeypatch.setattr(safety, "tls_context", lambda: client_ctx)
+    server_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    server_ctx.load_cert_chain(leaf_crt, leaf_key)
+    srv = _serve("127.0.0.1", _JSONHandler)
+    srv.socket = server_ctx.wrap_socket(srv.socket, server_side=True)
+    port = srv.server_address[1]
+    _JSONHandler.hits = 0
+    _JSONHandler.seen_hosts = []
+    dns.script(["127.0.0.1"])
+    try:
+        # urllib wraps the transport failure in URLError; the reason is the
+        # certificate verification failure against the ORIGINAL hostname.
+        with pytest.raises(urllib.error.URLError) as ei:
+            safety.safe_urlopen(
+                urllib.request.Request(f"https://{CONTROL_HOST}:{port}/x"), timeout=5)
+        assert "Hostname mismatch" in str(ei.value) or "CERTIFICATE_VERIFY_FAILED" in str(ei.value)
+        assert _JSONHandler.hits == 0            # no request was ever served
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+# --------------------------------------------------------------------------- #
+# E. proxies from the environment are not honored for protected requests
+# --------------------------------------------------------------------------- #
+
+def test_environment_proxies_are_ignored(dns, loopback_is_public, monkeypatch):
+    _ProxySink.hits = 0
+    proxy = _serve("127.0.0.1", _ProxySink)
+    _JSONHandler.hits = 0
+    _JSONHandler.seen_hosts = []
+    dns.script(["127.0.0.1"])
+    srv = _serve("127.0.0.1", _JSONHandler)
+    for var in ("http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY",
+                "HTTPS_PROXY", "ALL_PROXY"):
+        monkeypatch.setenv(var, f"http://127.0.0.1:{proxy.server_address[1]}")
+    try:
+        with safety.safe_urlopen(
+                urllib.request.Request(f"http://{CONTROL_HOST}:{srv.server_address[1]}/x"),
+                timeout=5) as r:
+            assert r.status == 200
+    finally:
+        for x in (proxy, srv):
+            x.shutdown()
+            x.server_close()
+    assert _ProxySink.hits == 0                 # the proxy was never contacted
+    assert _JSONHandler.hits == 1               # the real vetted destination was
+
+
+class _ProxySink(http.server.BaseHTTPRequestHandler):
+    hits = 0
+
+    def _serve(self):
+        type(self).hits += 1
+        self.send_response(200)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    do_GET = do_POST = _serve
+
+    def log_message(self, *a):
+        pass
+
+
+# --------------------------------------------------------------------------- #
+# F. redirects, methods and policy contracts stay intact
+# --------------------------------------------------------------------------- #
+
+def _redirect_to(target, status=302):
+    cls = type("_Redirect", (_RedirectHandler,), {"target": target,
+                                                  "status_code": status})
+    return cls
+
+
+def test_urllib_redirect_target_goes_through_the_guarded_connection(
+        dns, loopback_is_public, internal_listener):
+    # First hop: a literal allowed IP (no DNS).  The redirect points at the
+    # controlled hostname: the early re-check sees the allowed answer, the
+    # guarded connection resolves the rebinding answer and must refuse.
+    dns.script([ALLOWED_FIRST], [INTERNAL])
+    hop = _serve("127.0.0.1", _redirect_to(f"http://{CONTROL_HOST}:{internal_listener}/x"))
+    _JSONHandler.hits = 0
+    try:
+        with pytest.raises(safety.UnsafeURLError):
+            safety.safe_urlopen(
+                urllib.request.Request(f"http://127.0.0.1:{hop.server_address[1]}/r"),
+                timeout=5)
+    finally:
+        hop.shutdown()
+        hop.server_close()
+    assert _JSONHandler.hits == 0
+
+
+def test_aiohttp_redirect_target_goes_through_the_guarded_resolver(
+        dns, loopback_is_public, internal_listener):
+    dns.script([ALLOWED_FIRST], [INTERNAL])
+    hop = _serve("127.0.0.1", _redirect_to(
+        f"http://{CONTROL_HOST}:{internal_listener}/v1/chat/completions"))
+    _JSONHandler.hits = 0
+    try:
+        out = asyncio.run(_adapter(
+            f"http://127.0.0.1:{hop.server_address[1]}/v1/chat/completions").execute(
+            {"prompt": "hi"}))
+    finally:
+        hop.shutdown()
+        hop.server_close()
+    assert out["ok"] is False
+    assert "blocked non-public address" in out["result"]["error"]
+    assert _JSONHandler.hits == 0
+
+
+def test_urllib_redirect_loop_stays_bounded(loopback_is_public):
+    class _Loop(http.server.BaseHTTPRequestHandler):
+        def _serve(self):
+            length = int(self.headers.get("Content-Length") or 0)
+            if length:
+                self.rfile.read(length)
+            self.send_response(302)
+            self.send_header("Location", "/again")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        do_GET = do_POST = _serve
+
+        def log_message(self, *a):
+            pass
+
+    srv = _serve("127.0.0.1", _Loop)
+    try:
+        with pytest.raises(urllib.error.HTTPError):
+            safety.safe_urlopen(
+                urllib.request.Request(f"http://127.0.0.1:{srv.server_address[1]}/r"),
+                timeout=5)
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_public_literal_url_still_works(loopback_is_public):
+    _JSONHandler.hits = 0
+    srv = _serve("127.0.0.1", _JSONHandler)
+    try:
+        with safety.safe_urlopen(
+                urllib.request.Request(f"http://127.0.0.1:{srv.server_address[1]}/x"),
+                timeout=5) as r:
+            assert r.status == 200
+    finally:
+        srv.shutdown()
+        srv.server_close()
+    assert _JSONHandler.hits == 1
+
+
+def test_metadata_and_internal_literals_are_rejected():
+    for url in ("http://169.254.169.254/latest/meta-data/",
+                "http://10.0.0.5/v1", "http://[::1]:8080/v1"):
+        with pytest.raises(safety.UnsafeURLError):
+            safety.safe_urlopen(urllib.request.Request(url), timeout=5)
+
+
+def test_allow_private_still_reaches_internal_targets(dns, internal_listener):
+    # The documented exception for operator-configured components: the guarded
+    # transport connects to the internal address when the policy allows it.
+    dns.script([INTERNAL])
+    with safety.safe_urlopen(
+            urllib.request.Request(f"http://{CONTROL_HOST}:{internal_listener}/x"),
+            timeout=5, allow_private=True) as r:
+        assert r.status == 200
+    assert _JSONHandler.hits == 1
+
+    _JSONHandler.hits = 0
+    out = asyncio.run(_adapter(
+        f"http://{CONTROL_HOST}:{internal_listener}/v1/chat/completions",
+        allow_private=True).execute({"prompt": "hi"}))
+    assert out["ok"] is True and _JSONHandler.hits == 1
+
+
+def test_allow_private_does_not_skip_url_or_redirect_checks(dns):
+    # allow_private widens the ADDRESS policy only: schemes and redirects are
+    # still checked (file:// refused, a redirect still re-checked per hop).
+    with pytest.raises(safety.UnsafeURLError):
+        safety.safe_urlopen(
+            urllib.request.Request("file:///etc/passwd"), timeout=5,
+            allow_private=True)
