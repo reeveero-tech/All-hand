@@ -7,7 +7,8 @@
 - **الإصلاح**: `core/tenancy.py` جديد (مفاتيح → مستأجر ودور من `AGOS_TENANT_KEYS` بتجزئات SHA-256 و`AGOS_API_KEY` كمشغّل admin؛ خلل الإعداد يمنع الإقلاع)؛ `require_principal` على كل مسار بيانات (401 بلا مفتاح/بمفتاح خاطئ/بلا إعداد)؛ ملكية المهام و404 موحد؛ `all_tenants=true` للمدير فقط؛ ذاكرة وتعلّم وطوابير SSE وتخزين مقسّمة بالمستأجر؛ السجلات القديمة معزولة؛ تسجيل الوكلاء الخارجيين للمدير؛ ترحيل `docs/sql/002_tenant_isolation.sql`؛ الواجهة تقرأ SSE بـfetch مع المفتاح.
 - **تغيير سلوك مقصود**: المفتاح الخاطئ 401 (كان 403)؛ بلا مفاتيح لا وصول لبيانات المستأجرين؛ `/api/system/status` لم يعد يعرض عدادات الذاكرة.
 - **الاختبار**: `tests/test_sec02_tenant_isolation.py` (105) — 105/105 (`221`)؛ pytest ‏587+3+4 على 3.14.3/3.11.15/3.12.13، ruff صفر، الواجهة 14/14 + build (`222`). مسار PostgREST الحي تشغّله وظيفة CI `storage`.
-- **الوثائق**: ROADMAP (R-138)، PROJECT_STATE، SECURITY (نموذج الوصول)، API، DATA_MODEL، OPERATIONS، DECISIONS (D-056)، EVIDENCE، هذا السجل.
+- **CI**: خطوة docker لسياسة R-100 كانت ترسل مهمة مجهولة (تُرفض الآن 401 — فشل أول تشغيل، `223`)؛ صارت تثبت رفض المجهول ثم ترسل `test_runner` كمستأجر CI عشوائي وتثبت أن الكود لا يُنفَّذ بلا `AGOS_API_KEY`.
+- **الوثائق**: ROADMAP (R-138)، PROJECT_STATE، SECURITY (نموذج الوصول)، API، DATA_MODEL، OPERATIONS، DECISIONS (D-056)، RISKS (RISK-026)، QUALITY، EVIDENCE، هذا السجل.
 
 ## 2026-10-16 — R-137: SEC-01 — فحص SSRF عند كل إعادة توجيه في محول الوكلاء الخارجيين (دفعة m7/r137-sec01-redirect-ssrf، بطلب المالك)
 

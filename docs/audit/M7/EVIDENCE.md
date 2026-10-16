@@ -453,5 +453,7 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 | الاختبار نفسه بعد الإصلاح + 18 ملف اختبار مرتبطاً (بترتيب الحزمة) | 105/105؛ المرتبطة 210 passed, 3 skipped | 0 | raw/221 |
 | pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff + py_compile + `bash -n` + الواجهة (`npm test`، `npm run build`) | 587 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ الواجهة 14/14؛ build ناجح | 0 | raw/222 |
 
-لم يُشغَّل محلياً: `tests/test_r042_live_storage.py` و`scripts/run_r042_storage_verify.py` (يتطلبان PostgreSQL+PostgREST) — وظيفة CI `storage` على الـPR. قضية جانبية خارج النطاق موثقة في `221`: عداد rate limit مشترك بين ملفات الاختبار.
+| أول تشغيل CI للـPR #139 (run 38833456355): وظيفة `docker` فشلت — خطوة R-100 ترسل مهمة مجهولة فتُرفض 401 بعد SEC-02 (متوقع)؛ أُصلحت الخطوة في `ci.yml` (مستأجر CI عشوائي + إثبات 401 للمجهول + الكود لا يُنفَّذ). باقي الفحوص نجحت ومنها `storage` (الترحيل 002 والعزل الحي) | فشل ثم إصلاح | 1 | raw/223 |
+
+لم يُشغَّل محلياً: `tests/test_r042_live_storage.py` و`scripts/run_r042_storage_verify.py` (يتطلبان PostgreSQL+PostgREST) — وظيفة CI `storage` على الـPR (نجحت في run 38833456355). قضية جانبية خارج النطاق موثقة في `221`: عداد rate limit مشترك بين ملفات الاختبار.
 

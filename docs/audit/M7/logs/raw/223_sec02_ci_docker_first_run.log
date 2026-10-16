@@ -1,0 +1,21 @@
+# SEC-02 (R-138) — first CI run of PR #139: docker job failed (run 38833456355)
+# cause: the R-100 runtime-safety step submitted a test_runner task ANONYMOUSLY in open mode;
+# after SEC-02 that request is refused (401, no task_id) -> KeyError in the step. Expected by design.
+# fix: ci.yml docker job — container gets one ephemeral random CI tenant (AGOS_TENANT_KEYS, role user,
+# still no AGOS_API_KEY); the step now asserts anonymous POST/GET /api/tasks = 401, then submits
+# test_runner as that tenant and asserts code execution is still refused ('disabled in open mode').
+# other checks on that run: audit/build/governance/network/quality/storage/test = pass
+
+## gh run view 38833456355 --log-failed (tail)
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.2036202Z ^[[36;1mecho "open_mode_test_runner:" | tee -a "$LOG"; cat /tmp/task.json | tee -a "$LOG"; echo | tee -a "$LOG"^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.2037017Z ^[[36;1mgrep -q 'disabled in open mode' /tmp/task.json || { echo "FAIL: open-mode code execution not refused" | tee -a "$LOG"; exit 1; }^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.2037775Z ^[[36;1mecho "PASS: non-root container; open-mode code execution refused" | tee -a "$LOG"^[[0m
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.2098392Z shell: /usr/bin/bash -e {0}
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.2098653Z ##[endgroup]
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.2754678Z container_uid=10001
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.3681392Z Traceback (most recent call last):
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.3683867Z   File "<string>", line 1, in <module>
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.3684519Z     import sys,json;print(json.load(sys.stdin)["task_id"])
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.3685081Z                           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.3685538Z KeyError: 'task_id'
+docker	Verify runtime safety policy in the container (R-100)	2026-10-16T01:10:41.3839888Z ##[error]Process completed with exit code 1.
