@@ -1,0 +1,20 @@
+# SEC-03 (R-139) — full suite + quality, branch m7/r139-sec03-production-fail-closed
+## Python 3.14.3 — cmd: python3 -m pytest -q -p no:cacheprovider
+================ 644 passed, 3 skipped, 4 deselected in 39.92s =================
+## Python 3.11.15 — cmd: /tmp/venv311_r133/bin/python -m pytest -q -p no:cacheprovider
+================ 644 passed, 3 skipped, 4 deselected in 40.64s =================
+## Python 3.12.13 — cmd: /tmp/venv312_r133/bin/python -m pytest -q -p no:cacheprovider
+================ 644 passed, 3 skipped, 4 deselected in 40.67s =================
+## cmd: ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts/run_r042_storage_verify.py
+All checks passed!
+## yaml: render.yaml + ci.yml
+yaml ok
+## web: npm test && npm run build
+# tests 14
+# pass 14
+# fail 0
+✓ built in 116ms
+## cmd: /tmp/venv312_r133/bin/python scripts/run_r075_roadmap_audit.py (summary lines)
+item headings: 128
+status counts: {'done': 128}
+## not run locally: docker (no docker daemon here) — CI job docker runs the new step 'Verify production start is refused without credentials (SEC-03)'

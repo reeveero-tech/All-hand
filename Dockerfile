@@ -19,5 +19,8 @@ COPY --from=frontend-build /app/web/dist /app/web/dist
 RUN useradd --system --uid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin agos
 USER agos
 ENV PORT=8000
+# SEC-03 (R-139): the image is production — it refuses to start without
+# AGOS_TENANT_KEYS / AGOS_API_KEY. Local development: -e AGOS_ENV=development.
+ENV AGOS_ENV=production
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT}"]

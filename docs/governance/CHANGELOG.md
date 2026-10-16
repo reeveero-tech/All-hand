@@ -1,5 +1,14 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-16 — R-139: SEC-03 — الإنتاج لا يقلع بلا بيانات اعتماد صالحة (دفعة m7/r139-sec03-production-fail-closed، D-057)
+
+- **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 3؛ أولوية 0) + تعليمات المالك لـSEC-03.
+- **العيب**: خادم إنتاج بلا `AGOS_TENANT_KEYS` ولا `AGOS_API_KEY` يقلع ويبدو سليماً ثم يرفض كل طلب. مثبت على `7ac2cda` (`docs/audit/M7/logs/raw/225`: `env -i … import server` → rc=0 بصفر بيانات اعتماد؛ 43 فشلاً من 57).
+- **الإصلاح**: `core/tenancy.py` (`runtime_environment`، `enforce_startup`؛ رفض `AGOS_API_KEY` الفارغ بمسافات/المحاط بمسافات)؛ `server.py` يستدعي `enforce_startup` عند الاستيراد ويسجّل البيئة وعدد المفاتيح فقط؛ `render.yaml` (`AGOS_ENV: production`، `AGOS_TENANT_KEYS` sync:false، تصحيح تعليق «فارغ = وضع مفتوح»)؛ `Dockerfile` (`ENV AGOS_ENV=production`)؛ `ci.yml` (خطوة docker للرفض)؛ `tests/conftest.py` (`AGOS_ENV=test`).
+- **تغيير سلوك مقصود**: الإنتاج بلا مفاتيح لا يقلع؛ `AGOS_API_KEY` أقصر من 16 حرفاً يمنع إقلاع الإنتاج؛ قيمة `AGOS_ENV` مجهولة خطأ إقلاع؛ التشغيل المحلي بلا مفاتيح يتطلب `AGOS_ENV=development`.
+- **الاختبار**: `tests/test_sec03_production_startup.py` (57 حالة). التحقق: `226`، `227` — pytest ‏644+3+4 ×3 إصدارات؛ ruff صفر؛ الواجهة 14/14 + build.
+- **الوثائق**: OPERATIONS (تصحيح «القراءة/SSE تعمل بلا مفتاح»)، DEPLOY، README، SECURITY، API، QUALITY، DECISIONS (D-057)، ROADMAP (R-139)، PROJECT_STATE، EVIDENCE.
+
 ## 2026-10-16 — R-138: SEC-02 — نموذج متعدد المستأجرين: مصادقة إلزامية وعزل بيانات المستأجرين (دفعة m7/r138-sec02-tenant-isolation، بقرار المالك D-056)
 
 - **المصدر**: تقرير التدقيق الخارجي (القسم 6، المهمة 2؛ أولوية 0) + تعليمات المالك لـSEC-02.

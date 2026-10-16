@@ -458,3 +458,15 @@ D-038: المعيار 7 من D-035 ("Supabase حية **أو بديل موثق**"
 
 لم يُشغَّل محلياً: `tests/test_r042_live_storage.py` و`scripts/run_r042_storage_verify.py` (يتطلبان PostgreSQL+PostgREST) — وظيفة CI `storage` على الـPR (نجحت في run 38833456355). القضية الجانبية في `221` (نافذة rate limit مشتركة بين ملفات الاختبار) ظهرت في CI وأُصلحت كعزل اختبارات (`224`).
 
+## M7 — R-139: SEC-03 — الإنتاج لا يقلع بلا بيانات اعتماد (دفعة m7/r139-sec03-production-fail-closed، 2026-10-16، D-057)
+
+| الفحص | النتيجة | rc | السجل |
+|---|---|---|---|
+| مسبار على الكود القديم `7ac2cda` (worktree): `env -i PATH HOME PYTHONPATH python3 -c "import server"` | يقلع: `CREDENTIALS = 0`، `ENABLE_AUTH = False` | 0 | raw/225 |
+| `tests/test_sec03_production_startup.py` على الكود القديم (الملف وحده منسوخ) | 43 failed, 14 passed | 1 | raw/225 |
+| الاختبار نفسه بعد الإصلاح (-v) + انحدار SEC-02/الأمان (`test_sec02_tenant_isolation`، `test_security`، `test_r101_web_auth_contract`، `test_r100_runtime_safety`) | 57/57؛ 172/172 | 0 | raw/226 |
+| uvicorn حقيقي ببيئة فارغة: `AGOS_ENV=production` بلا مفاتيح؛ `AGOS_ENV` غير مضبوط؛ `development`+`RENDER=true` | الثلاثة يخرجون برمز 1 مع رسالة الرفض؛ لا تجزئة في الخرج | 1 (متوقع) | raw/226 |
+| uvicorn حقيقي `production` مع مفتاح مستأجر عشوائي | `/health` 200؛ `/api/tasks` 401 بلا مفتاح و200 به؛ المفتاح لا يظهر في الخرج | 0 | raw/226 |
+| pytest كامل على 3.14.3 و3.11.15 و3.12.13 + ruff + yaml + الواجهة (`npm test`، `npm run build`) | 644 passed, 3 skipped, 4 deselected ×3؛ ruff صفر؛ 14/14؛ build ok | 0 | raw/227 |
+
+لم يُشغَّل محلياً: docker (لا خادم docker في البيئة) — خطوة CI `docker` الجديدة «Verify production start is refused without credentials (SEC-03)» تشغّل الصورة المبنية بلا مفاتيح، ثم بـ`development`+`RENDER=true` (artifact `docker_startup_refusal.log`).

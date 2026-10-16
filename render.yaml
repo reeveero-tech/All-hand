@@ -20,9 +20,17 @@ services:
       # (3.12.0 was the 2023 initial release). CI tests 3.12 in job `test`.
       - key: PYTHON_VERSION
         value: "3.12.15"
-      # R-041: مدخلا المصادقة/CORS للنشر (sync:false = يدخل المشغّل قيمهما في
-      # لوحة Render؛ لا سر يُخزن في هذا الملف). ترك AGOS_API_KEY فارغاً
-      # يبقي الخادم في الوضع المفتوح (سلوك R-004).
+      # SEC-03 (R-139): بيئة الإنتاج صريحة. الإنتاج لا يقلع بلا بيانات اعتماد
+      # صالحة (AGOS_TENANT_KEYS و/أو AGOS_API_KEY)؛ وغياب AGOS_ENV يعني إنتاجاً
+      # أيضاً. development/test مرفوضان على Render (RENDER=true تضبطه المنصة).
+      - key: AGOS_ENV
+        value: production
+      # R-041 + SEC-02/SEC-03: مدخلا بيانات الاعتماد (sync:false = يدخل المشغّل
+      # القيم في لوحة Render؛ لا سر في هذا الملف). تركهما فارغين = الخادم لا يقلع
+      # (لا وضع مفتوح منذ R-139). AGOS_TENANT_KEYS: قائمة JSON بتجزئات SHA-256
+      # (docs/governance/OPERATIONS.md)؛ AGOS_API_KEY: مفتاح المشغّل (admin، ≥16 حرفاً).
+      - key: AGOS_TENANT_KEYS
+        sync: false
       - key: AGOS_API_KEY
         sync: false
       - key: AGOS_ALLOWED_ORIGINS
