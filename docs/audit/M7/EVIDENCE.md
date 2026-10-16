@@ -1044,3 +1044,13 @@ env -i PATH="$PATH" AGOS_ENV=test AGENTS_PER_SPEC=3 python -c "import server; pr
 - CI على `9a66ccb` (التشغيل 38961179184) وعلى `a3ee544` (التشغيل 38963184074 — `headSha` مُتحقق منه = الرأس المراجَع): كل الوظائف خضراء (quality/test/network/storage/build/docker/audit؛ publish متخطى بالمتوقع D-011). أدلة وظيفتي البناء على `a3ee544`: سجلا الوظائف الخام `288` (build — npm ci + npm run build + vite build للجذر والواجهة) و`289` (docker — بناء الصورة)، والملخص `290`؛ وتُعاد على رأس الالتزام الرابع (أدلة توثيقية فقط) وفحوص main على SHA الدمج نفسه تُوثَّق بعد الدمج.
 
 **حدود الإثبات**: لا اختبار اختراق حي ولا نشر إنتاجي؛ اختبارات الأمن الجديدة حتمية محلية (اختبارات الشبكة الحية تشغيل منفصل — `275`/`281`/`287`)؛ SEC-07 وBranch protection خارجا النطاق؛ publish يظل متخطى (D-011). **القبول تحقق**: دُمجت PR #156 بـ`--merge` في 2026-10-16T21:02Z — SHA الدمج `f568b4eaf999048cca573bf829ea34a78e986606` (الرأس المراجَع `4720a75` سلفه — مُتحقق بـmerge-base)، وفحوص main نجحت على SHA الدمج نفسه: التشغيل 38966612978 (quality/test/network/storage/build/docker/audit كلها success؛ publish متخطى D-011 ولا يُحتسب) — روابط الوظائف: https://github.com/reeveero-tech/All-hand/actions/runs/38966612978
+
+## M7 — R-150 (Branch protection): تدقيق حماية `main` الفعلية مقابل الحوكمة (دفعة m7/r150-branch-protection-audit، 2026-10-16)
+
+**مهمة قراءة فقط — لم تُغيَّر أي إعدادات حية.** خط الأساس: main عند `960c5e0520f931ec46baa6c8b21c73b57df27ac0` (رأس main وقت التدقيق).
+
+**مصدر البيانات**: `gh api` باعتماد مخوّل للقراءة، 2026-10-16T22:14Z — الأوامر الأربعة ورموز خروجها في وثيقة التدقيق. الأدلة الخام: السجلات `291`–`294` (`branches/main`، `branches/main/protection`، `rulesets`، `rules/branches/main` — كلها RC=0). حد سابق: قراءة integration لنقطة الحماية التفصيلية أعادت 403 — عولج باعتماد CLI مخوّل للقراءة.
+
+**النتيجة — تطابق تام** بين الواقع والحوكمة (GOVERNANCE_GATE.md وR-024): `protected: true` (قاعدة حماية تقليدية — `rulesets: []` و`rules/branches/main: []`)؛ الفحوص الإلزامية `quality, test, build, docker, governance, audit` بأسمائها الدقيقة (كلها app_id 15368 = GitHub Actions)؛ `strict: true`؛ `enforce_admins: false` (حد موثق بقرار المالك)؛ `allow_force_pushes/allow_deletions: false`؛ `required_approving_review_count: 0`؛ `restrictions: null`. فحوص CI الإضافية (`network`/`storage`/`publish`) ليست إلزامية للدمج — متسق مع الحوكمة. لا إعداد يمنع تطبيق السياسة. المقارنة الكاملة بجدولها: `docs/audit/M7/r150_branch_protection_audit.md`.
+
+**الحدود**: enforce_admins=false (المالك يستطيع التجاوز — قرار موثق)، لا موافقات إلزامية (المالك هو المراجع)، ولم يُختبر التجاوز بمحاولة مخالفة (قراءة فقط). لا توصية تغيير — لا فجوة.
