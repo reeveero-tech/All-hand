@@ -1,0 +1,36 @@
+R-145e documentation-precision audit — 2026-10-16T06:59Z — branch m7/r145e-sec06-evidence-precision (no code change)
+
+== roadmap audit ==
+item headings: 138
+duplicate ids: none
+status counts: {'done': 138}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 5481
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (a2ba8de..HEAD): ['R-053', 'R-073', 'R-074', 'R-075', 'R-076', 'R-077', 'R-078', 'R-079', 'R-080', 'R-081', 'R-082', 'R-083', 'R-084', 'R-085', 'R-086', 'R-087', 'R-088', 'R-089', 'R-090', 'R-091', 'R-092', 'R-093', 'R-094', 'R-095', 'R-096', 'R-097', 'R-098', 'R-099', 'R-100', 'R-101', 'R-102', 'R-103', 'R-104', 'R-104b', 'R-104c', 'R-104c2', 'R-105', 'R-106', 'R-107', 'R-107b', 'R-107c', 'R-107c2', 'R-108', 'R-109', 'R-110', 'R-111', 'R-112', 'R-112b', 'R-113', 'R-114', 'R-118', 'R-119', 'R-120', 'R-121', 'R-122', 'R-123', 'R-124', 'R-125', 'R-126', 'R-127', 'R-130', 'R-131', 'R-132', 'R-133', 'R-135', 'R-136', 'R-137', 'R-138', 'R-139', 'R-140', 'R-141', 'R-142', 'R-143', 'R-144', 'R-145', 'R-145b', 'R-145c', 'R-145d']
+  not in ROADMAP: ['R-107c2']
+  R-073: roadmap=yes changelog=yes
+  R-074: roadmap=yes changelog=yes
+  R-075: roadmap=yes changelog=yes
+  R-076: roadmap=yes changelog=yes
+  R-077: roadmap=yes changelog=yes
+  R-078: roadmap=yes changelog=yes
+ROADMAP_AUDIT_RC=0
+
+== 246 restored == sha256 of a0d25f9 version vs working tree ==
+710b2bab4e41a184c6ed58c535ed37615f849d0c74a1cf6640f3eefe64e55e0e  -
+710b2bab4e41a184c6ed58c535ed37615f849d0c74a1cf6640f3eefe64e55e0e  docs/audit/M7/logs/raw/246_r145b_review_gaps.log
+
+== 249 present (R-145c tree run) ==
+R-145b/R-145c verification (regenerated complete) — 2026-10-16T06:30Z — branch m7/r145c-sec06-visual-consent-fixes
+NOTE: the R-145b version of this log ran only the SEC-06 file — the full-suite row it claimed is now actually captured here (correction recorded in EVIDENCE).
+
+== tests still green on this tree (no code change expected) ==
+============================== 43 passed in 7.54s ==============================
+SEC06_RC=0
