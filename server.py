@@ -293,8 +293,13 @@ def _visible_task(task: Optional[Dict[str, Any]], scope) -> bool:
 STARTED_AT = time.time()
 MAX_TASKS_KEPT = 500
 
-logger.info(f"Civilization initialized with {len(SPECIALIZATIONS)} specializations, "
-            f"{len(CIVILIZATION) * 50} agents total")
+# BUG-05 (R-147): the startup log used to report specializations * a hardcoded
+# 50 ("1000 agents total") even though AGENTS_PER_SPEC has controlled the actual
+# count since R-041 (R-041/D-029).  The logged count is now the ACTUAL sum of
+# the built civilization; external agents stay on their own separate line and
+# are never added to the civilization count.
+logger.info(f"Civilization initialized: {len(SPECIALIZATIONS)} specializations, "
+            f"{sum(len(agents) for agents in CIVILIZATION.values())} civilization agents")
 logger.info(f"External agents loaded: {len(EXTERNAL_AGENTS)}")
 
 
