@@ -1,0 +1,14 @@
+BUG-05 BEFORE — 2026-10-16T10:33Z — branch m7/r147-bug05-correct-startup-agent-count — base main 7ecd098bf8bd348e79172ba6b1ae4068bcd9c380
+
+== command ==
+env -i PATH="$PATH" AGOS_ENV=test AGENTS_PER_SPEC=3 python -c \"import server\"" 2>&1
+
+== actual startup log (AGENTS_PER_SPEC=3, clean env) ==
+2026-10-16 10:33:22,071 - agos.server - INFO - Civilization initialized with 20 specializations, 1000 agents total - <module>:296
+2026-10-16 10:33:22,071 - agos.server - INFO - External agents loaded: 0 - <module>:298
+
+== separate ground-truth diagnostic (objects actually built) ==
+specializations: 20
+civilization agents (actual sum): 60
+naive len(CIVILIZATION)*50 would log: 1000
+DIAG_RC=0
