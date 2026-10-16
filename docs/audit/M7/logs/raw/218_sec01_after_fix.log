@@ -1,0 +1,65 @@
+# SEC-01 بعد الإصلاح — 2026-10-16T00:14:04Z
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
+rootdir: /home/user/workspace/agos
+configfile: pytest.ini
+plugins: platformdirs-4.13.1, asyncio-1.4.0, anyio-4.15.1, ddtrace-4.15.6
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 53 items
+
+tests/test_sec01_external_redirect.py::test_redirect_from_public_to_loopback_is_blocked PASSED [  1%]
+tests/test_sec01_external_redirect.py::test_redirect_to_non_public_targets_is_blocked[http://10.0.0.5/v1] PASSED [  3%]
+tests/test_sec01_external_redirect.py::test_redirect_to_non_public_targets_is_blocked[http://169.254.169.254/latest/meta-data/] PASSED [  5%]
+tests/test_sec01_external_redirect.py::test_redirect_to_non_public_targets_is_blocked[http://[::1]:8080/v1] PASSED [  7%]
+tests/test_sec01_external_redirect.py::test_redirect_to_non_public_targets_is_blocked[file:///etc/passwd] PASSED [  9%]
+tests/test_sec01_external_redirect.py::test_redirect_to_public_target_is_still_followed_with_post PASSED [ 11%]
+tests/test_sec01_external_redirect.py::test_redirect_loop_is_bounded PASSED [ 13%]
+tests/test_sec01_external_redirect.py::test_operator_agent_may_still_redirect_internally PASSED [ 15%]
+tests/test_sec01_external_redirect.py::test_cross_origin_redirect_drops_the_agent_key PASSED [ 16%]
+tests/test_r100_runtime_safety.py::test_policy_matrix PASSED             [ 18%]
+tests/test_r100_runtime_safety.py::test_open_mode_test_runner_does_not_execute PASSED [ 20%]
+tests/test_r100_runtime_safety.py::test_open_mode_api_does_not_leak_secrets PASSED [ 22%]
+tests/test_r100_runtime_safety.py::test_sandbox_child_gets_no_server_environment PASSED [ 24%]
+tests/test_r100_runtime_safety.py::test_sandbox_child_cannot_read_server_startup_environment PASSED [ 26%]
+tests/test_r100_runtime_safety.py::test_sandbox_cpu_limit_kills_busy_loop PASSED [ 28%]
+tests/test_r100_runtime_safety.py::test_sandbox_wall_timeout_kills_sleeper PASSED [ 30%]
+tests/test_r100_runtime_safety.py::test_sandbox_memory_limit PASSED      [ 32%]
+tests/test_r100_runtime_safety.py::test_sandbox_reports_signal_kill_honestly PASSED [ 33%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[127.0.0.1] PASSED [ 35%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[10.1.2.3] PASSED [ 37%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[172.16.0.1] PASSED [ 39%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[192.168.1.1] PASSED [ 41%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[169.254.169.254] PASSED [ 43%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[100.64.0.1] PASSED [ 45%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[0.0.0.0] PASSED [ 47%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[::1] PASSED [ 49%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[fd00::1] PASSED [ 50%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[fe80::1] PASSED [ 52%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[::ffff:127.0.0.1] PASSED [ 54%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[224.0.0.1] PASSED [ 56%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[64:ff9b::a9fe:a9fe] PASSED [ 58%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[64:ff9b::7f00:1] PASSED [ 60%]
+tests/test_r100_runtime_safety.py::test_non_public_addresses_are_blocked[2002:7f00:1::1] PASSED [ 62%]
+tests/test_r100_runtime_safety.py::test_public_and_documentation_addresses_are_allowed[8.8.8.8] PASSED [ 64%]
+tests/test_r100_runtime_safety.py::test_public_and_documentation_addresses_are_allowed[1.1.1.1] PASSED [ 66%]
+tests/test_r100_runtime_safety.py::test_public_and_documentation_addresses_are_allowed[2606:4700:4700::1111] PASSED [ 67%]
+tests/test_r100_runtime_safety.py::test_public_and_documentation_addresses_are_allowed[192.0.2.10] PASSED [ 69%]
+tests/test_r100_runtime_safety.py::test_public_and_documentation_addresses_are_allowed[64:ff9b::808:808] PASSED [ 71%]
+tests/test_r100_runtime_safety.py::test_non_http_schemes_are_blocked[file:///etc/passwd] PASSED [ 73%]
+tests/test_r100_runtime_safety.py::test_non_http_schemes_are_blocked[ftp://example.org/x] PASSED [ 75%]
+tests/test_r100_runtime_safety.py::test_non_http_schemes_are_blocked[gopher://x] PASSED [ 77%]
+tests/test_r100_runtime_safety.py::test_api_integrator_cannot_reach_internal_server PASSED [ 79%]
+tests/test_r100_runtime_safety.py::test_private_targets_allowed_only_with_explicit_flag PASSED [ 81%]
+tests/test_r100_runtime_safety.py::test_redirect_to_private_address_is_blocked PASSED [ 83%]
+tests/test_r100_runtime_safety.py::test_public_url_still_works_on_offline_transport PASSED [ 84%]
+tests/test_r100_runtime_safety.py::test_api_registered_external_agent_is_checked_on_every_call PASSED [ 86%]
+tests/test_r100_runtime_safety.py::test_open_mode_registration_of_loopback_agent_is_rejected PASSED [ 88%]
+tests/test_r100_runtime_safety.py::test_sqlite_attach_and_vacuum_into_are_denied PASSED [ 90%]
+tests/test_r100_runtime_safety.py::test_sqlite_runaway_query_is_interrupted PASSED [ 92%]
+tests/test_r100_runtime_safety.py::test_db_manager_still_runs_real_sql PASSED [ 94%]
+tests/test_r100_runtime_safety.py::test_sqlite_huge_value_cannot_be_allocated_in_the_server PASSED [ 96%]
+tests/test_r100_runtime_safety.py::test_sandbox_tolerates_invalid_utf8_output PASSED [ 98%]
+tests/test_r100_runtime_safety.py::test_sandbox_timeout_does_not_hang_on_escaped_descendant PASSED [100%]
+
+============================= 53 passed in 13.29s ==============================
+PYTEST_RC=0
