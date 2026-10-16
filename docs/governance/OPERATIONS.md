@@ -36,14 +36,21 @@ npm ci --engine-strict && npm run build   # R-148: تثبيت نظيف من مل
 ```
 
 ### تجديد قفل Python (R-148)
-- **التعريف مقابل القفل**: `requirements.txt` هو تعريف التبعيات المباشرة (يُحرَّر يدويًا). `requirements.lock` هو المُثبَّت القابل للإنتاج: الإصدارات المحلولة لكل التبعيات المباشرة والانتقالية مع تجزئات SHA-256 (`--require-hashes` يفرضها). `requirements-dev.in` هو تعريف أدوات الاختبار، و`requirements-dev.lock` قفلها، **مقيد بإصدارات الإنتاج نفسها**.
-- **التوليد**: أداة التوليد مثبتة الإصدار: `pip-tools==7.6.1` (على أقدم مدعوم: Python 3.11 — كي يصلح القفل له ولكل ما فوقه؛ أُثبت عمليًا أن القفل نفسه يخدم 3.11 و3.12):
+- **التعريف مقابل القفل**: `requirements.txt` هو تعريف التبعيات المباشرة (يُحرَّر يدويًا). `requirements.lock` هو المُثبَّت القابل للإنتاج: الإصدارات المحلولة لكل التبعيات المباشرة والانتقالية مع تجزئات SHA-256 (`--require-hashes` يفرضها). `requirements-dev.in` هو تعريف أدوات الاختبار و`requirements-dev.lock` قفلها **مقيد بإصدارات الإنتاج**؛ و`requirements-audit.in/lock` لأداة فحص الثغرات (بيئة مستقلة).
+- **التوليد**: أداة التوليد مثبتة الإصدار: `pip-tools==7.6.1` على Python 3.11. **النطاق المثبت**: منصات Linux المستهدفة على Python 3.11 و3.12 فقط (ما أثبتته الفحوص — بيئات 3.11.15 و3.12.13 محليًا و3.11.17 و3.12.15 في CI، كلها Linux x86_64). توليد أولي (يحترم القفل الموجود عند وجوده):
 ```bash
 pip-compile --generate-hashes --no-strip-extras --output-file=requirements.lock requirements.txt
 pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock --output-file=requirements-dev.lock requirements-dev.in
+pip-compile --generate-hashes --no-strip-extras --output-file=requirements-audit.lock requirements-audit.in
 ```
-- **القاعدة**: جدّد `requirements.lock` أولًا ثم `requirements-dev.lock` (القيد `-c` يضمن ألا تعيد أدوات الاختبار حل إصدارات الإنتاج إلى إصدارات مختلفة). لا يُعدَّل القفل يدويًا.
-- **الاستهلاك**: CI (test/storage/network) وDocker وRender وأوامر التشغيل المحلي كلها تثبّت من القفلين بـ`--require-hashes` — لا يوجد أي مسار يثبّت بحل عائم.
+- **التحديث المقصود** (رفع الإصدارات داخل النطاقات المسموحة — لا يعتمد على وصول عشوائي لحظة البناء):
+```bash
+pip-compile --generate-hashes --no-strip-extras --upgrade --output-file=requirements.lock requirements.txt
+# أو رفع حزمة محددة فقط: --upgrade-package aiohttp (ويكرر للحزم المطلوبة)
+pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock --output-file=requirements-dev.lock requirements-dev.in
+```
+- **القاعدة**: جدّد `requirements.lock` أولًا ثم `requirements-dev.lock` (القيد `-c` يضمن ألا تعيد أدوات الاختبار حل إصدارات الإنتاج). لا يُعدَّل أي قفل يدويًا. **ملاحظة ترويسة القفل**: قد تظهر `--no-index` في سطر «by the following command» رغم أنها لم تُمرَّر — أثر عرض معروف في ترويسة pip-tools 7.6.1 (مُتحقق منه: لا متغير PIP_ في البيئة ولا إعداد pip، والحل نجح ضد فهرس PyPI الكامل بتجزئات كل الحزم؛ ومع `--index-url` صريحة تظهر الاثنتان معًا — تناقض عرضي). الوصفة أعلاه تعمل في بيئة نظيفة كما هي.
+- **الاستهلاك**: CI (test/storage/network) وDocker وRender وأوامر التشغيل المحلي كلها تثبّت من الأقفال بـ`--require-hashes`؛ ترقية pip نفسها في CI مثبتة (`pip==26.2.1`)، وأداة الفحص `pip-audit` من قفلها — لا يوجد أي مسار يثبّت بحل عائم.
 
 ## النشر
 
