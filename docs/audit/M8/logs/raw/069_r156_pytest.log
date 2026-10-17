@@ -1,0 +1,10 @@
+# 069 R-156 full pytest (2026-10-17T04:09:28Z)
+$ python -m pytest tests/ -p no:cacheprovider
+PASSED lines: 1006
+tests/test_web_api_contract.py::test_chat_frontend_contract PASSED       [ 99%]
+tests/test_web_api_contract.py::test_external_agent_register_and_remove PASSED [ 99%]
+tests/test_web_api_contract.py::test_unknown_specialization_rejected PASSED [ 99%]
+tests/test_web_api_contract.py::test_sse_stream_yields_event PASSED      [100%]
+
+========== 1006 passed, 4 skipped, 4 deselected in 130.28s (0:02:10) ===========
+exit=0
