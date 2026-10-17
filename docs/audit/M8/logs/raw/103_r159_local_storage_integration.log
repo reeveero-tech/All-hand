@@ -1,0 +1,158 @@
+# 103 R-159 LOCAL integration (not live): telemetry over a real PostgREST + PostgreSQL on loopback — HEAD 777d028cf9b20932a1b8a919e84de6418a0862fc, 2026-10-17T08:22:48Z
+## stack script (/tmp/r159_stack.sh):
+set -u
+cd /home/user/workspace/repo; . /home/user/venv/bin/activate
+T=$(mktemp -d); P=55810; export PATH=/tmp/pgenv/bin:$PATH
+initdb -D $T/pg -U postgres --auth=trust -E UTF8 >/dev/null && pg_ctl -D $T/pg -o "-p $P -k $T -c listen_addresses=127.0.0.1" -l $T/pg.log -w start >/dev/null && psql -h 127.0.0.1 -p $P -U postgres -qc "create database agos"
+ADMIN_URI=postgresql://postgres@127.0.0.1:$P/agos; AUTH_URI=postgresql://authenticator:authenticator@127.0.0.1:$P/agos
+for f in scripts/r042/supabase_roles.sql docs/sql/001_init.sql docs/sql/002_tenant_isolation.sql scripts/r042/grants_after_schema.sql; do psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f $f >/dev/null || echo "schema FAIL $f"; done
+JWT_SECRET=r159-local-test-secret-not-a-real-key-000
+PGRST_DB_URI="$AUTH_URI" PGRST_DB_SCHEMAS=public PGRST_DB_ANON_ROLE=anon PGRST_JWT_SECRET=$JWT_SECRET PGRST_SERVER_PORT=$((P+1)) PGRST_LOG_LEVEL=error /tmp/postgrest > $T/pgrst.log 2>&1 & PG1=$!
+python scripts/r042/kong_prefix_proxy.py $((P+2)) http://127.0.0.1:$((P+1)) > $T/proxy.log 2>&1 & PG2=$!
+for _ in $(seq 1 30); do curl -fsS http://127.0.0.1:$((P+2))/rest/v1/ -o /dev/null 2>/dev/null && break; sleep 0.5; done
+echo "postgres: $(postgres --version); postgrest: $(/tmp/postgrest --version 2>&1 | head -1)"
+export SUPABASE_URL=http://127.0.0.1:$((P+2)) SUPABASE_SERVICE_KEY=$(python scripts/r042/make_jwt.py $JWT_SECRET service_role) AGOS_ENV=test AGOS_LLM_KEYLESS=0
+unset SUPABASE_ANON_KEY OPENROUTER_API_KEY
+for m in good_key bad_key; do for impl in real specialists; do echo "### mode=$m AGOS_AGENT_IMPL=$impl"; AGOS_AGENT_IMPL=$impl python /tmp/r159_probe.py $m 2>&1 | grep -vE "^WARNING|^INFO:"; echo "exit=$?"; done; done
+echo "### rows in public.tasks after the runs: $(psql "$ADMIN_URI" -tAc 'select count(*) from tasks')"
+kill $PG1 $PG2; pg_ctl -D $T/pg -m fast -w stop >/dev/null; rm -rf $T
+## probe (/tmp/r159_probe.py):
+"""R-159 local integration probe (NOT live): real server app in-process, REAL
+PostgREST 12.2.3 over a fresh local PostgreSQL 17 (loopback, throwaway JWT).
+Checks: storage spans share the request trace + task_id, outcomes match what
+PostgREST answered, and neither the service JWT, the prompt marker nor the raw
+tenant id appear in any log line or telemetry record."""
+import hashlib, json, logging, os, sys, time
+sys.path.insert(0, os.getcwd())
+PROMPT = "R159-LOCAL-PROMPT-MARKER-31c7"; TENANT = "tenant_r159_local_raw"
+lines = []
+class H(logging.Handler):
+    def emit(self, r): lines.append(f"{r.name} {r.getMessage()}")
+logging.getLogger().addHandler(H()); logging.getLogger().setLevel(logging.DEBUG)
+from fastapi.testclient import TestClient
+import server
+from agent_civilization.core import telemetry
+from agent_civilization.core.tenancy import Principal
+from agent_civilization.storage import supabase_store as ss
+key = "r159-local-key"; server.CREDENTIALS = {hashlib.sha256(key.encode()).hexdigest(): Principal(TENANT, "user")}
+server.ENABLE_AUTH = True; H_ = {"X-API-Key": key}
+mode = sys.argv[1]
+if mode == "bad_key":
+    ss.SUPABASE_KEY = ss.SUPABASE_KEY[:-4] + "AAAA"; ss._storage = None
+print("storage configured:", ss.is_configured(), "key source:", ss.SUPABASE_KEY_SOURCE)
+with TestClient(server.app) as c:
+    r = c.post("/api/chat", json={"message": f"analyze numbers 3 5 8 {PROMPT}"}, headers=H_)
+    print("chat:", r.status_code, "persisted:", r.json().get("persisted"))
+    t = c.post("/api/tasks", json={"specialization": "analyst", "prompt": f"numbers 1 2 {PROMPT}"}, headers=H_)
+    tid = t.json()["task_id"]
+    for _ in range(100):
+        if any(x["kind"] == "task" and x["op"] == "run" for x in telemetry.recent()):
+            break
+        time.sleep(0.05)
+    time.sleep(0.3)
+recs = telemetry.recent()
+for x in recs:
+    if x["kind"] in ("http", "task", "storage"):
+        print(json.dumps({k: x.get(k) for k in ("kind", "op", "outcome", "http_status", "error_type", "task_id", "trace_id", "parent_span_id")}))
+st = [x for x in recs if x["kind"] == "storage"]
+traces = {x["trace_id"] for x in recs if x["kind"] == "http"}
+ok = bool(st) and all(x["trace_id"] in traces for x in st) and all(x["task_id"] for x in st)
+want = "ok" if mode == "good_key" else "fail"
+ok = ok and all(x["outcome"] == want for x in st)
+blob = "\n".join(lines) + "\n".join(json.dumps(x) for x in recs)
+leaks = [m for m in (PROMPT, TENANT, os.environ["SUPABASE_SERVICE_KEY"], ss.SUPABASE_KEY) if m in blob]
+print(f"storage spans={len(st)} outcomes={sorted({x['outcome'] for x in st})} http_status={sorted({str(x.get('http_status')) for x in st})} all_in_request_traces={all(x['trace_id'] in traces for x in st)} leaks={leaks}")
+print("RESULT", "PASS" if ok and not leaks else "FAIL")
+sys.exit(0 if ok and not leaks else 1)
+## run
+postgres: postgres (PostgreSQL) 17.11; postgrest: PostgREST 12.2.3
+### mode=good_key AGOS_AGENT_IMPL=real
+storage configured: True key source: SUPABASE_SERVICE_KEY
+chat: 200 persisted: None
+{"kind": "task", "op": "recorded", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f55ddc34c12", "trace_id": "d673bfbb5d3949d4edf75503f9cd5ad1", "parent_span_id": "7f911dda143c27ad"}
+{"kind": "storage", "op": "insert_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f55ddc34c12", "trace_id": "d673bfbb5d3949d4edf75503f9cd5ad1", "parent_span_id": "7f911dda143c27ad"}
+{"kind": "storage", "op": "update_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f55ddc34c12", "trace_id": "d673bfbb5d3949d4edf75503f9cd5ad1", "parent_span_id": "7f911dda143c27ad"}
+{"kind": "storage", "op": "upsert_agent_stats", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f55ddc34c12", "trace_id": "d673bfbb5d3949d4edf75503f9cd5ad1", "parent_span_id": "7f911dda143c27ad"}
+{"kind": "storage", "op": "insert_event", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f55ddc34c12", "trace_id": "d673bfbb5d3949d4edf75503f9cd5ad1", "parent_span_id": "7f911dda143c27ad"}
+{"kind": "http", "op": "/api/chat", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f55ddc34c12", "trace_id": "d673bfbb5d3949d4edf75503f9cd5ad1", "parent_span_id": null}
+{"kind": "task", "op": "queued", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": "394103a9a6191627"}
+{"kind": "storage", "op": "insert_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": "394103a9a6191627"}
+{"kind": "storage", "op": "insert_event", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": "394103a9a6191627"}
+{"kind": "http", "op": "/api/tasks", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": null}
+{"kind": "storage", "op": "update_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": "3ead85a1ee3606ed"}
+{"kind": "storage", "op": "update_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": "3ead85a1ee3606ed"}
+{"kind": "storage", "op": "upsert_agent_stats", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": "3ead85a1ee3606ed"}
+{"kind": "storage", "op": "insert_event", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": "3ead85a1ee3606ed"}
+{"kind": "task", "op": "run", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "1057da748310", "trace_id": "78634bf029031e28f2978e6c0f22c7a8", "parent_span_id": "394103a9a6191627"}
+storage spans=10 outcomes=['ok'] http_status=['None'] all_in_request_traces=True leaks=[]
+RESULT PASS
+exit=0
+### mode=good_key AGOS_AGENT_IMPL=specialists
+storage configured: True key source: SUPABASE_SERVICE_KEY
+chat: 200 persisted: None
+{"kind": "task", "op": "recorded", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "728ff44cc260", "trace_id": "84555e29aa70bd74cdc4131e048f0b4a", "parent_span_id": "7ff22bcd7185051b"}
+{"kind": "storage", "op": "insert_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "728ff44cc260", "trace_id": "84555e29aa70bd74cdc4131e048f0b4a", "parent_span_id": "7ff22bcd7185051b"}
+{"kind": "storage", "op": "update_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "728ff44cc260", "trace_id": "84555e29aa70bd74cdc4131e048f0b4a", "parent_span_id": "7ff22bcd7185051b"}
+{"kind": "storage", "op": "upsert_agent_stats", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "728ff44cc260", "trace_id": "84555e29aa70bd74cdc4131e048f0b4a", "parent_span_id": "7ff22bcd7185051b"}
+{"kind": "storage", "op": "insert_event", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "728ff44cc260", "trace_id": "84555e29aa70bd74cdc4131e048f0b4a", "parent_span_id": "7ff22bcd7185051b"}
+{"kind": "http", "op": "/api/chat", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "728ff44cc260", "trace_id": "84555e29aa70bd74cdc4131e048f0b4a", "parent_span_id": null}
+{"kind": "task", "op": "queued", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": "1388fa756da299a8"}
+{"kind": "storage", "op": "insert_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": "1388fa756da299a8"}
+{"kind": "storage", "op": "insert_event", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": "1388fa756da299a8"}
+{"kind": "http", "op": "/api/tasks", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": null}
+{"kind": "storage", "op": "update_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": "2ed8674176720573"}
+{"kind": "storage", "op": "update_task", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": "2ed8674176720573"}
+{"kind": "storage", "op": "upsert_agent_stats", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": "2ed8674176720573"}
+{"kind": "storage", "op": "insert_event", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": "2ed8674176720573"}
+{"kind": "task", "op": "run", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "0210ee4b5a6c", "trace_id": "2cbba5cccdd784cb715af6f560a53619", "parent_span_id": "1388fa756da299a8"}
+storage spans=10 outcomes=['ok'] http_status=['None'] all_in_request_traces=True leaks=[]
+RESULT PASS
+exit=0
+### mode=bad_key AGOS_AGENT_IMPL=real
+storage configured: True key source: SUPABASE_SERVICE_KEY
+chat: 200 persisted: None
+{"kind": "task", "op": "recorded", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "3e1436ecc441", "trace_id": "42738ba0b1ab3e9f19431fccf098f76b", "parent_span_id": "daa67a74515c5904"}
+{"kind": "storage", "op": "insert_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "3e1436ecc441", "trace_id": "42738ba0b1ab3e9f19431fccf098f76b", "parent_span_id": "daa67a74515c5904"}
+{"kind": "storage", "op": "update_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "3e1436ecc441", "trace_id": "42738ba0b1ab3e9f19431fccf098f76b", "parent_span_id": "daa67a74515c5904"}
+{"kind": "storage", "op": "upsert_agent_stats", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "3e1436ecc441", "trace_id": "42738ba0b1ab3e9f19431fccf098f76b", "parent_span_id": "daa67a74515c5904"}
+{"kind": "storage", "op": "insert_event", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "3e1436ecc441", "trace_id": "42738ba0b1ab3e9f19431fccf098f76b", "parent_span_id": "daa67a74515c5904"}
+{"kind": "http", "op": "/api/chat", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "3e1436ecc441", "trace_id": "42738ba0b1ab3e9f19431fccf098f76b", "parent_span_id": null}
+{"kind": "task", "op": "queued", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": "5e6396565154576a"}
+{"kind": "storage", "op": "insert_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": "5e6396565154576a"}
+{"kind": "storage", "op": "insert_event", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": "5e6396565154576a"}
+{"kind": "http", "op": "/api/tasks", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": null}
+{"kind": "storage", "op": "update_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": "df2387468cdbaef4"}
+{"kind": "storage", "op": "update_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": "df2387468cdbaef4"}
+{"kind": "storage", "op": "upsert_agent_stats", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": "df2387468cdbaef4"}
+{"kind": "storage", "op": "insert_event", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": "df2387468cdbaef4"}
+{"kind": "task", "op": "run", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "6f3a940c02f1", "trace_id": "de68d779ef34d67fad81c67345f7b172", "parent_span_id": "5e6396565154576a"}
+storage spans=10 outcomes=['fail'] http_status=['401'] all_in_request_traces=True leaks=[]
+RESULT PASS
+exit=0
+### mode=bad_key AGOS_AGENT_IMPL=specialists
+storage configured: True key source: SUPABASE_SERVICE_KEY
+chat: 200 persisted: None
+{"kind": "task", "op": "recorded", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "87d09b750650", "trace_id": "793884808fba8157aa34399555156e1b", "parent_span_id": "20ca0ce93e36a171"}
+{"kind": "storage", "op": "insert_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "87d09b750650", "trace_id": "793884808fba8157aa34399555156e1b", "parent_span_id": "20ca0ce93e36a171"}
+{"kind": "storage", "op": "update_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "87d09b750650", "trace_id": "793884808fba8157aa34399555156e1b", "parent_span_id": "20ca0ce93e36a171"}
+{"kind": "storage", "op": "upsert_agent_stats", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "87d09b750650", "trace_id": "793884808fba8157aa34399555156e1b", "parent_span_id": "20ca0ce93e36a171"}
+{"kind": "storage", "op": "insert_event", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "87d09b750650", "trace_id": "793884808fba8157aa34399555156e1b", "parent_span_id": "20ca0ce93e36a171"}
+{"kind": "http", "op": "/api/chat", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "87d09b750650", "trace_id": "793884808fba8157aa34399555156e1b", "parent_span_id": null}
+{"kind": "task", "op": "queued", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": "4c8754c8328df5d5"}
+{"kind": "storage", "op": "insert_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": "4c8754c8328df5d5"}
+{"kind": "storage", "op": "insert_event", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": "4c8754c8328df5d5"}
+{"kind": "http", "op": "/api/tasks", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": null}
+{"kind": "storage", "op": "update_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": "2041c24bb03ae9b1"}
+{"kind": "storage", "op": "update_task", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": "2041c24bb03ae9b1"}
+{"kind": "storage", "op": "upsert_agent_stats", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": "2041c24bb03ae9b1"}
+{"kind": "storage", "op": "insert_event", "outcome": "fail", "http_status": 401, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": "2041c24bb03ae9b1"}
+{"kind": "task", "op": "run", "outcome": "ok", "http_status": null, "error_type": null, "task_id": "14bc013bbc10", "trace_id": "30c4e1eca347858e84aeddc54f090a2a", "parent_span_id": "4c8754c8328df5d5"}
+storage spans=10 outcomes=['fail'] http_status=['401'] all_in_request_traces=True leaks=[]
+RESULT PASS
+exit=0
+### rows in public.tasks after the runs: 4
+## notes (written after the run)
+- the 'exit=' lines are the exit code of the grep filter in the stack script, not of the probe; the probe's verdict is its 'RESULT' line (exit 0 only on PASS). All 4 runs: RESULT PASS.
+- good_key: 10 storage spans per run, all outcome=ok, all inside a traced request, all carrying a task_id; 4 rows in public.tasks = 2 runs x (1 chat + 1 task), i.e. the writes really reached PostgreSQL. http_status is recorded on failures only (the store passes no status on success).
+- bad_key (service JWT altered): PostgREST rejects every write with 401; every storage span = fail/401; the API still answers 200 with persisted reported by the existing contract (unchanged).
+- classification: LOCAL integration (loopback, throwaway JWT secret). Not live: no cloud Supabase, no paid LLM.
