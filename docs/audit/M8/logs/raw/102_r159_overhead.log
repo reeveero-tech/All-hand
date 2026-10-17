@@ -1,0 +1,80 @@
+# 102 R-159 telemetry overhead — 2026-10-17T08:18:58Z
+# env: Python 3.12.13, Linux 6.1.155 x86_64, 2 vCPU sandbox (shared, noisy), fastapi 0.143.3, starlette 1.8.0
+# before = worktree at 7aa5ed6d179b6bce0358e0912b8f353bead3bfd5 (main, no telemetry); after = branch m8/r159-observability HEAD 6971e91b78759176e4a41c7b4240a8ca27ef858f + working tree
+# variants: base | after_off (AGOS_TELEMETRY=off) | after_on_nolog (spans+metrics, agos.telemetry logger at WARNING) | after_on_filelog (records written to a local file)
+# path: in-process TestClient POST /api/chat 'analyze numbers ...' -> keyword route -> real analyst handler; memory ON, storage OFF, LLM OFF. 5 rounds x 4 variants interleaved, each a fresh process: 300 warm-up + 2000 timed sequential requests. Not a load test.
+## probe source (/tmp/bench159.py):
+"""R-159 overhead probe: in-process POST /api/chat ("analyze numbers ...",
+keyword-routed to the real analyst handler, experience memory ON, storage OFF,
+LLM OFF), timed per request with perf_counter. One process = one variant x one
+round. Not a load test: sequential, single client, in-process ASGI."""
+import hashlib, json, logging, os, resource, statistics, sys, time
+os.environ.setdefault("AGOS_ENV", "test"); os.environ["AGOS_LLM_KEYLESS"] = "0"
+os.environ.pop("OPENROUTER_API_KEY", None); os.environ.pop("SUPABASE_URL", None)
+variant, n, warm, logfile = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
+sys.path.insert(0, os.getcwd())
+if variant == "after_off":
+    os.environ["AGOS_TELEMETRY"] = "off"
+logging.basicConfig(level=logging.WARNING)
+fh = logging.FileHandler(logfile, mode="w")
+fh.setLevel(logging.INFO)
+lg = logging.getLogger("agos.telemetry"); lg.addHandler(fh); lg.propagate = False
+lg.setLevel(logging.WARNING if variant == "after_on_nolog" else logging.INFO)   # nolog: spans+metrics, records not written
+from fastapi.testclient import TestClient
+import server
+from agent_civilization.core.tenancy import Principal
+key = "bench-key"; server.CREDENTIALS = {hashlib.sha256(key.encode()).hexdigest(): Principal("bench_tenant", "user")}
+server.ENABLE_AUTH = True
+H = {"X-API-Key": key}
+lat = []
+with TestClient(server.app) as c:
+    for i in range(warm + n):
+        server.request_counts.clear()
+        t0 = time.perf_counter()
+        r = c.post("/api/chat", json={"message": f"analyze numbers {i % 7} 4 8 15 16 23 42"}, headers=H)
+        dt = time.perf_counter() - t0
+        assert r.status_code == 200 and r.json()["routed_to"] == "analyst", r.text[:200]
+        if i >= warm:
+            lat.append(dt * 1000)
+fh.flush()
+size = os.path.getsize(logfile)
+lines = sum(1 for _ in open(logfile))
+lat.sort()
+print(json.dumps({"variant": variant, "n": n, "warmup": warm,
+                  "median_ms": round(statistics.median(lat), 4), "mean_ms": round(statistics.fmean(lat), 4),
+                  "p95_ms": round(lat[int(0.95 * len(lat)) - 1], 4), "p99_ms": round(lat[int(0.99 * len(lat)) - 1], 4),
+                  "maxrss_kb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+                  "telemetry_log_bytes": size, "telemetry_log_lines": lines,
+                  "log_bytes_per_request": round(size / (warm + n), 1)}))
+## raw results (one JSON per process)
+round=1 {"variant": "base", "n": 2000, "warmup": 300, "median_ms": 3.1094, "mean_ms": 3.2211, "p95_ms": 4.8274, "p99_ms": 6.3734, "maxrss_kb": 68964, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=1 {"variant": "after_off", "n": 2000, "warmup": 300, "median_ms": 3.1424, "mean_ms": 3.2611, "p95_ms": 4.9603, "p99_ms": 5.8952, "maxrss_kb": 69396, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=1 {"variant": "after_on_nolog", "n": 2000, "warmup": 300, "median_ms": 3.4722, "mean_ms": 3.5138, "p95_ms": 5.2406, "p99_ms": 6.8367, "maxrss_kb": 69720, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=1 {"variant": "after_on_filelog", "n": 2000, "warmup": 300, "median_ms": 3.6761, "mean_ms": 3.7606, "p95_ms": 5.5348, "p99_ms": 6.9277, "maxrss_kb": 69308, "telemetry_log_bytes": 4599076, "telemetry_log_lines": 13800, "log_bytes_per_request": 1999.6}
+round=2 {"variant": "base", "n": 2000, "warmup": 300, "median_ms": 3.1185, "mean_ms": 3.1981, "p95_ms": 4.728, "p99_ms": 5.8124, "maxrss_kb": 68864, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=2 {"variant": "after_off", "n": 2000, "warmup": 300, "median_ms": 3.1029, "mean_ms": 3.1987, "p95_ms": 4.8284, "p99_ms": 5.6833, "maxrss_kb": 69172, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=2 {"variant": "after_on_nolog", "n": 2000, "warmup": 300, "median_ms": 3.4081, "mean_ms": 3.4978, "p95_ms": 5.2132, "p99_ms": 6.1536, "maxrss_kb": 69652, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=2 {"variant": "after_on_filelog", "n": 2000, "warmup": 300, "median_ms": 3.6417, "mean_ms": 3.775, "p95_ms": 5.4987, "p99_ms": 7.0708, "maxrss_kb": 69256, "telemetry_log_bytes": 4599046, "telemetry_log_lines": 13800, "log_bytes_per_request": 1999.6}
+round=3 {"variant": "base", "n": 2000, "warmup": 300, "median_ms": 3.1462, "mean_ms": 3.2473, "p95_ms": 4.9425, "p99_ms": 6.487, "maxrss_kb": 68584, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=3 {"variant": "after_off", "n": 2000, "warmup": 300, "median_ms": 3.1377, "mean_ms": 3.2452, "p95_ms": 4.8535, "p99_ms": 6.3795, "maxrss_kb": 69160, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=3 {"variant": "after_on_nolog", "n": 2000, "warmup": 300, "median_ms": 3.485, "mean_ms": 3.554, "p95_ms": 5.2903, "p99_ms": 6.0697, "maxrss_kb": 69224, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=3 {"variant": "after_on_filelog", "n": 2000, "warmup": 300, "median_ms": 3.7368, "mean_ms": 3.8551, "p95_ms": 5.6274, "p99_ms": 8.1396, "maxrss_kb": 69240, "telemetry_log_bytes": 4599073, "telemetry_log_lines": 13800, "log_bytes_per_request": 1999.6}
+round=4 {"variant": "base", "n": 2000, "warmup": 300, "median_ms": 3.0792, "mean_ms": 3.1806, "p95_ms": 4.7599, "p99_ms": 7.2942, "maxrss_kb": 68880, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=4 {"variant": "after_off", "n": 2000, "warmup": 300, "median_ms": 3.1809, "mean_ms": 3.2343, "p95_ms": 4.8665, "p99_ms": 5.7028, "maxrss_kb": 68668, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=4 {"variant": "after_on_nolog", "n": 2000, "warmup": 300, "median_ms": 3.4742, "mean_ms": 3.524, "p95_ms": 5.2737, "p99_ms": 6.6153, "maxrss_kb": 69252, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=4 {"variant": "after_on_filelog", "n": 2000, "warmup": 300, "median_ms": 3.6433, "mean_ms": 3.7713, "p95_ms": 5.6035, "p99_ms": 7.8099, "maxrss_kb": 69296, "telemetry_log_bytes": 4599056, "telemetry_log_lines": 13800, "log_bytes_per_request": 1999.6}
+round=5 {"variant": "base", "n": 2000, "warmup": 300, "median_ms": 3.0963, "mean_ms": 3.1681, "p95_ms": 4.8027, "p99_ms": 5.8377, "maxrss_kb": 69012, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=5 {"variant": "after_off", "n": 2000, "warmup": 300, "median_ms": 3.1302, "mean_ms": 3.2305, "p95_ms": 4.8541, "p99_ms": 5.6024, "maxrss_kb": 68648, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=5 {"variant": "after_on_nolog", "n": 2000, "warmup": 300, "median_ms": 3.4285, "mean_ms": 3.5044, "p95_ms": 5.1158, "p99_ms": 6.299, "maxrss_kb": 69224, "telemetry_log_bytes": 0, "telemetry_log_lines": 0, "log_bytes_per_request": 0.0}
+round=5 {"variant": "after_on_filelog", "n": 2000, "warmup": 300, "median_ms": 3.7365, "mean_ms": 3.7776, "p95_ms": 5.5074, "p99_ms": 6.4055, "maxrss_kb": 69252, "telemetry_log_bytes": 4599097, "telemetry_log_lines": 13800, "log_bytes_per_request": 1999.6}
+## summary (median over 5 rounds of each round's statistic; spread = min..max of the round medians)
+base              median=3.109 ms [3.079..3.146]  p95=4.803 ms  delta_vs_base=+0.000 ms (+0.0%)  maxrss=68880 KB  log_bytes/request=0.0  records/request=0.00
+after_off         median=3.138 ms [3.103..3.181]  p95=4.854 ms  delta_vs_base=+0.028 ms (+0.9%)  maxrss=69160 KB  log_bytes/request=0.0  records/request=0.00
+after_on_nolog    median=3.472 ms [3.408..3.485]  p95=5.241 ms  delta_vs_base=+0.363 ms (+11.7%)  maxrss=69252 KB  log_bytes/request=0.0  records/request=0.00
+after_on_filelog  median=3.676 ms [3.642..3.737]  p95=5.535 ms  delta_vs_base=+0.567 ms (+18.2%)  maxrss=69256 KB  log_bytes/request=1999.6  records/request=6.00
+## reading
+- after_off is within the round-to-round spread of base: the kill switch removes the cost on this path.
+- spans+metrics (no log write) and the written records each add a measurable cost on this ~3 ms in-process path; it is NOT negligible relative to this path and is reported as measured. In-process ASGI with no network/LLM/storage makes the relative share maximal; real requests with LLM/storage I/O were not measured.
+- memory: maxrss differs by < 1 MB between variants (ring buffer bounded at 512 records). Log volume ~2.0 KB per chat request (~6.5 records).
+- limits: shared sandbox CPU, single client, sequential, one route; no production load applied; no criterion is declared passed.
+- correction to the line above: records/request = 6.00 (computed in the summary: 13800 lines / 2300 requests), not ~6.5.
