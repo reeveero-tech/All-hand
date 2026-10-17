@@ -1,0 +1,18 @@
+# 034 roadmap audit + no-delete + atomic v2 self-check at eaae41d
+item headings: 179
+duplicate ids: none
+  not done: R-153 -> awaiting_merge
+status counts: {'done': 147, 'awaiting_merge': 1, 'planned': 31}
+items without status: none
+order section length: 8764
+R-ids in commit subjects since cycle start (7378357..HEAD): ['R-152', 'R-153']
+  not in ROADMAP: none
+  R-152: roadmap=yes changelog=yes
+  R-153: roadmap=yes changelog=yes
+audit exit=0
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 7, 'A': 11}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+no-delete exit=0
+atomic-batch v2: 18 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+atomic-v2 exit=0
