@@ -1,0 +1,28 @@
+# 039 simulation of the ORIGINAL R-153 contradiction: worktree at a34dc77 (merge of PR #165) + one later commit; R-153 kept awaiting_merge with pr=#165; R-151/R-152 left as they were on main (no structured fields)
+HEAD=213d462f4ad5eaa456f421adcacbae4e0e12530d parent=a34dc77c6eca7912f2e6e4258ecd5a1a081a3e0a
+::error::R-151 [done]: missing evidence field 'pr'
+::error::R-151 [done]: missing evidence field 'tested_sha'
+::error::R-151 [done]: missing evidence field 'merge_sha'
+::error::R-151 [done]: missing evidence field 'ci_run'
+::error::R-151 [done]: missing evidence field 'ci_conclusion'
+::error::R-151 [done]: missing evidence field 'tests'
+::error::R-151 [done]: missing evidence field 'tests_log'
+::error::R-151 [done]: missing evidence field 'skipped'
+::error::R-151 [done]: missing evidence field 'untested'
+::error::R-151 [done]: missing evidence field 'evidence'
+::error::R-152 [done]: missing evidence field 'pr'
+::error::R-152 [done]: missing evidence field 'tested_sha'
+::error::R-152 [done]: missing evidence field 'merge_sha'
+::error::R-152 [done]: missing evidence field 'ci_run'
+::error::R-152 [done]: missing evidence field 'ci_conclusion'
+::error::R-152 [done]: missing evidence field 'tests'
+::error::R-152 [done]: missing evidence field 'tests_log'
+::error::R-152 [done]: missing evidence field 'skipped'
+::error::R-152 [done]: missing evidence field 'untested'
+::error::R-152 [done]: missing evidence field 'evidence'
+::error::R-153: CONTRADICTION — PR #165 is already merged (a34dc77) but status is still awaiting_merge; record acceptance (done)
+::error::Status evidence check failed: 21 violation(s) (D-066).
+exit=1
+## grace case: same docs evaluated with HEAD = the merge commit a34dc77 itself (main push run on the merge)
+0
+(0 = no contradiction reported at the merge commit itself; other missing-field errors remain)

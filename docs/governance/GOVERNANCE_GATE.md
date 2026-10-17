@@ -30,6 +30,11 @@
 - **حد صادق**: يثبت وجود الاختبارات/الأدلة في الدفعة لا كفايتها؛ `src/` بلا إطار اختبار بعد (R-158).
 - الاختبارات: `tests/test_r153_atomic_batch_v2.py` (54) + إعادة تشغيل تاريخية (`docs/audit/M8/logs/raw/025`) + PR تجريبية حية (`035`).
 
+## فحص الحالات والأدلة (R-154، D-066)
+
+- خطوة **Status evidence check (R-154)**: `python3 scripts/check_status_evidence.py .` — تطبّق القواعد العشر في [`STATUS_DEFINITIONS.md`](STATUS_DEFINITIONS.md) §3 على ROADMAP وجدول «حالة بنود M8» في PROJECT_STATE: المفردات الست، حقول الدليل لكل حالة، ربط git لـ`done`، احتواء سجل القبول على `merge_sha`/`tested_sha`/`ci_run`/`success`، تناقض «مدموج ولا يزال awaiting_merge»، التزامن، والترتيب. خطأ git/ملفات ⇒ rc=2.
+- الاختبارات: `tests/test_r154_status_evidence.py` + PR تجريبية حية (`docs/audit/M8/logs/raw/048`).
+
 ## حدود التنفيذ الآلي (للأمانة)
 
 - فحص diff في workflow يتحقق من **الدفعة المجمعة للـ PR**؛ ذرّية كل commit على حدة تتطلب سياسة فريق أو فحص push events — يوثق كحد معروف.

@@ -1,0 +1,28 @@
+# 037 R-153 acceptance: PR #165 merged with --merge; CI on main at the merge SHA (recorded inside R-154 batch)
+PR #165 MERGED mergedAt=2026-10-17T01:03:49Z merge=a34dc77c6eca7912f2e6e4258ecd5a1a081a3e0a head=805ce218b9e219e337932af3c240747750b7e2a0
+merge^2 (tested PR head) = 805ce218b9e219e337932af3c240747750b7e2a0
+## PR checks on tested head:
+publish=skipping
+audit=pass
+build=pass
+docker=pass
+governance=pass
+network=pass
+quality=pass
+storage=pass
+test=pass
+## main push run 38989224464:
+conclusion=success headSha=a34dc77c6eca7912f2e6e4258ecd5a1a081a3e0a url=https://github.com/reeveero-tech/All-hand/actions/runs/38989224464
+quality=success
+test=success
+network=success
+audit=success
+build=success
+docker=success
+storage=success
+publish=skipped
+## trial PR #166:
+state=CLOSED merged=null
+## gates re-run locally over the R-153 merge:
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+Atomic batch v2 passed (R0-R6).

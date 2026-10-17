@@ -9,6 +9,7 @@
 | [PROJECT_CHARTER.md](PROJECT_CHARTER.md) | لماذا المشروع؟ |
 | [PROJECT_STATE.md](PROJECT_STATE.md) | أين نحن الآن؟ |
 | [ROADMAP.md](ROADMAP.md) | إلى أين نذهب؟ |
+| [STATUS_DEFINITIONS.md](STATUS_DEFINITIONS.md) | ماذا تعني كل حالة بند، وما الدليل المطلوب لها؟ (R-154، D-066) |
 | [roadmaps/revival-scale/README_AR.md](roadmaps/revival-scale/README_AR.md) | حزمة المالك لبرنامج M8 (إحياء AGOS والاختبار القصوى، D-063) — المرجع التفصيلي لبنود R-151..R-184 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | كيف مبني؟ |
 | [DOMAIN.md](DOMAIN.md) | منطق العمل |

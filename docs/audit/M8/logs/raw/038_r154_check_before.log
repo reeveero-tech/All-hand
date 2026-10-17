@@ -1,0 +1,26 @@
+# 038 BEFORE: status-evidence check on main tip a34dc77 docs (ROADMAP/PROJECT_STATE unchanged) — expected FAIL
+::error::R-151 [done]: missing evidence field 'pr'
+::error::R-151 [done]: missing evidence field 'tested_sha'
+::error::R-151 [done]: missing evidence field 'merge_sha'
+::error::R-151 [done]: missing evidence field 'ci_run'
+::error::R-151 [done]: missing evidence field 'ci_conclusion'
+::error::R-151 [done]: missing evidence field 'tests'
+::error::R-151 [done]: missing evidence field 'tests_log'
+::error::R-151 [done]: missing evidence field 'skipped'
+::error::R-151 [done]: missing evidence field 'untested'
+::error::R-151 [done]: missing evidence field 'evidence'
+::error::R-152 [done]: missing evidence field 'pr'
+::error::R-152 [done]: missing evidence field 'tested_sha'
+::error::R-152 [done]: missing evidence field 'merge_sha'
+::error::R-152 [done]: missing evidence field 'ci_run'
+::error::R-152 [done]: missing evidence field 'ci_conclusion'
+::error::R-152 [done]: missing evidence field 'tests'
+::error::R-152 [done]: missing evidence field 'tests_log'
+::error::R-152 [done]: missing evidence field 'skipped'
+::error::R-152 [done]: missing evidence field 'untested'
+::error::R-152 [done]: missing evidence field 'evidence'
+::error::R-153 [awaiting_merge]: missing evidence field 'branch'
+::error::R-153 [awaiting_merge]: missing evidence field 'pr'
+::error::PROJECT_STATE: section '## حالة بنود M8' missing
+::error::Status evidence check failed: 23 violation(s) (D-066).
+exit=1
