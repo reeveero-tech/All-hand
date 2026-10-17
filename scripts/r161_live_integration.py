@@ -269,8 +269,9 @@ class _StorageCleanup:
     """Deletes ONLY the rows of this run: tenant_id = the run's unique
     synthetic tenant (never a shared filter). Verifies nothing is left."""
 
-    def __init__(self, url: str, key: str, tenant: str):
+    def __init__(self, url: str, key: str, tenant: str, allow_private: bool = False):
         self.url, self.key, self.tenant = url.rstrip("/"), key, tenant
+        self.allow_private = allow_private
 
     async def run(self, timeout_s: float) -> Dict[str, Any]:
         import aiohttp
@@ -278,7 +279,9 @@ class _StorageCleanup:
         hdr = {"apikey": self.key, "Authorization": f"Bearer {self.key}", "Prefer": "return=representation"}
         flt = "tenant_id=eq." + urllib.parse.quote(self.tenant, safe="")
         try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_s), headers=hdr) as s:
+            from agent_civilization.agents.external_adapter import guarded_session_kwargs
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_s), headers=hdr,
+                                             **guarded_session_kwargs(self.allow_private)) as s:
                 for table in ("events", "tasks"):
                     async with s.delete(f"{self.url}/rest/v1/{table}?{flt}") as r:
                         if r.status not in (200, 204):
@@ -316,8 +319,9 @@ async def probe_storage(env: Dict[str, str], pf: Dict[str, Any], timeout_s: floa
     checks = _Checks()
     saved = (st.SUPABASE_URL, st.SUPABASE_KEY, st.SUPABASE_KEY_SOURCE)
     st.SUPABASE_URL, st.SUPABASE_KEY, st.SUPABASE_KEY_SOURCE = url, key, "R161_STORAGE_KEY"
-    store = st.SupabaseStorage()
-    cleanup = _StorageCleanup(url, key, tenant)
+    allow_private = pf["class"] != "live_integration"
+    store = st.SupabaseStorage(guarded=True, allow_private=allow_private)   # G-161-3
+    cleanup = _StorageCleanup(url, key, tenant, allow_private)
     res = _result("storage", "FAIL", "", pf["class"], endpoint_host=pf["host"],
                   synthetic={"tenant": tenant, "task_id": task_id})
 
@@ -407,7 +411,8 @@ async def probe_llm(env: Dict[str, str], pf: Dict[str, Any], timeout_s: float) -
     checks = _Checks()
     res = _result("llm", "FAIL", "", pf["class"], endpoint_host=pf["host"])
     client = LLMClient(api_key=env["R161_LLM_API_KEY"], model=env.get("R161_LLM_MODEL") or None,
-                       url=env.get("R161_LLM_URL") or DEFAULT_LLM_URL)
+                       url=env.get("R161_LLM_URL") or DEFAULT_LLM_URL,
+                       guarded=True, allow_private=pf["class"] != "live_integration")   # G-161-3
     try:
         if client.provider != "openrouter":                 # never the public keyless path
             res["reason"] = "client did not select the keyed provider"

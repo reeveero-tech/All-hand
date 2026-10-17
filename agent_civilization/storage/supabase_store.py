@@ -239,13 +239,22 @@ def is_configured() -> bool:
 class SupabaseStorage:
     """Async Supabase REST API client for persisting civilization data."""
 
-    def __init__(self):
+    def __init__(self, *, guarded: bool = False, allow_private: bool = False):
         self.url = SUPABASE_URL
         self.key = SUPABASE_KEY
+        # R-161b (G-161-3): guarded=True pins every connection to the DNS
+        # answer the SEC-05 policy vetted (GuardedResolver, no DNS cache,
+        # verifying TLS, redirects refused). Opt-in: the integration runner
+        # uses it; the server's default path is unchanged.
+        self.guarded, self.allow_private = guarded, allow_private
         self._session: Optional[aiohttp.ClientSession] = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
+            extra = {}
+            if self.guarded:
+                from agent_civilization.agents.external_adapter import guarded_session_kwargs
+                extra = guarded_session_kwargs(self.allow_private)
             self._session = aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=30),
                 headers={
@@ -253,6 +262,7 @@ class SupabaseStorage:
                     "Authorization": f"Bearer {self.key}",
                     "Content-Type": "application/json",
                 },
+                **extra,
             )
         return self._session
 

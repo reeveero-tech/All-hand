@@ -469,7 +469,9 @@ def test_workflow_is_manual_only_and_least_privilege():
     for trig in ("push", "pull_request", "pull_request_target", "schedule", "workflow_run"):
         assert not re.search(rf"^\s+{trig}:", on, re.M), trig
     assert re.search(r"^permissions:\n  contents: read\n", wf, re.M)
-    assert "environment: r161-staging" in wf
+    # R-161b: the staging environment is only named through the gate's output
+    assert "environment: r161-staging" not in wf
+    assert "name: ${{ needs.gate.outputs.environment }}" in wf
     assert "secrets.GITHUB_TOKEN" not in wf and "pull_request_target" not in wf
 
 
