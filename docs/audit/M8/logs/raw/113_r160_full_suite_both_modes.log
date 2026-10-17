@@ -1,0 +1,40 @@
+# 113 R-160 full pytest suite, both agent implementations, Python 3.11 and 3.12 with the locked deps — final runs at committed head 435dfe2e12f5b73394d884571c4f252a2b229f18 (clean tree) — recorded 2026-10-17T18:34:32Z
+## venvs: /tmp/venv3.11 (Python 3.11.15) and /tmp/venv3.12 (Python 3.12.13); pip install --require-hashes -r requirements.lock -r requirements-dev.lock (as CI)
+## command: AGOS_AGENT_IMPL=<real|specialists> python -m pytest tests -q -p no:cacheprovider   (pytest.ini addopts: -m "not network")
+### 3.11 real
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.7.0
+========== 1258 passed, 4 skipped, 4 deselected in 173.82s (0:02:53) ===========
+EXIT=0
+### 3.11 specialists
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.7.0
+========== 1258 passed, 4 skipped, 4 deselected in 186.71s (0:03:06) ===========
+EXIT=0
+### 3.12 real
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.7.0
+========== 1258 passed, 4 skipped, 4 deselected in 180.44s (0:03:00) ===========
+EXIT=0
+### 3.12 specialists
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.7.0
+========== 1258 passed, 4 skipped, 4 deselected in 193.66s (0:03:13) ===========
+EXIT=0
+## 4 skipped (each run) — $ python -m pytest -rs tests/test_r042_live_storage.py:
+SKIPPED [1] tests/test_r042_live_storage.py:72: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:78: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:122: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:158: R-042 live storage not configured (set R042_LIVE=1)
+  (tests/test_r042_live_storage.py needs R042_LIVE=1: run in CI job 'storage' against local PostgreSQL+PostgREST — not here)
+## 4 deselected — network marker ($ pytest --co -o addopts='' -m network):
+tests/test_network_live.py::test_researcher_live_duckduckgo
+tests/test_network_live.py::test_api_integrator_live_get
+tests/test_network_live.py::test_network_client_live_dns_and_head
+tests/test_r114_r118_real_fixes.py::test_live_keyless_llm_and_translation
+  (live internet — run in CI job 'network', not here)
+## 1258 = 1130 (main 49faab6, CI 39018809541) + 84 tests/test_r160_contracts.py + 5 tests/test_r160_local_integration.py + 39 tests/test_r160_g159_1_log_redaction.py
+## earlier runs in this batch (kept, not hidden):
+- run A (working tree, before commit): collection ERROR in both locked venvs — ModuleNotFoundError: No module named 'httpx' (locked dev deps ship httpx2). Fix: import httpx2 with fallback to httpx (as Starlette does). 4 deselected, 2 errors, EXIT=2.
+- run B Python 3.11.15 specialists: ===== 1 failed, 1257 passed, 4 skipped, 4 deselected in 205.32s (0:03:25) ====== — FAILED tests/test_r160_contracts.py::test_shared_examples_validate_and_match_live_shapes
+- run B Python 3.12.13 specialists: ===== 1 failed, 1257 passed, 4 skipped, 4 deselected in 219.04s (0:03:39) ====== — FAILED tests/test_r160_contracts.py::test_shared_examples_validate_and_match_live_shapes
+  cause: AGOS_AGENT_IMPL=specialists adds the documented key 'impl' to the outcome; the shape test compared with the real-mode example only. Fix: expect exactly {'impl'} extra in that mode. (run B real: 1258 passed on both.)
+- run C (after commit 3c3630e) Python 3.11.15 real: ===== 1 failed, 1257 passed, 4 skipped, 4 deselected in 180.22s (0:03:00) ====== — FAILED tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned
+- run C (after commit 3c3630e) Python 3.12.13 real: ===== 1 failed, 1257 passed, 4 skipped, 4 deselected in 186.79s (0:03:06) ====== — FAILED tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned
+  cause: 30 new files in docs/contracts/ (now tracked) matched no R-158 baseline group. Fix (commit 435dfe2): placed under docs/governance/contracts/ (group governance-data). Specialists runs C were stopped mid-run (tree changed) and are not counted.

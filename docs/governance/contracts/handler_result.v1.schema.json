@@ -1,0 +1,47 @@
+{
+  "$id": "agos://contracts/handler_result/v1",
+  "additionalProperties": true,
+  "description": "What a specialist handler (tool) returns inside ``outcome.result``.\nMeasured keys (20/20 specializations, both impls): ok, answer, error,\ntool_output. Handlers may add keys (open), but these four are typed.",
+  "properties": {
+    "answer": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Answer"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "tool_output": {
+      "default": null,
+      "title": "Tool Output"
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "title": "HandlerResult",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "internal",
+  "x-flow": "specialist handler (tool) -> agent outcome"
+}

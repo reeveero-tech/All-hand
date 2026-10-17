@@ -1,0 +1,66 @@
+{
+  "$id": "agos://contracts/llm_result/v1",
+  "additionalProperties": false,
+  "description": "``LLMClient.complete()``: never raises; ok=True only with a non-empty\nstring content (R-160 — a null/empty/malformed completion is ok=False).",
+  "properties": {
+    "attempts": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attempts"
+    },
+    "content": {
+      "title": "Content",
+      "type": "string"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Error"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "provider": {
+      "anyOf": [
+        {
+          "const": "keyless",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Provider"
+    }
+  },
+  "required": [
+    "ok",
+    "content",
+    "error",
+    "model"
+  ],
+  "title": "LLMResult",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "internal",
+  "x-flow": "LLMClient.complete -> handlers"
+}

@@ -1,0 +1,43 @@
+{
+  "$id": "agos://contracts/task_request/v1",
+  "properties": {
+    "allow_public_llm": {
+      "default": false,
+      "description": "Consent to send this request's text to the external public LLM provider",
+      "title": "Allow Public Llm",
+      "type": "boolean"
+    },
+    "data": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional payload for tool-enabled specializations",
+      "title": "Data"
+    },
+    "prompt": {
+      "maxLength": 20000,
+      "minLength": 1,
+      "title": "Prompt",
+      "type": "string"
+    },
+    "specialization": {
+      "description": "One of the 20 specializations, or 'external'",
+      "title": "Specialization",
+      "type": "string"
+    }
+  },
+  "required": [
+    "specialization",
+    "prompt"
+  ],
+  "title": "TaskRequest",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "request",
+  "x-flow": "client -> API",
+  "x-unknown-fields": "ignored by the server (not rejected)"
+}

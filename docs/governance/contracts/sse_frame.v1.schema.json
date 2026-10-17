@@ -1,0 +1,193 @@
+{
+  "$defs": {
+    "HeartbeatEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "heartbeat",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "HeartbeatEvent",
+      "type": "object"
+    },
+    "StreamGapEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "missed": {
+          "minimum": 1,
+          "title": "Missed",
+          "type": "integer"
+        },
+        "recover": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Recover",
+          "type": "array"
+        },
+        "type": {
+          "const": "stream_gap",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "missed",
+        "recover"
+      ],
+      "title": "StreamGapEvent",
+      "type": "object"
+    },
+    "TaskCompletedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Agent"
+        },
+        "elapsed_s": {
+          "minimum": 0,
+          "title": "Elapsed S",
+          "type": "number"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "specialization": {
+          "title": "Specialization",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "task_completed",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "task_id",
+        "agent",
+        "specialization",
+        "ok",
+        "elapsed_s"
+      ],
+      "title": "TaskCompletedEvent",
+      "type": "object"
+    },
+    "TaskCreatedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "specialization": {
+          "title": "Specialization",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "task_created",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "task_id",
+        "specialization"
+      ],
+      "title": "TaskCreatedEvent",
+      "type": "object"
+    },
+    "TaskStartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "title": "Agent",
+          "type": "string"
+        },
+        "specialization": {
+          "title": "Specialization",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "task_started",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "task_id",
+        "agent",
+        "specialization"
+      ],
+      "title": "TaskStartedEvent",
+      "type": "object"
+    }
+  },
+  "$id": "agos://contracts/sse_frame/v1",
+  "description": "One ``data: <json>\\n\\n`` frame of /api/events/stream. No ``id:`` and\nno ``event:`` field are sent: a reconnect is a NEW subscription with no\nreplay (Last-Event-ID is not supported); missed events are signalled by\nstream_gap and recovered from GET /api/tasks and /api/events.",
+  "properties": {
+    "event": {
+      "discriminator": {
+        "mapping": {
+          "heartbeat": "#/$defs/HeartbeatEvent",
+          "stream_gap": "#/$defs/StreamGapEvent",
+          "task_completed": "#/$defs/TaskCompletedEvent",
+          "task_created": "#/$defs/TaskCreatedEvent",
+          "task_started": "#/$defs/TaskStartedEvent"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TaskCreatedEvent"
+        },
+        {
+          "$ref": "#/$defs/TaskStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/TaskCompletedEvent"
+        },
+        {
+          "$ref": "#/$defs/HeartbeatEvent"
+        },
+        {
+          "$ref": "#/$defs/StreamGapEvent"
+        }
+      ],
+      "title": "Event"
+    }
+  },
+  "required": [
+    "event"
+  ],
+  "title": "SSEFrame",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "stream",
+  "x-flow": "/api/events/stream -> client"
+}

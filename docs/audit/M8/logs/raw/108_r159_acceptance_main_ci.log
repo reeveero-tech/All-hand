@@ -1,0 +1,76 @@
+# 108 R-159 acceptance: PR #173 merged with --merge; CI on main at the merge SHA itself (recorded inside the R-160 batch, 2026-10-17T17:41:01Z)
+## gh pr view 173 --json state,mergedAt,headRefOid,mergeCommit,title
+state=MERGED mergedAt=2026-10-17T08:49:28Z
+pr_head=c8f722f91858c78d1105d1523297cd8d68c9b333
+pr_merge_commit=49faab68fefee582b83f14fc64808e309adb7522
+title=R-159 (M8/P2): safe correlated telemetry (traces/structured logs/bounded metrics) + R-158 acceptance (D-071)
+pr=#173
+tested_sha=c8f722f91858c78d1105d1523297cd8d68c9b333
+merge_sha=49faab68fefee582b83f14fc64808e309adb7522
+git: merge^1=7aa5ed6d179b6bce0358e0912b8f353bead3bfd5 merge^2=c8f722f91858c78d1105d1523297cd8d68c9b333 subject=Merge pull request #173 from reeveero-tech/m8/r159-observability
+main HEAD at recording time (git rev-parse origin/main)=49faab68fefee582b83f14fc64808e309adb7522
+open PRs at recording time: 0
+## main push run (gh run view 39018809541):
+ci_run=39018809541
+ci_conclusion=success
+event=push headSha=49faab68fefee582b83f14fc64808e309adb7522
+url=https://github.com/reeveero-tech/All-hand/actions/runs/39018809541
+job test=success
+job quality=success
+job network=success
+job storage=success
+job build=success
+job audit=success
+job docker=success
+job publish=skipped
+note: publish=skipped is NOT a deployment success (D-011).
+## test job steps (gh api actions/jobs/117356312447):
+  Set up job: success
+  Run actions/checkout@v7: success
+  Set up Python: success
+  Install dependencies (locked): success
+  Run tests (live test suite): success
+  Set up Python 3.12 (runtime version): success
+  Run tests on Python 3.12: success
+  Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists: success
+  Post Set up Python 3.12 (runtime version): success
+  Post Set up Python: success
+  Post Run actions/checkout@v7: success
+  Complete job: success
+## verbatim pytest lines from the CI log of run 39018809541 (gh run view --log; step names print as UNKNOWN STEP in this log export, order = step order above: 3.11 live suite, 3.12, 3.12 specialists):
+  test	UNKNOWN STEP	2026-10-17T08:49:48.5266401Z platform linux -- Python 3.11.17, pytest-9.1.1, pluggy-1.7.0 -- /opt/hostedtoolcache/Python/3.11.17/x64/bin/python
+  test	UNKNOWN STEP	2026-10-17T08:50:55.4195505Z tests/test_r158_test_baseline.py::test_pytest_summary_parser[==== 1056 passed, 4 skipped, 4 deselected in 132.72s (0:02:12) ====-expected0] PASSED [ 56%]
+  test	UNKNOWN STEP	2026-10-17T08:50:55.4251244Z tests/test_r158_test_baseline.py::test_pytest_summary_parser[== 2 passed, 1 xfailed, 1 xpassed, 3 warnings in 0.5s ==-expected2] PASSED [ 56%]
+  test	UNKNOWN STEP	2026-10-17T08:51:52.9232218Z ========== 1130 passed, 4 skipped, 4 deselected in 123.99s (0:02:03) ===========
+  test	UNKNOWN STEP	2026-10-17T08:52:07.2209871Z platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+  test	UNKNOWN STEP	2026-10-17T08:53:56.6871308Z ========== 1130 passed, 4 skipped, 4 deselected in 111.65s (0:01:51) ===========
+  test	UNKNOWN STEP	2026-10-17T08:53:57.3485320Z   AGOS_AGENT_IMPL: specialists
+  test	UNKNOWN STEP	2026-10-17T08:53:58.4820891Z platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+  test	UNKNOWN STEP	2026-10-17T08:56:03.1264168Z ========== 1130 passed, 4 skipped, 4 deselected in 122.30s (0:02:02) ===========
+  network	UNKNOWN STEP	2026-10-17T08:49:57.0552654Z platform linux -- Python 3.11.17, pytest-9.1.1, pluggy-1.7.0 -- /opt/hostedtoolcache/Python/3.11.17/x64/bin/python
+  network	UNKNOWN STEP	2026-10-17T08:50:00.8593895Z ====================== 4 passed, 1134 deselected in 3.65s ======================
+  storage	UNKNOWN STEP	2026-10-17T08:56:40.8765530Z platform linux -- Python 3.11.17, pytest-9.1.1, pluggy-1.7.0 -- /opt/hostedtoolcache/Python/3.11.17/x64/bin/python
+  storage	UNKNOWN STEP	2026-10-17T08:56:42.4621442Z ============================== 4 passed in 1.55s ===============================
+## skipped tests in the test job (verbatim, step 1; same 4 in each step):
+  test	UNKNOWN STEP	2026-10-17T08:50:07.8233769Z tests/test_r042_live_storage.py::test_status_reports_live_storage SKIPPED [ 12%]
+  test	UNKNOWN STEP	2026-10-17T08:50:07.8244566Z tests/test_r042_live_storage.py::test_task_lifecycle_persisted SKIPPED   [ 12%]
+  test	UNKNOWN STEP	2026-10-17T08:50:07.8257756Z tests/test_r042_live_storage.py::test_task_read_by_id_from_storage_after_memory_loss SKIPPED [ 13%]
+  test	UNKNOWN STEP	2026-10-17T08:50:07.8269456Z tests/test_r042_live_storage.py::test_chat_persists_and_agent_stats_upserted SKIPPED [ 13%]
+## deselection source: pytest.ini: addopts = -v --tb=short -m "not network"
+tests=1130 passed, 4 skipped, 4 deselected (each of the 3 pytest steps; the step 'Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists' = 1130 passed, 4 skipped, 4 deselected)
+skipped=4 skipped = tests/test_r042_live_storage.py (needs R042_LIVE=1) — executed in job storage of run 39018809541 (4 passed, local PostgreSQL+PostgREST service containers in CI, not cloud Supabase); 4 deselected = network marker — executed in job network of the same run (4 passed, 1134 deselected; live internet from the GitHub runner)
+## PR runs on the tested head c8f722f91858c78d1105d1523297cd8d68c9b333:
+  39018252594 Governance Gate pull_request c8f722f91858c78d1105d1523297cd8d68c9b333 success
+  39018252604 AGOS Kernel CI/CD pull_request c8f722f91858c78d1105d1523297cd8d68c9b333 success
+## governance steps of 39018252594:
+  Set up job: success
+  Run actions/checkout@v7: success
+  No-delete check (R-152): success
+  Atomic batch check: success
+  Atomic batch check v2 (R-153): success
+  Status evidence check (R-154): success
+  Post Run actions/checkout@v7: success
+  Complete job: success
+untested=no OTLP exporter; trace_id not returned to clients; no live LLM/cloud Supabase/Render; overhead +11.7%/+18.2% on a ~3.1ms internal path (102) not declared negligible; G-159-1 (raw exception text in other log sites) reviewed in R-160 batch; Q-002 open; G-157-1/2/3/4/6 open; no production readiness or capacity targets.
+status: R-159 -> done (not accepted: no explicit owner acceptance decision).
+## note: the two 'test_pytest_summary_parser[...]' lines above are parametrized test NAMES of tests/test_r158_test_baseline.py that contain a summary string; they are not run summaries.

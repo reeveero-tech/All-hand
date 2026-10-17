@@ -1,0 +1,30 @@
+{
+  "$id": "agos://contracts/ready/v1",
+  "additionalProperties": false,
+  "properties": {
+    "agents": {
+      "minimum": 1,
+      "title": "Agents",
+      "type": "integer"
+    },
+    "specializations": {
+      "title": "Specializations",
+      "type": "integer"
+    },
+    "status": {
+      "const": "ready",
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "agents",
+    "specializations"
+  ],
+  "title": "Ready",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "GET /health/ready 200 -> probe"
+}

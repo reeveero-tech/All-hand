@@ -1,0 +1,23 @@
+{
+  "$id": "agos://contracts/validation_error/v1",
+  "additionalProperties": false,
+  "description": "FastAPI 422 body for an invalid request.",
+  "properties": {
+    "detail": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Detail",
+      "type": "array"
+    }
+  },
+  "required": [
+    "detail"
+  ],
+  "title": "ValidationErrorBody",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "422 -> client"
+}

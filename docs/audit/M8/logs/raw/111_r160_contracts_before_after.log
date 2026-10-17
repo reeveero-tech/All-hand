@@ -1,0 +1,113 @@
+# 111 R-160 contract tests before (main 49faab6) / after (branch m8/r160-contracts) — 2026-10-17T18:15:14Z
+## env: Python 3.12.13 (requirements.lock + requirements-dev.lock, --require-hashes), pydantic 2.14.1
+## BEFORE: worktree /tmp/wt_main at 49faab68fefee582b83f14fc64808e309adb7522 + ONLY the new test files, agent_civilization/core/contracts.py, docs/contracts/, scripts/export_contract_schemas.py, tests/support/r160_uvicorn_app.py, web/src/taskView.js copied in (production code = main)
+$ python -m pytest -q -p no:cacheprovider -rf tests/test_r160_contracts.py tests/test_r160_local_integration.py
+tests/test_r160_contracts.py ......................................FFFFF [ 48%]
+tests/test_r160_local_integration.py .....                               [100%]
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:376: in test_completion_content_rule
+tests/test_r160_contracts.py:421: in test_openrouter_path_malformed_completions_are_failures
+tests/test_r160_contracts.py:421: in test_openrouter_path_malformed_completions_are_failures
+tests/test_r160_contracts.py:422: in test_openrouter_path_malformed_completions_are_failures
+ERROR    llm:llm.py:244 LLM call failed: TypeError
+tests/test_r160_contracts.py:422: in test_openrouter_path_malformed_completions_are_failures
+ERROR    llm:llm.py:244 LLM call failed: KeyError
+tests/test_r160_contracts.py:439: in test_keyless_malformed_completion_fails_fast_without_retrying
+tests/test_r160_contracts.py:479: in test_external_agent_malformed_outputs
+tests/test_r160_contracts.py:483: in test_external_agent_malformed_outputs
+WARNING  external_agents:external_adapter.py:235 external agent ext_probe failed: KeyError
+_____________ test_cancelled_background_run_ends_the_record_failed _____________
+tests/test_r160_contracts.py:577: in test_cancelled_background_run_ends_the_record_failed
+____________ test_unexpected_error_in_a_run_ends_the_record_failed _____________
+tests/test_r160_contracts.py:608: in test_unexpected_error_in_a_run_ends_the_record_failed
+    if rec["status"] in ("completed", "failed"):
+tests/test_r160_contracts.py:627: in test_execute_route_error_does_not_leave_a_running_record
+    assert len(new) == 1 and new[0]["status"] == "failed"
+E   AssertionError: assert (1 == 1 and 'running' == 'failed'
+E     - failed
+tests/test_r160_contracts.py:702: in test_queue_duplicate_enqueue_is_idempotent_in_fallback
+tests/test_r160_contracts.py:762: in test_queue_redis_mode_retry_requeues_with_the_enqueue_priority
+tests/test_r160_contracts.py:773: in test_queue_redis_mode_duplicate_enqueue_is_idempotent
+tests/test_r160_contracts.py:906: in test_storage_malformed_reads_are_no_rows
+WARNING  storage:supabase_store.py:338 get_task failed: KeyError
+WARNING  storage:supabase_store.py:338 get_task failed: KeyError
+tests/test_r160_contracts.py:906: in test_storage_malformed_reads_are_no_rows
+tests/test_r160_contracts.py:906: in test_storage_malformed_reads_are_no_rows
+tests/test_r160_contracts.py:910: in test_storage_malformed_reads_are_no_rows
+tests/test_r160_contracts.py:922: in test_malformed_storage_row_is_404_not_500
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[body0-None]
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[body1-empty completion]
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[body2-empty completion]
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[body3-malformed completion]
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[body4-malformed completion]
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[body5-malformed completion]
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[body6-malformed completion]
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[text-malformed completion]
+FAILED tests/test_r160_contracts.py::test_completion_content_rule[None-malformed completion]
+FAILED tests/test_r160_contracts.py::test_openrouter_path_malformed_completions_are_failures[{"choices": [{"message": {"content": null}}]}-False-LLM empty completion]
+FAILED tests/test_r160_contracts.py::test_openrouter_path_malformed_completions_are_failures[{"choices": [{"message": {"content": ""}}]}-False-LLM empty completion]
+FAILED tests/test_r160_contracts.py::test_openrouter_path_malformed_completions_are_failures[{"choices": "nope"}-False-LLM malformed completion]
+FAILED tests/test_r160_contracts.py::test_openrouter_path_malformed_completions_are_failures[{"unexpected": true}-False-LLM malformed completion]
+FAILED tests/test_r160_contracts.py::test_keyless_malformed_completion_fails_fast_without_retrying
+FAILED tests/test_r160_contracts.py::test_external_agent_malformed_outputs[{"choices": [{"message": {"content": null}}]}-False-empty completion]
+FAILED tests/test_r160_contracts.py::test_external_agent_malformed_outputs[{"choices": {}}-False-malformed completion]
+FAILED tests/test_r160_contracts.py::test_cancelled_background_run_ends_the_record_failed
+FAILED tests/test_r160_contracts.py::test_unexpected_error_in_a_run_ends_the_record_failed
+FAILED tests/test_r160_contracts.py::test_execute_route_error_does_not_leave_a_running_record
+FAILED tests/test_r160_contracts.py::test_queue_duplicate_enqueue_is_idempotent_in_fallback
+FAILED tests/test_r160_contracts.py::test_queue_redis_mode_retry_requeues_with_the_enqueue_priority
+FAILED tests/test_r160_contracts.py::test_queue_redis_mode_duplicate_enqueue_is_idempotent
+FAILED tests/test_r160_contracts.py::test_storage_malformed_reads_are_no_rows[read0-0]
+FAILED tests/test_r160_contracts.py::test_storage_malformed_reads_are_no_rows[read1-0]
+FAILED tests/test_r160_contracts.py::test_storage_malformed_reads_are_no_rows[read2-0]
+FAILED tests/test_r160_contracts.py::test_storage_malformed_reads_are_no_rows[read3-1]
+FAILED tests/test_r160_contracts.py::test_malformed_storage_row_is_404_not_500
+================== 27 failed, 62 passed in 101.60s (0:01:41) ===================
+exit=1
+## BEFORE — what each failing group shows about main (the production code)
+- test_completion_content_rule x9: main has no completion rule (ImportError: completion_content) — null/empty/wrong-shape completions were not distinguished.
+- test_openrouter_path_* x4: main returned ok=True for content null / "" and raised/returned ok=True for wrong structure (fake OpenAI-compatible server on 127.0.0.1).
+- test_keyless_malformed_completion_fails_fast_without_retrying: main re-sent a structurally wrong 200 until the retry budget ended (most of the 101 s of this run).
+- test_external_agent_malformed_outputs x2: main returned ok=True, answer=None for content null; {"choices": {}} gave a raw error text.
+- test_cancelled_background_run_ends_the_record_failed / test_unexpected_error_in_a_run_ends_the_record_failed: the record stayed "running".
+- test_execute_route_error_does_not_leave_a_running_record: the execute record stayed "running" after the 500.
+- test_queue_duplicate_enqueue_is_idempotent_in_fallback: the fallback queued the same id twice.
+- test_queue_redis_mode_retry_requeues_with_the_enqueue_priority: fail() called self.zadd (AttributeError) -> never re-queued.
+- test_queue_redis_mode_duplicate_enqueue_is_idempotent: second enqueue overwrote the stored task.
+- test_storage_malformed_reads_are_no_rows x4: malformed bodies/rows were handed out as rows; get_task returned rows[0] for another id (read3).
+- test_malformed_storage_row_is_404_not_500: GET /api/tasks/{id} answered 500 on a row without task_id.
+- tests/test_r160_local_integration.py 5/5 pass on main: they pin observed behaviour that R-160 does not change (abort does not cancel, no SSE replay, duplicates = two tasks, error bodies).
+## AFTER: branch m8/r160-contracts (working tree, uncommitted at this point; same venv)
+$ python -m pytest -q -p no:cacheprovider -rf tests/test_r160_contracts.py tests/test_r160_local_integration.py
+============================== 89 passed in 7.82s ==============================
+exit=0
+$ python scripts/export_contract_schemas.py --check
+contracts=26 problems=0
+rc=0
+$ (main worktree) python scripts/export_contract_schemas.py --check   # same schemas generated against main code
+contracts=26 problems=0
+rc=0
+## note: the schemas generated from main's code equal the committed ones (rc=0 above) — the public response/request shapes are unchanged by R-160; what changed is behaviour inside those shapes (ok/status/error values), documented in API.md.
+## WEB before: main (49faab6) web/src/components/Tasks.jsx — the task fields it reads:
+$ git show 49faab6:web/src/components/Tasks.jsx | grep -n 'agent_name\|elapsed_s\|specialization\|prompt\|task_id\|created_at'
+115:            const taskId = task.task_id || task.id
+128:                      <span className="task-spec">{task.specialization}</span>
+129:                      {task.agent_name && (
+130:                        <span className="badge badge-info" style={{ fontSize: '11px' }}>{task.agent_name}</span>
+137:                    <div className="task-prompt">{task.prompt}</div>
+140:                      {task.elapsed_s && <span>{task.elapsed_s}s</span>}
+141:                      {task.created_at && <span>{new Date(typeof task.created_at === 'number' ? task.created_at * 1000 : task.created_at).toLocaleString('ar')}</span>}
+(also: elapsed_s 0 is falsy -> hidden)
+## memory records (source=memory, the default without storage) carry 'agent' and 'result.elapsed_s', not 'agent_name'/'elapsed_s' (docs/contracts/examples/task_list.memory.json) -> agent and duration were never shown; execute records carry plan.primary/message, not specialization/prompt.
+## WEB after:
+$ cd web && npm test
+# tests 39
+# pass 39
+# fail 0

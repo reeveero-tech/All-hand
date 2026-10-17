@@ -1,0 +1,24 @@
+{
+  "$id": "agos://contracts/not_ready/v1",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "status": {
+      "const": "not_ready",
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "reason"
+  ],
+  "title": "NotReady",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "GET /health/ready 503 -> probe"
+}

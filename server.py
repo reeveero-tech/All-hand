@@ -340,12 +340,48 @@ def _prune_tasks():
             TASKS.pop(tid, None)
 
 
+# R-160 (task lifecycle contract v1): strong references to the background runs.
+# asyncio keeps only a weak reference to a task, so an un-referenced
+# create_task() result may be garbage-collected before it finishes (asyncio
+# docs). The set holds each run until it is done.
+_BACKGROUND_TASKS: set = set()
+
+TERMINAL_TASK_STATES = ("completed", "failed")
+
+
+def _end_unfinished(task_id: str, specialization: str, reason: str) -> None:
+    """R-160: a task record never stays queued/running after its run exits —
+    on cancellation (shutdown) or an unexpected error it ends ``failed`` with a
+    FIXED reason (no exception text). Synchronous on purpose: it must also work
+    while the loop is cancelling. Only the memory record and the in-process SSE
+    bus are updated; a storage row already written as ``running`` is not
+    rewritten here (no await during cancellation) — documented gap G-160-2."""
+    rec = TASKS.get(task_id)
+    if rec is None or rec.get("status") in TERMINAL_TASK_STATES:
+        return
+    outcome = {"ok": False, "agent": rec.get("agent"), "specialization": specialization,
+               "elapsed_s": 0, "result": {"error": reason}}
+    rec.update(status="failed", result=outcome, finished_at=time.time())
+    tenant_id = rec.get("tenant_id")
+    if tenant_id is not None:
+        EVENT_BUS.publish(tenant_id, {"type": "task_completed", "task_id": task_id,
+                                      "agent": rec.get("agent"), "specialization": specialization,
+                                      "ok": False, "elapsed_s": 0})
+
+
 async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
     # R-159: the background run keeps the trace of the request that created it
     # (asyncio copies the context) and is one `task` span bound to task_id.
     telemetry.bind_task(task_id)
-    with telemetry.span("task", "run", specialization=specialization) as sp:
-        await _run_task_traced(sp, task_id, specialization, prompt, data)
+    try:
+        with telemetry.span("task", "run", specialization=specialization) as sp:
+            await _run_task_traced(sp, task_id, specialization, prompt, data)
+    except asyncio.CancelledError:
+        _end_unfinished(task_id, specialization, "task cancelled before completion")
+        raise
+    except Exception as e:  # noqa: BLE001 — the run must end the record, not vanish
+        logger.error("Task %s run failed: %s", task_id, type(e).__name__)
+        _end_unfinished(task_id, specialization, "task failed: internal error")
 
 
 async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, data: Any):
@@ -713,7 +749,9 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
     # task record, the event or storage, and it does not outlive the request.
     token = set_public_llm_consent(req.allow_public_llm)
     try:
-        asyncio.create_task(_run_task(task_id, req.specialization, req.prompt, req.data))
+        run = asyncio.create_task(_run_task(task_id, req.specialization, req.prompt, req.data))
+        _BACKGROUND_TASKS.add(run)              # R-160: keep a strong reference
+        run.add_done_callback(_BACKGROUND_TASKS.discard)
     finally:
         reset_public_llm_consent(token)
     logger.info(f"Task created: {task_id} for specialization: {req.specialization}")
@@ -1028,7 +1066,7 @@ try:
     register_civilization_routes(app, CIVILIZATION, TASKS, _prune_tasks, verify_api_key, require_principal)
     logger.info("Civilization routes registered successfully")
 except ImportError as e:
-    logger.warning(f"Civilization routes not available: {e}")
+    logger.warning("Civilization routes not available: %s (%s)", type(e).__name__, e.name)  # R-160 (G-159-1)
 
 # Serve the frontend (built React app from /web/dist)
 # ---------------------------------------------------------------------------

@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "Stage": {
+      "additionalProperties": true,
+      "properties": {
+        "agent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "specialization": {
+          "title": "Specialization",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "specialization",
+        "ok"
+      ],
+      "title": "Stage",
+      "type": "object"
+    }
+  },
+  "$id": "agos://contracts/execute_response/v1",
+  "additionalProperties": false,
+  "properties": {
+    "elapsed_s": {
+      "minimum": 0,
+      "title": "Elapsed S",
+      "type": "number"
+    },
+    "final": {
+      "default": null,
+      "title": "Final"
+    },
+    "primary": {
+      "title": "Primary",
+      "type": "string"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "stages": {
+      "items": {
+        "$ref": "#/$defs/Stage"
+      },
+      "title": "Stages",
+      "type": "array"
+    },
+    "task_id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "title": "Task Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_id",
+    "primary",
+    "reason",
+    "stages",
+    "elapsed_s"
+  ],
+  "title": "ExecuteResponse",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "POST /civilization/execute -> client"
+}

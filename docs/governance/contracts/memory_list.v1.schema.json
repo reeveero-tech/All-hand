@@ -1,0 +1,91 @@
+{
+  "$defs": {
+    "MemoryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Agent"
+        },
+        "answer": {
+          "title": "Answer",
+          "type": "string"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "input_kind": {
+          "title": "Input Kind",
+          "type": "string"
+        },
+        "memory_id": {
+          "title": "Memory Id",
+          "type": "string"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "prompt": {
+          "title": "Prompt",
+          "type": "string"
+        },
+        "specialization": {
+          "title": "Specialization",
+          "type": "string"
+        }
+      },
+      "required": [
+        "memory_id",
+        "specialization",
+        "agent",
+        "prompt",
+        "answer",
+        "ok",
+        "input_kind",
+        "created_at"
+      ],
+      "title": "MemoryEntry",
+      "type": "object"
+    }
+  },
+  "$id": "agos://contracts/memory_list/v1",
+  "additionalProperties": false,
+  "properties": {
+    "count": {
+      "minimum": 0,
+      "title": "Count",
+      "type": "integer"
+    },
+    "memories": {
+      "items": {
+        "$ref": "#/$defs/MemoryEntry"
+      },
+      "title": "Memories",
+      "type": "array"
+    },
+    "stats": {
+      "additionalProperties": true,
+      "title": "Stats",
+      "type": "object"
+    }
+  },
+  "required": [
+    "count",
+    "memories",
+    "stats"
+  ],
+  "title": "MemoryList",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "GET /api/memory -> client"
+}

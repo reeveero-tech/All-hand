@@ -1,0 +1,20 @@
+# 112 R-160 LOCAL INTEGRATION — real server app under real uvicorn on 127.0.0.1 over TCP (2026-10-17T18:17:58Z)
+## class: local integration (no internet, no cloud, no paid service, no secret: a throw-away key whose sha256 is set in AGOS_TENANT_KEYS; AGOS_ENV=test; AGOS_LLM_KEYLESS=0; storage not configured). NOT a live check.
+## launcher: tests/support/r160_uvicorn_app.py — only instrumentation: prompts containing R160-SLOW make analyst agents sleep R160_SLOW_S=2 s first
+## env: Python 3.12.13, uvicorn 0.54.0, httpx2 2.13.1
+$ python -m pytest -v -p no:cacheprovider tests/test_r160_local_integration.py
+tests/test_r160_local_integration.py::test_sse_on_the_wire_disconnect_and_reconnect PASSED [ 20%]
+tests/test_r160_local_integration.py::test_client_abort_of_a_slow_chat_does_not_cancel_the_work PASSED [ 40%]
+tests/test_r160_local_integration.py::test_task_accepted_then_disconnect_still_completes PASSED [ 60%]
+tests/test_r160_local_integration.py::test_duplicate_requests_over_tcp_are_distinct PASSED [ 80%]
+tests/test_r160_local_integration.py::test_errors_on_the_wire_follow_the_error_contracts PASSED [100%]
+============================== 5 passed in 6.27s ===============================
+exit=0
+## measurement made before writing test_client_abort_of_a_slow_chat_does_not_cancel_the_work (probe, same launcher):
+##   POST /api/chat "R160-SLOW analyze 1 2 3" with client timeout 0.5 s -> client aborted at 0.51 s
+##   3 s later GET /api/tasks -> [('completed', 'R160-SLOW analyze 1 2 3', None)]
+##   server telemetry for that request: kind=http op=/api/chat status=200 duration_ms=2004.8 (the handler ran to the end)
+##   => observed contract v1: a client abort does not cancel server-side work; the result is retrievable afterwards.
+## measurement for SSE release (raw socket, same launcher): open stream -> agos_sse_connections 1; socket.close() -> 0 within 1 s (heartbeat 1 s).
+## test-design defect found and fixed before commit (no skip): the first version parsed agos_sse_connections_opened_total as the gauge (prefix match),
+## then read the gauge after leaving iter_lines (httpx closes the response then) -> 0; now exact-name match and the gauge is read while the stream is consumed.

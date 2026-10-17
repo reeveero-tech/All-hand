@@ -1,0 +1,18 @@
+# 109 status-evidence check after R-159 -> done and R-160 -> awaiting_merge (R-160 batch, branch m8/r160-contracts, 2026-10-17T18:12:12Z)
+## run 1 (before this log existed — the evidence path of R-159 pointed to it):
+$ python3 scripts/check_status_evidence.py .
+::error::R-159: evidence path missing or outside docs/audit/: docs/audit/M8/logs/raw/109_r159_r160_status_check.log
+::error::Status evidence check failed: 1 violation(s) (D-066).
+rc=1
+## fix: create this log (no other change)
+## run 2:
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+## M8 table sync (ROADMAP '#### R-NNN' status line vs PROJECT_STATE table)
+roadmap_items=34 table_items=34 mismatches=0
+counts: {'done': 9, 'awaiting_merge': 1, 'planned': 24}
+R-158 roadmap=done table=done
+R-159 roadmap=done table=done
+R-160 roadmap=awaiting_merge table=awaiting_merge
+R-161 roadmap=planned table=planned

@@ -1,0 +1,120 @@
+{
+  "$id": "agos://contracts/system_status/v1",
+  "additionalProperties": false,
+  "properties": {
+    "experience": {
+      "additionalProperties": true,
+      "title": "Experience",
+      "type": "object"
+    },
+    "external_agents": {
+      "title": "External Agents",
+      "type": "integer"
+    },
+    "llm_configured": {
+      "title": "Llm Configured",
+      "type": "boolean"
+    },
+    "llm_model": {
+      "title": "Llm Model",
+      "type": "string"
+    },
+    "llm_provider": {
+      "enum": [
+        "openrouter",
+        "keyless",
+        "none"
+      ],
+      "title": "Llm Provider",
+      "type": "string"
+    },
+    "public_llm_enabled": {
+      "title": "Public Llm Enabled",
+      "type": "boolean"
+    },
+    "public_llm_requires_consent": {
+      "title": "Public Llm Requires Consent",
+      "type": "boolean"
+    },
+    "security": {
+      "additionalProperties": true,
+      "title": "Security",
+      "type": "object"
+    },
+    "specializations": {
+      "title": "Specializations",
+      "type": "integer"
+    },
+    "status": {
+      "const": "healthy",
+      "title": "Status",
+      "type": "string"
+    },
+    "supabase_configured": {
+      "title": "Supabase Configured",
+      "type": "boolean"
+    },
+    "supabase_key": {
+      "additionalProperties": true,
+      "title": "Supabase Key",
+      "type": "object"
+    },
+    "tasks_completed": {
+      "title": "Tasks Completed",
+      "type": "integer"
+    },
+    "tasks_failed": {
+      "title": "Tasks Failed",
+      "type": "integer"
+    },
+    "tasks_in_db": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Tasks In Db"
+    },
+    "tasks_in_memory": {
+      "title": "Tasks In Memory",
+      "type": "integer"
+    },
+    "total_agents": {
+      "title": "Total Agents",
+      "type": "integer"
+    },
+    "uptime_s": {
+      "minimum": 0,
+      "title": "Uptime S",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "status",
+    "uptime_s",
+    "llm_configured",
+    "llm_model",
+    "llm_provider",
+    "public_llm_enabled",
+    "public_llm_requires_consent",
+    "supabase_configured",
+    "supabase_key",
+    "specializations",
+    "total_agents",
+    "external_agents",
+    "tasks_completed",
+    "tasks_failed",
+    "tasks_in_memory",
+    "tasks_in_db",
+    "security",
+    "experience"
+  ],
+  "title": "SystemStatus",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "GET /api/system/status -> client"
+}

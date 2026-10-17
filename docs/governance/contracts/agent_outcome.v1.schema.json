@@ -1,0 +1,132 @@
+{
+  "$defs": {
+    "HandlerResult": {
+      "additionalProperties": true,
+      "description": "What a specialist handler (tool) returns inside ``outcome.result``.\nMeasured keys (20/20 specializations, both impls): ok, answer, error,\ntool_output. Handlers may add keys (open), but these four are typed.",
+      "properties": {
+        "answer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Answer"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "tool_output": {
+          "default": null,
+          "title": "Tool Output"
+        }
+      },
+      "required": [
+        "ok"
+      ],
+      "title": "HandlerResult",
+      "type": "object"
+    }
+  },
+  "$id": "agos://contracts/agent_outcome/v1",
+  "additionalProperties": false,
+  "description": "runtime_contract.py (R-157): the result of ``agent.execute`` — the same\nshape under AGOS_AGENT_IMPL=real and =specialists (the latter adds\n``impl``). ``specialization`` appears only on the outcome _run_task builds\nwhen no agent could run (BUG-01) or the run ended without one (R-160).",
+  "properties": {
+    "agent": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Agent"
+    },
+    "elapsed_s": {
+      "minimum": 0,
+      "title": "Elapsed S",
+      "type": "number"
+    },
+    "experience": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Experience"
+    },
+    "impl": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Impl"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "result": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HandlerResult"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ],
+      "title": "Result"
+    },
+    "specialization": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Specialization"
+    }
+  },
+  "required": [
+    "ok",
+    "agent",
+    "elapsed_s",
+    "result"
+  ],
+  "title": "AgentOutcome",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "internal+response",
+  "x-flow": "agent.execute -> API/storage/web"
+}

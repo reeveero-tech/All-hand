@@ -90,6 +90,15 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         token = set_public_llm_consent(req.allow_public_llm)
         try:
             result = await execute_plan(plan, civilization, data=req.data)
+        except BaseException:
+            # R-160 (task lifecycle contract v1): the record never stays
+            # "running" after the handler exits (error or cancellation); the
+            # HTTP outcome is unchanged (the exception propagates).
+            rec = tasks_store.get(task_id)
+            if rec is not None and rec.get("status") == "running":
+                rec.update(status="failed", finished_at=time.time(),
+                           result={"error": "execution did not complete"})
+            raise
         finally:
             reset_public_llm_consent(token)
         tasks_store[task_id]["status"] = "completed"

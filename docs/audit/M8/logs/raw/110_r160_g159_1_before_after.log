@@ -1,0 +1,95 @@
+# 110 R-160 / G-159-1: same tests + scanner, BEFORE (origin/main 49faab68fefee582b83f14fc64808e309adb7522) and AFTER (branch working tree). Python 3.14.3. Evidence class: unit/local (mocks + in-process TestClient).
+## BEFORE: python3 scripts/scan_raw_exception_logs.py (on main)
+flagged=38 reviewed=1 unreviewed=37 stale_reviewed=2
+UNREVIEWED agent_civilization/agents/executors/data_worker.py:92: logger.error(f"Worker {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/external_adapter.py:325: logger.error("Invalid EXTERNAL_AGENTS JSON: %s", e)
+UNREVIEWED agent_civilization/agents/specialists/_templates/analyst_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/api_integrator_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/architect_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/builder_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/code_generator_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/communicator_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/data_processor_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/db_manager_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/designer_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/educator_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/modifier_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/monitor_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/network_client_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/researcher_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/reviewer_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/self_developer_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/strategist_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/surgeon_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/test_runner_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/agents/specialists/_templates/validator_base.py:42: logger.error(f"Agent {self.name} error: {e}")
+UNREVIEWED agent_civilization/core/agents/base_agent.py:173: logger.error(f"Work execution error in {self.name}: {e}")
+UNREVIEWED agent_civilization/core/agents/base_agent.py:137: logger.error(f"Error in agent {self.name}: {e}")
+UNREVIEWED agent_civilization/core/agents/communication_hub.py:93: logger.error(f"Broadcast delivery error to {recipient_name}: {e}")
+UNREVIEWED agos_kernel/agent_production/agent_factory.py:273: logger.warning(f"recall_context failed for {self.name}: {e}")
+UNREVIEWED agos_kernel/agent_production/agent_factory.py:284: logger.warning(f"select_approach failed for {self.name}: {e}")
+UNREVIEWED agos_kernel/agent_production/agent_factory.py:249: logger.warning(f"learning_runtime record_task failed for {self.name}: {e}")
+UNREVIEWED agos_kernel/infrastructure/redis_queue.py:162: logger.error(f"Failed to connect to Redis: {e}")
+UNREVIEWED agos_kernel/infrastructure/redis_queue.py:290: logger.error(f"Failed to dequeue task: {e}")
+UNREVIEWED agos_kernel/infrastructure/redis_queue.py:331: logger.error(f"Failed to complete task: {e}")
+UNREVIEWED agos_kernel/infrastructure/redis_queue.py:385: logger.error(f"Failed to fail task: {e}")
+UNREVIEWED agos_kernel/infrastructure/redis_queue.py:399: logger.error(f"Failed to get task: {e}")
+UNREVIEWED agos_kernel/infrastructure/redis_queue.py:411: logger.error(f"Failed to get queue size: {e}")
+UNREVIEWED agos_kernel/infrastructure/redis_queue.py:464: logger.error(f"Failed to get stats: {e}")
+UNREVIEWED agos_kernel/infrastructure/redis_queue.py:227: logger.error(f"Failed to enqueue task: {e}")
+UNREVIEWED server.py:1031: logger.warning(f"Civilization routes not available: {e}")
+STALE REVIEWED ENTRY ('agent_civilization/agents/external_adapter.py', 'getattr(e, "lineno", "?")')
+STALE REVIEWED ENTRY ('server.py', 'type(e).__name__, e.name')
+rc=1
+## BEFORE: pytest tests/test_r160_g159_1_log_redaction.py (on main)
+WARNING  agos.agent_production:agent_factory.py:284 select_approach failed for probe-dyn: SYNTHETIC-SECRET-r160-7f3a9c
+WARNING  agos.agent_production:agent_factory.py:273 recall_context failed for probe-dyn: SYNTHETIC-SECRET-r160-7f3a9c
+ERROR    data_worker:data_worker.py:92 Worker probe-worker error: SYNTHETIC-SECRET-r160-7f3a9c
+ERROR    agos.infrastructure.redis:redis_queue.py:227 Failed to enqueue task: SYNTHETIC-SECRET-r160-7f3a9c
+ERROR    agos.infrastructure.redis:redis_queue.py:290 Failed to dequeue task: SYNTHETIC-SECRET-r160-7f3a9c
+ERROR    agos.infrastructure.redis:redis_queue.py:331 Failed to complete task: SYNTHETIC-SECRET-r160-7f3a9c
+ERROR    agos.infrastructure.redis:redis_queue.py:385 Failed to fail task: SYNTHETIC-SECRET-r160-7f3a9c
+ERROR    agos.infrastructure.redis:redis_queue.py:399 Failed to get task: SYNTHETIC-SECRET-r160-7f3a9c
+ERROR    agos.infrastructure.redis:redis_queue.py:411 Failed to get queue size: SYNTHETIC-SECRET-r160-7f3a9c
+ERROR    agos.infrastructure.redis:redis_queue.py:464 Failed to get stats: SYNTHETIC-SECRET-r160-7f3a9c
+FAILED tests/test_r160_g159_1_log_redaction.py::test_scanner_finds_no_unreviewed_raw_exception_log_in_runtime_code
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[analyst]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[api_integrator]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[architect]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[builder]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[code_generator]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[communicator]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[data_processor]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[db_manager]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[designer]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[educator]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[modifier]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[monitor]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[network_client]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[researcher]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[reviewer]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[self_developer]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[strategist]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[surgeon]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[test_runner]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_specialist_template_logs_type_only[validator]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_base_agent_work_error_logs_type_only
+FAILED tests/test_r160_g159_1_log_redaction.py::test_base_agent_loop_error_logs_and_exposes_type_only
+FAILED tests/test_r160_g159_1_log_redaction.py::test_communication_hub_broadcast_error_logs_type_only
+FAILED tests/test_r160_g159_1_log_redaction.py::test_agent_factory_learning_and_memory_errors_log_type_only
+FAILED tests/test_r160_g159_1_log_redaction.py::test_data_worker_error_logs_type_only
+FAILED tests/test_r160_g159_1_log_redaction.py::test_redis_queue_does_not_log_url_credentials
+FAILED tests/test_r160_g159_1_log_redaction.py::test_redis_queue_target_helper
+FAILED tests/test_r160_g159_1_log_redaction.py::test_redis_queue_errors_log_and_return_type_only
+FAILED tests/test_r160_g159_1_log_redaction.py::test_health_check_wrapper_message_is_type_only
+FAILED tests/test_r160_g159_1_log_redaction.py::test_health_component_checks_message_is_type_only[check_redis-agos_kernel.infrastructure.redis_queue.get_redis_queue]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_health_component_checks_message_is_type_only[check_storage-agent_civilization.storage.storage_stats]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_health_component_checks_message_is_type_only[check_civilization-agent_civilization.agents.real.create_civilization]
+FAILED tests/test_r160_g159_1_log_redaction.py::test_public_health_route_body_has_no_exception_text
+34 failed, 5 passed in 1.13s
+## AFTER: python3 scripts/scan_raw_exception_logs.py (branch)
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+## AFTER: pytest tests/test_r160_g159_1_log_redaction.py (branch)
+
+============================== 39 passed in 1.07s ==============================

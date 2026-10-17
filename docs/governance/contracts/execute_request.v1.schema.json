@@ -1,0 +1,33 @@
+{
+  "$id": "agos://contracts/execute_request/v1",
+  "properties": {
+    "allow_public_llm": {
+      "default": false,
+      "title": "Allow Public Llm",
+      "type": "boolean"
+    },
+    "data": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data"
+    },
+    "message": {
+      "title": "Message",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message"
+  ],
+  "title": "ExecuteRequest",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "request",
+  "x-flow": "client -> API",
+  "x-unknown-fields": "ignored by the server (not rejected)"
+}

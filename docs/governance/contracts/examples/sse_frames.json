@@ -1,0 +1,32 @@
+[
+  {
+    "type": "task_created",
+    "task_id": "0123456789ab",
+    "specialization": "designer"
+  },
+  {
+    "type": "task_started",
+    "task_id": "0123456789ab",
+    "agent": "designer_0003",
+    "specialization": "designer"
+  },
+  {
+    "type": "task_completed",
+    "task_id": "0123456789ab",
+    "agent": "designer_0003",
+    "specialization": "designer",
+    "ok": true,
+    "elapsed_s": 0.004
+  },
+  {
+    "type": "heartbeat"
+  },
+  {
+    "type": "stream_gap",
+    "missed": 3,
+    "recover": [
+      "/api/tasks",
+      "/api/events"
+    ]
+  }
+]

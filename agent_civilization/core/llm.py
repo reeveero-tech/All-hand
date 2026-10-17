@@ -230,7 +230,16 @@ class LLMClient:
                         "model": self.model,
                     }
                 data = json.loads(body)
-                content = data["choices"][0]["message"]["content"]
+                try:
+                    content = completion_content(data)
+                except MalformedCompletion as e:
+                    # R-160 (llm result contract v1): a 200 whose body is not an
+                    # OpenAI-style completion, or whose content is null/empty, is
+                    # a failure — before, content=None/"" came back as ok=True.
+                    telemetry_reason = e.reason
+                    logger.error("LLM %s (provider body not logged)", telemetry_reason)
+                    return {"ok": False, "content": "", "error": f"LLM {telemetry_reason}",
+                            "model": self.model}
                 return {
                     "ok": True,
                     "content": content,
@@ -280,6 +289,30 @@ _keyless_lock: "_asyncio.Lock | None" = None
 _keyless_last = 0.0
 _keyless_waiting = 0
 keyless_stats = {"calls": 0, "ok": 0, "rate_limited": 0, "errors": 0, "busy": 0}
+
+
+class MalformedCompletion(ValueError):
+    """R-160: the provider answered 200 but not with a usable completion.
+    ``reason`` is one of two FIXED strings (never provider text)."""
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
+
+
+def completion_content(data: object) -> str:
+    """R-160 (llm result contract v1): the text of an OpenAI-style completion
+    body — ``{"choices": [{"message": {"content": "<str>"}}]}`` — or raise
+    MalformedCompletion("malformed completion" | "empty completion")."""
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        raise MalformedCompletion("malformed completion") from None
+    if content is None or (isinstance(content, str) and not content.strip()):
+        raise MalformedCompletion("empty completion")
+    if not isinstance(content, str):
+        raise MalformedCompletion("malformed completion")
+    return content
 
 
 def _keyless_post(system: str, prompt: str, max_tokens: int, timeout: float) -> dict:
@@ -350,11 +383,18 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
             from agent_civilization.core import pools  # R-132: own pool
             data = await pools.run("llm", _keyless_post, system, prompt, max_tokens, remaining)
             _keyless_last = _time.monotonic()
-            content = data["choices"][0]["message"]["content"] or ""
-            if not content.strip():
-                last_err = "empty completion"
+            try:
+                content = completion_content(data)
+            except MalformedCompletion as e:
                 keyless_stats["errors"] += 1
-                continue
+                if e.reason == "empty completion":
+                    last_err = "empty completion"      # may be transient: retry
+                    continue
+                # R-160: a structurally wrong answer is deterministic — fail now
+                # instead of re-sending the prompt until the 90 s budget ends
+                # (it used to be retried as if it were a network error).
+                return {"ok": False, "content": "", "error": "keyless LLM malformed completion",
+                        "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}
             keyless_stats["ok"] += 1
             return {"ok": True, "content": content, "error": None,
                     "model": f"keyless:{data.get('model', KEYLESS_MODEL)}",
