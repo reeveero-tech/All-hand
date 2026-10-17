@@ -433,3 +433,75 @@
 - `114`: ruff، وعدم الحذف، والذرية v1/v2، وأدلة الحالة، و`--check` العقود، والماسح، و`git diff --check`، و`web/` (test + build)، والبناء الجذري.
 - CI للـPR وعلى SHA الدمج يُسجَّل بعد الدمج في دفعة القبول التالية.
 - **لم يُختبر**: Supabase سحابي، وLLM مدفوع، وRender، وRedis حقيقي، وبناء Docker محلياً، والحمل أو السعة. لا ادعاء جاهزية إنتاج.
+
+## قبول R-160 (سُجل داخل دفعة R-161، 2026-10-17)
+- PR #174 حالتها MERGED. SHA الدمج `dadbba1d1fb01cdf17a7a01c54bbb088f583b086`، وأبواه `49faab6…` و`33d10bdcba57b9c2ec87e38a57089e9d05306e50` (الرأس المختبر). `115`.
+- CI على main عند SHA الدمج: التشغيل 39059547216 (push، headSha = SHA الدمج) **success**. نجحت quality وtest وnetwork وstorage وbuild وaudit وdocker، وتُخطّي publish (D-011؛ ليس نجاحاً ولا نشراً).
+  - test: خطوات pytest الثلاث — Python 3.11.17 (الخطوة اسمها «live test suite» لكنها الحزمة العادية بلا شبكة مع التغطية)، و3.12.15، و3.12.15 بـ`AGOS_AGENT_IMPL=specialists` — كلٌّ منها 1258 passed, 4 skipped, 4 deselected، والمقتطفات حرفية من سجل التشغيل.
+  - 4 skipped = `tests/test_r042_live_storage.py` — نُفذت في job ‏storage على PostgreSQL 17 + PostgREST 12.2.3 داخل CI (26/26 فحصاً، و4 passed). 4 deselected = علامة network — نُفذت في job ‏network (4 passed).
+- PR CI ‏39058963368 والحوكمة 39058963375 ناجحان على الرأس المختبر.
+- `116`: فحص أدلة الحالة (انظر أدناه). R-160 ‏`done` (لا `accepted`).
+- **لم يُختبر في PR #174**: تكامل حي، ووضع Redis بحزمة Redis حقيقية. G-160-1..6 مفتوحة.
+
+## R-161 — تكامل اختياري آمن ومصنف (2026-10-17، دفعة m8/r161-live-integration، PR #175، D-073)
+
+### ما أُضيف
+- `scripts/r161_live_integration.py`: مشغل الأهداف storage وllm وexternal وmcp. يعيد استخدام `SupabaseStorage` و`LLMClient` و`ExternalAgentAdapter` وعقود `task_row` و`llm_result` و`agent_outcome`.
+- `.github/workflows/live-integration.yml`: التشغيل الحي اليدوي.
+- `tests/test_r161_live_integration.py` (46).
+- `LLMClient(url=None)`، وتشغيل المشغل في نهاية `scripts/r042/run_local_stack.sh` (job ‏storage) مع رفع تقريره.
+
+### الفئات والنتائج في هذه الدفعة
+
+| الهدف | mock | local_integration | live_integration |
+|---|---|---|---|
+| storage | PASS (`117`، `118`) — خدمات وهمية على 127.0.0.1 | CI job ‏storage على PostgreSQL 17 + PostgREST 12.2.3 (`121`)؛ في بيئة العمل NOT_RUN (لا PostgreSQL ولا Docker) | **NOT_RUN** |
+| llm | PASS (`117`، `118`) | لا خادم LLM حقيقي محلي — لا شيء | **NOT_RUN** |
+| external | PASS (`117`، `118`) | لا شيء | **NOT_RUN** |
+| mcp | BLOCKED | BLOCKED | BLOCKED — لا عميل MCP |
+
+- **لماذا لم يُشغَّل live_integration**: لا بيئة `r161-staging` ولا بيانات اعتماد اختبار مؤقتة مقدمة من المالك، والتوجيه يمنع إنشاء بيانات اعتماد أو موارد سحابية. لا يُعلن «live integration: PASS».
+- job ‏`network` يصل إلى نقاط عامة بلا مفتاح؛ هذا ليس تكاملاً مع حساب اختبار ولا يُحتسب لـR-161.
+
+### متطلبات الاختبار ومكانها
+
+| المتطلب | الاختبار |
+|---|---|
+| المحلي/الوهمي يعمل بلا أسرار إنتاج | كل اختبارات storage/llm/external بمفاتيح اصطناعية |
+| الحي معطل افتراضياً | `test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary` (8)، و`test_endpoint_policy` (6) |
+| الإعداد الناقص = BLOCKED/NOT_RUN | `test_missing_configuration_is_blocked_by_variable_name_only`، و`test_nothing_requested_is_not_run_and_not_success` |
+| الرفض/المهلة/الاستجابة المشوهة ≠ نجاح | `test_storage_provider_failures_are_failures`، و`test_llm_provider_failures_are_failures` (4)، و`test_external_failures_are_failures` (4)، و`test_*timeout*`، و`test_connection_refused_is_a_failure`، و`test_a_pass_needs_a_response`، و`test_live_endpoint_without_network_is_a_failure_never_a_pass` |
+| الأسرار غائبة حتى مع الاستثناءات | `test_secrets_never_reach_report_stdout_or_logs_even_on_exceptions` (CLI كامل: استثناء يحمل السر، ومزود يردد المفتاح، وسجلات العميل)، و`test_redactor` |
+| التنظيف يحدث وفشله ظاهر | `test_storage_probe_passes_and_cleans_up_only_its_rows`، و`test_cleanup_failure_turns_a_passing_probe_into_a_failure` (2)، و`test_storage_timeout_is_a_failure_and_cleanup_still_runs` |
+| الإلغاء | `test_cancelled_run_cleans_up_and_is_reported_as_failure` |
+| التقارير تفصل الفئات | `test_report_separates_evidence_classes_and_cli_writes_it`، و`test_exit_codes` |
+| الـworkflow | `test_workflow_is_manual_only_and_least_privilege`، و`test_workflow_secrets_only_in_the_runner_step_and_artifact_is_checked`، و`test_ci_never_receives_live_secrets_and_storage_job_runs_the_runner_locally` |
+
+### قبل/بعد
+- `117`: على main لا يوجد المشغل ولا الـworkflow، و`LLMClient(url=…)` ‏TypeError، والاختبارات خطأ جمع. على الفرع 46/46 على 3.14.3 و3.11.15 و3.12.13 وفي `specialists`. اختبارات R-159/R-160 المتأثرة بتغيير `LLMClient` ناجحة (121).
+
+### إخفاقات وجدت وعولجت (لا skip ولا xfail)
+- اتصال مرفوض كان يُسجل `connected=True` لأن فحص «المستأجر الآخر لا يقرأ» صحيح بلا خادم؛ صار الاتصال يتطلب إجابة فعلية.
+- **تسريب**: استثناء غير متوقع داخل probe أسقط المشغل بـtraceback يحمل قيمة السر؛ صار FAIL بنوع الاستثناء فقط، مع معالج أخير منقح في `main()`.
+- افتراض خاطئ في اختبار: DNS الوهمي في conftest يُعامل كعام، فقُسم إلى اختبار رفض DNS (BLOCKED) واختبار حي بلا شبكة (FAIL، بلا اتصال).
+- تفاصيل أخرى في `117`.
+
+### الحالات المرصودة في تشغيلات CLI (`118`)
+- بلا أهداف: NOT_RUN ورمز 3. كل الأهداف بلا إعداد: BLOCKED ورمز 2. نقطة عامة بلا `R161_LIVE`، أو مضيف خارج القائمة، أو بلا انتهاء، أو ببيانات اعتماد في الـURL: BLOCKED قبل أي اتصال.
+- وهمي سليم: storage/llm/external ‏PASS (mock) وmcp ‏BLOCKED، فالرمز 2 لا 0. وهمي يرفض بـ401 مع ترديد المفتاح: FAIL ورمز 1، والسر غائب. تنظيف لا يحذف: FAIL «rows of this run are still present after cleanup».
+
+### ثغرات مفتوحة
+- **G-161-1**: لم يُنفذ تشغيل حي (لا بيئة ولا بيانات اعتماد).
+- **G-161-2**: لا عميل MCP في المستودع؛ الهدف BLOCKED.
+- **G-161-3**: عملاء التخزين وLLM يفحصون DNS قبل الاتصال فقط (preflight)، ولا يثبتون العنوان عند الاتصال كما يفعل `ExternalAgentAdapter` (R-146) — نافذة DNS rebinding في التشغيل الحي.
+- **G-161-4**: تاريخ الانتهاء إقرار من المشغّل لا يتحقق منه المشغل لدى المزود.
+- **G-161-5**: إن شُغِّل الـworkflow قبل أن ينشئ المالك البيئة، ينشئها GitHub بلا حماية (وبلا أسرار، فكل هدف BLOCKED).
+- **G-161-6**: التكامل المحلي PostgREST لا Supabase المستضاف (مصادقة/RLS خاصة بـSupabase لم تُختبر)، ولا خادم LLM أو أداة حقيقي محلي (mock فقط).
+- **G-160-1..6** لم تُغلق بهذه الاختبارات ولم يُعالج أيٌّ منها. حزمة Redis غير مضافة. Q-002 وG-157-3 ومفتاح الاسم المستعار ومُصدِّر traces وإرجاع trace_id بلا تغيير.
+
+### الحزمة والبوابات
+- `116`: فحص أدلة الحالة.
+- `119`: الحزمة كاملة بالوضعين على Python 3.11 و3.12 (تبعيات مقفلة).
+- `120`: ruff، وعدم الحذف، والذرية v1/v2، وأدلة الحالة، و`--check` العقود، والماسح، و`git diff --check`، و`web/` (test + build)، والبناء الجذري.
+- `121`: CI الـPR — job ‏storage (local_integration) وبقية الوظائف.
+- **لم يُختبر**: تكامل حي مع أي مزود أو مشروع، وSupabase المستضاف، وMCP، وRedis حقيقي، والحمل أو السعة. لا ادعاء جاهزية إنتاج.

@@ -371,6 +371,8 @@ jobs:
           ADMIN_URI: postgresql://postgres:postgres@localhost:5432/agos
           AUTH_URI: postgresql://authenticator:authenticator@localhost:5432/agos
           POSTGREST_BIN: /tmp/postgrest
+          # R-161: the runner's report for the same local stack (local_integration)
+          R161_REPORT: ${{ github.workspace }}/r161_storage_local.json
         run: |
           set -o pipefail
           bash scripts/r042/run_local_stack.sh 2>&1 | tee "$GITHUB_WORKSPACE/r042_storage.log"
@@ -380,7 +382,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: r042-storage-verification-log
-          path: r042_storage.log
+          path: |
+            r042_storage.log
+            r161_storage_local.json
 
   network:
     # R-072 (RISK-019): the internet-facing agents (researcher / api_integrator /

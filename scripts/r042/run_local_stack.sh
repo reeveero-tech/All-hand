@@ -64,3 +64,9 @@ python scripts/run_r042_storage_verify.py
 echo "== server end-to-end with live storage"
 export R042_LIVE=1
 python -m pytest tests/test_r042_live_storage.py -v -p no:cacheprovider
+
+echo "== R-161 runner against the same local stack (local_integration)"
+# loopback endpoint + the throwaway service key minted above: class
+# local_integration (never live). Cleanup deletes only this run's tenant rows.
+R161_STORAGE_URL="$SUPABASE_URL" R161_STORAGE_KEY="$SUPABASE_SERVICE_KEY" \
+  python scripts/r161_live_integration.py --targets storage --report "${R161_REPORT:-/tmp/r161_storage_local.json}"

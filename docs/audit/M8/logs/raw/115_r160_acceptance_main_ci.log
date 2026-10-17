@@ -1,0 +1,64 @@
+# 115 R-160 acceptance: PR #174 merged with --merge; CI on main at the merge SHA itself (recorded inside the R-161 batch, 2026-10-17T19:53:47Z)
+## checked: 'ls docs/audit/M8/logs/raw/115*' -> No such file or directory (name free before creation)
+## gh pr view 174 --json state,mergedAt,headRefOid,mergeCommit,title
+state=MERGED mergedAt=2026-10-17T18:46:04Z
+pr_head=33d10bdcba57b9c2ec87e38a57089e9d05306e50
+pr_merge_commit=dadbba1d1fb01cdf17a7a01c54bbb088f583b086
+title=R-160 (M8/P2): verifiable contracts + G-159-1 + R-159 acceptance (D-072)
+pr=#174
+tested_sha=33d10bdcba57b9c2ec87e38a57089e9d05306e50
+merge_sha=dadbba1d1fb01cdf17a7a01c54bbb088f583b086
+ci_run=39059547216
+ci_conclusion=success
+tests=1258 passed, 4 skipped, 4 deselected
+git: merge^1=49faab68fefee582b83f14fc64808e309adb7522 merge^2=33d10bdcba57b9c2ec87e38a57089e9d05306e50 subject=Merge pull request #174 from reeveero-tech/m8/r160-contracts
+main HEAD at recording time (git rev-parse origin/main)=dadbba1d1fb01cdf17a7a01c54bbb088f583b086
+open PRs at recording time: 0
+
+## gh run view 39059547216 (push to main at the merge SHA)
+run=39059547216 workflow=AGOS Kernel CI/CD event=push branch=main headSha=dadbba1d1fb01cdf17a7a01c54bbb088f583b086 status=completed conclusion=success created=2026-10-17T18:46:06Z updated=2026-10-17T18:54:05Z
+url=https://github.com/reeveero-tech/All-hand/actions/runs/39059547216
+check: headSha == merge_sha -> yes
+## jobs
+job=test id=117474497282 conclusion=success started=2026-10-17T18:46:09Z completed=2026-10-17T18:53:33Z
+job=quality id=117474497487 conclusion=success started=2026-10-17T18:46:09Z completed=2026-10-17T18:46:17Z
+job=network id=117474531780 conclusion=success started=2026-10-17T18:46:20Z completed=2026-10-17T18:46:37Z
+job=build id=117476063289 conclusion=success started=2026-10-17T18:53:35Z completed=2026-10-17T18:53:55Z
+job=audit id=117476063388 conclusion=success started=2026-10-17T18:53:35Z completed=2026-10-17T18:54:05Z
+job=storage id=117476063394 conclusion=success started=2026-10-17T18:53:35Z completed=2026-10-17T18:54:02Z
+job=docker id=117476063402 conclusion=success started=2026-10-17T18:53:35Z completed=2026-10-17T18:54:00Z
+job=publish id=117476142710 conclusion=skipped started=2026-10-17T18:53:56Z completed=2026-10-17T18:53:55Z
+## publish=skipped: governed by D-011 (runs only on push to main with [publish] in the commit message; the step itself only echoes that publishing is disabled). NOT counted as a success, NOT a deploy.
+
+## job test — gh run view 39059547216 --log --job 117474497282 (step | line), pytest summary lines verbatim:
+Run tests (live test suite) | platform linux -- Python 3.11.17, pytest-9.1.1, pluggy-1.7.0 -- /opt/hostedtoolcache/Python/3.11.17/x64/bin/python
+Run tests (live test suite) | ========== 1258 passed, 4 skipped, 4 deselected in 135.74s (0:02:15) ===========
+Run tests on Python 3.12 | platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+Run tests on Python 3.12 | ========== 1258 passed, 4 skipped, 4 deselected in 123.25s (0:02:03) ===========
+Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists | platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists | ========== 1258 passed, 4 skipped, 4 deselected in 133.92s (0:02:13) ===========
+## => three pytest steps: Python 3.11.17 (live test suite, with coverage), Python 3.12.15, Python 3.12.15 with AGOS_AGENT_IMPL=specialists — each 1258 passed, 4 skipped, 4 deselected
+
+## the 4 skipped = tests/test_r042_live_storage.py (skip unless R042_LIVE=1). Run in job storage (id 117476063394) against PostgreSQL 17 (service container) + PostgREST 12.2.3 (checksum-pinned) inside CI — local integration, not hosted Supabase:
+Verify storage layer + server end-to-end | == start PostgREST PostgREST 12.2.3
+Verify storage layer + server end-to-end | invalid JWT -> HTTP 401
+Verify storage layer + server end-to-end | anon insert -> HTTP 401 {"code":"42501","details":null,"hint":null,"message":"new row violates row-level security policy for table \"tasks\""}
+Verify storage layer + server end-to-end | R-042 storage verification: 26/26 checks passed
+Verify storage layer + server end-to-end | tests/test_r042_live_storage.py::test_status_reports_live_storage PASSED [ 25%]
+Verify storage layer + server end-to-end | tests/test_r042_live_storage.py::test_task_lifecycle_persisted PASSED    [ 50%]
+Verify storage layer + server end-to-end | tests/test_r042_live_storage.py::test_task_read_by_id_from_storage_after_memory_loss PASSED [ 75%]
+Verify storage layer + server end-to-end | tests/test_r042_live_storage.py::test_chat_persists_and_agent_stats_upserted PASSED [100%]
+Verify storage layer + server end-to-end | ============================== 4 passed in 1.71s ===============================
+
+## the 4 deselected = marker network (pytest.ini addopts -m "not network"). Run in job network (id 117474531780): pytest tests/ -m network -v against the real internet (public endpoints, no secret):
+Live network tests | platform linux -- Python 3.11.17, pytest-9.1.1, pluggy-1.7.0 -- /opt/hostedtoolcache/Python/3.11.17/x64/bin/python
+Live network tests | tests/test_network_live.py::test_researcher_live_duckduckgo PASSED       [ 25%]
+Live network tests | tests/test_network_live.py::test_api_integrator_live_get PASSED          [ 50%]
+Live network tests | tests/test_network_live.py::test_network_client_live_dns_and_head PASSED [ 75%]
+Live network tests | tests/test_r114_r118_real_fixes.py::test_live_keyless_llm_and_translation PASSED [100%]
+Live network tests | ====================== 4 passed, 1262 deselected in 3.89s ======================
+
+## PR checks before merge (gh pr checks 174): CI run 39058963368 success, Governance Gate 39058963375 success (recorded in the R-160 handoff); PR head = tested_sha.
+pr_ci_run=39058963368 event=pull_request headSha=33d10bdcba57b9c2ec87e38a57089e9d05306e50 conclusion=success
+pr_governance_run=39058963375 workflow=Governance Gate event=pull_request headSha=33d10bdcba57b9c2ec87e38a57089e9d05306e50 conclusion=success
+## note: 'Run tests (live test suite)' is the CI step's own name; it runs the deterministic offline suite (with coverage) — it is NOT a live integration.

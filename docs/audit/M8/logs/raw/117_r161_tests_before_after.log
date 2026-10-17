@@ -1,0 +1,172 @@
+# 117 R-161 tests before (main) and after (branch) — 2026-10-17T20:10:04Z
+## BEFORE: git worktree of origin/main dadbba1d1fb01cdf17a7a01c54bbb088f583b086 + only tests/test_r161_live_integration.py copied in
+$ ls scripts/r161_live_integration.py .github/workflows/live-integration.yml
+ls: cannot access 'scripts/r161_live_integration.py': No such file or directory
+ls: cannot access '.github/workflows/live-integration.yml': No such file or directory
+$ python -c 'LLMClient(url=...)' on main
+TypeError: LLMClient.__init__() got an unexpected keyword argument 'url'
+$ /tmp/venv3.11/bin/python -m pytest -q -p no:cacheprovider tests/test_r161_live_integration.py  (main)
+collected 0 items / 1 error
+ImportError while importing test module '/tmp/r161/main_wt/tests/test_r161_live_integration.py'.
+E   ModuleNotFoundError: No module named 'r161_live_integration'
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 0.23s ===============================
+=> main: collection error (the runner does not exist on main); pytest rc=2 (interrupted)
+
+## AFTER: branch m8/r161-live-integration (working tree, before commit) on git dadbba1d1fb01cdf17a7a01c54bbb088f583b086 + changes
+$ python3 -m pytest -v -p no:cacheprovider tests/test_r161_live_integration.py  (Python 3.14.3)
+tests/test_r161_live_integration.py::test_nothing_requested_is_not_run_and_not_success PASSED
+tests/test_r161_live_integration.py::test_missing_configuration_is_blocked_by_variable_name_only PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env0-R161_LIVE is not 1] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env1-R161_LIVE is not 1] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env2-not in R161_ALLOWED_HOSTS] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env3-not in R161_ALLOWED_HOSTS] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env4-R161_CREDENTIAL_EXPIRES_AT not declared] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env5-not an ISO-8601 time] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env6-in the past] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env7-more than 7 days ahead] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://proj.supabase.co-must use https] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[https://user:pw@proj.supabase.co-credentials inside the endpoint URL] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[ftp://proj.supabase.co-http(s) URL] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://10.0.0.5:3000-private/reserved address] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://192.168.1.10-private/reserved address] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[not a url-http(s) URL] PASSED
+tests/test_r161_live_integration.py::test_fully_enabled_live_endpoint_must_resolve_publicly PASSED
+tests/test_r161_live_integration.py::test_live_endpoint_without_network_is_a_failure_never_a_pass PASSED
+tests/test_r161_live_integration.py::test_preflight_live_ok_and_classes PASSED
+tests/test_r161_live_integration.py::test_storage_probe_passes_and_cleans_up_only_its_rows PASSED
+tests/test_r161_live_integration.py::test_storage_provider_failures_are_failures[reject-check failed: insert_task accepted] PASSED
+tests/test_r161_live_integration.py::test_storage_provider_failures_are_failures[malformed-check failed: get_task returns the row] PASSED
+tests/test_r161_live_integration.py::test_storage_timeout_is_a_failure_and_cleanup_still_runs PASSED
+tests/test_r161_live_integration.py::test_cleanup_failure_turns_a_passing_probe_into_a_failure[delete_fails-DELETE events -> HTTP 500] PASSED
+tests/test_r161_live_integration.py::test_cleanup_failure_turns_a_passing_probe_into_a_failure[delete_noop-still present after cleanup] PASSED
+tests/test_r161_live_integration.py::test_connection_refused_is_a_failure PASSED
+tests/test_r161_live_integration.py::test_cancelled_run_cleans_up_and_is_reported_as_failure PASSED
+tests/test_r161_live_integration.py::test_llm_probe_pass_uses_the_keyed_client_only PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[reject-provider answered HTTP 401] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[empty-provider: empty completion] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[malformed-provider request failed] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[wrong_word-answer is the expected word] PASSED
+tests/test_r161_live_integration.py::test_llm_timeout_is_a_failure PASSED
+tests/test_r161_live_integration.py::test_external_probe_pass PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[reject-HTTP 401] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[empty-empty completion] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[malformed-JSONDecodeError] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[wrong_word-answer is the expected word] PASSED
+tests/test_r161_live_integration.py::test_a_pass_needs_a_response PASSED
+tests/test_r161_live_integration.py::test_redactor PASSED
+tests/test_r161_live_integration.py::test_secrets_never_reach_report_stdout_or_logs_even_on_exceptions PASSED
+tests/test_r161_live_integration.py::test_report_separates_evidence_classes_and_cli_writes_it PASSED
+tests/test_r161_live_integration.py::test_exit_codes PASSED
+tests/test_r161_live_integration.py::test_workflow_is_manual_only_and_least_privilege PASSED
+tests/test_r161_live_integration.py::test_workflow_secrets_only_in_the_runner_step_and_artifact_is_checked PASSED
+tests/test_r161_live_integration.py::test_ci_never_receives_live_secrets_and_storage_job_runs_the_runner_locally PASSED
+============================= 46 passed in 14.63s ==============================
+$ /tmp/venv3.11/bin/python -m pytest -v -p no:cacheprovider tests/test_r161_live_integration.py  (Python 3.11.15)
+tests/test_r161_live_integration.py::test_nothing_requested_is_not_run_and_not_success PASSED
+tests/test_r161_live_integration.py::test_missing_configuration_is_blocked_by_variable_name_only PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env0-R161_LIVE is not 1] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env1-R161_LIVE is not 1] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env2-not in R161_ALLOWED_HOSTS] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env3-not in R161_ALLOWED_HOSTS] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env4-R161_CREDENTIAL_EXPIRES_AT not declared] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env5-not an ISO-8601 time] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env6-in the past] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env7-more than 7 days ahead] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://proj.supabase.co-must use https] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[https://user:pw@proj.supabase.co-credentials inside the endpoint URL] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[ftp://proj.supabase.co-http(s) URL] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://10.0.0.5:3000-private/reserved address] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://192.168.1.10-private/reserved address] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[not a url-http(s) URL] PASSED
+tests/test_r161_live_integration.py::test_fully_enabled_live_endpoint_must_resolve_publicly PASSED
+tests/test_r161_live_integration.py::test_live_endpoint_without_network_is_a_failure_never_a_pass PASSED
+tests/test_r161_live_integration.py::test_preflight_live_ok_and_classes PASSED
+tests/test_r161_live_integration.py::test_storage_probe_passes_and_cleans_up_only_its_rows PASSED
+tests/test_r161_live_integration.py::test_storage_provider_failures_are_failures[reject-check failed: insert_task accepted] PASSED
+tests/test_r161_live_integration.py::test_storage_provider_failures_are_failures[malformed-check failed: get_task returns the row] PASSED
+tests/test_r161_live_integration.py::test_storage_timeout_is_a_failure_and_cleanup_still_runs PASSED
+tests/test_r161_live_integration.py::test_cleanup_failure_turns_a_passing_probe_into_a_failure[delete_fails-DELETE events -> HTTP 500] PASSED
+tests/test_r161_live_integration.py::test_cleanup_failure_turns_a_passing_probe_into_a_failure[delete_noop-still present after cleanup] PASSED
+tests/test_r161_live_integration.py::test_connection_refused_is_a_failure PASSED
+tests/test_r161_live_integration.py::test_cancelled_run_cleans_up_and_is_reported_as_failure PASSED
+tests/test_r161_live_integration.py::test_llm_probe_pass_uses_the_keyed_client_only PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[reject-provider answered HTTP 401] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[empty-provider: empty completion] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[malformed-provider request failed] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[wrong_word-answer is the expected word] PASSED
+tests/test_r161_live_integration.py::test_llm_timeout_is_a_failure PASSED
+tests/test_r161_live_integration.py::test_external_probe_pass PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[reject-HTTP 401] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[empty-empty completion] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[malformed-JSONDecodeError] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[wrong_word-answer is the expected word] PASSED
+tests/test_r161_live_integration.py::test_a_pass_needs_a_response PASSED
+tests/test_r161_live_integration.py::test_redactor PASSED
+tests/test_r161_live_integration.py::test_secrets_never_reach_report_stdout_or_logs_even_on_exceptions PASSED
+tests/test_r161_live_integration.py::test_report_separates_evidence_classes_and_cli_writes_it PASSED
+tests/test_r161_live_integration.py::test_exit_codes PASSED
+tests/test_r161_live_integration.py::test_workflow_is_manual_only_and_least_privilege PASSED
+tests/test_r161_live_integration.py::test_workflow_secrets_only_in_the_runner_step_and_artifact_is_checked PASSED
+tests/test_r161_live_integration.py::test_ci_never_receives_live_secrets_and_storage_job_runs_the_runner_locally PASSED
+============================= 46 passed in 14.61s ==============================
+$ /tmp/venv3.12/bin/python -m pytest -v -p no:cacheprovider tests/test_r161_live_integration.py  (Python 3.12.13)
+tests/test_r161_live_integration.py::test_nothing_requested_is_not_run_and_not_success PASSED
+tests/test_r161_live_integration.py::test_missing_configuration_is_blocked_by_variable_name_only PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env0-R161_LIVE is not 1] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env1-R161_LIVE is not 1] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env2-not in R161_ALLOWED_HOSTS] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env3-not in R161_ALLOWED_HOSTS] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env4-R161_CREDENTIAL_EXPIRES_AT not declared] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env5-not an ISO-8601 time] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env6-in the past] PASSED
+tests/test_r161_live_integration.py::test_live_is_refused_unless_explicitly_enabled_allowlisted_and_temporary[env7-more than 7 days ahead] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://proj.supabase.co-must use https] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[https://user:pw@proj.supabase.co-credentials inside the endpoint URL] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[ftp://proj.supabase.co-http(s) URL] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://10.0.0.5:3000-private/reserved address] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[http://192.168.1.10-private/reserved address] PASSED
+tests/test_r161_live_integration.py::test_endpoint_policy[not a url-http(s) URL] PASSED
+tests/test_r161_live_integration.py::test_fully_enabled_live_endpoint_must_resolve_publicly PASSED
+tests/test_r161_live_integration.py::test_live_endpoint_without_network_is_a_failure_never_a_pass PASSED
+tests/test_r161_live_integration.py::test_preflight_live_ok_and_classes PASSED
+tests/test_r161_live_integration.py::test_storage_probe_passes_and_cleans_up_only_its_rows PASSED
+tests/test_r161_live_integration.py::test_storage_provider_failures_are_failures[reject-check failed: insert_task accepted] PASSED
+tests/test_r161_live_integration.py::test_storage_provider_failures_are_failures[malformed-check failed: get_task returns the row] PASSED
+tests/test_r161_live_integration.py::test_storage_timeout_is_a_failure_and_cleanup_still_runs PASSED
+tests/test_r161_live_integration.py::test_cleanup_failure_turns_a_passing_probe_into_a_failure[delete_fails-DELETE events -> HTTP 500] PASSED
+tests/test_r161_live_integration.py::test_cleanup_failure_turns_a_passing_probe_into_a_failure[delete_noop-still present after cleanup] PASSED
+tests/test_r161_live_integration.py::test_connection_refused_is_a_failure PASSED
+tests/test_r161_live_integration.py::test_cancelled_run_cleans_up_and_is_reported_as_failure PASSED
+tests/test_r161_live_integration.py::test_llm_probe_pass_uses_the_keyed_client_only PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[reject-provider answered HTTP 401] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[empty-provider: empty completion] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[malformed-provider request failed] PASSED
+tests/test_r161_live_integration.py::test_llm_provider_failures_are_failures[wrong_word-answer is the expected word] PASSED
+tests/test_r161_live_integration.py::test_llm_timeout_is_a_failure PASSED
+tests/test_r161_live_integration.py::test_external_probe_pass PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[reject-HTTP 401] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[empty-empty completion] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[malformed-JSONDecodeError] PASSED
+tests/test_r161_live_integration.py::test_external_failures_are_failures[wrong_word-answer is the expected word] PASSED
+tests/test_r161_live_integration.py::test_a_pass_needs_a_response PASSED
+tests/test_r161_live_integration.py::test_redactor PASSED
+tests/test_r161_live_integration.py::test_secrets_never_reach_report_stdout_or_logs_even_on_exceptions PASSED
+tests/test_r161_live_integration.py::test_report_separates_evidence_classes_and_cli_writes_it PASSED
+tests/test_r161_live_integration.py::test_exit_codes PASSED
+tests/test_r161_live_integration.py::test_workflow_is_manual_only_and_least_privilege PASSED
+tests/test_r161_live_integration.py::test_workflow_secrets_only_in_the_runner_step_and_artifact_is_checked PASSED
+tests/test_r161_live_integration.py::test_ci_never_receives_live_secrets_and_storage_job_runs_the_runner_locally PASSED
+============================= 46 passed in 15.21s ==============================
+$ AGOS_AGENT_IMPL=specialists /tmp/venv3.12/bin/python -m pytest -q tests/test_r161_live_integration.py
+============================= 46 passed in 14.85s ==============================
+
+## existing tests touched by the LLMClient(url=) change (default path unchanged)
+============================= 121 passed in 10.59s =============================
+
+## failures found while writing the tests and fixed in the runner (no skip/xfail):
+- test_connection_refused_is_a_failure: a refused connection reported connected=True (the 'other tenant cannot read' check is true without a server) -> connected now requires a real answer (write accepted / row read)
+- test_secrets_never_reach_report_stdout_or_logs_even_on_exceptions: an unexpected exception inside a probe crashed the runner with a traceback carrying the secret value -> run_target turns it into FAIL 'probe error: <type>' and main() has a redacted last-resort handler
+- test_fully_enabled_live_endpoint_still_must_resolve_publicly (test assumption): under the conftest fake DNS (TEST-NET treated as public by the suite) the live probe reaches the offline guard -> split into a DNS-refusal test (BLOCKED) and a no-network live test (FAIL, connected=False, never PASS)
+- workflow static test: the header comment contained the word 'secrets.' -> reworded
+- three timeout/cancel tests took 30 s each because the fakes' hang handlers blocked server shutdown -> fake hang 4 s (probe deadline 1 s)

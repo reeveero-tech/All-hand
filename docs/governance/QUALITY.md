@@ -285,3 +285,10 @@
 - **`web/tests/task_view.test.mjs`** (8) ⇒ اختبارات الويب 39/39.
 - **قبل/بعد على main**: 27/84 و34/39 تفشل (`110`، `111`). الحزمة الكاملة بعد الدفعة: 1258 passed, 4 skipped, 4 deselected (`113`).
 - **ثغرات مسجلة**: G-160-1..6 (انظر EVIDENCE).
+
+## R-161 — اختبارات التكامل الاختياري (D-073)
+- **`tests/test_r161_live_integration.py`** (46، فئة **mock**: خدمات وهمية aiohttp على 127.0.0.1)، يشغّله CI في الوضعين ضمن `test`. لا يتصل بأي شيء خارج loopback، وحارس conftest يرفع عند أي محاولة، وبعض الاختبارات تعتمد عليه لإثبات أن الإعداد الحي المرفوض لم يتصل.
+- **local_integration**: job ‏`storage` يشغّل `scripts/r161_live_integration.py --targets storage` على PostgreSQL + PostgREST الحقيقيين، والفشل يُفشل الـjob.
+- **live_integration**: workflow يدوي فقط (`live-integration.yml`)، خارج مسار الـPR — **لم يُشغَّل** (G-161-1).
+- **قاعدة**: اختبار unit أو mock لا يُحتسب حياً. لا يُعد دليلاً حياً إلا صف `live_integration` بنتيجة PASS في تقرير المشغل.
+- قبل/بعد في `117`؛ والحزمة بعد الدفعة 1304 passed, 4 skipped, 4 deselected (`119`).

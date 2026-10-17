@@ -1,5 +1,21 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-17 — R-161 (M8/P2): تكامل اختياري آمن ومصنف mock/local/live — storage وLLM وأداة خارجية وMCP (دفعة m8/r161-live-integration، D-073) + قبول R-160
+
+- **قبول R-160**: PR #174 مدموجة بـ`--merge`. SHA الدمج `dadbba1d1fb01cdf17a7a01c54bbb088f583b086`، وأبوه الثاني هو المختبر `33d10bdcba57b9c2ec87e38a57089e9d05306e50`. CI main ‏39059547216 على SHA الدمج نجح، وتُخطّي publish (D-011، ليس نشراً). خطوات pytest الثلاث (3.11، 3.12، 3.12 specialists) طبعت 1258 passed, 4 skipped, 4 deselected؛ المتخطاة نُفذت في job ‏storage والمستبعدة في job ‏network (`115`). R-160 ‏`done`.
+- **مضاف**:
+  - `scripts/r161_live_integration.py`: مشغل أهداف storage/llm/external/mcp بنتائج PASS/FAIL/BLOCKED/NOT_RUN وفئات mock/local_integration/live_integration، وسياسة نقاط النهاية، والمهلة والإلغاء، والتنظيف المحقق، والتنقيح، وتقرير JSON.
+  - `.github/workflows/live-integration.yml`: تشغيل حي يدوي فقط (workflow_dispatch، بيئة r161-staging، contents: read).
+  - `tests/test_r161_live_integration.py` (46 اختباراً، فئة mock).
+- **مُعدل**:
+  - `agent_civilization/core/llm.py`: `LLMClient(..., url=None)` اختياري؛ الافتراضي OpenRouter بلا تغيير.
+  - `scripts/r042/run_local_stack.sh` و`.github/workflows/ci.yml` (job ‏storage فقط): تشغيل المشغل على المخزن المحلي نفسه ورفع تقريره.
+- **مُصلح في النطاق**: استثناء غير متوقع داخل probe كان سيُسقط المشغل بـtraceback يحمل قيمة السر؛ صار FAIL بنوع الاستثناء فقط (كشفه الاختبار).
+- **لم يتغير**: أي عقد API، والإعدادات الإلزامية، والتبعيات، وإعدادات حماية الفرع. لا سر جديد إلزامي.
+- **لم يُشغَّل**: live_integration — لا بيئة staging ولا بيانات اعتماد اختبار مؤقتة من المالك. MCP ‏BLOCKED (لا عميل MCP).
+- **الأدلة**: `115` قبول R-160، `116` فحص الحالة، `117` الاختبارات قبل/بعد، `118` تشغيلات المشغل، `119` الحزمة بالوضعين، `120` البوابات والبناء، `121` job ‏storage في CI الـPR.
+- **وثائق**: ROADMAP، PROJECT_STATE، DECISIONS (D-073)، OPERATIONS، SECURITY، QUALITY، `docs/governance/contracts/README.md`، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+
 ## 2026-10-17 — R-160 (M8/P2): عقود قابلة للتحقق — API/SSE/نتائج/أدوات/LLM/ذاكرة/طابور/تخزين وإصدارات (دفعة m8/r160-contracts، D-072) + G-159-1 + قبول R-159
 
 - **قبول R-159**: PR #173 مدموجة بـ`--merge`. SHA الدمج `49faab68fefee582b83f14fc64808e309adb7522`، وأبوه الثاني هو المختبر `c8f722f91858c78d1105d1523297cd8d68c9b333`. CI main ‏39018809541 نجح، وتُخطّي publish (D-011، ليس نشراً). خطوات pytest الثلاث: 1130 passed, 4 skipped, 4 deselected. R-159 ⇒ `done` لا `accepted` (`108`)، وفحص الحالة وتزامن جدول M8 (`109`).

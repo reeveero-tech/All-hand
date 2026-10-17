@@ -1,0 +1,14 @@
+# 116 status evidence check (R-154 rules) after the ROADMAP/PROJECT_STATE edits of the R-161 batch — 2026-10-17T20:12:56Z
+## run 1 (before this log file existed): python3 scripts/check_status_evidence.py .
+::error::R-160: evidence path missing or outside docs/audit/: docs/audit/M8/logs/raw/116_r160_r161_status_check.log
+::error::Status evidence check failed: 1 violation(s) (D-066).
+rc=1
+
+## run 2 (after creating this file, no other change): python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+
+## M8 table in PROJECT_STATE vs ROADMAP (item by item)
+items in table=34 mismatches=none
+R-160: done done | R-161: awaiting_merge awaiting_merge
+'accepted' used as a status: False

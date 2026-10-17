@@ -232,3 +232,28 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 - سجلات الاستثناءات في القوالب والوكلاء والطابور بنوع الاستثناء فقط. فحص محلي: `python3 scripts/scan_raw_exception_logs.py` (rc=1 عند موقع جديد غير مراجَع).
 - إيقاف الخادم أثناء مهام جارية: سجلاتها في الذاكرة تنتهي `failed` بسبب «task cancelled before completion»؛ صفوف التخزين المقابلة قد تبقى `running` (G-160-2).
 - فحص العقود محلياً: `python3 scripts/export_contract_schemas.py --check`؛ بعد تغيير مقصود: `python3 scripts/export_contract_schemas.py` ثم مراجعة الفرق ورفع الإصدار إن كان BREAKING.
+
+## R-161 — التكامل الاختياري: محلي وحي (D-073، 2026-10-17)
+المشغل: `python3 scripts/r161_live_integration.py --targets storage,llm,external,mcp --report r161_report.json`. بلا إعداد: كل هدف BLOCKED ورمز الخروج 2، وبلا `--targets` ‏NOT_RUN ورمز 3. لا يُحتسب أي منهما نجاحاً.
+
+- **رموز الخروج**: 0 = كل المطلوب PASS؛ 1 = FAIL (فشل المزود، أو المهلة، أو الرفض، أو الاستجابة المشوهة، أو الإلغاء، أو فشل التنظيف)؛ 2 = BLOCKED (إعداد ناقص أو مرفوض)؛ 3 = لم يُشغَّل شيء؛ 64 = هدف غير معروف.
+- **المتغيرات** (القيم لا تُطبع أبداً):
+
+| المتغير | المعنى |
+|---|---|
+| `R161_STORAGE_URL` / `R161_STORAGE_KEY` | مشروع PostgREST/Supabase **للاختبار فقط** ومفتاح خدمته |
+| `R161_LLM_URL` / `R161_LLM_API_KEY` / `R161_LLM_MODEL` | نقطة OpenAI-compatible (الافتراضي OpenRouter) ومفتاح اختبار |
+| `R161_EXTERNAL_URL` / `R161_EXTERNAL_API_KEY` / `R161_EXTERNAL_MODEL` | أداة/وكيل خارجي OpenAI-compatible |
+| `R161_LIVE=1` | يسمح بأي نقطة غير loopback (وإلا BLOCKED) |
+| `R161_ALLOWED_HOSTS` | قائمة مضيفين مطابقة حرفياً، مفصولة بفواصل |
+| `R161_CREDENTIAL_EXPIRES_AT` | وقت انتهاء بيانات الاعتماد بصيغة ISO-8601 مع منطقة، خلال 7 أيام |
+| `R161_TIMEOUT_S` | مهلة كل هدف (1..300، افتراضي 30) |
+
+- **محلياً (local_integration)**: `bash scripts/r042/run_local_stack.sh` (يتطلب `ADMIN_URI` و`AUTH_URI` و`POSTGREST_BIN`) يشغّل في نهايته المشغل على المخزن المحلي نفسه، ويكتب التقرير في `$R161_REPORT` (افتراضياً `/tmp/r161_storage_local.json`). في CI يُرفع ضمن artifact ‏`r042-storage-verification-log`.
+- **حياً (live_integration) — إجراء المالك، لا يُنفذه الوكيل**:
+  1. **البيئة**: Settings ← Environments ← `r161-staging` مع required reviewers (والفرع main فقط)، **قبل** أول تشغيل. إن شُغِّل الـworkflow قبل ذلك أنشأها GitHub بلا حماية وبلا أسرار، فيصير كل هدف BLOCKED (G-161-5).
+  2. **بيانات اعتماد مؤقتة بصلاحية دنيا**: مشروع Supabase **مخصص للاختبار** (لا الإنتاج، ولا مشروع فيه بيانات حقيقية) بجدولي `tasks` و`events` من `docs/sql/`؛ ومفتاح LLM بحد إنفاق صغير وانتهاء قصير لدى المزود إن أتاحه. المفتاح لا يصير مؤقتاً بتسميته: الضمان هو انتهاؤه لدى المزود أو إبطاله يدوياً بعد التشغيل.
+  3. **الأسرار** في البيئة: `R161_STORAGE_KEY`، و`R161_LLM_API_KEY`، و`R161_EXTERNAL_API_KEY`. **المتغيرات** (vars): `R161_ALLOWED_HOSTS`، و`R161_STORAGE_URL`، و`R161_LLM_URL`، و`R161_LLM_MODEL`، و`R161_EXTERNAL_URL`، و`R161_EXTERNAL_MODEL`.
+  4. **التشغيل**: Actions ← «R-161 Live Integration (manual)» ← Run workflow، مع الأهداف ووقت الانتهاء الفعلي. الـjob يفشل ما لم يكن كل المطلوب PASS، والتقرير المنقح يُرفع artifact ‏`r161-integration-report` لمدة 30 يوماً.
+  5. **التنظيف**: المشغل يحذف صفوف مستأجر التشغيل الاصطناعي فقط ويتحقق منه، وفشله يظهر FAIL. بعد التشغيل: إبطال المفاتيح أو تركها تنتهي، وحذف الأسرار من البيئة، وحذف مشروع الاختبار إن أُنشئ لهذا الغرض.
+- **MCP**: دائماً BLOCKED — لا عميل MCP في المستودع (G-161-2).
