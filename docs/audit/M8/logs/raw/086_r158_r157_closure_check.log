@@ -1,0 +1,10 @@
+# 086 status-evidence check right after flipping R-157 to done (before any R-158 work), HEAD=573793c1f36afd77f3b79247ab9e2d978a397b62 + working-tree docs (2026-10-17T06:22:08Z)
+$ python3 scripts/check_status_evidence.py .
+::error::R-157: evidence path missing or outside docs/audit/: docs/governance/roadmaps/revival-scale/maps/CAPABILITY_CONTRACTS_228b956.md
+::error::Status evidence check failed: 1 violation(s) (D-066).
+exit=1
+$ git status --short
+ M docs/governance/PROJECT_STATE.md
+ M docs/governance/ROADMAP.md
+?? docs/audit/M8/logs/raw/085_r157_acceptance_main_ci.log
+?? docs/audit/M8/logs/raw/086_r158_r157_closure_check.log
