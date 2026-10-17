@@ -455,7 +455,7 @@
 
 | الهدف | mock | local_integration | live_integration |
 |---|---|---|---|
-| storage | PASS (`117`، `118`) — خدمات وهمية على 127.0.0.1 | CI job ‏storage على PostgreSQL 17 + PostgREST 12.2.3 (`121`)؛ في بيئة العمل NOT_RUN (لا PostgreSQL ولا Docker) | **NOT_RUN** |
+| storage | PASS (`117`، `118`) — خدمات وهمية على 127.0.0.1 | **PASS** في CI job ‏storage لـPR #175 (التشغيل 39067354247) على PostgreSQL 17 + PostgREST 12.2.3 حقيقيين على loopback: 9/9 فحوص والتنظيف ok (`121`)؛ في بيئة العمل NOT_RUN (لا PostgreSQL ولا Docker) | **NOT_RUN** |
 | llm | PASS (`117`، `118`) | لا خادم LLM حقيقي محلي — لا شيء | **NOT_RUN** |
 | external | PASS (`117`، `118`) | لا شيء | **NOT_RUN** |
 | mcp | BLOCKED | BLOCKED | BLOCKED — لا عميل MCP |
@@ -503,5 +503,5 @@
 - `116`: فحص أدلة الحالة.
 - `119`: الحزمة كاملة بالوضعين على Python 3.11 و3.12 (تبعيات مقفلة).
 - `120`: ruff، وعدم الحذف، والذرية v1/v2، وأدلة الحالة، و`--check` العقود، والماسح، و`git diff --check`، و`web/` (test + build)، والبناء الجذري.
-- `121`: CI الـPR — job ‏storage (local_integration) وبقية الوظائف.
+- `121`: CI الـPR ‏39067354247 (رأس `de67c53`) success، والحوكمة 39067354159 success: job ‏storage — R-042 ‏26/26 و4 passed، ثم المشغل storage ‏PASS بفئة local_integration (9/9، تنظيف ok، رمز 0)؛ وخطوات pytest الثلاث 1304 passed, 4 skipped, 4 deselected. تعذر تنزيل artifact التقرير من بيئة العمل (HTTP 401)، فالدليل هو مخرج المشغل في سجل الـjob.
 - **لم يُختبر**: تكامل حي مع أي مزود أو مشروع، وSupabase المستضاف، وMCP، وRedis حقيقي، والحمل أو السعة. لا ادعاء جاهزية إنتاج.
