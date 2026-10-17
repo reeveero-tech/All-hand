@@ -1,5 +1,15 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-17 — R-155 (M8/P1): جرد 100% من الملفات المتعقبة عند `f8b2d48` (دفعة m8/r155-file-inventory، D-067) + قبول R-154
+
+- **قبول R-154**: PR #167 مدموجة بـ`--merge` (SHA `f8b2d48`، الأب الثاني = المختبر `141e3f8`)، CI main 38993839404 success؛ R-154 ⇒ `done` بحقول دليل متحققة (`050`)؛ فحص الحالات نجح بعد التحويل وقبل أي عمل جرد (`051`).
+- **مضاف**: `scripts/build_file_inventory.py` — مولّد حتمي يقرأ اللقطة من كائنات git، ينتج صفاً لكل مسار في `git ls-files` بأعمدة القالب الـ24، بفحص ذاتي (عدد/مجموعة المسارات، لا تكرار، لا `DELETE`، مفردات الحالة، سبب وإجراء لكل `unresolved`).
+- **مضاف**: `docs/governance/roadmaps/revival-scale/inventory/` — `FILE_INVENTORY_f8b2d48.csv` (1867 صفاً)، `INVENTORY_SUMMARY_f8b2d48.md/.json` (مولّدان)، `README.md` (الشرح ومرفقات الدفعة).
+- **النتيجة**: 131 active، 36 shared، 1000 legacy-compatible، 563 generated، 59 test-only، 61 docs-only، 17 unresolved (`src/` — Q-002). لا فهم كامل معلن؛ لا أهداف سعة مقيسة؛ لا جاهزية إنتاجية.
+- **اختبارات**: `tests/test_r155_file_inventory.py` (17)؛ طفرات 13/13 (`055`)؛ المجموعة 984 ناجح + 4 متخطى + 4 مستبعد (`056`).
+- **أدلة**: `052` إحصاء اللقطة، `053` pytest+تغطية في worktree نظيف عند الأساس، `054` التوليد والحتمية، `055`..`062`.
+- **وثائق**: ROADMAP، PROJECT_STATE، DECISIONS (D-067)، OPEN_QUESTIONS (تحديث Q-002)، RISKS (RISK-032)، QUALITY، README، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+
 ## 2026-10-17 — R-154 (M8): تعريف حالات العمل وشروط قبول الأدلة (دفعة m8/r154-status-definitions، D-066) + قبول R-153
 
 - **مضاف**: `docs/governance/STATUS_DEFINITIONS.md` — المرجع الملزم: ست حالات (`planned`/`in_progress`/`blocked`/`awaiting_merge`/`done`/`accepted`)، حقول دليل لكل حالة، دورة الحياة، و`production-ready` قرار جاهزية مستقل (R-184 + قرار المالك).

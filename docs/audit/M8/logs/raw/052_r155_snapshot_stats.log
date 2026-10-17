@@ -1,0 +1,53 @@
+# 052 R-155 reproducible snapshot statistics at f8b2d4828ee5aba3dc097665199f1fdf6450c2eb (2026-10-17T02:44:09Z)
+## commands (clean worktree checked out at the base SHA: git worktree add --detach /tmp/snap f8b2d4828ee5aba3dc097665199f1fdf6450c2eb):
+$ git -C /tmp/snap status --porcelain | wc -l
+0
+$ git -C /tmp/snap ls-files -z | tr -cd "\0" | wc -c
+1867
+$ git ls-tree -r -z --name-only --full-tree f8b2d4828ee5aba3dc097665199f1fdf6450c2eb | tr -cd "\0" | wc -c
+1867
+$ diff <(git -C /tmp/snap ls-files) <(git ls-tree -r --name-only --full-tree f8b2d4828ee5aba3dc097665199f1fdf6450c2eb) && echo identical
+identical
+$ git ls-tree -r -l f8b2d4828ee5aba3dc097665199f1fdf6450c2eb | awk "{s+=\$4} END {print s}"   # total bytes
+24471939
+## by top-level entry (git -C /tmp/snap ls-files | awk -F/ '{print (NF>1?$1"/":$1)}' | sort | uniq -c):
+     27 (root files)
+      2 .github/
+      1 .lovable/
+   1080 agent_civilization/
+      9 agos_kernel/
+    628 docs/
+      1 public/
+     35 scripts/
+     18 src/
+     50 tests/
+     16 web/
+## by extension:
+   1188 py
+    518 log
+     56 md
+     36 json
+      9 ts
+      8 tsx
+      8 jsx
+      7 png
+      5 txt
+      4 sql
+      3 lock
+      3 jsonl
+      3 js
+      2 yml
+      2 sh
+      2 mjs
+      2 in
+      2 csv
+      2 css
+      1 yaml
+      1 ini
+      1 html
+      1 gitignore
+      1 example
+      1 dockerignore
+      1 (none)
+## agent_civilization/agents/specialists: 1044 files; shims matching */<spec>_NNNN.py: 1000
+## file names with spaces or non-ASCII: 0

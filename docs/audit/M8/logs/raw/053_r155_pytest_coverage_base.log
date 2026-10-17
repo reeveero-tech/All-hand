@@ -1,0 +1,13 @@
+# 053 pytest + coverage in a CLEAN worktree at f8b2d4828ee5aba3dc097665199f1fdf6450c2eb (2026-10-17T02:44:23Z)
+$ git -C /tmp/snap rev-parse HEAD: f8b2d4828ee5aba3dc097665199f1fdf6450c2eb; dirty files: 0
+$ python -m pytest tests/ -q -p no:cacheprovider -rs --cov=. --cov-config=/dev/null --cov-report=json:/tmp/cov_base.json
+Coverage JSON written to file /tmp/cov_base.json
+SKIPPED [1] tests/test_r042_live_storage.py:72: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:78: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:122: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:158: R-042 live storage not configured (set R042_LIVE=1)
+=========== 967 passed, 4 skipped, 4 deselected in 134.30s (0:02:14) ===========
+exit=0
+## coverage totals (from /tmp/cov_base.json written by the run above; per-file percents saved to 053_r155_coverage_files.json):
+all measured files: 1146 total percent_covered_display: 91
+excluding tests/: 1096 files, covered_lines 10303 num_statements 11808 = 87.3 %

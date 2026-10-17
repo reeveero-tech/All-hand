@@ -1,0 +1,7 @@
+# 056 pytest (R-155 branch) 2026-10-17T02:51:27Z
+SKIPPED [1] tests/test_r042_live_storage.py:72: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:78: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:122: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:158: R-042 live storage not configured (set R042_LIVE=1)
+=========== 984 passed, 4 skipped, 4 deselected in 118.54s (0:01:58) ===========
+exit=0
