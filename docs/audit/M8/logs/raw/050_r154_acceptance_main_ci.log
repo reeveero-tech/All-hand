@@ -1,0 +1,50 @@
+# 050 R-154 acceptance: PR #167 merged with --merge; CI on main at the merge SHA (recorded inside R-155 batch, 2026-10-17T02:22:03Z)
+pr=#167 state=MERGED mergedAt=2026-10-17T02:09:57Z
+merge_sha=f8b2d4828ee5aba3dc097665199f1fdf6450c2eb
+tested_sha=141e3f8bb4f41509646d24f43337c89e46075aa2
+merge^2 (git) = 141e3f8bb4f41509646d24f43337c89e46075aa2
+## PR checks on tested head:
+publish=skipping
+audit=pass
+build=pass
+docker=pass
+governance=pass
+network=pass
+quality=pass
+storage=pass
+test=pass
+## main push run:
+ci_run=38993839404
+ci_conclusion=success
+headSha=f8b2d4828ee5aba3dc097665199f1fdf6450c2eb
+url=https://github.com/reeveero-tech/All-hand/actions/runs/38993839404
+job quality=success
+job test=success
+job network=success
+job docker=success
+job build=success
+job audit=success
+job storage=success
+job publish=skipped
+## tests: raw log docs/audit/M8/logs/raw/041_r154_pytest.log (tested branch content):
+SKIPPED [1] tests/test_r042_live_storage.py:72: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:78: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:122: R-042 live storage not configured (set R042_LIVE=1)
+SKIPPED [1] tests/test_r042_live_storage.py:158: R-042 live storage not configured (set R042_LIVE=1)
+=========== 967 passed, 4 skipped, 4 deselected in 112.64s (0:01:52) ===========
+## deselected (marker network, default addopts -m 'not network'); run by CI job 'network':
+collected 975 items / 971 deselected / 4 selected
+      <Function test_researcher_live_duckduckgo>
+      <Function test_api_integrator_live_get>
+      <Function test_network_client_live_dns_and_head>
+      <Function test_live_keyless_llm_and_translation>
+=============== 4/975 tests collected (971 deselected) in 0.71s ================
+## skipped: 4 x tests/test_r042_live_storage.py need R042_LIVE=1 — run by CI job 'storage' (PostgreSQL+PostgREST service)
+## untested limits: production readiness NOT proven (production-ready requires R-184 GO + owner decision); capacity targets (10,000 agents / 1,000,000 tasks / 10,000 tools) NOT measured; gate does not query GitHub API (ci_run proven by this committed log); test sufficiency not judged by the gate; legacy R-001..R-150 vocabulary-only
+## trial PR #168: state=CLOSED merged=null
+## coverage of skipped/deselected in CI (static evidence from the repo at f8b2d48):
+366:          bash scripts/r042/run_local_stack.sh 2>&1 | tee "$GITHUB_WORKSPACE/r042_storage.log"
+65:export R042_LIVE=1
+66:python -m pytest tests/test_r042_live_storage.py -v -p no:cacheprovider
+395:        run: pytest tests/ -m network -v
+=> job storage (success in run 38993839404) executes the 4 skipped tests; job network (success) executes the 4 deselected tests

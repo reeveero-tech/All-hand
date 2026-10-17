@@ -1,0 +1,14 @@
+# 055 mutation check for scripts/build_file_inventory.py (final version): each mutant MUST make tests/test_r155_file_inventory.py fail
+M1 row-count self-check disabled: rc=1 -> 1 failed, 9 passed in 3.47s -> KILLED
+M2 DELETE decision allowed: rc=1 -> 1 failed, 11 passed in 4.09s -> KILLED
+M3 status vocabulary unchecked: rc=1 -> 1 failed, 12 passed in 4.67s -> KILLED
+M4 unresolved without reason allowed: rc=1 -> 1 failed, 14 passed in 5.06s -> KILLED
+M5 last change = oldest commit (overwrite): rc=1 -> 1 failed, 1 passed in 0.91s -> KILLED
+M6 f-string import_module not expanded: rc=1 -> 1 failed, 3 passed in 1.49s -> KILLED
+M7 no-evidence python treated as active: rc=1 -> 1 failed, 4 passed in 1.85s -> KILLED
+M8 path mentions counted as direct tests: rc=1 -> 1 failed, 5 passed in 2.13s -> KILLED
+M9 open-question rule ignored: rc=1 -> 1 failed, 7 passed in 2.82s -> KILLED
+M10 dates not converted to UTC: rc=1 -> 1 failed, 1 passed in 0.92s -> KILLED
+M11 deploy CMD not parsed: rc=1 -> 1 failed, 3 passed in 1.49s -> KILLED
+M12 path-set equality unchecked: rc=1 -> 1 failed, 13 passed in 5.10s -> KILLED
+M13 shim risk not lowered: rc=1 -> 1 failed, 6 passed in 2.36s -> KILLED
