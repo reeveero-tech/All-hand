@@ -1,0 +1,146 @@
+# 124 R-161b safety tests, full suite and gates — branch m8/r161b-dns-pinning-env-gate
+
+## A. R-161/R-161b tests on the committed head b365ecbab8a6147dc0a75fe3795f6e4d6b9a9faf
+$ python3 -m pytest -q -p no:cacheprovider tests/test_r161_live_integration.py tests/test_r161b_dns_pinning.py tests/test_r161b_workflow_gate.py tests/test_sec05_dns_rebinding.py   (Python 3.14.3)
+============================= 157 passed in 41.96s =============================
+$ /tmp/venv3.11/bin/python -m pytest -q -p no:cacheprovider tests/test_r161_live_integration.py tests/test_r161b_dns_pinning.py tests/test_r161b_workflow_gate.py tests/test_sec05_dns_rebinding.py   (Python 3.11.15)
+============================= 157 passed in 42.72s =============================
+$ /tmp/venv3.12/bin/python -m pytest -q -p no:cacheprovider tests/test_r161_live_integration.py tests/test_r161b_dns_pinning.py tests/test_r161b_workflow_gate.py tests/test_sec05_dns_rebinding.py   (Python 3.12.13)
+============================= 157 passed in 42.85s =============================
+
+## B. full suite, both agent modes, locked venvs (requirements.lock + requirements-dev.lock, --require-hashes); working tree = the code of b365ecbab8a6147dc0a75fe3795f6e4d6b9a9faf (the later doc-only commit does not touch code or tests)
+# command per run: AGOS_AGENT_IMPL=<mode> <python> -m pytest -q -p no:cacheprovider tests/   (pytest.ini: -m 'not network')
+### Python 3.11.15 AGOS_AGENT_IMPL=real — start 2026-10-17T22:09:16Z
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1353 passed, 4 skipped, 4 deselected in 171.01s (0:02:51) ===========
+rc=0 end 2026-10-17T22:12:09Z
+
+### Python 3.11.15 AGOS_AGENT_IMPL=specialists — start 2026-10-17T22:12:09Z
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1353 passed, 4 skipped, 4 deselected in 189.68s (0:03:09) ===========
+rc=0 end 2026-10-17T22:15:31Z
+
+### Python 3.12.13 AGOS_AGENT_IMPL=real — start 2026-10-17T22:15:31Z
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1353 passed, 4 skipped, 4 deselected in 175.77s (0:02:55) ===========
+rc=0 end 2026-10-17T22:18:28Z
+
+### Python 3.12.13 AGOS_AGENT_IMPL=specialists — start 2026-10-17T22:18:28Z
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1353 passed, 4 skipped, 4 deselected in 190.46s (0:03:10) ===========
+rc=0 end 2026-10-17T22:21:52Z
+
+## arithmetic: 1353 = 1304 (main fcc869b, CI 39068752136) + 23 (test_r161b_dns_pinning.py) + 26 (test_r161b_workflow_gate.py); test_r161_live_integration.py stays 46 (one assertion updated)
+## 4 skipped = tests/test_r042_live_storage.py (CI job storage); 4 deselected = marker network (CI job network)
+## note: a first background run was stopped after its first result (1353 passed on 3.11 real) because scripts/r161_staging_gate.py and its test changed afterwards ('not queried' message); the four runs above are on the final code.
+
+## C. gates
+# 124 R-161b gates, lint, web/root builds on committed head b365ecbab8a6147dc0a75fe3795f6e4d6b9a9faf (base origin/main fcc869b5c51d775cab5bc548a70ccda55e0f76a7) — 2026-10-17T22:25:34Z
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+ruff 0.17.1
+All checks passed!
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 15, 'A': 5}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ atomic batch check v1 (the inline step of .github/workflows/governance-gate.yml, run verbatim; file list omitted)
+changed files:
+.github/workflows/live-integration.yml
+::error::Storage changed without docs/governance/DATA_MODEL.md
+rc=1
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 20 changed file(s) in origin/main...HEAD
+::error::R3 storage changed without docs/governance/DATA_MODEL.md
+::error::Atomic batch v2 failed: 1 rule(s) violated (D-065). Add the missing docs/evidence/tests to the SAME PR.
+rc=1
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/export_contract_schemas.py --check
+contracts=26 problems=0
+rc=0
+$ python3 scripts/scan_raw_exception_logs.py
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+$ git diff --check origin/main...HEAD
+rc=0
+$ git diff --name-status origin/main...HEAD | cut -f1 | sort | uniq -c   # D-064: no D/R
+      5 A
+     15 M
+## node v20.20.2, npm 10.8.2 (CI uses Node 22 — local is 20)
+$ cd web && npm install && npm test && npm run build
+up to date in 304ms
+install rc=0
+# tests 39
+# pass 39
+# fail 0
+test rc=0
+
+✓ built in 134ms
+build rc=0
+$ npm install && npm run build   # repository root
+up to date in 689ms
+install rc=0
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+build rc=0
+$ git status --short   # builds leave no tracked change
+(end)
+
+## D. gates — second run after the fix (run C failed atomic v1/v2: 'storage changed without docs/governance/DATA_MODEL.md' — a real omission; DATA_MODEL.md now documents SupabaseStorage(guarded=…), no schema change; commit d7110ee5c48b68f736804b395afb014ff56bf089)
+# 124 R-161b gates, lint, web/root builds on committed head d7110ee5c48b68f736804b395afb014ff56bf089 (base origin/main fcc869b5c51d775cab5bc548a70ccda55e0f76a7) — 2026-10-17T22:26:09Z
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+ruff 0.17.1
+All checks passed!
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 16, 'A': 5}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ atomic batch check v1 (the inline step of .github/workflows/governance-gate.yml, run verbatim; file list omitted)
+changed files:
+.github/workflows/live-integration.yml
+Governance gate passed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 21 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/export_contract_schemas.py --check
+contracts=26 problems=0
+rc=0
+$ python3 scripts/scan_raw_exception_logs.py
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+$ git diff --check origin/main...HEAD
+rc=0
+$ git diff --name-status origin/main...HEAD | cut -f1 | sort | uniq -c   # D-064: no D/R
+      5 A
+     16 M
+## node v20.20.2, npm 10.8.2 (CI uses Node 22 — local is 20)
+$ cd web && npm install && npm test && npm run build
+up to date in 365ms
+install rc=0
+# tests 39
+# pass 39
+# fail 0
+test rc=0
+
+✓ built in 134ms
+build rc=0
+$ npm install && npm run build   # repository root
+up to date in 736ms
+install rc=0
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+build rc=0
+$ git status --short   # builds leave no tracked change
+(end)

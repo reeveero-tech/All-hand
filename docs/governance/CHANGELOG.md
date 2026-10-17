@@ -15,7 +15,7 @@
 - **مُعدل**: `tests/test_r161_live_integration.py`: توقع الـworkflow الجديد (لا اسم بيئة حرفي).
 - **لم يُشغَّل**: أي تكامل حي، وأي تشغيل للـworkflow. لم تُنشأ بيئة ولا حساب ولا سر. حماية الفرع بلا تغيير.
 - **الأدلة**: `122` تثبيت DNS قبل/بعد، و`123` البوابة والمانع وفحص الحالة، و`124` الحزمة والبوابات.
-- **وثائق**: ROADMAP، PROJECT_STATE، OPEN_QUESTIONS (Q-025)، DECISIONS (D-074)، OPERATIONS، SECURITY، QUALITY، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+- **وثائق**: ROADMAP، PROJECT_STATE، OPEN_QUESTIONS (Q-025)، DECISIONS (D-074)، OPERATIONS، SECURITY، QUALITY، DATA_MODEL (مُعامل `guarded` في `SupabaseStorage`، بلا تغيير مخطط)، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
 
 ## 2026-10-17 — R-161 (M8/P2): تكامل اختياري آمن ومصنف mock/local/live — storage وLLM وأداة خارجية وMCP (دفعة m8/r161-live-integration، D-073) + قبول R-160
 
