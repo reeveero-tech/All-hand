@@ -1518,8 +1518,8 @@
 - النطاق (نص الخارطة الرئيسية): أضف قائمة قبول في قالب PR أو بوابة حوكمة تحقق عدم وجود حذف/rename غير مصرح به، أو على الأقل دليل diff صريح بالملفات المحذوفة/المنقولة (المطلوب: صفر). لا تغيّر قواعد حماية الفرع الحالية في هذه المهمة.
 
 #### R-153 — مواصفات الدفعة الذرية
-- الحالة: **done**
-- أدلة الحالة (R-154): pr=#165 | tested_sha=805ce218b9e219e337932af3c240747750b7e2a0 | merge_sha=a34dc77c6eca7912f2e6e4258ecd5a1a081a3e0a | ci_run=38989224464 | ci_conclusion=success | tests=914 passed, 4 skipped, 4 deselected | tests_log=docs/audit/M8/logs/raw/028_r153_pytest.log | skipped=4 skipped = R-042 live storage (تحتاج R042_LIVE=1 — تُشغَّل في job ‏storage، نجح على الـPR)، 4 deselected = علامة network (تُشغَّل في job ‏network، نجح على الـPR) | untested=يثبت وجود الاختبارات والأدلة في الدفعة لا كفايتها؛ src/ بلا إطار اختبار (R-158)؛ diff الـPR الصافي لا كل commit | evidence=docs/audit/M8/logs/raw/037_r153_acceptance_main_ci.log, docs/audit/M8/logs/raw/035_r153_live_trial_incomplete.log, docs/audit/M8/EVIDENCE.md
+- الحالة: **awaiting_merge**
+- أدلة الحالة (R-154): branch=m8/r153-atomic-batch-v2 | pr=#165
 - المنفذ (دفعة m8/r153-atomic-batch-v2، D-065): `scripts/check_atomic_batch.py` — نسخة v2 قابلة للاختبار وأشد من الفحص المضمن v1 (الذي **بقي بلا تغيير** في الـworkflow؛ v2 خطوة إضافية في job ‏`governance` الإلزامي): R0 الوثائق الثلاث، R1 دليل `docs/audit/` لكل تغيير تنفيذي (مسارات v1 + `scripts/` و`.github/` وDocker/Render والتبعيات وملفات الأقفال وإعدادات البناء/الاختبار و`docs/sql/`)، R2–R4 كما في v1، **R5** تغيير Python تشغيلي يتطلب تغييراً في `tests/`، **R6** تغيير مصدر `web/` يتطلب تغييراً في `web/tests/` أو `tests/`. تُذكر كل المخالفات معاً.
 - الدليل: `025` (إعادة تشغيل على كل دمجات main الـ161: v1 وv2 يرفضان الـ35 نفسها — كلها PR #1..#36 قبل البوابة — وصفر رفض جديد)، `026` (5 طفرات كلها مقتولة بعد إصلاح اختبار ضعيف كشفته الطفرة)، `028`..`034` فحوص الأساس، `035`/`036` PR تجريبية حية ناقصة تفشل وPR الدفعة الكاملة تنجح. يتحول إلى `done` داخل دفعة R-154.
 - المرحلة: P0 (أولوية مانعة)؛ الاعتماديات: R-152
