@@ -1,0 +1,78 @@
+# 078 R-157 mutation run 1 — HEAD 7dcf0d28dcb3ca024c111a63c3bb9e3d8a288125 (local, 2026-10-17T04:58:35Z, Python 3.12.13); runner source at the end
+KILLED    M1 public_error leaks message | agent_civilization/agents/real/runtime_contract.py | first failing: tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+KILLED    M2 public_error drops UnsafeURLError text | agent_civilization/agents/real/runtime_contract.py | first failing: tests/test_r157_contract_parity.py::test_c1_unsafe_url_error_keeps_its_fixed_message_on_both
+KILLED    M3 adapter reverted to inner.execute | agent_civilization/agents/real/specialist_runtime.py | first failing: tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+KILLED    M4 adapter forgets inner failure count | agent_civilization/agents/real/specialist_runtime.py | first failing: tests/test_r157_contract_parity.py::test_c1_specialist_instance_bookkeeping_is_preserved
+KILLED    M5 adapter swallows exception (BaseAgent style) | agent_civilization/agents/real/specialist_runtime.py | first failing: tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+SURVIVED  M6 adapter default ok False when key missing | agent_civilization/agents/real/specialist_runtime.py | first failing: -
+KILLED    M7 health ignores provider | agos_kernel/infrastructure/health.py | first failing: tests/test_r157_contract_parity.py::test_c2_health_views_agree_on_the_live_civilization
+KILLED    M8 civilization_status zero-agent rule broken | agos_kernel/infrastructure/health.py | first failing: tests/test_r157_contract_parity.py::test_c2_not_ready_state_is_unhealthy_in_both_views[civ1-No
+KILLED    M9 health provider path leaks str(e) | agos_kernel/infrastructure/health.py | first failing: tests/test_r157_contract_parity.py::test_c2_broken_civilization_does_not_leak_in_either_view
+KILLED    M10 server does not register provider | server.py | first failing: tests/test_r157_contract_parity.py::test_c2_health_views_agree_on_the_live_civilization
+KILLED    M11 provider snapshots CIVILIZATION at import | server.py | first failing: tests/test_r157_contract_parity.py::test_c2_health_views_agree_on_the_live_civilization
+KILLED    M12 server _pick_agent policy changed silently | server.py | first failing: tests/test_r157_contract_parity.py::test_c5_selection_policies_are_pinned_as_they_are
+KILLED    M13 real runtime leaks message | agent_civilization/agents/real/real_agents.py | first failing: tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+killed 12/13
+after restore: ============================== 49 passed in 0.53s ==============================
+exit=0
+## result: M6 SURVIVED -> gap in tests (a handler result without an 'ok' key). Test added in the next commit; see 079.
+## runner /tmp/mut/run_mutations.py:
+"""R-157 mutation run: each mutant is applied to a clean copy of the file,
+must still compile (py_compile), then the R-157 contract tests run. A mutant
+counts as KILLED only if pytest fails with an assertion failure (not a
+collection/import/syntax error)."""
+import py_compile, re, subprocess, sys, pathlib
+ROOT = pathlib.Path(".")
+T = "tests/test_r157_contract_parity.py"
+M = [
+ ("M1 public_error leaks message", "agent_civilization/agents/real/runtime_contract.py",
+  'return str(exc) if isinstance(exc, UnsafeURLError) else type(exc).__name__', 'return str(exc)'),
+ ("M2 public_error drops UnsafeURLError text", "agent_civilization/agents/real/runtime_contract.py",
+  'return str(exc) if isinstance(exc, UnsafeURLError) else type(exc).__name__', 'return type(exc).__name__'),
+ ("M3 adapter reverted to inner.execute", "agent_civilization/agents/real/specialist_runtime.py",
+  'out = await self._run_inner(work)', 'out = await self.inner.execute(work)'),
+ ("M4 adapter forgets inner failure count", "agent_civilization/agents/real/specialist_runtime.py",
+  '        except Exception:\n            inner.performance_metrics["tasks_failed"] += 1\n            raise', '        except Exception:\n            raise'),
+ ("M5 adapter swallows exception (BaseAgent style)", "agent_civilization/agents/real/specialist_runtime.py",
+  '            inner.performance_metrics["tasks_failed"] += 1\n            raise', '            inner.performance_metrics["tasks_failed"] += 1\n            return {"ok": False, "agent": inner.name, "result": {"error": "RuntimeError"}}'),
+ ("M6 adapter default ok False when key missing", "agent_civilization/agents/real/specialist_runtime.py",
+  'ok = bool(result.get("ok", True)) if isinstance(result, dict) else True\n        inner.performance_metrics', 'ok = bool(result.get("ok", False)) if isinstance(result, dict) else True\n        inner.performance_metrics'),
+ ("M7 health ignores provider", "agos_kernel/infrastructure/health.py",
+  '    provider = _civilization_provider\n', '    provider = None\n'),
+ ("M8 civilization_status zero-agent rule broken", "agos_kernel/infrastructure/health.py",
+  '    if total == 0:', '    if total < 0:'),
+ ("M9 health provider path leaks str(e)", "agos_kernel/infrastructure/health.py",
+  'return {"status": "unhealthy", "message": "readiness check failed"}', 'return {"status": "unhealthy", "message": str(e)}'),
+ ("M10 server does not register provider", "server.py",
+  'set_civilization_provider(lambda: CIVILIZATION)\n', '\n'),
+ ("M11 provider snapshots CIVILIZATION at import", "server.py",
+  'set_civilization_provider(lambda: CIVILIZATION)\n', 'set_civilization_provider((lambda c: (lambda: c))(CIVILIZATION))\n'),
+ ("M12 server _pick_agent policy changed silently", "server.py",
+  '    return (idle or pool)[0]\n', '    return (idle or pool)[-1]\n'),
+ ("M13 real runtime leaks message", "agent_civilization/agents/real/real_agents.py",
+  '"result": failure_result(exc),', '"result": {"ok": False, "error": f"{type(exc).__name__}: {exc}"},'),
+]
+killed = 0
+for name, f, old, new in M:
+    p = ROOT / f; src = p.read_text(encoding="utf-8")
+    assert src.count(old) == 1, (name, src.count(old))
+    p.write_text(src.replace(old, new), encoding="utf-8")
+    try:
+        py_compile.compile(str(p), doraise=True)
+        r = subprocess.run([sys.executable, "-m", "pytest", T, "-q", "-p", "no:cacheprovider", "-x", "--no-header"],
+                           capture_output=True, text=True)
+        out = r.stdout + r.stderr
+        bad = re.search(r"(SyntaxError|ImportError|ModuleNotFoundError|NameError|errors? during collection)", out)
+        failed = re.search(r"^FAILED (\S+)", out, re.M)
+        if r.returncode != 0 and failed and not bad and ("AssertionError" in out or "assert " in out):
+            verdict = "KILLED"; killed += 1
+        elif r.returncode == 0:
+            verdict = "SURVIVED"
+        else:
+            verdict = "INVALID (non-assertion failure)"
+        print(f"{verdict:9} {name} | {f} | first failing: {failed.group(1) if failed else '-'}")
+    finally:
+        p.write_text(src, encoding="utf-8")
+print(f"killed {killed}/{len(M)}")
+r = subprocess.run([sys.executable, "-m", "pytest", T, "-q", "-p", "no:cacheprovider", "--no-header"], capture_output=True, text=True)
+print("after restore:", r.stdout.strip().splitlines()[-1])

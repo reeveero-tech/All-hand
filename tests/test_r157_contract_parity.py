@@ -213,6 +213,23 @@ def test_c1_specialist_instance_bookkeeping_is_preserved(runtimes, raising_dispa
     assert legacy["ok"] is False and legacy["result"]["error"].startswith("ValueError: ")
 
 
+def test_c1_result_without_ok_key_matches_and_keeps_legacy_inner_count(runtimes, raising_dispatch):
+    """A handler result with no 'ok' key: both runtimes report ok=False (outer
+    rule ``bool(result.get('ok'))``), while the wrapped specialist instance keeps
+    BaseAgent's legacy rule (missing 'ok' counts as completed). The inner/outer
+    disagreement is pre-existing legacy behaviour, preserved — not hidden.
+    (Kills mutant M6 of 078_r157_mutation_run1.log.)"""
+    async def no_ok(spec, work):
+        return {"answer": "42"}
+    raising_dispatch(no_ok)
+    r = _run(runtimes["real"]["analyst"][0], {"prompt": "x"})
+    a = runtimes["specialists"]["analyst"][0]
+    s = _run(a, {"prompt": "x"})
+    assert _comparable(r) == _comparable(s) == {"ok": False, "result": {"answer": "42"}}
+    assert (a.inner.performance_metrics["tasks_completed"], a.inner.performance_metrics["tasks_failed"]) == (1, 0)
+    assert a.stats["tasks_failed"] == 1 and a.stats["tasks_completed"] == 0
+
+
 def _experience_side_effects(agent, work, tenant):
     token = tenancy.set_tenant(tenant)
     try:
