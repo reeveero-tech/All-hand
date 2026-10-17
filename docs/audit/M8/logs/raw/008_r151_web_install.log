@@ -1,0 +1,7 @@
+# 008 web npm ci
+npm warn EBADENGINE   required: { node: '>=22.13.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+npm warn EBADENGINE }
+
+added 63 packages in 2s
+exit=0

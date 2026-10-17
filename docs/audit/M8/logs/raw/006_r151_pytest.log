@@ -1,0 +1,17 @@
+# 006 pytest on branch (docs-only over 8457ad3) 2026-10-17T00:03:23Z
+tests/test_sec03_production_startup.py ................................. [ 72%]
+........................                                                 [ 75%]
+tests/test_sec04_sse_broadcast_bounds.py ............................... [ 78%]
+..                                                                       [ 79%]
+tests/test_sec05_dns_rebinding.py ...................................... [ 83%]
+........................                                                 [ 86%]
+tests/test_sec06_public_llm_consent.py ................................. [ 90%]
+..........                                                               [ 91%]
+tests/test_security.py ..........                                        [ 92%]
+tests/test_specialist_runtime.py ..........                              [ 93%]
+tests/test_specialists_package.py ....................................   [ 98%]
+tests/test_storage_payloads.py ......                                    [ 98%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+=========== 847 passed, 4 skipped, 4 deselected in 88.20s (0:01:28) ============
+exit=0
