@@ -1,0 +1,50 @@
+# 114 R-160 gates, lint, web/root builds on committed head 435dfe2e12f5b73394d884571c4f252a2b229f18 (base origin/main 49faab68fefee582b83f14fc64808e309adb7522) — 2026-10-17T18:37:44Z
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+ruff 0.17.1
+All checks passed!
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 43, 'A': 45}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ atomic batch check v1 (the inline step of .github/workflows/governance-gate.yml, run verbatim; file list omitted)
+changed files:
+Governance gate passed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 88 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/export_contract_schemas.py --check
+contracts=26 problems=0
+rc=0
+$ python3 scripts/scan_raw_exception_logs.py
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+$ git diff --check origin/main...HEAD
+rc=0
+$ git diff --name-status origin/main...HEAD | cut -f1 | sort | uniq -c   # D-064: no D/R
+     45 A
+     43 M
+## node v20.20.2, npm 10.8.2 (CI uses Node 22 — local is 20)
+$ cd web && npm install && npm test && npm run build
+up to date in 312ms
+install rc=0
+# tests 39
+# pass 39
+# fail 0
+test rc=0
+
+✓ built in 125ms
+build rc=0
+$ npm install && npm run build   # repository root
+up to date in 717ms
+install rc=0
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+build rc=0
+$ git status --short   # builds leave no tracked change
+(end)
