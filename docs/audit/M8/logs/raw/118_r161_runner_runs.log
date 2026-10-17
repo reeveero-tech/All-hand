@@ -1,0 +1,136 @@
+# 118 R-161 runner — real CLI runs (no staging environment and no credentials exist: live NOT_RUN) — 2026-10-17T20:11:53Z, git dadbba1d1fb01cdf17a7a01c54bbb088f583b086 + branch changes, Python 3.14.3
+
+## 1. no targets -> everything NOT_RUN, exit 3 (not success)
+$ env -i PATH=/usr/bin:/bin python3 scripts/r161_live_integration.py
+R-161 integration report v1 git_sha=dadbba1d1fb0 simulated=False exit_code=3
+  storage   NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+  llm       NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+  external  NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+  mcp       NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+  summary: unclassified: NOT_RUN=4
+  NOTE: only live_integration PASS rows are live evidence; mock and local_integration are not.
+exit_code=3
+
+## 2. all targets, no configuration -> BLOCKED by variable name, exit 2
+$ env -i PATH=/usr/bin:/bin python3 scripts/r161_live_integration.py --targets storage,llm,external,mcp --report /tmp/r161/r2.json
+R-161 integration report v1 git_sha=dadbba1d1fb0 simulated=False exit_code=2
+  storage   BLOCKED  class=-                 host=- connected=False cleanup=- reason=storage: missing configuration: R161_STORAGE_URL, R161_STORAGE_KEY
+  llm       BLOCKED  class=-                 host=- connected=False cleanup=- reason=llm: missing configuration: R161_LLM_API_KEY
+  external  BLOCKED  class=-                 host=- connected=False cleanup=- reason=external: missing configuration: R161_EXTERNAL_URL
+  mcp       BLOCKED  class=-                 host=- connected=False cleanup=- reason=no MCP client or transport exists in this repository (MCP appears only as catalogue metadata in agent_civilization/registry/oss_agents.py); building one is outside R-161
+  summary: unclassified: BLOCKED=4
+  NOTE: only live_integration PASS rows are live evidence; mock and local_integration are not.
+exit_code=2
+report summary: {'mock': {'PASS': 0, 'FAIL': 0, 'BLOCKED': 0, 'NOT_RUN': 0}, 'local_integration': {'PASS': 0, 'FAIL': 0, 'BLOCKED': 0, 'NOT_RUN': 0}, 'live_integration': {'PASS': 0, 'FAIL': 0, 'BLOCKED': 0, 'NOT_RUN': 0}, 'unclassified': {'PASS': 0, 'FAIL': 0, 'BLOCKED': 4, 'NOT_RUN': 0}}
+
+## 3. a public endpoint without R161_LIVE=1 -> BLOCKED before any connection
+$ env -i PATH=/usr/bin:/bin R161_STORAGE_URL=https://example-test-project.supabase.co R161_STORAGE_KEY=<synthetic> python3 scripts/r161_live_integration.py --targets storage
+R-161 integration report v1 git_sha=dadbba1d1fb0 simulated=False exit_code=2
+  storage   BLOCKED  class=-                 host=- connected=False cleanup=- reason=storage: live integration not enabled (R161_LIVE is not 1)
+  llm       NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+  external  NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+  mcp       NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+  summary: unclassified: BLOCKED=1, NOT_RUN=3
+  NOTE: only live_integration PASS rows are live evidence; mock and local_integration are not.
+exit_code=2
+
+## 4. R161_LIVE=1 but host not allowlisted / no declared expiry / credentials in URL -> BLOCKED
+  storage   BLOCKED  class=-                 host=- connected=False cleanup=- reason=storage: host is not in R161_ALLOWED_HOSTS
+  storage   BLOCKED  class=-                 host=- connected=False cleanup=- reason=storage: R161_CREDENTIAL_EXPIRES_AT not declared (temporary credentials required)
+  storage   BLOCKED  class=-                 host=- connected=False cleanup=- reason=storage: credentials inside the endpoint URL are refused
+
+## 5. unknown target -> 64
+unknown target(s): nope
+exit_code=64
+
+## 6. --simulated against fake services on 127.0.0.1 (class mock — NOT integration evidence)
+### 6a. all fakes healthy
+WARNING agos.infrastructure.redis: Redis not available. Using in-memory fallback.
+R-161 integration report v1 git_sha=dadbba1d1fb0 simulated=True exit_code=2
+  storage   PASS     class=mock              host=127.0.0.1 connected=True cleanup=ok reason=all checks passed
+      [ok] insert_task accepted
+      [ok] update_task accepted
+      [ok] get_task returns the row
+      [ok] row matches task_row v1
+      [ok] row values round-trip
+      [ok] get_tasks scoped to the run tenant
+      [ok] other tenant cannot read the row
+      [ok] insert_event accepted
+      [ok] get_events returns the event
+  llm       PASS     class=mock              host=127.0.0.1 connected=True cleanup=ok reason=all checks passed
+      [ok] result matches llm_result v1
+      [ok] provider answered ok
+      [ok] answer is the expected word — content length 4
+  external  PASS     class=mock              host=127.0.0.1 connected=True cleanup=ok reason=all checks passed
+      [ok] outcome matches agent_outcome v1
+      [ok] external agent answered ok
+      [ok] answer is the expected word
+  mcp       BLOCKED  class=-                 host=- connected=False cleanup=- reason=no MCP client or transport exists in this repository (MCP appears only as catalogue metadata in agent_civilization/registry/oss_agents.py); building one is outside R-161
+  summary: mock: PASS=3; unclassified: BLOCKED=1
+  NOTE: only live_integration PASS rows are live evidence; mock and local_integration are not.
+exit_code=2  secret value present in stdout+report: False
+rows left in the fake store after the run: tasks=0 events=0
+### 6b. fake store rejects (401 echoing the key), fake provider rejects (401 echoing the key)
+WARNING storage: insert_task rejected: HTTP 401
+WARNING agos.infrastructure.redis: Redis not available. Using in-memory fallback.
+WARNING storage: update_task rejected: HTTP 401
+WARNING storage: get_task rejected: HTTP 401
+WARNING storage: get_tasks rejected: HTTP 401
+WARNING storage: get_task rejected: HTTP 401
+WARNING storage: insert_event rejected: HTTP 401
+WARNING storage: get_events rejected: HTTP 401
+ERROR llm: LLM error: HTTP 401 (provider response body not logged)
+WARNING external_agents: external agent r161_probe failed: HTTP 401
+R-161 integration report v1 git_sha=dadbba1d1fb0 simulated=True exit_code=1
+  storage   FAIL     class=mock              host=127.0.0.1 connected=False cleanup=FAILED reason=check failed: insert_task accepted; cleanup failed: DELETE events -> HTTP 401
+      [FAIL] insert_task accepted
+      [FAIL] update_task accepted
+      [FAIL] get_task returns the row
+      [FAIL] get_tasks scoped to the run tenant
+      [ok] other tenant cannot read the row
+      [FAIL] insert_event accepted
+      [FAIL] get_events returns the event
+  llm       FAIL     class=mock              host=127.0.0.1 connected=True cleanup=ok reason=check failed: provider answered ok (provider answered HTTP 401)
+      [ok] result matches llm_result v1
+      [FAIL] provider answered ok — provider answered HTTP 401
+  external  FAIL     class=mock              host=127.0.0.1 connected=True cleanup=ok reason=check failed: external agent answered ok (HTTP 401)
+      [ok] outcome matches agent_outcome v1
+      [FAIL] external agent answered ok — HTTP 401
+  mcp       BLOCKED  class=-                 host=- connected=False cleanup=- reason=no MCP client or transport exists in this repository (MCP appears only as catalogue metadata in agent_civilization/registry/oss_agents.py); building one is outside R-161
+  summary: mock: FAIL=3; unclassified: BLOCKED=1
+  NOTE: only live_integration PASS rows are live evidence; mock and local_integration are not.
+exit_code=1  secret value present in stdout+report: False
+rows left in the fake store after the run: tasks=0 events=0
+### 6c. store cleanup cannot delete (DELETE -> 200 but rows stay), provider returns empty content
+WARNING agos.infrastructure.redis: Redis not available. Using in-memory fallback.
+ERROR llm: LLM empty completion (provider body not logged)
+WARNING external_agents: external agent r161_probe failed: empty completion
+R-161 integration report v1 git_sha=dadbba1d1fb0 simulated=True exit_code=1
+  storage   FAIL     class=mock              host=127.0.0.1 connected=True cleanup=FAILED reason=cleanup failed: rows of this run are still present after cleanup
+      [ok] insert_task accepted
+      [ok] update_task accepted
+      [ok] get_task returns the row
+      [ok] row matches task_row v1
+      [ok] row values round-trip
+      [ok] get_tasks scoped to the run tenant
+      [ok] other tenant cannot read the row
+      [ok] insert_event accepted
+      [ok] get_events returns the event
+  llm       FAIL     class=mock              host=127.0.0.1 connected=True cleanup=ok reason=check failed: provider answered ok (provider: empty completion)
+      [ok] result matches llm_result v1
+      [FAIL] provider answered ok — provider: empty completion
+  external  FAIL     class=mock              host=127.0.0.1 connected=True cleanup=ok reason=check failed: external agent answered ok (empty completion)
+      [ok] outcome matches agent_outcome v1
+      [FAIL] external agent answered ok — empty completion
+  mcp       BLOCKED  class=-                 host=- connected=False cleanup=- reason=no MCP client or transport exists in this repository (MCP appears only as catalogue metadata in agent_civilization/registry/oss_agents.py); building one is outside R-161
+  summary: mock: FAIL=3; unclassified: BLOCKED=1
+  NOTE: only live_integration PASS rows are live evidence; mock and local_integration are not.
+exit_code=1  secret value present in stdout+report: False
+rows left in the fake store after the run: tasks=1 events=1
+
+## 7. local_integration in this sandbox: NOT_RUN — no PostgreSQL/PostgREST/Docker here:
+$ which postgres psql pg_ctl docker
+(none found)
+   -> the local_integration run is CI job storage (PostgreSQL 17 + PostgREST 12.2.3), recorded in 121.
+
+## 8. live_integration: NOT_RUN — the environment r161-staging and temporary test credentials do not exist; creating them is the owner's action (OPERATIONS R-161) and outside this batch's authorization.

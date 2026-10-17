@@ -1,0 +1,29 @@
+# 119 R-161 full suite, both agent modes, on the locked venvs (requirements.lock + requirements-dev.lock, --require-hashes) — branch m8/r161-live-integration working tree (all batch changes; base dadbba1d1fb01cdf17a7a01c54bbb088f583b086)
+# command per run: AGOS_AGENT_IMPL=<mode> <python> -m pytest -q -p no:cacheprovider tests/   (pytest.ini: -m 'not network')
+### Python 3.11.15 AGOS_AGENT_IMPL=real — start 2026-10-17T20:21:56Z
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1304 passed, 4 skipped, 4 deselected in 154.19s (0:02:34) ===========
+rc=0 end 2026-10-17T20:24:32Z
+
+### Python 3.11.15 AGOS_AGENT_IMPL=specialists — start 2026-10-17T20:24:32Z
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1304 passed, 4 skipped, 4 deselected in 171.35s (0:02:51) ===========
+rc=0 end 2026-10-17T20:27:36Z
+
+### Python 3.12.13 AGOS_AGENT_IMPL=real — start 2026-10-17T20:27:36Z
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1304 passed, 4 skipped, 4 deselected in 160.58s (0:02:40) ===========
+rc=0 end 2026-10-17T20:30:18Z
+
+### Python 3.12.13 AGOS_AGENT_IMPL=specialists — start 2026-10-17T20:30:18Z
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1304 passed, 4 skipped, 4 deselected in 174.94s (0:02:54) ===========
+rc=0 end 2026-10-17T20:33:24Z
+
+## arithmetic: 1304 = 1258 (main at dadbba1, CI 39059547216 — 115) + 46 (tests/test_r161_live_integration.py — 117)
+## 4 skipped = tests/test_r042_live_storage.py (needs R042_LIVE=1; runs in CI job storage). 4 deselected = marker network (runs in CI job network). Neither is counted as passed here.
+## evidence class of these runs: unit + mock (no live integration; no real PostgreSQL/PostgREST in this sandbox)

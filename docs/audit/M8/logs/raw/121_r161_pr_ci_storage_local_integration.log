@@ -1,0 +1,54 @@
+# 121 R-161 PR CI — local_integration evidence from CI job storage + suite counts (recorded 2026-10-17T20:45:05Z)
+ci_run=39067354247 workflow=AGOS Kernel CI/CD event=pull_request head_sha=de67c539e79774885c1cfc8245af26191b7572ce conclusion=success
+url=https://github.com/reeveero-tech/All-hand/actions/runs/39067354247
+governance_run=39067354159 event=pull_request head_sha=de67c539e79774885c1cfc8245af26191b7572ce conclusion=success
+## jobs
+job=quality id=117497660397 conclusion=success
+job=test id=117497660527 conclusion=success
+job=network id=117497690432 conclusion=success
+job=audit id=117499310930 conclusion=success
+job=build id=117499310939 conclusion=success
+job=docker id=117499310974 conclusion=success
+job=storage id=117499311010 conclusion=success
+job=publish id=117499414630 conclusion=skipped
+## publish=skipped (D-011): not a success, not a deploy
+## note: the runner prints git_sha=264eb69… = the pull_request merge ref GitHub checks out (head de67c53 merged onto main); run head_sha=de67c53
+
+## job storage (id 117499311010) — PostgreSQL 17 service + PostgREST 12.2.3 on loopback; R-042 first, then the R-161 runner on the same stack (verbatim):
+2026-10-17T20:43:51.9292879Z R-042 storage verification: 26/26 checks passed
+2026-10-17T20:43:53.1468328Z tests/test_r042_live_storage.py::test_status_reports_live_storage PASSED [ 25%]
+2026-10-17T20:43:53.2762595Z tests/test_r042_live_storage.py::test_task_lifecycle_persisted PASSED    [ 50%]
+2026-10-17T20:43:53.4008109Z tests/test_r042_live_storage.py::test_task_read_by_id_from_storage_after_memory_loss PASSED [ 75%]
+2026-10-17T20:43:54.3120847Z tests/test_r042_live_storage.py::test_chat_persists_and_agent_stats_upserted PASSED [100%]
+2026-10-17T20:43:54.3121812Z ============================== 4 passed in 1.74s ===============================
+2026-10-17T20:43:54.3791480Z == R-161 runner against the same local stack (local_integration)
+2026-10-17T20:43:54.6288373Z WARNING agos.infrastructure.redis: Redis not available. Using in-memory fallback.
+2026-10-17T20:43:54.6598212Z R-161 integration report v1 git_sha=264eb69def9b simulated=False exit_code=0
+2026-10-17T20:43:54.6599153Z   storage   PASS     class=local_integration host=127.0.0.1 connected=True cleanup=ok reason=all checks passed
+2026-10-17T20:43:54.6599831Z       [ok] insert_task accepted
+2026-10-17T20:43:54.6600157Z       [ok] update_task accepted
+2026-10-17T20:43:54.6600490Z       [ok] get_task returns the row
+2026-10-17T20:43:54.6600846Z       [ok] row matches task_row v1
+2026-10-17T20:43:54.6601185Z       [ok] row values round-trip
+2026-10-17T20:43:54.6601538Z       [ok] get_tasks scoped to the run tenant
+2026-10-17T20:43:54.6601938Z       [ok] other tenant cannot read the row
+2026-10-17T20:43:54.6602308Z       [ok] insert_event accepted
+2026-10-17T20:43:54.6602645Z       [ok] get_events returns the event
+2026-10-17T20:43:54.6603197Z   llm       NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+2026-10-17T20:43:54.6604275Z   external  NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+2026-10-17T20:43:54.6605267Z   mcp       NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+2026-10-17T20:43:54.6605910Z   summary: local_integration: PASS=1; unclassified: NOT_RUN=3
+## artifact upload (same job):
+2026-10-17T20:43:54.8648202Z With the provided path, there will be 2 files uploaded
+2026-10-17T20:43:56.0792389Z Artifact r042-storage-verification-log has been successfully uploaded! Final size is 3095 bytes. Artifact ID is 12114335549
+## the report JSON could not be downloaded from this sandbox (gh run download -> HTTP 401: the token has no artifact scope); its content is the same run printed above (stdout is the rendered report). JWT-shaped strings in the whole storage job log: 0
+## classification: storage = local_integration PASS (a real PostgREST on 127.0.0.1, service key = JWT minted from a throwaway per-run secret). NOT live_integration. llm/external/mcp NOT_RUN in this job.
+
+## job test (id 117497660527) — pytest summaries (3.11, 3.12, 3.12 specialists):
+2026-10-17T20:35:37.8590513Z platform linux -- Python 3.11.17, pytest-9.1.1, pluggy-1.7.0 -- /opt/hostedtoolcache/Python/3.11.17/x64/bin/python
+2026-10-17T20:38:22.2349914Z platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+2026-10-17T20:40:41.9309720Z platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+2026-10-17T20:38:09.1818965Z ========== 1304 passed, 4 skipped, 4 deselected in 150.81s (0:02:30) ===========
+2026-10-17T20:40:39.6317668Z ========== 1304 passed, 4 skipped, 4 deselected in 140.06s (0:02:20) ===========
+2026-10-17T20:43:12.5443918Z ========== 1304 passed, 4 skipped, 4 deselected in 148.05s (0:02:28) ===========
+## => each step: 1304 passed, 4 skipped, 4 deselected (= local 119)
