@@ -1539,7 +1539,7 @@
 
 #### R-155 — جرد 100%
 - الحالة: **awaiting_merge**
-- أدلة الحالة (R-154): branch=m8/r155-file-inventory | pr=#PENDING
+- أدلة الحالة (R-154): branch=m8/r155-file-inventory | pr=#169
 - المنفذ (دفعة m8/r155-file-inventory، D-067): مولّد حتمي `scripts/build_file_inventory.py` يقرأ اللقطة من كائنات git عند `f8b2d4828ee5aba3dc097665199f1fdf6450c2eb` (لا من شجرة العمل) وينتج [`FILE_INVENTORY_f8b2d48.csv`](roadmaps/revival-scale/inventory/FILE_INVENTORY_f8b2d48.csv) بأعمدة القالب الـ24 — **1867 صفاً = 1867 مساراً في `git ls-files`** (فحص ذاتي: المجموعة متطابقة، لا تكرار، لا `DELETE`) — وملخصاً مولّداً [`INVENTORY_SUMMARY_f8b2d48.md`](roadmaps/revival-scale/inventory/INVENTORY_SUMMARY_f8b2d48.md). الأدلة لكل صف: git (blob/الحجم/آخر التزام)، رسم استيراد AST + أنماط `import_module(f"…")`/`spec_from_file_location`/glob الاختبارات، نقاط الدخول المستخرجة من Dockerfile/render.yaml/CI/package.json/HTML/مسارات TanStack، رسم JS/TS، المراجع النصية، وتغطية تنفيذ pytest على اللقطة نفسها (`053`). غياب الاستيراد لا يُعد دليل عدم استخدام.
 - النتيجة: 131 active، 36 shared، 1000 legacy-compatible (shims ‏D-049)، 563 generated، 59 test-only، 61 docs-only، **17 unresolved** (كل `src/` — مصير واجهة الجذر سؤال مفتوح Q-002). 1850 حُسم دورها **آلياً** بدليل (ليست قراءة بشرية سطراً بسطر). **لا يُعلن فهم كامل للمستودع** ما دامت 17 صفاً غير محسومة. لا حذف ولا نقل ولا إعادة هيكلة.
 - الدليل: `052` (إحصاء اللقطة القابل لإعادة الإنتاج)، `053` (pytest+تغطية في worktree نظيف عند الأساس: 967/4/4)، `054` (التوليد + تطابق sha256 ×3 + مطابقة المسارات + ملفات الدفعة خارج الجرد)، `055` (طفرات 13/13)، `056`..`062` فحوص الأساس. قبول R-154 مسجل في هذه الدفعة (`050`/`051`).
