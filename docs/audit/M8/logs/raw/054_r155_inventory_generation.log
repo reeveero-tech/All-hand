@@ -1,4 +1,4 @@
-# 054 R-155 inventory generation + determinism (2026-10-17T02:49:33Z)
+# 054 R-155 inventory generation + determinism (2026-10-17T02:56:38Z)
 $ python3 scripts/build_file_inventory.py . f8b2d4828ee5aba3dc097665199f1fdf6450c2eb docs/governance/roadmaps/revival-scale/inventory/FILE_INVENTORY_f8b2d48.csv --coverage docs/audit/M8/logs/raw/053_r155_coverage_files.json --review-date 2026-10-17 --summary docs/governance/roadmaps/revival-scale/inventory/INVENTORY_SUMMARY_f8b2d48.json --summary-md docs/governance/roadmaps/revival-scale/inventory/INVENTORY_SUMMARY_f8b2d48.md
 snapshot=f8b2d4828ee5aba3dc097665199f1fdf6450c2eb rows=1867 status={'active': 131, 'docs-only': 61, 'generated': 563, 'legacy-compatible': 1000, 'shared': 36, 'test-only': 59, 'unresolved': 17} unresolved=17 self_check=PASS
 exit=0
@@ -16,7 +16,6 @@ rows 1867 unique paths 1867 DELETE 0 empty reviewed_by 0 unresolved 17
 ## path set vs git ls-files in the clean base worktree:
 path sets identical
 ## files added by THIS batch are NOT in the snapshot inventory (must print 0):
-.coverage
 docs/audit/M8/logs/raw/050_r154_acceptance_main_ci.log
 docs/audit/M8/logs/raw/051_r155_r154_closure_check.log
 docs/audit/M8/logs/raw/052_r155_snapshot_stats.log
@@ -24,9 +23,17 @@ docs/audit/M8/logs/raw/053_r155_coverage_files.json
 docs/audit/M8/logs/raw/053_r155_pytest_coverage_base.log
 docs/audit/M8/logs/raw/054_r155_inventory_generation.log
 docs/audit/M8/logs/raw/055_r155_mutation_tests.log
+docs/audit/M8/logs/raw/056_r155_pytest.log
+docs/audit/M8/logs/raw/057_r155_ruff.log
+docs/audit/M8/logs/raw/058_r155_web_install.log
+docs/audit/M8/logs/raw/059_r155_web_build.log
+docs/audit/M8/logs/raw/060_r155_root_install.log
+docs/audit/M8/logs/raw/061_r155_root_build.log
 docs/governance/roadmaps/revival-scale/inventory/FILE_INVENTORY_f8b2d48.csv
 docs/governance/roadmaps/revival-scale/inventory/INVENTORY_SUMMARY_f8b2d48.json
 docs/governance/roadmaps/revival-scale/inventory/INVENTORY_SUMMARY_f8b2d48.md
+docs/governance/roadmaps/revival-scale/inventory/README.md
 scripts/build_file_inventory.py
 tests/test_r155_file_inventory.py
-batch-added files: 13 of which in snapshot inventory: 0
+docs/audit/M8/logs/raw/062_r155_local_gates.log
+batch-added files: 20 of which in snapshot inventory: 0

@@ -1,0 +1,27 @@
+# 062 R-155 local governance gates on branch HEAD ff6832027b65e2088cc801aa23942dbf14522671 vs origin/main (2026-10-17T02:56:30Z)
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 9, 'A': 19}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 28 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+exit=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0
+$ python scripts/run_r075_roadmap_audit.py f8b2d48..HEAD R-154 R-155
+item headings: 179
+duplicate ids: none
+status counts: {'done': 149, 'awaiting_merge': 1, 'planned': 29}
+items without status: none
+  not in ROADMAP: none
+  R-154: roadmap=yes changelog=yes
+  R-155: roadmap=yes changelog=yes
+exit=0
+## PROJECT_STATE table vs ROADMAP (M8):
+items 34 table rows 34 mismatches [] R-154 done done R-155 awaiting_merge awaiting_merge
+## git diff --stat origin/main (deletions/renames must be 0):
+ 28 files changed, 4941 insertions(+), 9 deletions(-)
+     19 A
+      9 M
