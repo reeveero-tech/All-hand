@@ -468,8 +468,12 @@ def test_consecutive_requests_never_share_or_inherit_a_trace(auth):
     http = [x for x in _records() if x["kind"] == "http"]
     assert len(http) == 3 and len({x["trace_id"] for x in http}) == 3
     assert all(x["parent_span_id"] is None for x in http)
-    # the SPA catch-all answers unknown paths: the label is its template, never the raw path
-    assert http[1]["route"] == "/{full_path}" and "nonexistent" not in json.dumps(http[1])
+    # the SPA catch-all `/{full_path:path}` exists only when web/dist is built
+    # (log 106): then the label is its template, otherwise "<unmatched>" —
+    # never the raw path either way.
+    catch_all = any(getattr(rt, "path", "") == "/{full_path:path}" for rt in server.app.routes)
+    assert http[1]["route"] == ("/{full_path}" if catch_all else "<unmatched>")
+    assert "nonexistent" not in json.dumps(http[1])
     for h in http:                                   # every span of a trace hangs under its own http root
         for x in _records(h["trace_id"]):
             assert x is h or x["parent_span_id"] is not None
