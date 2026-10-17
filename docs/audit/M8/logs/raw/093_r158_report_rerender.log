@@ -1,0 +1,63 @@
+# 093 R-158 report re-render — 2026-10-17T07:05:12Z
+# reason: tests/test_r158_test_baseline.py::test_human_report_and_csvs_are_rendered_from_the_json FAILED: render_md iterated dicts in run insertion order while the JSON is stored sort_keys=True, so the .md rendered in-run (090) differs in row ORDER from one rendered from the committed JSON. Fix: render_md normalizes to the sorted form; new --render-from mode. No command is re-run; the JSON is not changed.
+$ sha256sum (before)
+b8d88f9083f12b3f3f69809eb4e37d9c9b2e8adc7f1fef0ed511ebbbb4aa05ad  docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.json
+9946ec05bee579da414f834458a3d08ef8a293f19e693f271bffc458dffcdf92  docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.md
+0f8d623e5803d4a129c97292b80219ebb71d86a904c5a951fde746c10bf59fb2  docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_FILES_573793c.csv
+ac0784bf7ab865f3150a9b9ecc7de57a8dac374af3f4a8c1d1408507eb876ab4  docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_GROUPS_573793c.csv
+$ diff generator v1 (used by runs 088-090, sha256 c630d8c6...) -> current
+--- scripts/build_test_baseline.py@runs088-090	2026-10-17 07:05:03.031061446 +0000
++++ scripts/build_test_baseline.py	2026-10-17 07:05:03.043061446 +0000
+@@ -779,6 +779,9 @@
+ 
+ 
+ def render_md(b: Dict, json_name: str) -> str:
++    # R-158: render from the key-sorted form the JSON is stored in, so the
++    # report is identical whether it is rendered in-run or from the file.
++    b = json.loads(json.dumps(b, sort_keys=True))
+     L = [f"# خط أساس اختبارات الملفات — R-158 عند `{b['snapshot_sha']}`", "",
+          f"> مولَّد من [`{json_name}`]({json_name}) بـ`scripts/build_test_baseline.py` — لا يُحرر يدوياً. "
+          f"البصمة (الجزء الحتمي): `{b['fingerprint']}`.", "",
+@@ -859,9 +862,11 @@
+ def main(argv=None) -> int:
+     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+     ap.add_argument("--repo", default=".")
+-    ap.add_argument("--sha", required=True)
++    ap.add_argument("--sha")
+     ap.add_argument("--out", required=True)
+-    ap.add_argument("--raw-log", required=True)
++    ap.add_argument("--raw-log")
++    ap.add_argument("--render-from", help="re-render the .md/.csv outputs from an existing baseline JSON "
++                                          "(no command is run; the JSON is not changed)")
+     ap.add_argument("--checkout")
+     ap.add_argument("--node-bin")
+     ap.add_argument("--pg-bin")
+@@ -870,6 +875,17 @@
+     ap.add_argument("--ci-json")
+     ap.add_argument("--no-network", action="store_true")
+     a = ap.parse_args(argv)
++    if a.render_from:
++        with open(a.render_from, encoding="utf-8") as f:
++            b = json.load(f)
++        if b.get("fingerprint") != fingerprint(b):
++            print("::error::test-baseline: stored fingerprint does not match the JSON")
++            return 2
++        paths = write_outputs(b, a.out)
++        print(f"re-rendered from {a.render_from} fingerprint={b['fingerprint']} out={paths['json']}")
++        return 0
++    if not (a.sha and a.raw_log):
++        ap.error("--sha and --raw-log are required (unless --render-from)")
+     try:
+         b, problems = build(a)
+     except (subprocess.CalledProcessError, OSError, ValueError) as e:
+generator now sha256=52d3fbd959cbee80afd6836b4e811b358085eebef86cc45a9d083c1d21098b6e
+$ python scripts/build_test_baseline.py --render-from docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.json --out docs/governance/roadmaps/revival-scale/baseline
+re-rendered from docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.json fingerprint=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474 out=docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.json
+exit=0
+$ sha256sum (after)
+b8d88f9083f12b3f3f69809eb4e37d9c9b2e8adc7f1fef0ed511ebbbb4aa05ad  docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.json
+d9e571147ac4b4f9f41056006b1e8b5a299a967db3be752c83d49625b3274b9b  docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.md
+0f8d623e5803d4a129c97292b80219ebb71d86a904c5a951fde746c10bf59fb2  docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_FILES_573793c.csv
+ac0784bf7ab865f3150a9b9ecc7de57a8dac374af3f4a8c1d1408507eb876ab4  docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_GROUPS_573793c.csv
+$ deterministic part of the first-run in-memory render vs re-render: only row order may differ
+render_md(json)==file: True fingerprint: d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474

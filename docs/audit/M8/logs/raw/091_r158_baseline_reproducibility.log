@@ -1,0 +1,24 @@
+# 091 R-158 reproducibility: 3 independent runs of scripts/build_test_baseline.py at 573793c1f36afd77f3b79247ab9e2d978a397b62 — compared 2026-10-17T07:02:38Z
+# run1 = fresh git worktree (088), run2 = fresh git worktree (089), run3 = fresh 'gh repo clone' + checkout --detach, verified clean (090) -> committed outputs in docs/governance/roadmaps/revival-scale/baseline/
+run1 exit=0
+run2 exit=0
+clone3 HEAD=573793c1f36afd77f3b79247ab9e2d978a397b62 status=[0 changes]
+run3 exit=0
+DONE
+## generator sha256 recorded in each raw log header:
+088_r158_baseline_run1_worktree.log: sha256=c630d8c629c5ad308a02d49b1f9e923cf43134e16bef6a9e8d79a8f8fe6df6ec  fingerprint(deterministic part)=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474
+089_r158_baseline_run2_worktree.log: sha256=c630d8c629c5ad308a02d49b1f9e923cf43134e16bef6a9e8d79a8f8fe6df6ec  fingerprint(deterministic part)=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474
+090_r158_baseline_run3_clean_clone.log: sha256=c630d8c629c5ad308a02d49b1f9e923cf43134e16bef6a9e8d79a8f8fe6df6ec  fingerprint(deterministic part)=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474
+## generator in this branch: sha256=c630d8c629c5ad308a02d49b1f9e923cf43134e16bef6a9e8d79a8f8fe6df6ec
+run1: stored fingerprint=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474 recomputed=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474 raw_log=088_r158_baseline_run1_worktree.log checkout=fresh git worktree
+run2: stored fingerprint=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474 recomputed=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474 raw_log=089_r158_baseline_run2_worktree.log checkout=fresh git worktree
+run3: stored fingerprint=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474 recomputed=d2523d8ca38443c6e8fa84be37445f5dc5362accdd41caa4d292737969c33474 raw_log=090_r158_baseline_run3_clean_clone.log checkout=existing clean clone (--checkout)
+## run1 vs run2: deterministic-view differences=0; full-JSON differences=1:
+    value /raw_log '088_r158_baseline_run1_worktree.log' != '089_r158_baseline_run2_worktree.log'
+## run1 vs run3: deterministic-view differences=0; full-JSON differences=2:
+    value /checkout 'fresh git worktree' != 'existing clean clone (--checkout)'
+    value /raw_log '088_r158_baseline_run1_worktree.log' != '090_r158_baseline_run3_clean_clone.log'
+## non-deterministic fields (excluded from the fingerprint, by design): raw_log, checkout, steps with evidence_kind=local-live-internet (pytest -m network). Durations/timestamps/temp paths are never written to the JSON — they exist only in the raw logs.
+   run1 pytest:network exit=1 counts={'deselected': 1060, 'failed': 1, 'passed': 3} failures=['tests/test_r114_r118_real_fixes.py::test_live_keyless_llm_and_translation']
+   run2 pytest:network exit=1 counts={'deselected': 1060, 'failed': 1, 'passed': 3} failures=['tests/test_r114_r118_real_fixes.py::test_live_keyless_llm_and_translation']
+   run3 pytest:network exit=1 counts={'deselected': 1060, 'failed': 1, 'passed': 3} failures=['tests/test_r114_r118_real_fixes.py::test_live_keyless_llm_and_translation']
