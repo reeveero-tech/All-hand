@@ -15,11 +15,13 @@ messages (R-054).
 from __future__ import annotations
 
 import importlib
+import inspect
 import time
 from typing import Any, Dict, List
 
+from agent_civilization.agents.real.runtime_contract import failure_result
 from agent_civilization.core import experience as _experience
-from agent_civilization.core.safety import UnsafeURLError
+from agent_civilization.core.safety import UnsafeURLError  # noqa: F401  (public name kept, R-157)
 # R-104c2: the canonical public messaging API lives in agent_civilization.communication
 from agent_civilization.communication import CommunicationHub
 
@@ -56,7 +58,7 @@ class SpecialistBackedAgent:
             work = work or {}
 
             async def call():
-                out = await self.inner.execute(work)
+                out = await self._run_inner(work)
                 r = out.get("result")
                 if not isinstance(r, dict):
                     r = {"ok": bool(out.get("ok")), "answer": r}
@@ -80,12 +82,43 @@ class SpecialistBackedAgent:
             # R-149 (Security QA): an unexpected exception's raw text is not
             # trusted — only its TYPE is reported; UnsafeURLError keeps its
             # fixed refusal message (SEC-01/SEC-05, proven by their tests).
-            error = str(exc) if isinstance(exc, UnsafeURLError) else type(exc).__name__
+            # R-157: the rule lives in runtime_contract (shared with real).
             return {"ok": False, "agent": self.name, "elapsed_s": elapsed,
-                    "result": {"ok": False, "error": error},
+                    "result": failure_result(exc),
                     "impl": self.impl_class}
         finally:
             self.status = "idle"
+
+    async def _run_inner(self, work: Dict[str, Any]) -> Dict[str, Any]:
+        """R-157 (D-069) compatibility adapter around the specialist instance.
+
+        Same bookkeeping and the same return value as the legacy
+        ``BaseAgent.execute`` (status, ``performance_metrics``, ok propagation
+        of R-032, non-dict results) — but an exception raised by
+        ``_process_task`` is re-raised instead of being turned into
+        ``"<Type>: <message>"``. That lets it reach the canonical envelope
+        above, so both runtimes report the type only (R-149) and a raising
+        handler leaves no memory/learning record, exactly like ``real``.
+        ``BaseAgent.execute`` itself is unchanged for its other callers
+        (hub ``_execute_work``)."""
+        inner = self.inner
+        pt = getattr(inner, "_process_task", None)
+        if not (pt and inspect.iscoroutinefunction(pt)):
+            return {"ok": False, "agent": inner.name,
+                    "result": {"error": "agent has no _process_task"}}
+        t0 = time.monotonic()
+        inner.status = "working"
+        try:
+            result = await pt(work)
+        except Exception:
+            inner.performance_metrics["tasks_failed"] += 1
+            raise
+        finally:
+            inner.status = "idle"
+        ok = bool(result.get("ok", True)) if isinstance(result, dict) else True
+        inner.performance_metrics["tasks_completed" if ok else "tasks_failed"] += 1
+        return {"ok": ok, "agent": inner.name,
+                "elapsed_s": round(time.monotonic() - t0, 3), "result": result}
 
     def snapshot(self) -> Dict[str, Any]:
         return {

@@ -243,13 +243,59 @@ async def check_api() -> Dict[str, Any]:
     """Check API availability."""
     return {"status": "healthy", "message": "API is responding"}
 
+# R-157 (D-069): one source of truth for "is the civilization serving?".
+# server.py registers its live civilization here at startup, so /health (this
+# registry) and /health/ready / /api/system/status judge the SAME object.
+# Before R-157 this check built its own default civilization on every call
+# (1,000 agents whatever AGENTS_PER_SPEC said) and could answer "healthy"
+# while /health/ready answered 503 (docs/audit/M8/logs/raw/077_*).
+_civilization_provider: Optional[Callable[[], Any]] = None
+
+
+def set_civilization_provider(provider: Optional[Callable[[], Any]]) -> None:
+    """Register (or clear with ``None``) the callable returning the live
+    civilization map ``{specialization: [agent, ...]}``."""
+    global _civilization_provider
+    _civilization_provider = provider
+
+
+def civilization_status(civilization: Any) -> Dict[str, Any]:
+    """The readiness rule shared by /health and /health/ready.
+
+    Returns ``{"ready", "reason", "agents"}``; ``reason`` is the exact text
+    /health/ready has always returned for the two not-ready states. May raise
+    if ``civilization`` is broken — callers map that to a fixed reason."""
+    if not civilization:
+        return {"ready": False, "reason": "Civilization not initialized", "agents": 0}
+    total = sum(len(agents) for agents in civilization.values())
+    if total == 0:
+        return {"ready": False, "reason": "No agents available", "agents": 0}
+    return {"ready": True, "reason": None, "agents": total}
+
+
 async def check_civilization() -> Dict[str, Any]:
     """Check civilization system.
 
-    The civilization map is not exported as a module attribute; the canonical
-    entry point is `create_civilization()` (see server.py). Build it lazily
-    here so health can run independently of the server.
+    With a registered provider (server.py) the live civilization is judged by
+    ``civilization_status``. Without one (health used standalone) the legacy
+    behaviour is kept unchanged: build the default civilization lazily via
+    `create_civilization()` so health can run independently of the server.
     """
+    provider = _civilization_provider
+    if provider is not None:
+        try:
+            st = civilization_status(provider())
+        except Exception as e:  # noqa: BLE001
+            # fixed reason, type-only log — same rule as /health/ready (R-149)
+            logger.warning("civilization health check failed: %s", type(e).__name__)
+            return {"status": "unhealthy", "message": "readiness check failed"}
+        if not st["ready"]:
+            return {"status": "unhealthy", "message": st["reason"], "agent_count": 0}
+        return {
+            "status": "healthy",
+            "message": f"Civilization active with {st['agents']} agents",
+            "agent_count": st["agents"],
+        }
     try:
         from agent_civilization.agents.real import create_civilization
         civilization = create_civilization()

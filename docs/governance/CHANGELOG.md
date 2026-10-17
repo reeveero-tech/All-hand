@@ -1,5 +1,15 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-17 — R-157 (M8/P1): توحيد عقود القدرات وواجهات التوافق (دفعة m8/r157-contracts-parity، D-069) + قبول R-156
+
+- **قبول R-156**: PR #170 مدموجة بـ`--merge` (SHA `228b9560f74f8ef9035a57ce1e460362ac9d3a2c`، الأب الثاني = المختبر `72c573f676033cf7e58a3075c1e3ed7a7dbd40d8`)، CI main 39002479809 success (test ‏1006/4/4 على نسختي Python، storage ‏4 passed للاختبارات المتخطاة الأربعة، network ‏4 passed للمستبعدة الأربعة)، الحوكمة للـPR 39002012148 success بخطواتها الأربع؛ R-156 ⇒ `done` (لا `accepted`) (`074`، فحص الحالة `075`).
+- **مضاف**: `agent_civilization/agents/real/runtime_contract.py` — العقد المرجعي لوقت تشغيل الوكيل (`AgentRuntime`، مفاتيح الخرج/اللقطة/الإحصاءات، `public_error`/`failure_result`، `INTENDED_DIFFERENCES`).
+- **مُصلح (C1)**: `SpecialistBackedAgent._run_inner` — محوّل يشغّل `_process_task` للفئة المغلّفة بمحاسبة `BaseAgent.execute` نفسها لكنه يعيد رفع الاستثناء إلى الغلاف المرجعي. قبله كان `AGOS_AGENT_IMPL=specialists` يعيد `"RuntimeError: <نص الاستثناء>"` ويخزّنه في ذاكرة المستأجر وتعلّمه (`076`). `real_agents.py` يستخدم القاعدة المشتركة بمخرجات مطابقة. `BaseAgent.execute` والقوالب الألف دون تعديل.
+- **مُصلح (C2)**: `agos_kernel/infrastructure/health.py` — `set_civilization_provider` و`civilization_status`؛ `server.py` يسجّل الحضارة الحية و`/health/ready` يستخدم القاعدة نفسها. `/health` لم يعد يبني حضارة ثانية (كان يعلن 1000 وكيل مع `AGENTS_PER_SPEC=2`، وhealthy حين ready ‏503 — `077`). بلا مزوّد يبقى السلوك القديم.
+- **مثبت بلا تعديل**: الذاكرة والتعلّم (C3)، الرسائل (C4)، سياسات اختيار الوكيل الثلاث (C5، غير موحّدة — G-157-3). **غير محسوم**: `src/`/`web/` (C6، Q-002 مفتوح، G-157-4).
+- **اختبارات**: `tests/test_r157_contract_parity.py` (50). طفرات 12/13 ثم 13/13 بعد اختبار للطفرة الناجية (`078`، `079`). uvicorn حقيقي على الوقتين (`080`). مجموعات API/الأمن على `specialists` (`081`). الواجهتان (`082`). الحزمة الكاملة (`083`). ruff والبوابات (`084`).
+- **وثائق**: المصفوفة `maps/CAPABILITY_CONTRACTS_228b956.md`، ROADMAP، PROJECT_STATE، DECISIONS (D-069)، API.md (`/health`)، OPEN_QUESTIONS (ملاحظة Q-002)، QUALITY، `docs/governance/README.md`، `maps/README.md`، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+
 ## 2026-10-17 — R-156 (M8/P1): خريطة نقاط الدخول والمسارات عند `caab69b` (دفعة m8/r156-entrypoint-map، D-068) + قبول R-155
 
 - **قبول R-155**: PR #169 مدموجة بـ`--merge` (SHA `caab69b`، الأب الثاني = المختبر `54a1fb9`)، CI main 38997223656 success (test ‏984/4/4 على نسختي Python، storage ‏4 passed، network ‏4 passed)، الحوكمة للـPR 38996889506 success؛ R-155 ⇒ `done` (لا `accepted`) بحقول دليل متحقق منها (`063`، فحص الحالة `064`).

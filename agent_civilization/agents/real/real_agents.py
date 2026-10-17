@@ -14,12 +14,13 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from agent_civilization.agents.real.runtime_contract import failure_result
 from agent_civilization.core import experience as _experience
 from agent_civilization.core.agents.real_dispatcher import (
     coverage as _coverage,
     dispatch as _dispatch,
 )
-from agent_civilization.core.safety import UnsafeURLError
+from agent_civilization.core.safety import UnsafeURLError  # noqa: F401  (public name kept, R-157)
 
 SPECIALIZATIONS: Dict[str, str] = {
     "analyst": "Analyze numeric/textual evidence and extract measurable patterns.",
@@ -110,12 +111,12 @@ class RealSpecialistAgent:
             # trusted — it can carry internal details into the tenant-visible
             # result — so only its TYPE is reported. UnsafeURLError keeps its
             # fixed refusal message (SEC-01/SEC-05, proven by their tests).
-            error = str(exc) if isinstance(exc, UnsafeURLError) else type(exc).__name__
+            # R-157: the rule lives in runtime_contract (shared with specialists).
             return {
                 "ok": False,
                 "agent": self.name,
                 "elapsed_s": elapsed,
-                "result": {"ok": False, "error": error},
+                "result": failure_result(exc),
             }
         finally:
             self.status = "idle"

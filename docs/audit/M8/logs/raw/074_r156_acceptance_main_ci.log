@@ -1,0 +1,47 @@
+# 074 R-156 acceptance: PR #170 merged with --merge; CI on main at the merge SHA itself (recorded inside the R-157 batch, 2026-10-17T04:45:46Z)
+pr=#170
+state=MERGED mergedAt=2026-10-17T04:24:57Z
+pr_head=72c573f676033cf7e58a3075c1e3ed7a7dbd40d8
+pr_merge_commit=228b9560f74f8ef9035a57ce1e460362ac9d3a2c
+tested_sha=72c573f676033cf7e58a3075c1e3ed7a7dbd40d8
+merge_sha=228b9560f74f8ef9035a57ce1e460362ac9d3a2c
+git: merge^1=caab69b2d9aa59614856923512f2e10ccca0954f merge^2=72c573f676033cf7e58a3075c1e3ed7a7dbd40d8 subject=Merge pull request #170 from reeveero-tech/m8/r156-entrypoint-map
+## main push run (gh run view 39002479809):
+ci_run=39002479809
+ci_conclusion=success
+event=push headSha=228b9560f74f8ef9035a57ce1e460362ac9d3a2c
+url=https://github.com/reeveero-tech/All-hand/actions/runs/39002479809
+job quality=success
+job test=success
+job network=success
+job docker=success
+job build=success
+job audit=success
+job storage=success
+job publish=skipped
+## PR governance run (gh run view 39002012148) on tested head:
+run=39002012148 event=pull_request headSha=72c573f676033cf7e58a3075c1e3ed7a7dbd40d8 conclusion=success
+No-delete check (R-152)	2026-10-17T04:17:39.6022197Z No-delete gate passed: 0 tracked files deleted, moved or renamed.
+Atomic batch check	2026-10-17T04:17:39.6417558Z Governance gate passed.
+Atomic batch check v2 (R-153)	2026-10-17T04:17:39.6859172Z Atomic batch v2 passed (R0-R6).
+Status evidence check (R-154)	2026-10-17T04:17:39.7771004Z Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+## tests: raw log docs/audit/M8/logs/raw/069_r156_pytest.log (tested branch content) says:
+========== 1006 passed, 4 skipped, 4 deselected in 130.28s (0:02:10) ===========
+## same count reproduced by CI job 'test' on the merge SHA (both Python versions), excerpt of run 39002479809 log:
+2026-10-17T04:27:16.0703513Z ========== 1006 passed, 4 skipped, 4 deselected in 119.42s (0:01:59) ===========
+2026-10-17T04:29:17.0604744Z ========== 1006 passed, 4 skipped, 4 deselected in 109.22s (0:01:49) ===========
+## skipped (4) = tests/test_r042_live_storage.py (need R042_LIVE=1), executed with R042_LIVE=1 by job 'storage' in the same run:
+2026-10-17T04:29:43.9843002Z tests/test_r042_live_storage.py::test_status_reports_live_storage PASSED [ 25%]
+2026-10-17T04:29:44.1142312Z tests/test_r042_live_storage.py::test_task_lifecycle_persisted PASSED    [ 50%]
+2026-10-17T04:29:44.2392086Z tests/test_r042_live_storage.py::test_task_read_by_id_from_storage_after_memory_loss PASSED [ 75%]
+2026-10-17T04:29:44.9315404Z tests/test_r042_live_storage.py::test_chat_persists_and_agent_stats_upserted PASSED [100%]
+2026-10-17T04:29:44.9316376Z ============================== 4 passed in 1.43s ===============================
+## deselected (4) = marker network, executed by job 'network' in the same run:
+2026-10-17T04:25:30.1873085Z collecting ... collected 1014 items / 1010 deselected / 4 selected
+2026-10-17T04:25:30.3065820Z tests/test_network_live.py::test_researcher_live_duckduckgo PASSED       [ 25%]
+2026-10-17T04:25:30.4214981Z tests/test_network_live.py::test_api_integrator_live_get PASSED          [ 50%]
+2026-10-17T04:25:30.4877990Z tests/test_network_live.py::test_network_client_live_dns_and_head PASSED [ 75%]
+2026-10-17T04:25:32.2013556Z tests/test_r114_r118_real_fixes.py::test_live_keyless_llm_and_translation PASSED [100%]
+2026-10-17T04:25:32.2014635Z ====================== 4 passed, 1010 deselected in 3.87s ======================
+## untested / not proven: production readiness (needs R-184 GO + owner decision); capacity targets 10,000 agents / 1,000,000 tasks / 10,000 tools NOT measured; external deployment of src/ NOT determined (Q-002 open, 17 files stay unresolved); the map is not full semantic coverage (subsystems are a declared grouping needing human review); scripts needing a live server were compiled/imported only
+## open PRs: 0

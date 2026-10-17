@@ -1,0 +1,102 @@
+# 076 R-157 BEFORE: C1 agent-runtime parity on UNCHANGED runtime code (base 228b9560f74f8ef9035a57ce1e460362ac9d3a2c; only the new test file + the inert runtime_contract.py exist) — 2026-10-17T04:53:27Z, local, Python 3.12.13
+# expected: the C1 security/side-effect cases FAIL here, proving the divergence the adapter fixes
+$ git status --short -- agent_civilization tests
+?? agent_civilization/agents/real/runtime_contract.py
+?? tests/test_r157_contract_parity.py
+$ python -m pytest tests/test_r157_contract_parity.py -k test_c1 -q -p no:cacheprovider
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/repo
+configfile: pytest.ini
+plugins: cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 49 items / 13 deselected / 36 selected
+
+tests/test_r157_contract_parity.py ...........................FF....F..  [100%]
+
+=================================== FAILURES ===================================
+____________ test_c1_unexpected_exception_reports_type_only_on_both ____________
+tests/test_r157_contract_parity.py:167: in test_c1_unexpected_exception_reports_type_only_on_both
+    assert r["result"] == {"ok": False, "error": "RuntimeError"}, (impl, r)
+E   AssertionError: ('specialists', {'ok': False, 'agent': 'analyst_0000', 'elapsed_s': 0.0, 'result': {'error': 'RuntimeError: internal secret /etc/passwd token=abc123'}, ...})
+E   assert {'error': 'Ru...token=abc123'} == {'ok': False,...RuntimeError'}
+E     
+E     Differing items:
+E     {'error': 'RuntimeError: internal secret /etc/passwd token=abc123'} != {'error': 'RuntimeError'}
+E     Right contains 1 more item:
+E     {'ok': False}
+E     Use -v to get more diff
+___________ test_c1_unsafe_url_error_keeps_its_fixed_message_on_both ___________
+tests/test_r157_contract_parity.py:181: in test_c1_unsafe_url_error_keeps_its_fixed_message_on_both
+    assert r["result"] == {"ok": False, "error": msg}, (impl, r)
+E   AssertionError: ('specialists', {'ok': False, 'agent': 'api_integrator_0001', 'elapsed_s': 0.0, 'result': {'error': 'UnsafeURLError: url rejected: host resolves to a private address'}, ...})
+E   assert {'error': 'Un...vate address'} == {'ok': False,...vate address'}
+E     
+E     Differing items:
+E     {'error': 'UnsafeURLError: url rejected: host resolves to a private address'} != {'error': 'url rejected: host resolves to a private address'}
+E     Right contains 1 more item:
+E     {'ok': False}
+E     Use -v to get more diff
+__________ test_c1_memory_and_learning_side_effects_match[exception] ___________
+tests/test_r157_contract_parity.py:250: in test_c1_memory_and_learning_side_effects_match
+    assert effects["real"] == effects["specialists"], effects
+E   AssertionError: {'real': {'memories': 0, 'stored': [], 'learning': {'tasks': 0, 'by_specialization': {}}, 'experience': None}, 'specia...', 'samples': 0}, 'after': {'specialization': 'analyst', 'input_kind': 'numbers', 'samples': 1, 'success_rate': 0.0}}}}
+E   assert {'memories': ...rience': None} == {'memories': ..._rate': 0.0}}}
+E     
+E     Differing items:
+E     {'experience': None} != {'experience': {'recalled': 0, 'stored': True, 'prior': {'specialization': 'analyst', 'input_kind': 'numbers', 'samples': 0}, 'after': {'specialization': 'analyst', 'input_kind': 'numbers', 'samples': 1, 'success_rate': 0.0}}}
+E     {'stored': []} != {'stored': [{'layer': 'experience', 'tenant_id': 't-r157', 'specialization': 'analyst', 'prompt': 'avg', ...}]}
+E     {'memories': 0} != {'memories': 1}
+E     {'learning': {'tasks': 0, 'by_specialization': {}}} != {'learning': {'tasks': 1, 'by_specialization': {'analyst': {'samples': 1, 'by_input_kind': {...
+E     
+E     ...Full output truncated (2 lines hidden), use '-vv' to show
+=========================== short test summary info ============================
+FAILED tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+FAILED tests/test_r157_contract_parity.py::test_c1_unsafe_url_error_keeps_its_fixed_message_on_both
+FAILED tests/test_r157_contract_parity.py::test_c1_memory_and_learning_side_effects_match[exception]
+================= 3 failed, 33 passed, 13 deselected in 0.54s ==================
+exit=1
+## direct probe (source below; same fake dispatch on both runtimes, outside pytest — network NOT faked, so only the injected-dispatch lines are used as evidence):
+exception REAL {"ok": false, "result": {"ok": false, "error": "RuntimeError"}} | SPEC {"ok": false, "result": {"error": "RuntimeError: internal secret /etc/passwd"}} | elapsed keys True True
+unsafe_url REAL {"ok": false, "result": {"ok": false, "error": "url rejected: private address"}} | SPEC {"ok": false, "result": {"error": "UnsafeURLError: url rejected: private address"}} | elapsed keys True True
+no_handler REAL {"ok": false, "result": {"ok": false, "error": "no handler for analyst"}} | SPEC {"ok": false, "result": {"ok": false, "error": "no real dispatcher for analyst"}} | elapsed keys True True
+stats real {'tasks_completed': 1, 'tasks_failed': 3, 'total_time_s': 0.0} spec {'tasks_completed': 1, 'tasks_failed': 3, 'total_time_s': 0.0}
+snapshot keys real ['id', 'name', 'specialization', 'stats', 'status'] spec ['id', 'impl', 'name', 'specialization', 'stats', 'status']
+## probe source /tmp/probe/probe_runtime.py:
+import os, sys, asyncio, json
+os.environ["AGOS_ENV"]="test"; sys.path.insert(0,".")
+from agent_civilization.agents.real import create_civilization, SPECIALIZATIONS
+from agent_civilization.core.agents import real_dispatcher
+from agent_civilization.core import safety
+real = create_civilization(1, impl="real"); spec = create_civilization(1, impl="specialists")
+def strip(o):
+    o=dict(o); o.pop("elapsed_s",None); o.pop("agent",None); o.pop("impl",None)
+    r=o.get("result")
+    if isinstance(r,dict):
+        r=dict(r)
+        for k in ("elapsed_s","duration_s","elapsed_ms","timestamp","fetched_at"): r.pop(k,None)
+        o["result"]=r
+    return o
+CASES={"validator":{"prompt":'{"a":1}'},"analyst":{"prompt":"avg","data":[1,2,3,4]},"db_manager":{"prompt":"CREATE TABLE t(x INTEGER)"}}
+async def main():
+    same=diff=0
+    for s in SPECIALIZATIONS:
+        w=CASES.get(s,{"prompt":"demo"})
+        a=strip(await real[s][0].execute(dict(w))); b=strip(await spec[s][0].execute(dict(w)))
+        eq = json.dumps(a,sort_keys=True,default=str)==json.dumps(b,sort_keys=True,default=str)
+        same+=eq; diff+= not eq
+        if not eq: print("DIFF", s, json.dumps(a,default=str)[:200], "||", json.dumps(b,default=str)[:200])
+    print("success/refusal cases: equal", same, "different", diff)
+    orig=real_dispatcher.dispatch
+    async def boom(sp, w): raise RuntimeError("internal secret /etc/passwd")
+    async def unsafe(sp, w): raise safety.UnsafeURLError("url rejected: private address")
+    async def none(sp, w): return None
+    for name,fn in (("exception",boom),("unsafe_url",unsafe),("no_handler",none)):
+        real_dispatcher.dispatch=fn
+        import agent_civilization.agents.real.real_agents as ra; ra._dispatch=fn
+        a=await real["analyst"][0].execute({"prompt":"x"}); b=await spec["analyst"][0].execute({"prompt":"x"})
+        print(name, "REAL", json.dumps(strip(a)), "| SPEC", json.dumps(strip(b)), "| elapsed keys", "elapsed_s" in a, "elapsed_s" in b)
+    real_dispatcher.dispatch=orig
+    print("stats real", real["analyst"][0].stats, "spec", spec["analyst"][0].stats)
+    print("snapshot keys real", sorted(real["analyst"][0].snapshot()), "spec", sorted(spec["analyst"][0].snapshot()))
+asyncio.run(main())
