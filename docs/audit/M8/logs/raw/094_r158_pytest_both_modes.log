@@ -1,0 +1,41 @@
+# 094 R-158 full pytest on branch m8/r158-test-baseline (working tree = HEAD 9cc76bc45adef71c9cb8f9d779c42eed0b63ae4c + PR-number fill-in) — 2026-10-17T07:09:10Z, Python 3.12.13
+
+## AGOS_AGENT_IMPL=real  $ python -m pytest tests/ -q -p no:cacheprovider
+tests/test_real_dispatch_audit.py ......                                 [ 62%]
+tests/test_routing_pipeline.py .................................         [ 65%]
+tests/test_sec01_external_redirect.py .........                          [ 66%]
+tests/test_sec02_tenant_isolation.py ................................... [ 69%]
+tests/test_sec03_production_startup.py ................................. [ 78%]
+tests/test_sec04_sse_broadcast_bounds.py ............................... [ 83%]
+tests/test_sec05_dns_rebinding.py ...................................... [ 87%]
+tests/test_sec06_public_llm_consent.py ................................. [ 92%]
+tests/test_security.py ..........                                        [ 94%]
+tests/test_specialist_runtime.py ..........                              [ 95%]
+tests/test_specialists_package.py ....................................   [ 98%]
+tests/test_storage_payloads.py ......                                    [ 99%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1098 passed, 4 skipped, 4 deselected in 132.98s (0:02:12) ===========
+exit=0
+
+## AGOS_AGENT_IMPL=specialists  $ python -m pytest tests/ -q -p no:cacheprovider
+tests/test_real_dispatch_audit.py ......                                 [ 62%]
+tests/test_routing_pipeline.py .................................         [ 65%]
+tests/test_sec01_external_redirect.py .........                          [ 66%]
+tests/test_sec02_tenant_isolation.py ................................... [ 69%]
+tests/test_sec03_production_startup.py ................................. [ 78%]
+tests/test_sec04_sse_broadcast_bounds.py ............................... [ 83%]
+tests/test_sec05_dns_rebinding.py ...................................... [ 87%]
+tests/test_sec06_public_llm_consent.py ................................. [ 92%]
+tests/test_security.py ..........                                        [ 94%]
+tests/test_specialist_runtime.py ..........                              [ 95%]
+tests/test_specialists_package.py ....................................   [ 98%]
+tests/test_storage_payloads.py ......                                    [ 99%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1098 passed, 4 skipped, 4 deselected in 148.03s (0:02:28) ===========
+exit=0
+
+## new R-158 tests
+
+============================= 64 passed in 10.89s ==============================

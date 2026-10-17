@@ -437,15 +437,27 @@ def test_background_task_final_event_rejected_after_creation_saved(
 
 # ------------------------------------------------------------------ G4: exception inside a real agent
 
+def _patch_handler_dispatch(monkeypatch, fn):
+    """R-158 (G-157-5): inject ``fn`` as the shared handler dispatcher on BOTH
+    runtime bindings. ``real_agents`` binds ``_dispatch`` at import time; the
+    ``specialists`` templates import ``real_dispatcher.dispatch`` at call time.
+    Patching only the first left the injected crash inert when the server is
+    built with AGOS_AGENT_IMPL=specialists (the 3 tests below then failed for
+    a fixture reason, not a behaviour one — docs/audit/M8/logs/raw/092_*)."""
+    import agent_civilization.agents.real.real_agents as ra
+    from agent_civilization.core.agents import real_dispatcher
+    monkeypatch.setattr(ra, "_dispatch", fn)
+    monkeypatch.setattr(real_dispatcher, "dispatch", fn)
+
+
 def test_handler_exception_inside_real_agent_ends_task_failed(
         tenant_auth, postgrest, published, clean_tasks, monkeypatch):
     """The agent's own exception handling is the contract under test:
     ``execute()`` stays REAL; the handler it calls raises. The task must end
     failed with the error in its result — never stay pending."""
-    import agent_civilization.agents.real.real_agents as ra
     def crashing_dispatch(specialization, work):
         raise RuntimeError("R-149 controlled handler crash")
-    monkeypatch.setattr(ra, "_dispatch", crashing_dispatch)
+    _patch_handler_dispatch(monkeypatch, crashing_dispatch)
     with TestClient(server.app) as c:
         r = c.post("/api/tasks", json={"specialization": SPEC, "prompt": MESSAGE},
                    headers=tenant_auth.headers)
@@ -474,10 +486,9 @@ def test_internal_exception_marker_reaches_nowhere(
     not trusted — it can carry internal details — so only the exception TYPE
     may be reported; the marker must not surface anywhere: the response, the
     task result, the events, the logs. The task still ends failed."""
-    import agent_civilization.agents.real.real_agents as ra
     def crashing_dispatch(specialization, work):
         raise RuntimeError(f"handler crashed: {MARKER}")
-    monkeypatch.setattr(ra, "_dispatch", crashing_dispatch)
+    _patch_handler_dispatch(monkeypatch, crashing_dispatch)
     with TestClient(server.app) as c:
         r = c.post("/api/tasks", json={"specialization": SPEC, "prompt": MESSAGE},
                    headers=tenant_auth.headers)
@@ -501,10 +512,9 @@ def test_internal_dependency_timeout_ends_failed_without_leak(
     dependency raises TimeoutError carrying a marker; ``execute()`` stays
     real. The task ends failed with the TYPE only — the marker reaches
     nowhere."""
-    import agent_civilization.agents.real.real_agents as ra
     def timing_out_dispatch(specialization, work):
         raise TimeoutError(f"internal dependency timed out: {MARKER}")
-    monkeypatch.setattr(ra, "_dispatch", timing_out_dispatch)
+    _patch_handler_dispatch(monkeypatch, timing_out_dispatch)
     with TestClient(server.app) as c:
         r = c.post("/api/tasks", json={"specialization": SPEC, "prompt": MESSAGE},
                    headers=tenant_auth.headers)

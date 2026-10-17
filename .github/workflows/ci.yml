@@ -68,6 +68,16 @@ jobs:
           pip install --require-hashes -r requirements-dev.lock
           python -m pytest tests/ -q
 
+      # R-158 (D-070, gap G-157-5): the server can be built on either agent
+      # runtime (AGOS_AGENT_IMPL=real|specialists). The steps above exercise
+      # the default (real) only; this step runs the same suite with the
+      # server on the specialists runtime. Same job, so the required check
+      # name `test` is unchanged (branch protection is owner-managed, Q-020).
+      - name: Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists
+        env:
+          AGOS_AGENT_IMPL: specialists
+        run: python -m pytest tests/ -q
+
   build:
     runs-on: ubuntu-26.04
     needs: [quality, test]

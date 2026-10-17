@@ -1560,8 +1560,9 @@
 - النطاق (نص الخارطة الرئيسية): استخرج نقاط الدخول، الاستيرادات، استدعاءات الوحدات، التبعيات، مسارات الخادم والواجهة، عامل التنسيق، التخزين والذاكرة والاتصال بالأدوات. صنف الملفات التي لم يُعرف من يستدعيها `unresolved` بدل حذفها.
 
 #### R-157 — تدقيق العقود والتكرار
-- الحالة: **awaiting_merge**
-- أدلة الحالة (R-154): branch=m8/r157-contracts-parity | pr=#171
+- الحالة: **done**
+- أدلة الحالة (R-154): pr=#171 | tested_sha=1e4d6fa035bcf2262345e239c997b731df4a2974 | merge_sha=573793c1f36afd77f3b79247ab9e2d978a397b62 | ci_run=39005652192 | ci_conclusion=success | tests=1056 passed, 4 skipped, 4 deselected | tests_log=docs/audit/M8/logs/raw/083_r157_pytest.log | skipped=4 skipped = tests/test_r042_live_storage.py (تحتاج R042_LIVE=1) — نُفذت في job ‏storage من التشغيل 39005652192 (4 passed)؛ 4 deselected = علامة network — نُفذت في job ‏network من التشغيل نفسه (4 passed, 1060 deselected) | untested=CI يشغّل الوقت real وحده (specialists محلياً فقط: 081)؛ لا جاهزية إنتاجية ولا أهداف سعة؛ Q-002 مفتوح؛ الفجوات G-157-1..6 مفتوحة (تُراجع في R-158) | evidence=docs/audit/M8/logs/raw/085_r157_acceptance_main_ci.log, docs/audit/M8/EVIDENCE.md
+- **القبول (سُجل داخل دفعة R-158)**: PR #171 مدموجة بـ`--merge` — SHA الدمج `573793c1f36afd77f3b79247ab9e2d978a397b62` (أبوه الثاني = المختبر `1e4d6fa035bcf2262345e239c997b731df4a2974`)؛ CI main ‏39005652192 كل الوظائف success (publish متخطى، D-011)؛ الحوكمة للـPR ‏39005317063 success بخطواتها الأربع (`085`، فحص الحالة `086`). الحالة `done` لا `accepted`.
 - **المخرجات (دفعة m8/r157-contracts-parity، D-069)**: مصفوفة [`maps/CAPABILITY_CONTRACTS_228b956.md`](roadmaps/revival-scale/maps/CAPABILITY_CONTRACTS_228b956.md) لسبع قدرات مرشحة من جرد R-155 وخريطة R-156، كل قرار مبني على تشغيل التنفيذين على الحالات المرجعية نفسها قبل التعديل (`076`، `077`).
   - **وُحّد فعلياً (2)**: C1 تشغيل مهمة على وكيل — العقد المرجعي `agent_civilization/agents/real/runtime_contract.py` ومحوّل `SpecialistBackedAgent._run_inner`: كان وقت `specialists` يسرّب نص الاستثناء (`"RuntimeError: <msg>"`) ويخزّنه في ذاكرة المستأجر وتعلّمه خلافاً لـR-149 ولوقت `real`؛ الآن متكافئان على 20 تخصصاً + 5 حالات حدّية + الأخطاء + الآثار الجانبية، بفرقين مقصودين موثقين (`impl`، رسالة «لا معالج» غير القابلة للوصول). C2 صحة الحضارة — `/health` كان يبني حضارة ثانية من 1,000 وكيل في كل نداء (يعلن 1000 مع `AGENTS_PER_SPEC=2` بينما `/health/ready` يعلن 40، ويقول healthy حين يقول ready ‏503)؛ الآن مزوّد للحضارة الحية وقاعدة واحدة `civilization_status`، والسلوك المستقل القديم محفوظ بلا مزوّد.
   - **مثبت بلا توحيد**: C3 الذاكرة والتعلّم (طبقات: `experience` واجهة المستأجر فوق محرك النواة — لا تنفيذان متوازيان)، C4 الرسائل (إعادة تصدير، هوية الكائن).
@@ -1573,7 +1574,24 @@
 - النطاق (نص الخارطة الرئيسية): حدد الوظائف المكررة أو المسارات المتوازية (`real`/`specialists`، `agos_kernel`، طبقات الأدوات/الذاكرة). وحّد عبر واجهة معيارية ومحولات توافق؛ لا تحذف implementations القديمة.
 
 #### R-158 — خط أساس لكل مكون
-- الحالة: **planned**
+- الحالة: **awaiting_merge**
+- أدلة الحالة (R-154): branch=m8/r158-test-baseline | pr=#172
+- **المخرجات (دفعة m8/r158-test-baseline، D-070)**: خط أساس اختبارات لكل ملف متعقب عند اللقطة `573793c1f36afd77f3b79247ab9e2d978a397b62` في [`baseline/`](roadmaps/revival-scale/baseline/README.md). المولّد الحتمي `scripts/build_test_baseline.py` يكتب JSON آلياً وتقريراً عربياً وملفَّي CSV مولَّدين منه، وأسماؤها تحمل SHA.
+  - **التغطية**: 1917/1917 ملفاً، كل ملف في مجموعة واحدة من 16 مجموعة، والفحص الذاتي PASS. الحالات: pass 1294، fail 32، integrity-only 591. لكل خطوة الأمر وسبب ملاءمته، وexit، وعدّادات pass/fail/skip/xfail/xpass/deselected/errors، والقسم في السجل الخام. الأدلة مفصولة إلى local-test وlocal-operational وlocal-live-internet وci.
+  - **النتائج عند اللقطة (محلي)**:
+    - pytest `real`: 1056 passed, 4 skipped, 4 deselected.
+    - pytest `specialists`: **3 failed**, 1053 passed (R-149، G-157-5).
+    - `-m network`: 3 passed، **1 failed** (خدمة MyMemory الخارجية، G-158-1).
+    - التخزين الحي المحلي (PostgreSQL 17.11 + PostgREST 12.2.3): 4 passed.
+    - `web/`: 31/31.
+    - `src/`: build وeslint ناجحان، و`tsc` **4 أخطاء** (G-158-2، Q-002).
+    - ruff: نطاق CI صفر، وخارجه 5 في أدلة تاريخية (G-158-3).
+    - نزاهة الأدلة: 2 `.json` ليست JSON (G-158-4)، وسجل واحد ليس UTF-8 (G-158-5).
+  - **إعادة الإنتاج**: 3 تشغيلات، اثنان في worktree جديد وواحد في clone نظيف، بالبصمة نفسها `d2523d8c…69c33474` (`088`–`091`). الحقول غير الحتمية موثقة ومستبعدة: `raw_log` و`checkout` واختبارات الإنترنت الحي.
+  - **G-157-5 محلولة**: السبب مثبت (`092`)، وهو أن الحقن رقّع ربط `real` وحده فبقي الانهيار معطَّلاً تحت `specialists`. الإصلاح في الـfixture فقط، والتأكيدات بلا تغيير. يكشف الاختبار المُصلَح تسرّب ما قبل R-157، ويقتل طفرة إلغاء المحوّل. وأُضيفت خطوة `AGOS_AGENT_IMPL=specialists` إلى وظيفة CI `test`.
+  - **G-157-1**: أُضيف اختبار انحدار يثبت أن الـ500 بلا نص داخلي، والثغرة نفسها مفتوحة. **G-157-2/3/4/6**: مفتوحة وموثقة بإجراءاتها.
+  - **الاختبارات**: `tests/test_r158_test_baseline.py` (40) و`tests/test_r158_gap_regressions.py` (2). إعادة التوليد موثقة في `093`، والحزمة بالوضعين في `094`، وruff والبوابات في `095`. فشل أول CI للـPR بسبب checkout سطحي (عيب في اختبار، أُصلح) في `096`، والحزمة والبوابات بعده في `097`.
+  - **حدود صادقة**: لم يُبنَ Docker محلياً، ولا يوجد تحقق Render، ولا LLM مدفوع، ولا حمل. لا جاهزية إنتاجية ولا أهداف سعة. Q-002 مفتوح.
 - المرحلة: P1 (أولوية عالية)؛ الاعتماديات: R-157
 - المرجع ومعايير القبول التفصيلية: [`roadmap/P1_REPOSITORY_REVIVAL_AR.md`](roadmaps/revival-scale/roadmap/P1_REPOSITORY_REVIVAL_AR.md)
 - النطاق (نص الخارطة الرئيسية): نفذ import/compile/lint/schema/unit/contract tests الملائمة، وبيّن التغطية ومناطق الاختبار الغائبة. أضف smoke test لكل نقطة دخول ولكل خدمة داخلية قابلة للتشغيل.

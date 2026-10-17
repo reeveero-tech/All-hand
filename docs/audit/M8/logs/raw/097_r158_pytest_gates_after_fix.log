@@ -1,0 +1,120 @@
+# 097 R-158 full pytest both modes + local gates after the 096 fix — HEAD edf9e313922d099096153f11359bedcf96d4207e, 2026-10-17T07:18:48Z, Python 3.12.13. This log is added by the next commit; gates re-run after it (appended).
+## AGOS_AGENT_IMPL=real $ python -m pytest tests/ -q -p no:cacheprovider
+========== 1098 passed, 4 skipped, 4 deselected in 138.22s (0:02:18) ===========
+exit=0
+## AGOS_AGENT_IMPL=specialists $ python -m pytest tests/ -q -p no:cacheprovider
+========== 1098 passed, 4 skipped, 4 deselected in 148.49s (0:02:28) ===========
+exit=0
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests   (ruff 0.17.0, CI scope)
+All checks passed!
+exit=0
+$ ruff check --select F,E722 scripts/build_test_baseline.py
+All checks passed!
+exit=0
+$ python -c "import yaml; yaml.safe_load(.github/workflows/ci.yml)"
+['Set up Python', 'Install dependencies (locked)', 'Run tests (live test suite)', 'Set up Python 3.12 (runtime version)', 'Run tests on Python 3.12', 'Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists']
+exit=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 10, 'A': 20}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0
+$ atomic v1 (run block extracted verbatim from governance-gate.yml)
+Governance gate passed.
+atomic v1 exit=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 30 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+exit=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0
+$ git diff --name-status --no-renames origin/main...HEAD
+M	.github/workflows/ci.yml
+M	docs/audit/M8/EVIDENCE.md
+A	docs/audit/M8/logs/raw/085_r157_acceptance_main_ci.log
+A	docs/audit/M8/logs/raw/086_r158_r157_closure_check.log
+A	docs/audit/M8/logs/raw/087_r158_base_ci_run_573793c.json
+A	docs/audit/M8/logs/raw/088_r158_baseline_run1_worktree.log
+A	docs/audit/M8/logs/raw/089_r158_baseline_run2_worktree.log
+A	docs/audit/M8/logs/raw/090_r158_baseline_run3_clean_clone.log
+A	docs/audit/M8/logs/raw/091_r158_baseline_reproducibility.log
+A	docs/audit/M8/logs/raw/092_r158_g157_5_root_cause.log
+A	docs/audit/M8/logs/raw/093_r158_report_rerender.log
+A	docs/audit/M8/logs/raw/094_r158_pytest_both_modes.log
+A	docs/audit/M8/logs/raw/095_r158_local_gates.log
+A	docs/audit/M8/logs/raw/096_r158_pr_ci_shallow_checkout.log
+M	docs/governance/CHANGELOG.md
+M	docs/governance/DECISIONS.md
+M	docs/governance/OPEN_QUESTIONS.md
+M	docs/governance/PROJECT_STATE.md
+M	docs/governance/QUALITY.md
+M	docs/governance/README.md
+M	docs/governance/ROADMAP.md
+A	docs/governance/roadmaps/revival-scale/baseline/README.md
+A	docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.json
+A	docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.md
+A	docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_FILES_573793c.csv
+A	docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_GROUPS_573793c.csv
+A	scripts/build_test_baseline.py
+M	tests/test_r149_security_qa_gaps.py
+A	tests/test_r158_gap_regressions.py
+A	tests/test_r158_test_baseline.py
+
+## re-run of gates after committing 097 — HEAD 9e4973949bdf3a2145bd41191cd1bfcac733bbff
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests   (ruff 0.17.0, CI scope)
+All checks passed!
+exit=0
+$ ruff check --select F,E722 scripts/build_test_baseline.py
+All checks passed!
+exit=0
+$ python -c "import yaml; yaml.safe_load(.github/workflows/ci.yml)"
+['Set up Python', 'Install dependencies (locked)', 'Run tests (live test suite)', 'Set up Python 3.12 (runtime version)', 'Run tests on Python 3.12', 'Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists']
+exit=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 10, 'A': 21}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0
+$ atomic v1 (run block extracted verbatim from governance-gate.yml)
+Governance gate passed.
+atomic v1 exit=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 31 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+exit=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0
+$ git diff --name-status --no-renames origin/main...HEAD
+M	.github/workflows/ci.yml
+M	docs/audit/M8/EVIDENCE.md
+A	docs/audit/M8/logs/raw/085_r157_acceptance_main_ci.log
+A	docs/audit/M8/logs/raw/086_r158_r157_closure_check.log
+A	docs/audit/M8/logs/raw/087_r158_base_ci_run_573793c.json
+A	docs/audit/M8/logs/raw/088_r158_baseline_run1_worktree.log
+A	docs/audit/M8/logs/raw/089_r158_baseline_run2_worktree.log
+A	docs/audit/M8/logs/raw/090_r158_baseline_run3_clean_clone.log
+A	docs/audit/M8/logs/raw/091_r158_baseline_reproducibility.log
+A	docs/audit/M8/logs/raw/092_r158_g157_5_root_cause.log
+A	docs/audit/M8/logs/raw/093_r158_report_rerender.log
+A	docs/audit/M8/logs/raw/094_r158_pytest_both_modes.log
+A	docs/audit/M8/logs/raw/095_r158_local_gates.log
+A	docs/audit/M8/logs/raw/096_r158_pr_ci_shallow_checkout.log
+A	docs/audit/M8/logs/raw/097_r158_pytest_gates_after_fix.log
+M	docs/governance/CHANGELOG.md
+M	docs/governance/DECISIONS.md
+M	docs/governance/OPEN_QUESTIONS.md
+M	docs/governance/PROJECT_STATE.md
+M	docs/governance/QUALITY.md
+M	docs/governance/README.md
+M	docs/governance/ROADMAP.md
+A	docs/governance/roadmaps/revival-scale/baseline/README.md
+A	docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.json
+A	docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_573793c.md
+A	docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_FILES_573793c.csv
+A	docs/governance/roadmaps/revival-scale/baseline/TEST_BASELINE_GROUPS_573793c.csv
+A	scripts/build_test_baseline.py
+M	tests/test_r149_security_qa_gaps.py
+A	tests/test_r158_gap_regressions.py
+A	tests/test_r158_test_baseline.py
+$ python -m pytest tests/test_r158_test_baseline.py -q
+============================== 40 passed in 0.30s ==============================
