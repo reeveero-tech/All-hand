@@ -1,0 +1,30 @@
+# 096 R-158 PR #172 CI failure and fix — 2026-10-17T07:18:04Z
+## CI run 39012932109 (pull_request, head 6d424c2): job test FAILED — 1 failed, 1097 passed, 4 skipped, 4 deselected (first step; the specialists step did not run)
+2026-10-17T07:16:31.5466603Z tests/test_r158_test_baseline.py::test_pytest_summary_parser[===== 3 failed, 1053 passed, 4 skipped, 4 deselected in 149.15s (0:02:29) ======-expected1] PASSED [ 58%]
+2026-10-17T07:17:24.6747861Z E   subprocess.CalledProcessError: Command '['git', '-C', '/home/runner/work/All-hand/All-hand', 'ls-tree', '-r', '-z', '--name-only', '573793c1f36afd77f3b79247ab9e2d978a397b62']' returned non-zero exit status 128.
+2026-10-17T07:17:24.6752315Z FAILED tests/test_r158_test_baseline.py::test_baseline_is_for_the_base_sha_and_covers_every_file_exactly_once - subprocess.CalledProcessError: Command '['git', '-C', '/home/runner/work/All-hand/All-hand', 'ls-tree', '-r', '-z', '--name-only', '573793c1f36afd77f3b79247ab9e2d978a397b62']' returned non-zero exit status 128.
+2026-10-17T07:17:24.6754958Z ===== 1 failed, 1097 passed, 4 skipped, 4 deselected in 118.93s (0:01:58) ======
+## cause: actions/checkout@v7 default fetch-depth=1 -> commit 573793c is absent; the test called git ls-tree <base sha> (exit 128). Test-design defect (only local full clones had the object), not a baseline defect.
+## also: CI 39012554848 + governance 39012554889 on 9cc76bc failed (pushed before the PR number existed: pr=#PRNUM placeholder rejected by the status check, as designed); superseded by 6d424c2 (governance 39012932089 success).
+2026-10-17T07:09:12.4036187Z ##[error]R-158: pr must look like #N, got '#PRNUM'
+2026-10-17T07:09:12.4045935Z ##[error]Status evidence check failed: 1 violation(s) (D-066).
+2026-10-17T07:09:12.4069607Z ##[error]Process completed with exit code 1.
+## reproduction (before fix) in a depth-1 clone
+6d424c266c9e52959925b4463eaba0efb8c6ace6
+fatal: Not a valid object name 573793c1f36afd77f3b79247ab9e2d978a397b62^{commit}
+cat-file exit=128
+FAILED tests/test_r158_test_baseline.py::test_baseline_is_for_the_base_sha_and_covers_every_file_exactly_once
+========================= 1 failed, 39 passed in 0.35s =========================
+## after fix (test file from working copy) in the same depth-1 clone
+========================= 1 failed, 39 passed in 0.34s =========================
+## after fix in the full clone (exact ls-tree comparison path)
+============================== 40 passed in 0.33s ==============================
+## correction: the first fix still referenced at_sha on the history-free path (UnboundLocalError in the depth-1 clone, above). Line 168 now uses len(paths).
+## after fix 2 in the same depth-1 clone
+commit present in shallow clone: exit=128
+============================== 40 passed in 0.33s ==============================
+## after fix 2 in the full clone (exact ls-tree comparison path)
+============================== 40 passed in 0.34s ==============================
+## mutation of the history-free path: drop one path from a copy of the JSON's file list in the shallow clone -> must fail
+======================= 1 failed, 39 deselected in 0.14s =======================
+## note: the mutation above ADDS an untracked path ('zz_not_tracked.txt') to the file list (heading says 'drop'); the subset check rejects it.

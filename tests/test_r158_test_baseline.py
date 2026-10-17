@@ -144,14 +144,28 @@ def test_test_category_table_names_exist():
 
 
 # --------------------------------------------------------- committed outputs --
+def _has_commit(sha):
+    return subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"{sha}^{{commit}}"],
+                          capture_output=True).returncode == 0
+
+
 def test_baseline_is_for_the_base_sha_and_covers_every_file_exactly_once(baseline):
+    """CI checks out with depth 1, so the snapshot commit may be absent (096).
+    Then the strongest history-free check runs: the snapshot is a sorted,
+    duplicate-free subset of the files tracked at HEAD (no tracked file is
+    ever deleted/moved/renamed — R-152 gate). With the commit present (full
+    clone, local runs), the file list must equal `git ls-tree` at the SHA."""
     assert baseline["schema"] == btb.SCHEMA and baseline["snapshot_sha"] == BASE_SHA
-    at_sha = sorted(p for p in _git("ls-tree", "-r", "-z", "--name-only", BASE_SHA).split("\0") if p)
     paths = [f["path"] for f in baseline["files"]]
-    assert paths == at_sha and baseline["tracked_files"] == len(at_sha)
+    assert paths == sorted(set(paths)) and baseline["tracked_files"] == len(paths)
+    head = {p for p in _git("ls-files", "-z").split("\0") if p}
+    assert set(paths) <= head
+    if _has_commit(BASE_SHA):
+        at_sha = sorted(p for p in _git("ls-tree", "-r", "-z", "--name-only", BASE_SHA).split("\0") if p)
+        assert paths == at_sha
     assert baseline["self_check"] == {"problems": [], "result": "PASS"}
     assert all(f["status"] in ("pass", "fail", "integrity-only") for f in baseline["files"])
-    assert sum(baseline["files_summary"].values()) == len(at_sha)
+    assert sum(baseline["files_summary"].values()) == len(paths)
 
 
 def test_fingerprint_recomputes_and_ignores_only_per_run_fields(baseline):

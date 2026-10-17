@@ -123,4 +123,6 @@ python scripts/build_test_baseline.py --repo . --sha 573793c1f36afd77f3b79247ab9
 - `docs/audit/M8/logs/raw/093_r158_report_rerender.log`
 - `docs/audit/M8/logs/raw/094_r158_pytest_both_modes.log`
 - `docs/audit/M8/logs/raw/095_r158_local_gates.log`
+- `docs/audit/M8/logs/raw/096_r158_pr_ci_shallow_checkout.log`
+- `docs/audit/M8/logs/raw/097_r158_pytest_gates_after_fix.log`
 <!-- /batch-files -->
