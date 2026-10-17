@@ -1,0 +1,74 @@
+{
+  "$id": "agos://contracts/storage_task_update/v1",
+  "additionalProperties": false,
+  "properties": {
+    "agent_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Agent Name"
+    },
+    "elapsed_s": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Elapsed S"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "const": "now()",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "result": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "completed",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "TaskUpdate",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "storage",
+  "x-flow": "SupabaseStorage.update_task -> PostgREST"
+}

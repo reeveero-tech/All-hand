@@ -39,7 +39,8 @@ class BuilderAgentBaseAgent(BaseAgent):
                                "agent_id": self.agent_id, "spec": self.specialization})
             await self.communication_hub.send_message(r)
         except Exception as e:
-            logger.error(f"Agent {self.name} error: {e}")
+            # R-160 (G-159-1): exception TYPE only — the raw text is untrusted.
+            logger.error("Agent %s error: %s", self.name, type(e).__name__)
             self.stats["errors"] += 1
             self.performance_metrics["tasks_failed"] += 1
     async def _handle_message(self, msg: Message):

@@ -1,0 +1,26 @@
+{
+  "$id": "agos://contracts/chat_request/v1",
+  "properties": {
+    "allow_public_llm": {
+      "default": false,
+      "description": "Consent to send this message's text to the external public LLM provider",
+      "title": "Allow Public Llm",
+      "type": "boolean"
+    },
+    "message": {
+      "maxLength": 20000,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message"
+  ],
+  "title": "ChatRequest",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "request",
+  "x-flow": "client -> API",
+  "x-unknown-fields": "ignored by the server (not rejected)"
+}

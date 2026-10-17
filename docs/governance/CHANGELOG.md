@@ -1,5 +1,26 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-17 — R-160 (M8/P2): عقود قابلة للتحقق — API/SSE/نتائج/أدوات/LLM/ذاكرة/طابور/تخزين وإصدارات (دفعة m8/r160-contracts، D-072) + G-159-1 + قبول R-159
+
+- **قبول R-159**: PR #173 مدموجة بـ`--merge`. SHA الدمج `49faab68fefee582b83f14fc64808e309adb7522`، وأبوه الثاني هو المختبر `c8f722f91858c78d1105d1523297cd8d68c9b333`. CI main ‏39018809541 نجح، وتُخطّي publish (D-011، ليس نشراً). خطوات pytest الثلاث: 1130 passed, 4 skipped, 4 deselected. R-159 ⇒ `done` لا `accepted` (`108`)، وفحص الحالة وتزامن جدول M8 (`109`).
+- **مضاف**:
+  - `agent_civilization/core/contracts.py`: 22 عقداً مُصدَّراً + 4 نماذج طلب، و`validate()` و`json_schemas()` و`classify_changes()`.
+  - `scripts/export_contract_schemas.py` (كتابة/`--check`) و`docs/contracts/` (26 مخططاً `v1`، وأمثلة مشتركة، وREADME).
+  - `scripts/scan_raw_exception_logs.py`: ماسح AST لسجلات نص الاستثناء الخام.
+  - `web/src/taskView.js`: قراءة سجل المهمة بمتغيراته الثلاثة.
+- **مُصلح**:
+  - `server.py`: تشغيل مهمة خلفية ملغى/مستثنى ينتهي `failed` بسبب ثابت مع `task_completed` ok=false، ومرجعية قوية للمهام الخلفية.
+  - `civilization_routes.py`: سجل execute ‏`failed` عند الاستثناء أو الإلغاء.
+  - `llm.py` و`external_adapter.py`: استجابة فارغة أو مشوهة ⇒ ok=False بسبب ثابت؛ المسار بلا مفتاح لا يعيد محاولة استجابة مشوهة بنيوياً.
+  - `supabase_store.py`: قراءة مشوهة ⇒ فشل مسجل بلا صفوف (404 لا 500).
+  - `redis_queue.py`: `fail()` في وضع Redis، وتكرار المعرّف idempotent في الوضعين، وعنوان Redis في السجل بلا بيانات اعتماد.
+  - G-159-1: نص الاستثناء الخام في سجلات 20 قالب specialists وbase_agent وcommunication_hub وagent_factory وdata_worker وexternal_adapter وserver وredis_queue، ورسائل `/health` الأربع ⇒ نوع الاستثناء فقط.
+  - `web/src/components/Tasks.jsx`: يعرض الوكيل والمدة لسجلات الذاكرة، وبيانات سجلات execute، والمدة 0.
+- **لم يتغير**: شكل أي استجابة API (لا حقل ولا رأس جديد)، وقبول الطلبات (الحقول غير المعروفة ما زالت تُتجاهل)، والإعدادات الإلزامية. `src/` لم يُلمس.
+- **اختبارات**: `tests/test_r160_contracts.py` (84)، `tests/test_r160_local_integration.py` (5)، `tests/test_r160_g159_1_log_redaction.py` (39)، `web/tests/task_view.test.mjs` (8).
+- **الأدلة**: `108` قبول R-159، `109` فحص الحالة، `110` G-159-1 قبل/بعد، `111` العقود قبل/بعد، `112` uvicorn حقيقي، `113` الحزمة بالوضعين، `114` البوابات والبناء.
+- **وثائق**: ROADMAP، PROJECT_STATE، DECISIONS (D-072)، API، DATA_MODEL، QUALITY، SECURITY، OPERATIONS، `docs/contracts/README.md`، `baseline/README.md` (G-157-2)، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+
 ## 2026-10-17 — R-159 (M8/P2): رصد موحد وآمن — traces/structured logs/metrics (دفعة m8/r159-observability، D-071) + قبول R-158
 
 - **قبول R-158**: PR #172 مدموجة بـ`--merge`. SHA الدمج `7aa5ed6d179b6bce0358e0912b8f353bead3bfd5`، وأبوه الثاني هو المختبر `ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d`. CI main ‏39013981294 نجح في كل الوظائف، وتُخطّي publish. خطوة `specialists` نجحت بـ1098 passed. R-158 ⇒ `done` لا `accepted` (`098`)، وفحص الحالة ناجح (`099`).

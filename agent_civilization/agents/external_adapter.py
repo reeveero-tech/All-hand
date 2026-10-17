@@ -206,7 +206,11 @@ class ExternalAgentAdapter:
             if status != 200:
                 raise _HTTPStatusError(status)
             data = json.loads(body)
-            content = data["choices"][0]["message"]["content"]
+            # R-160 (handler result contract v1): the same completion rule as
+            # the LLM client — a null/empty/structurally wrong answer is a
+            # failure with a FIXED reason (it used to be ok=True, answer=None).
+            from agent_civilization.core.llm import completion_content
+            content = completion_content(data)
             self.stats["tasks_completed"] += 1
             ok, result = True, {"answer": content, "external_agent": self.name}
         except Exception as e:
@@ -223,6 +227,8 @@ class ExternalAgentAdapter:
                 error = f"HTTP {e.status}"
             elif isinstance(e, (safety.UnsafeURLError, _FixedReasonError)):
                 error = str(e)
+            elif type(e).__name__ == "MalformedCompletion":
+                error = e.reason          # one of two fixed strings (llm.py)
             elif isinstance(e, aiohttp.ClientConnectorCertificateError):
                 reason = str(getattr(e, "certificate_error", "")).lower()
                 if "hostname" in reason and "match" in reason:
@@ -322,5 +328,8 @@ def load_external_agents_from_env() -> List[ExternalAgentAdapter]:
             for e in entries
         ]
     except Exception as e:
-        logger.error("Invalid EXTERNAL_AGENTS JSON: %s", e)
+        # R-160 (G-159-1): type (and JSON position, if any) only — the message
+        # of a decode/key/type error can echo the env value (urls, api keys).
+        logger.error("Invalid EXTERNAL_AGENTS JSON: %s at line %s column %s",
+                     type(e).__name__, getattr(e, "lineno", "?"), getattr(e, "colno", "?"))
         return []

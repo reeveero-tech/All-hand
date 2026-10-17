@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fetchTasks } from '../api.js'
+import { taskView } from '../taskView.js'
 
 function TaskResult({ result }) {
   if (!result) return null
@@ -60,13 +61,10 @@ export default function Tasks({ liveEvent }) {
 
   const statusMap = { completed: '✓', failed: '✗', running: '⟳', queued: '○' }
 
-  const filtered = filter === 'all' ? tasks : tasks.filter((t) => {
-    const s = typeof t.status === 'string' ? t.status : 'queued'
-    return s === filter
-  })
+  const filtered = filter === 'all' ? tasks : tasks.filter((t) => taskView(t).status === filter)
 
   const counts = tasks.reduce((acc, t) => {
-    const s = typeof t.status === 'string' ? t.status : 'queued'
+    const s = taskView(t).status
     acc[s] = (acc[s] || 0) + 1
     return acc
   }, {})
@@ -112,8 +110,9 @@ export default function Tasks({ liveEvent }) {
       ) : (
         <div className="task-list">
           {filtered.map((task) => {
-            const taskId = task.task_id || task.id
-            const status = typeof task.status === 'string' ? task.status : 'queued'
+            const view = taskView(task)   // R-160: every record variant
+            const taskId = view.id
+            const status = view.status
             const isExpanded = expanded === taskId
 
             return (
@@ -125,25 +124,25 @@ export default function Tasks({ liveEvent }) {
                   </div>
                   <div className="task-content">
                     <div className="task-header">
-                      <span className="task-spec">{task.specialization}</span>
-                      {task.agent_name && (
-                        <span className="badge badge-info" style={{ fontSize: '11px' }}>{task.agent_name}</span>
+                      <span className="task-spec">{view.specialization}</span>
+                      {view.agent && (
+                        <span className="badge badge-info" style={{ fontSize: '11px' }}>{view.agent}</span>
                       )}
                       <span className={`badge ${status === 'completed' ? 'badge-success' : status === 'failed' ? 'badge-error' : 'badge-info'}`}
                             style={{ marginRight: 'auto', fontSize: '11px' }}>
                         {status}
                       </span>
                     </div>
-                    <div className="task-prompt">{task.prompt}</div>
+                    <div className="task-prompt">{view.prompt}</div>
                     <div className="task-meta">
                       <span>{taskId}</span>
-                      {task.elapsed_s && <span>{task.elapsed_s}s</span>}
-                      {task.created_at && <span>{new Date(typeof task.created_at === 'number' ? task.created_at * 1000 : task.created_at).toLocaleString('ar')}</span>}
+                      {view.elapsedS !== null && <span>{view.elapsedS}s</span>}
+                      {view.createdMs !== null && <span>{new Date(view.createdMs).toLocaleString('ar')}</span>}
                     </div>
                   </div>
                 </div>
 
-                {isExpanded && task.result && <TaskResult result={task.result} />}
+                {isExpanded && view.result && <TaskResult result={view.result} />}
               </div>
             )
           })}

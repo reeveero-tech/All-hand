@@ -88,3 +88,8 @@
 - النتيجة مأخوذة من `_record` نفسه: `ok`، أو `fail` مع `http_status`، أو `error` مع نوع الاستثناء.
 - لا يُسجل جسم الطلب ولا الاستجابة ولا المفتاح ولا `tenant_id`. لم يتغير المخطط ولا الحمولة ولا قيم الإرجاع.
 - تحقق محلي مع PostgREST 12.2.3 وPostgreSQL 17.11 (`103`): كتابات حقيقية (4 صفوف) بنتيجة `ok`، ومفتاح معدَّل يعطي 401 في كل span، ولا تسريب.
+
+## R-160 — عقود الطابور والتخزين (D-072، 2026-10-17)
+- **التخزين** (`docs/contracts/storage_*.v1.schema.json`، `task_row.v1`): أجسام `insert_task`/`update_task`/`insert_event`/`upsert_agent_stats` كما يكتبها الخادم فعلاً، ومفاتيح كلٍّ منها ⊆ أعمدة جدولها في `docs/sql/001_init.sql` + `002_tenant_isolation.sql` (يتحقق اختبار عبر fake PostgREST على loopback يلتقط الأجسام من المسار الحقيقي للخادم). لا تغيير في المخطط ولا في الجداول.
+- **القراءة**: `get_tasks`/`get_task`/`get_events`/`get_agent_stats` تقبل قائمة كائنات فقط، وكل صف يحمل مفتاحه (`task_id` أو `agent_name`)، و`get_task` يشترط تطابق المعرّف. غير ذلك = فشل مسجل في `storage_stats()` (`last_ok=false`) وبلا صفوف — لا يُسلَّم صف مشوه إلى API.
+- **الطابور** (`queue_task.v1`؛ `agos_kernel/infrastructure/redis_queue.py`): حالات `pending/queued/running/completed/failed/cancelled`. `enqueue` بمعرّف موجود idempotent في الوضعين (الأول يبقى). `fail()` يعيد الجدولة بالأولوية نفسها في وضع Redis (`zadd` بـ`-priority` كما في `enqueue`). حمولة مخزنة مشوهة ⇒ `get_task` يعيد `None` ويُسجَّل نوع الخطأ فقط. القارئ يتجاهل مفاتيح أحدث (توافق أمامي)، والعقد v1 صارم في الاختبار ليظهر الانحراف. **ملاحظة واقع**: حزمة `redis` ليست في `requirements.lock`، فالنشر يعمل بالوضع الاحتياطي، والطابور ليس على مسار مهام HTTP (المهام الخلفية `asyncio` في `server.py`).

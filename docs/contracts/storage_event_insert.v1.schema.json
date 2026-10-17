@@ -1,0 +1,41 @@
+{
+  "$id": "agos://contracts/storage_event_insert/v1",
+  "additionalProperties": false,
+  "properties": {
+    "event_data": {
+      "additionalProperties": true,
+      "title": "Event Data",
+      "type": "object"
+    },
+    "event_type": {
+      "enum": [
+        "task_created",
+        "task_completed",
+        "chat_completed"
+      ],
+      "title": "Event Type",
+      "type": "string"
+    },
+    "tenant_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tenant Id"
+    }
+  },
+  "required": [
+    "event_type",
+    "event_data"
+  ],
+  "title": "EventInsert",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "storage",
+  "x-flow": "SupabaseStorage.insert_event -> PostgREST"
+}

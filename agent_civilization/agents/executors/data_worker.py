@@ -89,7 +89,7 @@ class DataWorkerAgent(BaseAgent):
             await self.communication_hub.send_message(result_msg)
 
         except Exception as e:
-            logger.error(f"Worker {self.name} error: {e}")
+            logger.error("Worker %s error: %s", self.name, type(e).__name__)  # R-160 (G-159-1)
             self.performance_metrics["tasks_failed"] += 1
 
     async def _process_data(self, data: Dict[str, Any]) -> Dict[str, Any]:

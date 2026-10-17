@@ -1,0 +1,26 @@
+{
+  "$id": "agos://contracts/task_accepted/v1",
+  "additionalProperties": false,
+  "description": "202 of POST /api/tasks.",
+  "properties": {
+    "status": {
+      "const": "queued",
+      "title": "Status",
+      "type": "string"
+    },
+    "task_id": {
+      "pattern": "^[0-9a-f]{12}$",
+      "title": "Task Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_id",
+    "status"
+  ],
+  "title": "TaskAccepted",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "POST /api/tasks -> client"
+}

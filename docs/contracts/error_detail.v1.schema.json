@@ -1,0 +1,19 @@
+{
+  "$id": "agos://contracts/error_detail/v1",
+  "additionalProperties": false,
+  "description": "Every HTTPException body (400/401/403/404/409/429/503).",
+  "properties": {
+    "detail": {
+      "title": "Detail",
+      "type": "string"
+    }
+  },
+  "required": [
+    "detail"
+  ],
+  "title": "ErrorDetail",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "HTTPException -> client"
+}

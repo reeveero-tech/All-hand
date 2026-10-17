@@ -139,7 +139,9 @@ class RedisQueue:
         self._fallback_tasks: Dict[str, Task] = {}
         self._fallback_queue: asyncio.Queue = asyncio.Queue()
         
-        logger.info(f"RedisQueue initialized with URL: {self.redis_url}")
+        # R-160 (G-159-1): REDIS_URL may carry a password (redis://:pw@host) —
+        # log scheme/host/port only, never the userinfo or the full URL.
+        logger.info("RedisQueue initialized with URL: %s", _safe_redis_target(self.redis_url))
         logger.info(f"Using Redis: {REDIS_AVAILABLE}, Fallback: {self._use_fallback}")
     
     async def connect(self) -> bool:
@@ -159,7 +161,7 @@ class RedisQueue:
             logger.info("Connected to Redis successfully")
             return True
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+            logger.error("Failed to connect to Redis: %s", type(e).__name__)  # R-160 (G-159-1)
             self._use_fallback = True
             return False
     
@@ -192,7 +194,23 @@ class RedisQueue:
             Task ID
         """
         task_id = task_id or str(uuid4())[:12]
-        
+
+        # R-160 (queue contract v1): enqueueing an id the queue already knows is
+        # idempotent in BOTH modes — the existing task is kept and not queued a
+        # second time. Before, the fallback queued it twice (executed twice)
+        # while Redis deduplicated it (sorted-set member), i.e. the two modes
+        # disagreed on a duplicate request.
+        if task_id in self._fallback_tasks:
+            logger.info(f"Task {task_id} already enqueued (duplicate ignored)")
+            return task_id
+        if not self._use_fallback:
+            try:
+                if await self._redis.hexists(self.results_name, task_id):
+                    logger.info(f"Task {task_id} already enqueued (duplicate ignored)")
+                    return task_id
+            except Exception as e:
+                logger.error("Failed to check task: %s", type(e).__name__)
+
         task = Task(
             id=task_id,
             specialization=specialization,
@@ -224,7 +242,7 @@ class RedisQueue:
                 
                 logger.info(f"Task {task_id} enqueued with priority {priority}")
             except Exception as e:
-                logger.error(f"Failed to enqueue task: {e}")
+                logger.error("Failed to enqueue task: %s", type(e).__name__)  # R-160 (G-159-1)
                 # Fallback to memory
                 self._fallback_tasks[task_id] = task
                 await self._fallback_queue.put(task)
@@ -287,7 +305,7 @@ class RedisQueue:
             return task
             
         except Exception as e:
-            logger.error(f"Failed to dequeue task: {e}")
+            logger.error("Failed to dequeue task: %s", type(e).__name__)  # R-160 (G-159-1)
             return None
     
     async def complete(
@@ -328,7 +346,7 @@ class RedisQueue:
                 
                 logger.info(f"Task {task_id} completed with status {status.value}")
         except Exception as e:
-            logger.error(f"Failed to complete task: {e}")
+            logger.error("Failed to complete task: %s", type(e).__name__)  # R-160 (G-159-1)
     
     async def fail(self, task_id: str, error: str) -> bool:
         """
@@ -366,7 +384,10 @@ class RedisQueue:
                     # Requeue with backoff
                     task.status = TaskStatus.PENDING
                     await asyncio.sleep(2 ** task.attempts)  # Exponential backoff
-                    await self.zadd(self.queue_name, {task_id: task.priority})
+                    # R-160: was ``self.zadd`` (no such attribute: the retry
+                    # raised AttributeError and was never requeued) with the
+                    # opposite sign of enqueue() — same score rule as enqueue now.
+                    await self._redis.zadd(self.queue_name, {task_id: -task.priority})
                     logger.info(f"Task {task_id} failed, retrying (attempt {task.attempts})")
                 else:
                     task.status = TaskStatus.FAILED
@@ -382,7 +403,7 @@ class RedisQueue:
                 return task.attempts < task.max_attempts
                 
         except Exception as e:
-            logger.error(f"Failed to fail task: {e}")
+            logger.error("Failed to fail task: %s", type(e).__name__)  # R-160 (G-159-1)
         
         return False
     
@@ -396,7 +417,7 @@ class RedisQueue:
             if task_data:
                 return Task.from_dict(json.loads(task_data))
         except Exception as e:
-            logger.error(f"Failed to get task: {e}")
+            logger.error("Failed to get task: %s", type(e).__name__)  # R-160 (G-159-1)
         
         return None
     
@@ -408,7 +429,7 @@ class RedisQueue:
         try:
             return await self._redis.zcard(self.queue_name)
         except Exception as e:
-            logger.error(f"Failed to get queue size: {e}")
+            logger.error("Failed to get queue size: %s", type(e).__name__)  # R-160 (G-159-1)
             return 0
     
     async def get_stats(self) -> Dict[str, Any]:
@@ -461,8 +482,19 @@ class RedisQueue:
                 "running": running,
             }
         except Exception as e:
-            logger.error(f"Failed to get stats: {e}")
-            return {"error": str(e)}
+            logger.error("Failed to get stats: %s", type(e).__name__)  # R-160 (G-159-1)
+            return {"error": type(e).__name__}  # R-160 (G-159-1): no raw text
+
+
+def _safe_redis_target(url: str) -> str:
+    """scheme://host:port of a Redis URL, without credentials/path/query."""
+    try:
+        from urllib.parse import urlsplit
+        u = urlsplit(url or "")
+        host = u.hostname or "?"
+        return f"{u.scheme or '?'}://{host}" + (f":{u.port}" if u.port else "")
+    except ValueError:
+        return "<unparseable>"
 
 
 # Global instance

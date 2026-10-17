@@ -90,7 +90,7 @@ class CommunicationHub:
                     agent.deliver_message(message)
                     delivered += 1
                 except Exception as e:
-                    logger.error(f"Broadcast delivery error to {recipient_name}: {e}")
+                    logger.error("Broadcast delivery error to %s: %s", recipient_name, type(e).__name__)  # R-160 (G-159-1)
 
         self._stats["messages_broadcast"] += 1
         self._stats["messages_delivered"] += delivered

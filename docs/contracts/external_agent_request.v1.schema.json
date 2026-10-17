@@ -1,0 +1,33 @@
+{
+  "$id": "agos://contracts/external_agent_request/v1",
+  "properties": {
+    "api_key": {
+      "default": "",
+      "title": "Api Key",
+      "type": "string"
+    },
+    "model": {
+      "default": "",
+      "title": "Model",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "url": {
+      "title": "Url",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "url"
+  ],
+  "title": "ExternalAgentRequest",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "request",
+  "x-flow": "client -> API",
+  "x-unknown-fields": "ignored by the server (not rejected)"
+}

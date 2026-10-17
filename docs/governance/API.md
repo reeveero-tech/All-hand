@@ -149,3 +149,18 @@
 - لا مسار جديد، ولا رأس جديد، ولا حقل جديد في أي استجابة، ولم تتغير قيم الإرجاع ولا رموز الحالة.
 - `/metrics` (القائم) يضيف سلسلتين: `agos_ops_total{kind,op,outcome}` و`agos_op_duration_seconds{kind,op}` (histogram). الوسوم محدودة القيم، ولا تحوي معرّفات طلب أو مهمة أو مستأجر.
 - `TelemetryMiddleware` (ASGI خام، أبعد middleware) يفتح trace لكل طلب عدا `/health*` و`/metrics`، والبث SSE يمر دون تعديل. `trace_id` يظهر في سجلات الخادم فقط، ولا يُعاد للعميل.
+
+## R-160 — العقود القابلة للتحقق (D-072، 2026-10-17)
+- **المرجع**: [`docs/contracts/README.md`](../contracts/README.md) والمخططات `docs/contracts/*.v1.schema.json`، المولّدة من `agent_civilization/core/contracts.py`. فحص الانحراف: `python3 scripts/export_contract_schemas.py --check` (خطوة في job ‏`test` عبر `tests/test_r160_contracts.py`).
+- **ما يغطيه v1**: `POST /api/tasks` (202 ‏task_accepted)، `GET /api/tasks/{id}` (task_record أو execute_record)، `GET /api/tasks` (task_list بمصدر `memory` أو `database`)، `POST /api/chat`، `POST /civilization/execute`، `GET /api/system/status`، `GET /health/ready` (200 ‏ready، 503 ‏not_ready)، `GET /api/memory`، أجسام الأخطاء `{"detail": "<نص>"}` (400/401/404/409/429/500) و422 (`detail` قائمة FastAPI)، وأطر SSE.
+- **الحقول غير المعروفة في الطلب**: تُتجاهل ولا تُنفَّذ (السلوك القائم، بلا تغيير). `tenant_id` في الجسم لا يغيّر المالك (SEC-02). `allow_public_llm` يجب أن يكون JSON boolean (القائم منذ SEC-06).
+- **سلوك صار موثقاً كعقد v1 (مرصود، لم يتغير)**:
+  - الطلب المكرر لـ`POST /api/tasks` أو `/api/chat` = مهمتان بمعرّفين مختلفين (لا مفتاح idempotency — G-160-4).
+  - قطع العميل لطلب `/api/chat` بطيء لا يلغي العمل: السجل يكتمل `completed` ويُسترجع من `/api/tasks` (مقيس عبر uvicorn حقيقي، `112`).
+  - SSE بلا `id:` ولا إعادة تشغيل: الاتصال الجديد يستقبل ما يُنشر بعده فقط (G-160-5). قطع الاتصال يحرر المقعد (`agos_sse_connections` يعود 0).
+- **سلوك تغيّر (إصلاح، لا تغيير شكل)**:
+  - مهمة يُلغى تشغيلها الخلفي (مثل الإيقاف) أو يرفع استثناءً غير متوقع: السجل `failed` بالنتيجة `{"error": "task cancelled before completion"}` أو `{"error": "task failed: internal error"}`، ويُنشر `task_completed` بـ`ok: false` (كان يبقى `running` للأبد). صف التخزين لا يُعاد كتابته عند الإلغاء (G-160-2).
+  - `/civilization/execute`: استثناء داخلي ⇒ 500 كما كان، والسجل `failed` (كان `running`).
+  - استجابة LLM أو وكيل خارجي بمحتوى null/فارغ/بنية خاطئة ⇒ نتيجة `ok: false` بسبب ثابت (`LLM empty completion`، `LLM malformed completion`، `keyless LLM malformed completion`، `empty completion`، `malformed completion`) — كانت `ok: true` بإجابة فارغة.
+  - صف تخزين مشوه (بلا `task_id` أو بمعرّف مختلف، أو جسم ليس قائمة): `GET /api/tasks/{id}` ‏404 (كان 500)، و`GET /api/tasks` يعود إلى مصدر `memory`.
+  - `/health`: رسالة المكوّن الفاشل `Error: <نوع الاستثناء>` بلا نص الاستثناء (G-159-1/G-157-2).

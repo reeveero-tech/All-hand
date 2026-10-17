@@ -1,0 +1,57 @@
+{
+  "task_id": "43d2b3dd451c",
+  "routed_to": "analyst",
+  "routing": {
+    "method": "keywords",
+    "reason": "تحليل بيانات"
+  },
+  "agent": "analyst_0000",
+  "outcome": {
+    "ok": true,
+    "agent": "analyst_0000",
+    "elapsed_s": 0.0,
+    "result": {
+      "ok": true,
+      "answer": "sum=6 (n=3)",
+      "tool_output": {
+        "n": 3,
+        "sum": 6.0,
+        "mean": 2.0,
+        "median": 2.0,
+        "stdev": 0.816496580927726,
+        "min": 1.0,
+        "max": 3.0,
+        "outliers": [],
+        "trend": "up",
+        "samples": [
+          1.0,
+          2.0,
+          3.0
+        ]
+      }
+    },
+    "experience": {
+      "memory": {
+        "recalled": [],
+        "stored_id": "mem_20261017174956249675_905fe0af",
+        "fallback_used": null
+      },
+      "learning": {
+        "prior": {
+          "specialization": "analyst",
+          "input_kind": "numbers",
+          "samples": 1,
+          "success_rate": 1.0,
+          "avg_duration_ms": 0.4
+        },
+        "after": {
+          "specialization": "analyst",
+          "input_kind": "numbers",
+          "samples": 2,
+          "success_rate": 1.0,
+          "avg_duration_ms": 0.2
+        }
+      }
+    }
+  }
+}

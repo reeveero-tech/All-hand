@@ -1,0 +1,53 @@
+{
+  "$id": "agos://contracts/storage_agent_stats/v1",
+  "additionalProperties": false,
+  "properties": {
+    "agent_name": {
+      "title": "Agent Name",
+      "type": "string"
+    },
+    "last_active_at": {
+      "const": "now()",
+      "title": "Last Active At",
+      "type": "string"
+    },
+    "specialization": {
+      "title": "Specialization",
+      "type": "string"
+    },
+    "tasks_completed": {
+      "minimum": 0,
+      "title": "Tasks Completed",
+      "type": "integer"
+    },
+    "tasks_failed": {
+      "minimum": 0,
+      "title": "Tasks Failed",
+      "type": "integer"
+    },
+    "total_time_s": {
+      "minimum": 0,
+      "title": "Total Time S",
+      "type": "number"
+    },
+    "updated_at": {
+      "const": "now()",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "agent_name",
+    "specialization",
+    "tasks_completed",
+    "tasks_failed",
+    "total_time_s",
+    "last_active_at",
+    "updated_at"
+  ],
+  "title": "AgentStatsUpsert",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "storage",
+  "x-flow": "SupabaseStorage.upsert_agent_stats -> PostgREST"
+}

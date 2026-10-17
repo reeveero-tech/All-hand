@@ -134,8 +134,10 @@ class BaseAgent(ABC):
             except asyncio.CancelledError:
                 break
             except Exception as e:  # noqa: BLE001
-                logger.error(f"Error in agent {self.name}: {e}")
-                self.performance_metrics["errors"].append(str(e))
+                # R-160 (G-159-1): type only, in the log and in the metrics that
+                # get_status()/snapshot expose — never the raw exception text.
+                logger.error("Error in agent %s: %s", self.name, type(e).__name__)
+                self.performance_metrics["errors"].append(type(e).__name__)
                 await asyncio.sleep(0.1)
 
     async def execute(self, work: Dict[str, Any]) -> Dict[str, Any]:
@@ -170,7 +172,7 @@ class BaseAgent(ABC):
         try:
             await self.execute(work_item)
         except Exception as e:  # noqa: BLE001
-            logger.error(f"Work execution error in {self.name}: {e}")
+            logger.error("Work execution error in %s: %s", self.name, type(e).__name__)  # R-160 (G-159-1)
             self.performance_metrics["tasks_failed"] += 1
 
     async def _handle_message(self, message: Message):

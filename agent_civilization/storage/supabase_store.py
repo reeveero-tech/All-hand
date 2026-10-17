@@ -179,6 +179,24 @@ def reset_storage_stats() -> None:
     _STATS.update({"ops": {}, "last_ok": None, "last_error": None, "last_success_at": None})
 
 
+def _rows(op: str, body: Any, key: str) -> List[Dict[str, Any]]:
+    """R-160 (storage read contract v1): a PostgREST read must be a JSON array
+    of row objects carrying ``key``. Anything else is a malformed response:
+    recorded as a failure of ``op`` (fixed reason, no body) and read as no
+    rows — never handed to the API as if it were rows (a non-list body used
+    to become ``{"count": len(body), "tasks": body}``, and a row without
+    ``task_id`` a 500 in GET /api/tasks/{id})."""
+    if not isinstance(body, list):
+        logger.warning("%s: malformed response (not a list)", op)
+        _record(op, False, "malformed response")
+        return []
+    rows = [r for r in body if isinstance(r, dict) and isinstance(r.get(key), (str, int))]
+    if len(rows) != len(body):
+        logger.warning("%s: %d malformed row(s) dropped", op, len(body) - len(rows))
+        _record(op, False, "malformed response")
+    return rows
+
+
 async def _accepted(r: aiohttp.ClientResponse, op: str, codes: tuple) -> bool:
     """True if the HTTP status is in ``codes``; otherwise record the failure.
 
@@ -306,7 +324,7 @@ class SupabaseStorage:
                 f"{self.url}/rest/v1/tasks", params=_scoped_params(limit, scope),
             ) as r:
                 if await _accepted(r, "get_tasks", (200,)):
-                    return await r.json()
+                    return _rows("get_tasks", await r.json(), "task_id")
                 return []
         except Exception as e:
             logger.warning("get_tasks failed: %s", type(e).__name__)
@@ -331,7 +349,8 @@ class SupabaseStorage:
                 f"{self.url}/rest/v1/tasks", params=_task_by_id_params(task_id, scope),
             ) as r:
                 if await _accepted(r, "get_task", (200,)):
-                    rows = await r.json()
+                    rows = [row for row in _rows("get_task", await r.json(), "task_id")
+                            if row["task_id"] == task_id]
                     return rows[0] if rows else None
                 return None
         except Exception as e:
@@ -382,7 +401,7 @@ class SupabaseStorage:
                 f"{self.url}/rest/v1/agent_stats?order=total_time_s.desc",
             ) as r:
                 if await _accepted(r, "get_agent_stats", (200,)):
-                    return await r.json()
+                    return _rows("get_agent_stats", await r.json(), "agent_name")
                 return []
         except Exception as e:
             logger.warning("get_agent_stats failed: %s", type(e).__name__)
@@ -422,7 +441,7 @@ class SupabaseStorage:
                 f"{self.url}/rest/v1/events", params=_scoped_params(limit, scope),
             ) as r:
                 if await _accepted(r, "get_events", (200,)):
-                    return await r.json()
+                    return _rows("get_events", await r.json(), "event_type")
                 return []
         except Exception as e:
             logger.warning("get_events failed: %s", type(e).__name__)

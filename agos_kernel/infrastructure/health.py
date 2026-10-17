@@ -138,7 +138,9 @@ class HealthCheck:
             self._last_result = HealthCheckResult(
                 component=self.name,
                 status=HealthStatus.UNHEALTHY,
-                message=f"Error: {type(e).__name__}: {str(e)}",
+                # R-160 (G-159-1): /health is public — type only, never the
+                # raw exception text (it can carry URLs, hosts, credentials).
+                message=f"Error: {type(e).__name__}",
                 duration_ms=duration_ms,
                 details={"error_type": type(e).__name__},
             )
@@ -306,7 +308,7 @@ async def check_civilization() -> Dict[str, Any]:
             "agent_count": agent_count,
         }
     except Exception as e:
-        return {"status": "unhealthy", "message": str(e)}
+        return {"status": "unhealthy", "message": f"Error: {type(e).__name__}"}  # R-160 (G-159-1, G-157-2)
 
 async def check_storage() -> Dict[str, Any]:
     """Check storage availability."""
@@ -345,7 +347,7 @@ async def check_storage() -> Dict[str, Any]:
             "total_failed": stats["total_failed"],
         }
     except Exception as e:
-        return {"status": "degraded", "message": str(e)}
+        return {"status": "degraded", "message": f"Error: {type(e).__name__}"}  # R-160 (G-159-1)
 
 async def check_redis() -> Dict[str, Any]:
     """Check Redis availability."""
@@ -360,7 +362,7 @@ async def check_redis() -> Dict[str, Any]:
             **stats,
         }
     except Exception as e:
-        return {"status": "degraded", "message": f"Redis unavailable: {str(e)}"}
+        return {"status": "degraded", "message": f"Redis unavailable: {type(e).__name__}"}  # R-160 (G-159-1)
 
 
 def create_default_registry() -> HealthCheckRegistry:

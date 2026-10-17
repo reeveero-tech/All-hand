@@ -246,7 +246,7 @@ class DynamicAgent:
                     duration_ms=(datetime.utcnow() - self.last_active).total_seconds() * 1000.0,
                 )
             except Exception as e:  # noqa: BLE001
-                logger.warning(f"learning_runtime record_task failed for {self.name}: {e}")
+                logger.warning("learning_runtime record_task failed for %s: %s", self.name, type(e).__name__)  # R-160 (G-159-1)
     
     async def _recall_context(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """R-054: استرجاع الذكريات ذات الصلة بمهمة (مِن memory_system إن مُهيّأ)."""
@@ -270,7 +270,7 @@ class DynamicAgent:
                 ],
             }
         except Exception as e:  # noqa: BLE001
-            logger.warning(f"recall_context failed for {self.name}: {e}")
+            logger.warning("recall_context failed for %s: %s", self.name, type(e).__name__)  # R-160 (G-159-1)
             return {}
     
     def _select_approach(self, task: Dict[str, Any]) -> Optional[str]:
@@ -281,7 +281,7 @@ class DynamicAgent:
         try:
             return self._learning_runtime.get_best_approach(task_type)
         except Exception as e:  # noqa: BLE001
-            logger.warning(f"select_approach failed for {self.name}: {e}")
+            logger.warning("select_approach failed for %s: %s", self.name, type(e).__name__)  # R-160 (G-159-1)
             return None
     
     def _summarize_result(self, result: Dict[str, Any]) -> str:
