@@ -136,6 +136,7 @@ if _IS_WILDCARD:
 # R-083: count HTTP requests (method / route template / status) and durations
 # for /metrics. Pure ASGI — streaming responses (SSE) pass through untouched.
 from agos_kernel.infrastructure.metrics import MetricsMiddleware  # noqa: E402
+from agos_kernel.infrastructure.health import civilization_status, set_civilization_provider  # noqa: E402  (R-157)
 app.add_middleware(MetricsMiddleware)
 
 
@@ -260,6 +261,9 @@ def _agents_per_spec() -> int:
 
 AGENTS_PER_SPEC = _agents_per_spec()
 CIVILIZATION = create_civilization(AGENTS_PER_SPEC)
+# R-157 (D-069): /health judges this live civilization (read at call time, so a
+# replaced CIVILIZATION is seen) instead of building a second default one.
+set_civilization_provider(lambda: CIVILIZATION)
 EXTERNAL_AGENTS: List[ExternalAgentAdapter] = load_external_agents_from_env()
 TASKS: Dict[str, Dict[str, Any]] = {}
 # SEC-04 (R-144): live events are broadcast in process — every SSE connection
@@ -508,18 +512,15 @@ async def readiness_probe():
         return JSONResponse(status_code=503, content={"status": "not_ready", "reason": reason})
 
     try:
-        # Check if civilization is initialized
-        if not CIVILIZATION:
-            return not_ready("Civilization not initialized")
-
-        # Check if agents are available
-        total_agents = sum(len(agents) for agents in CIVILIZATION.values())
-        if total_agents == 0:
-            return not_ready("No agents available")
+        # R-157 (D-069): the rule is shared with /health's civilization check
+        # (civilization_status), so both views judge the same live object.
+        st = civilization_status(CIVILIZATION)
+        if not st["ready"]:
+            return not_ready(st["reason"])
 
         return {
             "status": "ready",
-            "agents": total_agents,
+            "agents": st["agents"],
             "specializations": len(SPECIALIZATIONS)
         }
 

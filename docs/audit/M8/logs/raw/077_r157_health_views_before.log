@@ -1,0 +1,54 @@
+# 077 R-157 BEFORE: C2 health views on UNCHANGED server.py / health.py (base 228b9560f74f8ef9035a57ce1e460362ac9d3a2c) — 2026-10-17T04:53:30Z, local
+# expected: views disagree. test_c2_standalone_registry_keeps_legacy_behaviour and test_c2_civilization_status_rule fail only because the new API (provider / civilization_status) does not exist yet (AttributeError) — they are NOT counted as behavioural evidence
+$ python -m pytest tests/test_r157_contract_parity.py -k test_c2 -q -p no:cacheprovider
+tests/test_r157_contract_parity.py F.FFFFFF                              [100%]
+tests/test_r157_contract_parity.py:292: in test_c2_health_views_agree_on_the_live_civilization
+E   assert 1000 == 6
+tests/test_r157_contract_parity.py:313: in test_c2_not_ready_state_is_unhealthy_in_both_views
+E   assert (200 == 503)
+E    +  where 200 = <Response [200 OK]>.status_code
+tests/test_r157_contract_parity.py:313: in test_c2_not_ready_state_is_unhealthy_in_both_views
+E   assert (200 == 503)
+E    +  where 200 = <Response [200 OK]>.status_code
+tests/test_r157_contract_parity.py:323: in test_c2_broken_civilization_does_not_leak_in_either_view
+tests/test_r157_contract_parity.py:282: in _views
+tests/test_r157_contract_parity.py:321: in values
+E   RuntimeError: internal secret /etc/passwd token=abc123
+tests/test_r157_contract_parity.py:336: in test_c2_server_health_does_not_build_a_second_civilization
+E   AssertionError: assert 'unhealthy' == 'healthy'
+E     
+E     - healthy
+E     + unhealthy
+E     ? ++
+tests/test_r157_contract_parity.py:342: in test_c2_standalone_registry_keeps_legacy_behaviour
+E   AttributeError: <module 'agos_kernel.infrastructure.health' from '/home/user/workspace/repo/agos_kernel/infrastructure/health.py'> has no attribute '_civilization_provider'
+tests/test_r157_contract_parity.py:348: in test_c2_civilization_status_rule
+E   AttributeError: module 'agos_kernel.infrastructure.health' has no attribute 'civilization_status'
+FAILED tests/test_r157_contract_parity.py::test_c2_health_views_agree_on_the_live_civilization
+FAILED tests/test_r157_contract_parity.py::test_c2_not_ready_state_is_unhealthy_in_both_views[civ0-Civilization not initialized]
+FAILED tests/test_r157_contract_parity.py::test_c2_not_ready_state_is_unhealthy_in_both_views[civ1-No agents available]
+FAILED tests/test_r157_contract_parity.py::test_c2_broken_civilization_does_not_leak_in_either_view
+FAILED tests/test_r157_contract_parity.py::test_c2_server_health_does_not_build_a_second_civilization
+FAILED tests/test_r157_contract_parity.py::test_c2_standalone_registry_keeps_legacy_behaviour
+FAILED tests/test_r157_contract_parity.py::test_c2_civilization_status_rule
+================== 7 failed, 1 passed, 41 deselected in 0.75s ==================
+exit=1
+## direct probe, AGENTS_PER_SPEC=2 (source below; TestClient on server.app):
+env AGENTS_PER_SPEC = 2 | server.AGENTS_PER_SPEC = 2 | live agents = 40
+/health checks.civilization: {'status': 'healthy', 'message': 'Civilization active with 1000 agents'} agent_count = 1000
+/health/ready 200 {'status': 'ready', 'agents': 40, 'specializations': 20}
+/api/system/status total_agents = 40
+## probe source /tmp/probe/probe_health.py:
+import os, sys
+os.environ["AGOS_ENV"] = "test"; os.environ["AGENTS_PER_SPEC"] = sys.argv[1] if len(sys.argv) > 1 else "2"
+sys.path.insert(0, ".")
+from fastapi.testclient import TestClient
+import server
+c = TestClient(server.app)
+h = c.get("/health").json()
+print("env AGENTS_PER_SPEC =", os.environ["AGENTS_PER_SPEC"], "| server.AGENTS_PER_SPEC =", server.AGENTS_PER_SPEC,
+      "| live agents =", sum(len(p) for p in server.CIVILIZATION.values()))
+print("/health checks.civilization:", {k: h["checks"]["civilization"][k] for k in ("status", "message")},
+      "agent_count =", h["checks"]["civilization"]["details"].get("agent_count"))
+r = c.get("/health/ready"); print("/health/ready", r.status_code, r.json())
+s = c.get("/api/system/status").json(); print("/api/system/status total_agents =", s["total_agents"])

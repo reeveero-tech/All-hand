@@ -1,0 +1,8 @@
+# 075 status-evidence check right after flipping R-156 to done (before any R-157 work), HEAD=228b9560f74f8ef9035a57ce1e460362ac9d3a2c + working-tree docs (2026-10-17T04:46:07Z)
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0
+$ git diff --stat
+ docs/governance/PROJECT_STATE.md | 2 +-
+ docs/governance/ROADMAP.md       | 5 +++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
