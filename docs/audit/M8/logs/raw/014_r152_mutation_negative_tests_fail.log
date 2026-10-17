@@ -1,8 +1,5 @@
-# 014 mutation check: script neutered to ignore deletions -> negative tests must FAIL
+# 014 mutation check (re-run after message fix): script neutered to ignore deletions -> negative tests must FAIL
 61:    deleted = []  # MUTANT: ignores deletions
-E    +  where 0 = CompletedProcess(args=['/usr/local/bin/python', '/home/user/workspace/allhand/scripts/check_no_delete.py', 'main', 'HE... status counts (no-renames): {'D': 1}\nNo-delete gate passed: 0 tracked files deleted, moved or renamed.\n", stderr='').returncode
-E    +  where 0 = CompletedProcess(args=['/usr/local/bin/python', '/home/user/workspace/allhand/scripts/check_no_delete.py', 'main', 'HE...counts (no-renames): {'D': 1, 'A': 1}\nNo-delete gate passed: 0 tracked files deleted, moved or renamed.\n", stderr='').returncode
-E    +  where 0 = CompletedProcess(args=['/usr/local/bin/python', '/home/user/workspace/allhand/scripts/check_no_delete.py', 'main', 'HE...counts (no-renames): {'A': 1, 'D': 1}\nNo-delete gate passed: 0 tracked files deleted, moved or renamed.\n", stderr='').returncode
 E    +  where 0 = CompletedProcess(args=['/usr/local/bin/python', '/home/user/workspace/allhand/scripts/check_no_delete.py', 'main', 'HE...counts (no-renames): {'D': 1, 'A': 1}\nNo-delete gate passed: 0 tracked files deleted, moved or renamed.\n", stderr='').returncode
 E    +  where 0 = CompletedProcess(args=['/usr/local/bin/python', '/home/user/workspace/allhand/scripts/check_no_delete.py', 'main', 'HE... status counts (no-renames): {'D': 2}\nNo-delete gate passed: 0 tracked files deleted, moved or renamed.\n", stderr='').returncode
 E    +  where 0 = CompletedProcess(args=['/usr/local/bin/python', '/home/user/workspace/allhand/scripts/check_no_delete.py', 'main', 'HE... status counts (no-renames): {'D': 1}\nNo-delete gate passed: 0 tracked files deleted, moved or renamed.\n", stderr='').returncode
@@ -12,5 +9,5 @@ FAILED tests/test_r152_no_delete_gate.py::test_move_to_other_directory_fails
 FAILED tests/test_r152_no_delete_gate.py::test_rename_with_heavy_edit_still_fails
 FAILED tests/test_r152_no_delete_gate.py::test_delete_directory_lists_every_file
 FAILED tests/test_r152_no_delete_gate.py::test_non_ascii_path_deletion_reported_exactly
-========================= 6 failed, 7 passed in 2.52s ==========================
+========================= 6 failed, 7 passed in 2.53s ==========================
 exit=1

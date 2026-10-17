@@ -92,7 +92,7 @@ def test_delete_file_fails(repo):
     _commit(repo)
     res = _run(repo)
     assert res.returncode == 1
-    assert "::error file=keep.py::deleted" in res.stdout
+    assert "::error file=keep.py::keep.py deleted" in res.stdout
 
 
 def test_rename_fails_and_is_labelled(repo):
@@ -100,7 +100,7 @@ def test_rename_fails_and_is_labelled(repo):
     _commit(repo)
     res = _run(repo)
     assert res.returncode == 1
-    assert "::error file=pkg/a.py::renamed/moved to pkg/a_renamed.py" in res.stdout
+    assert "::error file=pkg/a.py::pkg/a.py renamed/moved to pkg/a_renamed.py" in res.stdout
 
 
 def test_move_to_other_directory_fails(repo):
@@ -137,7 +137,7 @@ def test_non_ascii_path_deletion_reported_exactly(repo):
     _commit(repo)
     res = _run(repo)
     assert res.returncode == 1
-    assert "ملف عربي.md" in res.stdout
+    assert "::ملف عربي.md deleted" in res.stdout
 
 
 def test_delete_then_restore_in_later_commit_passes(repo):

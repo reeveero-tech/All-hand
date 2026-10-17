@@ -1,0 +1,75 @@
+# 016a live trial PR #164 (deletes templates/test_evidence_template.csv) — governance run 38986394241, BEFORE message fix
+governance=fail
+network=pass
+test=pending
+quality=pass
+## governance job log:
+No-delete check (R-152)	﻿2026-10-17T00:26:49.0695839Z ##[group]Run python3 scripts/check_no_delete.py origin/main HEAD
+No-delete check (R-152)	2026-10-17T00:26:49.0697650Z ^[[36;1mpython3 scripts/check_no_delete.py origin/main HEAD^[[0m
+No-delete check (R-152)	2026-10-17T00:26:49.0881534Z shell: /usr/bin/bash -e {0}
+No-delete check (R-152)	2026-10-17T00:26:49.0882813Z ##[endgroup]
+No-delete check (R-152)	2026-10-17T00:26:49.1261395Z no-delete check: origin/main...HEAD status counts (no-renames): {'M': 7, 'A': 12, 'D': 1}
+No-delete check (R-152)	2026-10-17T00:26:49.1297760Z ##[error]deleted — forbidden by D-063 (no delete/move/rename)
+No-delete check (R-152)	2026-10-17T00:26:49.1319549Z ##[error]No-delete gate failed: 1 tracked file(s) deleted, moved or renamed. Repair/upgrade/adapt instead; deletion needs a separate explicit owner authorization (D-063/D-064).
+No-delete check (R-152)	2026-10-17T00:26:49.1336771Z ##[error]Process completed with exit code 1.
+Atomic batch check	﻿2026-10-17T00:26:49.1442470Z ##[group]Run set -uo pipefail
+Atomic batch check	2026-10-17T00:26:49.1443669Z ^[[36;1mset -uo pipefail^[[0m
+Atomic batch check	2026-10-17T00:26:49.1445231Z ^[[36;1mCHANGED=$(git diff --name-only origin/main...HEAD)^[[0m
+Atomic batch check	2026-10-17T00:26:49.1446679Z ^[[36;1mecho "changed files:"; echo "$CHANGED"^[[0m
+Atomic batch check	2026-10-17T00:26:49.1447823Z ^[[36;1m^[[0m
+Atomic batch check	2026-10-17T00:26:49.1449118Z ^[[36;1m# Always required whenever ANYTHING changes in the PR (docs-only included):^[[0m
+Atomic batch check	2026-10-17T00:26:49.1451004Z ^[[36;1m# the work item must be visible in ROADMAP/PROJECT_STATE/CHANGELOG.^[[0m
+Atomic batch check	2026-10-17T00:26:49.1453169Z ^[[36;1mMANDATORY=(docs/governance/ROADMAP.md docs/governance/PROJECT_STATE.md docs/governance/CHANGELOG.md)^[[0m
+Atomic batch check	2026-10-17T00:26:49.1455299Z ^[[36;1mMISSING=()^[[0m
+Atomic batch check	2026-10-17T00:26:49.1456270Z ^[[36;1mfor f in "${MANDATORY[@]}"; do^[[0m
+Atomic batch check	2026-10-17T00:26:49.1457575Z ^[[36;1m  if ! grep -qxF "$f" <<< "$CHANGED"; then MISSING+=("$f"); fi^[[0m
+Atomic batch check	2026-10-17T00:26:49.1458847Z ^[[36;1mdone^[[0m
+Atomic batch check	2026-10-17T00:26:49.1459765Z ^[[36;1mif [ ${#MISSING[@]} -gt 0 ]; then^[[0m
+Atomic batch check	2026-10-17T00:26:49.1461672Z ^[[36;1m  echo "::error::Atomic batch rule violated: these mandatory docs must be updated in the same PR: ${MISSING[*]}"^[[0m
+Atomic batch check	2026-10-17T00:26:49.1463514Z ^[[36;1m  exit 1^[[0m
+Atomic batch check	2026-10-17T00:26:49.1464388Z ^[[36;1mfi^[[0m
+Atomic batch check	2026-10-17T00:26:49.1465528Z ^[[36;1m^[[0m
+Atomic batch check	2026-10-17T00:26:49.1466559Z ^[[36;1m# Conditional rules keyed on the kind of change:^[[0m
+Atomic batch check	2026-10-17T00:26:49.1468231Z ^[[36;1mCODE_RE='^(server\.py|run\.py|agent_civilization/|agos_kernel/|src/|web/|tests/)'^[[0m
+Atomic batch check	2026-10-17T00:26:49.1469894Z ^[[36;1mif grep -Eq "$CODE_RE" <<< "$CHANGED"; then^[[0m
+Atomic batch check	2026-10-17T00:26:49.1471195Z ^[[36;1m  grep -qxE 'docs/audit/.+' <<< "$CHANGED" \^[[0m
+Atomic batch check	2026-10-17T00:26:49.1472760Z ^[[36;1m    || { echo "::error::Code changed without evidence in docs/audit/"; exit 1; }^[[0m
+Atomic batch check	2026-10-17T00:26:49.1474219Z ^[[36;1mfi^[[0m
+Atomic batch check	2026-10-17T00:26:49.1475870Z ^[[36;1mif grep -Eq '^server\.py|agent_civilization/civilization_routes\.py' <<< "$CHANGED"; then^[[0m
+Atomic batch check	2026-10-17T00:26:49.1478329Z ^[[36;1m  grep -qxF 'docs/governance/API.md' <<< "$CHANGED" \^[[0m
+Atomic batch check	2026-10-17T00:26:49.1480143Z ^[[36;1m    || { echo "::error::API changed without docs/governance/API.md"; exit 1; }^[[0m
+Atomic batch check	2026-10-17T00:26:49.1481844Z ^[[36;1mfi^[[0m
+Atomic batch check	2026-10-17T00:26:49.1483105Z ^[[36;1mif grep -Eq 'agent_civilization/storage/' <<< "$CHANGED"; then^[[0m
+Atomic batch check	2026-10-17T00:26:49.1485085Z ^[[36;1m  grep -qxF 'docs/governance/DATA_MODEL.md' <<< "$CHANGED" \^[[0m
+Atomic batch check	2026-10-17T00:26:49.1486985Z ^[[36;1m    || { echo "::error::Storage changed without docs/governance/DATA_MODEL.md"; exit 1; }^[[0m
+Atomic batch check	2026-10-17T00:26:49.1488568Z ^[[36;1mfi^[[0m
+Atomic batch check	2026-10-17T00:26:49.1489633Z ^[[36;1mif grep -Eq '^\.github/workflows/' <<< "$CHANGED"; then^[[0m
+Atomic batch check	2026-10-17T00:26:49.1491148Z ^[[36;1m  grep -qxF 'docs/governance/QUALITY.md' <<< "$CHANGED" \^[[0m
+Atomic batch check	2026-10-17T00:26:49.1492844Z ^[[36;1m    || { echo "::error::CI changed without docs/governance/QUALITY.md"; exit 1; }^[[0m
+Atomic batch check	2026-10-17T00:26:49.1494305Z ^[[36;1mfi^[[0m
+Atomic batch check	2026-10-17T00:26:49.1495391Z ^[[36;1m^[[0m
+Atomic batch check	2026-10-17T00:26:49.1496297Z ^[[36;1mecho "Governance gate passed."^[[0m
+Atomic batch check	2026-10-17T00:26:49.1563011Z shell: /usr/bin/bash -e {0}
+Atomic batch check	2026-10-17T00:26:49.1564094Z ##[endgroup]
+Atomic batch check	2026-10-17T00:26:49.1696924Z changed files:
+Atomic batch check	2026-10-17T00:26:49.1698407Z .github/workflows/governance-gate.yml
+Atomic batch check	2026-10-17T00:26:49.1700334Z docs/audit/M8/logs/raw/013_r151_acceptance_main_ci.log
+Atomic batch check	2026-10-17T00:26:49.1702091Z docs/audit/M8/logs/raw/014_r152_mutation_negative_tests_fail.log
+Atomic batch check	2026-10-17T00:26:49.1703969Z docs/audit/M8/logs/raw/015_r152_historical_deletion_detected.log
+Atomic batch check	2026-10-17T00:26:49.1706086Z docs/audit/M8/logs/raw/018_r152_pytest.log
+Atomic batch check	2026-10-17T00:26:49.1707556Z docs/audit/M8/logs/raw/019_r152_ruff.log
+Atomic batch check	2026-10-17T00:26:49.1709030Z docs/audit/M8/logs/raw/020_r152_web_install.log
+Atomic batch check	2026-10-17T00:26:49.1710536Z docs/audit/M8/logs/raw/021_r152_web_build.log
+Atomic batch check	2026-10-17T00:26:49.1712033Z docs/audit/M8/logs/raw/022_r152_root_install.log
+Atomic batch check	2026-10-17T00:26:49.1713554Z docs/audit/M8/logs/raw/023_r152_root_build.log
+Atomic batch check	2026-10-17T00:26:49.1715408Z docs/audit/M8/logs/raw/024_r152_roadmap_audit_selfcheck.log
+Atomic batch check	2026-10-17T00:26:49.1717333Z docs/governance/CHANGELOG.md
+Atomic batch check	2026-10-17T00:26:49.1718607Z docs/governance/DECISIONS.md
+Atomic batch check	2026-10-17T00:26:49.1719893Z docs/governance/GOVERNANCE_GATE.md
+Atomic batch check	2026-10-17T00:26:49.1721224Z docs/governance/PROJECT_STATE.md
+Atomic batch check	2026-10-17T00:26:49.1722540Z docs/governance/QUALITY.md
+Atomic batch check	2026-10-17T00:26:49.1723778Z docs/governance/ROADMAP.md
+Atomic batch check	2026-10-17T00:26:49.1725836Z docs/governance/roadmaps/revival-scale/templates/test_evidence_template.csv
+Atomic batch check	2026-10-17T00:26:49.1727648Z scripts/check_no_delete.py
+Atomic batch check	2026-10-17T00:26:49.1728900Z tests/test_r152_no_delete_gate.py
+Atomic batch check	2026-10-17T00:26:49.1827267Z Governance gate passed.
