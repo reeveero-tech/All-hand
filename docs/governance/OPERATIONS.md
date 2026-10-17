@@ -251,9 +251,17 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 
 - **محلياً (local_integration)**: `bash scripts/r042/run_local_stack.sh` (يتطلب `ADMIN_URI` و`AUTH_URI` و`POSTGREST_BIN`) يشغّل في نهايته المشغل على المخزن المحلي نفسه، ويكتب التقرير في `$R161_REPORT` (افتراضياً `/tmp/r161_storage_local.json`). في CI يُرفع ضمن artifact ‏`r042-storage-verification-log`.
 - **حياً (live_integration) — إجراء المالك، لا يُنفذه الوكيل**:
-  1. **البيئة**: Settings ← Environments ← `r161-staging` مع required reviewers (والفرع main فقط)، **قبل** أول تشغيل. إن شُغِّل الـworkflow قبل ذلك أنشأها GitHub بلا حماية وبلا أسرار، فيصير كل هدف BLOCKED (G-161-5).
+  1. **البيئة (R-161b، D-074)**: المالك وحده يُعدّها. الخطوات، في Settings ← Environments ← New environment ← `r161-staging`:
+     - Required reviewers: مراجع واحد على الأقل، ويفضل تفعيل Prevent self-review.
+     - Deployment branches: «Selected branches» بقاعدة فرع واحدة `main` فقط.
+     - بعد التحقق الفعلي من الإعداد: Settings ← Variables ← Repository variables ← `R161_STAGING_READY` = `owner-verified`.
+     هذا المتغير **إقرار من المالك** لا إثبات بحد ذاته. لذلك وظيفة `gate` (بلا بيئة ولا أسرار) تتحقق أيضاً عبر API، قراءةً فقط، من وجود البيئة وأن فيها مراجعين وأن سياسة فرعها `main` فقط، ومن أن التشغيل على main.
+     أي نقص يعني بوابة CLOSED: يفشل التشغيل ظاهراً بسبب مكتوب، وتُتخطى وظيفة `live`، ولا تُذكر البيئة في أي وظيفة. افحص محلياً: `GATE_REF=refs/heads/main GATE_READY=owner-verified GITHUB_REPOSITORY=reeveero-tech/All-hand python3 scripts/r161_staging_gate.py`.
+     حد معروف (G-161-5): من يملك صلاحية الكتابة يستطيع تشغيل نسخة معدلة من الـworkflow من فرع آخر. سياسة فرع البيئة (`main` فقط) تمنع تلك النسخة من أسرار البيئة متى كانت البيئة موجودة.
   2. **بيانات اعتماد مؤقتة بصلاحية دنيا**: مشروع Supabase **مخصص للاختبار** (لا الإنتاج، ولا مشروع فيه بيانات حقيقية) بجدولي `tasks` و`events` من `docs/sql/`؛ ومفتاح LLM بحد إنفاق صغير وانتهاء قصير لدى المزود إن أتاحه. المفتاح لا يصير مؤقتاً بتسميته: الضمان هو انتهاؤه لدى المزود أو إبطاله يدوياً بعد التشغيل.
   3. **الأسرار** في البيئة: `R161_STORAGE_KEY`، و`R161_LLM_API_KEY`، و`R161_EXTERNAL_API_KEY`. **المتغيرات** (vars): `R161_ALLOWED_HOSTS`، و`R161_STORAGE_URL`، و`R161_LLM_URL`، و`R161_LLM_MODEL`، و`R161_EXTERNAL_URL`، و`R161_EXTERNAL_MODEL`.
   4. **التشغيل**: Actions ← «R-161 Live Integration (manual)» ← Run workflow، مع الأهداف ووقت الانتهاء الفعلي. الـjob يفشل ما لم يكن كل المطلوب PASS، والتقرير المنقح يُرفع artifact ‏`r161-integration-report` لمدة 30 يوماً.
   5. **التنظيف**: المشغل يحذف صفوف مستأجر التشغيل الاصطناعي فقط ويتحقق منه، وفشله يظهر FAIL. بعد التشغيل: إبطال المفاتيح أو تركها تنتهي، وحذف الأسرار من البيئة، وحذف مشروع الاختبار إن أُنشئ لهذا الغرض.
 - **MCP**: دائماً BLOCKED — لا عميل MCP في المستودع (G-161-2).
+- **تثبيت DNS (R-161b، G-161-3)**: المشغل يفتح كل اتصالات storage وLLM والتنظيف عبر `guarded_session_kwargs`: حلّ واحد مفحوص لكل اتصال، ولا ذاكرة DNS، وTLS بالاسم الأصلي، ولا تحويلات. نقطة تُرجع تحويلاً (3xx) تُسجل FAIL، فاستخدم الـURL النهائي للمزود مباشرة.
+- **حالة R-161**: `blocked` بـQ-025 حتى يجتاز تشغيل يدوي فعلي بنتائج live_integration.

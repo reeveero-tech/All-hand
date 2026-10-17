@@ -1,0 +1,153 @@
+# 123 R-161b G-161-5 staging gate + R-161 blocked (Q-025) + status check — 2026-10-17T22:08:54Z, branch at 93616b46dc99c3734222c0e17a03d17d8ba8d105 + working-tree changes
+
+## 1. repository state, read-only (gh api GET), before
+$ gh api repos/reeveero-tech/All-hand/environments --jq '{total_count, names}'
+{"names":[],"total_count":0}
+$ gh api repos/reeveero-tech/All-hand/environments/r161-staging
+{"message":"Not Found","documentation_url":"https://docs.github.com/rest/deployments/environments#get-an-environment","status":"404"}gh: Not Found (HTTP 404)
+
+$ gh api repos/reeveero-tech/All-hand/actions/variables --jq '[.variables[].name]'
+[]
+=> no environment exists (r161-staging was never auto-created) and R161_STAGING_READY is not set
+
+## 2. the gate script against the REAL repository (GET only, unauthenticated: public repo)
+### 2a. not on main
+$ env -i PATH=/usr/bin:/bin GATE_REF=refs/heads/m8/r161b-dns-pinning-env-gate GATE_READY=owner-verified GITHUB_REPOSITORY=reeveero-tech/All-hand GITHUB_OUTPUT=/tmp/r161/gh_out python3 scripts/r161_staging_gate.py
+::error::R-161 staging gate refused: run is not on main (ref refs/heads/m8/r161b-dns-pinning-env-gate)
+::error::R-161 staging gate refused: environment r161-staging not queried (the gate is already closed by the checks above)
+R-161 staging gate: CLOSED — the live job will not run (see docs/governance/OPERATIONS.md, R-161).
+exit_code=1  GITHUB_OUTPUT written: no
+### 2b. on main, no owner declaration (the repository's real state)
+$ env -i PATH=/usr/bin:/bin GATE_REF=refs/heads/main GATE_READY= GITHUB_REPOSITORY=reeveero-tech/All-hand GITHUB_OUTPUT=/tmp/r161/gh_out python3 scripts/r161_staging_gate.py
+::error::R-161 staging gate refused: repository variable R161_STAGING_READY is not 'owner-verified' (the owner has not declared the environment ready)
+::error::R-161 staging gate refused: environment r161-staging not queried (the gate is already closed by the checks above)
+R-161 staging gate: CLOSED — the live job will not run (see docs/governance/OPERATIONS.md, R-161).
+exit_code=1  GITHUB_OUTPUT written: no
+### 2c. on main WITH the declaration (simulated locally only — the variable is NOT set in the repository): the API check still closes the gate
+$ env -i PATH=/usr/bin:/bin GATE_REF=refs/heads/main GATE_READY=owner-verified GITHUB_REPOSITORY=reeveero-tech/All-hand GITHUB_OUTPUT=/tmp/r161/gh_out python3 scripts/r161_staging_gate.py
+::error::R-161 staging gate refused: environment r161-staging does not exist or cannot be read (HTTP 404); it must be created by the owner first — this gate never creates it
+R-161 staging gate: CLOSED — the live job will not run (see docs/governance/OPERATIONS.md, R-161).
+exit_code=1  GITHUB_OUTPUT written: no
+
+## 3. after the GETs: still no environment (a GET does not create one)
+{"names":[],"total_count":0}
+
+## 4. workflow structure (parsed YAML)
+on: ['workflow_dispatch'] | permissions: {'contents': 'read'}
+job gate: environment=None needs=None if=None permissions={'contents': 'read', 'actions': 'read'} secrets_in_job=False
+job live: environment={'name': '${{ needs.gate.outputs.environment }}'} needs=gate if=needs.gate.outputs.environment == 'r161-staging' && github.ref == 'refs/heads/main' permissions=None secrets_in_job=True
+
+## 5. tests
+$ python3 -m pytest -v -p no:cacheprovider tests/test_r161b_workflow_gate.py   (Python 3.14.3)
+tests/test_r161b_workflow_gate.py::test_everything_in_place_opens_the_gate PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args0-not on main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args1-not on main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args2-R161_STAGING_READY] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args3-R161_STAGING_READY] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args4-does not exist] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args5-cannot be read] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args6-HTTP 0] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args7-no required reviewers] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args8-no required reviewers] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args9-custom deployment-branch] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args10-custom deployment-branch] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args11-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args12-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args13-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args14-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/dev-owner-verified] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/main-] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/main-yes] PASSED
+tests/test_r161b_workflow_gate.py::test_missing_environment_closes_the_gate_and_never_creates_it PASSED
+tests/test_r161b_workflow_gate.py::test_open_gate_writes_the_environment_output PASSED
+tests/test_r161b_workflow_gate.py::test_manual_only_and_least_privilege PASSED
+tests/test_r161b_workflow_gate.py::test_gate_job_has_no_environment_and_no_secrets PASSED
+tests/test_r161b_workflow_gate.py::test_live_job_reaches_staging_only_through_the_gate PASSED
+tests/test_r161b_workflow_gate.py::test_without_the_gate_output_the_live_job_cannot_name_the_environment PASSED
+tests/test_r161b_workflow_gate.py::test_secrets_only_in_the_runner_step_after_the_gate PASSED
+============================== 26 passed in 0.16s ==============================
+$ /tmp/venv3.11/bin/python -m pytest -v -p no:cacheprovider tests/test_r161b_workflow_gate.py   (Python 3.11.15)
+tests/test_r161b_workflow_gate.py::test_everything_in_place_opens_the_gate PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args0-not on main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args1-not on main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args2-R161_STAGING_READY] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args3-R161_STAGING_READY] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args4-does not exist] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args5-cannot be read] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args6-HTTP 0] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args7-no required reviewers] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args8-no required reviewers] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args9-custom deployment-branch] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args10-custom deployment-branch] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args11-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args12-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args13-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args14-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/dev-owner-verified] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/main-] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/main-yes] PASSED
+tests/test_r161b_workflow_gate.py::test_missing_environment_closes_the_gate_and_never_creates_it PASSED
+tests/test_r161b_workflow_gate.py::test_open_gate_writes_the_environment_output PASSED
+tests/test_r161b_workflow_gate.py::test_manual_only_and_least_privilege PASSED
+tests/test_r161b_workflow_gate.py::test_gate_job_has_no_environment_and_no_secrets PASSED
+tests/test_r161b_workflow_gate.py::test_live_job_reaches_staging_only_through_the_gate PASSED
+tests/test_r161b_workflow_gate.py::test_without_the_gate_output_the_live_job_cannot_name_the_environment PASSED
+tests/test_r161b_workflow_gate.py::test_secrets_only_in_the_runner_step_after_the_gate PASSED
+============================== 26 passed in 0.18s ==============================
+$ /tmp/venv3.12/bin/python -m pytest -v -p no:cacheprovider tests/test_r161b_workflow_gate.py   (Python 3.12.13)
+tests/test_r161b_workflow_gate.py::test_everything_in_place_opens_the_gate PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args0-not on main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args1-not on main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args2-R161_STAGING_READY] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args3-R161_STAGING_READY] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args4-does not exist] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args5-cannot be read] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args6-HTTP 0] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args7-no required reviewers] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args8-no required reviewers] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args9-custom deployment-branch] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args10-custom deployment-branch] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args11-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args12-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args13-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_each_missing_condition_closes_the_gate[args14-exactly the branch main] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/dev-owner-verified] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/main-] PASSED
+tests/test_r161b_workflow_gate.py::test_closed_gate_makes_no_api_call_and_writes_no_output[refs/heads/main-yes] PASSED
+tests/test_r161b_workflow_gate.py::test_missing_environment_closes_the_gate_and_never_creates_it PASSED
+tests/test_r161b_workflow_gate.py::test_open_gate_writes_the_environment_output PASSED
+tests/test_r161b_workflow_gate.py::test_manual_only_and_least_privilege PASSED
+tests/test_r161b_workflow_gate.py::test_gate_job_has_no_environment_and_no_secrets PASSED
+tests/test_r161b_workflow_gate.py::test_live_job_reaches_staging_only_through_the_gate PASSED
+tests/test_r161b_workflow_gate.py::test_without_the_gate_output_the_live_job_cannot_name_the_environment PASSED
+tests/test_r161b_workflow_gate.py::test_secrets_only_in_the_runner_step_after_the_gate PASSED
+============================== 26 passed in 0.20s ==============================
+(tests/test_r161_live_integration.py was updated: 'environment: r161-staging' must NOT appear; the environment name is the gate output)
+(fix while writing this log: a gate closed by the branch/declaration checks first reported 'cannot be read (HTTP 0)' although no request is made; it now says 'not queried', asserted by test_closed_gate_makes_no_api_call_and_writes_no_output)
+
+## 6. why G-161-5 is NOT closed
+- GitHub docs (Managing environments for deployment): 'Running a workflow that references an environment that does not exist will create an environment with the referenced name … the newly created environment will not have any protection rules or secrets configured.' The docs do not say what a SKIPPED job referencing an environment does.
+- The design never names r161-staging in an environment key; the live job's name is ${{ needs.gate.outputs.environment }}, set only after the gate verified the environment ALREADY exists with reviewers and a main-only branch policy. Proven statically and by unit tests — NOT by a GitHub run: dispatching the workflow is outside this batch's authorization (it could create a repository resource).
+- Anyone with write access can dispatch a modified copy of the workflow from another branch; a platform property, not controllable from this file.
+
+## 7. Q-025 and the log names were free before creation
+$ git show origin/main:docs/governance/OPEN_QUESTIONS.md | grep -c 'Q-025'
+0
+$ git grep -n 'Q-025' origin/main -- docs | wc -l
+0
+$ git ls-tree --name-only origin/main docs/audit/M8/logs/raw/ | tail -1
+docs/audit/M8/logs/raw/121_r161_pr_ci_storage_local_integration.log
+
+## 8. status evidence check
+### before the doc edits (commit 93616b4: code+tests only; ROADMAP still R-161 awaiting_merge although PR #175 is merged)
+$ python3 scripts/check_status_evidence.py .
+::error::R-161: CONTRADICTION — PR #175 is already merged (fcc869b) but status is still awaiting_merge; record acceptance (done)
+::error::Status evidence check failed: 1 violation(s) (D-066).
+rc=1
+### after (R-161 blocked, blocker=Q-025, PROJECT_STATE table synced)
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+M8 table items=34 mismatches=none R-161=blocked/blocked R-162=planned/planned
+ROADMAP status counts (all items): {'done': 155, 'blocked': 1, 'planned': 23} total 179
+M8 table counts: {'done': 10, 'blocked': 1, 'planned': 23}

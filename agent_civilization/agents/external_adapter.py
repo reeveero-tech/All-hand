@@ -158,6 +158,31 @@ class _FixedClientError(_FixedReasonError, aiohttp.ClientConnectionError):
     arbitrary text, e.g. a wrapped backend body)."""
 
 
+async def _refuse_redirect(session, ctx, params) -> None:
+    """R-161b: a guarded session does not follow redirects at all — the
+    allowlisted endpoint must answer itself (no new hop, no new host)."""
+    params.response.release()
+    raise _FixedClientError("redirect refused by the outbound policy")
+
+
+def guarded_session_kwargs(allow_private: bool) -> Dict[str, Any]:
+    """R-161b (G-161-3): the SEC-05 guarantees for OTHER aiohttp clients
+    (storage, LLM) — not a parallel mechanism: the same ``GuardedResolver``
+    (one resolution per connection, EVERY address vetted by
+    ``safety.validate_getaddrinfo``, the connector gets the vetted IP literal
+    and never resolves again), no DNS cache, the verifying
+    ``safety.tls_context()`` (SNI + certificate checked against the ORIGINAL
+    hostname, which also stays in ``Host``), and redirects refused.
+
+    Returns keyword arguments for ``aiohttp.ClientSession``.
+    """
+    trace = aiohttp.TraceConfig()
+    trace.on_request_redirect.append(_refuse_redirect)
+    connector = aiohttp.TCPConnector(resolver=GuardedResolver(allow_private),
+                                     use_dns_cache=False, ssl=safety.tls_context())
+    return {"connector": connector, "trace_configs": [trace]}
+
+
 class ExternalAgentAdapter:
     """Wraps a real remote agent behind the same execute() contract."""
 

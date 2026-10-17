@@ -1,5 +1,22 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-18 — R-161b (M8/P2): تثبيت DNS عند الاتصال (G-161-3) + بوابة staging مغلقة افتراضياً (G-161-5) + R-161 ‏`blocked` بـQ-025 (دفعة m8/r161b-dns-pinning-env-gate، D-074)
+
+- **الحالة**: R-161 ‏`blocked` (blocker=Q-025). PR #175 مدموجة (`fcc869b`، CI main 39068752136 success)، لكن live_integration ‏NOT_RUN وMCP بلا عميل. R-162 يبقى planned.
+- **مُصلح (G-161-3، مغلقة)**: `SupabaseStorage(guarded=True)` و`LLMClient(guarded=True)` وجلسة التنظيف في `scripts/r161_live_integration.py` تستخدم `guarded_session_kwargs` الجديدة في `agent_civilization/agents/external_adapter.py`، المبنية على `GuardedResolver` من SEC-05:
+  - تثبيت العنوان المفحوص عند الاتصال، وفحص كل عناوين الإجابة، وفشل الحل يعني الرفض.
+  - لا ذاكرة DNS، وTLS ‏(SNI وHost) بالاسم الأصلي، والتحويلات مرفوضة.
+  - على main تلقى مستمع داخلي 8 اتصالات (storage) و1 (LLM) في سيناريو rebinding؛ بعد الإصلاح 0 (`122`).
+- **مُخفف (G-161-5، غير مغلقة)**: `.github/workflows/live-integration.yml` صار وظيفتين:
+  - `gate`: بلا بيئة ولا أسرار، وتشغّل `scripts/r161_staging_gate.py` الجديد (main + `R161_STAGING_READY=owner-verified` + GET يثبت وجود البيئة بمراجعين وسياسة فرع main فقط).
+  - `live`: اسم بيئتها من مخرج البوابة فقط.
+  - على المستودع الحقيقي (قراءة فقط) البوابة CLOSED، والبيئة غير موجودة (`123`).
+- **مضاف**: `tests/test_r161b_dns_pinning.py` (23)، و`tests/test_r161b_workflow_gate.py` (26)، وQ-025 في OPEN_QUESTIONS.
+- **مُعدل**: `tests/test_r161_live_integration.py`: توقع الـworkflow الجديد (لا اسم بيئة حرفي).
+- **لم يُشغَّل**: أي تكامل حي، وأي تشغيل للـworkflow. لم تُنشأ بيئة ولا حساب ولا سر. حماية الفرع بلا تغيير.
+- **الأدلة**: `122` تثبيت DNS قبل/بعد، و`123` البوابة والمانع وفحص الحالة، و`124` الحزمة والبوابات.
+- **وثائق**: ROADMAP، PROJECT_STATE، OPEN_QUESTIONS (Q-025)، DECISIONS (D-074)، OPERATIONS، SECURITY، QUALITY، DATA_MODEL (مُعامل `guarded` في `SupabaseStorage`، بلا تغيير مخطط)، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+
 ## 2026-10-17 — R-161 (M8/P2): تكامل اختياري آمن ومصنف mock/local/live — storage وLLM وأداة خارجية وMCP (دفعة m8/r161-live-integration، D-073) + قبول R-160
 
 - **قبول R-160**: PR #174 مدموجة بـ`--merge`. SHA الدمج `dadbba1d1fb01cdf17a7a01c54bbb088f583b086`، وأبوه الثاني هو المختبر `33d10bdcba57b9c2ec87e38a57089e9d05306e50`. CI main ‏39059547216 على SHA الدمج نجح، وتُخطّي publish (D-011، ليس نشراً). خطوات pytest الثلاث (3.11، 3.12، 3.12 specialists) طبعت 1258 passed, 4 skipped, 4 deselected؛ المتخطاة نُفذت في job ‏storage والمستبعدة في job ‏network (`115`). R-160 ‏`done`.

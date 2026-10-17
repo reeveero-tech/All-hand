@@ -110,13 +110,17 @@ DEFAULT_MODEL = os.environ.get("LLM_MODEL", "meta-llama/llama-3.3-70b-instruct:f
 class LLMClient:
     """Async LLM client. One shared instance per process."""
 
-    def __init__(self, api_key: str = None, model: str = None, url: str = None):
+    def __init__(self, api_key: str = None, model: str = None, url: str = None,
+                 *, guarded: bool = False, allow_private: bool = False):
         self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "")
         self.model = model or DEFAULT_MODEL
         # R-161: the OpenAI-compatible endpoint (default OpenRouter, unchanged).
         # Only the integration runner passes another URL, after its own host
         # allowlist / https / loopback checks (scripts/r161_live_integration.py).
         self.url = url or OPENROUTER_URL
+        # R-161b (G-161-3): opt-in SEC-05 pinning for this client's
+        # connections (see external_adapter.guarded_session_kwargs).
+        self.guarded, self.allow_private = guarded, allow_private
         self._session: aiohttp.ClientSession | None = None
 
     @property
@@ -139,8 +143,12 @@ class LLMClient:
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
+            extra = {}
+            if self.guarded:
+                from agent_civilization.agents.external_adapter import guarded_session_kwargs
+                extra = guarded_session_kwargs(self.allow_private)
             self._session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=120)
+                timeout=aiohttp.ClientTimeout(total=120), **extra
             )
         return self._session
 

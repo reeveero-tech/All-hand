@@ -4,10 +4,15 @@ name: R-161 Live Integration (manual)
 # isolated staging account (test project / test key / test endpoint).
 # * Manual only (workflow_dispatch): never on push or pull_request, so no PR —
 #   and no fork — can read the staging credentials.
-# * environment r161-staging: the owner creates it (Settings > Environments)
-#   with required reviewers BEFORE the first run, and stores the temporary
-#   test credentials there. Until then every target is BLOCKED (exit 2) —
-#   never PASS. Runbook: docs/governance/OPERATIONS.md (R-161).
+# * R-161b (G-161-5) fail-closed gate: job ``gate`` (no environment, no
+#   staging secrets) runs scripts/r161_staging_gate.py — main only, the owner's
+#   declaration (vars.R161_STAGING_READY == owner-verified) AND a read-only API
+#   check that r161-staging ALREADY exists with required reviewers and a
+#   deployment-branch policy of exactly main. Job ``live`` takes its
+#   environment NAME from the gate's output, so no job references the staging
+#   environment unless the gate passed (a reference to a missing environment
+#   would create it unprotected — GitHub docs). Gate closed => run fails, live
+#   job skipped. Runbook: docs/governance/OPERATIONS.md (R-161).
 # * The runner refuses non-https, non-allowlisted or non-public endpoints and
 #   credentials without a declared expiry <= 7 days (scripts/r161_live_integration.py).
 # * The job fails unless every requested target PASSed: a provider failure,
@@ -31,9 +36,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  live:
+  gate:
+    name: staging readiness gate (no environment, no secrets)
     runs-on: ubuntu-26.04
-    environment: r161-staging
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read        # GET the environment's settings (read-only; never creates it)
+    outputs:
+      environment: ${{ steps.gate.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check branch, owner declaration and environment protection
+        id: gate
+        env:
+          GATE_REF: ${{ github.ref }}
+          GATE_READY: ${{ vars.R161_STAGING_READY }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/r161_staging_gate.py
+
+  live:
+    needs: gate
+    if: needs.gate.outputs.environment == 'r161-staging' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-26.04
+    environment:
+      name: ${{ needs.gate.outputs.environment }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
