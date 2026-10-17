@@ -398,7 +398,8 @@ class MemorySystem:
             os.replace(tmp, self._persistence_file)
             logger.info(f"Memory persisted to {self._persistence_file}")
         except Exception as e:
-            logger.error(f"Failed to persist memory: {e}")
+            # R-159: exception TYPE only — the text can echo stored contents
+            logger.error("Failed to persist memory: %s", type(e).__name__)
     
     async def load(self) -> None:
         """Load memory from disk."""
@@ -434,7 +435,7 @@ class MemorySystem:
             
             logger.info(f"Memory loaded from {self._persistence_file}")
         except Exception as e:
-            logger.error(f"Failed to load memory: {e}")
+            logger.error("Failed to load memory: %s", type(e).__name__)
     
     def get_stats(self) -> Dict[str, Any]:
         """Get memory statistics."""

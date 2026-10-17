@@ -142,7 +142,36 @@ class LLMClient:
 
     async def complete(self, system: str, prompt: str, max_tokens: int = 1024,
                        max_wait_s: float | None = None) -> dict:
-        """Return {"ok": bool, "content": str, "error": str|None, "model": str}."""
+        """Return {"ok": bool, "content": str, "error": str|None, "model": str}.
+
+        R-159: one `llm` span (provider, model, HTTP status, reason class —
+        never the system/user text, the answer, the key or the error body)."""
+        from agent_civilization.core import telemetry
+        if not self.api_key and os.environ.get("OPENROUTER_API_KEY"):
+            self.api_key = os.environ["OPENROUTER_API_KEY"]
+        with telemetry.span("llm", "none") as sp:
+            prov = self.provider
+            sp.op = prov
+            sp.set(provider=prov)
+            out = await self._complete(system, prompt, max_tokens, max_wait_s)
+            ok = bool(out.get("ok"))
+            reason = None
+            if not ok:
+                if out.get("busy"):
+                    reason = "busy"
+                elif out.get("error") == PUBLIC_LLM_NO_CONSENT_ERROR:
+                    reason = "no_consent"
+                elif prov == "none":
+                    reason = "not_configured"
+                elif sp.err:
+                    reason = "exception"
+                else:
+                    reason = "provider_error"
+            sp.set(outcome="ok" if ok else ("error" if sp.err else "fail"), model=out.get("model"), reason=reason)
+            return out
+
+    async def _complete(self, system: str, prompt: str, max_tokens: int = 1024,
+                        max_wait_s: float | None = None) -> dict:
         if not self.api_key and os.environ.get("OPENROUTER_API_KEY"):
             self.api_key = os.environ["OPENROUTER_API_KEY"]
         if self.provider == "keyless":
@@ -192,6 +221,8 @@ class LLMClient:
                     # SEC-06 (R-145): provider error bodies may echo user text —
                     # log the status only, never the body content.
                     logger.error("LLM error: HTTP %s (provider response body not logged)", resp.status)
+                    from agent_civilization.core import telemetry
+                    telemetry.annotate(kind="llm", http_status=resp.status)
                     return {
                         "ok": False,
                         "content": "",
@@ -211,6 +242,8 @@ class LLMClient:
             # text — log the exception type only. The message itself is returned
             # to the calling tenant, never logged.
             logger.error("LLM call failed: %s", type(e).__name__)
+            from agent_civilization.core import telemetry
+            telemetry.annotate(kind="llm", error=e)
             return {"ok": False, "content": "", "error": str(e), "model": self.model}
 
     async def close(self):
@@ -328,6 +361,8 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
                     "provider": "keyless", "attempts": attempt}
         except _urlerr.HTTPError as e:
             _keyless_last = _time.monotonic()
+            from agent_civilization.core import telemetry
+            telemetry.annotate(kind="llm", http_status=e.code)   # R-159: status only
             if e.code in (402, 429, 503):
                 keyless_stats["rate_limited"] += 1
                 last_err = f"HTTP {e.code} (rate limited)"

@@ -21,6 +21,7 @@ from typing import Any, Dict, List
 
 from agent_civilization.agents.real.runtime_contract import failure_result
 from agent_civilization.core import experience as _experience
+from agent_civilization.core import telemetry as _telemetry
 from agent_civilization.core.safety import UnsafeURLError  # noqa: F401  (public name kept, R-157)
 # R-104c2: the canonical public messaging API lives in agent_civilization.communication
 from agent_civilization.communication import CommunicationHub
@@ -52,6 +53,14 @@ class SpecialistBackedAgent:
         return type(self.inner).__name__
 
     async def execute(self, work: Dict[str, Any]) -> Dict[str, Any]:
+        # R-159: one `agent` span, same fields as the real runtime (impl differs)
+        with _telemetry.span("agent", self.specialization, impl="specialists", agent=self.name,
+                             specialization=self.specialization) as sp:
+            out = await self._execute(work)
+            sp.set(outcome="ok" if out.get("ok") else "fail")
+            return out
+
+    async def _execute(self, work: Dict[str, Any]) -> Dict[str, Any]:
         started = time.time()
         self.status = "working"
         try:
@@ -78,6 +87,7 @@ class SpecialistBackedAgent:
         except Exception as exc:  # noqa: BLE001
             elapsed = round(time.time() - started, 3)
             self.stats["tasks_failed"] += 1
+            _telemetry.annotate(kind="agent", error=exc)
             self.stats["total_time_s"] += elapsed
             # R-149 (Security QA): an unexpected exception's raw text is not
             # trusted — only its TYPE is reported; UnsafeURLError keeps its

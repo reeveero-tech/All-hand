@@ -1552,10 +1552,17 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
     fn = _HANDLERS.get(specialization)
     if fn is None:
         return None
-    try:
-        return await fn(work or {})
-    except Exception as e:  # noqa: BLE001
-        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+    # R-159: one `tool` span per handler run (the handler is the tool layer;
+    # its name, not its input, is recorded). Result contract unchanged.
+    from agent_civilization.core import telemetry
+    with telemetry.span("tool", specialization, tool=specialization) as sp:
+        try:
+            out = await fn(work or {})
+        except Exception as e:  # noqa: BLE001
+            sp.set(error=e)
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        sp.set(outcome="ok" if isinstance(out, dict) and out.get("ok") else "fail")
+        return out
 
 
 def coverage() -> Dict[str, Any]:

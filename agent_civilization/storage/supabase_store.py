@@ -7,6 +7,7 @@ Uses the REST API (no external SDK needed) via aiohttp.
 """
 
 import base64
+import functools
 from datetime import datetime, timezone
 import json
 import logging
@@ -16,6 +17,7 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 
+from agent_civilization.core import telemetry
 from agent_civilization.core.tenancy import ALL_TENANTS, check_scope
 
 logger = logging.getLogger("storage")
@@ -126,6 +128,10 @@ def _now_iso() -> str:
 
 
 def _record(op: str, ok: bool, reason: Optional[str] = None) -> None:
+    # R-159: the same outcome on the current `storage` span (status code only)
+    m = re.match(r"^HTTP (\d{3})$", reason or "")
+    telemetry.annotate(kind="storage", outcome="ok" if ok else "fail",
+                       http_status=int(m.group(1)) if m else None)
     counters = _STATS["ops"].setdefault(op, {"ok": 0, "failed": 0})
     counters["ok" if ok else "failed"] += 1
     _STATS["last_ok"] = ok
@@ -137,6 +143,22 @@ def _record(op: str, ok: bool, reason: Optional[str] = None) -> None:
 
 def _record_exception(op: str, e: BaseException) -> None:
     _record(op, False, f"exception: {type(e).__name__}")
+    telemetry.annotate(kind="storage", error=e, reason="exception")
+
+
+def _traced(op: str):
+    """R-159: one `storage` span per operation actually attempted (an
+    unconfigured store does nothing and emits nothing). Return value and
+    failure handling are unchanged."""
+    def deco(fn):
+        @functools.wraps(fn)
+        async def wrapper(*args, **kwargs):
+            if not is_configured():
+                return await fn(*args, **kwargs)
+            with telemetry.span("storage", op):
+                return await fn(*args, **kwargs)
+        return wrapper
+    return deco
 
 
 def storage_stats() -> Dict[str, Any]:
@@ -216,6 +238,7 @@ class SupabaseStorage:
             )
         return self._session
 
+    @_traced("insert_task")
     async def insert_task(self, task_id: str, specialization: str, prompt: str, status: str = "queued",
                           *, tenant_id: Optional[str] = None) -> bool:
         """SEC-02: ``tenant_id`` is the owner, fixed at insert (``update_task``
@@ -243,6 +266,7 @@ class SupabaseStorage:
             _record_exception("insert_task", e)
             return False
 
+    @_traced("update_task")
     async def update_task(self, task_id: str, status: str, agent_name: str = None,
                           result: Dict = None, elapsed_s: float = None) -> bool:
         if not is_configured():
@@ -268,6 +292,7 @@ class SupabaseStorage:
             _record_exception("update_task", e)
             return False
 
+    @_traced("get_tasks")
     async def get_tasks(self, limit: int = 50, *, scope=None) -> List[Dict[str, Any]]:
         """SEC-02: rows of ``scope`` only — a tenant id, or ALL_TENANTS for an
         admin. No scope -> no rows (default deny). Untenanted rows (NULL) never
@@ -288,6 +313,7 @@ class SupabaseStorage:
             _record_exception("get_tasks", e)
             return []
 
+    @_traced("get_task")
     async def get_task(self, task_id: str, *, scope=None) -> Optional[Dict[str, Any]]:
         """BUG-04 (R-143): the stored row of ``task_id`` within ``scope`` — a
         tenant id, or ALL_TENANTS for an admin — or None. The tenant filter is
@@ -313,6 +339,7 @@ class SupabaseStorage:
             _record_exception("get_task", e)
             return None
 
+    @_traced("upsert_agent_stats")
     async def upsert_agent_stats(self, agent_name: str, specialization: str,
                                   tasks_completed: int, tasks_failed: int,
                                   total_time_s: float) -> bool:
@@ -345,6 +372,7 @@ class SupabaseStorage:
             _record_exception("upsert_agent_stats", e)
             return False
 
+    @_traced("get_agent_stats")
     async def get_agent_stats(self) -> List[Dict[str, Any]]:
         if not is_configured():
             return []
@@ -361,6 +389,7 @@ class SupabaseStorage:
             _record_exception("get_agent_stats", e)
             return []
 
+    @_traced("insert_event")
     async def insert_event(self, event_type: str, event_data: Dict[str, Any], *,
                            tenant_id: Optional[str] = None) -> bool:
         if not is_configured():
@@ -381,6 +410,7 @@ class SupabaseStorage:
             _record_exception("insert_event", e)
             return False
 
+    @_traced("get_events")
     async def get_events(self, limit: int = 50, *, scope=None) -> List[Dict[str, Any]]:
         """SEC-02: same scoping rule as ``get_tasks``."""
         if not is_configured() or scope is None:
