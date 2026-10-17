@@ -62,3 +62,62 @@ M	docs/governance/ROADMAP.md
 M	docs/governance/SECURITY.md
 M	server.py
 A	tests/test_r159_telemetry.py
+
+## re-run of gates after committing 107 — HEAD 260d75f6f4159fef594dfb45395ac28c84a08426
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests   (ruff 0.17.0, CI scope)
+All checks passed!
+exit=0
+$ ruff check --select F,E722 scripts/build_test_baseline.py
+All checks passed!
+exit=0
+$ python -c "import yaml; yaml.safe_load(.github/workflows/ci.yml)"
+['Set up Python', 'Install dependencies (locked)', 'Run tests (live test suite)', 'Set up Python 3.12 (runtime version)', 'Run tests on Python 3.12', 'Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists']
+exit=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 21, 'A': 12}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0
+$ atomic v1 (run block extracted verbatim from governance-gate.yml)
+Governance gate passed.
+atomic v1 exit=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 33 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+exit=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0
+$ git diff --name-status --no-renames origin/main...HEAD
+M	agent_civilization/agents/external_adapter.py
+M	agent_civilization/agents/real/real_agents.py
+M	agent_civilization/agents/real/specialist_runtime.py
+M	agent_civilization/core/agents/real_dispatcher.py
+M	agent_civilization/core/experience.py
+M	agent_civilization/core/llm.py
+A	agent_civilization/core/telemetry.py
+M	agent_civilization/pipeline/orchestrator.py
+M	agent_civilization/storage/supabase_store.py
+M	agos_kernel/agent_production/memory_system.py
+M	docs/audit/M8/EVIDENCE.md
+M	docs/audit/M8/logs/raw/096_r158_pr_ci_shallow_checkout.log
+A	docs/audit/M8/logs/raw/098_r158_acceptance_main_ci.log
+A	docs/audit/M8/logs/raw/099_r159_r158_closure_check.log
+A	docs/audit/M8/logs/raw/100_r159_fake_postgrest_204_flake.log
+A	docs/audit/M8/logs/raw/101_r159_mutations.log
+A	docs/audit/M8/logs/raw/102_r159_overhead.log
+A	docs/audit/M8/logs/raw/103_r159_local_storage_integration.log
+A	docs/audit/M8/logs/raw/104_r159_pytest_both_modes.log
+A	docs/audit/M8/logs/raw/105_r159_local_gates.log
+A	docs/audit/M8/logs/raw/106_r159_pr_ci_catch_all_route.log
+A	docs/audit/M8/logs/raw/107_r159_pytest_gates_ci_like.log
+M	docs/governance/API.md
+M	docs/governance/CHANGELOG.md
+M	docs/governance/DATA_MODEL.md
+M	docs/governance/DECISIONS.md
+M	docs/governance/OPERATIONS.md
+M	docs/governance/PROJECT_STATE.md
+M	docs/governance/QUALITY.md
+M	docs/governance/ROADMAP.md
+M	docs/governance/SECURITY.md
+M	server.py
+A	tests/test_r159_telemetry.py
