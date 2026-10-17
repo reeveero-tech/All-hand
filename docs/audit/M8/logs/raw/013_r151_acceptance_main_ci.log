@@ -1,0 +1,24 @@
+# 013 R-151 acceptance: PR #162 merged with --merge; CI on main at the merge SHA
+PR #162 MERGED mergedAt=2026-10-17T00:10:17Z merge=646e453cffee2f57b1e901abde236c7748618a2c head=b1cd7509535a41de9d1fe5ff38c3274cbb3ebb4f
+## PR checks:
+publish=skipping
+audit=pass
+build=pass
+docker=pass
+governance=pass
+network=pass
+quality=pass
+storage=pass
+test=pass
+## main push run 38985115300:
+conclusion=success headSha=646e453cffee2f57b1e901abde236c7748618a2c
+test=success
+quality=success
+network=success
+docker=success
+audit=success
+storage=success
+build=success
+publish=skipped
+## manifest re-check on main merge SHA (blobs as committed):
+     23 OK BUILDER_AGENT_ORDER_AR.md

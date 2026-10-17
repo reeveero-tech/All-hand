@@ -1,0 +1,34 @@
+# 016 live trial PR #164 (draft, deletes docs/governance/roadmaps/revival-scale/templates/test_evidence_template.csv), after message fix — governance run 38986696832 MUST FAIL
+head=a440d47b5af148d18acbdd88f35412ac84a27a3f draft=true
+governance=fail
+network=pass
+quality=pass
+test=pending
+## governance job log (filtered):
+No-delete check (R-152)	2026-10-17T00:30:44.9594511Z no-delete check: origin/main...HEAD status counts (no-renames): {'M': 7, 'A': 13, 'D': 1}
+No-delete check (R-152)	2026-10-17T00:30:44.9618894Z ##[error]docs/governance/roadmaps/revival-scale/templates/test_evidence_template.csv deleted — forbidden by D-063 (no delete/move/rename)
+No-delete check (R-152)	2026-10-17T00:30:44.9639128Z ##[error]No-delete gate failed: 1 tracked file(s) deleted, moved or renamed. Repair/upgrade/adapt instead; deletion needs a separate explicit owner authorization (D-063/D-064).
+No-delete check (R-152)	2026-10-17T00:30:44.9649816Z ##[error]Process completed with exit code 1.
+Atomic batch check	2026-10-17T00:30:45.0022888Z changed files:
+Atomic batch check	2026-10-17T00:30:45.0024584Z .github/workflows/governance-gate.yml
+Atomic batch check	2026-10-17T00:30:45.0026650Z docs/audit/M8/logs/raw/013_r151_acceptance_main_ci.log
+Atomic batch check	2026-10-17T00:30:45.0028735Z docs/audit/M8/logs/raw/014_r152_mutation_negative_tests_fail.log
+Atomic batch check	2026-10-17T00:30:45.0030985Z docs/audit/M8/logs/raw/015_r152_historical_deletion_detected.log
+Atomic batch check	2026-10-17T00:30:45.0033320Z docs/audit/M8/logs/raw/016a_r152_live_trial_negative_before_msgfix.log
+Atomic batch check	2026-10-17T00:30:45.0035582Z docs/audit/M8/logs/raw/018_r152_pytest.log
+Atomic batch check	2026-10-17T00:30:45.0037202Z docs/audit/M8/logs/raw/019_r152_ruff.log
+Atomic batch check	2026-10-17T00:30:45.0038826Z docs/audit/M8/logs/raw/020_r152_web_install.log
+Atomic batch check	2026-10-17T00:30:45.0040513Z docs/audit/M8/logs/raw/021_r152_web_build.log
+Atomic batch check	2026-10-17T00:30:45.0042175Z docs/audit/M8/logs/raw/022_r152_root_install.log
+Atomic batch check	2026-10-17T00:30:45.0043863Z docs/audit/M8/logs/raw/023_r152_root_build.log
+Atomic batch check	2026-10-17T00:30:45.0046233Z docs/audit/M8/logs/raw/024_r152_roadmap_audit_selfcheck.log
+Atomic batch check	2026-10-17T00:30:45.0048058Z docs/governance/CHANGELOG.md
+Atomic batch check	2026-10-17T00:30:45.0049422Z docs/governance/DECISIONS.md
+Atomic batch check	2026-10-17T00:30:45.0050794Z docs/governance/GOVERNANCE_GATE.md
+Atomic batch check	2026-10-17T00:30:45.0052235Z docs/governance/PROJECT_STATE.md
+Atomic batch check	2026-10-17T00:30:45.0053640Z docs/governance/QUALITY.md
+Atomic batch check	2026-10-17T00:30:45.0054955Z docs/governance/ROADMAP.md
+Atomic batch check	2026-10-17T00:30:45.0057108Z docs/governance/roadmaps/revival-scale/templates/test_evidence_template.csv
+Atomic batch check	2026-10-17T00:30:45.0059239Z scripts/check_no_delete.py
+Atomic batch check	2026-10-17T00:30:45.0060564Z tests/test_r152_no_delete_gate.py
+Atomic batch check	2026-10-17T00:30:45.0144410Z Governance gate passed.

@@ -18,7 +18,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      # R-152 (D-063/D-064): zero tracked files deleted, moved or renamed in
+      # the PR's net diff (origin/main...HEAD). No in-repo override exists:
+      # owner-authorized deletions need a separate documented decision.
+      - name: No-delete check (R-152)
+        run: python3 scripts/check_no_delete.py origin/main HEAD
+
       - name: Atomic batch check
+        # run even if the no-delete step failed, so both verdicts are reported
+        if: ${{ !cancelled() }}
         run: |
           set -uo pipefail
           CHANGED=$(git diff --name-only origin/main...HEAD)
