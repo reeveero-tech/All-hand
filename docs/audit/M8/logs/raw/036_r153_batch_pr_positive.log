@@ -1,0 +1,16 @@
+# 036 positive: R-153 batch PR #165 — governance run 38988381812 MUST PASS (all three steps)
+head=b0f48f0a2947b7184ea48c52d2d9d7459f01012d
+publish=skipping
+audit=pass
+build=pass
+docker=pass
+governance=pass
+network=pass
+quality=pass
+storage=pass
+test=pass
+## governance job log (emitted results only):
+No-delete check (R-152)	2026-10-17T00:52:48.0959445Z No-delete gate passed: 0 tracked files deleted, moved or renamed.
+Atomic batch check	2026-10-17T00:52:48.1376710Z Governance gate passed.
+Atomic batch check v2 (R-153)	2026-10-17T00:52:48.1788564Z atomic-batch v2: 19 changed file(s) in origin/main...HEAD
+Atomic batch check v2 (R-153)	2026-10-17T00:52:48.1791373Z Atomic batch v2 passed (R0-R6).

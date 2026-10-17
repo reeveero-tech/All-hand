@@ -1,0 +1,28 @@
+# 027 R-152 acceptance: PR #163 merged with --merge; CI on main at the merge SHA
+PR #163 MERGED mergedAt=2026-10-17T00:40:25Z merge=7378357deb13ba2dc1c6c54ba43d1313c4752d07 head=3d7fc1579cbf0cc1d9188ccab7201b25b557a492
+## PR checks:
+publish=skipping
+audit=pass
+build=pass
+docker=pass
+governance=pass
+network=pass
+quality=pass
+storage=pass
+test=pass
+## main push run 38987448882:
+conclusion=success headSha=7378357deb13ba2dc1c6c54ba43d1313c4752d07
+test=success
+quality=success
+network=success
+audit=success
+storage=success
+docker=success
+build=success
+publish=skipped
+## trial PR #164:
+state=CLOSED merged=null
+## gate on main tip (no-delete self-check over the R-152 merge):
+no-delete check: 646e453...7378357 status counts (no-renames): {'M': 8, 'A': 15}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0

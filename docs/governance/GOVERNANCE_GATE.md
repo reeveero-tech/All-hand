@@ -24,6 +24,12 @@
 - **لا استثناء داخل المستودع** (D-064): لا ملف allowlist ولا label ولا نص PR. الحذف المصرّح يحتاج قرار مالك منفصلاً يُدخل آلية مراجَعة في دفعته الخاصة.
 - الاختبارات: `tests/test_r152_no_delete_gate.py` (13، مستودعات git حقيقية) + PR تجريبية حية سالبة (`docs/audit/M8/logs/raw/016`).
 
+## فحص الذرية v2 (R-153، D-065)
+
+- خطوة **Atomic batch check v2 (R-153)** بعد الفحص المضمن v1 (الباقي بلا تغيير): `python3 scripts/check_atomic_batch.py origin/main HEAD`. القواعد: **R0** ROADMAP/PROJECT_STATE/CHANGELOG دائماً؛ **R1** أي تغيير تنفيذي (مسارات v1 + `scripts/`، `.github/`، Docker/Render، `requirements*`، `package(-lock).json`، إعدادات البناء والاختبار، `public/`، `.env.example`، `docs/sql/`) يتطلب دليلاً في `docs/audit/`؛ **R2** API.md؛ **R3** DATA_MODEL.md؛ **R4** QUALITY.md؛ **R5** Python تشغيلي ⇒ تغيير في `tests/`؛ **R6** مصدر `web/` ⇒ تغيير في `web/tests/` أو `tests/`. تُذكر كل المخالفات دفعةً واحدة؛ خطأ git ⇒ rc=2.
+- **حد صادق**: يثبت وجود الاختبارات/الأدلة في الدفعة لا كفايتها؛ `src/` بلا إطار اختبار بعد (R-158).
+- الاختبارات: `tests/test_r153_atomic_batch_v2.py` (54) + إعادة تشغيل تاريخية (`docs/audit/M8/logs/raw/025`) + PR تجريبية حية (`035`).
+
 ## حدود التنفيذ الآلي (للأمانة)
 
 - فحص diff في workflow يتحقق من **الدفعة المجمعة للـ PR**؛ ذرّية كل commit على حدة تتطلب سياسة فريق أو فحص push events — يوثق كحد معروف.
