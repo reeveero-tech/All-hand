@@ -90,10 +90,10 @@ def main(argv: list[str]) -> int:
     for path in res["deleted"]:
         if path in moved_from:
             new, score = moved_from[path]
-            print(f"::error file={path}::renamed/moved to {new} (similarity {score}%)"
+            print(f"::error file={path}::{path} renamed/moved to {new} (similarity {score}%)"
                   " — forbidden by D-063 (no delete/move/rename)")
         else:
-            print(f"::error file={path}::deleted — forbidden by D-063 (no delete/move/rename)")
+            print(f"::error file={path}::{path} deleted — forbidden by D-063 (no delete/move/rename)")
     print(f"::error::No-delete gate failed: {len(res['deleted'])} tracked file(s) "
           "deleted, moved or renamed. Repair/upgrade/adapt instead; deletion needs a "
           "separate explicit owner authorization (D-063/D-064).")
