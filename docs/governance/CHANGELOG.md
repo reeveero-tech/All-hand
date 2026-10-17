@@ -1,5 +1,15 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-17 — R-154 (M8): تعريف حالات العمل وشروط قبول الأدلة (دفعة m8/r154-status-definitions، D-066) + قبول R-153
+
+- **مضاف**: `docs/governance/STATUS_DEFINITIONS.md` — المرجع الملزم: ست حالات (`planned`/`in_progress`/`blocked`/`awaiting_merge`/`done`/`accepted`)، حقول دليل لكل حالة، دورة الحياة، و`production-ready` قرار جاهزية مستقل (R-184 + قرار المالك).
+- **مضاف**: `scripts/check_status_evidence.py` (10 قواعد؛ rc 0/1/2) وخطوة «Status evidence check (R-154)» في job ‏`governance`؛ الخطوات السابقة بلا تغيير.
+- **مصحح**: تناقض R-153 (مدموجة وCI ناجح لكنها `awaiting_merge`) ⇒ `done` بحقول دليل متحققة (`037`)؛ R-151/R-152 حصلتا على حقول الدليل المهيكلة؛ HANDOFF_PROMPT لم يعد يستعمل `ready`/`proposed`؛ فقرة «معنى planned» المؤقتة في ROADMAP تحيل الآن إلى المرجع.
+- **PROJECT_STATE**: جدول «حالة بنود M8» مطابق آلياً لـROADMAP.
+- **اختبارات**: `tests/test_r154_status_evidence.py` ‏(53)؛ طفرات 12/12 مقتولة (`040`).
+- **أدلة**: `037` (قبول R-153)، `038` (الفحص على main قبل الدفعة: 23 مخالفة)، `039` (محاكاة تناقض R-153 الأصلي ⇒ CONTRADICTION)، `040` طفرات، `041`..`047` فحوص الأساس، `048`/`049` PR حية مخالفة تفشل وPR الدفعة تنجح.
+- **وثائق**: DECISIONS (D-066)، GOVERNANCE_GATE، QUALITY، README، HANDOFF_PROMPT، ROADMAP، PROJECT_STATE.
+
 ## 2026-10-17 — R-153 (M8): فحص الذرية v2 (دفعة m8/r153-atomic-batch-v2، D-065) + قبول R-152
 
 - **مضاف**: `scripts/check_atomic_batch.py` (القواعد R0..R6؛ كل المخالفات معاً؛ خطأ git rc=2)، وخطوة «Atomic batch check v2 (R-153)» في job ‏`governance`. الفحص المضمن v1 وخطوة عدم الحذف بلا تغيير.

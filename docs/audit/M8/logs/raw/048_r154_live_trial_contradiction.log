@@ -1,0 +1,10 @@
+# 048 live trial PR #168 (draft): original R-153 contradiction restored (R-153 awaiting_merge pr=#165, PROJECT_STATE table consistent) — Status evidence check MUST FAIL, other governance steps pass
+trial head=cf1361a95ccc96ccfda55d63eae4adcfffdb9e3a
+governance run 38992987707 headSha=cf1361a95ccc96ccfda55d63eae4adcfffdb9e3a conclusion=failure
+## governance job log (emitted results only):
+No-delete check (R-152)	2026-10-17T01:57:21.1579942Z No-delete gate passed: 0 tracked files deleted, moved or renamed.
+Atomic batch check	2026-10-17T01:57:21.2083311Z Governance gate passed.
+Atomic batch check v2 (R-153)	2026-10-17T01:57:21.2575633Z Atomic batch v2 passed (R0-R6).
+Status evidence check (R-154)	2026-10-17T01:57:21.3401503Z ##[error]R-153: CONTRADICTION — PR #165 is already merged (a34dc77) but status is still awaiting_merge; record acceptance (done)
+Status evidence check (R-154)	2026-10-17T01:57:21.3413899Z ##[error]Status evidence check failed: 1 violation(s) (D-066).
+Status evidence check (R-154)	2026-10-17T01:57:21.3432346Z ##[error]Process completed with exit code 1.

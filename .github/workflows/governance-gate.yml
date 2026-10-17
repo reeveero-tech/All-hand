@@ -71,3 +71,10 @@ jobs:
       - name: Atomic batch check v2 (R-153)
         if: ${{ !cancelled() }}
         run: python3 scripts/check_atomic_batch.py origin/main HEAD
+
+      # R-154 (D-066): status vocabulary + evidence sufficiency for ROADMAP
+      # items (docs/governance/STATUS_DEFINITIONS.md §3). Needs full history
+      # (fetch-depth: 0 above) to verify merge_sha^2 == tested_sha.
+      - name: Status evidence check (R-154)
+        if: ${{ !cancelled() }}
+        run: python3 scripts/check_status_evidence.py .

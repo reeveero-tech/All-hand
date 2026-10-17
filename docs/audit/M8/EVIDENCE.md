@@ -90,3 +90,39 @@
 ### حدود صادقة
 - يثبت **وجود** اختبارات/أدلة في الدفعة لا **كفايتها**؛ `src/` بلا إطار اختبار بعد (R-158)؛ الفحص على diff الـPR الصافي.
 - R-153 يتحول إلى done داخل دفعة R-154 بعد التحقق من CI على SHA الدمج.
+
+### قبول R-153 (سُجل داخل دفعة R-154)
+- PR #165 مدموجة بـ`--merge`؛ SHA الدمج `a34dc77c6eca7912f2e6e4258ecd5a1a081a3e0a`، أبوه الثاني = رأس الـPR المختبر `805ce218b9e219e337932af3c240747750b7e2a0`؛ فحوص الـPR كلها pass؛ CI على main عند SHA الدمج (التشغيل [38989224464](https://github.com/reeveero-tech/All-hand/actions/runs/38989224464)) كل الوظائف success؛ PR التجريبية #166 مغلقة بلا دمج — `logs/raw/037_r153_acceptance_main_ci.log`. كان هذا التناقض («مدموجة ولا تزال awaiting_merge») هو ما عالجته R-154.
+
+## R-154 — تعريف حالات العمل وشروط قبول الأدلة (2026-10-17، دفعة m8/r154-status-definitions، D-066)
+
+### ما تغيّر
+- **مضاف**: `docs/governance/STATUS_DEFINITIONS.md`، `scripts/check_status_evidence.py`، `tests/test_r154_status_evidence.py` (53).
+- **معدّل**: `.github/workflows/governance-gate.yml` (خطوة «Status evidence check (R-154)» مضافة؛ الثلاث السابقة بلا تغيير)، ROADMAP (حقول دليل R-151..R-153، R-153 done، R-154 awaiting_merge، فقرة الحالات)، PROJECT_STATE (جدول «حالة بنود M8»)، CHANGELOG، DECISIONS (D-066)، GOVERNANCE_GATE، QUALITY، README، HANDOFF_PROMPT.
+
+### الحالة قبل/بعد
+| البند | قبل | بعد |
+|---|---|---|
+| R-151 | done (أدلة نثرية) | done + حقول مهيكلة متحققة (PR #162، `646e453`، CI 38985115300) |
+| R-152 | done (أدلة نثرية) | done + حقول مهيكلة متحققة (PR #163، `7378357`، CI 38987448882) |
+| R-153 | **awaiting_merge رغم الدمج** (تناقض) | done + حقول مهيكلة متحققة (PR #165، `a34dc77`، CI 38989224464) |
+| R-154 | planned | awaiting_merge (PR #167) |
+
+### الأدلة
+| الفحص | النتيجة | السجل |
+|---|---|---|
+| الفحص الجديد على حالة main قبل الدفعة | rc=1، 23 مخالفة (حقول R-151/R-152 الناقصة، R-153 بلا pr/branch، جدول PROJECT_STATE غائب) | `logs/raw/038_r154_check_before.log` |
+| محاكاة تناقض R-153 الأصلي (worktree على `a34dc77` + التزام لاحق) | `CONTRADICTION — PR #165 is already merged`؛ وعلى التزام الدمج نفسه صفر تناقض (الاستثناء) | `logs/raw/039_r154_r153_contradiction_simulation.log` |
+| طفرات (12: كل قاعدة + خطأ git = نجاح) | 12/12 مقتولة | `logs/raw/040_r154_mutation_tests.log` |
+| pytest tests/ | 967 ناجح + 4 متخطى (R-042 live storage — job ‏storage) + 4 مستبعد (network — job ‏network)، rc=0 | `logs/raw/041_r154_pytest.log` |
+| ruff F,E722 (+ سكربتات البوابة الثلاثة) | صفر | `logs/raw/042_r154_ruff.log` |
+| بناء web/ والجذر | rc=0 ×4 | `logs/raw/043`..`046` |
+| فحص ذاتي + عدّاد الخارطة | الفحص الجديد pass؛ 179 بنداً: 148 done + 1 awaiting_merge + 30 planned | `logs/raw/047_r154_selfcheck.log` |
+| **PR تجريبية حية مخالفة** #168 (إعادة تناقض R-153) | عدم الحذف وv1 وv2 pass، **Status evidence check fail (CONTRADICTION)**؛ أُغلقت بلا دمج | `logs/raw/048_r154_live_trial_contradiction.log` |
+| **PR الدفعة** #167 | governance pass بالخطوات الأربع، كل الفحوص pass | `logs/raw/049_r154_batch_pr_positive.log` |
+
+### حدود صادقة
+- البوابة لا تستعلم GitHub API: نتيجة `ci_run` تُثبت بمحتوى سجل القبول المرفوع (يمكن نظرياً كتابة سجل كاذب — يكشفه المراجع بـ`gh run view`؛ ربط git `merge_sha^2 = tested_sha` يُتحقق منه فعلاً).
+- لا حكم على كفاية الاختبارات علمياً (للمراجعة والطفرات)؛ بنود R-001..R-150 تُفحص مفرداتها فقط؛ النص النثري في PROJECT_STATE لا يُفحص (المرجع جدول M8).
+- `production-ready` غير مُعلن ولا يُعلن قبل R-184 وقرار المالك.
+- R-154 يتحول إلى done في الدفعة التالية؛ القاعدة 8 ستفرض ذلك آلياً.
