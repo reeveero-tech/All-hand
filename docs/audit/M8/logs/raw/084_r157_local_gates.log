@@ -52,3 +52,59 @@ A	docs/governance/roadmaps/revival-scale/maps/CAPABILITY_CONTRACTS_228b956.md
 M	docs/governance/roadmaps/revival-scale/maps/README.md
 M	server.py
 A	tests/test_r157_contract_parity.py
+
+## re-run after committing 084 itself — HEAD c4ab02a96083ac43901401f0b978b79b39cd3759
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests   (ruff 0.17.0, CI scope)
+All checks passed!
+exit=0
+$ python -m py_compile <changed .py>
+exit=0
+$ python -c "import server" (AGOS_ENV=test) for both runtimes
+2026-10-17 05:10:45,381 - agos.server - INFO - Civilization initialized: 20 specializations, 1000 civilization agents - <module>:305
+2026-10-17 05:10:45,381 - agos.server - INFO - External agents loaded: 0 - <module>:307
+real 1000 agents
+2026-10-17 05:10:45,931 - agos.server - INFO - Civilization initialized: 20 specializations, 1000 civilization agents - <module>:305
+2026-10-17 05:10:45,931 - agos.server - INFO - External agents loaded: 0 - <module>:307
+specialists 1000 agents
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 14, 'A': 14}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0
+$ atomic v1 (same shell rules as governance-gate.yml)
+atomic v1 exit=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 28 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+exit=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0
+$ git diff --name-status origin/main...HEAD
+M	agent_civilization/agents/real/real_agents.py
+A	agent_civilization/agents/real/runtime_contract.py
+M	agent_civilization/agents/real/specialist_runtime.py
+M	agos_kernel/infrastructure/health.py
+M	docs/audit/M8/EVIDENCE.md
+A	docs/audit/M8/logs/raw/074_r156_acceptance_main_ci.log
+A	docs/audit/M8/logs/raw/075_r157_r156_closure_check.log
+A	docs/audit/M8/logs/raw/076_r157_runtime_parity_before.log
+A	docs/audit/M8/logs/raw/077_r157_health_views_before.log
+A	docs/audit/M8/logs/raw/078_r157_mutation_run1.log
+A	docs/audit/M8/logs/raw/079_r157_mutation_run2.log
+A	docs/audit/M8/logs/raw/080_r157_live_server_check.log
+A	docs/audit/M8/logs/raw/081_r157_specialists_mode_suites.log
+A	docs/audit/M8/logs/raw/082_r157_frontend_builds.log
+A	docs/audit/M8/logs/raw/083_r157_pytest.log
+A	docs/audit/M8/logs/raw/084_r157_local_gates.log
+M	docs/governance/API.md
+M	docs/governance/CHANGELOG.md
+M	docs/governance/DECISIONS.md
+M	docs/governance/OPEN_QUESTIONS.md
+M	docs/governance/PROJECT_STATE.md
+M	docs/governance/QUALITY.md
+M	docs/governance/README.md
+M	docs/governance/ROADMAP.md
+A	docs/governance/roadmaps/revival-scale/maps/CAPABILITY_CONTRACTS_228b956.md
+M	docs/governance/roadmaps/revival-scale/maps/README.md
+M	server.py
+A	tests/test_r157_contract_parity.py
