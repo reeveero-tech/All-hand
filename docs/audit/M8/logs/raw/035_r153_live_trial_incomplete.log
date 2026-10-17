@@ -1,0 +1,20 @@
+# 035 live trial PR #166 (draft): scripts/ + workflow + ROADMAP/PROJECT_STATE/CHANGELOG/QUALITY, NO docs/audit — v1 expected PASS, v2 MUST FAIL (R1)
+trial head=2c9d0825853edaa481b7d2636f5c797e5c62c4d3
+governance run 38988380227 headSha=2c9d0825853edaa481b7d2636f5c797e5c62c4d3 conclusion=failure
+## trial diff vs main:
+M	.github/workflows/governance-gate.yml
+M	docs/governance/CHANGELOG.md
+M	docs/governance/PROJECT_STATE.md
+M	docs/governance/QUALITY.md
+M	docs/governance/ROADMAP.md
+A	scripts/check_atomic_batch.py
+## governance job log (emitted results only; echoed script source filtered):
+No-delete check (R-152)	2026-10-17T00:52:47.6064816Z No-delete gate passed: 0 tracked files deleted, moved or renamed.
+Atomic batch check	2026-10-17T00:52:47.6414029Z Governance gate passed.
+Atomic batch check v2 (R-153)	2026-10-17T00:52:47.6746048Z atomic-batch v2: 6 changed file(s) in origin/main...HEAD
+Atomic batch check v2 (R-153)	2026-10-17T00:52:47.6768883Z ##[error]R1 executable change without evidence under docs/audit/: .github/workflows/governance-gate.yml, scripts/check_atomic_batch.py
+Atomic batch check v2 (R-153)	2026-10-17T00:52:47.6781635Z ##[error]Atomic batch v2 failed: 1 rule(s) violated (D-065). Add the missing docs/evidence/tests to the SAME PR.
+Atomic batch check v2 (R-153)	2026-10-17T00:52:47.6796521Z ##[error]Process completed with exit code 1.
+## note: first push of this trial accidentally included log 034 (would have satisfied R1); it was removed from the trial branch before this run (commit 'drop accidentally included evidence file').
+2c9d082 R-153 TRIAL: drop accidentally included evidence file (trial must have NO docs/audit)
+090df6d R-153 TRIAL (do not merge): scripts/ + CI change with docs but WITHOUT docs/audit evidence
