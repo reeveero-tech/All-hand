@@ -5,8 +5,8 @@
 2026-10-17T07:17:24.6752315Z FAILED tests/test_r158_test_baseline.py::test_baseline_is_for_the_base_sha_and_covers_every_file_exactly_once - subprocess.CalledProcessError: Command '['git', '-C', '/home/runner/work/All-hand/All-hand', 'ls-tree', '-r', '-z', '--name-only', '573793c1f36afd77f3b79247ab9e2d978a397b62']' returned non-zero exit status 128.
 2026-10-17T07:17:24.6754958Z ===== 1 failed, 1097 passed, 4 skipped, 4 deselected in 118.93s (0:01:58) ======
 ## cause: actions/checkout@v7 default fetch-depth=1 -> commit 573793c is absent; the test called git ls-tree <base sha> (exit 128). Test-design defect (only local full clones had the object), not a baseline defect.
-## also: CI 39012554848 + governance 39012554889 on 9cc76bc failed (pushed before the PR number existed: pr=#PRNUM placeholder rejected by the status check, as designed); superseded by 6d424c2 (governance 39012932089 success).
-2026-10-17T07:09:12.4036187Z ##[error]R-158: pr must look like #N, got '#PRNUM'
+## also: CI 39012554848 + governance 39012554889 on 9cc76bc failed (pushed before the PR number existed: pr=#173 placeholder rejected by the status check, as designed); superseded by 6d424c2 (governance 39012932089 success).
+2026-10-17T07:09:12.4036187Z ##[error]R-158: pr must look like #N, got '#173'
 2026-10-17T07:09:12.4045935Z ##[error]Status evidence check failed: 1 violation(s) (D-066).
 2026-10-17T07:09:12.4069607Z ##[error]Process completed with exit code 1.
 ## reproduction (before fix) in a depth-1 clone

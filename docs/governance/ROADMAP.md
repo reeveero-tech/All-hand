@@ -1601,7 +1601,7 @@
 
 #### R-159 — مقاييس موحدة وآمنة
 - الحالة: **awaiting_merge**
-- أدلة الحالة (R-154): branch=m8/r159-observability | pr=#PRNUM
+- أدلة الحالة (R-154): branch=m8/r159-observability | pr=#173
 - **المخرجات (دفعة m8/r159-observability، D-071)**: وحدة `agent_civilization/core/telemetry.py` توفر trace لكل طلب HTTP، وspans لثمانية أنواع (`http`، `task`، `workflow`، `agent`، `tool`، `memory`، `llm`، `storage`) تُفتح في مواقع التشغيل الفعلية. ينتج كل span سجلاً منظماً بمخطط ثابت `agos.telemetry/1`، وسلسلتين في `/metrics` هما `agos_ops_total{kind,op,outcome}` و`agos_op_duration_seconds{kind,op}`.
   - **التنقيح**: الحقول مقيدة بقائمة مسموحات، والقيم النصية بنمط معرّفات وإلا تُستبدل بـ`<redacted>`. الأخطاء تُسجل بنوعها فقط، والمستأجر باسم مستعار HMAC.
   - **المقاييس**: لا تُستخدم `trace_id` أو `task_id` أو المستأجر كوسوم أبداً، وقيم `op` محدودة.
