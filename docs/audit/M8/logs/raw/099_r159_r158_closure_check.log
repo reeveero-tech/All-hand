@@ -1,0 +1,7 @@
+# 099 R-159 batch: status evidence check after R-158 -> done (before any R-159 work) — HEAD 7aa5ed6d179b6bce0358e0912b8f353bead3bfd5 + working-tree edits to ROADMAP/PROJECT_STATE, 2026-10-17T07:54:58Z
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0
+$ M8 status table vs ROADMAP (R-151..R-184)
+items compared: 34 mismatches: []
+R-157 done done | R-158 done done | R-159 planned planned

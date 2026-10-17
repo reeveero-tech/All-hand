@@ -1,0 +1,64 @@
+# 098 R-158 acceptance: PR #172 merged with --merge; CI on main at the merge SHA itself (recorded inside the R-159 batch, 2026-10-17T07:54:21Z)
+pr=#172
+state=MERGED mergedAt=2026-10-17T07:31:55Z
+pr_head=ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d
+pr_merge_commit=7aa5ed6d179b6bce0358e0912b8f353bead3bfd5
+tested_sha=ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d
+merge_sha=7aa5ed6d179b6bce0358e0912b8f353bead3bfd5
+git: merge^1=573793c1f36afd77f3b79247ab9e2d978a397b62 merge^2=ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d subject=Merge pull request #172 from reeveero-tech/m8/r158-test-baseline
+newer PRs after #172: 172 is the latest PR number
+## main push run (gh run view 39013981294):
+ci_run=39013981294
+ci_conclusion=success
+event=push headSha=7aa5ed6d179b6bce0358e0912b8f353bead3bfd5
+url=https://github.com/reeveero-tech/All-hand/actions/runs/39013981294
+job test=success
+job quality=success
+job network=success
+job audit=success
+job build=success
+job storage=success
+job docker=success
+job publish=skipped
+note: publish=skipped is NOT a deployment success (D-011).
+## test job steps:
+  Set up job: success
+  Run actions/checkout@v7: success
+  Set up Python: success
+  Install dependencies (locked): success
+  Run tests (live test suite): success
+  Set up Python 3.12 (runtime version): success
+  Run tests on Python 3.12: success
+  Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists: success
+  Post Set up Python 3.12 (runtime version): success
+  Post Set up Python: success
+  Post Run actions/checkout@v7: success
+  Complete job: success
+## verbatim pytest result lines from the CI log of run 39013981294 (merge SHA):
+  test	Run tests (live test suite)	2026-10-17T07:34:12.7897979Z ========== 1098 passed, 4 skipped, 4 deselected in 119.06s (0:01:59) ===========
+  test	Run tests on Python 3.12	2026-10-17T07:36:14.3385916Z ========== 1098 passed, 4 skipped, 4 deselected in 108.59s (0:01:48) ===========
+  test	Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists	2026-10-17T07:38:19.3713037Z ========== 1098 passed, 4 skipped, 4 deselected in 120.60s (0:02:00) ===========
+  network	Live network tests	2026-10-17T07:32:31.7760823Z ====================== 4 passed, 1102 deselected in 3.91s ======================
+  storage	Verify storage layer + server end-to-end	2026-10-17T07:38:57.6234261Z ============================== 4 passed in 1.50s ===============================
+## python versions in test job:
+tests=1098 passed, 4 skipped, 4 deselected (each of the 3 pytest steps above; the step 'Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists' = 1098 passed, 4 skipped, 4 deselected)
+skipped=4 skipped = tests/test_r042_live_storage.py (needs R042_LIVE=1) — executed in job storage of run 39013981294 (4 passed); 4 deselected = network marker — executed in job network of the same run (4 passed, 1102 deselected)
+## PR runs on the tested head ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d:
+  39013490808 AGOS Kernel CI/CD pull_request ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d success
+  39013490844 Governance Gate pull_request ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d success
+## governance steps of 39013490844:
+  Set up job: success
+  Run actions/checkout@v7: success
+  No-delete check (R-152): success
+  Atomic batch check: success
+  Atomic batch check v2 (R-153): success
+  Status evidence check (R-154): success
+  Post Run actions/checkout@v7: success
+  Complete job: success
+untested=CI does not run tsc on src/ (G-158-2); no local Docker build, no Render verification, no paid LLM, no cloud Supabase, no load; Q-002 open; G-157-1/2/3/4/6 and G-158-1..8 open; no production readiness or capacity targets.
+status: R-158 -> done (not accepted: no explicit owner acceptance decision). Results of snapshot 573793c (088-091) are baseline results, NOT CI results of this merge.
+## python versions in test job (the grep above printed nothing; corrected grep on the same CI log):
+  (second grep also printed nothing: grep -E does not interpret \t; third grep with grep -P on the same CI log, run 39013981294:)
+  test	Run tests (live test suite)	2026-10-17T07:32:13.2757664Z platform linux -- Python 3.11.17, pytest-9.1.1, pluggy-1.7.0 -- /opt/hostedtoolcache/Python/3.11.17/x64/bin/python
+  test	Run tests on Python 3.12	2026-10-17T07:34:27.9102000Z platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+  test	Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists	2026-10-17T07:36:16.2949056Z platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0

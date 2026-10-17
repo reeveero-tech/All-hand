@@ -19,7 +19,7 @@
 | R-155 | `done` |
 | R-156 | `done` |
 | R-157 | `done` |
-| R-158 | `awaiting_merge` |
+| R-158 | `done` |
 | R-159 | `planned` |
 | R-160 | `planned` |
 | R-161 | `planned` |
