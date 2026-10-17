@@ -1,0 +1,21 @@
+# 017 positive: R-152 batch PR #163 — governance run 38986694681 MUST PASS (both steps)
+head=a1320a928f21347dc2e378755b1a1af105dc2df2
+publish=skipping
+audit=pass
+build=pass
+docker=pass
+governance=pass
+network=pass
+quality=pass
+storage=pass
+test=pass
+## governance job log (filtered):
+No-delete check (R-152)	2026-10-17T00:30:42.4799305Z no-delete check: origin/main...HEAD status counts (no-renames): {'M': 7, 'A': 13}
+No-delete check (R-152)	2026-10-17T00:30:42.4831829Z No-delete gate passed: 0 tracked files deleted, moved or renamed.
+Atomic batch check	2026-10-17T00:30:42.4919922Z ^[[36;1m  echo "::error::Atomic batch rule violated: these mandatory docs must be updated in the same PR: ${MISSING[*]}"^[[0m
+Atomic batch check	2026-10-17T00:30:42.4929387Z ^[[36;1m    || { echo "::error::Code changed without evidence in docs/audit/"; exit 1; }^[[0m
+Atomic batch check	2026-10-17T00:30:42.4935066Z ^[[36;1m    || { echo "::error::API changed without docs/governance/API.md"; exit 1; }^[[0m
+Atomic batch check	2026-10-17T00:30:42.4940302Z ^[[36;1m    || { echo "::error::Storage changed without docs/governance/DATA_MODEL.md"; exit 1; }^[[0m
+Atomic batch check	2026-10-17T00:30:42.4945485Z ^[[36;1m    || { echo "::error::CI changed without docs/governance/QUALITY.md"; exit 1; }^[[0m
+Atomic batch check	2026-10-17T00:30:42.4948241Z ^[[36;1mecho "Governance gate passed."^[[0m
+Atomic batch check	2026-10-17T00:30:42.5204151Z Governance gate passed.
