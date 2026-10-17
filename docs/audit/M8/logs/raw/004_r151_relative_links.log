@@ -1,0 +1,24 @@
+checked docs/governance/ROADMAP.md
+checked docs/governance/README.md
+checked docs/governance/PROJECT_CHARTER.md
+checked docs/governance/QUALITY.md
+checked docs/governance/roadmaps/revival-scale/README_AR.md
+checked docs/governance/roadmaps/revival-scale/REFERENCES_AR.md
+checked docs/governance/roadmaps/revival-scale/BUILDER_AGENT_ORDER_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/P1_REPOSITORY_REVIVAL_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/MILLION_TASK_CAPACITY_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/P7_RELEASE_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/P5_TOOL_ECOSYSTEM_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/P2_OBSERVABILITY_CONTRACTS_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/NO_DELETE_FILE_AUDIT_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/P6_EXTREME_TESTING_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/P0_GOVERNANCE_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/ATOMIC_BATCH_RULE_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/LLM_QUALITY_HALLUCINATION_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/P4_MEMORY_QUALITY_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/P3_AGENT_COORDINATION_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/MASTER_ROADMAP_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/TEST_MATRIX_AR.md
+checked docs/governance/roadmaps/revival-scale/roadmap/10K_TOOLS_SPEC_AR.md
+checked docs/governance/roadmaps/revival-scale/templates/batch_acceptance_checklist.md
+RESULT relative links ok=81 broken=0

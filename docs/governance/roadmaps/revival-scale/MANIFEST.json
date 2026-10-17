@@ -1,0 +1,123 @@
+{
+  "package": "AGOS Revival + Extreme Testing Roadmap",
+  "language": "Arabic (technical identifiers preserved)",
+  "created_date": "2026-10-17",
+  "repository_target": "reeveero-tech/All-hand",
+  "files": [
+    {
+      "path": "BUILDER_AGENT_ORDER_AR.md",
+      "bytes": 7021,
+      "sha256": "b510a260ae7e31ed9946107c4167abbb4af751756db16edbf29b157ca7803618"
+    },
+    {
+      "path": "README_AR.md",
+      "bytes": 6018,
+      "sha256": "e47e0d356e1fe27be8137580a5bec8726892bc16fce9c6bf73d2711dbda7b2e6"
+    },
+    {
+      "path": "REFERENCES_AR.md",
+      "bytes": 3122,
+      "sha256": "209fb39ce74ed96ab1150029cbcc3dcc2eae583ea270b7d95a9273a8c13a9f50"
+    },
+    {
+      "path": "roadmap/10K_TOOLS_SPEC_AR.md",
+      "bytes": 5753,
+      "sha256": "0747a2e40cc3dba4a15fa130d6a690808ab91ed229d9ed9b5db67f221e7ff638"
+    },
+    {
+      "path": "roadmap/ATOMIC_BATCH_RULE_AR.md",
+      "bytes": 2907,
+      "sha256": "9be0c066f75b79cc7e2ea04985b16fd045493a9ba7b60f1681090c32e2036c7e"
+    },
+    {
+      "path": "roadmap/LLM_QUALITY_HALLUCINATION_AR.md",
+      "bytes": 4706,
+      "sha256": "297a70c671f5262c3bcc24147fda61d000939633ac3e531e34da538adafb1578"
+    },
+    {
+      "path": "roadmap/MASTER_ROADMAP_AR.md",
+      "bytes": 19057,
+      "sha256": "f20e801007e747681975246afb9c904d0e99268857ded77de66ff611eb448b28"
+    },
+    {
+      "path": "roadmap/MILLION_TASK_CAPACITY_AR.md",
+      "bytes": 5016,
+      "sha256": "3c6dcbaf0aafaa199b47aa40ff1ccb193a27b4cd32cf73dac6a70dec54fe4dac"
+    },
+    {
+      "path": "roadmap/NO_DELETE_FILE_AUDIT_AR.md",
+      "bytes": 4506,
+      "sha256": "9014b8b73a932a2d38a0929d761a942981f124c85356d1a945349587a733ed3c"
+    },
+    {
+      "path": "roadmap/P0_GOVERNANCE_AR.md",
+      "bytes": 2179,
+      "sha256": "c63ed906b4e74e879094228607703001fef818abdf38f3a4aac961c30d64b8d9"
+    },
+    {
+      "path": "roadmap/P1_REPOSITORY_REVIVAL_AR.md",
+      "bytes": 1884,
+      "sha256": "3b628535e6d00c67939872b4507f8bb7d147793c7b54846e59eb5921ea753419"
+    },
+    {
+      "path": "roadmap/P2_OBSERVABILITY_CONTRACTS_AR.md",
+      "bytes": 1350,
+      "sha256": "731b508897e68ea20cc7af0d3696c45dd32fe01b67fbd316ea834e649ceeac5a"
+    },
+    {
+      "path": "roadmap/P3_AGENT_COORDINATION_AR.md",
+      "bytes": 2361,
+      "sha256": "01a0463ea47d6723c5bdca535ab52ada9564d2b3c2f12fadf414257e04136a5b"
+    },
+    {
+      "path": "roadmap/P4_MEMORY_QUALITY_AR.md",
+      "bytes": 2063,
+      "sha256": "34057161d1caacf93671c7661f2bbfc6b579b0c760a88798dac833659093c584"
+    },
+    {
+      "path": "roadmap/P5_TOOL_ECOSYSTEM_AR.md",
+      "bytes": 2508,
+      "sha256": "6e16cf6f91ccc4318c9e6cd715022a6f814ce1048f8e2c087a943dfc364275cb"
+    },
+    {
+      "path": "roadmap/P6_EXTREME_TESTING_AR.md",
+      "bytes": 3290,
+      "sha256": "ad2167075577ccf039d23a9c0161844b4464bf8d9802f7386f351a6ae01de54e"
+    },
+    {
+      "path": "roadmap/P7_RELEASE_AR.md",
+      "bytes": 1819,
+      "sha256": "f01a36fa68db1fe3056b28f4992bb33725de8a404c6454f2456b6d3b6fe0f43e"
+    },
+    {
+      "path": "roadmap/TEST_MATRIX_AR.md",
+      "bytes": 4942,
+      "sha256": "148bdd9e14b3db3c5193d2e8d3aa041d813e5e801ab5aec725f634a1e6dd29ba"
+    },
+    {
+      "path": "specs/tool_registry_contract.schema.json",
+      "bytes": 2785,
+      "sha256": "7a34b2c0d8a976c04b07bfa43decbcfc6579693cd11cd71f843923f9a87ecb58"
+    },
+    {
+      "path": "templates/batch_acceptance_checklist.md",
+      "bytes": 1498,
+      "sha256": "4adda6b15635d44989ec593e4f242ed9d8d5683a38e22f9d26609a2fa5136e58"
+    },
+    {
+      "path": "templates/file_inventory_template.csv",
+      "bytes": 370,
+      "sha256": "e5fc86c68612c6a392cb25c6b6e4760d8ab198de82059006ca3e196925713af7"
+    },
+    {
+      "path": "templates/test_evidence_template.csv",
+      "bytes": 359,
+      "sha256": "41786b73ab63ec62adbd22633ff2fb7db2d3874ea3741490095484833cbb12ed"
+    },
+    {
+      "path": "templates/tool_registry_seed.json",
+      "bytes": 1626,
+      "sha256": "5f0787bf1a1b31577f1f4b842a1b607c58161a587a763f0c1448181265c0c52f"
+    }
+  ]
+}

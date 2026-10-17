@@ -1,0 +1,51 @@
+# 005 roadmap audit 2026-10-17T00:03:19Z
+item headings: 179
+duplicate ids: none
+  not done: R-151 -> awaiting_merge
+  not done: R-152 -> planned
+  not done: R-153 -> planned
+  not done: R-154 -> planned
+  not done: R-155 -> planned
+  not done: R-156 -> planned
+  not done: R-157 -> planned
+  not done: R-158 -> planned
+  not done: R-159 -> planned
+  not done: R-160 -> planned
+  not done: R-161 -> planned
+  not done: R-162 -> planned
+  not done: R-163 -> planned
+  not done: R-164 -> planned
+  not done: R-165 -> planned
+  not done: R-166 -> planned
+  not done: R-167 -> planned
+  not done: R-168 -> planned
+  not done: R-169 -> planned
+  not done: R-170 -> planned
+  not done: R-171 -> planned
+  not done: R-172 -> planned
+  not done: R-173 -> planned
+  not done: R-174 -> planned
+  not done: R-175 -> planned
+  not done: R-176 -> planned
+  not done: R-177 -> planned
+  not done: R-178 -> planned
+  not done: R-179 -> planned
+  not done: R-180 -> planned
+  not done: R-181 -> planned
+  not done: R-182 -> planned
+  not done: R-183 -> planned
+  not done: R-184 -> planned
+status counts: {'done': 145, 'awaiting_merge': 1, 'planned': 33}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 8667
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (8457ad3..HEAD): []
+  not in ROADMAP: none
+  R-151: roadmap=yes changelog=yes
+exit=0

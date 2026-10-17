@@ -1,0 +1,52 @@
+# 003 git diff --cached --name-status -M origin/main 2026-10-17T00:05:40Z
+A	docs/audit/M8/EVIDENCE.md
+A	docs/audit/M8/logs/raw/001_r151_base_state.log
+A	docs/audit/M8/logs/raw/002_r151_manifest_sha256.log
+A	docs/audit/M8/logs/raw/004_r151_relative_links.log
+A	docs/audit/M8/logs/raw/005_r151_roadmap_audit.log
+A	docs/audit/M8/logs/raw/006_r151_pytest.log
+A	docs/audit/M8/logs/raw/007_r151_ruff.log
+A	docs/audit/M8/logs/raw/008_r151_web_install.log
+A	docs/audit/M8/logs/raw/009_r151_web_build.log
+A	docs/audit/M8/logs/raw/010_r151_root_install.log
+A	docs/audit/M8/logs/raw/011_r151_root_build.log
+A	docs/audit/M8/logs/raw/012_r151_environment.log
+M	docs/governance/CHANGELOG.md
+M	docs/governance/DECISIONS.md
+M	docs/governance/HANDOFF_PROMPT.md
+M	docs/governance/OPEN_QUESTIONS.md
+M	docs/governance/OPERATIONS.md
+M	docs/governance/PROJECT_CHARTER.md
+M	docs/governance/PROJECT_STATE.md
+M	docs/governance/QUALITY.md
+M	docs/governance/README.md
+M	docs/governance/RISKS.md
+M	docs/governance/ROADMAP.md
+A	docs/governance/roadmaps/revival-scale/BUILDER_AGENT_ORDER_AR.md
+A	docs/governance/roadmaps/revival-scale/MANIFEST.json
+A	docs/governance/roadmaps/revival-scale/README_AR.md
+A	docs/governance/roadmaps/revival-scale/REFERENCES_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/10K_TOOLS_SPEC_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/ATOMIC_BATCH_RULE_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/LLM_QUALITY_HALLUCINATION_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/MASTER_ROADMAP_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/MILLION_TASK_CAPACITY_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/NO_DELETE_FILE_AUDIT_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/P0_GOVERNANCE_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/P1_REPOSITORY_REVIVAL_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/P2_OBSERVABILITY_CONTRACTS_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/P3_AGENT_COORDINATION_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/P4_MEMORY_QUALITY_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/P5_TOOL_ECOSYSTEM_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/P6_EXTREME_TESTING_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/P7_RELEASE_AR.md
+A	docs/governance/roadmaps/revival-scale/roadmap/TEST_MATRIX_AR.md
+A	docs/governance/roadmaps/revival-scale/specs/tool_registry_contract.schema.json
+A	docs/governance/roadmaps/revival-scale/templates/batch_acceptance_checklist.md
+A	docs/governance/roadmaps/revival-scale/templates/file_inventory_template.csv
+A	docs/governance/roadmaps/revival-scale/templates/test_evidence_template.csv
+A	docs/governance/roadmaps/revival-scale/templates/tool_registry_seed.json
+## counts by status:
+     36 A
+     11 M
+D_or_R=0
