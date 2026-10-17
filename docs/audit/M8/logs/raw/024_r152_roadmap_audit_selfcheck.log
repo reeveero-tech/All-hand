@@ -1,0 +1,22 @@
+# 024 roadmap audit + no-delete self-check at 7ff770e
+item headings: 179
+duplicate ids: none
+  not done: R-152 -> awaiting_merge
+status counts: {'done': 146, 'awaiting_merge': 1, 'planned': 32}
+items without status: none
+'(هذه الدفعة)' occurrences: 2
+   ... 1)، صفر ready/proposed/in_progress متبقية.   - إصلاح 4 صيغ "(هذه الدفعة)" متجمدة
+   ... لثمانية). بعد الدمج: 55 بنداً، صفر تكرار.   - **صيغ متجمدة "(هذه الدفعة)"**: 10 
+order section length: 8694
+  stale phrase in order section: 'Q-020 للمالك. Q-020 للمالك' -> False
+  stale phrase in order section: 'أو فتح R-042 بقرار المالك' -> False
+  stale phrase in order section: 'البند `blocked` الوحيد' -> False
+  stale phrase in order section: 'التالي: دورة M6 القادمة' -> False
+R-ids in commit subjects since cycle start (646e453..HEAD): ['R-151', 'R-152']
+  not in ROADMAP: none
+  R-151: roadmap=yes changelog=yes
+  R-152: roadmap=yes changelog=yes
+audit exit=0
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 7, 'A': 11}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+no-delete exit=0
