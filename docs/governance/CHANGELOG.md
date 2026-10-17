@@ -1,5 +1,13 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-17 — R-152 (M8): بوابة عدم الحذف الآلية (دفعة m8/r152-no-delete-gate، D-064) + قبول R-151
+
+- **مضاف**: `scripts/check_no_delete.py` — يفحص `git diff --no-renames -z origin/main...HEAD` ويفشل (rc=1) عند أي حذف/نقل/إعادة تسمية لملف متعقب مع ذكر كل مسار ووجهة النقل؛ مرجع غير صالح rc=2. بلا أي استثناء داخل المستودع (D-064).
+- **CI**: خطوة «No-delete check (R-152)» في job ‏`governance`؛ «Atomic batch check» بلا تغيير في المنطق (`if: !cancelled()` ليظهر الحكمان). لا تغيير في حماية الفرع.
+- **اختبارات**: `tests/test_r152_no_delete_gate.py` ‏(13) على مستودعات git حقيقية؛ الحزمة 860 = 847 + 13.
+- **أدلة**: `013` (قبول R-151: PR #162 → `646e453`، CI main 38985115300 success)، `014` (طفرة ⇒ 6 سالبة تفشل)، `015` (حذف R-138 التاريخي مرصود)، `016`/`017` (PR تجريبية حية سالبة ثم PR الدفعة موجبة)، `018`..`024` فحوص الأساس.
+- **وثائق**: GOVERNANCE_GATE (قسم البوابة)، QUALITY (تغيير CI)، DECISIONS (D-064)، ROADMAP (R-151 done، R-152 awaiting_merge)، PROJECT_STATE.
+
 ## 2026-10-17 — R-151 (M8): إدخال خارطة «إحياء AGOS والاختبار القصوى» (دفعة توثيقية m8/r151-revival-plan-integration، D-063)
 
 - **مضاف**: حزمة المالك كاملة (24 ملفاً: README_AR وBUILDER_AGENT_ORDER_AR وREFERENCES_AR وMANIFEST والخارطة الرئيسية ومراحل P0..P7 والمواصفات والقوالب) في `docs/governance/roadmaps/revival-scale/` بلا تعديل — 23/23 بصمة مطابقة (`docs/audit/M8/logs/raw/002`).

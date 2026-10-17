@@ -1,0 +1,10 @@
+# 015 gate against a real historical deletion commit in this repo: f9548c224b8ae30b3a1f1ad3a0e6833404496766
+f9548c2 R-138: remove stray local .coverage file committed by mistake
+no-delete check: f9548c224b8ae30b3a1f1ad3a0e6833404496766~1...f9548c224b8ae30b3a1f1ad3a0e6833404496766 status counts (no-renames): {'D': 1}
+::error file=.coverage::deleted — forbidden by D-063 (no delete/move/rename)
+::error::No-delete gate failed: 1 tracked file(s) deleted, moved or renamed. Repair/upgrade/adapt instead; deletion needs a separate explicit owner authorization (D-063/D-064).
+exit=1
+## and on the R-151 merge (docs-only, additive):
+no-delete check: 8457ad3...646e453 status counts (no-renames): {'A': 37, 'M': 11}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0
