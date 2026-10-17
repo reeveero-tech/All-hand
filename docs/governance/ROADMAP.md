@@ -1575,7 +1575,7 @@
 
 #### R-158 — خط أساس لكل مكون
 - الحالة: **awaiting_merge**
-- أدلة الحالة (R-154): branch=m8/r158-test-baseline | pr=#PRNUM
+- أدلة الحالة (R-154): branch=m8/r158-test-baseline | pr=#172
 - **المخرجات (دفعة m8/r158-test-baseline، D-070)**: خط أساس اختبارات لكل ملف متعقب عند اللقطة `573793c1f36afd77f3b79247ab9e2d978a397b62` في [`baseline/`](roadmaps/revival-scale/baseline/README.md). المولّد الحتمي `scripts/build_test_baseline.py` يكتب JSON آلياً وتقريراً عربياً وملفَّي CSV مولَّدين منه، وأسماؤها تحمل SHA.
   - **التغطية**: 1917/1917 ملفاً، كل ملف في مجموعة واحدة من 16 مجموعة، والفحص الذاتي PASS. الحالات: pass 1294، fail 32، integrity-only 591. لكل خطوة الأمر وسبب ملاءمته، وexit، وعدّادات pass/fail/skip/xfail/xpass/deselected/errors، والقسم في السجل الخام. الأدلة مفصولة إلى local-test وlocal-operational وlocal-live-internet وci.
   - **النتائج عند اللقطة (محلي)**:
