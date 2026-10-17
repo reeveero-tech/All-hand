@@ -1,0 +1,94 @@
+# 066 R-156 runtime-vs-static validation of the map (base caab69b; executed on working tree, python 3.14.3 )
+web/dist present locally: True (CI test job builds no web/dist -> conditional SPA routes absent there)
+
+## A. routes: runtime app.routes = 24 | map = 24
+runtime-only: []
+map-only: []
+   GET /civilization/registry lazy agent_civilization/civilization_routes.py deps= ['api_key_header'] cond= inside def register_civilization_routes()
+   POST /civilization/plan lazy agent_civilization/civilization_routes.py deps= ['api_key_header'] cond= inside def register_civilization_routes()
+   POST /civilization/execute lazy agent_civilization/civilization_routes.py deps= ['api_key_header'] cond= inside def register_civilization_routes()
+   GET /api top server.py deps= [] cond= None
+   GET /health top server.py deps= [] cond= None
+   GET /health/live top server.py deps= [] cond= None
+   GET /health/ready top server.py deps= [] cond= None
+   GET /metrics top server.py deps= [] cond= None
+   GET /api/system/status top server.py deps= [] cond= None
+   GET /api/agents top server.py deps= [] cond= None
+   GET /api/specializations top server.py deps= [] cond= None
+   POST /api/tasks top server.py deps= ['api_key_header'] cond= None
+   GET /api/tasks top server.py deps= ['api_key_header'] cond= None
+   GET /api/tasks/{task_id} top server.py deps= ['api_key_header'] cond= None
+   GET /api/memory top server.py deps= ['api_key_header'] cond= None
+   GET /api/learning top server.py deps= ['api_key_header'] cond= None
+   DELETE /api/memory top server.py deps= ['api_key_header'] cond= None
+   GET /api/events top server.py deps= ['api_key_header'] cond= None
+   GET /api/events/stream top server.py deps= ['api_key_header'] cond= None
+   POST /api/chat top server.py deps= ['api_key_header'] cond= None
+   POST /api/agents/external top server.py deps= ['api_key_header'] cond= None
+   DELETE /api/agents/external/{name} top server.py deps= ['api_key_header'] cond= None
+   MOUNT /assets conditional server.py deps= [] cond= if WEB_DIST.exists()
+   GET /{full_path:path} conditional server.py deps= [] cond= if WEB_DIST.exists()
+
+## B. `import server`: repo .py modules loaded = 41 | static top-level closure = 34 | full closure = 90
+top-level predicted but NOT loaded: []
+loaded but NOT in full static closure: []
+in full closure but not loaded at import (lazy/conditional/dynamic; need runtime exercise, NOT dead):
+    agent_civilization/agents/executors/__init__.py
+    agent_civilization/agents/executors/data_worker.py
+    agent_civilization/agents/specialists/__init__.py
+    agent_civilization/agents/specialists/_templates/__init__.py
+    agent_civilization/agents/specialists/_templates/_factory.py
+    agent_civilization/agents/specialists/_templates/_spec_layout.py
+    agent_civilization/agents/specialists/_templates/analyst_base.py
+    agent_civilization/agents/specialists/_templates/api_integrator_base.py
+    agent_civilization/agents/specialists/_templates/architect_base.py
+    agent_civilization/agents/specialists/_templates/builder_base.py
+    agent_civilization/agents/specialists/_templates/code_generator_base.py
+    agent_civilization/agents/specialists/_templates/communicator_base.py
+    agent_civilization/agents/specialists/_templates/data_processor_base.py
+    agent_civilization/agents/specialists/_templates/db_manager_base.py
+    agent_civilization/agents/specialists/_templates/designer_base.py
+    agent_civilization/agents/specialists/_templates/educator_base.py
+    agent_civilization/agents/specialists/_templates/modifier_base.py
+    agent_civilization/agents/specialists/_templates/monitor_base.py
+    agent_civilization/agents/specialists/_templates/network_client_base.py
+    agent_civilization/agents/specialists/_templates/researcher_base.py
+    agent_civilization/agents/specialists/_templates/reviewer_base.py
+    agent_civilization/agents/specialists/_templates/self_developer_base.py
+    agent_civilization/agents/specialists/_templates/strategist_base.py
+    agent_civilization/agents/specialists/_templates/surgeon_base.py
+    agent_civilization/agents/specialists/_templates/test_runner_base.py
+    agent_civilization/agents/specialists/_templates/validator_base.py
+    agent_civilization/agents/specialists/analyst/__init__.py
+    agent_civilization/agents/specialists/api_integrator/__init__.py
+    agent_civilization/agents/specialists/architect/__init__.py
+    agent_civilization/agents/specialists/builder/__init__.py
+    agent_civilization/agents/specialists/code_generator/__init__.py
+    agent_civilization/agents/specialists/communicator/__init__.py
+    agent_civilization/agents/specialists/data_processor/__init__.py
+    agent_civilization/agents/specialists/db_manager/__init__.py
+    agent_civilization/agents/specialists/designer/__init__.py
+    agent_civilization/agents/specialists/educator/__init__.py
+    agent_civilization/agents/specialists/modifier/__init__.py
+    agent_civilization/agents/specialists/monitor/__init__.py
+    agent_civilization/agents/specialists/network_client/__init__.py
+    agent_civilization/agents/specialists/researcher/__init__.py
+    agent_civilization/agents/specialists/reviewer/__init__.py
+    agent_civilization/agents/specialists/self_developer/__init__.py
+    agent_civilization/agents/specialists/strategist/__init__.py
+    agent_civilization/agents/specialists/surgeon/__init__.py
+    agent_civilization/agents/specialists/test_runner/__init__.py
+    agent_civilization/agents/specialists/validator/__init__.py
+    agent_civilization/core/pools.py
+    agent_civilization/runtime/__init__.py
+    agent_civilization/utils/__init__.py
+
+## C. specialists dynamic import_module(f-string): predicted = 21 | loaded spec packages = 20 | loaded ⊆ predicted: True
+
+## D. env vars read at runtime by repo code (import server + 7 HTTP calls + specialists civ): 39 | in map: 39 | missing: []
+    ['AGENTS_PER_SPEC', 'AGOS_AGENT_IMPL', 'AGOS_ALLOWED_ORIGINS', 'AGOS_ALLOW_CODE_EXEC', 'AGOS_ALLOW_PRIVATE_NETWORK', 'AGOS_API_KEY', 'AGOS_ENV', 'AGOS_LLM_KEYLESS', 'AGOS_LLM_KEYLESS_BUDGET_S', 'AGOS_LLM_KEYLESS_MAX_WAIT_S', 'AGOS_LLM_KEYLESS_MODEL', 'AGOS_LLM_KEYLESS_SPACING_S', 'AGOS_LLM_KEYLESS_URL', 'AGOS_MEMORY', 'AGOS_MEMORY_FILE', 'AGOS_MEMORY_MAX', 'AGOS_RATE_LIMIT_REQUESTS', 'AGOS_RATE_LIMIT_WINDOW', 'AGOS_SSE_HEARTBEAT', 'AGOS_SSE_MAX_CONNECTIONS', 'AGOS_SSE_MAX_LIFETIME', 'AGOS_SSE_MAX_PER_CLIENT', 'AGOS_SSE_MAX_PER_TENANT', 'AGOS_SSE_OPEN_RATE', 'AGOS_SSE_OPEN_WINDOW', 'AGOS_SSE_QUEUE_SIZE', 'AGOS_TENANT_KEYS', 'AGOS_WEB_WAIT_S', 'EXTERNAL_AGENTS', 'LLM_MODEL', 'METRICS_NAMESPACE', 'OPENROUTER_API_KEY', 'REDIS_URL', 'RENDER', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_KEY', 'SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_SUPABASE_URL']
+map env_flags total: 57
+
+## E. history: before the indirect-env fix this check found 9 real map gaps (AGOS_SSE_* x8 via _LIMITS dict, RENDER via PLATFORM_MARKERS); fixed in generator and covered by unit test.
+
+RESULT: routes equal = True | top⊆loaded = True | loaded⊆full = True | env missing = 0

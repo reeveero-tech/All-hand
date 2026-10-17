@@ -1,0 +1,15 @@
+# 068 (rc must be 1 with a FAILED test; rc=2 collection/syntax errors are INVALID, not kills)
+# 068 R-156 mutation testing of scripts/build_entrypoint_map.py — each mutant must be KILLED by tests/test_r156_entrypoint_map.py
+lazy-scope-as-top: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_routes_scope_condition_and_dependencies
+conditional-scope-as-top: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_routes_scope_condition_and_dependencies
+fstring-dynamic-disabled: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_edge_kinds_lazy_conditional_dynamic
+copy-check-disabled: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_self_check_fails_on_broken_references[Dockerfile-FROM node:22 AS web\nCOPY web/ ./\nFROM python:3.12\nCOPY requir
+cmd-module-check-disabled: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_self_check_fails_on_broken_references[Dockerfile-FROM node:22 AS web\nCOPY web/ ./\nFROM python:3.12\nCOPY requir
+render-path-check-disabled: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_self_check_fails_on_broken_references[render.yaml-services:\n  - type: web\n    buildCommand: pip install -r requ
+workflow-path-check-disabled: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_self_check_fails_on_broken_references[.github/workflows/ci.yml-name: CI\non:\n  push:\n  pull_request:\njobs:\n  
+module-style-ref-not-accepted: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_real_repo_self_check_passes - ...
+tests-routes-not-excluded: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_routes_scope_condition_and_dependencies
+indirect-env-disabled: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_env_urls_tables_extracted - As...
+webtests-guard-removed: KILLED rc=1 first_failure=FAILED tests/test_r156_entrypoint_map.py::test_entry_points_from_docker_render_ci_tests_frontends
+RESULT 11/11 killed
+generator restored byte-identical: yes

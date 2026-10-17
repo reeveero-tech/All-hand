@@ -1,0 +1,50 @@
+# 067 R-156 smoke/integration tests per entry point (2026-10-17T04:05:37Z)
+$ python -m pytest tests/test_r156_entrypoint_map.py -v -p no:cacheprovider
+============================= test session starts ==============================
+configfile: pytest.ini
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 22 items
+
+tests/test_r156_entrypoint_map.py::test_entry_points_from_docker_render_ci_tests_frontends PASSED [  4%]
+tests/test_r156_entrypoint_map.py::test_routes_scope_condition_and_dependencies PASSED [  9%]
+tests/test_r156_entrypoint_map.py::test_edge_kinds_lazy_conditional_dynamic PASSED [ 13%]
+tests/test_r156_entrypoint_map.py::test_env_urls_tables_extracted PASSED [ 18%]
+tests/test_r156_entrypoint_map.py::test_src_is_listed_unresolved_not_dead PASSED [ 22%]
+tests/test_r156_entrypoint_map.py::test_self_check_fails_on_broken_references[Dockerfile-FROM node:22 AS web\nCOPY web/ ./\nFROM python:3.12\nCOPY requirements-missing.lock ./\nCOPY . .\nCMD ["sh", "-c", "uvicorn app:app --port 8000"]\n-COPY source 'requirements-missing.lock' not found] PASSED [ 27%]
+tests/test_r156_entrypoint_map.py::test_self_check_fails_on_broken_references[Dockerfile-FROM node:22 AS web\nCOPY web/ ./\nFROM python:3.12\nCOPY requirements.lock ./\nCOPY . .\nCMD ["sh", "-c", "uvicorn nowhere:app --port 8000"]\n-CMD module nowhere not found] PASSED [ 31%]
+tests/test_r156_entrypoint_map.py::test_self_check_fails_on_broken_references[render.yaml-services:\n  - type: web\n    buildCommand: pip install -r requirements.lock && cd webx && npm ci\n    startCommand: uvicorn app:app --host 0.0.0.0\n-path 'webx' not found] PASSED [ 36%]
+tests/test_r156_entrypoint_map.py::test_self_check_fails_on_broken_references[.github/workflows/ci.yml-name: CI\non:\n  push:\n  pull_request:\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: |\n          pip install -r requirements.lock\n          python scripts/gone.py --help\n          pytest tests/\n  web:\n    runs-on: ubuntu-latest\n    steps:\n      - run: npm ci\n        working-directory: web/\n-job references 'scripts/gone.py'] PASSED [ 40%]
+tests/test_r156_entrypoint_map.py::test_reads_snapshot_not_working_tree PASSED [ 45%]
+tests/test_r156_entrypoint_map.py::test_cli_deterministic_and_bad_sha PASSED [ 50%]
+tests/test_r156_entrypoint_map.py::test_real_repo_self_check_passes PASSED [ 54%]
+tests/test_r156_entrypoint_map.py::test_map_routes_equal_routes_registered_on_real_app PASSED [ 59%]
+tests/test_r156_entrypoint_map.py::test_import_server_loads_exactly_what_the_static_map_predicts PASSED [ 63%]
+tests/test_r156_entrypoint_map.py::test_specialists_dynamic_expansion_matches_runtime PASSED [ 68%]
+tests/test_r156_entrypoint_map.py::test_map_driven_http_smoke_every_route_no_5xx PASSED [ 72%]
+tests/test_r156_entrypoint_map.py::test_deploy_asgi_target_boots_with_real_uvicorn PASSED [ 77%]
+tests/test_r156_entrypoint_map.py::test_run_py_cli_over_stdin PASSED     [ 81%]
+tests/test_r156_entrypoint_map.py::test_every_guarded_cli_imports_cleanly_and_argparse_help_works PASSED [ 86%]
+tests/test_r156_entrypoint_map.py::test_toplevel_scripts_compile PASSED  [ 90%]
+tests/test_r156_entrypoint_map.py::test_pytest_collection_matches_test_entry_point PASSED [ 95%]
+tests/test_r156_entrypoint_map.py::test_every_env_var_read_at_runtime_is_in_the_map PASSED [100%]
+
+============================= 22 passed in 11.82s ==============================
+exit=0
+
+## web front-end entry point: web/ npm test (node --test)
+  ...
+# Subtest: cleanup: transpiled temp files removed
+ok 31 - cleanup: transpiled temp files removed
+  ---
+  duration_ms: 1.45503
+  ...
+1..31
+# tests 31
+# suites 0
+# pass 31
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1410.000656
+exit=0

@@ -1,0 +1,3 @@
+# 064 status-evidence check right after flipping R-155 to done (before any R-156 work), HEAD=caab69b2d9aa59614856923512f2e10ccca0954f + working-tree docs
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0

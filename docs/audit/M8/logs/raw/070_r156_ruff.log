@@ -1,0 +1,4 @@
+# 070 R-156 ruff (2026-10-17T04:09:33Z)
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests scripts/check_no_delete.py scripts/check_atomic_batch.py scripts/check_status_evidence.py scripts/build_file_inventory.py scripts/build_entrypoint_map.py
+All checks passed!
+exit=0

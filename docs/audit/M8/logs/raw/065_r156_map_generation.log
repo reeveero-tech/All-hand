@@ -1,0 +1,15 @@
+# 065 R-156 map generation + determinism (2026-10-17T04:04:03Z)
+$ python3 scripts/build_entrypoint_map.py . caab69b2d9aa59614856923512f2e10ccca0954f docs/governance/roadmaps/revival-scale/maps/ENTRYPOINT_MAP_caab69b.json --md docs/governance/roadmaps/revival-scale/maps/ENTRYPOINT_MAP_caab69b.md
+snapshot=caab69b2d9aa59614856923512f2e10ccca0954f entry_points=60 routes=24 edges=7007 server_closure=34/90 unanalyzable=30 problems=0 self_check=PASS
+exit=0
+2663726b8f725b03ab3c8a956e5a43d34e08c05e350b4487bb9ca2477aa8f587  docs/governance/roadmaps/revival-scale/maps/ENTRYPOINT_MAP_caab69b.json
+5ab65a9a809ab5f421f318cf11c4436a4e86a4679f9dcb324c0e48feee5d42e7  docs/governance/roadmaps/revival-scale/maps/ENTRYPOINT_MAP_caab69b.md
+1645511 ENTRYPOINT_MAP_caab69b.json
+38285 ENTRYPOINT_MAP_caab69b.md
+## rerun #2 (/tmp):
+2663726b8f725b03ab3c8a956e5a43d34e08c05e350b4487bb9ca2477aa8f587  /tmp/e2.json
+## rerun #3 against the CLEAN base worktree /tmp/snap2 (scripts copied to /tmp/bemrun):
+2663726b8f725b03ab3c8a956e5a43d34e08c05e350b4487bb9ca2477aa8f587  /tmp/e3.json
+IDENTICAL x3
+## counts:
+{"analyzed_code_files": 1221, "cli_entry_points": 40, "edges": 7007, "edges_by_kind": {"conditional": 10, "dynamic": 71, "lazy": 292, "top": 6634}, "entry_points": 60, "entry_points_by_kind": {"ci-job": 9, "cli": 26, "cli-toplevel": 14, "frontend-root": 4, "frontend-web": 2, "server": 2, "shell": 1, "tests": 2}, "env_flags": 57, "python_files": 1190, "routes": 24, "server_static_full_closure": 90, "server_static_top_closure": 34, "tracked_files": 1887, "unanalyzable_or_unresolved": 30}
