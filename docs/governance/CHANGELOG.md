@@ -5,7 +5,7 @@
 - **قبول R-159**: PR #173 مدموجة بـ`--merge`. SHA الدمج `49faab68fefee582b83f14fc64808e309adb7522`، وأبوه الثاني هو المختبر `c8f722f91858c78d1105d1523297cd8d68c9b333`. CI main ‏39018809541 نجح، وتُخطّي publish (D-011، ليس نشراً). خطوات pytest الثلاث: 1130 passed, 4 skipped, 4 deselected. R-159 ⇒ `done` لا `accepted` (`108`)، وفحص الحالة وتزامن جدول M8 (`109`).
 - **مضاف**:
   - `agent_civilization/core/contracts.py`: 22 عقداً مُصدَّراً + 4 نماذج طلب، و`validate()` و`json_schemas()` و`classify_changes()`.
-  - `scripts/export_contract_schemas.py` (كتابة/`--check`) و`docs/contracts/` (26 مخططاً `v1`، وأمثلة مشتركة، وREADME).
+  - `scripts/export_contract_schemas.py` (كتابة/`--check`) و`docs/governance/contracts/` (26 مخططاً `v1`، وأمثلة مشتركة، وREADME).
   - `scripts/scan_raw_exception_logs.py`: ماسح AST لسجلات نص الاستثناء الخام.
   - `web/src/taskView.js`: قراءة سجل المهمة بمتغيراته الثلاثة.
 - **مُصلح**:
@@ -19,7 +19,7 @@
 - **لم يتغير**: شكل أي استجابة API (لا حقل ولا رأس جديد)، وقبول الطلبات (الحقول غير المعروفة ما زالت تُتجاهل)، والإعدادات الإلزامية. `src/` لم يُلمس.
 - **اختبارات**: `tests/test_r160_contracts.py` (84)، `tests/test_r160_local_integration.py` (5)، `tests/test_r160_g159_1_log_redaction.py` (39)، `web/tests/task_view.test.mjs` (8).
 - **الأدلة**: `108` قبول R-159، `109` فحص الحالة، `110` G-159-1 قبل/بعد، `111` العقود قبل/بعد، `112` uvicorn حقيقي، `113` الحزمة بالوضعين، `114` البوابات والبناء.
-- **وثائق**: ROADMAP، PROJECT_STATE، DECISIONS (D-072)، API، DATA_MODEL، QUALITY، SECURITY، OPERATIONS، `docs/contracts/README.md`، `baseline/README.md` (G-157-2)، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+- **وثائق**: ROADMAP، PROJECT_STATE، DECISIONS (D-072)، API، DATA_MODEL، QUALITY، SECURITY، OPERATIONS، `docs/governance/contracts/README.md`، `baseline/README.md` (G-157-2)، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
 
 ## 2026-10-17 — R-159 (M8/P2): رصد موحد وآمن — traces/structured logs/metrics (دفعة m8/r159-observability، D-071) + قبول R-158
 

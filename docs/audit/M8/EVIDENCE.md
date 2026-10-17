@@ -386,7 +386,7 @@
 ## R-160 — عقود قابلة للتحقق (2026-10-17، دفعة m8/r160-contracts، PR #174، D-072)
 
 ### ما أُضيف
-- `agent_civilization/core/contracts.py`: 22 عقداً + 4 نماذج طلب قائمة، بإصدار `v1` لكل منها؛ `scripts/export_contract_schemas.py` (كتابة/`--check` مع تصنيف BREAKING/ADDITIVE واشتراط بقاء الإصدار السابق)؛ `docs/contracts/` (26 مخططاً، 4 أمثلة مشتركة، README).
+- `agent_civilization/core/contracts.py`: 22 عقداً + 4 نماذج طلب قائمة، بإصدار `v1` لكل منها؛ `scripts/export_contract_schemas.py` (كتابة/`--check` مع تصنيف BREAKING/ADDITIVE واشتراط بقاء الإصدار السابق)؛ `docs/governance/contracts/` (26 مخططاً، 4 أمثلة مشتركة، README).
 - `scripts/scan_raw_exception_logs.py` (G-159-1)، و`web/src/taskView.js`.
 
 ### تغطية حالات P2
@@ -416,6 +416,7 @@
 - اختبار `/health` كان معتمداً على الترتيب (مسار المزود المسجَّل)، فثُبِّت المسار المستقل في الاختبار.
 - مدقق التوافق لم يكشف enum موسَّعاً (pydantic يضع `type` مع `enum`)؛ صار يقارن القيم أيضاً.
 - اختبار uvicorn قرأ مقياساً خاطئاً بمطابقة البادئة؛ صحح قبل الالتزام (`112`).
+- بعد الالتزام الأول فشل `tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned`: 30 ملفاً جديداً في `docs/contracts/` لا تنتمي لأي مجموعة في خط أساس R-158. نُقلت (داخل الفرع، وهي إضافات لا ملفات متعقبة على main — D-064 لا ينطبق) إلى `docs/governance/contracts/` حيث تفحصها مجموعة governance-data (تحليل JSON)، بدل تعديل مولّد خط الأساس الذي يغيّر بصمته المعاد إنتاجها. السجلات `110`–`112` تذكر المسار القديم كما كان وقت التشغيل (`113`).
 
 ### ثغرات مفتوحة
 - **G-160-1**: نص الاستثناء الخام في **نتائج** مهام مرئية للمستأجر (llm.py نتيجة النقل، real_dispatcher، agent_factory، last_err، OSError عند تسجيل وكيل خارجي). G-159-1 أُغلق للسجلات و`/health` فقط.

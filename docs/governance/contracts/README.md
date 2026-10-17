@@ -1,6 +1,6 @@
 # عقود الخدمات القابلة للتحقق (R-160، D-072)
 
-> المصدر الوحيد: النماذج في [`agent_civilization/core/contracts.py`](../../agent_civilization/core/contracts.py). الملفات هنا **مولّدة** — لا تُعدَّل يدوياً.
+> المصدر الوحيد: النماذج في [`agent_civilization/core/contracts.py`](../../../agent_civilization/core/contracts.py). الملفات هنا **مولّدة** — لا تُعدَّل يدوياً.
 > التوليد: `python3 scripts/export_contract_schemas.py` — الفحص: `python3 scripts/export_contract_schemas.py --check` (rc=1 عند أي انحراف). يشغّل الفحصَ `tests/test_r160_contracts.py::test_committed_schemas_match_the_code` في كل CI.
 
 ## العقود (v1)

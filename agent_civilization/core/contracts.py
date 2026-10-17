@@ -1,18 +1,18 @@
 """R-160 (M8/P2): verifiable service contracts — version 1.
 
 These models DESCRIBE the payloads AGOS exchanges today (read from the code
-and measured on the running app — docs/contracts/README.md); they do not
+and measured on the running app — docs/governance/contracts/README.md); they do not
 change what the server returns. They are used by:
 
 - ``tests/test_r160_contracts.py``: real responses of the in-process app, the
   agent outcomes of both implementations (real/specialists), the LLM client,
   the queue and the storage payloads are validated against them;
 - ``scripts/export_contract_schemas.py``: writes the JSON Schemas under
-  ``docs/contracts/`` and, with ``--check``, fails when the code-side contract
+  ``docs/governance/contracts/`` and, with ``--check``, fails when the code-side contract
   drifts from the committed schema (a breaking change without a version bump
   fails with the list of breaking differences);
 - ``web/tests/task_view.test.mjs``: the web client is tested on the same
-  example payloads (docs/contracts/examples/) the Python side validates.
+  example payloads (docs/governance/contracts/examples/) the Python side validates.
 
 Unknown-field policy (explicit, per direction):
 - REQUESTS: the server ignores unknown fields (Pydantic default; kept — SEC-02

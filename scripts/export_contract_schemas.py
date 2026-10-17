@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """R-160: write / check the committed JSON Schemas of the AGOS contracts.
 
-    python3 scripts/export_contract_schemas.py          # (re)write docs/contracts/*.schema.json
+    python3 scripts/export_contract_schemas.py          # (re)write docs/governance/contracts/*.schema.json
     python3 scripts/export_contract_schemas.py --check  # rc=1 on drift, rc=0 in sync
 
 Each contract ``<name>`` at version ``v`` lives in
-``docs/contracts/<name>.v<v>.schema.json``. ``--check`` regenerates the schemas
+``docs/governance/contracts/<name>.v<v>.schema.json``. ``--check`` regenerates the schemas
 from the code (agent_civilization/core/contracts.py + the server's request
 models) and compares them with the committed files:
 
@@ -30,7 +30,7 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / "docs" / "contracts"
+OUT = ROOT / "docs" / "governance" / "contracts"
 sys.path.insert(0, str(ROOT))
 
 

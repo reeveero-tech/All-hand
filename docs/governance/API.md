@@ -151,7 +151,7 @@
 - `TelemetryMiddleware` (ASGI خام، أبعد middleware) يفتح trace لكل طلب عدا `/health*` و`/metrics`، والبث SSE يمر دون تعديل. `trace_id` يظهر في سجلات الخادم فقط، ولا يُعاد للعميل.
 
 ## R-160 — العقود القابلة للتحقق (D-072، 2026-10-17)
-- **المرجع**: [`docs/contracts/README.md`](../contracts/README.md) والمخططات `docs/contracts/*.v1.schema.json`، المولّدة من `agent_civilization/core/contracts.py`. فحص الانحراف: `python3 scripts/export_contract_schemas.py --check` (خطوة في job ‏`test` عبر `tests/test_r160_contracts.py`).
+- **المرجع**: [`docs/governance/contracts/README.md`](contracts/README.md) والمخططات `docs/governance/contracts/*.v1.schema.json`، المولّدة من `agent_civilization/core/contracts.py`. فحص الانحراف: `python3 scripts/export_contract_schemas.py --check` (خطوة في job ‏`test` عبر `tests/test_r160_contracts.py`).
 - **ما يغطيه v1**: `POST /api/tasks` (202 ‏task_accepted)، `GET /api/tasks/{id}` (task_record أو execute_record)، `GET /api/tasks` (task_list بمصدر `memory` أو `database`)، `POST /api/chat`، `POST /civilization/execute`، `GET /api/system/status`، `GET /health/ready` (200 ‏ready، 503 ‏not_ready)، `GET /api/memory`، أجسام الأخطاء `{"detail": "<نص>"}` (400/401/404/409/429/500) و422 (`detail` قائمة FastAPI)، وأطر SSE.
 - **الحقول غير المعروفة في الطلب**: تُتجاهل ولا تُنفَّذ (السلوك القائم، بلا تغيير). `tenant_id` في الجسم لا يغيّر المالك (SEC-02). `allow_public_llm` يجب أن يكون JSON boolean (القائم منذ SEC-06).
 - **سلوك صار موثقاً كعقد v1 (مرصود، لم يتغير)**:

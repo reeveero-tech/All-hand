@@ -1,5 +1,5 @@
 // R-160 (task record contract v1): the web task view on the SAME example
-// payloads the Python contract tests validate (docs/contracts/examples/ —
+// payloads the Python contract tests validate (docs/governance/contracts/examples/ —
 // tests/test_r160_contracts.py checks they match live API shapes). Covers the
 // three record variants, unknown fields, malformed/missing fields and a
 // newer-API record (version drift): the view must keep working and ignore
@@ -12,7 +12,7 @@ import { join, dirname } from 'node:path';
 import { taskView } from '../src/taskView.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ex = (name) => JSON.parse(readFileSync(join(here, '..', '..', 'docs', 'contracts', 'examples', name), 'utf8'));
+const ex = (name) => JSON.parse(readFileSync(join(here, '..', '..', 'docs', 'governance', 'contracts', 'examples', name), 'utf8'));
 
 test('memory source: agent and duration come from the memory record (were blank before R-160)', () => {
   const list = ex('task_list.memory.json');

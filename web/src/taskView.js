@@ -1,6 +1,6 @@
 // R-160 (task record contract v1): one view of a task record for the UI,
 // whatever variant /api/tasks returned. The API answers with three record
-// shapes (docs/contracts/README.md):
+// shapes (docs/governance/contracts/README.md):
 //   - "memory" task/chat record: {id, specialization, prompt, status, agent,
 //     result: {ok, agent, elapsed_s, result, ...}, created_at (epoch s), ...}
 //   - "database" row: {task_id, specialization, prompt, status, agent_name,

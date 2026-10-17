@@ -1,7 +1,7 @@
 """R-160 (M8/P2): verifiable contracts — API / task result / SSE / tool / LLM /
 memory / queue / storage, versions and compatibility.
 
-Evidence classes (kept apart on purpose — docs/contracts/README.md):
+Evidence classes (kept apart on purpose — docs/governance/contracts/README.md):
 - UNIT / MOCK: models, compat checker, fake Redis client, monkeypatched LLM
   transport, in-process ASGI app (httpx ASGITransport / TestClient);
 - LOCAL INTEGRATION (fake server on 127.0.0.1): aiohttp servers standing in for
@@ -34,7 +34,7 @@ from pydantic import BaseModel, ValidationError
 from agent_civilization.core import contracts as C
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-EXAMPLES = ROOT / "docs" / "contracts" / "examples"
+EXAMPLES = ROOT / "docs" / "governance" / "contracts" / "examples"
 sys.path.insert(0, str(ROOT / "scripts"))
 import export_contract_schemas as exporter  # noqa: E402
 
@@ -75,7 +75,7 @@ def test_every_contract_has_a_version_and_a_committed_file():
     assert set(C.CONTRACTS) | set(C.REQUEST_MODELS) == set(schemas)
     for name, s in schemas.items():
         assert s["x-contract-version"] >= 1
-        assert (ROOT / "docs" / "contracts" / f"{name}.v{s['x-contract-version']}.schema.json").exists()
+        assert (ROOT / "docs" / "governance" / "contracts" / f"{name}.v{s['x-contract-version']}.schema.json").exists()
 
 
 class _V1(BaseModel):
@@ -933,7 +933,7 @@ async def test_malformed_storage_row_is_404_not_500(tenant_auth, monkeypatch):
 # ========================================================= web <-> API
 
 def test_shared_examples_validate_and_match_live_shapes(tenant_auth):
-    """The example payloads the web tests consume (docs/contracts/examples)
+    """The example payloads the web tests consume (docs/governance/contracts/examples)
     validate against the contracts AND have the same keys as live responses of
     the in-process app — so the web tests cannot drift from the API."""
     mem = json.loads((EXAMPLES / "task_list.memory.json").read_text())
