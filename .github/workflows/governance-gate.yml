@@ -64,3 +64,10 @@ jobs:
           fi
 
           echo "Governance gate passed."
+
+      # R-153 (D-065): stricter, unit-tested superset of the inline check
+      # above (which stays unchanged). Wider "executable" set needs
+      # docs/audit evidence; runtime Python / web source need tests.
+      - name: Atomic batch check v2 (R-153)
+        if: ${{ !cancelled() }}
+        run: python3 scripts/check_atomic_batch.py origin/main HEAD
