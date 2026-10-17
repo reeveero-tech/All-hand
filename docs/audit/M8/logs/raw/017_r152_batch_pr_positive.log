@@ -19,3 +19,4 @@ Atomic batch check	2026-10-17T00:30:42.4940302Z ^[[36;1m    || { echo "::error::
 Atomic batch check	2026-10-17T00:30:42.4945485Z ^[[36;1m    || { echo "::error::CI changed without docs/governance/QUALITY.md"; exit 1; }^[[0m
 Atomic batch check	2026-10-17T00:30:42.4948241Z ^[[36;1mecho "Governance gate passed."^[[0m
 Atomic batch check	2026-10-17T00:30:42.5204151Z Governance gate passed.
+## note: the '::error::' lines above prefixed by ESC[36;1m are GitHub echoing the step's script source, not emitted errors; the only emitted results are 'No-delete gate passed' and 'Governance gate passed.'
