@@ -176,6 +176,16 @@ class ExternalAgentAdapter:
         self.stats = {"tasks_completed": 0, "tasks_failed": 0, "total_time_s": 0.0}
 
     async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
+        # R-159: one `agent` span (impl=external); the admin-given name is
+        # recorded only if identifier-like (else "<redacted>"), never the URL/key
+        from agent_civilization.core import telemetry
+        with telemetry.span("agent", "external", impl="external", agent=self.name,
+                            specialization="external") as sp:
+            out = await self._execute(task)
+            sp.set(outcome="ok" if out.get("ok") else "fail")
+            return out
+
+    async def _execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
         prompt = str(task.get("prompt") or task.get("description") or "")
         started = time.time()
         self.status = "working"

@@ -1,0 +1,52 @@
+# 106 R-159 PR #173 CI failure and fix — 2026-10-17T08:34:33Z
+## CI runs 39017316556 (ae182d9) and 39017672731 (0a26c88): job test FAILED in the first pytest step — 1 failed, 1129 passed, 4 skipped, 4 deselected:
+===== 1 failed, 1129 passed, 4 skipped, 4 deselected in 112.41s (0:01:52) ======
+E   AssertionError: assert ('<unmatched>' == '/{full_path}'
+FAILED tests/test_r159_telemetry.py::test_consecutive_requests_never_share_or_inherit_a_trace - AssertionError: assert ('<unmatched>' == '/{full_path}'
+tests/test_r158_test_baseline.py::test_pytest_summary_parser[===== 3 failed, 1053 passed, 4 skipped, 4 deselected in 149.15s (0:02:29) ======-expected1] PASSED [ 56%]
+## also: governance 39017316555 on ae182d9 failed: pr=#PRNUM placeholder rejected by the status check (as designed); fixed in 0a26c88 (governance 39017672753 success).
+## cause: server.py registers the SPA catch-all '/{full_path:path}' only if web/dist exists (server.py:1040). The local working copy has a built web/dist (untracked, from earlier builds); CI's test job does not build web/. The test hard-coded the local state. Test-design defect; the runtime records '<unmatched>' correctly when no route matches.
+## fix (git diff):
+diff --git a/tests/test_r159_telemetry.py b/tests/test_r159_telemetry.py
+index e1bc594..7c5f533 100644
+--- a/tests/test_r159_telemetry.py
++++ b/tests/test_r159_telemetry.py
+@@ -468,8 +468,12 @@ def test_consecutive_requests_never_share_or_inherit_a_trace(auth):
+     http = [x for x in _records() if x["kind"] == "http"]
+     assert len(http) == 3 and len({x["trace_id"] for x in http}) == 3
+     assert all(x["parent_span_id"] is None for x in http)
+-    # the SPA catch-all answers unknown paths: the label is its template, never the raw path
+-    assert http[1]["route"] == "/{full_path}" and "nonexistent" not in json.dumps(http[1])
++    # the SPA catch-all `/{full_path:path}` exists only when web/dist is built
++    # (log 106): then the label is its template, otherwise "<unmatched>" —
++    # never the raw path either way.
++    catch_all = any(getattr(rt, "path", "") == "/{full_path:path}" for rt in server.app.routes)
++    assert http[1]["route"] == ("/{full_path}" if catch_all else "<unmatched>")
++    assert "nonexistent" not in json.dumps(http[1])
+     for h in http:                                   # every span of a trace hangs under its own http root
+         for x in _records(h["trace_id"]):
+             assert x is h or x["parent_span_id"] is not None
+## after: with web/dist present (local)
+======================= 1 passed, 31 deselected in 0.47s =======================
+## after: without web/dist (CI-like: web/dist moved aside for the run, then restored)
+============================== 32 passed in 3.52s ==============================
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/user/workspace/repo/server.py", line 83, in <module>
+    RUNTIME_ENV = tenancy.enforce_startup(CREDENTIALS)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/workspace/repo/agent_civilization/core/tenancy.py", line 173, in enforce_startup
+    raise CredentialsError(
+agent_civilization.core.tenancy.CredentialsError: production start refused: no credentials configured — set AGOS_TENANT_KEYS and/or AGOS_API_KEY (see docs/governance/OPERATIONS.md). For local development without keys set AGOS_ENV=development explicitly
+web/dist restored: yes
+## mutation check: runtime records the raw path as route when unmatched -> must fail in the CI-like state
+  (the 'catch-all registered' probe above failed only because it was run without AGOS_ENV=test — production start refusal; repeated with AGOS_ENV=test below)
+catch-all registered without web/dist: False
+ agent_civilization/core/telemetry.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+### mutant (raw path as route label) without web/dist:
+FAILED tests/test_r159_telemetry.py::test_consecutive_requests_never_share_or_inherit_a_trace
+========================= 1 failed, 31 passed in 3.57s =========================
+### restored: []
+============================== 32 passed in 3.51s ==============================
+web/dist restored: yes

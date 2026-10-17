@@ -1574,8 +1574,9 @@
 - النطاق (نص الخارطة الرئيسية): حدد الوظائف المكررة أو المسارات المتوازية (`real`/`specialists`، `agos_kernel`، طبقات الأدوات/الذاكرة). وحّد عبر واجهة معيارية ومحولات توافق؛ لا تحذف implementations القديمة.
 
 #### R-158 — خط أساس لكل مكون
-- الحالة: **awaiting_merge**
-- أدلة الحالة (R-154): branch=m8/r158-test-baseline | pr=#172
+- الحالة: **done**
+- أدلة الحالة (R-154): pr=#172 | tested_sha=ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d | merge_sha=7aa5ed6d179b6bce0358e0912b8f353bead3bfd5 | ci_run=39013981294 | ci_conclusion=success | tests=1098 passed, 4 skipped, 4 deselected | tests_log=docs/audit/M8/logs/raw/098_r158_acceptance_main_ci.log | skipped=4 skipped = tests/test_r042_live_storage.py (تحتاج R042_LIVE=1) — نُفذت في job ‏storage من التشغيل 39013981294 (4 passed)؛ 4 deselected = علامة network — نُفذت في job ‏network من التشغيل نفسه (4 passed, 1102 deselected) | untested=tsc على src/ خارج CI (G-158-2)؛ لا بناء Docker محلي ولا تحقق Render ولا LLM مدفوع ولا Supabase سحابي ولا حمل؛ Q-002 مفتوح؛ G-157-1/2/3/4/6 وG-158-1..8 مفتوحة؛ لا جاهزية إنتاجية ولا أهداف سعة | evidence=docs/audit/M8/logs/raw/098_r158_acceptance_main_ci.log, docs/audit/M8/EVIDENCE.md
+- **القبول (سُجل داخل دفعة R-159)**: PR #172 مدموجة بـ`--merge`. SHA الدمج `7aa5ed6d179b6bce0358e0912b8f353bead3bfd5`، وأبوه الثاني هو المختبر `ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d`. CI main ‏39013981294 نجح في كل الوظائف، وتُخطّي publish (D-011). خطوة `AGOS_AGENT_IMPL=specialists` نجحت بـ1098 passed على SHA الدمج. CI الـPR ‏39013490808 والحوكمة 39013490844 ناجحان (`098`، وفحص الحالة `099`). الحالة `done` لا `accepted`.
 - **المخرجات (دفعة m8/r158-test-baseline، D-070)**: خط أساس اختبارات لكل ملف متعقب عند اللقطة `573793c1f36afd77f3b79247ab9e2d978a397b62` في [`baseline/`](roadmaps/revival-scale/baseline/README.md). المولّد الحتمي `scripts/build_test_baseline.py` يكتب JSON آلياً وتقريراً عربياً وملفَّي CSV مولَّدين منه، وأسماؤها تحمل SHA.
   - **التغطية**: 1917/1917 ملفاً، كل ملف في مجموعة واحدة من 16 مجموعة، والفحص الذاتي PASS. الحالات: pass 1294، fail 32، integrity-only 591. لكل خطوة الأمر وسبب ملاءمته، وexit، وعدّادات pass/fail/skip/xfail/xpass/deselected/errors، والقسم في السجل الخام. الأدلة مفصولة إلى local-test وlocal-operational وlocal-live-internet وci.
   - **النتائج عند اللقطة (محلي)**:
@@ -1599,7 +1600,29 @@
 ### المرحلة P2 — أولوية عالية ([`P2_OBSERVABILITY_CONTRACTS_AR.md`](roadmaps/revival-scale/roadmap/P2_OBSERVABILITY_CONTRACTS_AR.md))
 
 #### R-159 — مقاييس موحدة وآمنة
-- الحالة: **planned**
+- الحالة: **awaiting_merge**
+- أدلة الحالة (R-154): branch=m8/r159-observability | pr=#173
+- **المخرجات (دفعة m8/r159-observability، D-071)**: وحدة `agent_civilization/core/telemetry.py` توفر trace لكل طلب HTTP، وspans لثمانية أنواع (`http`، `task`، `workflow`، `agent`، `tool`، `memory`، `llm`، `storage`) تُفتح في مواقع التشغيل الفعلية. ينتج كل span سجلاً منظماً بمخطط ثابت `agos.telemetry/1`، وسلسلتين في `/metrics` هما `agos_ops_total{kind,op,outcome}` و`agos_op_duration_seconds{kind,op}`.
+  - **التنقيح**: الحقول مقيدة بقائمة مسموحات، والقيم النصية بنمط معرّفات وإلا تُستبدل بـ`<redacted>`. الأخطاء تُسجل بنوعها فقط، والمستأجر باسم مستعار HMAC.
+  - **المقاييس**: لا تُستخدم `trace_id` أو `task_id` أو المستأجر كوسوم أبداً، وقيم `op` محدودة.
+  - **التشغيل والإيقاف**: `AGOS_TELEMETRY=off` يوقف الرصد. لا سر إلزامي جديد، ولم يتغير أي عقد API.
+  - **مُصلح في النطاق**: سجلات كانت تطبع نص الاستثناء الخام في مسار الذاكرة (`experience.py` ×2 و`memory_system.py` ×2)، وعنوان URL الكامل للوكيل الخارجي في `server.py`.
+  - **اختبارات** `tests/test_r159_telemetry.py` (32 اختباراً):
+    - وحدات: الحقول، والتنقيح، والاسم المستعار، والإلغاء، والربط، والإيقاف، وحدود `op`.
+    - cardinality: السلاسل ثابتة بين 10 و510 معرّف مهمة.
+    - تكامل محلي بـmocks على loopback: سلسلة كاملة HTTP ← llm ← agent ← memory ← tool ← workflow ← agent ← tool ← storage في trace واحد، وأخطاء المزود والنقل والتخزين والأداة والذاكرة بلا تسريب في أي سجل، وعدم توريث السياق بين الطلبات.
+  - **الأدلة**:
+    - طفرات `101`: 15/15 قُتلت، بعد أن كشفت أولاً طفرة ناجية أضيف لها اختبار.
+    - تكامل محلي مع PostgREST 12.2.3 وPostgreSQL 17.11 `103`.
+    - قياس الكلفة `102`: +0.363 مللي ثانية (+11.7%) لـspans والمقاييس، و+0.567 مللي ثانية (+18.2%) مع كتابة السجل، على مسار داخلي زمنه نحو 3.1 مللي ثانية، و2.0 كيلوبايت سجلات لكل طلب. `off` ضمن تذبذب الأساس. **غير مهملة نسبةً لهذا المسار**، ولا يُعلن اجتياز معيار.
+    - تقطع الـfake `100`.
+    - الحزمة بالوضعين `104`، والبوابات `105`.
+    - فشل أول CI للـPR (`106`): اختبار افترض وجود مسار SPA غير موجود في CI، فأُصلح. الحزمة بالوضعين دون `web/dist` في `107`.
+  - **حدود**:
+    - لا تكامل حي: لا LLM مدفوع، ولا Supabase سحابي، ولا Render.
+    - لا مُصدِّر OTLP، ولا يُعاد `trace_id` للعميل (منعاً لتغيير العقد).
+    - مسارات قديمة غير نشطة ما زالت تسجل نص استثناء خام (G-159-1).
+    - G-157-1/2/3/4/6 مفتوحة، وQ-002 مفتوح. لا جاهزية إنتاجية ولا أهداف سعة.
 - المرحلة: P2 (أولوية عالية)؛ الاعتماديات: كل P1 (R-155..R-158)
 - المرجع ومعايير القبول التفصيلية: [`roadmap/P2_OBSERVABILITY_CONTRACTS_AR.md`](roadmaps/revival-scale/roadmap/P2_OBSERVABILITY_CONTRACTS_AR.md)
 - النطاق (نص الخارطة الرئيسية): أضف telemetry منضبطة للطلب والمهمة والمرحلة والوكيل والأداة والذاكرة ومزود النموذج مع `trace_id`, `task_id`, `tenant_id` المستعار/المجزأ. لا تسجل الأسرار أو نصوص prompts/results افتراضيًا.

@@ -1,0 +1,142 @@
+# 101 R-159 mutation run — HEAD 6971e91b78759176e4a41c7b4240a8ca27ef858f + working tree (tests/test_r159_telemetry.py uncommitted), 2026-10-17T08:15:39Z, Python 3.12.13
+## runner source (/tmp/mut159/run.py):
+"""R-159 mutation run: each mutant must compile and import; it is KILLED only
+if pytest exits 1 with >=1 failed test and 0 collection errors."""
+import re, shutil, subprocess, sys, py_compile
+ROOT = "/home/user/workspace/repo"
+T = "agent_civilization/core/telemetry.py"
+M = [
+ ("M1 no redaction of unsafe strings", T,
+  "    if isinstance(value, str) and _SAFE_VALUE.match(value):\n        return value\n    return REDACTED",
+  "    if isinstance(value, str):\n        return value\n    return REDACTED"),
+ ("M2 raw tenant id instead of pseudonym", T,
+  '    return "t_" + hmac.new(key, tenant.encode(), hashlib.sha256).hexdigest()[:12]',
+  '    return tenant'),
+ ("M3 raw exception text as error_type", T,
+  "    name = type(exc).__name__\n    return name if _TYPE_NAME.match(name) else \"Exception\"",
+  "    return f\"{type(exc).__name__}: {exc}\""),
+ ("M4 task_id as a metric label", T,
+  'm.inc_counter("ops_total", labels={"kind": rec["kind"], "op": op, "outcome": rec["outcome"]})',
+  'm.inc_counter("ops_total", labels={"kind": rec["kind"], "op": op, "outcome": rec["outcome"], "task": str(rec["task_id"])})'),
+ ("M5 unbounded op label (no allowlist/cap)", T,
+  '        op = bounded_op(rec["kind"], rec["op"])',
+  '        op = str(rec["op"]) + (rec["task_id"] or "")'),
+ ("M6 middleware does not reset the trace", T,
+  "        finally:\n            end_trace(token)",
+  "        finally:\n            pass"),
+ ("M7 parent span not linked", T,
+  "        self.parent = parent.span_id if parent is not None else None",
+  "        self.parent = None"),
+ ("M8 bind_task is a no-op", T,
+  "    tid = _safe_id(task_id)\n    if ctx is None:",
+  "    return\n    tid = _safe_id(task_id)\n    if ctx is None:"),
+ ("M9 cancellation recorded as ok", T,
+  '                    self.outcome = "cancelled"',
+  '                    self.outcome = "ok"'),
+ ("M10 memory failure logs raw exception text", "agent_civilization/core/experience.py",
+  'logger.warning("experience recall failed: %s", type(exc).__name__)',
+  'logger.warning("experience recall failed: %s", exc)'),
+ ("M11 storage outcome not annotated", "agent_civilization/storage/supabase_store.py",
+  '    telemetry.annotate(kind="storage", outcome="ok" if ok else "fail",',
+  '    telemetry.annotate(kind="storage", outcome="ok",'),
+ ("M12 LLM HTTP status not annotated", "agent_civilization/core/llm.py",
+  "                    telemetry.annotate(kind=\"llm\", http_status=resp.status)",
+  "                    pass"),
+ ("M13 background task not bound to task_id", "server.py",
+  "    telemetry.bind_task(task_id)\n    with telemetry.span(\"task\", \"run\"",
+  "    with telemetry.span(\"task\", \"run\""),
+ ("M14 workflow stage span dropped", "agent_civilization/pipeline/orchestrator.py",
+  '        with telemetry.span("workflow", "stage",',
+  '        with telemetry.span("tool", "stage",'),
+ ("M15 tool span outcome ignores handler failure", "agent_civilization/core/agents/real_dispatcher.py",
+  "            sp.set(error=e)\n",
+  "            pass\n"),
+]
+results = []
+for name, path, old, new in M:
+    p = f"{ROOT}/{path}"; src = open(p, encoding="utf-8").read()
+    assert src.count(old) == 1, (name, src.count(old))
+    shutil.copy(p, "/tmp/mut159/backup")
+    try:
+        open(p, "w", encoding="utf-8").write(src.replace(old, new))
+        py_compile.compile(p, cfile="/tmp/mut159/x.pyc", doraise=True)
+        r = subprocess.run([sys.executable, "-m", "pytest", "tests/test_r159_telemetry.py", "-q", "-p", "no:cacheprovider"],
+                           cwd=ROOT, capture_output=True, text=True, timeout=600)
+        last = r.stdout.strip().splitlines()[-1]
+        failed = re.search(r"(\d+) failed", last); errors = re.search(r"(\d+) error", last)
+        killed = r.returncode == 1 and failed and not errors
+        fails = sorted({l.split("::")[1].split(" ")[0] for l in r.stdout.splitlines() if l.startswith("FAILED")})
+        results.append((name, "KILLED" if killed else "SURVIVED", last, fails))
+    finally:
+        shutil.copy("/tmp/mut159/backup", p)
+    print(f"{name}: {results[-1][1]} | {results[-1][2]}\n    failing tests: {', '.join(results[-1][3])}", flush=True)
+r = subprocess.run(["git", "-C", ROOT, "status", "--porcelain", "--", *{m[1] for m in M}], capture_output=True, text=True)
+print(f"restored: git status of mutated files = [{r.stdout.strip()}]")
+print(f"killed {sum(1 for x in results if x[1]=='KILLED')}/{len(results)}")
+## results
+M1 no redaction of unsafe strings: KILLED | ========================= 7 failed, 24 passed in 3.67s =========================
+    failing tests: test_unsafe_values_are_redacted[Bearer, test_unsafe_values_are_redacted[R159-PROMPT-SECRET-c41f, test_unsafe_values_are_redacted[\u062d\u0631\u0648\u0641, test_unsafe_values_are_redacted[a"b], test_unsafe_values_are_redacted[https://user:pw@host/x?key=1], test_unsafe_values_are_redacted[line\nbreak], test_unsafe_values_are_redacted[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+M2 raw tenant id instead of pseudonym: KILLED | ========================= 9 failed, 22 passed in 3.59s =========================
+    failing tests: test_background_task_trace_links_request_task_and_storage, test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace, test_memory_layer_failure_logs_type_only, test_provider_error_is_diagnosable_without_leaking, test_provider_transport_error_is_typed, test_storage_rejection_is_diagnosable_without_leaking, test_tenant_is_a_keyed_pseudonym_never_the_raw_id, test_tool_exception_is_typed_and_not_leaked, test_workflow_endpoint_traces_each_stage
+M3 raw exception text as error_type: KILLED | ========================= 3 failed, 28 passed in 3.61s =========================
+    failing tests: test_exception_is_reported_by_type_only, test_memory_layer_failure_logs_type_only, test_tool_exception_is_typed_and_not_leaked
+M4 task_id as a metric label: KILLED | ========================= 2 failed, 29 passed in 3.58s =========================
+    failing tests: test_metrics_endpoint_has_bounded_ops_labels_only, test_series_do_not_grow_with_task_or_trace_ids
+M5 unbounded op label (no allowlist/cap): KILLED | ========================= 2 failed, 29 passed in 3.63s =========================
+    failing tests: test_metrics_endpoint_has_bounded_ops_labels_only, test_series_do_not_grow_with_task_or_trace_ids
+M6 middleware does not reset the trace: KILLED | ========================= 1 failed, 30 passed in 3.57s =========================
+    failing tests: test_failed_request_then_next_request_is_clean
+M7 parent span not linked: KILLED | ========================= 4 failed, 27 passed in 3.58s =========================
+    failing tests: test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace, test_consecutive_requests_never_share_or_inherit_a_trace, test_nested_spans_link_parent_and_share_trace, test_workflow_endpoint_traces_each_stage
+M8 bind_task is a no-op: KILLED | ========================= 3 failed, 28 passed in 3.57s =========================
+    failing tests: test_background_task_trace_links_request_task_and_storage, test_bind_task_in_a_child_task_does_not_touch_the_parent, test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace
+M9 cancellation recorded as ok: KILLED | ========================= 1 failed, 30 passed in 3.56s =========================
+    failing tests: test_cancellation_is_recorded_and_context_restored
+M10 memory failure logs raw exception text: KILLED | ========================= 1 failed, 30 passed in 3.56s =========================
+    failing tests: test_memory_layer_failure_logs_type_only
+M11 storage outcome not annotated: KILLED | ========================= 1 failed, 30 passed in 3.54s =========================
+    failing tests: test_storage_rejection_is_diagnosable_without_leaking
+M12 LLM HTTP status not annotated: KILLED | ========================= 1 failed, 30 passed in 3.55s =========================
+    failing tests: test_provider_error_is_diagnosable_without_leaking
+M13 background task not bound to task_id: SURVIVED | ============================== 31 passed in 3.57s ==============================
+    failing tests: 
+M14 workflow stage span dropped: KILLED | ========================= 2 failed, 29 passed in 3.56s =========================
+    failing tests: test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace, test_workflow_endpoint_traces_each_stage
+M15 tool span outcome ignores handler failure: KILLED | ========================= 1 failed, 30 passed in 3.57s =========================
+    failing tests: test_tool_exception_is_typed_and_not_leaked
+restored: git status of mutated files = []
+killed 14/15
+
+## follow-up: M13 SURVIVED above. Cause: create_task binds task_id before asyncio.create_task, so the copied context already carries it — the mutant is equivalent on that call path, but _run_task must bind itself whatever the caller. Added test_run_task_binds_its_own_task_id_whatever_the_caller (calls _run_task from a fresh context). Full mutation run repeated:
+M1 no redaction of unsafe strings: KILLED | ========================= 7 failed, 25 passed in 3.63s =========================
+    failing tests: test_unsafe_values_are_redacted[Bearer, test_unsafe_values_are_redacted[R159-PROMPT-SECRET-c41f, test_unsafe_values_are_redacted[\u062d\u0631\u0648\u0641, test_unsafe_values_are_redacted[a"b], test_unsafe_values_are_redacted[https://user:pw@host/x?key=1], test_unsafe_values_are_redacted[line\nbreak], test_unsafe_values_are_redacted[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+M2 raw tenant id instead of pseudonym: KILLED | ========================= 9 failed, 23 passed in 3.59s =========================
+    failing tests: test_background_task_trace_links_request_task_and_storage, test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace, test_memory_layer_failure_logs_type_only, test_provider_error_is_diagnosable_without_leaking, test_provider_transport_error_is_typed, test_storage_rejection_is_diagnosable_without_leaking, test_tenant_is_a_keyed_pseudonym_never_the_raw_id, test_tool_exception_is_typed_and_not_leaked, test_workflow_endpoint_traces_each_stage
+M3 raw exception text as error_type: KILLED | ========================= 3 failed, 29 passed in 3.57s =========================
+    failing tests: test_exception_is_reported_by_type_only, test_memory_layer_failure_logs_type_only, test_tool_exception_is_typed_and_not_leaked
+M4 task_id as a metric label: KILLED | ========================= 2 failed, 30 passed in 3.58s =========================
+    failing tests: test_metrics_endpoint_has_bounded_ops_labels_only, test_series_do_not_grow_with_task_or_trace_ids
+M5 unbounded op label (no allowlist/cap): KILLED | ========================= 2 failed, 30 passed in 3.62s =========================
+    failing tests: test_metrics_endpoint_has_bounded_ops_labels_only, test_series_do_not_grow_with_task_or_trace_ids
+M6 middleware does not reset the trace: KILLED | ========================= 1 failed, 31 passed in 3.58s =========================
+    failing tests: test_failed_request_then_next_request_is_clean
+M7 parent span not linked: KILLED | ========================= 4 failed, 28 passed in 3.58s =========================
+    failing tests: test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace, test_consecutive_requests_never_share_or_inherit_a_trace, test_nested_spans_link_parent_and_share_trace, test_workflow_endpoint_traces_each_stage
+M8 bind_task is a no-op: KILLED | ========================= 4 failed, 28 passed in 3.57s =========================
+    failing tests: test_background_task_trace_links_request_task_and_storage, test_bind_task_in_a_child_task_does_not_touch_the_parent, test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace, test_run_task_binds_its_own_task_id_whatever_the_caller
+M9 cancellation recorded as ok: KILLED | ========================= 1 failed, 31 passed in 3.57s =========================
+    failing tests: test_cancellation_is_recorded_and_context_restored
+M10 memory failure logs raw exception text: KILLED | ========================= 1 failed, 31 passed in 3.58s =========================
+    failing tests: test_memory_layer_failure_logs_type_only
+M11 storage outcome not annotated: KILLED | ========================= 1 failed, 31 passed in 3.55s =========================
+    failing tests: test_storage_rejection_is_diagnosable_without_leaking
+M12 LLM HTTP status not annotated: KILLED | ========================= 1 failed, 31 passed in 3.52s =========================
+    failing tests: test_provider_error_is_diagnosable_without_leaking
+M13 background task not bound to task_id: KILLED | ========================= 1 failed, 31 passed in 3.56s =========================
+    failing tests: test_run_task_binds_its_own_task_id_whatever_the_caller
+M14 workflow stage span dropped: KILLED | ========================= 2 failed, 30 passed in 3.55s =========================
+    failing tests: test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace, test_workflow_endpoint_traces_each_stage
+M15 tool span outcome ignores handler failure: KILLED | ========================= 1 failed, 31 passed in 3.56s =========================
+    failing tests: test_tool_exception_is_typed_and_not_leaked
+restored: git status of mutated files = []
+killed 15/15

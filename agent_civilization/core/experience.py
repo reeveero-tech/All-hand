@@ -52,7 +52,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from agos_kernel.agent_production.learning_runtime import LearningRuntime
 from agos_kernel.agent_production.memory_system import MemorySystem, MemoryType
-from agent_civilization.core import tenancy
+from agent_civilization.core import telemetry, tenancy
 from agent_civilization.core.tenancy import ALL_TENANTS
 
 logger = logging.getLogger("agos.experience")
@@ -304,14 +304,20 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
     tid = tenancy.current_tenant()
     if not enabled() or tid is None:
         # SEC-02: no authenticated tenant -> no memory (nothing recalled, nothing stored)
+        telemetry.event("memory", "recall", outcome="skipped",
+                        reason="disabled" if not enabled() else "no_tenant")
         return await call(), None
     try:
-        await _ensure_loaded()
-        kind = input_kind(work)
-        recalled = await recall(specialization, work, tenant_id=tid)
-        prior = prior_learning(specialization, kind, tid)
+        # R-159: `memory` spans hold counts/flags only — never the recalled text
+        with telemetry.span("memory", "recall") as msp:
+            await _ensure_loaded()
+            kind = input_kind(work)
+            recalled = await recall(specialization, work, tenant_id=tid)
+            prior = prior_learning(specialization, kind, tid)
+            msp.set(recalled=len(recalled) if isinstance(recalled, list) else None)
     except Exception as exc:  # noqa: BLE001 — memory must never break a task
-        logger.warning("experience recall failed: %s", exc)
+        # R-159: exception TYPE only (its text may carry paths/contents)
+        logger.warning("experience recall failed: %s", type(exc).__name__)
         return await call(), None
     started = time.perf_counter()
     result = await call()
@@ -323,8 +329,10 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
         live_result = result
         if fallback is not None:
             result = fallback
-        mid = await _store(specialization, agent, work, live_result if isinstance(live_result, dict) else {},
-                           kind, elapsed_ms, tid)
+        with telemetry.span("memory", "record") as msp:
+            mid = await _store(specialization, agent, work, live_result if isinstance(live_result, dict) else {},
+                               kind, elapsed_ms, tid)
+            msp.set(stored=mid is not None)
         learning(tid).record_task(agent_id=agent, task_type=specialization, approach=kind,
                                success=bool(isinstance(live_result, dict) and live_result.get("ok")),
                                duration_ms=elapsed_ms)
@@ -334,7 +342,7 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
                                    "after": prior_learning(specialization, kind, tid)}}
         return result, experience
     except Exception as exc:  # noqa: BLE001
-        logger.warning("experience store failed: %s", exc)
+        logger.warning("experience store failed: %s", type(exc).__name__)
         return result, None
 
 

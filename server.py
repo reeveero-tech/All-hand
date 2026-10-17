@@ -24,6 +24,7 @@ import json
 import logging
 import os
 import time
+import urllib.parse
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
@@ -45,7 +46,7 @@ from agent_civilization.agents.external_adapter import (
     ExternalAgentAdapter,
     load_external_agents_from_env,
 )
-from agent_civilization.core import experience, safety, tenancy
+from agent_civilization.core import experience, safety, telemetry, tenancy
 from agent_civilization.core.tenancy import ALL_TENANTS, Principal
 from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
 from agent_civilization.routing import route as route_request
@@ -138,6 +139,10 @@ if _IS_WILDCARD:
 from agos_kernel.infrastructure.metrics import MetricsMiddleware  # noqa: E402
 from agos_kernel.infrastructure.health import civilization_status, set_civilization_provider  # noqa: E402  (R-157)
 app.add_middleware(MetricsMiddleware)
+# R-159 (D-071): one trace + one `http` span per request (outermost, so the
+# trace covers the whole request; reset in finally — never inherited by a
+# later request). Records hold no prompt/result/credential/raw tenant id.
+app.add_middleware(telemetry.TelemetryMiddleware)
 
 
 # ============================================================================
@@ -336,6 +341,14 @@ def _prune_tasks():
 
 
 async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
+    # R-159: the background run keeps the trace of the request that created it
+    # (asyncio copies the context) and is one `task` span bound to task_id.
+    telemetry.bind_task(task_id)
+    with telemetry.span("task", "run", specialization=specialization) as sp:
+        await _run_task_traced(sp, task_id, specialization, prompt, data)
+
+
+async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, data: Any):
     # SEC-02: the background task runs as the tenant that owns the record
     # (explicit, not only inherited), so memory and events stay in that tenant.
     tenant_id = TASKS[task_id]["tenant_id"]
@@ -350,6 +363,7 @@ async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
         outcome = {"ok": False, "agent": None, "specialization": specialization, "elapsed_s": 0,
                    "result": {"error": reason}}
         TASKS[task_id].update(status="failed", result=outcome, finished_at=time.time())
+        sp.set(outcome="fail")
         storage = get_storage()
         await storage.update_task(task_id, "failed", result=outcome, elapsed_s=0)
         await storage.insert_event("task_completed", {"task_id": task_id, "agent": None,
@@ -370,6 +384,7 @@ async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
     TASKS[task_id]["status"] = "completed" if outcome["ok"] else "failed"
     TASKS[task_id]["result"] = outcome
     TASKS[task_id]["finished_at"] = time.time()
+    sp.set(outcome="ok" if outcome["ok"] else "fail")
 
     await storage.update_task(task_id, TASKS[task_id]["status"],
                               agent_name=agent.name, result=outcome, elapsed_s=outcome.get("elapsed_s", 0))
@@ -684,6 +699,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
         "tenant_id": principal.tenant_id,
     }
     _prune_tasks()
+    telemetry.bind_task(task_id)
+    telemetry.event("task", "queued", specialization=req.specialization)
     storage = get_storage()
     await storage.insert_task(task_id, req.specialization, req.prompt, "queued", tenant_id=principal.tenant_id)
     await storage.insert_event("task_created", {"task_id": task_id, "specialization": req.specialization},
@@ -915,6 +932,11 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
         "tenant_id": principal.tenant_id,
     }
     _prune_tasks()
+    # R-159: the chat's task_id exists only after execution; the agent/tool/
+    # memory/llm spans above share this request's trace_id, the storage spans
+    # below also carry the task_id.
+    telemetry.bind_task(task_id)
+    telemetry.event("task", "recorded", outcome="ok" if outcome["ok"] else "fail", specialization=spec)
 
     storage = get_storage()
     await storage.insert_task(task_id, spec, req.message, chat_status, tenant_id=principal.tenant_id)
@@ -971,7 +993,9 @@ async def register_external_agent(
     adapter = ExternalAgentAdapter(req.name, req.url, req.model, req.api_key,
                                    allow_private=allow_private)
     EXTERNAL_AGENTS.append(adapter)
-    logger.warning(f"External agent registered: {req.name} at {req.url}")
+    # R-159: the URL may carry userinfo/query credentials — log scheme+host only.
+    _u = urllib.parse.urlsplit(req.url)
+    logger.warning("External agent registered: %s at %s://%s", req.name, _u.scheme, _u.hostname or "?")
     return {"registered": adapter.snapshot()}
 
 

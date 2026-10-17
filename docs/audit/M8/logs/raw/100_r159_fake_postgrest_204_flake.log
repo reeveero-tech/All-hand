@@ -1,0 +1,11 @@
+# 100 R-159: intermittent failure of the new chain test caused by the LOCAL fake PostgREST (a body on HTTP 204) — before/after, 2026-10-17T08:11:09Z, Python 3.12.13
+## observed first in a full-file run: 1 failed / 31 (test_chain_..._one_trace): storage span update_task outcome=fail error_type=ClientResponseError, while it passed alone
+$ diff (old fake -> fixed fake)
+134c134
+<         data = json.dumps({"message": BACKEND_SECRET} if self.reject else []).encode()
+---
+>         data = b"" if code == 204 else json.dumps({"message": BACKEND_SECRET} if self.reject else []).encode()
+FAILED tests/test_r159_telemetry.py::test_chain_api_llm_agent_tool_memory_workflow_storage_one_trace
+## fake=old: failing runs = 1 / 30 (31 tests per run)
+## fake=fixed: failing runs = 0 / 30 (31 tests per run)
+## reading: the defect is in the test double (a 204 must not carry a body), not in the runtime; the production store maps any transport error to a failed write (unchanged).

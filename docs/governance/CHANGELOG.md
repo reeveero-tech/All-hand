@@ -1,5 +1,32 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-17 — R-159 (M8/P2): رصد موحد وآمن — traces/structured logs/metrics (دفعة m8/r159-observability، D-071) + قبول R-158
+
+- **قبول R-158**: PR #172 مدموجة بـ`--merge`. SHA الدمج `7aa5ed6d179b6bce0358e0912b8f353bead3bfd5`، وأبوه الثاني هو المختبر `ed078cef1ec4f1c7bf1269295272fc8cfcd3fc4d`. CI main ‏39013981294 نجح في كل الوظائف، وتُخطّي publish. خطوة `specialists` نجحت بـ1098 passed. R-158 ⇒ `done` لا `accepted` (`098`)، وفحص الحالة ناجح (`099`).
+- **مضاف**:
+  - `agent_civilization/core/telemetry.py`: سياق trace بـcontextvars، وspans، وأحداث، و`TelemetryMiddleware` (ASGI خام)، ومقاييس محدودة، واسم مستعار للمستأجر، وحلقة داخلية بحجم 512.
+  - نقاط رصد في:
+    - `server.py`: الطلب، ومهمة `queued`/`run`/`recorded`.
+    - `pipeline/orchestrator.py`: كل مرحلة.
+    - `real_agents.py` و`specialist_runtime.py` و`external_adapter.py`: الوكيل.
+    - `real_dispatcher.dispatch`: الأداة.
+    - `experience.run_with_experience`: الذاكرة recall/record.
+    - `LLMClient.complete`: المزود.
+    - `SupabaseStorage`: العمليات الثماني.
+- **مُصلح**: نص الاستثناء الخام لم يعد يُسجل في `experience.py` (recall/store) ولا `memory_system.py` (persist/load). تسجيل الوكيل الخارجي يطبع scheme وhost فقط.
+- **لم يتغير**: عقود API، وقيم الإرجاع، وسياسات اختيار الوكيل، والإعدادات الإلزامية. `src/` لم يُلمس.
+- **اختبارات**: `tests/test_r159_telemetry.py` (32).
+- **الأدلة**:
+  - `100`: تقطع fake 204.
+  - `101`: الطفرات.
+  - `102`: الكلفة.
+  - `103`: تكامل محلي للتخزين.
+  - `104`: الحزمة بالوضعين.
+  - `105`: البوابات.
+  - `106`: فشل CI للـPR بسبب مسار catch-all غير موجود في CI، وإصلاحه.
+  - `107`: الحزمة بالوضعين دون `web/dist`، والبوابات.
+- **وثائق**: ROADMAP، PROJECT_STATE، DECISIONS (D-071)، QUALITY، API، DATA_MODEL، OPERATIONS (تشغيل/إيقاف)، SECURITY، `docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+
 ## 2026-10-17 — R-158 (M8/P1): خط أساس اختبارات لكل ملف عند `573793c` (دفعة m8/r158-test-baseline، D-070) + قبول R-157
 
 - **قبول R-157**: PR #171 مدموجة بـ`--merge`. SHA الدمج `573793c1f36afd77f3b79247ab9e2d978a397b62`، وأبوه الثاني هو المختبر `1e4d6fa035bcf2262345e239c997b731df4a2974`. CI main 39005652192 success، والحوكمة للـPR 39005317063 success. R-157 ⇒ `done` لا `accepted` (`085`). فحص الحالة (`086`) فشل أولاً لأن مسار دليل كان خارج `docs/audit/`، فصُحح الحقل ونجحت إعادة التشغيل.

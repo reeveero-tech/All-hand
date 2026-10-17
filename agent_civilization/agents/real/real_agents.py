@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from agent_civilization.agents.real.runtime_contract import failure_result
 from agent_civilization.core import experience as _experience
+from agent_civilization.core import telemetry as _telemetry
 from agent_civilization.core.agents.real_dispatcher import (
     coverage as _coverage,
     dispatch as _dispatch,
@@ -81,6 +82,14 @@ class RealSpecialistAgent:
     })
 
     async def execute(self, work: Dict[str, Any]) -> Dict[str, Any]:
+        # R-159: one `agent` span; outcome from the canonical result (no content logged)
+        with _telemetry.span("agent", self.specialization, impl="real", agent=self.name,
+                             specialization=self.specialization) as sp:
+            out = await self._execute(work)
+            sp.set(outcome="ok" if out.get("ok") else "fail")
+            return out
+
+    async def _execute(self, work: Dict[str, Any]) -> Dict[str, Any]:
         started = time.time()
         self.status = "working"
         try:
@@ -107,6 +116,7 @@ class RealSpecialistAgent:
             elapsed = round(time.time() - started, 3)
             self.stats["tasks_failed"] += 1
             self.stats["total_time_s"] += elapsed
+            _telemetry.annotate(kind="agent", error=exc)
             # R-149 (Security QA): an unexpected exception's raw text is not
             # trusted — it can carry internal details into the tenant-visible
             # result — so only its TYPE is reported. UnsafeURLError keeps its
