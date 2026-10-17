@@ -1,0 +1,17 @@
+# 079 R-157 mutation run 2 — HEAD 0ba6ed65d1f390eb5d18ab422a85a88bc3f4655f (local, 2026-10-17T04:59:01Z, Python 3.12.13); same runner as 078 (unchanged), after adding test_c1_result_without_ok_key_matches_and_keeps_legacy_inner_count
+KILLED    M1 public_error leaks message | agent_civilization/agents/real/runtime_contract.py | first failing: tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+KILLED    M2 public_error drops UnsafeURLError text | agent_civilization/agents/real/runtime_contract.py | first failing: tests/test_r157_contract_parity.py::test_c1_unsafe_url_error_keeps_its_fixed_message_on_both
+KILLED    M3 adapter reverted to inner.execute | agent_civilization/agents/real/specialist_runtime.py | first failing: tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+KILLED    M4 adapter forgets inner failure count | agent_civilization/agents/real/specialist_runtime.py | first failing: tests/test_r157_contract_parity.py::test_c1_specialist_instance_bookkeeping_is_preserved
+KILLED    M5 adapter swallows exception (BaseAgent style) | agent_civilization/agents/real/specialist_runtime.py | first failing: tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+KILLED    M6 adapter default ok False when key missing | agent_civilization/agents/real/specialist_runtime.py | first failing: tests/test_r157_contract_parity.py::test_c1_result_without_ok_key_matches_and_keeps_legacy_inner_count
+KILLED    M7 health ignores provider | agos_kernel/infrastructure/health.py | first failing: tests/test_r157_contract_parity.py::test_c2_health_views_agree_on_the_live_civilization
+KILLED    M8 civilization_status zero-agent rule broken | agos_kernel/infrastructure/health.py | first failing: tests/test_r157_contract_parity.py::test_c2_not_ready_state_is_unhealthy_in_both_views[civ1-No
+KILLED    M9 health provider path leaks str(e) | agos_kernel/infrastructure/health.py | first failing: tests/test_r157_contract_parity.py::test_c2_broken_civilization_does_not_leak_in_either_view
+KILLED    M10 server does not register provider | server.py | first failing: tests/test_r157_contract_parity.py::test_c2_health_views_agree_on_the_live_civilization
+KILLED    M11 provider snapshots CIVILIZATION at import | server.py | first failing: tests/test_r157_contract_parity.py::test_c2_health_views_agree_on_the_live_civilization
+KILLED    M12 server _pick_agent policy changed silently | server.py | first failing: tests/test_r157_contract_parity.py::test_c5_selection_policies_are_pinned_as_they_are
+KILLED    M13 real runtime leaks message | agent_civilization/agents/real/real_agents.py | first failing: tests/test_r157_contract_parity.py::test_c1_unexpected_exception_reports_type_only_on_both
+killed 13/13
+after restore: ============================== 50 passed in 0.53s ==============================
+exit=0

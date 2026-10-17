@@ -1,0 +1,26 @@
+# 082 R-157 frontend builds — no file under src/ or web/ is changed by R-157 (git diff below); builds re-run to show nothing broke. HEAD 0ba6ed65d1f390eb5d18ab422a85a88bc3f4655f, 2026-10-17T05:03:44Z, node v22.22.0, npm 10.9.4 (engines >=22.13.0; CI uses setup-node 22)
+$ git diff --stat 228b9560f74f8ef9035a57ce1e460362ac9d3a2c HEAD -- src web package.json package-lock.json
+(empty = unchanged)
+## web/: npm ci --engine-strict ; npm run build ; npm test
+
+added 63 packages in 2s
+ci exit=0
+dist/assets/index-B6dOodBA.css   12.26 kB │ gzip:  2.99 kB
+dist/assets/index-DixFQaVY.js   172.32 kB │ gzip: 54.45 kB
+
+✓ built in 127ms
+build exit=0
+# tests 31
+# pass 31
+# fail 0
+test exit=0
+## root app (src/): npm ci --engine-strict ; npx eslint . --max-warnings=0 ; npm run build
+
+added 415 packages in 8s
+ci exit=0
+eslint exit=0
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+root build exit=0

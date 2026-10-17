@@ -1,0 +1,39 @@
+# 080 R-157 direct operational check — real uvicorn process on 127.0.0.1, HEAD 0ba6ed65d1f390eb5d18ab422a85a88bc3f4655f, 2026-10-17T05:00:18Z, Python 3.12.13; AGOS_ENV=development, AGENTS_PER_SPEC=2, AGOS_API_KEY=<random 32 hex, not recorded>, Redis/Supabase absent (degraded = in-memory storage, expected)
+## AGOS_AGENT_IMPL=real (port 18897)
+GET /health -> degraded | civilization: healthy / Civilization active with 40 agents | agent_count= 40 [200]
+GET /health/ready -> {"status":"ready","agents":40,"specializations":20} [200]
+GET /api/system/status total_agents -> 40
+GET /api/agents -> count 40 snapshot keys ['id', 'name', 'specialization', 'stats', 'status']
+POST /api/tasks analyst -> task status=completed ok=True impl=- result: {"ok": true, "answer": "n=4 mean=2.500 sd=1.118 trend=up"} | experience stored: True
+POST /api/tasks validator -> task status=failed ok=False impl=- result: {"ok": false, "error": "invalid JSON: Expecting value at pos 0"} | experience stored: True
+POST /api/tasks api_integrator -> task status=failed ok=False impl=- result: {"ok": false, "error": "blocked: blocked non-public address for 127.0.0.1: 127.0.0.1 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)"} | experience stored: True
+GET /api/memory -> count 3 | stats.memories 3
+## AGOS_AGENT_IMPL=specialists (port 18748)
+GET /health -> degraded | civilization: healthy / Civilization active with 40 agents | agent_count= 40 [200]
+GET /health/ready -> {"status":"ready","agents":40,"specializations":20} [200]
+GET /api/system/status total_agents -> 40
+GET /api/agents -> count 40 snapshot keys ['id', 'impl', 'name', 'specialization', 'stats', 'status']
+POST /api/tasks analyst -> task status=completed ok=True impl=AnalystAgent0015 result: {"ok": true, "answer": "n=4 mean=2.500 sd=1.118 trend=up"} | experience stored: True
+POST /api/tasks validator -> task status=failed ok=False impl=ValidatorAgent0019 result: {"ok": false, "error": "invalid JSON: Expecting value at pos 0"} | experience stored: True
+POST /api/tasks api_integrator -> task status=failed ok=False impl=ApiIntegratorAgent0001 result: {"ok": false, "error": "blocked: blocked non-public address for 127.0.0.1: 127.0.0.1 (set AGOS_ALLOW_PRIVATE_NETWORK=1 to allow internal targets)"} | experience stored: True
+GET /api/memory -> count 3 | stats.memories 3
+## probe source /tmp/probe/task.py:
+import json, sys, time, urllib.request
+base, key, spec, prompt, data = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], json.loads(sys.argv[5])
+H = {"content-type": "application/json", "X-API-Key": key}
+def call(m, p, body=None):
+    req = urllib.request.Request(base + p, method=m, headers=H, data=None if body is None else json.dumps(body).encode())
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return r.status, json.loads(r.read())
+st, j = call("POST", "/api/tasks", {"specialization": spec, "prompt": prompt, "data": data})
+tid = j["task_id"]
+for _ in range(100):
+    st, t = call("GET", f"/api/tasks/{tid}")
+    if t["status"] in ("completed", "failed"): break
+    time.sleep(0.1)
+res = t.get("result") or {}
+inner = res.get("result") if isinstance(res, dict) else None
+print(f"POST /api/tasks {spec} -> task status={t['status']} ok={res.get('ok')} impl={res.get('impl', '-')}",
+      "result:", json.dumps({k: inner[k] for k in ("ok", "error", "answer") if isinstance(inner, dict) and k in inner})[:160],
+      "| experience stored:", bool(((res.get('experience') or {}).get('memory') or {}).get('stored_id')))
+## not exercised live: an unexpected handler exception (needs code injection into a running process; covered by the in-process parity tests — local full run 081 and CI)
