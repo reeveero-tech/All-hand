@@ -79,7 +79,8 @@ def test_closed_gate_makes_no_api_call_and_writes_no_output(monkeypatch, tmp_pat
         monkeypatch.setenv(k, v)
     assert G.main() == 1
     assert calls == [] and not out.exists()
-    assert "CLOSED" in capsys.readouterr().out
+    text = capsys.readouterr().out
+    assert "CLOSED" in text and "not queried" in text and "HTTP" not in text
 
 
 def test_missing_environment_closes_the_gate_and_never_creates_it(monkeypatch, tmp_path):

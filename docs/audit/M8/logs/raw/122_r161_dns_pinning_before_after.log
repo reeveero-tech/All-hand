@@ -1,0 +1,162 @@
+# 122 R-161b G-161-3 — DNS pinning at the connection layer, before (main) / after (branch) — 2026-10-17T22:06:07Z
+# evidence class: mock (scripted socket.getaddrinfo + listeners on 127.0.0.x that count TCP connections). Not a live integration.
+
+## BEFORE: worktree of origin/main fcc869b5c51d775cab5bc548a70ccda55e0f76a7 + only tests/test_r161b_dns_pinning.py copied in (its import of the new guarded_session_kwargs removed so it can be collected)
+### A. the runner's live path: preflight answers 192.0.2.10 (public), every later resolution answers 127.0.0.3 (internal decoy)
+$ /tmp/venv3.11/bin/python -m pytest -v -p no:cacheprovider tests/test_r161b_dns_pinning.py -k rebinding_between_preflight
+tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[storage] FAILED
+tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[llm] FAILED
+E   AssertionError: assert (8 == 0)
+E    +  where 8 = <class 'tests.test_r161b_dns_pinning._handler.<locals>.H'>.connections
+WARNING  storage:supabase_store.py:281 insert_task failed: ClientConnectorSSLError
+WARNING  storage:supabase_store.py:309 update_task failed: ClientConnectorSSLError
+WARNING  storage:supabase_store.py:357 get_task failed: ClientConnectorSSLError
+WARNING  storage:supabase_store.py:330 get_tasks failed: ClientConnectorSSLError
+WARNING  storage:supabase_store.py:357 get_task failed: ClientConnectorSSLError
+WARNING  storage:supabase_store.py:428 insert_event failed: ClientConnectorSSLError
+WARNING  storage:supabase_store.py:447 get_events failed: ClientConnectorSSLError
+E   AssertionError: assert (1 == 0)
+E    +  where 1 = <class 'tests.test_r161b_dns_pinning._handler.<locals>.H'>.connections
+ERROR    llm:llm.py:257 LLM call failed: ClientConnectorSSLError
+FAILED tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[storage] - AssertionError: assert (8 == 0)
+FAILED tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[llm] - AssertionError: assert (1 == 0)
+======================= 2 failed, 21 deselected in 1.36s =======================
+=> on main the internal listener received TCP connections after the policy check had passed: 8 (storage probe: insert/update/get/... + cleanup) and 1 (LLM). That is the rebinding window of G-161-3.
+
+### the rest of the file on main (the guarded= parameter does not exist there):
+     11 E   TypeError: LLMClient.__init__() got an unexpected keyword argument 'guarded'
+      8 E   TypeError: SupabaseStorage.__init__() got an unexpected keyword argument 'guarded'
+      2 WARNING  storage:supabase_store.py:357 get_task failed: ClientConnectorSSLError
+      1 WARNING  storage:supabase_store.py:447 get_events failed: ClientConnectorSSLError
+      1 WARNING  storage:supabase_store.py:428 insert_event failed: ClientConnectorSSLError
+      1 WARNING  storage:supabase_store.py:330 get_tasks failed: ClientConnectorSSLError
+      1 WARNING  storage:supabase_store.py:309 update_task failed: ClientConnectorSSLError
+      1 WARNING  storage:supabase_store.py:281 insert_task failed: ClientConnectorSSLError
+      1 FAILED tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[pinned.test-True]
+      1 FAILED tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[other.test-False]
+      1 FAILED tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[storage]
+      1 FAILED tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[llm]
+
+## FAILURES WHILE WRITING THE FIX (kept; first run on the branch, python3 Python 3.14.3):
+ERROR    llm:llm.py:265 LLM call failed: UnsafeURLError
+FAILED tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[storage]
+FAILED tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[storage]
+FAILED tests/test_r161b_dns_pinning.py::test_no_dns_cache_each_connection_is_vetted_again
+FAILED tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[storage]
+FAILED tests/test_r161b_dns_pinning.py::test_default_clients_are_unchanged_and_the_runner_uses_guarded_ones
+======================== 5 failed, 18 passed in 13.78s =========================
+causes (test-side, then fixed — no skip/xfail):
+- 4 storage cases: the helper restored SUPABASE_URL/KEY right after constructing the client; SupabaseStorage reads them at call time, so NO request was made (dns.calls == 0) — the cases were not testing anything -> globals kept for the whole test (monkeypatch)
+- no-DNS-cache case: TCPConnector built outside a running loop (RuntimeError) -> built inside the loop
+- static case: wrong count of 'guarded_session_kwargs(' in the runner -> assert the cleanup session's '**guarded_session_kwargs(self.allow_private)'
+
+## AFTER: branch m8/r161b-dns-pinning-env-gate at 93616b46dc99c3734222c0e17a03d17d8ba8d105
+$ python3 -m pytest -v -p no:cacheprovider tests/test_r161b_dns_pinning.py   (Python 3.14.3)
+tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_resolver_hands_the_connector_the_vetted_literal PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer0] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer1] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer2] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer3] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer0] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer1] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer2] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer3] PASSED
+tests/test_r161b_dns_pinning.py::test_dns_failure_fails_closed[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_dns_failure_fails_closed[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_no_dns_cache_each_connection_is_vetted_again PASSED
+tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[pinned.test-True] PASSED
+tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[other.test-False] PASSED
+tests/test_r161b_dns_pinning.py::test_default_clients_are_unchanged_and_the_runner_uses_guarded_ones PASSED
+============================= 23 passed in 13.58s ==============================
+$ /tmp/venv3.11/bin/python -m pytest -v -p no:cacheprovider tests/test_r161b_dns_pinning.py   (Python 3.11.15)
+tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_resolver_hands_the_connector_the_vetted_literal PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer0] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer1] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer2] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer3] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer0] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer1] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer2] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer3] PASSED
+tests/test_r161b_dns_pinning.py::test_dns_failure_fails_closed[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_dns_failure_fails_closed[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_no_dns_cache_each_connection_is_vetted_again PASSED
+tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[pinned.test-True] PASSED
+tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[other.test-False] PASSED
+tests/test_r161b_dns_pinning.py::test_default_clients_are_unchanged_and_the_runner_uses_guarded_ones PASSED
+============================= 23 passed in 13.47s ==============================
+$ /tmp/venv3.12/bin/python -m pytest -v -p no:cacheprovider tests/test_r161b_dns_pinning.py   (Python 3.12.13)
+tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_guarded_resolver_hands_the_connector_the_vetted_literal PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer0] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer1] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer2] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer3] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer0] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer1] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer2] PASSED
+tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer3] PASSED
+tests/test_r161b_dns_pinning.py::test_dns_failure_fails_closed[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_dns_failure_fails_closed[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_no_dns_cache_each_connection_is_vetted_again PASSED
+tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[storage] PASSED
+tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[llm] PASSED
+tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[pinned.test-True] PASSED
+tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[other.test-False] PASSED
+tests/test_r161b_dns_pinning.py::test_default_clients_are_unchanged_and_the_runner_uses_guarded_ones PASSED
+============================= 23 passed in 13.62s ==============================
+
+## what the passing cases prove (assertions in the file):
+- rebinding (storage, llm): decoy.connections == 0 and hits == 0, dns.calls >= 2 (the connect-time answer was produced and refused), outcome FAIL with class live_integration, connected False — never PASS
+- allowed (storage, llm): dns.calls == 1, the listener bound ONLY to the vetted 127.0.0.2 got exactly 1 connection, Host == 'pinned.test:<port>', decoy 0 => the connected address is the vetted address
+- mixed [public, internal] / [internal, public] / 10.0.0.7 / 169.254.169.254: rejected as a whole, 0 connections; DNS failure: fail closed, 0 connections
+- no DNS cache: second connection is resolved and vetted again (refused when it answers internal); connector _use_dns_cache False, resolver GuardedResolver
+- redirects: 307 from the allowed host is refused, the redirect target got 0 connections
+- TLS: SNI == 'pinned.test' (original name) with a test CA; a certificate for other.test fails verification and no HTTP request is sent
+
+## BEFORE (addendum): whole file on main, summary line and per-test outcome
+ERROR    llm:llm.py:257 LLM call failed: ClientConnectorSSLError
+FAILED tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[storage]
+FAILED tests/test_r161b_dns_pinning.py::test_rebinding_between_preflight_and_connect_never_reaches_the_internal_listener[llm]
+FAILED tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[storage]
+FAILED tests/test_r161b_dns_pinning.py::test_guarded_clients_refuse_an_internal_answer_at_connect[llm]
+FAILED tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[storage]
+FAILED tests/test_r161b_dns_pinning.py::test_allowed_connection_goes_to_the_vetted_address_once[llm]
+FAILED tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer0]
+FAILED tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer1]
+FAILED tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer2]
+FAILED tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[storage-answer3]
+FAILED tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer0]
+FAILED tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer1]
+FAILED tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer2]
+FAILED tests/test_r161b_dns_pinning.py::test_mixed_or_internal_answers_are_rejected_as_a_whole[llm-answer3]
+FAILED tests/test_r161b_dns_pinning.py::test_dns_failure_fails_closed[storage]
+FAILED tests/test_r161b_dns_pinning.py::test_dns_failure_fails_closed[llm] - ...
+FAILED tests/test_r161b_dns_pinning.py::test_no_dns_cache_each_connection_is_vetted_again
+FAILED tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[storage]
+FAILED tests/test_r161b_dns_pinning.py::test_redirects_are_refused_and_the_target_never_contacted[llm]
+FAILED tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[pinned.test-True]
+FAILED tests/test_r161b_dns_pinning.py::test_tls_sni_and_verification_use_the_original_hostname[other.test-False]
+FAILED tests/test_r161b_dns_pinning.py::test_default_clients_are_unchanged_and_the_runner_uses_guarded_ones
+======================== 22 failed, 1 passed in 13.62s =========================

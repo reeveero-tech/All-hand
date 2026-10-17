@@ -31,6 +31,7 @@ from typing import Any, Dict, List, Optional, Tuple
 ENVIRONMENT = "r161-staging"
 READY_VALUE = "owner-verified"
 MAIN_REF = "refs/heads/main"
+NOT_QUERIED = -1
 
 
 def evaluate(ref: str, ready: str, env_status: int, env: Optional[Dict[str, Any]],
@@ -42,7 +43,9 @@ def evaluate(ref: str, ready: str, env_status: int, env: Optional[Dict[str, Any]
     if ready != READY_VALUE:
         why.append(f"repository variable R161_STAGING_READY is not '{READY_VALUE}' "
                    "(the owner has not declared the environment ready)")
-    if env_status != 200 or not isinstance(env, dict):
+    if env_status == NOT_QUERIED:
+        why.append(f"environment {ENVIRONMENT} not queried (the gate is already closed by the checks above)")
+    elif env_status != 200 or not isinstance(env, dict):
         why.append(f"environment {ENVIRONMENT} does not exist or cannot be read (HTTP {env_status}); "
                    "it must be created by the owner first — this gate never creates it")
     else:
@@ -79,7 +82,7 @@ def main() -> int:
     ref, ready = os.environ.get("GATE_REF", ""), os.environ.get("GATE_READY", "")
     repo, token = os.environ.get("GITHUB_REPOSITORY", ""), os.environ.get("GH_TOKEN", "")
     api = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
-    env_status, env, policies = 0, None, None
+    env_status, env, policies = NOT_QUERIED, None, None
     if ref == MAIN_REF and ready == READY_VALUE and repo:       # do not even query otherwise
         base = f"{api}/repos/{repo}/environments/{ENVIRONMENT}"
         env_status, env = _get(base, token)
