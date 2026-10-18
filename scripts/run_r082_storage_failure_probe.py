@@ -8,8 +8,20 @@ submits and lists tasks:
   phase 2 "401"   : every request answered 401 (key revoked) -> HTTP rejection
   phase 3 "ok"    : 201 for writes, 200 [] for reads       -> recovery
 After each phase it prints /health storage status/message and storage lines of /metrics.
-Exit code 0 always (it is a probe; the before/after logs are the evidence).
+R-185 (Q-026): since SEC-02/SEC-03 the tenant routes need a credential and
+production start needs one configured. The probe therefore configures a
+probe-only tenant (``AGOS_TENANT_KEYS`` with the SHA-256 of a key generated at
+run time, never printed) and sends that key as ``X-API-Key``. The fake honours
+``Prefer: return=representation`` like real PostgREST (R-161c).
+
+Self-check: the probe prints, per phase, the API status codes and how many
+requests the fake storage received. It exits 1 if the API refused the probe
+(401/403) or no request reached the fake in phases 2/3 — i.e. if it is not
+measuring what it was written for (the silent drift Q-026 found). Otherwise 0
+(it is a probe; the before/after logs are the evidence).
 """
+import hashlib
+import secrets
 import json
 import os
 import socket
@@ -17,10 +29,12 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 MODE = {"value": "401"}
+SEEN = {"n": 0}
 
 
 class Fake(BaseHTTPRequestHandler):
@@ -28,8 +42,14 @@ class Fake(BaseHTTPRequestHandler):
         n = int(self.headers.get("content-length") or 0)
         if n:
             self.rfile.read(n)
+        SEEN["n"] += 1
         if MODE["value"] == "401":
             body, code = b'{"code":"PGRST301","message":"JWT expired"}', 401
+        elif self.command == "PATCH" and "return=representation" in (self.headers.get("Prefer") or ""):
+            # real PostgREST: 200 + the updated rows when asked for them (R-161c)
+            q = parse_qs(urlsplit(self.path).query)
+            tid = (q.get("task_id") or ["eq."])[0].removeprefix("eq.")
+            code, body = 200, json.dumps([{"task_id": tid}]).encode()
         else:
             code = 201 if self.command == "POST" else (204 if self.command == "PATCH" else 200)
             body = b"" if code == 204 else b"[]"  # 204 must not carry a body
@@ -54,8 +74,13 @@ def free_port():
 
 
 port = free_port()
-for v in ("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY", "AGOS_API_KEY"):
+for v in ("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY", "AGOS_API_KEY", "RENDER"):
     os.environ.pop(v, None)
+# probe-only tenant credential (SEC-02 format); the key exists only in this process
+PROBE_KEY = secrets.token_urlsafe(32)
+os.environ["AGOS_TENANT_KEYS"] = json.dumps(
+    [{"tenant": "r082-probe", "key_sha256": hashlib.sha256(PROBE_KEY.encode()).hexdigest(), "role": "user"}])
+HDR = {"X-API-Key": PROBE_KEY}
 os.environ["SUPABASE_URL"] = f"http://127.0.0.1:{port}"
 os.environ["SUPABASE_SERVICE_KEY"] = "sb_secret_" + "z" * 24  # fake, service-shaped (R-078 → no startup warning)
 
@@ -63,24 +88,40 @@ from fastapi.testclient import TestClient  # noqa: E402
 import server  # noqa: E402
 
 
-def report(c, phase):
-    c.post("/api/tasks", json={"prompt": "r082 probe task", "specialization": "analyst"})
-    c.get("/api/tasks")
+PROBLEMS = []
+
+
+def report(c, phase, expect_storage_traffic):
+    before = SEEN["n"]
+    p = c.post("/api/tasks", json={"prompt": "r082 probe task", "specialization": "analyst"}, headers=HDR)
+    g = c.get("/api/tasks", headers=HDR)
+    reached = SEEN["n"] - before
+    print(f"[{phase}] API: POST /api/tasks -> {p.status_code}, GET /api/tasks -> {g.status_code}; "
+          f"requests reaching the fake storage: {reached}")
+    if p.status_code in (401, 403) or g.status_code in (401, 403):
+        PROBLEMS.append(f"{phase}: the API refused the probe credential")
+    if expect_storage_traffic and reached == 0:
+        PROBLEMS.append(f"{phase}: no request reached the fake storage")
     h = c.get("/health").json()
     s = h.get("checks", {}).get("storage", {})
     m = [ln for ln in c.get("/metrics").text.splitlines() if "storage" in ln and not ln.startswith("#")]
-    print(f"[{phase}] /health={h.get('status')} storage={s.get('status')} msg={s.get('message')!r}")
+    print(f"    /health={h.get('status')} storage={s.get('status')} msg={s.get('message')!r}")
     det = s.get("details", {})
     print(f"    details: last_ok={det.get('last_ok')} last_error={json.dumps(det.get('last_error'))}")
     print(f"    /metrics storage lines: {len(m)}" + ("".join(f"\n      {ln}" for ln in m[:6])))
 
 
 with TestClient(server.app) as c:
-    report(c, "1 down (connection refused)")
+    report(c, "1 down (connection refused)", expect_storage_traffic=False)
     srv = HTTPServer(("127.0.0.1", port), Fake)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     MODE["value"] = "401"
-    report(c, "2 HTTP 401 (key revoked)")
+    report(c, "2 HTTP 401 (key revoked)", expect_storage_traffic=True)
     MODE["value"] = "ok"
-    report(c, "3 recovered (201/200)")
+    report(c, "3 recovered (201/200)", expect_storage_traffic=True)
     srv.shutdown()
+
+if PROBLEMS:
+    print("PROBE NOT MEASURING: " + "; ".join(PROBLEMS))
+    sys.exit(1)
+print("probe reached storage in every phase that expects it")

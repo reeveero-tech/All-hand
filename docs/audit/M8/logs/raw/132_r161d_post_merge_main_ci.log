@@ -1,0 +1,17 @@
+# 132 R-161d — post-merge verification of PR #178 on main (2026-10-18T04:42:17Z)
+$ gh pr view 178 --json state,mergedAt,mergeCommit,headRefOid
+{"head":"bc386c3001a58cec92c8f5415067a49a5452927c","merge":"2b036a2dc5c7eb0ab8846fea8749854e248ca430","mergedAt":"2026-10-18T04:32:38Z","state":"MERGED"}
+$ git log -1 --format="%H %P %s" 2b036a2
+2b036a2dc5c7eb0ab8846fea8749854e248ca430 8f8488ff9399def290d98d25a68b8c8820cd9b0a bc386c3001a58cec92c8f5415067a49a5452927c Merge pull request #178 from reeveero-tech/m8/r161d-storage-connected-definition
+$ gh run view 39097462754 --json conclusion,headSha,event,jobs
+{"conclusion":"success","event":"push","headSha":"2b036a2dc5c7eb0ab8846fea8749854e248ca430","jobs":["quality=success","test=success","network=success","build=success","audit=success","storage=success","docker=success","publish=skipped"]}
+# pytest summaries of job test (gh run view 39097462754 --log | grep passed, 3 steps)
+Run tests (live test suite)	2026-10-18T04:35:30.3688986Z ========== 1379 passed, 4 skipped, 4 deselected in 154.27s (0:02:34) ===========
+Run tests on Python 3.12	2026-10-18T04:38:06.6242342Z ========== 1379 passed, 4 skipped, 4 deselected in 146.80s (0:02:26) ===========
+Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists	2026-10-18T04:40:51.3358246Z ========== 1379 passed, 4 skipped, 4 deselected in 159.25s (0:02:39) ===========
+# interpreters reported in job test:
+      1 Python 3.11.17
+      3 Python 3.12.15
+# job storage: R-161 runner on local PostgreSQL 17 + PostgREST (local_integration), with the R-161d connected definition:
+Verify storage layer + server end-to-end	2026-10-18T04:41:32.3803184Z R-161 integration report v1 git_sha=2b036a2dc5c7 simulated=False exit_code=0
+Verify storage layer + server end-to-end	2026-10-18T04:41:32.3804081Z   storage   PASS     class=local_integration host=127.0.0.1 connected=True cleanup=ok reason=all checks passed
