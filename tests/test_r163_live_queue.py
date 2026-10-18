@@ -9,6 +9,13 @@ Covers what the fake-backed unit suite cannot: the real HTTP round-trip and
 the real SQL semantics of every queue operation — the conditional PATCH as an
 atomic fence, ``Prefer: return=representation``, the ``in./lt.`` filters, and
 the unique ``(tenant_id, idempotency_key)`` index (409 on duplicates).
+
+Harness note: aiohttp sessions are bound to the event loop that created them,
+and the storage singleton is shared across tests — so each test runs its whole
+scenario inside ONE ``asyncio.run`` and closes the session inside that same
+loop before returning (the first CI run of this suite failed exactly that
+way: a fresh ``asyncio.run`` per storage call reused a dead loop's session and
+raised RuntimeError).
 """
 import asyncio
 import os
@@ -52,52 +59,66 @@ def test_r163_live_queue_roundtrip():
     s = _storage()
     _cleanup()
     try:
-        # insert with the queue columns
-        assert asyncio.run(s.insert_task("r163-live-1", "analyst", "p", "queued",
-                                          tenant_id=_TENANT, payload={"n": [1, 2]},
-                                          idempotency_key="live-key-1", max_attempts=3))
-        # duplicate key: the unique (tenant, key) index answers 409
-        assert not asyncio.run(s.insert_task("r163-live-2", "analyst", "p", "queued",
-                                             tenant_id=_TENANT, idempotency_key="live-key-1"))
-        # replay finds the SAME task, tenant-scoped
-        found = asyncio.run(s.find_task_by_idempotency_key("live-key-1", scope=_TENANT))
-        assert found is not None and found["task_id"] == "r163-live-1"
-        # claim is atomic: the second claim of a claimed row wins nothing
-        row = asyncio.run(s.claim_task("r163-live-1", "tok-live", _iso(60)))
-        assert row is not None and row["claim_token"] == "tok-live"
-        assert asyncio.run(s.claim_task("r163-live-1", "tok-live-b", _iso(60))) is None
-        # start counts the attempt; the stale token cannot start it
-        assert asyncio.run(s.start_task("r163-live-1", "tok-live-b", 5)) is False
-        assert asyncio.run(s.start_task("r163-live-1", "tok-live", 1)) is True
-        # renew extends the lease (fenced)
-        assert asyncio.run(s.renew_task_lease("r163-live-1", "tok-live", _iso(120)))
-        # finish is fenced: the stale token's late result is discarded
-        assert asyncio.run(s.finish_task("r163-live-1", "tok-live-b", "completed",
-                                         result={"ok": True})) is False
-        assert asyncio.run(s.finish_task("r163-live-1", "tok-live", "completed",
-                                         agent_name="analyst_007", result={"ok": True})) is True
+        asyncio.run(_roundtrip(s))
     finally:
         _cleanup()
+
+
+async def _roundtrip(s):
+    try:
+        # insert with the queue columns
+        assert await s.insert_task("r163-live-1", "analyst", "p", "queued",
+                                   tenant_id=_TENANT, payload={"n": [1, 2]},
+                                   idempotency_key="live-key-1", max_attempts=3)
+        # duplicate key: the unique (tenant, key) index answers 409
+        assert not await s.insert_task("r163-live-2", "analyst", "p", "queued",
+                                       tenant_id=_TENANT, idempotency_key="live-key-1")
+        # replay finds the SAME task, tenant-scoped
+        found = await s.find_task_by_idempotency_key("live-key-1", scope=_TENANT)
+        assert found is not None and found["task_id"] == "r163-live-1"
+        # claim is atomic: the second claim of a claimed row wins nothing
+        row = await s.claim_task("r163-live-1", "tok-live", _iso(60))
+        assert row is not None and row["claim_token"] == "tok-live"
+        assert await s.claim_task("r163-live-1", "tok-live-b", _iso(60)) is None
+        # start counts the attempt; the stale token cannot start it
+        assert await s.start_task("r163-live-1", "tok-live-b", 5) is False
+        assert await s.start_task("r163-live-1", "tok-live", 1) is True
+        # renew extends the lease (fenced)
+        assert await s.renew_task_lease("r163-live-1", "tok-live", _iso(120))
+        # finish is fenced: the stale token's late result is discarded
+        assert await s.finish_task("r163-live-1", "tok-live-b", "completed",
+                                   result={"ok": True}) is False
+        assert await s.finish_task("r163-live-1", "tok-live", "completed",
+                                   agent_name="analyst_007", result={"ok": True}) is True
+    finally:
+        await s.close()
 
 
 def test_r163_live_recovery_semantics():
     s = _storage()
     _cleanup()
     try:
-        # two leased rows: one live (future deadline), one dead (past deadline)
-        assert asyncio.run(s.insert_task("r163-live-live", "analyst", "p", "queued", tenant_id=_TENANT))
-        assert asyncio.run(s.insert_task("r163-live-dead", "analyst", "p", "queued", tenant_id=_TENANT))
-        assert asyncio.run(s.claim_task("r163-live-live", "tok-a", _iso(3600))) is not None
-        assert asyncio.run(s.claim_task("r163-live-dead", "tok-b", _iso(-3600))) is not None
-        asyncio.run(s.start_task("r163-live-live", "tok-a", 1))
-        asyncio.run(s.start_task("r163-live-dead", "tok-b", 1))
-        expired = asyncio.run(s.list_expired_lease_tasks())
-        assert [r["task_id"] for r in expired] == ["r163-live-dead"]
-        # recovery never steals the live lease (lt. filter)
-        assert asyncio.run(s.transition_task("r163-live-dead", ("claimed", "running"), "retrying",
-                                             lease_expired_before=_iso())) is True
-        assert asyncio.run(s.transition_task("r163-live-dead", ("retrying",), "queued")) is True
-        live = asyncio.run(s.get_task("r163-live-live", scope=_TENANT))
-        assert live["status"] == "running" and live["claim_token"] == "tok-a"
+        asyncio.run(_recovery(s))
     finally:
         _cleanup()
+
+
+async def _recovery(s):
+    try:
+        # two leased rows: one live (future deadline), one dead (past deadline)
+        assert await s.insert_task("r163-live-live", "analyst", "p", "queued", tenant_id=_TENANT)
+        assert await s.insert_task("r163-live-dead", "analyst", "p", "queued", tenant_id=_TENANT)
+        assert await s.claim_task("r163-live-live", "tok-a", _iso(3600)) is not None
+        assert await s.claim_task("r163-live-dead", "tok-b", _iso(-3600)) is not None
+        await s.start_task("r163-live-live", "tok-a", 1)
+        await s.start_task("r163-live-dead", "tok-b", 1)
+        expired = await s.list_expired_lease_tasks()
+        assert [r["task_id"] for r in expired] == ["r163-live-dead"]
+        # recovery never steals the live lease (lt. filter)
+        assert await s.transition_task("r163-live-dead", ("claimed", "running"), "retrying",
+                                       lease_expired_before=_iso()) is True
+        assert await s.transition_task("r163-live-dead", ("retrying",), "queued") is True
+        live = await s.get_task("r163-live-live", scope=_TENANT)
+        assert live["status"] == "running" and live["claim_token"] == "tok-a"
+    finally:
+        await s.close()
