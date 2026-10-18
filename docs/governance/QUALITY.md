@@ -315,6 +315,14 @@
 - **مُعدلة لتطابق PostgREST** (`return=representation` ← 200 والصفوف، وإلا 204): fakes في `test_r149_security_qa_gaps.py` و`test_r159_telemetry.py` و`test_r161_live_integration.py` و`test_storage_payloads.py`. وفي R-149 صار التوقع الصادق: تحديث بلا صف = فشل `no row updated`.
 - **التوافق مع PostgREST الحقيقي**: job ‏`storage` في CI (PostgreSQL 17 + PostgREST 12.2.3، local_integration).
 
+## R-161e — حارس مسبار R-082 وانحراف `PYTHON_VERSION` (D-077، Q-026)
+- `tests/test_r185_r082_probe_and_ops_drift.py` (5، فئة mock: fake PostgREST على 127.0.0.1 داخل المسبار، والسكربت الحقيقي في عملية جديدة ببيئة نظيفة):
+  - المسبار يصل إلى التخزين (POST 202 / GET 200، وطلبات > 0 في المرحلتين 2/3) وانتقالات R-082: انقطاع ← degraded ‏(ClientConnectorError)، و401 ← degraded ‏(HTTP 401)، والتعافي ← healthy.
+  - يقلع في وضع الإنتاج الافتراضي بلا `AGOS_ENV`؛ ومخرجه بلا بيانات اعتماد.
+  - الفحص الذاتي: بلا ترويسة المفتاح يخرج 1 بـ`PROBE NOT MEASURING`.
+  - `PYTHON_VERSION` في OPERATIONS == `render.yaml`.
+- **قبل** (نسخ main): 5/5 فشل. **بعد**: 5/5. **طفرات** 4/4 مقتولة (عدّ الطلبات، `Prefer`، الخروج 1، ضبط بيانات الاعتماد) (`130`).
+
 ## R-161d — اختبارات تعريف `connected` للتخزين (D-076، G-161-7)
 - `tests/test_r161d_storage_connected.py` (10، فئة mock، aiohttp على 127.0.0.1، يعيد استخدام fakes ‏`test_r161_live_integration.py`):
   - شكل 39082180770 (مخطط 001 بلا 002: 400 لكل طلب يذكر `tenant_id`، والتنظيف `DELETE events -> HTTP 400`) ← `FAIL` و`connected=True`.

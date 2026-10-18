@@ -1,0 +1,69 @@
+# 131 R-161e — full suite both modes + gates — branch m8/r185-r082-probe-and-ops-drift, committed head ff0a858081d45f2c1f85db8050356b88213a4a2a (base origin/main 2b036a2dc5c7eb0ab8846fea8749854e248ca430)
+
+## A. full suite, both agent modes, locked venvs (requirements.lock + requirements-dev.lock, --require-hashes)
+# code = ff0a858081d45f2c1f85db8050356b88213a4a2a; the docs (ROADMAP/STATE/QUALITY/...) were finalised while A ran, so the doc-reading tests were re-run on the committed head in A2
+# command per run: AGOS_AGENT_IMPL=<mode> <python> -m pytest -q -p no:cacheprovider tests/   (pytest.ini: -m 'not network')
+### Python 3.11.15 AGOS_AGENT_IMPL=real — python 3.11 AGOS_AGENT_IMPL=real — 2026-10-18T04:36:17Z — HEAD 2b036a2 + working tree (R-185)
+========== 1384 passed, 4 skipped, 4 deselected in 185.54s (0:03:05) ===========
+rc=0
+### Python 3.11.15 AGOS_AGENT_IMPL=specialists — python 3.11 AGOS_AGENT_IMPL=specialists — 2026-10-18T04:39:24Z — HEAD 2b036a2 + working tree (R-185)
+========== 1384 passed, 4 skipped, 4 deselected in 200.23s (0:03:20) ===========
+rc=0
+### Python 3.12.13 AGOS_AGENT_IMPL=real — python 3.12 AGOS_AGENT_IMPL=real — 2026-10-18T04:42:56Z — HEAD 2b036a2 + working tree (R-185)
+========== 1384 passed, 4 skipped, 4 deselected in 190.22s (0:03:10) ===========
+rc=0
+### Python 3.12.13 AGOS_AGENT_IMPL=specialists — python 3.12 AGOS_AGENT_IMPL=specialists — 2026-10-18T04:46:08Z — HEAD 2b036a2 + working tree (R-185)
+========== 1384 passed, 4 skipped, 4 deselected in 204.81s (0:03:24) ===========
+rc=0
+## arithmetic: 1384 = 1379 (main 2b036a2, CI 39097462754) + 5 (tests/test_r185_r082_probe_and_ops_drift.py)
+## A2. doc-reading gate tests on committed head
+$ python -m pytest -q -p no:cacheprovider tests/test_r154_status_evidence.py tests/test_r153_atomic_batch_v2.py tests/test_r152_no_delete_gate.py tests/test_r185_r082_probe_and_ops_drift.py
+============================= 125 passed in 29.82s =============================
+
+## B. gates on committed head ff0a858081d45f2c1f85db8050356b88213a4a2a — 2026-10-18T04:51:18Z
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+All checks passed!
+rc=0
+$ ruff check --select F,E722 scripts/run_r082_storage_failure_probe.py scripts/r161_live_integration.py
+All checks passed!
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 9, 'A': 3}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ atomic batch check v1 (the inline step of .github/workflows/governance-gate.yml, run verbatim; file list omitted)
+Governance gate passed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 12 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/export_contract_schemas.py --check
+contracts=26 problems=0
+rc=0
+$ python3 scripts/scan_raw_exception_logs.py
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+$ git diff --check origin/main...HEAD
+rc=0
+$ git diff --name-status origin/main...HEAD | cut -f1 | sort | uniq -c   # D-064: no D/R
+      3 A
+      9 M
+## node v22.23.3, npm 10.9.9
+$ cd web && npm install && npm test && npm run build
+install rc=0
+test rc=0
+# tests 39
+# pass 39
+# fail 0
+build rc=0
+✓ built in 132ms
+$ npm install && npm run build   # repository root
+install rc=0
+build rc=0
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+$ git status --short   # builds leave no tracked change (only this log is untracked)
+?? docs/audit/M8/logs/raw/131_r161e_suite_gates.log

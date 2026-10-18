@@ -62,7 +62,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 - **التحقق (R-040، ✓ done — دفعة M4/1)**: job `docker` في CI تبني الصورة وتشغلها وتتحقق من `/health` (HTTP 200 + جسم JSON يحوي `status`)، مع جمع السجلات ورفعها كـ artifact. تحققت في تشغيلين: الأول (run 38285632672) على رأس `f02ed61` والثاني/النهائي (run 38285911497) على رأس `13fc37d` — كلاهما نجح. الأدلة مُرتكزة في `docs/audit/M4/logs/05..09`. بيئة التحرير المحلية بلا Docker (دليل `docs/audit/M4/logs/04`).
 
 ### Render (من `render.yaml` — محدث R-041)
-- `PYTHON_VERSION=3.12.0` (يستهلكه Render لا كود التطبيق — Q-007)، `startCommand=uvicorn server:app`، `healthCheckPath=/api/system/status`.
+- `PYTHON_VERSION=3.12.15` (يستهلكه Render لا كود التطبيق — Q-007؛ نسخة patch كاملة منذ R-090، وكانت هذه الوثيقة تذكر `3.12.0` حتى صُححت في R-185 — يحرسها `tests/test_r185_r082_probe_and_ops_drift.py`)، `startCommand=uvicorn server:app --host 0.0.0.0 --port $PORT`، `healthCheckPath=/api/system/status`.
 - `AGOS_AGENT_IMPL` (R-032، D-037): `real` (افتراضي) أو `specialists` — الثاني يبني الوكلاء من أصناف `specialists/`. مقاس عند 1000 وكيل: بناء 0.152s مقابل 0.002s، ذاكرة قصوى 66.7MB مقابل 39.1MB، 1000/1000 نجاح في الحالتين (`docs/audit/M7/logs/08`). التراجع: إزالة المتغير وإعادة التشغيل. قيمة غير صالحة توقف البدء.
 - `AGENTS_PER_SPEC=3`: **يُقرأ من الكود منذ R-041** (كان متغيراً ميتاً في الإعدادات). ملاءمة القيمة 3 للموارد لم تُقس — Q-013.
 - مدخلا `AGOS_API_KEY` و`AGOS_ALLOWED_ORIGINS` أُضيفا كـ`sync: false` (المشغّل يدخل القيم في لوحة Render؛ لا سر في المستودع).

@@ -636,3 +636,24 @@
 ### الحزمة والبوابات (`129`)
 - **الحزمة**: 1379 passed, 4 skipped, 4 deselected بالوضعين (`real`، `specialists`) على 3.11.15 و3.12.13 من الأقفال (= 1369 + 10).
 - **البوابات**: انظر `129` (ruff، عدم الحذف، الذرية v1/v2، أدلة الحالة، `--check` العقود، الماسح، الويب، البناء الجذري).
+
+### ما تحقق بعد دمج R-161d (`132`، سُجّل في دفعة R-161e)
+- PR #178 مدموجة بـ`--merge`: SHA ‏`2b036a2dc5c7eb0ab8846fea8749854e248ca430`، وأبوه الثاني الرأس المختبر `bc386c3001a58cec92c8f5415067a49a5452927c`.
+- CI main ‏39097462754 على SHA الدمج: success في quality وtest وnetwork وbuild وaudit وstorage وdocker؛ publish متخطى (D-011).
+- pytest ‏1379 passed, 4 skipped, 4 deselected في خطوات test الثلاث (3.11.17، 3.12.15، 3.12.15 specialists). job ‏storage: `storage PASS class=local_integration connected=True`.
+
+## R-161e — مسبار R-082 وانحراف `PYTHON_VERSION` (Q-026، D-077، 2026-10-18)
+الفرع `m8/r185-r082-probe-and-ops-drift`، الأساس main ‏`2b036a2`. فئة الأدلة **mock** (fake PostgREST على 127.0.0.1 داخل المسبار، والخادم الحقيقي عبر TestClient في عملية جديدة).
+
+### الفجوة والإصلاح (`130`)
+- **قبل** (نسخ main): المسبار بلا `AGOS_ENV` يرفض الإقلاع (`production start refused`)، ومع `AGOS_ENV=development` يُرفض كل طلب 401 قبل التخزين فتطبع المراحل الثلاث `storage=healthy` و`last_ok=None`. و`OPERATIONS.md` يذكر `PYTHON_VERSION=3.12.0` و`render.yaml` يضبط `3.12.15`. 5/5 اختبارات تفشل.
+- **بعد**: POST ‏202 / GET ‏200 في كل مرحلة؛ طلبات تصل التخزين 0 ← 5 ← 4؛ والصحة: degraded ‏(ClientConnectorError) ← degraded ‏(HTTP 401) ← healthy. 5/5.
+- **طفرات**: 4/4 مقتولة (عدّ الطلبات، `Prefer: return=representation`، الخروج 1، ضبط بيانات الاعتماد). بصمة الملف بعد الإعادة مطابقة.
+- **الأمان**: المفتاح يُولَّد وقت التشغيل ولا يُطبع؛ الاختبار يتحقق من غياب `key_sha256` و`AGOS_TENANT_KEYS` و`sb_secret_` من المخرج.
+
+### الحالة
+- Q-026: الفرقان 2 و3 مُصلحان؛ معرّف النموذج في `render.yaml` مفتوح (قرار المالك، لا تغيير في إعداد النشر).
+- R-161 يبقى `blocked` بـQ-025.
+
+### الحزمة والبوابات (`131`)
+- 1384 passed, 4 skipped, 4 deselected بالوضعين على 3.11.15 و3.12.13 (= 1379 + 5). البوابات في `131`.

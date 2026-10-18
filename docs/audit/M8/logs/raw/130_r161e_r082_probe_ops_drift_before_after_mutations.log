@@ -1,0 +1,58 @@
+# 130 R-161e (Q-026, D-077) — R-082 probe + OPERATIONS PYTHON_VERSION drift: before/after + mutations — branch m8/r185-r082-probe-and-ops-drift, base origin/main 2b036a2dc5c7eb0ab8846fea8749854e248ca430
+# evidence class: mock (the probe's fake PostgREST on 127.0.0.1; the real server.app via TestClient in a fresh process). No network beyond loopback.
+
+## A. before — scripts/run_r082_storage_failure_probe.py and docs/governance/OPERATIONS.md of main 2b036a2, tests = this branch (Python 3.14.3)
+$ python -m pytest tests/test_r185_r082_probe_and_ops_drift.py -p no:cacheprovider -q -rf
+FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_reaches_storage_and_shows_r082_transitions
+FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_output_carries_no_credential
+FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_self_check_fails_when_the_api_refuses_it
+FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_starts_in_production_mode_without_agos_env
+FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_operations_python_version_matches_render_yaml
+============================== 5 failed in 1.98s ===============================
+# note: test_probe_output_carries_no_credential fails on main only because the crash message of the refused start names AGOS_TENANT_KEYS (no secret); the other four fail on the drift itself.
+
+$ python3 scripts/run_r082_storage_failure_probe.py   # main version, AGOS_ENV unset
+        "For local development without keys set AGOS_ENV=development explicitly")
+agent_civilization.core.tenancy.CredentialsError: production start refused: no credentials configured — set AGOS_TENANT_KEYS and/or AGOS_API_KEY (see docs/governance/OPERATIONS.md). For local development without keys set AGOS_ENV=development explicitly
+rc=1
+$ AGOS_ENV=development python3 scripts/run_r082_storage_failure_probe.py   # main version
+[1 down (connection refused)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=None last_error=null
+[2 HTTP 401 (key revoked)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=None last_error=null
+[3 recovered (201/200)] /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=None last_error=null
+rc=0
+
+## B. after — this branch
+$ python3 scripts/run_r082_storage_failure_probe.py   # AGOS_ENV unset = production (SEC-03); duration-bucket and per-op metric lines omitted
+[1 down (connection refused)] API: POST /api/tasks -> 202, GET /api/tasks -> 200; requests reaching the fake storage: 0
+    /health=degraded storage=degraded msg='last storage operation failed: insert_event (exception: ClientConnectorError) at 2026-10-18T04:34:23+00:00'
+    details: last_ok=False last_error={"operation": "insert_event", "reason": "exception: ClientConnectorError", "at": "2026-10-18T04:34:23+00:00"}
+    /metrics storage lines: 86
+[2 HTTP 401 (key revoked)] API: POST /api/tasks -> 202, GET /api/tasks -> 200; requests reaching the fake storage: 5
+    /health=degraded storage=degraded msg='last storage operation failed: upsert_agent_stats (HTTP 401) at 2026-10-18T04:34:23+00:00'
+    details: last_ok=False last_error={"operation": "upsert_agent_stats", "reason": "HTTP 401", "at": "2026-10-18T04:34:23+00:00"}
+    /metrics storage lines: 86
+[3 recovered (201/200)] API: POST /api/tasks -> 202, GET /api/tasks -> 200; requests reaching the fake storage: 4
+    /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=True last_error={"operation": "insert_event", "reason": "HTTP 401", "at": "2026-10-18T04:34:23+00:00"}
+    /metrics storage lines: 91
+probe reached storage in every phase that expects it
+$ python -m pytest tests/test_r185_r082_probe_and_ops_drift.py -p no:cacheprovider
+tests/test_r185_r082_probe_and_ops_drift.py::test_probe_reaches_storage_and_shows_r082_transitions PASSED
+tests/test_r185_r082_probe_and_ops_drift.py::test_probe_output_carries_no_credential PASSED
+tests/test_r185_r082_probe_and_ops_drift.py::test_probe_self_check_fails_when_the_api_refuses_it PASSED
+tests/test_r185_r082_probe_and_ops_drift.py::test_probe_starts_in_production_mode_without_agos_env PASSED
+tests/test_r185_r082_probe_and_ops_drift.py::test_operations_python_version_matches_render_yaml PASSED
+============================== 5 passed in 2.72s ===============================
+
+## C. mutations of the probe fix (each alone, then restored; sha256 after restore below). M0 = control.
+M0 no mutation (control) => ============================== 5 passed in 4.04s ===============================
+M1 fake does not count requests => FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_reaches_storage_and_shows_r082_transitions FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_starts_in_production_mode_without_agos_env ========================= 2 failed, 3 passed in 3.09s ==========================
+M2 fake ignores Prefer: return=representation => FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_reaches_storage_and_shows_r082_transitions ========================= 1 failed, 4 passed in 3.33s ==========================
+M3 self-check never exits 1 => FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_self_check_fails_when_the_api_refuses_it ========================= 1 failed, 4 passed in 2.83s ==========================
+M4 probe credential not configured => FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_reaches_storage_and_shows_r082_transitions FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_output_carries_no_credential FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_self_check_fails_when_the_api_refuses_it FAILED tests/test_r185_r082_probe_and_ops_drift.py::test_probe_starts_in_production_mode_without_agos_env ========================= 4 failed, 1 passed in 1.88s ==========================
+# OPERATIONS guard: its 'mutation' is main's own text (A above: test_operations_python_version_matches_render_yaml FAILED with 3.12.0).
+$ sha256sum scripts/run_r082_storage_failure_probe.py
+46e895ae0706a37467c83908959349ef53ebea4452e0b76d1dbf09c5f8fd5023  scripts/run_r082_storage_failure_probe.py

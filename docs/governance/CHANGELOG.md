@@ -1,5 +1,14 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-18 — R-161e: إصلاح مسبار R-082 وانحراف `PYTHON_VERSION` (Q-026، D-077) + قبول R-161d
+- **الفرع**: `m8/r185-r082-probe-and-ops-drift`. R-161 يبقى `blocked` بـQ-025؛ 179 بنداً بلا تغيير (دفعة فرعية).
+- **قبول R-161d**: PR #178 مدموجة (SHA `2b036a2`، أبوه الثاني `bc386c3`)، CI main ‏39097462754 success بكل وظائفه، وpytest 1379/4/4 في خطوات test الثلاث (`132`).
+- **المسبار** (`scripts/run_r082_storage_failure_probe.py`، أُصلح لا حُذف): بيانات اعتماد مستأجر خاصة بالمسبار (SHA-256 لمفتاح وقت التشغيل، لا يُطبع)، وإقلاع في وضع الإنتاج الافتراضي، وfake يحترم `Prefer: return=representation`، وفحص ذاتي يخرج 1 إن رُفض أو لم يصل إلى التخزين. النتيجة: انقطاع ← degraded، و401 ← degraded، وتعافٍ ← healthy.
+- **الوثيقة**: `OPERATIONS.md` ‏`PYTHON_VERSION=3.12.15` (كانت 3.12.0) و`startCommand` كما في `render.yaml`.
+- **الاختبارات**: `tests/test_r185_r082_probe_and_ops_drift.py` (5): قبل 5/5 فشل، بعد 5/5، طفرات 4/4 (`130`). الحزمة 1384/4/4 بالوضعين على 3.11.15 و3.12.13 (`131`).
+- **لم يُلمس**: معرّف النموذج في `render.yaml` (Q-026 مفتوح لهذا الجزء — قرار المالك).
+- **الوثائق**: ROADMAP، PROJECT_STATE، OPERATIONS، QUALITY، OPEN_QUESTIONS (Q-026)، DECISIONS (D-077)، EVIDENCE M8.
+
 ## 2026-10-18 — R-161d: تعريف `connected` للتخزين في مشغل R-161 (G-161-7، D-076)
 - **الفرع**: `m8/r161d-storage-connected-definition`. R-161 يبقى `blocked` بـQ-025؛ عدد البنود 179 بلا تغيير (دفعة فرعية).
 - **خط الأساس قبل العمل**: main ‏`8f8488f` طابق PROJECT_STATE (pytest 1369/4/4 على 3.14.3، ruff صفر، بناء web والجذر، اختبارات الويب 39/39، CI main ‏39091701511 success). لا فروقات.
