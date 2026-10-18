@@ -1,0 +1,47 @@
+# 128 R-161d (G-161-7, D-076) — storage 'connected' definition: before/after + mutations — branch m8/r161d-storage-connected-definition, base origin/main 8f8488ff9399def290d98d25a68b8c8820cd9b0a
+# evidence class of every test here: mock (aiohttp fakes on 127.0.0.1, simulated=True). No network beyond loopback (tests/conftest.py offline guard).
+
+## A. before — scripts/r161_live_integration.py of main 8f8488f, tests = this branch
+$ git show main:scripts/r161_live_integration.py > scripts/r161_live_integration.py && python -m pytest tests/test_r161d_storage_connected.py -p no:cacheprovider -q   (Python 3.14.3; the fixed file restored afterwards)
+E   AssertionError: {'target': 'storage', 'outcome': 'FAIL', 'reason': 'check failed: insert_task accepted; cleanup failed: DELETE events -> HTTP 400', 'evidence_class': 'mock', ...}
+E   AssertionError: {'target': 'storage', 'outcome': 'FAIL', 'reason': 'check failed: insert_task accepted; cleanup failed: DELETE events -> HTTP 401', 'evidence_class': 'mock', ...}
+E   AssertionError: {'target': 'storage', 'outcome': 'FAIL', 'reason': 'timeout after 1s; cleanup failed: DELETE events -> HTTP 403', 'evidence_class': 'mock', ...}
+E   AssertionError: {'target': 'storage', 'outcome': 'FAIL', 'reason': 'check failed: insert_task accepted; cleanup failed: cleanup error: TimeoutError', 'evidence_class': 'mock', ...}
+FAILED tests/test_r161d_storage_connected.py::test_server_answering_400_everywhere_is_connected_but_fails
+FAILED tests/test_r161d_storage_connected.py::test_auth_rejection_is_connected_but_fails
+FAILED tests/test_r161d_storage_connected.py::test_cleanup_answer_alone_counts_as_connected
+FAILED tests/test_r161d_storage_connected.py::test_step_answers_alone_count_as_connected
+========================= 4 failed, 6 passed in 13.50s =========================
+# the 4 failures are the gap: the server answered (HTTP 400 / 401 / 403 / 400) and connected was False.
+
+## B. after — this branch (Python 3.14.3): all R-161 test files
+$ python -m pytest -p no:cacheprovider tests/test_r161d_storage_connected.py tests/test_r161_live_integration.py tests/test_r161b_dns_pinning.py tests/test_r161b_workflow_gate.py tests/test_r161c_update_task_confirmation.py
+tests/test_r161d_storage_connected.py::test_server_answering_400_everywhere_is_connected_but_fails PASSED
+tests/test_r161d_storage_connected.py::test_auth_rejection_is_connected_but_fails PASSED
+tests/test_r161d_storage_connected.py::test_malformed_answer_is_connected PASSED
+tests/test_r161d_storage_connected.py::test_connection_refused_is_not_connected PASSED
+tests/test_r161d_storage_connected.py::test_timeout_without_any_answer_is_not_connected PASSED
+tests/test_r161d_storage_connected.py::test_cleanup_answer_alone_counts_as_connected PASSED
+tests/test_r161d_storage_connected.py::test_step_answers_alone_count_as_connected PASSED
+tests/test_r161d_storage_connected.py::test_passing_probe_is_still_connected_and_passes PASSED
+tests/test_r161d_storage_connected.py::test_observer_is_removed_after_the_probe PASSED
+tests/test_r161d_storage_connected.py::test_report_keeps_no_backend_body_or_secret PASSED
+# test_r161d_storage_connected: 10 PASSED, 0 FAILED
+# test_r161_live_integration: 46 PASSED, 0 FAILED
+# test_r161b_dns_pinning: 23 PASSED, 0 FAILED
+# test_r161b_workflow_gate: 26 PASSED, 0 FAILED
+# test_r161c_update_task_confirmation: 16 PASSED, 0 FAILED
+============================= 121 passed in 41.94s =============================
+# arithmetic: 121 = 10 + 46 + 23 + 26 + 16
+
+## C. mutations of the fix (each applied alone to scripts/r161_live_integration.py, then restored; file sha256 after restore below)
+$ python -m pytest tests/test_r161d_storage_connected.py -p no:cacheprovider -q   per mutant
+M0 no mutation (control) => ============================= 10 passed in 13.47s ============================== 
+M1 observer never sets seen => E   AssertionError: {'target': 'storage', 'outcome': 'FAIL', 'reason': 'check failed: insert_task accepted; cleanup failed: cleanup error: TimeoutError', 'evidence_class': 'mock', ...} FAILED tests/test_r161d_storage_connected.py::test_step_answers_alone_count_as_connected ========================= 1 failed, 9 passed in 13.51s ========================= 
+M2 cleanup answer ignored => E   AssertionError: {'target': 'storage', 'outcome': 'FAIL', 'reason': 'timeout after 1s; cleanup failed: DELETE events -> HTTP 403', 'evidence_class': 'mock', ...} FAILED tests/test_r161d_storage_connected.py::test_cleanup_answer_alone_counts_as_connected ========================= 1 failed, 9 passed in 13.51s ========================= 
+M3 recorder not restored => FAILED tests/test_r161d_storage_connected.py::test_observer_is_removed_after_the_probe ========================= 1 failed, 9 passed in 13.47s ========================= 
+M4 exceptions count as answers => E   AssertionError: {'target': 'storage', 'outcome': 'FAIL', 'reason': 'check failed: insert_task accepted; cleanup failed: cleanup error: ClientConnectorError', 'evidence_class': 'mock', ...}WARNING  storage:supabase_store.py:356 update_task failed: ClientConnectorErrorWARNING  storage:supabase_store.py:377 get_tasks failed: ClientConnectorErrorWARNING  storage:supabase_store.py:475 insert_event failed: ClientConnectorError
+# M0 control 10/10; M1..M4 each killed by >=1 test (4/4).
+$ sha256sum scripts/r161_live_integration.py /tmp/r161d/orig.py
+bf04d96c3b12b4954ba59a1368ad22e35a91c4f1bdfd360b3c664c1ca12ced0d  scripts/r161_live_integration.py
+bf04d96c3b12b4954ba59a1368ad22e35a91c4f1bdfd360b3c664c1ca12ced0d  /tmp/r161d/orig.py

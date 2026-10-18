@@ -1,5 +1,12 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-18 — R-161d: تعريف `connected` للتخزين في مشغل R-161 (G-161-7، D-076)
+- **الفرع**: `m8/r161d-storage-connected-definition`. R-161 يبقى `blocked` بـQ-025؛ عدد البنود 179 بلا تغيير (دفعة فرعية).
+- **خط الأساس قبل العمل**: main ‏`8f8488f` طابق PROJECT_STATE (pytest 1369/4/4 على 3.14.3، ruff صفر، بناء web والجذر، اختبارات الويب 39/39، CI main ‏39091701511 success). لا فروقات.
+- **الإصلاح** (`scripts/r161_live_integration.py`): `connected` لهدف storage = أجاب المخزن عبر HTTP أثناء الفحص (نجاح، أو سبب ثابت `HTTP NNN`/`malformed response`/`no row updated`، أو إجابة HTTP على التنظيف)، بمراقب مؤقت حول `supabase_store._record` يحفظ قيمة منطقية فقط ويُعاد في `finally`. الاتصال المرفوض والمهلة بلا إجابة واستثناءات النقل = False. لا تغيير في PASS/FAIL ورموز الخروج والخادم و`supabase_store`.
+- **الاختبارات**: `tests/test_r161d_storage_connected.py` (10، mock). قبل: 4 فشل/6 نجاح على مشغل main؛ بعد: 10/10، و121/121 مع اختبارات R-161 كلها؛ طفرات 4/4 مقتولة (`128`). الحزمة 1379/4/4 بالوضعين على 3.11.15 و3.12.13 (`129`).
+- **الوثائق**: ROADMAP (R-161: R-161d، G-161-7 مغلقة، الرأس)، PROJECT_STATE، OPERATIONS (معنى `connected`)، QUALITY، OPEN_QUESTIONS (Q-025)، DECISIONS (D-076)، EVIDENCE M8.
+
 ## 2026-10-18 — R-161c (M8/P2): أدلة التشغيل الحي الفاشل 39082180770 + تأكيد `update_task` بالصف المحدّث (دفعة m8/r161c-live-run-evidence-update-task، D-075)
 
 - **التشغيل 39082180770** (يدوي، المالك، main عند `457a0c1`):
