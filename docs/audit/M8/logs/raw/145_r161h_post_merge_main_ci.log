@@ -1,0 +1,23 @@
+# 145 R-161h — post-merge verification of PR #182 on main (2026-10-18T08:48:24Z)
+$ gh pr view 182 --json state,mergedAt,mergeCommit,headRefOid
+{"head":"94c24c098fbc575c6dfb6f8faf6bfc1b987e7214","merge":"e85e093477d8398c49f4614b71b34f50b88c0cca","mergedAt":"2026-10-18T08:35:55Z","state":"MERGED"}
+$ git log -1 --format="%H %P %s" e85e093
+e85e093477d8398c49f4614b71b34f50b88c0cca c8d1805e9da6cdb454b8d0cda21b0bcdcbcaa6e9 94c24c098fbc575c6dfb6f8faf6bfc1b987e7214 Merge pull request #182 from reeveero-tech/m8/r161h-owner-acceptance
+PR CI (before merge): quality=success governance=success test=success network=success build=success docker=success audit=success storage=success publish=skipped
+$ gh api repos/reeveero-tech/All-hand/actions/runs/39112066735
+workflow=AGOS Kernel CI/CD head_sha=e85e093477d8398c49f4614b71b34f50b88c0cca event=push status=completed conclusion=success
+  job test: success
+  job quality: success
+  job network: success
+  job build: success
+  job docker: success
+  job audit: success
+  job storage: success
+  job publish: skipped
+## pytest summaries in job test (117630128522), verbatim:
+2026-10-18T08:39:24.6078681Z ========== 1387 passed, 4 skipped, 4 deselected in 182.78s (0:03:02) ===========
+2026-10-18T08:42:26.4683193Z ========== 1387 passed, 4 skipped, 4 deselected in 165.99s (0:02:45) ===========
+2026-10-18T08:45:28.6215227Z ========== 1387 passed, 4 skipped, 4 deselected in 177.37s (0:02:57) ===========
+$ python3 scripts/check_status_evidence.py . (on e85e093, via git worktree)
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+## no live run repeated (owner: do not repeat live tests without need); R-161 live acceptance evidence remains run 39105410408 (139); MCP NOT_RUN per D-079/D-080

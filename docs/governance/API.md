@@ -169,6 +169,6 @@
 - **لا نقطة نهاية جديدة ولا تغيير في شكل العقود v1.** السجلات الناتجة تطابق `task_record` (يتحقق منه `tests/test_r162_agent_registry.py`).
 - **`POST /api/tasks` (التشغيل الخلفي)**: قبل `running` يأخذ التشغيل إيجاراً على عامل العملية، ويحرره في نهايته أياً كانت النتيجة.
   - إذا بلغ عدد المهام الجارية `AGOS_WORKER_CAPACITY` (افتراضي 1024): السجل `failed` بالنتيجة `{"error": "worker capacity saturated: the task was not started (AGOS_WORKER_CAPACITY tasks are already running)"}`، و`agent: null`، ويُحدَّث التخزين ويُنشر `task_completed` بـ`ok: false`. المهمة لا تنتظر في طابور (R-163/R-164).
-  - عامل غير متاح (متوقف أو صامت) → السبب الثابت `worker not available`.
+  - عامل في `draining` (أو غير متاح لسبب آخر) → السبب الثابت `worker not available`. وبعد إيقاف lifespan، إذا استمرت العملية تخدم، تبدأ المهمة التالية جيلاً جديداً من العامل `inproc-<pid>-<n+1>`، ويُحذف المتوقف من الجدول.
   - إيقاف الخادم أثناء تشغيل مهمة: السجل `failed` بالنتيجة `{"error": "task cancelled before completion: worker stopped"}`. والنتيجة التي تصل بعد ذلك تُهمل، فلا تعيد السجل إلى `completed`. صف التخزين لا يُعاد كتابته هنا (امتداد G-160-2).
 - **`DELETE /api/agents/external/{name}`**: يعطّل هوية `external:<name>` في السجل، فلا تأخذ إيجاراً جديداً، والمهام الجارية تكمل. إعادة التسجيل تعيد تفعيلها.

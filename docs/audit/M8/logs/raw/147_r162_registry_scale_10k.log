@@ -1,0 +1,98 @@
+# 147 R-162 — 10k logical agents: scripts/r162_registry_scale.py (defaults: --per-spec 500 --workers 10 --capacity 1000) at 956959053511900304dcebbf959978ae202b8de7 — 2026-10-18T09:08:17Z
+# no network, no storage, no secrets; one process; rc=0 = every acceptance assertion in the script holds
+
+## Python 3.11.15
+{
+  "python": "3.11.15",
+  "per_spec": 500,
+  "workers": 10,
+  "capacity": 1000,
+  "phases": {
+    "build_civilization": {
+      "wall_s": 0.0806,
+      "cpu_s": 0.0806
+    },
+    "register_identities": {
+      "wall_s": 0.0968,
+      "cpu_s": 0.0968
+    },
+    "register_workers": {
+      "wall_s": 0.0001,
+      "cpu_s": 0.0001
+    },
+    "select_and_lease_all": {
+      "wall_s": 0.3648,
+      "cpu_s": 0.3648
+    },
+    "stop_and_remove_workers": {
+      "wall_s": 0.0555,
+      "cpu_s": 0.0555
+    }
+  },
+  "identities": 10000,
+  "leases_taken": 10000,
+  "saturation_at_full": 1.0,
+  "lease_beyond_capacity": "Saturated",
+  "orphans_returned": 10000,
+  "orphans_unique": 10000,
+  "orphans_equal_leases": true,
+  "leases_active_after": 0,
+  "traced_peak_civilization_mb": 3.83,
+  "traced_registry_retained_mb": 6.43,
+  "traced_registry_peak_mb": 10.26,
+  "rss_growth_mb": 24.26,
+  "max_rss_mb": 56.22,
+  "os_threads_before": 1,
+  "os_threads_after": 1,
+  "child_processes_before": 0,
+  "child_processes_after": 0
+}
+rc=0
+
+## Python 3.12.13
+{
+  "python": "3.12.13",
+  "per_spec": 500,
+  "workers": 10,
+  "capacity": 1000,
+  "phases": {
+    "build_civilization": {
+      "wall_s": 0.0717,
+      "cpu_s": 0.0717
+    },
+    "register_identities": {
+      "wall_s": 0.1027,
+      "cpu_s": 0.1027
+    },
+    "register_workers": {
+      "wall_s": 0.0001,
+      "cpu_s": 0.0001
+    },
+    "select_and_lease_all": {
+      "wall_s": 0.3652,
+      "cpu_s": 0.3652
+    },
+    "stop_and_remove_workers": {
+      "wall_s": 0.0584,
+      "cpu_s": 0.0584
+    }
+  },
+  "identities": 10000,
+  "leases_taken": 10000,
+  "saturation_at_full": 1.0,
+  "lease_beyond_capacity": "Saturated",
+  "orphans_returned": 10000,
+  "orphans_unique": 10000,
+  "orphans_equal_leases": true,
+  "leases_active_after": 0,
+  "traced_peak_civilization_mb": 3.68,
+  "traced_registry_retained_mb": 6.35,
+  "traced_registry_peak_mb": 10.03,
+  "rss_growth_mb": 22.26,
+  "max_rss_mb": 54.95,
+  "os_threads_before": 1,
+  "os_threads_after": 1,
+  "child_processes_before": 0,
+  "child_processes_after": 0
+}
+rc=0
