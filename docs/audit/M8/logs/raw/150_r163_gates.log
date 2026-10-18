@@ -1,30 +1,12 @@
-=== ruff (تسليم scope) ===
-All checks passed!
-ruff_rc=0
-=== web tests ===
-# skipped 0
-# todo 0
-# duration_ms 1471.453456
-=== web build ===
-
-✓ built in 114ms
-=== root build ===
-[nitro] ✔ You can preview this build using npx vite preview
-[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
 === governance: status evidence ===
 ::error::R-163: pr must look like #N, got '#PR_NUMBER'
 ::error::Status evidence check failed: 1 violation(s) (D-066).
 csr_rc=1
 === governance: no-delete ===
-no-delete check: origin/main...HEAD status counts (no-renames): {'A': 2, 'M': 2}
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 15, 'A': 9}
 No-delete gate passed: 0 tracked files deleted, moved or renamed.
 cnd_rc=0
 === governance: atomic batch v2 ===
-atomic-batch v2: 4 changed file(s) in origin/main...HEAD
-::error::R0 mandatory governance docs not updated: docs/governance/ROADMAP.md, docs/governance/PROJECT_STATE.md, docs/governance/CHANGELOG.md
-::error::R1 executable change without evidence under docs/audit/: agent_civilization/core/task_queue.py, agent_civilization/storage/supabase_store.py, docs/sql/003_task_queue.sql, server.py
-::error::R2 API changed without docs/governance/API.md
-::error::R3 storage changed without docs/governance/DATA_MODEL.md
-::error::R5 runtime Python changed without any change under tests/: agent_civilization/core/task_queue.py, agent_civilization/storage/supabase_store.py, server.py
-::error::Atomic batch v2 failed: 5 rule(s) violated (D-065). Add the missing docs/evidence/tests to the SAME PR.
-cab_rc=1
+atomic-batch v2: 24 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+cab_rc=0
