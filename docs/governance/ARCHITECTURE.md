@@ -98,6 +98,7 @@ All-hand/ (الجذر — 10 أدلة جذرية متتبعة، 1,546 ملفاً
 POST /api/tasks → TASKS dict (in-memory) + storage.insert_task() (يفشل بصمت إن لم يُعد Supabase)
   → _run_task (asyncio.create_task) → agent.execute → storage.update_task / upsert_agent_stats / insert_event + TASK_EVENTS
 ```
+- **R-162 (D-081)**: بين اختيار الوكيل و`running` يأخذ التشغيل إيجاراً من `AGENT_REGISTRY` (`agent_civilization/core/agent_registry.py`)، ويحرره في `finally`. الهوية (كل منفذ في `CIVILIZATION`، أو `external:<name>`) منفصلة عن العامل (`inproc-<pid>-<gen>`، سعته `AGOS_WORKER_CAPACITY`) وعن المهمة (الإيجار). عند التشبع تنتهي المهمة `failed` فوراً. وعند الإيقاف تنتهي المهام اليتيمة `failed`. السجل في الذاكرة، وعامل واحد لكل عملية، وتكلفة الوكيل سجل بيانات لا خيط.
 
 ### `POST /api/chat`
 ```

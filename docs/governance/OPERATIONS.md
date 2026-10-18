@@ -106,6 +106,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_WEB_WAIT_S` (R-132) | core/agents/real_dispatcher.py | 20 ث أقصى انتظار (طابور + نداء) لاحتياطي ويب educator وترجمة communicator |
 | `AGOS_LLM_KEYLESS_URL` / `AGOS_LLM_KEYLESS_MODEL` (R-116) | core/llm.py | `https://text.pollinations.ai/openai` / `openai` |
 | `AGOS_AGENT_IMPL` | agents/real/real_agents.py | غير مضبوط = `real` (الافتراضي)؛ `specialists` يبني الحضارة من أصناف `specialists/` (D-037). (R-104: `process_text()` — دالة وحدة لا صنف — مُفوَّضة إليها من `_data_processor` لمدخل نصي فقط؛ بلا `OPENROUTER_API_KEY` يُنشر فشل LLM صراحةً) |
+| `AGOS_WORKER_CAPACITY` (R-162، D-081) | server.py + core/agent_registry.py | 1024 مهمة جارية في وقت واحد لعامل العملية (1..100000؛ قيمة غير صالحة توقف الإقلاع). عند بلوغها تنتهي المهمة الجديدة `failed` بسبب `worker capacity saturated: …` فوراً، بلا انتظار. التراجع: إزالة المتغير |
 | `EXTERNAL_AGENTS` | agents/external_adapter.py | `""` — بلا وكيل خارجي (لا هنا ولا عبر `POST /api/agents/external`) ترد مهام `external` بـ409 فوراً (R-140، BUG-01) |
 | `REDIS_URL` | agos_kernel/infrastructure/redis_queue.py | `redis://localhost:6379` |
 | `METRICS_NAMESPACE` | agos_kernel/infrastructure/metrics.py | `agos` |

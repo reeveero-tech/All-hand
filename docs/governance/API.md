@@ -164,3 +164,11 @@
   - استجابة LLM أو وكيل خارجي بمحتوى null/فارغ/بنية خاطئة ⇒ نتيجة `ok: false` بسبب ثابت (`LLM empty completion`، `LLM malformed completion`، `keyless LLM malformed completion`، `empty completion`، `malformed completion`) — كانت `ok: true` بإجابة فارغة.
   - صف تخزين مشوه (بلا `task_id` أو بمعرّف مختلف، أو جسم ليس قائمة): `GET /api/tasks/{id}` ‏404 (كان 500)، و`GET /api/tasks` يعود إلى مصدر `memory`.
   - `/health`: رسالة المكوّن الفاشل `Error: <نوع الاستثناء>` بلا نص الاستثناء (G-159-1/G-157-2).
+
+## R-162 — سجل الوكيل والسعة (D-081، 2026-10-18)
+- **لا نقطة نهاية جديدة ولا تغيير في شكل العقود v1.** السجلات الناتجة تطابق `task_record` (يتحقق منه `tests/test_r162_agent_registry.py`).
+- **`POST /api/tasks` (التشغيل الخلفي)**: قبل `running` يأخذ التشغيل إيجاراً على عامل العملية، ويحرره في نهايته أياً كانت النتيجة.
+  - إذا بلغ عدد المهام الجارية `AGOS_WORKER_CAPACITY` (افتراضي 1024): السجل `failed` بالنتيجة `{"error": "worker capacity saturated: the task was not started (AGOS_WORKER_CAPACITY tasks are already running)"}`، و`agent: null`، ويُحدَّث التخزين ويُنشر `task_completed` بـ`ok: false`. المهمة لا تنتظر في طابور (R-163/R-164).
+  - عامل غير متاح (متوقف أو صامت) → السبب الثابت `worker not available`.
+  - إيقاف الخادم أثناء تشغيل مهمة: السجل `failed` بالنتيجة `{"error": "task cancelled before completion: worker stopped"}`. والنتيجة التي تصل بعد ذلك تُهمل، فلا تعيد السجل إلى `completed`. صف التخزين لا يُعاد كتابته هنا (امتداد G-160-2).
+- **`DELETE /api/agents/external/{name}`**: يعطّل هوية `external:<name>` في السجل، فلا تأخذ إيجاراً جديداً، والمهام الجارية تكمل. إعادة التسجيل تعيد تفعيلها.
