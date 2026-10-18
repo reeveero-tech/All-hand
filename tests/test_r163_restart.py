@@ -64,15 +64,18 @@ class _Server:
                 "role": "user"}]),
         })
         env.update(self.env_extra)
+        import tempfile
+        self._log = tempfile.NamedTemporaryFile(
+            prefix="r163-server-", suffix=".log", delete=False)
         self.proc = subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "server:app", "--port", str(self.port),
              "--log-level", "warning"],
             cwd=ROOT, env=env,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout=self._log, stderr=subprocess.STDOUT)
         deadline = time.time() + 60
         while time.time() < deadline:
             if self.proc.poll() is not None:
-                out = self.proc.stdout.read().decode()[-2000:]
+                out = self._tail()
                 raise RuntimeError(f"server died at boot:\n{out}")
             try:
                 with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/health", timeout=1) as r:
@@ -80,7 +83,15 @@ class _Server:
                         return
             except Exception:
                 time.sleep(0.5)
-        raise RuntimeError("server did not become healthy in 60s")
+        raise RuntimeError(f"server did not become healthy in 60s; server log tail:\n{self._tail()}")
+
+    def _tail(self, n=3000):
+        try:
+            self._log.flush()
+            with open(self._log.name) as f:
+                return f.read()[-n:]
+        except Exception:
+            return "<no server output>"
 
     def kill(self):
         self.proc.send_signal(signal.SIGKILL)
