@@ -1,5 +1,12 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-18 — R-161h: قبول المالك الرسمي لـR-161 (`accepted`، D-080)
+- **الفرع**: `m8/r161h-owner-acceptance`. R-161: ‏`done` ← `accepted` (`accepted_by=owner`، `decision=D-080`، مع `conditions`). 179 بنداً بلا تغيير.
+- **النطاق**: storage وllm وexternal بنتيجة PASS ‏live_integration (39105410408). MCP ‏NOT_RUN مقبول في النطاق، وليس نجاحاً لاختبار MCP.
+- **قبول R-161g**: PR #181 مدموجة (SHA `c8d1805`)، وCI main ‏39107652431 ‏success، و1387/4/4 في خطوات test الثلاث (`142`). لم يُكرَّر أي تشغيل حي.
+- **خارج القبول، وكلٌّ قرار مستقل للمالك**: Q-027 (إبطال المفاتيح)، وQ-026 (نموذج `render.yaml`)، وR-162.
+- **الوثائق**: ROADMAP، PROJECT_STATE، DECISIONS ‏(D-080)، OPEN_QUESTIONS ‏(Q-027)، EVIDENCE M8. لا تغيير في الكود.
+
 ## 2026-10-18 — R-161g: قبول R-161 (`done`) — الأهداف الثلاثة PASS حياً (D-079)
 - **الفرع**: `m8/r161g-acceptance`. R-161 صار ‏`blocked` ← `done`. 179 بنداً بلا تغيير.
 - **قبول R-161f**: PR #180 مدموجة (SHA `ecbbf45`، وأبوه الثاني `2d9b0f3`)، وCI main ‏39105405500 ‏success، و1387/4/4 في خطوات test الثلاث (`138`).
