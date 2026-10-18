@@ -1,0 +1,57 @@
+# 141 R-161g — full suite (both agent modes, 3.11.15/3.12.13 venvs from locks) and gates; doc-only batch on HEAD 260a40c
+
+## s2_3.11_real.log
+=== python 3.11 AGOS_AGENT_IMPL=real — 2026-10-18T07:02:10Z — HEAD 260a40c (R-161g)
+========== 1387 passed, 4 skipped, 4 deselected in 186.46s (0:03:06) ===========
+rc=0
+
+## s2_3.11_specialists.log
+=== python 3.11 AGOS_AGENT_IMPL=specialists — 2026-10-18T07:05:18Z — HEAD 260a40c (R-161g)
+========== 1387 passed, 4 skipped, 4 deselected in 202.47s (0:03:22) ===========
+rc=0
+
+## s2_3.12_real.log
+=== python 3.12 AGOS_AGENT_IMPL=real — 2026-10-18T07:08:54Z — HEAD 260a40c (R-161g)
+========== 1387 passed, 4 skipped, 4 deselected in 191.68s (0:03:11) ===========
+rc=0
+
+## s2_3.12_specialists.log
+=== python 3.12 AGOS_AGENT_IMPL=specialists — 2026-10-18T07:12:07Z — HEAD 260a40c (R-161g)
+========== 1387 passed, 4 skipped, 4 deselected in 205.48s (0:03:25) ===========
+rc=0
+
+## gates
+# gates @ 2026-10-18T07:02:10Z HEAD ecbbf456a3b4f78606b385e73ebcb213789bac92
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): empty diff
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 0 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/export_contract_schemas.py --check
+2026-10-18 07:02:12,836 - agos.server - INFO - Civilization initialized: 20 specializations, 1000 civilization agents - <module>:310
+2026-10-18 07:02:12,836 - agos.server - INFO - External agents loaded: 0 - <module>:312
+2026-10-18 07:02:12,864 - agos.server - INFO - Civilization routes registered successfully - <module>:1067
+contracts=26 problems=0
+rc=0
+$ python3 scripts/scan_raw_exception_logs.py
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+$ git diff --check origin/main...HEAD
+rc=0
+$ bash /tmp/r161d/v1.sh
+docs/governance/OPERATIONS.md
+docs/governance/PROJECT_STATE.md
+docs/governance/ROADMAP.md
+Governance gate passed.
+rc=0
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+All checks passed!
+rc=0
+$ grep -c '^- الحالة:' docs/governance/ROADMAP.md
+179
