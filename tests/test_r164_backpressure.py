@@ -237,6 +237,12 @@ def test_r164_cancelled_queued_pool_call_never_runs():
         waiting = asyncio.ensure_future(pools.run("local", lambda: ran.append("late")))
         await asyncio.sleep(0.05)
         waiting.cancel()
+        # the cancel reaches the queued concurrent future via a loop callback
+        # (asyncio chains futures with call_soon) — let it settle before the
+        # threads free up; releasing in the same tick races the test itself
+        await asyncio.gather(waiting, return_exceptions=True)
+        await asyncio.sleep(0)
+        assert waiting.cancelled()
         gate.set()
         await asyncio.gather(*busy)
         await asyncio.sleep(0.2)
