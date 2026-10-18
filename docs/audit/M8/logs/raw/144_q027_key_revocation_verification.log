@@ -1,0 +1,21 @@
+# 144 Q-027 — revocation of R-161 test keys: owner confirmation vs independent verification (2026-10-18T08:23:35Z)
+## A. Owner confirmation (verbatim, chat 2026-10-18 ~08:00Z)
+«أؤكد أنني أبطلت مفتاح OpenRouter وحذفته، وحذفت مشروع Supabase التجريبي الذي أُنشئ لاختبارات R-161.»
+Structured form answer (2026-10-18 08:23Z) to 'were all OpenRouter keys placed in R161_LLM_API_KEY and R161_EXTERNAL_API_KEY revoked?':
+«مفتاح واحد مشترك، أُبطل»  => one shared OpenRouter key for both secrets, revoked (owner statement).
+## B. Independent verification by the agent
+$ gh api repos/reeveero-tech/All-hand/environments/r161-staging/secrets --jq total_count
+total_count=0
+$ gh api repos/reeveero-tech/All-hand/actions/secrets --jq "[.secrets[].name]"  (repo-level, names only)
+[]
+$ Supabase connector list_projects @ 2026-10-18T08:04Z (organization adpptggdtvvvjwvrpkji)
+projects=[fgfbavtxfmzpjneclkya "uxxxug" ACTIVE_HEALTHY created_at=2026-10-12T22:58:22.013303Z]  -> tecghrfscighyahufmga ABSENT
+$ getent hosts tecghrfscighyahufmga.supabase.co ; curl https://tecghrfscighyahufmga.supabase.co/rest/v1/
+dns_rc=2
+curl: (6) Could not resolve host: tecghrfscighyahufmga.supabase.co
+=> the Supabase test project no longer exists; its API host does not resolve, so the test secret key of that project cannot authenticate anywhere.
+Side fact: the old project fgfbavtxfmzpjneclkya was created 2026-10-12T22:58:22Z = issued_at of the rejected key in run 39102327940 (135 §C):
+   the first R161_STORAGE_KEY was the old project's service_role key. The old project was not touched; any key of it is outside R-161's test keys.
+## C. Not independently verifiable
+OpenRouter: the agent has no access to the owner's OpenRouter account and never saw the key value; no request was made with any key.
+The revocation of the shared OpenRouter key rests on the owner's confirmation (A) only.

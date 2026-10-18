@@ -1,0 +1,57 @@
+# 143 R-161h — full suite (both agent modes, 3.11.15/3.12.13 venvs from locks) and gates; doc-only batch on HEAD 8132c07
+
+## s3_3.11_real.log
+=== python 3.11 AGOS_AGENT_IMPL=real — 2026-10-18T07:49:53Z — HEAD 8132c07 (R-161h)
+========== 1387 passed, 4 skipped, 4 deselected in 187.84s (0:03:07) ===========
+rc=0
+
+## s3_3.11_specialists.log
+=== python 3.11 AGOS_AGENT_IMPL=specialists — 2026-10-18T07:53:03Z — HEAD 8132c07 (R-161h)
+========== 1387 passed, 4 skipped, 4 deselected in 200.20s (0:03:20) ===========
+rc=0
+
+## s3_3.12_real.log
+=== python 3.12 AGOS_AGENT_IMPL=real — 2026-10-18T07:56:34Z — HEAD 8132c07 (R-161h)
+========== 1387 passed, 4 skipped, 4 deselected in 191.26s (0:03:11) ===========
+rc=0
+
+## s3_3.12_specialists.log
+=== python 3.12 AGOS_AGENT_IMPL=specialists — 2026-10-18T07:59:47Z — HEAD 8132c07 (R-161h)
+========== 1387 passed, 4 skipped, 4 deselected in 206.70s (0:03:26) ===========
+rc=0
+
+## gates
+# gates @ 2026-10-18T07:49:53Z HEAD 8132c079892368ae756d090e3b06978634edd87c
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 6, 'A': 1}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 7 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/export_contract_schemas.py --check
+2026-10-18 07:49:56,156 - agos.server - INFO - Civilization initialized: 20 specializations, 1000 civilization agents - <module>:310
+2026-10-18 07:49:56,156 - agos.server - INFO - External agents loaded: 0 - <module>:312
+2026-10-18 07:49:56,183 - agos.server - INFO - Civilization routes registered successfully - <module>:1067
+contracts=26 problems=0
+rc=0
+$ python3 scripts/scan_raw_exception_logs.py
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+$ git diff --check origin/main...HEAD
+rc=0
+$ bash /tmp/r161d/v1.sh
+docs/governance/OPEN_QUESTIONS.md
+docs/governance/PROJECT_STATE.md
+docs/governance/ROADMAP.md
+Governance gate passed.
+rc=0
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+All checks passed!
+rc=0
+$ grep -c '^- الحالة:' docs/governance/ROADMAP.md
+179
