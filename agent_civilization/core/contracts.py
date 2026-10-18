@@ -160,9 +160,37 @@ class TaskRow(_Strict):
     source: Optional[Literal["database"]] = None
 
 
+class TaskRowV2(_Strict):
+    """A ``tasks`` row as PostgREST returns it (docs/sql/001 + 002 + 003),
+    i.e. a GET /api/tasks item with source=database. v2 (R-163, D-082): the
+    durable-queue columns are part of the row — all optional, because 001/002
+    rows and the volatile mode never set them. GET /api/tasks/{id} adds ``id``
+    (= task_id) and ``source``."""
+    task_id: str
+    specialization: str
+    prompt: Optional[str] = None
+    status: str
+    agent_name: Optional[str] = None
+    result: Optional[Dict[str, Any]] = None
+    elapsed_s: Optional[float] = None
+    created_at: str
+    finished_at: Optional[str] = None
+    tenant_id: Optional[str] = None
+    id: Optional[str] = None
+    source: Optional[Literal["database"]] = None
+    # R-163 (D-082) queue columns — optional: rows created before 003 (or in
+    # the volatile mode) never set them
+    claim_token: Optional[str] = None
+    lease_expires_at: Optional[str] = None
+    attempts: Optional[int] = None
+    max_attempts: Optional[int] = None
+    payload: Optional[Dict[str, Any]] = None
+    idempotency_key: Optional[str] = None
+
+
 class TaskList(_Strict):
     count: int = Field(ge=0)
-    tasks: List[Union[TaskRecord, ExecuteRecord, TaskRow]]
+    tasks: List[Union[TaskRecord, ExecuteRecord, TaskRowV2]]
     source: Literal["memory", "database"]
 
     @model_validator(mode="after")
@@ -395,7 +423,7 @@ CONTRACTS: Dict[str, tuple] = {
     "task_cancelled":       (1, TaskCancelled, "response", "POST /api/tasks/{task_id}/cancel -> client"),
     "task_record":          (1, TaskRecord, "response", "GET /api/tasks[/{id}] (memory) -> client"),
     "execute_record":       (1, ExecuteRecord, "response", "GET /api/tasks (memory, execute variant) -> client"),
-    "task_row":             (1, TaskRow, "response+storage", "PostgREST tasks row -> API -> client"),
+    "task_row":             (2, TaskRowV2, "response+storage", "PostgREST tasks row -> API -> client"),
     "task_list":            (1, TaskList, "response", "GET /api/tasks -> client"),
     "chat_response":        (1, ChatResponse, "response", "POST /api/chat -> client"),
     "execute_response":     (1, ExecuteResponse, "response", "POST /civilization/execute -> client"),

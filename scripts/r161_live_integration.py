@@ -356,9 +356,9 @@ async def probe_storage(env: Dict[str, str], pf: Dict[str, Any], timeout_s: floa
         if row is not None:
             try:
                 C.validate("task_row", row)
-                checks.add("row matches task_row v1", True)
+                checks.add("row matches task_row v2", True)
             except Exception as e:  # noqa: BLE001
-                checks.add("row matches task_row v1", False, type(e).__name__)
+                checks.add("row matches task_row v2", False, type(e).__name__)
             checks.add("row values round-trip", row.get("status") == "completed"
                        and row.get("tenant_id") == tenant and isinstance(row.get("result"), dict))
         rows = await store.get_tasks(limit=5, scope=tenant)
