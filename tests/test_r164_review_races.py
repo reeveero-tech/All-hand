@@ -352,3 +352,65 @@ def test_r164_review_storage_requests_report_with_their_own_permit(monkeypatch):
     run(ss._breaker_on_start(None, again, None))        # the slot was freed
     run(ss._breaker_on_end(None, again, ok200))
     assert brk.state() == "closed"
+
+
+# ------------------- pool queue cap: free threads are not "waiting" calls
+
+class _SlowPickupQueue:
+    """The executor's work queue, with threads that are slow to pick a call
+    up (a loaded CI runner): every ``get`` waits a moment first."""
+
+    def __init__(self, inner, delay):
+        self._inner, self._delay = inner, delay
+
+    def get(self, *a, **kw):
+        import time as _t
+        _t.sleep(self._delay)
+        return self._inner.get(*a, **kw)
+
+    def get_nowait(self):           # Python >= 3.13 workers try this first
+        import time as _t
+        _t.sleep(self._delay)
+        return self._inner.get_nowait()
+
+    def __getattr__(self, attr):
+        return getattr(self._inner, attr)
+
+
+def test_r164_review_pool_cap_counts_only_calls_beyond_the_threads(monkeypatch):
+    """CI finding on PR #189 (Python 3.12 run, ``assert 2 == 3``): the cap
+    read the executor's work queue, which also holds calls that free threads
+    have not picked up yet — a burst of size+cap calls was partly refused
+    with PoolBusy although threads were free. With slow pickup the defect is
+    deterministic; the in-flight count is not affected by pickup speed."""
+    from concurrent.futures import ThreadPoolExecutor
+    from agent_civilization.core import pools
+    monkeypatch.setenv("AGOS_POOL_WEB_QUEUE", "3")
+    size = pools.size("web")
+    ex = ThreadPoolExecutor(max_workers=size, thread_name_prefix="agos-web-r164")
+    ex._work_queue = _SlowPickupQueue(ex._work_queue, 0.2)
+    monkeypatch.setitem(pools._pools, "web", ex)
+    gate = threading.Event()
+
+    async def burst():
+        futs = [asyncio.ensure_future(pools.run("web", gate.wait, 5)) for _ in range(size + 3)]
+        await asyncio.sleep(0.6)            # every thread has picked its call up
+        refused = [f for f in futs if f.done() and isinstance(f.exception(), pools.PoolBusy)]
+        waiting_now = pools.load()["web"]["waiting"]
+        try:                                # the cap itself must still hold
+            extra = await asyncio.wait_for(pools.run("web", gate.wait, 5), timeout=0.1)
+        except pools.PoolBusy:
+            extra = "PoolBusy"
+        except asyncio.TimeoutError:
+            extra = "queued"
+        gate.set()
+        await asyncio.gather(*futs, return_exceptions=True)
+        return len(refused), waiting_now, extra
+    try:
+        refused, waiting_now, extra = asyncio.run(burst())
+    finally:
+        gate.set()
+        ex.shutdown(wait=True)
+    assert refused == 0, f"{refused} call(s) refused with PoolBusy while threads were free"
+    assert waiting_now == 3
+    assert extra == "PoolBusy", "the cap no longer refuses the call beyond threads + 3"
