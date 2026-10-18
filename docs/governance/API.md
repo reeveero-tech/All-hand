@@ -173,3 +173,17 @@
   - عامل في `draining` (أو غير متاح لسبب آخر) → السبب الثابت `worker not available`. وبعد إيقاف lifespan، إذا استمرت العملية تخدم، تبدأ المهمة التالية جيلاً جديداً من العامل `inproc-<pid>-<n+1>`، ويُحذف المتوقف من الجدول.
   - إيقاف الخادم أثناء تشغيل مهمة: السجل `failed` بالنتيجة `{"error": "task cancelled before completion: worker stopped"}`. والنتيجة التي تصل بعد ذلك تُهمل، فلا تعيد السجل إلى `completed`. صف التخزين لا يُعاد كتابته هنا (امتداد G-160-2).
 - **`DELETE /api/agents/external/{name}`**: يعطّل هوية `external:<name>` في السجل، فلا تأخذ إيجاراً جديداً، والمهام الجارية تكمل. إعادة التسجيل تعيد تفعيلها.
+
+## R-164 — الضغط الخلفي والحدود (D-083، 2026-10-18)
+- **لا نقطة نهاية جديدة، ولا تغيير في جسم أي رد**: كل رفض جديد جسمه `error_detail` v1 (`{"detail": "..."}`)، والجديد ترويسة **`Retry-After`** (ثوانٍ صحيحة ≥1).
+- **`POST /api/tasks`** (الوضعان، بعد فحص إعادة الإرسال بالمفتاح نفسه وقبل أي أثر — المرفوض لا سجل ولا صف ولا حدث ولا تشغيل):
+  - مهام المستأجر المعلّقة بلغت `AGOS_TASK_QUEUE_MAX_PER_TENANT` (افتراضي 1000) → **429** «task queue full for this tenant: N pending task(s) …; retry later» + `Retry-After` (`AGOS_TASK_RETRY_AFTER_S`، افتراضي 5).
+  - مهام الخدمة المعلّقة بلغت `AGOS_TASK_QUEUE_MAX` (افتراضي 10000؛ في الوضع المتطاير لا يتجاوز 500 = ما تحفظه الذاكرة) → **503** «task queue full: the service is at capacity; retry later» + `Retry-After` — لا يذكر أي مستأجر.
+  - `AGOS_TASK_ACCEPT_RATE_PER_MIN` (معطّل افتراضياً) → **429** «task acceptance rate exceeded for this tenant …» + `Retry-After` محسوب.
+  - إعادة الإرسال بمفتاح `idempotency_key` مقبول سابقاً تُجاب دائماً `202` + `duplicate: true` حتى والطابور ممتلئ.
+  - الوضع المتين: تخزين لا يجيب (أو قاطع `storage` مفتوح) → 503 «storage unavailable: the task was not accepted» كما في R-163، والجديد `Retry-After` (المدة المتبقية للقاطع إن كان مفتوحاً).
+- **حد المعدل العام** (`AGOS_RATE_LIMIT_REQUESTS`/`_WINDOW`): 429 بالجسم نفسه، والجديد `Retry-After` = الثواني حتى يخرج أقدم طلب من النافذة.
+- **`POST /api/tasks/{id}/cancel`**: في الوضع المتطاير صار يلغي **التشغيل الحي** أيضاً (لا السجل فقط)؛ 503 «cancel not confirmed» صار يحمل `Retry-After`.
+- **مهلة التنفيذ** `AGOS_TASK_TIMEOUT_S` (افتراضي 600): المهمة التي تتجاوزها تنتهي `failed` بالنتيجة `{"error": "task timed out after Ns (AGOS_TASK_TIMEOUT_S)"}` (شكل `agent_outcome` v1)، ولا يُعاد تشغيلها؛ وكذلك `/api/chat`.
+- **عقد داخلي `llm_result` v1**: حقلان اختياريان جمعيان `busy` (رفض قبول: طابور بلا مفتاح/حد التزامن/قاطع مفتوح — كان يُرجع قبل R-164 ولم يكن في النموذج الصارم) و`retry_after` (ثوانٍ). مصنّف R-160: جمعي، صفر كسر — لا رفع نسخة.
+- **`/metrics`**: مقاييس جديدة `pool_threads`/`pool_waiting`/`pool_busy_rejections` (وسم `pool`)، و`breaker_state` (0 مغلق/1 نصف مفتوح/2 مفتوح) و`breaker_opened`/`breaker_rejected` (وسم `service`)، و`tasks_pending`.

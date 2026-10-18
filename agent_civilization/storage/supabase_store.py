@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 
-from agent_civilization.core import telemetry
+from agent_civilization.core import backpressure, telemetry
 from agent_civilization.core.tenancy import ALL_TENANTS, check_scope
 
 logger = logging.getLogger("storage")
@@ -141,7 +141,51 @@ def _record(op: str, ok: bool, reason: Optional[str] = None) -> None:
         _STATS["last_error"] = {"operation": op, "reason": reason or "unknown", "at": _now_iso()}
 
 
+# R-164 (D-083): storage limits independent of the thread pools — the store
+# is async (aiohttp), so it never holds an llm/web/net/local thread; its own
+# bounds are the connection limit, the per-request timeout and the
+# ``storage`` circuit breaker (consecutive transport failures / 5xx open it;
+# while open every operation fails at once with ``CircuitOpen`` — recorded
+# as a failed operation like any other — instead of each one waiting up to
+# the timeout against a store that is down). Defaults keep the pre-R-164
+# values (aiohttp's 100 connections, 30 s).
+_SAFE_TENANT_RE = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+STORAGE_TIMEOUT_S = backpressure._float_env("AGOS_STORAGE_TIMEOUT_S", 30.0, 1.0, 300.0)
+STORAGE_CONCURRENCY = backpressure._int_env("AGOS_STORAGE_CONCURRENCY", 100, 1, 1000)
+
+
+# the cause behind the breaker (R-082 visibility): an operation refused by
+# an open breaker reports "circuit open after <last transport failure>", so
+# /health still names the root cause (e.g. ClientConnectorError, HTTP 503).
+_BREAKER_CAUSE = {"last": None}
+
+
+async def _breaker_on_end(session, ctx, params) -> None:
+    if params.response.status >= 500:
+        _BREAKER_CAUSE["last"] = f"HTTP {params.response.status}"
+        backpressure.breaker("storage").failure()
+    else:
+        backpressure.breaker("storage").success()
+
+
+async def _breaker_on_exception(session, ctx, params) -> None:
+    _BREAKER_CAUSE["last"] = f"exception: {type(params.exception).__name__}"
+    backpressure.breaker("storage").failure()
+
+
+def storage_breaker_trace() -> aiohttp.TraceConfig:
+    trace = aiohttp.TraceConfig()
+    trace.on_request_end.append(_breaker_on_end)
+    trace.on_request_exception.append(_breaker_on_exception)
+    return trace
+
+
 def _record_exception(op: str, e: BaseException) -> None:
+    if isinstance(e, backpressure.CircuitOpen):
+        cause = _BREAKER_CAUSE["last"]
+        _record(op, False, f"circuit open after {cause}" if cause else "circuit open")
+        telemetry.annotate(kind="storage", error=e, reason="circuit_open")
+        return
     _record(op, False, f"exception: {type(e).__name__}")
     telemetry.annotate(kind="storage", error=e, reason="exception")
 
@@ -282,13 +326,19 @@ class SupabaseStorage:
         self._session: Optional[aiohttp.ClientSession] = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
+        # R-164: refuse at once while the storage breaker is open (every
+        # caller is inside its operation's try/except, so this is recorded
+        # as that operation's failure and returns its usual failure value).
+        backpressure.breaker("storage").check()
         if self._session is None or self._session.closed:
-            extra = {}
             if self.guarded:
                 from agent_civilization.agents.external_adapter import guarded_session_kwargs
-                extra = guarded_session_kwargs(self.allow_private)
+                extra = guarded_session_kwargs(self.allow_private, limit=STORAGE_CONCURRENCY)
+            else:
+                extra = {"connector": aiohttp.TCPConnector(limit=STORAGE_CONCURRENCY), "trace_configs": []}
+            extra["trace_configs"] = list(extra.get("trace_configs") or []) + [storage_breaker_trace()]
             self._session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=30),
+                timeout=aiohttp.ClientTimeout(total=STORAGE_TIMEOUT_S),
                 headers={
                     "apikey": self.key,
                     "Authorization": f"Bearer {self.key}",
@@ -409,13 +459,22 @@ class SupabaseStorage:
             return None
 
     @_traced("queue_list_queued")
-    async def list_queued_tasks(self, limit: int = 50) -> Optional[List[Dict[str, Any]]]:
+    async def list_queued_tasks(self, limit: int = 50,
+                                exclude_tenants: Optional[List[str]] = None) -> Optional[List[Dict[str, Any]]]:
         """Queued rows, oldest first — the dispatcher's claim scan (admin
-        scope: the dispatcher is the server, not a tenant request)."""
+        scope: the dispatcher is the server, not a tenant request).
+
+        R-164 fairness: ``exclude_tenants`` leaves those tenants' rows out
+        (``tenant_id=not.in.(...)``) so a second scan can surface tenants
+        hidden behind another tenant's backlog. Only well-formed tenant ids
+        are sent (the same pattern as every scope); others are skipped."""
         if not is_configured():
             return None
         params: Dict[str, str] = {"status": "eq.queued", "order": "created_at.asc",
                                   "limit": str(int(limit))}
+        excluded = [t for t in (exclude_tenants or []) if isinstance(t, str) and _SAFE_TENANT_RE.match(t)]
+        if excluded:
+            params["tenant_id"] = "not.in.(" + ",".join(excluded) + ")"
         try:
             session = await self._get_session()
             async with session.get(f"{self.url}/rest/v1/tasks", params=params) as r:
@@ -426,6 +485,40 @@ class SupabaseStorage:
         except Exception as e:  # noqa: BLE001
             logger.warning("queue_list_queued failed: %s", type(e).__name__)
             _record_exception("queue_list_queued", e)
+            return None
+
+    @_traced("queue_count_pending")
+    async def count_pending_tasks(self, scope, limit: int) -> Optional[int]:
+        """R-164 admission: how many non-terminal rows (accepted, queued,
+        claimed, running, waiting, retrying) ``scope`` has — a tenant id, or
+        ALL_TENANTS for the whole-service cap — reading at most ``limit``
+        rows (the caller only needs to know whether the cap is reached).
+        ``None`` = the store did not answer (the caller refuses the task)."""
+        if not is_configured() or scope is None:
+            return None
+        check_scope(scope)
+        params: Dict[str, str] = {
+            "select": "task_id",
+            "status": "in.(accepted,queued,claimed,running,waiting,retrying)",
+            "limit": str(max(1, int(limit))),
+        }
+        if scope is not ALL_TENANTS:
+            params["tenant_id"] = f"eq.{scope}"
+        try:
+            session = await self._get_session()
+            async with session.get(f"{self.url}/rest/v1/tasks", params=params) as r:
+                if r.status != 200:
+                    _record("queue_count_pending", False, f"HTTP {r.status}")
+                    return None
+                rows = await r.json(content_type=None)
+                if not isinstance(rows, list):
+                    _record("queue_count_pending", False, "malformed response")
+                    return None
+                _record("queue_count_pending", True)
+                return len(rows)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("queue_count_pending failed: %s", type(e).__name__)
+            _record_exception("queue_count_pending", e)
             return None
 
     @_traced("queue_list_expired")

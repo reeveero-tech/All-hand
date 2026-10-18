@@ -8,6 +8,13 @@ submits and lists tasks:
   phase 2 "401"   : every request answered 401 (key revoked) -> HTTP rejection
   phase 3 "ok"    : 201 for writes, 200 [] for reads       -> recovery
 After each phase it prints /health storage status/message and storage lines of /metrics.
+R-164 (D-083): the ``storage`` circuit breaker opens during phase 1 (the
+store refuses connections); while it is open, operations fail at once
+WITHOUT reaching the store. The probe runs with a short open period
+(``AGOS_BREAKER_STORAGE_RESET_S=0.5``), prints the breaker state per phase and
+waits for the half-open probe slot before the next phase — so phases 2/3
+measure the real recovery path (one probe request, then closed), not a
+breaker that is still open from phase 1.
 R-185 (Q-026): since SEC-02/SEC-03 the tenant routes need a credential and
 production start needs one configured. The probe therefore configures a
 probe-only tenant (``AGOS_TENANT_KEYS`` with the SHA-256 of a key generated at
@@ -83,6 +90,7 @@ os.environ["AGOS_TENANT_KEYS"] = json.dumps(
 HDR = {"X-API-Key": PROBE_KEY}
 os.environ["SUPABASE_URL"] = f"http://127.0.0.1:{port}"
 os.environ["SUPABASE_SERVICE_KEY"] = "sb_secret_" + "z" * 24  # fake, service-shaped (R-078 → no startup warning)
+os.environ["AGOS_BREAKER_STORAGE_RESET_S"] = "0.5"   # R-164: short open period (see docstring)
 
 from fastapi.testclient import TestClient  # noqa: E402
 import server  # noqa: E402
@@ -109,6 +117,15 @@ def report(c, phase, expect_storage_traffic):
     det = s.get("details", {})
     print(f"    details: last_ok={det.get('last_ok')} last_error={json.dumps(det.get('last_error'))}")
     print(f"    /metrics storage lines: {len(m)}" + ("".join(f"\n      {ln}" for ln in m[:6])))
+    b = server.backpressure.breaker("storage").snapshot()
+    print(f"    storage breaker (R-164): state={b['state']} opened={b['opened']} rejected={b['rejected']}")
+
+
+def wait_breaker_probe():
+    """R-164: wait until the storage breaker lets its half-open probe through."""
+    import time
+    brk = server.backpressure.breaker("storage")
+    time.sleep(brk.retry_after() + 0.05)
 
 
 with TestClient(server.app) as c:
@@ -116,8 +133,10 @@ with TestClient(server.app) as c:
     srv = HTTPServer(("127.0.0.1", port), Fake)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     MODE["value"] = "401"
+    wait_breaker_probe()
     report(c, "2 HTTP 401 (key revoked)", expect_storage_traffic=True)
     MODE["value"] = "ok"
+    wait_breaker_probe()
     report(c, "3 recovered (201/200)", expect_storage_traffic=True)
     srv.shutdown()
 

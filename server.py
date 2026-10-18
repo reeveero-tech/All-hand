@@ -21,6 +21,7 @@ Security Features:
 
 import asyncio
 import json
+import math
 import logging
 import os
 import time
@@ -49,6 +50,7 @@ from agent_civilization.agents.external_adapter import (
 from agent_civilization.core import experience, safety, telemetry, tenancy
 from agent_civilization.core import agent_registry
 from agent_civilization.core import task_queue
+from agent_civilization.core import backpressure, pools
 from agent_civilization.core.tenancy import ALL_TENANTS, Principal
 from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
 from agent_civilization.routing import route as route_request
@@ -222,9 +224,14 @@ def check_rate_limit(client_id: str) -> None:
     
     # Check limit
     if len(request_counts[client_id]) >= RATE_LIMIT_REQUESTS:
+        # R-164: tell the client WHEN — the oldest request in the window
+        # leaves it after this many seconds (body unchanged: error_detail v1).
+        oldest = min(request_counts[client_id])
+        wait = max(1, math.ceil((oldest + timedelta(seconds=RATE_LIMIT_WINDOW) - now).total_seconds()))
         raise HTTPException(
             status_code=429,
-            detail=f"Rate limit exceeded. Max {RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW}s"
+            detail=f"Rate limit exceeded. Max {RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW}s",
+            headers={"Retry-After": str(wait)},
         )
     
     # Add current request
@@ -400,6 +407,33 @@ TASK_MAX_ATTEMPTS = agent_registry.positive_int_env("AGOS_TASK_MAX_ATTEMPTS", 3,
 TASK_DISPATCH_BATCH = agent_registry.positive_int_env("AGOS_TASK_DISPATCH_BATCH", 50, 1, 1000)
 TASK_DISPATCH_IDLE_S = max(0.05, float(os.environ.get("AGOS_TASK_DISPATCH_IDLE_S", "0.2") or 0.2))
 
+# R-164 (D-083) — admission limits and back-off, in BOTH modes (volatile and
+# durable). "Pending" = accepted but not finished (queued/claimed/running/...).
+# - AGOS_TASK_QUEUE_MAX: pending tasks for the whole service (0 = no cap).
+#   Full -> 503 + Retry-After (server capacity, names no other tenant). In
+#   the volatile mode the effective cap is never above MAX_TASKS_KEPT — the
+#   memory table cannot hold more in-flight records than it keeps (before
+#   R-164 the 501st accepted task pruned an in-flight record).
+# - AGOS_TASK_QUEUE_MAX_PER_TENANT: pending tasks per tenant (0 = no cap).
+#   Full -> 429 + Retry-After: one tenant cannot fill the queue for the rest.
+# - AGOS_TASK_ACCEPT_RATE_PER_MIN: accepted tasks per tenant per 60 s
+#   (0 = off — a rate quota is a product/owner policy, not an invariant).
+# - AGOS_TASK_RETRY_AFTER_S: the Retry-After sent with a full-queue answer.
+# - AGOS_TASK_TIMEOUT_S: execution deadline of one run (0 = none). A hung
+#   run used to hold its worker slot forever — and, durable, have its lease
+#   renewed forever, so it was never recovered either.
+# - AGOS_TASK_RETRY_BASE_S / _CAP_S: jittered back-off before a deferred
+#   (worker capacity full) or recovered (lease expired) task is dispatched
+#   again — was a fixed 2.0 s / immediate.
+TASK_QUEUE_MAX = agent_registry.positive_int_env("AGOS_TASK_QUEUE_MAX", 10000, 0, 10_000_000)
+TASK_QUEUE_MAX_PER_TENANT = agent_registry.positive_int_env("AGOS_TASK_QUEUE_MAX_PER_TENANT", 1000, 0, 10_000_000)
+TASK_ACCEPT_RATE_PER_MIN = agent_registry.positive_int_env("AGOS_TASK_ACCEPT_RATE_PER_MIN", 0, 0, 1_000_000)
+TASK_RETRY_AFTER_S = agent_registry.positive_int_env("AGOS_TASK_RETRY_AFTER_S", 5, 1, 3600)
+TASK_TIMEOUT_S = backpressure._float_env("AGOS_TASK_TIMEOUT_S", 600.0, 0.0, 86400.0)
+TASK_RETRY_BASE_S = backpressure._float_env("AGOS_TASK_RETRY_BASE_S", 1.0, 0.01, 600.0)
+TASK_RETRY_CAP_S = backpressure._float_env("AGOS_TASK_RETRY_CAP_S", 30.0, 0.01, 3600.0)
+backpressure.validate_env()     # an invalid AGOS_BREAKER_* fails the start
+
 # R-163 (D-082): the durable queue is OPT-IN (precedent: AGOS_AGENT_IMPL,
 # D-037) — active only when storage is configured AND the operator explicitly
 # enables it. Default off keeps the volatile path (and its documented limits)
@@ -441,9 +475,111 @@ def _pick_agent(specialization: str):
 
 
 def _prune_tasks():
-    if len(TASKS) > MAX_TASKS_KEPT:
-        for tid in sorted(TASKS, key=lambda t: TASKS[t]["created_at"])[: len(TASKS) - MAX_TASKS_KEPT]:
+    """Keep at most MAX_TASKS_KEPT records. R-164: finished records go first
+    (oldest first) — before, the oldest record was dropped whatever its
+    status, so an in-flight task could lose its record while still running.
+    Only when finished records are not enough does the oldest in-flight one
+    go (possible only for durable mirrors, whose truth is the stored row: the
+    volatile admission cap keeps in-flight records <= MAX_TASKS_KEPT)."""
+    excess = len(TASKS) - MAX_TASKS_KEPT
+    if excess <= 0:
+        return
+    by_age = sorted(TASKS, key=lambda t: TASKS[t]["created_at"])
+    done = [t for t in by_age if TASKS[t].get("status") in TERMINAL_TASK_STATES]
+    for tid in done[:excess]:
+        TASKS.pop(tid, None)
+    excess = len(TASKS) - MAX_TASKS_KEPT
+    if excess > 0:
+        for tid in [t for t in by_age if t in TASKS][:excess]:
             TASKS.pop(tid, None)
+
+
+def _overloaded(status: int, detail: str, retry_after: float) -> HTTPException:
+    """R-164: a refusal that says when to come back (error_detail v1 body +
+    ``Retry-After`` header)."""
+    return HTTPException(status_code=status, detail=detail,
+                         headers={"Retry-After": str(max(1, math.ceil(retry_after)))})
+
+
+_ACCEPTED_AT: Dict[str, List[float]] = defaultdict(list)
+
+
+def _check_accept_rate(tenant_id: str) -> None:
+    """R-164: AGOS_TASK_ACCEPT_RATE_PER_MIN accepted tasks per tenant per
+    60 s (sliding window). Checked before anything is created; a refused
+    request leaves no trace and consumes no quota."""
+    if not TASK_ACCEPT_RATE_PER_MIN:
+        return
+    now = time.monotonic()
+    window = [t for t in _ACCEPTED_AT[tenant_id] if t > now - 60.0]
+    _ACCEPTED_AT[tenant_id] = window
+    if len(window) >= TASK_ACCEPT_RATE_PER_MIN:
+        raise _overloaded(429, f"task acceptance rate exceeded for this tenant: max "
+                               f"{TASK_ACCEPT_RATE_PER_MIN} per 60s (AGOS_TASK_ACCEPT_RATE_PER_MIN)",
+                          window[0] + 60.0 - now)
+
+
+def _note_accepted(tenant_id: str) -> None:
+    if TASK_ACCEPT_RATE_PER_MIN:
+        _ACCEPTED_AT[tenant_id].append(time.monotonic())
+
+
+def _volatile_admission(tenant_id: str) -> None:
+    """R-164: queue caps for the volatile mode, from the memory table."""
+    pending = [t for t in TASKS.values() if t.get("status") not in TERMINAL_TASK_STATES]
+    mine = sum(1 for t in pending if t.get("tenant_id") == tenant_id)
+    if TASK_QUEUE_MAX_PER_TENANT and mine >= TASK_QUEUE_MAX_PER_TENANT:
+        raise _overloaded(429, f"task queue full for this tenant: {mine} pending task(s) "
+                               f"(AGOS_TASK_QUEUE_MAX_PER_TENANT={TASK_QUEUE_MAX_PER_TENANT}); retry later",
+                          TASK_RETRY_AFTER_S)
+    cap = min(TASK_QUEUE_MAX or MAX_TASKS_KEPT, MAX_TASKS_KEPT)
+    if len(pending) >= cap:
+        raise _overloaded(503, "task queue full: the service is at capacity; retry later",
+                          TASK_RETRY_AFTER_S)
+
+
+async def _durable_admission(storage, tenant_id: str) -> None:
+    """R-164: queue caps for the durable mode, counted in the store (the
+    truth across restarts). Each count reads at most cap rows. A store that
+    cannot answer refuses the task (503) — it could not be stored either."""
+    if TASK_QUEUE_MAX_PER_TENANT:
+        mine = await storage.count_pending_tasks(tenant_id, TASK_QUEUE_MAX_PER_TENANT)
+        if mine is None:
+            raise _storage_unavailable("storage unavailable: the task was not accepted")
+        if mine >= TASK_QUEUE_MAX_PER_TENANT:
+            raise _overloaded(429, f"task queue full for this tenant: {mine} pending task(s) "
+                                   f"(AGOS_TASK_QUEUE_MAX_PER_TENANT={TASK_QUEUE_MAX_PER_TENANT}); retry later",
+                              TASK_RETRY_AFTER_S)
+    if TASK_QUEUE_MAX:
+        total = await storage.count_pending_tasks(ALL_TENANTS, TASK_QUEUE_MAX)
+        if total is None:
+            raise _storage_unavailable("storage unavailable: the task was not accepted")
+        if total >= TASK_QUEUE_MAX:
+            raise _overloaded(503, "task queue full: the service is at capacity; retry later",
+                              TASK_RETRY_AFTER_S)
+
+
+def _storage_unavailable(detail: str) -> HTTPException:
+    """R-164: 503 for a store that did not answer, with the storage
+    breaker's own wait when it is open (else the default retry hint)."""
+    brk = backpressure.breaker("storage")
+    wait = brk.retry_after() if brk.is_open() else TASK_RETRY_AFTER_S
+    return _overloaded(503, detail, wait)
+
+
+async def _execute_bounded(agent, payload: dict) -> dict:
+    """R-164: one run under AGOS_TASK_TIMEOUT_S. On timeout the agent
+    coroutine is cancelled (a pool thread already running finishes on its
+    own; its result is discarded) and the run ends as a FAILED outcome —
+    never retried: a run that started may have had side effects."""
+    if not TASK_TIMEOUT_S:
+        return await agent.execute(payload)
+    try:
+        return await asyncio.wait_for(agent.execute(payload), timeout=TASK_TIMEOUT_S)
+    except asyncio.TimeoutError:
+        telemetry.event("task", "timeout", outcome="fail")
+        return {"ok": False, "agent": getattr(agent, "name", None), "elapsed_s": round(TASK_TIMEOUT_S, 3),
+                "result": {"error": f"task timed out after {TASK_TIMEOUT_S:g}s (AGOS_TASK_TIMEOUT_S)"}}
 
 
 # R-160 (task lifecycle contract v1): strong references to the background runs.
@@ -577,7 +713,7 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
     await _publish(tenant_id, {"type": "task_started", "task_id": task_id, "agent": agent.name,
                                "specialization": specialization})
 
-    outcome = await agent.execute({"prompt": prompt, "data": data})
+    outcome = await _execute_bounded(agent, {"prompt": prompt, "data": data})   # R-164: deadline
     if TASKS[task_id].get("status") in TERMINAL_TASK_STATES or AGENT_REGISTRY.lease(task_id) is None:
         # R-162: the lease ended while the agent ran (worker stopped/removed):
         # the record was already ended as an orphan; a late result never
@@ -618,6 +754,12 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
 # recovery without a durable store — see OPERATIONS.md).
 
 _QUEUE_BACKOFF: Dict[str, float] = {}
+# R-164: how many times a task was handed back for capacity (back-off growth)
+_QUEUE_DEFERRALS: Dict[str, int] = {}
+# R-164: volatile runs by task id — so the cancel endpoint can cancel a
+# RUNNING volatile task too (before, only its record moved to cancelled and
+# the agent kept running to the end).
+_VOLATILE_RUNS: Dict[str, asyncio.Task] = {}
 
 
 def _lease_deadline() -> str:
@@ -686,6 +828,8 @@ async def _finish_durable(task_id: str, specialization: str, claim_token: str,
             if confirmed is not False:
                 break
     _QUEUE_STATE.pop(task_id, None)
+    _QUEUE_DEFERRALS.pop(task_id, None)
+    _QUEUE_BACKOFF.pop(task_id, None)
     if confirmed is not True:
         # 0 rows matched: the claim is not ours anymore (recovered/cancelled)
         # — a late result is discarded, never resurrected (R-162 semantics)
@@ -734,19 +878,30 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
     tenancy.set_tenant(tenant_id)
     storage = get_storage()
     attempts = int(info.get("attempts") or 0) + 1
-    if not await storage.start_task(task_id, claim_token, attempts):
-        # the claim is gone (recovered/cancelled) or the store is down — the
-        # task must NOT run: the reaper/owner will decide its fate
-        logger.warning("Task %s not started: claim not held", task_id)
-        _QUEUE_STATE.pop(task_id, None)
-        sp.set(outcome="orphaned")
-        return
-    info["state"], info["attempts"] = "running", attempts
-    if rec is not None:
-        rec["status"] = "running"
+
+    async def _start() -> bool:
+        if not await storage.start_task(task_id, claim_token, attempts):
+            # the claim is gone (recovered/cancelled) or the store is down —
+            # the task must NOT run: the reaper/owner will decide its fate
+            logger.warning("Task %s not started: claim not held", task_id)
+            _QUEUE_STATE.pop(task_id, None)
+            sp.set(outcome="orphaned")
+            return False
+        info["state"], info["attempts"] = "running", attempts
+        if rec is not None:
+            rec["status"] = "running"
+        return True
+
+    # R-164: the worker slot is taken BEFORE the row moves to running. Before
+    # R-164 the row was already running (attempt counted) when the registry
+    # said Saturated, so release_task (claimed -> queued only) silently
+    # failed: the "deferred" task waited out a whole lease, lost an attempt
+    # and could dead-letter without ever running.
     try:
         agent = _pick_agent(specialization)
     except HTTPException as e:
+        if not await _start():
+            return
         reason = NO_EXTERNAL_AGENT if specialization == "external" else str(e.detail)
         await _finish_durable(task_id, specialization, claim_token,
                               {"ok": False, "agent": None, "specialization": specialization,
@@ -759,23 +914,33 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
     except agent_registry.RegistryError as e:
         if isinstance(e, agent_registry.Saturated):
             # capacity: give the claim back without consuming an attempt —
-            # the task stays queued and is retried when capacity frees
-            _QUEUE_BACKOFF[task_id] = time.time() + 2.0
-            await storage.release_task(task_id, claim_token, "queued")
+            # the row is still `claimed`, so the release really happens.
+            # R-164: jittered, growing back-off per deferral (was a fixed
+            # 2.0 s — every deferred task came back at the same instant)
+            n = _QUEUE_DEFERRALS[task_id] = _QUEUE_DEFERRALS.get(task_id, 0) + 1
+            _QUEUE_BACKOFF[task_id] = time.time() + backpressure.backoff_delay(
+                n, TASK_RETRY_BASE_S, TASK_RETRY_CAP_S)
+            if await storage.release_task(task_id, claim_token, "queued") is not True:
+                logger.warning("Task %s deferral not confirmed by the store; lease expiry recovers it", task_id)
             _QUEUE_STATE.pop(task_id, None)
             if rec is not None:
                 rec["status"] = "queued"
             sp.set(outcome="deferred")
             return
+        if not await _start():
+            return
         await _finish_durable(task_id, specialization, claim_token,
                               {"ok": False, "agent": None, "specialization": specialization,
                                "elapsed_s": 0, "result": {"error": "worker not available"}}, sp, agent=None)
+        return
+    if not await _start():
+        _release_registry_lease(task_id)
         return
     if rec is not None:
         rec["agent"] = agent.name
     await _publish(tenant_id, {"type": "task_started", "task_id": task_id, "agent": agent.name,
                                "specialization": specialization})
-    outcome = await agent.execute({"prompt": prompt, "data": data})
+    outcome = await _execute_bounded(agent, {"prompt": prompt, "data": data})   # R-164: deadline
     if (TASKS.get(task_id) or {}).get("status") in TERMINAL_TASK_STATES \
             or AGENT_REGISTRY.lease(task_id) is None:
         logger.warning("Task %s late result discarded: its lease had ended", task_id)
@@ -840,26 +1005,29 @@ async def _queue_dispatcher() -> None:
     storage = get_storage()
     logger.info("R-163 durable queue dispatcher started (lease=%ss, reap=%ss)", TASK_LEASE_S, TASK_REAP_S)
     while not _QUEUE_STOP:
+        brk = backpressure.breaker("storage")
+        if brk.is_open():
+            # R-164: the store is failing — do not poll it every idle tick;
+            # come back when the breaker allows a probe (bounded pause).
+            await asyncio.sleep(min(5.0, max(TASK_DISPATCH_IDLE_S, brk.retry_after())))
+            continue
         try:
             if len(_RUNNING_RUNS) >= WORKER_CAPACITY:
                 await asyncio.sleep(TASK_DISPATCH_IDLE_S)
                 continue
-            rows = await storage.list_queued_tasks(TASK_DISPATCH_BATCH)
+            rows = await _scan_queued(storage)
         except Exception as e:  # noqa: BLE001 — a failed scan must not kill the loop
             logger.warning("queue dispatcher scan failed: %s", type(e).__name__)
             rows = None
         if not rows:
             await asyncio.sleep(TASK_DISPATCH_IDLE_S)
             continue
-        inflight: Dict[str, int] = defaultdict(int)
-        for info in _QUEUE_STATE.values():
-            if info.get("state") in ("claimed", "running"):
-                inflight[str(info.get("tenant_id"))] = inflight.get(str(info.get("tenant_id")), 0) + 1
+        inflight = _inflight_by_tenant()
         now = time.time()
-        for row in sorted(rows, key=lambda r: (inflight.get(str(r.get("tenant_id")), 0),
-                                              str(r.get("created_at") or ""))):
-            if _QUEUE_STOP:
-                break
+        claimed_any = False
+        for row in _fair_order(rows, inflight):
+            if _QUEUE_STOP or len(_RUNNING_RUNS) >= WORKER_CAPACITY:
+                break       # R-164: capacity is checked per claim, not per pass
             tid = str(row.get("task_id"))
             if tid in _RUNNING_RUNS or _QUEUE_BACKOFF.get(tid, 0) > now:
                 continue
@@ -888,6 +1056,58 @@ async def _queue_dispatcher() -> None:
             run.add_done_callback(_BACKGROUND_TASKS.discard)
             run.add_done_callback(lambda _r, tid=tid: _RUNNING_RUNS.pop(tid, None))
             inflight[str(claimed.get("tenant_id"))] = inflight.get(str(claimed.get("tenant_id")), 0) + 1
+            claimed_any = True
+        if not claimed_any:
+            # every visible row is backing off / already ours: wait a tick
+            # instead of re-scanning in a hot loop
+            await asyncio.sleep(TASK_DISPATCH_IDLE_S)
+
+
+def _inflight_by_tenant() -> Dict[str, int]:
+    inflight: Dict[str, int] = defaultdict(int)
+    for info in _QUEUE_STATE.values():
+        if info.get("state") in ("claimed", "running"):
+            inflight[str(info.get("tenant_id"))] += 1
+    return inflight
+
+
+async def _scan_queued(storage) -> Optional[List[Dict[str, Any]]]:
+    """R-164 fairness: one scan returns the OLDEST ``TASK_DISPATCH_BATCH``
+    queued rows — so before R-164 a tenant with a backlog deeper than one
+    batch filled every batch, and a newer tenant's task waited until that
+    whole backlog drained (the in-batch "fewest in-flight first" order cannot
+    help a row that is not in the batch). When the batch is full there may be
+    hidden tenants: a second scan EXCLUDES every tenant already seen, and the
+    dispatcher then interleaves tenants (``_fair_order``). One extra read,
+    only when a batch comes back full."""
+    now = time.time()
+    for tid in [t for t, until in _QUEUE_BACKOFF.items() if until <= now]:
+        _QUEUE_BACKOFF.pop(tid, None)          # bounded: expired entries go
+    rows = await storage.list_queued_tasks(TASK_DISPATCH_BATCH)
+    if not rows or len(rows) < TASK_DISPATCH_BATCH:
+        return rows
+    seen_tenants = {str(r.get("tenant_id")) for r in rows} - {"None"}
+    if not seen_tenants:
+        return rows
+    others = await storage.list_queued_tasks(TASK_DISPATCH_BATCH, exclude_tenants=sorted(seen_tenants)[:100])
+    if not others:
+        return rows
+    seen = {str(r.get("task_id")) for r in rows}
+    return list(rows) + [r for r in others if str(r.get("task_id")) not in seen]
+
+
+def _fair_order(rows: List[Dict[str, Any]], inflight: Dict[str, int]) -> List[Dict[str, Any]]:
+    """R-164: round-robin across tenants — a row's turn is its tenant's
+    in-flight count plus its rank among that tenant's candidates (oldest
+    first); ties go to the older row. Tenant A's 2nd row comes after every
+    other tenant's 1st, whatever A's backlog depth."""
+    rank: Dict[str, int] = defaultdict(int)
+    keyed = []
+    for r in sorted(rows, key=lambda r: str(r.get("created_at") or "")):
+        t = str(r.get("tenant_id"))
+        keyed.append(((inflight.get(t, 0) + rank[t], str(r.get("created_at") or "")), r))
+        rank[t] += 1
+    return [r for _, r in sorted(keyed, key=lambda kr: kr[0])]
 
 
 async def _queue_reaper() -> None:
@@ -933,6 +1153,16 @@ async def _queue_reaper() -> None:
                 if not moved:
                     continue
                 _QUEUE_STATE.pop(tid, None)
+                if after is not task_queue.TaskState.DEAD_LETTER:
+                    # R-164: bounded, jittered back-off before the next
+                    # attempt (was immediate: a task that kills its worker
+                    # was re-run at once, max_attempts times in a row)
+                    _QUEUE_BACKOFF[tid] = time.time() + backpressure.backoff_delay(
+                        max(1, attempts), TASK_RETRY_BASE_S, TASK_RETRY_CAP_S)
+                else:
+                    _QUEUE_BACKOFF.pop(tid, None)
+                    _QUEUE_DEFERRALS.pop(tid, None)
+                    telemetry.event("task", "dead_letter", outcome="fail")
                 if rec is not None and rec.get("status") not in TERMINAL_TASK_STATES:
                     if after is task_queue.TaskState.DEAD_LETTER:
                         rec.update(status="failed", result=outcome, finished_at=time.time())
@@ -1147,6 +1377,19 @@ async def prometheus_metrics():
             metrics.set_gauge("storage_operations", c["failed"], {"operation": op, "outcome": "failed"})
         last = st["last_ok"]
         metrics.set_gauge("storage_last_operation_ok", -1 if last is None else int(bool(last)))
+
+        # R-164 (D-083): backpressure — per-pool load, per-service breakers
+        # (state 0 closed / 1 half-open / 2 open) and pending tasks in memory.
+        for name, ld in pools.load().items():
+            metrics.set_gauge("pool_threads", ld["size"], {"pool": name})
+            metrics.set_gauge("pool_waiting", ld["waiting"], {"pool": name})
+            metrics.set_gauge("pool_busy_rejections", ld["busy_rejections"], {"pool": name})
+        for name, b in backpressure.snapshot().items():
+            metrics.set_gauge("breaker_state", backpressure.STATE_CODE[b["state"]], {"service": name})
+            metrics.set_gauge("breaker_opened", b["opened"], {"service": name})
+            metrics.set_gauge("breaker_rejected", b["rejected"], {"service": name})
+        metrics.set_gauge("tasks_pending", sum(1 for t in TASKS.values()
+                                               if t.get("status") not in TERMINAL_TASK_STATES))
         
         return Response(
             content=metrics.export_prometheus(),
@@ -1279,6 +1522,10 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
                 return {"task_id": str(existing.get("task_id")),
                         "status": task_queue.public_status(existing.get("status") or "queued"),
                         "duplicate": True}
+        # R-164: admission AFTER the idempotent replay (a replay is never
+        # refused — it creates nothing) and BEFORE anything is written.
+        _check_accept_rate(principal.tenant_id)
+        await _durable_admission(storage, principal.tenant_id)
         persisted = await storage.insert_task(
             task_id, req.specialization, req.prompt, "queued",
             tenant_id=principal.tenant_id, payload=_durable_payload(req.prompt, req.data),
@@ -1292,7 +1539,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
                     return {"task_id": str(existing.get("task_id")),
                             "status": task_queue.public_status(existing.get("status") or "queued"),
                             "duplicate": True}
-            raise HTTPException(503, "storage unavailable: the task was not accepted")
+            raise _storage_unavailable("storage unavailable: the task was not accepted")
+        _note_accepted(principal.tenant_id)
         TASKS[task_id] = {
             "id": task_id,
             "specialization": req.specialization,
@@ -1322,6 +1570,12 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
         replay = _VOLATILE_IDEMPOTENT.get((principal.tenant_id, idem))
         if replay is not None and replay in TASKS:
             return {"task_id": replay, "status": TASKS[replay]["status"], "duplicate": True}
+    # R-164: admission after the replay check, before any side effect (a
+    # refused task leaves no record, idempotency entry, row, event or run).
+    _check_accept_rate(principal.tenant_id)
+    _volatile_admission(principal.tenant_id)
+    _note_accepted(principal.tenant_id)
+    if idem is not None:
         _VOLATILE_IDEMPOTENT[(principal.tenant_id, idem)] = task_id
     TASKS[task_id] = {
         "id": task_id,
@@ -1350,6 +1604,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
         run = asyncio.create_task(_run_task(task_id, req.specialization, req.prompt, req.data))
         _BACKGROUND_TASKS.add(run)              # R-160: keep a strong reference
         run.add_done_callback(_BACKGROUND_TASKS.discard)
+        _VOLATILE_RUNS[task_id] = run           # R-164: cancellable while running
+        run.add_done_callback(lambda _r, tid=task_id: _VOLATILE_RUNS.pop(tid, None))
     finally:
         reset_public_llm_consent(token)
     logger.info(f"Task created: {task_id} for specialization: {req.specialization}")
@@ -1443,7 +1699,7 @@ async def cancel_task(request: Request, task_id: str,
             # the request itself failed (store down): the cancel is NOT
             # confirmed — the row may be re-dispatched later. Answering 409
             # here would claim a finish that never happened.
-            raise HTTPException(503, "storage unavailable: cancel not confirmed — the task may still run")
+            raise _storage_unavailable("storage unavailable: cancel not confirmed — the task may still run")
         if moved is False:
             # someone else finished/recovered it between the read and this write
             raise HTTPException(409, "task already finished")
@@ -1453,9 +1709,16 @@ async def cancel_task(request: Request, task_id: str,
     outcome = task_queue.cancelled_outcome(rec.get("agent"), rec.get("specialization") or "")
     rec.update(status="failed", result=outcome, finished_at=time.time())
     _QUEUE_STATE.pop(task_id, None)
-    run = _RUNNING_RUNS.get(task_id)
-    if run is not None and not run.done():
-        run.cancel()  # its result is discarded: the row is terminal now
+    _QUEUE_BACKOFF.pop(task_id, None)
+    _QUEUE_DEFERRALS.pop(task_id, None)
+    # R-164: cancel propagates to the live run in BOTH modes (the volatile
+    # run used to keep executing after its record said "cancelled"). A pool
+    # thread already inside a blocking call finishes on its own; its result
+    # is discarded — the record is terminal and is never resurrected.
+    for runs in (_RUNNING_RUNS, _VOLATILE_RUNS):
+        run = runs.get(task_id)
+        if run is not None and not run.done():
+            run.cancel()
     tenant_id = rec.get("tenant_id")
     if tenant_id is not None:
         await storage.insert_event("task_completed", {
@@ -1619,7 +1882,7 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
     # agent execution). Reset in finally: consent never leaks past this request.
     token = set_public_llm_consent(req.allow_public_llm)
     try:
-        outcome = await agent.execute({"prompt": req.message})
+        outcome = await _execute_bounded(agent, {"prompt": req.message})   # R-164: deadline
     finally:
         reset_public_llm_consent(token)
     # BUG-02 (R-141): one status derived from the outcome, used for the memory

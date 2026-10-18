@@ -89,3 +89,14 @@ async def run(name: str, fn, *args, **kwargs):
 def snapshot() -> dict:
     """Pools created so far (for measurement: scripts/r132_server_probe.py)."""
     return dict(_pools)
+
+
+def load() -> dict:
+    """R-164: per-pool load for /metrics — threads, calls waiting for a
+    thread right now, and calls refused by the queue cap since start. Only
+    pools created so far (an unused kind costs nothing)."""
+    out = {}
+    for name, ex in list(_pools.items()):
+        out[name] = {"size": ex._max_workers, "waiting": ex._work_queue.qsize(),
+                     "queue_cap": queue_cap(name), "busy_rejections": stats["busy"][name]}
+    return out

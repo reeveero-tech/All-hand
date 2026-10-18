@@ -15,6 +15,18 @@
       "default": null,
       "title": "Attempts"
     },
+    "busy": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Busy"
+    },
     "content": {
       "title": "Content",
       "type": "string"
@@ -50,6 +62,18 @@
       ],
       "default": null,
       "title": "Provider"
+    },
+    "retry_after": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Retry After"
     }
   },
   "required": [

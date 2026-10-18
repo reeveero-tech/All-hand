@@ -49,6 +49,8 @@ class _PostgREST(BaseHTTPRequestHandler):
     def _keep(row: dict, col: str, val: str) -> bool:
         if val.startswith("eq."):
             return str(row.get(col)) == val[3:]
+        if val.startswith("not.in.("):          # R-164 fairness scan
+            return str(row.get(col)) not in val[8:-1].split(",")
         if val.startswith("in.("):
             allowed = val[4:-1].split(",")
             return str(row.get(col)) in allowed

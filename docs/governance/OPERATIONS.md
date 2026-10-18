@@ -292,3 +292,23 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 - **ما يلاحظه المشغّل عند التعطيل** (`AGOS_TASK_QUEUE` مرفوع بعد تشغيل متين): المهام قيد الجري تُعالَج كما في الوضع المتطاير (الحد المتبقي للنهاية غير المنتهية)، والصفوف تبقى كما هي — لا تُفقد ولا تُنشأ حلقة مراجعة؛ إعادة التفعيل تستأنف الاسترداد من الصفوف.
 - **الحد المتبقي (G-160-2 متطاير)**: إلغاء مهمة متطايرة يُحدّث الذاكرة فقط؛ صف التخزين لا يُحدّث أثناء الإلغاء — في الوضع المتين تُحدّث بالكتابة المسوّجة `transition_task`.
 - **السجلات**: دورتا الإرسال والمحصّل تسجّل الأحداث المهمة (`startup: queue_mode=…` عند الإقلاع، `storage unavailable, retrying…` عند انقطاع التخزين). لا تُطبع أي حمولة مهمة في السجلات.
+
+## الضغط الخلفي والحدود (R-164، D-083)
+| المتغير | المكان | الافتراضي والمعنى |
+|---|---|---|
+| `AGOS_TASK_QUEUE_MAX` | server.py | 10000 مهمة معلّقة للخدمة (0 = بلا سقف؛ المتطاير ≤500). البلوغ → 503 + `Retry-After` |
+| `AGOS_TASK_QUEUE_MAX_PER_TENANT` | server.py | 1000 مهمة معلّقة لكل مستأجر (0 = بلا سقف). البلوغ → 429 + `Retry-After` |
+| `AGOS_TASK_ACCEPT_RATE_PER_MIN` | server.py | 0 = معطّل؛ قيمة > 0 = مهام مقبولة لكل مستأجر في 60 ث |
+| `AGOS_TASK_RETRY_AFTER_S` | server.py | 5 ث تلميح `Retry-After` لرفض امتلاء الطابور (1..3600) |
+| `AGOS_TASK_TIMEOUT_S` | server.py | 600 ث مهلة التشغيل الواحد (0 = بلا مهلة؛ ≤86400). انتهاؤها = `failed` بلا إعادة |
+| `AGOS_TASK_RETRY_BASE_S` / `AGOS_TASK_RETRY_CAP_S` | server.py | 1 / 30 ث تراجع بتذبذب قبل إعادة إرسال مهمة مؤجلة (تشبع) أو مستردة (انتهاء عقد) |
+| `AGOS_LLM_CONCURRENCY` | core/llm.py | 8 طلبات متزامنة للمزود بمفتاح (1..256) — **حد جديد** (كان بلا حد) |
+| `AGOS_LLM_MAX_WAIT_S` | core/llm.py | 30 ث أقصى انتظار لمقعد المزود بمفتاح، ثم `busy` صريح |
+| `AGOS_STORAGE_CONCURRENCY` | storage/supabase_store.py | 100 اتصال (افتراضي aiohttp نفسه) |
+| `AGOS_STORAGE_TIMEOUT_S` | storage/supabase_store.py | 30 ث لكل طلب تخزين (القيمة السابقة نفسها؛ 1..300) |
+| `AGOS_BREAKER_<NAME>_THRESHOLD` (`LLM`/`WEB`/`TRANSLATE`/`STORAGE`) | core/backpressure.py | 5 إخفاقات متتالية تفتح القاطع (0 = معطّل؛ `Retry-After` من المزود يُحترم دائماً) |
+| `AGOS_BREAKER_<NAME>_RESET_S` | core/backpressure.py | 30 ث (`storage`: 10 ث) مدة الفتح قبل مسبار half-open واحد |
+
+- **قيمة غير صالحة** لأي من هذه توقف الإقلاع برسالة باسم المتغير (قاعدة AGOS_SSE_*/AGOS_WORKER_CAPACITY نفسها).
+- **ما يراه المشغّل**: `/health` تحت قاطع تخزين مفتوح يذكر «circuit open after <السبب>» (مثل `exception: ClientConnectorError`)؛ و`/metrics` يعرض حالة كل قاطع وانتظار كل مجمّع وعدد المهام المعلّقة. مهمة `dead_letter` تبقى في الجدول بنتيجتها ولا تُعاد — إعادة تشغيلها قرار يدوي (لا نقطة redrive بعد).
+- **التراجع**: إزالة المتغير تعيد الافتراضي؛ لتعطيل سقف ضعه 0، ولتعطيل قاطع ضع عتبته 0. لا شيء من ذلك يغيّر `render.yaml` (Q-026 مفتوحة).
