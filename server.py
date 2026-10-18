@@ -47,6 +47,7 @@ from agent_civilization.agents.external_adapter import (
     load_external_agents_from_env,
 )
 from agent_civilization.core import experience, safety, telemetry, tenancy
+from agent_civilization.core import agent_registry
 from agent_civilization.core.tenancy import ALL_TENANTS, Principal
 from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
 from agent_civilization.routing import route as route_request
@@ -100,7 +101,9 @@ async def _lifespan(_app):
     """R-042: close the storage HTTP session on shutdown (was leaked — 'Unclosed client session').
     R-078: classify the Supabase key at startup and warn loudly if it is a public one."""
     log_key_status()
+    _start_registry_worker()  # R-162: a fresh worker after a previous shutdown
     yield
+    _stop_registry_worker()  # R-162: no lease outlives the worker
     await experience.persist()  # R-103: no-op unless AGOS_MEMORY_FILE is set
     await get_storage().close()
 
@@ -271,6 +274,89 @@ CIVILIZATION = create_civilization(AGENTS_PER_SPEC)
 set_civilization_provider(lambda: CIVILIZATION)
 EXTERNAL_AGENTS: List[ExternalAgentAdapter] = load_external_agents_from_env()
 TASKS: Dict[str, Dict[str, Any]] = {}
+
+# R-162 (D-081): the agent registry — identity, worker and task are separate.
+# Every civilization executor is an identity (agent_id = its unique name,
+# version = the implementation); this process is ONE worker of pool "inproc"
+# whose capacity (AGOS_WORKER_CAPACITY, default 1024) bounds the tasks running
+# at once; each run holds a lease from pick to end. An invalid value is a
+# startup error. External agents become identities "external:<name>" on first
+# use and are disabled when removed.
+WORKER_CAPACITY = agent_registry.positive_int_env("AGOS_WORKER_CAPACITY", 1024, 1, 100_000)
+AGENT_REGISTRY = agent_registry.AgentRegistry()
+agent_registry.register_civilization(
+    AGENT_REGISTRY, CIVILIZATION, version=os.getenv("AGOS_AGENT_IMPL", "real").strip().lower() or "real",
+    capabilities=SPECIALIZATION_TOOLS)
+_WORKER_GENERATION = 0
+WORKER_ID = ""
+
+
+def _start_registry_worker() -> None:
+    """Register this process as a ready worker unless the current one is
+    still live in the table (ready, or draining on purpose). A stopped or
+    dead worker is never revived (its leases were returned): it is removed
+    from the table (no lease left, so no orphan) and a new generation gets a
+    new unique id — the table stays bounded across restarts."""
+    global WORKER_ID, _WORKER_GENERATION
+    if WORKER_ID:
+        try:
+            if AGENT_REGISTRY.worker(WORKER_ID).state in ("starting", "ready", "draining"):
+                return
+            AGENT_REGISTRY.remove_worker(WORKER_ID)
+        except agent_registry.UnknownWorker:
+            pass
+    WORKER_ID = f"inproc-{os.getpid()}-{_WORKER_GENERATION}"
+    _WORKER_GENERATION += 1
+    AGENT_REGISTRY.register_worker(WORKER_ID, "inproc", WORKER_CAPACITY)
+    AGENT_REGISTRY.mark_ready(WORKER_ID)
+
+
+_start_registry_worker()
+WORKER_SATURATED = ("worker capacity saturated: the task was not started "
+                    "(AGOS_WORKER_CAPACITY tasks are already running)")
+
+
+def _identity_id(agent) -> str:
+    if isinstance(agent, ExternalAgentAdapter):
+        return f"external:{agent.name}"
+    return agent_registry.executor_id(agent, getattr(agent, "specialization", "?"), id(agent))
+
+
+def _ensure_identity(agent, specialization: str = "?") -> str:
+    """The identity of an executor, registered on first use (external agents,
+    or a civilization replaced at runtime) and re-enabled if it was disabled."""
+    aid = _identity_id(agent)
+    try:
+        ident = AGENT_REGISTRY.agent(aid)
+    except agent_registry.UnknownAgent:
+        spec = getattr(agent, "specialization", None) or specialization
+        AGENT_REGISTRY.register_agent(aid, aid, spec, version="external"
+                                      if isinstance(agent, ExternalAgentAdapter) else "runtime")
+        return aid
+    if ident.state == "disabled":
+        AGENT_REGISTRY.enable_agent(aid)
+    return aid
+
+
+def _registry_metrics() -> None:
+    from agos_kernel.infrastructure.metrics import get_metrics
+    snap = AGENT_REGISTRY.snapshot()
+    m = get_metrics()
+    m.set_gauge("registry_leases_active", snap["leases_active"])
+    m.set_gauge("registry_agents", snap["agents"])
+    m.set_gauge("registry_saturation", snap["saturation"] or 0.0)
+
+
+def _stop_registry_worker() -> None:
+    """Shutdown: stop this worker; every task still holding a lease ends
+    ``failed`` with a fixed reason instead of staying ``running``."""
+    try:
+        orphans = AGENT_REGISTRY.stop(WORKER_ID, "worker stopped at shutdown")
+    except agent_registry.RegistryError:
+        return
+    for tid in orphans.task_ids:
+        rec = TASKS.get(tid) or {}
+        _end_unfinished(tid, rec.get("specialization", "?"), "task cancelled before completion: worker stopped")
 # SEC-04 (R-144): live events are broadcast in process — every SSE connection
 # of a tenant has its own bounded queue and receives its own copy; nothing is
 # kept for a tenant with no connection (SEC-02: a stream only ever subscribes
@@ -382,6 +468,11 @@ async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
     except Exception as e:  # noqa: BLE001 — the run must end the record, not vanish
         logger.error("Task %s run failed: %s", task_id, type(e).__name__)
         _end_unfinished(task_id, specialization, "task failed: internal error")
+    finally:
+        # R-162: the lease ends with the run, whatever its outcome
+        if AGENT_REGISTRY.lease(task_id) is not None:
+            AGENT_REGISTRY.release(task_id)
+        _registry_metrics()
 
 
 async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, data: Any):
@@ -408,6 +499,34 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
         await _publish(tenant_id, {"type": "task_completed", "task_id": task_id, "agent": None,
                                    "specialization": specialization, "ok": False, "elapsed_s": 0})
         return
+    # R-162: a lease binds this task to the agent identity on this worker.
+    # At capacity the task ends failed with a fixed reason — never silently
+    # queued (waiting/backpressure are R-163/R-164).
+    try:
+        # the process keeps serving after a lifespan shutdown (e.g. an embedding
+        # app or tests): a task that starts then gets a NEW worker generation —
+        # never the stopped one, whose tasks were already ended as orphans.
+        _start_registry_worker()
+        AGENT_REGISTRY.heartbeat(WORKER_ID)   # in-process: alive while it runs code
+        AGENT_REGISTRY.acquire(task_id, _ensure_identity(agent, specialization), worker_id=WORKER_ID)
+    except agent_registry.RegistryError as e:
+        try:
+            ready = AGENT_REGISTRY.worker(WORKER_ID).state == "ready"
+        except agent_registry.RegistryError:
+            ready = False
+        reason = WORKER_SATURATED if isinstance(e, agent_registry.Saturated) and ready else "worker not available"
+        outcome = {"ok": False, "agent": None, "specialization": specialization, "elapsed_s": 0,
+                   "result": {"error": reason}}
+        TASKS[task_id].update(status="failed", result=outcome, finished_at=time.time())
+        sp.set(outcome="fail")
+        storage = get_storage()
+        await storage.update_task(task_id, "failed", result=outcome, elapsed_s=0)
+        await storage.insert_event("task_completed", {"task_id": task_id, "agent": None,
+                                                      "specialization": specialization, "ok": False},
+                                   tenant_id=tenant_id)
+        await _publish(tenant_id, {"type": "task_completed", "task_id": task_id, "agent": None,
+                                   "specialization": specialization, "ok": False, "elapsed_s": 0})
+        return
     TASKS[task_id]["status"] = "running"
     TASKS[task_id]["agent"] = agent.name
     storage = get_storage()
@@ -417,6 +536,13 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
                                "specialization": specialization})
 
     outcome = await agent.execute({"prompt": prompt, "data": data})
+    if TASKS[task_id].get("status") in TERMINAL_TASK_STATES or AGENT_REGISTRY.lease(task_id) is None:
+        # R-162: the lease ended while the agent ran (worker stopped/removed):
+        # the record was already ended as an orphan; a late result never
+        # resurrects it.
+        logger.warning("Task %s late result discarded: its lease had ended", task_id)
+        sp.set(outcome="orphaned")
+        return
     TASKS[task_id]["status"] = "completed" if outcome["ok"] else "failed"
     TASKS[task_id]["result"] = outcome
     TASKS[task_id]["finished_at"] = time.time()
@@ -1050,6 +1176,10 @@ async def remove_external_agent(
     for i, a in enumerate(EXTERNAL_AGENTS):
         if a.name == name:
             EXTERNAL_AGENTS.pop(i)
+            try:   # R-162: no new lease for the removed agent; running ones finish
+                AGENT_REGISTRY.disable_agent(_identity_id(a))
+            except agent_registry.UnknownAgent:
+                pass
             logger.warning(f"External agent removed: {name}")
             return {"removed": name}
     raise HTTPException(404, "external agent not found")

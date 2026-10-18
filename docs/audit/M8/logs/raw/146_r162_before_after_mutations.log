@@ -1,0 +1,108 @@
+# 146 R-162 — before / after / mutations for tests/test_r162_agent_registry.py (2026-10-18T09:08:17Z)
+
+## BEFORE (main, no registry)
+=== BEFORE: tests/test_r162_agent_registry.py (from 9569590) on main e85e093477d8398c49f4614b71b34f50b88c0cca — python 3.12.13 — 2026-10-18T08:55:04Z
+    from agent_civilization.core import agent_registry as AR
+E   ImportError: cannot import name 'agent_registry' from 'agent_civilization.core' (/tmp/r162/main_wt/agent_civilization/core/__init__.py)
+=========================== short test summary info ============================
+ERROR tests/test_r162_agent_registry.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 0.19s ===============================
+rc=2
+
+## AFTER
+=== AFTER: branch m8/r162-agent-registry at 956959053511900304dcebbf959978ae202b8de7 — 2026-10-18T08:55:05Z
+--- python Python 3.11.15
+tests/test_r162_agent_registry.py::test_registration_is_unique_by_id_name_and_worker PASSED [  3%]
+tests/test_r162_agent_registry.py::test_identity_worker_and_task_are_separate_records PASSED [  7%]
+tests/test_r162_agent_registry.py::test_worker_lifecycle_transitions_are_enforced PASSED [ 11%]
+tests/test_r162_agent_registry.py::test_liveness_health_and_reap_of_a_silent_worker PASSED [ 15%]
+tests/test_r162_agent_registry.py::test_heartbeat_keeps_a_worker_live PASSED [ 19%]
+tests/test_r162_agent_registry.py::test_an_unresponsive_worker_gets_no_new_lease PASSED [ 23%]
+tests/test_r162_agent_registry.py::test_capacity_saturation_and_worker_choice PASSED [ 26%]
+tests/test_r162_agent_registry.py::test_pool_filter PASSED               [ 30%]
+tests/test_r162_agent_registry.py::test_drain_takes_no_new_lease_but_running_ones_finish PASSED [ 34%]
+tests/test_r162_agent_registry.py::test_stop_and_remove_return_every_running_task_as_orphan PASSED [ 38%]
+tests/test_r162_agent_registry.py::test_lease_expiry_is_reported_not_silent PASSED [ 42%]
+tests/test_r162_agent_registry.py::test_upgrade_keeps_running_leases_on_their_version PASSED [ 46%]
+tests/test_r162_agent_registry.py::test_disabled_and_retired_identities_are_not_assignable PASSED [ 50%]
+tests/test_r162_agent_registry.py::test_select_is_least_loaded PASSED    [ 53%]
+tests/test_r162_agent_registry.py::test_positive_int_env PASSED          [ 57%]
+tests/test_r162_agent_registry.py::test_snapshot_has_counts_only PASSED  [ 61%]
+tests/test_r162_agent_registry.py::test_ten_thousand_logical_agents_without_a_thread_or_process_each PASSED [ 65%]
+tests/test_r162_agent_registry.py::test_server_registers_the_civilization_and_one_inproc_worker PASSED [ 69%]
+tests/test_r162_agent_registry.py::test_a_running_task_holds_a_lease_and_releases_it PASSED [ 73%]
+tests/test_r162_agent_registry.py::test_a_failing_run_also_releases_its_lease PASSED [ 76%]
+tests/test_r162_agent_registry.py::test_at_capacity_a_task_fails_explicitly_instead_of_waiting PASSED [ 80%]
+tests/test_r162_agent_registry.py::test_stopping_the_worker_ends_running_tasks_and_a_new_worker_starts PASSED [ 84%]
+tests/test_r162_agent_registry.py::test_removed_external_agent_identity_is_disabled PASSED [ 88%]
+tests/test_r162_agent_registry.py::test_a_draining_worker_takes_no_new_task_and_is_not_replaced PASSED [ 92%]
+tests/test_r162_agent_registry.py::test_real_lifespan_stops_the_worker_and_a_later_task_gets_a_new_one PASSED [ 96%]
+tests/test_r162_agent_registry.py::test_executors_without_a_name_get_a_positional_identity PASSED [100%]
+============================== 26 passed in 1.22s ==============================
+rc=0
+--- python Python 3.12.13
+tests/test_r162_agent_registry.py::test_registration_is_unique_by_id_name_and_worker PASSED [  3%]
+tests/test_r162_agent_registry.py::test_identity_worker_and_task_are_separate_records PASSED [  7%]
+tests/test_r162_agent_registry.py::test_worker_lifecycle_transitions_are_enforced PASSED [ 11%]
+tests/test_r162_agent_registry.py::test_liveness_health_and_reap_of_a_silent_worker PASSED [ 15%]
+tests/test_r162_agent_registry.py::test_heartbeat_keeps_a_worker_live PASSED [ 19%]
+tests/test_r162_agent_registry.py::test_an_unresponsive_worker_gets_no_new_lease PASSED [ 23%]
+tests/test_r162_agent_registry.py::test_capacity_saturation_and_worker_choice PASSED [ 26%]
+tests/test_r162_agent_registry.py::test_pool_filter PASSED               [ 30%]
+tests/test_r162_agent_registry.py::test_drain_takes_no_new_lease_but_running_ones_finish PASSED [ 34%]
+tests/test_r162_agent_registry.py::test_stop_and_remove_return_every_running_task_as_orphan PASSED [ 38%]
+tests/test_r162_agent_registry.py::test_lease_expiry_is_reported_not_silent PASSED [ 42%]
+tests/test_r162_agent_registry.py::test_upgrade_keeps_running_leases_on_their_version PASSED [ 46%]
+tests/test_r162_agent_registry.py::test_disabled_and_retired_identities_are_not_assignable PASSED [ 50%]
+tests/test_r162_agent_registry.py::test_select_is_least_loaded PASSED    [ 53%]
+tests/test_r162_agent_registry.py::test_positive_int_env PASSED          [ 57%]
+tests/test_r162_agent_registry.py::test_snapshot_has_counts_only PASSED  [ 61%]
+tests/test_r162_agent_registry.py::test_ten_thousand_logical_agents_without_a_thread_or_process_each PASSED [ 65%]
+tests/test_r162_agent_registry.py::test_server_registers_the_civilization_and_one_inproc_worker PASSED [ 69%]
+tests/test_r162_agent_registry.py::test_a_running_task_holds_a_lease_and_releases_it PASSED [ 73%]
+tests/test_r162_agent_registry.py::test_a_failing_run_also_releases_its_lease PASSED [ 76%]
+tests/test_r162_agent_registry.py::test_at_capacity_a_task_fails_explicitly_instead_of_waiting PASSED [ 80%]
+tests/test_r162_agent_registry.py::test_stopping_the_worker_ends_running_tasks_and_a_new_worker_starts PASSED [ 84%]
+tests/test_r162_agent_registry.py::test_removed_external_agent_identity_is_disabled PASSED [ 88%]
+tests/test_r162_agent_registry.py::test_a_draining_worker_takes_no_new_task_and_is_not_replaced PASSED [ 92%]
+tests/test_r162_agent_registry.py::test_real_lifespan_stops_the_worker_and_a_later_task_gets_a_new_one PASSED [ 96%]
+tests/test_r162_agent_registry.py::test_executors_without_a_name_get_a_positional_identity PASSED [100%]
+============================== 26 passed in 1.41s ==============================
+rc=0
+
+## MUTATIONS (script: each mutation alone, file restored after; KILLED = the R-162 tests fail)
+=== R-162 mutations: each applied alone, tests/test_r162_agent_registry.py run (python 3.12.13), file restored — 2026-10-18T08:53:41Z HEAD 0a99cec + test fix
+M1 duplicate id accepted: rc=1 KILLED | ========================= 1 failed, 25 passed in 1.29s =========================
+M2 capacity ignored: rc=1 KILLED | ========================= 4 failed, 22 passed in 4.35s =========================
+M3 stop keeps leases: rc=1 KILLED | ========================= 4 failed, 22 passed in 1.27s =========================
+M4 heartbeat TTL ignored in reap: rc=1 KILLED | ========================= 1 failed, 25 passed in 1.29s =========================
+M5 remove skips stop: rc=1 KILLED | ========================= 2 failed, 24 passed in 1.33s =========================
+M6 server never releases: rc=1 KILLED | ========================= 2 failed, 24 passed in 1.29s =========================
+M7 server late result resurrects: rc=1 KILLED | ========================= 1 failed, 25 passed in 1.40s =========================
+M8 server shutdown orphans not ended: rc=1 KILLED | ========================= 2 failed, 24 passed in 1.25s =========================
+M9 saturation silently runs: rc=1 KILLED | ========================= 2 failed, 24 passed in 7.34s =========================
+M10 external removal not disabled: rc=1 KILLED | ========================= 1 failed, 25 passed in 1.39s =========================
+M11 draining worker replaced: rc=1 KILLED | ========================= 1 failed, 25 passed in 1.29s =========================
+M12 stopped worker kept in table: rc=1 KILLED | ========================= 1 failed, 25 passed in 1.28s =========================
+M13 task after shutdown uses the stopped worker: rc=1 KILLED | ========================= 1 failed, 25 passed in 1.33s =========================
+M14 nameless executor not handled: rc=1 KILLED | ========================= 1 failed, 25 passed in 1.29s =========================
+M15 lease not version-pinned: rc=1 KILLED | ========================= 2 failed, 24 passed in 1.34s =========================
+rc=0
+
+## mutation definitions (file | original -> mutated)
+M1 duplicate id accepted | agent_civilization/core/agent_registry.py | 'raise DuplicateRegistration(f"agent_id already registered: {agent_id}")' -> 'pass'
+M2 capacity ignored | agent_civilization/core/agent_registry.py | 'and w.in_flight < w.capacity:' -> ':'
+M3 stop keeps leases | agent_civilization/core/agent_registry.py | 'self._transition(worker_id, "stopped")\n        return self._orphan_all(worker_id, reason)' -> 'self._transition(worker_id, "stopped")\n        return Orphans(worker_id, reason)'
+M4 heartbeat TTL ignored in reap | agent_civilization/core/agent_registry.py | 'and now - w.last_heartbeat > self.heartbeat_ttl_s:' -> 'and False:'
+M5 remove skips stop | agent_civilization/core/agent_registry.py | 'if w.state not in ("stopped", "dead"):\n            orphans = self.stop(worker_id, "worker removed")' -> 'if False:\n            pass'
+M6 server never releases | server.py | 'AGENT_REGISTRY.release(task_id)\n        _registry_metrics()' -> 'pass\n        _registry_metrics()'
+M7 server late result resurrects | server.py | 'if TASKS[task_id].get("status") in TERMINAL_TASK_STATES or AGENT_REGISTRY.lease(task_id) is None:' -> 'if False:'
+M8 server shutdown orphans not ended | server.py | '_end_unfinished(tid, rec.get("specialization", "?"), "task cancelled before completion: worker stopped")' -> 'pass'
+M9 saturation silently runs | server.py | 'AGENT_REGISTRY.acquire(task_id, _ensure_identity(agent, specialization), worker_id=WORKER_ID)\n    except agent_registry.RegistryError' -> 'try:\n            AGENT_REGISTRY.acquire(task_id, _ensure_identity(agent, specialization), worker_id=WORKER_ID)\n        except agent_registry.Saturated:\n            pass\n    except agent_registry.RegistryError'
+M10 external removal not disabled | server.py | 'AGENT_REGISTRY.disable_agent(_identity_id(a))' -> 'pass'
+M11 draining worker replaced | server.py | 'state in ("starting", "ready", "draining"):' -> 'state in ("starting", "ready"):'
+M12 stopped worker kept in table | server.py | 'AGENT_REGISTRY.remove_worker(WORKER_ID)' -> ''
+M13 task after shutdown uses the stopped worker | server.py | '_start_registry_worker()\n        AGENT_REGISTRY.heartbeat(WORKER_ID)' -> 'AGENT_REGISTRY.heartbeat(WORKER_ID)'
+M14 nameless executor not handled | agent_civilization/core/agent_registry.py | 'return name if isinstance(name, str) and name.strip() else f"{specialization}#{index}"' -> 'return agent.name'
+M15 lease not version-pinned | agent_civilization/core/agent_registry.py | 'lease = Lease(task_id, agent_id, ident.version,' -> 'lease = Lease(task_id, agent_id, "?",'

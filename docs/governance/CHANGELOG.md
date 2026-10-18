@@ -1,5 +1,16 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-18 — R-162: سجل الوكيل المعياري (`awaiting_merge`، D-081)
+- **الفرع**: `m8/r162-agent-registry`، والـPR ‏#183، ولا تُدمج إلا بقرار المالك. البدء بتصريح المالك المستقل بعد قبول R-161 (D-080). 179 بنداً بلا تغيير.
+- **الكود**:
+  - `agent_civilization/core/agent_registry.py` جديد: الهوية والعامل والإيجار منفصلة، وتسجيل فريد، وصحة وحيوية ونبض وحصاد، وسعة وتشبع صريح، وإصدارات، وdrain/stop/remove بلا مهام عالقة.
+  - `server.py`: هوية لكل منفذ، وعامل `inproc` بسعة `AGOS_WORKER_CAPACITY` (افتراضي 1024)، وإيجار لكل تشغيل. التشبع ← `failed` بسبب ثابت. الإيقاف ← الأيتام `failed`، ولا تحييها نتيجة متأخرة. الوكيل الخارجي المحذوف تُعطَّل هويته.
+  - `scripts/r162_registry_scale.py` للقياس.
+- **الاختبارات**: `tests/test_r162_agent_registry.py` (26). قبل: خطأ جمع على main. بعد: 26/26. الطفرات 15/15 مقتولة (`146`). القياس 10k في `147`. الحزمة والبوابات في `148`.
+- **ما بعد دمج PR #182** (`145`): SHA الدمج `e85e093`، وCI main على SHA الدمج.
+- **الوثائق**: ROADMAP، PROJECT_STATE، DECISIONS ‏(D-081)، API، ARCHITECTURE، OPERATIONS ‏(`AGOS_WORKER_CAPACITY`)، QUALITY، EVIDENCE M8.
+- **لم يتغير**: عقود v1 ونقاط النهاية، و`render.yaml` وإعداد الإنتاج (Q-026 مفتوحة). لا نشر، ولا خدمة مدفوعة، ولا بدء R-163.
+
 ## 2026-10-18 — R-161h: قبول المالك الرسمي لـR-161 (`accepted`، D-080)
 - **الفرع**: `m8/r161h-owner-acceptance`. R-161: ‏`done` ← `accepted` (`accepted_by=owner`، `decision=D-080`، مع `conditions`). 179 بنداً بلا تغيير.
 - **النطاق**: storage وllm وexternal بنتيجة PASS ‏live_integration (39105410408). MCP ‏NOT_RUN مقبول في النطاق، وليس نجاحاً لاختبار MCP.
