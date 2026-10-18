@@ -71,12 +71,13 @@ def test_r164_breaker_state_machine():
     clk = _Clock()
     b = backpressure.CircuitBreaker("t", threshold=3, reset_s=10, clock=clk)
     for _ in range(2):
-        assert b.allow()
-        b.failure()
+        p = b.allow()
+        assert p
+        b.failure(p)
     assert b.state() == "closed"
-    b.success()                                   # consecutive: a success resets the count
+    b.success(b.allow())                          # consecutive: a success resets the count
     for _ in range(3):
-        b.failure()
+        b.failure(b.allow())
     assert b.state() == "open" and not b.allow()
     assert 9 <= b.retry_after() <= 10
     with pytest.raises(backpressure.CircuitOpen) as ei:
@@ -84,13 +85,15 @@ def test_r164_breaker_state_machine():
     assert ei.value.retry_after >= 1 and "retry in" in str(ei.value)
     clk.t += 10
     assert b.state() == "half_open"
-    assert b.allow()                              # exactly one probe
+    probe = b.allow()                             # exactly one probe
+    assert probe and probe.probe
     assert not b.allow() and b.is_open()
-    b.failure()                                   # probe failed -> open again
+    b.failure(probe)                              # probe failed -> open again
     assert b.state() == "open"
     clk.t += 10
-    assert b.allow()
-    b.success()                                   # probe ok -> closed
+    probe = b.allow()
+    assert probe
+    b.success(probe)                              # probe ok -> closed
     assert b.state() == "closed" and b.allow() and b.allow()
     assert b.snapshot()["opened"] == 2
 
@@ -98,10 +101,11 @@ def test_r164_breaker_state_machine():
 def test_r164_breaker_lost_probe_and_neutral_outcome_free_the_slot():
     clk = _Clock()
     b = backpressure.CircuitBreaker("t", threshold=1, reset_s=5, clock=clk)
-    b.failure()
+    b.failure(b.allow())
     clk.t += 5
-    assert b.allow() and not b.allow()
-    b.release_probe()                             # neutral outcome (4xx of the request)
+    probe = b.allow()
+    assert probe and not b.allow()
+    b.release_probe(probe)                        # neutral outcome (4xx of the request)
     assert b.allow()
     clk.t += 5                                    # probe never reported (cancelled)
     assert b.allow()
@@ -111,7 +115,7 @@ def test_r164_breaker_disabled_still_honours_retry_after_hold():
     clk = _Clock()
     b = backpressure.CircuitBreaker("t", threshold=0, reset_s=5, clock=clk)
     for _ in range(100):
-        b.failure()
+        b.failure(b.allow())
     assert b.state() == "closed"                  # 0 = never opens on failures
     b.hold(3)                                     # but the provider said "come back in 3 s"
     assert not b.allow() and 2 <= b.retry_after() <= 3
@@ -586,7 +590,7 @@ def test_r164_metrics_expose_pools_breakers_and_pending(tenant_auth):
     with TestClient(server.app) as c:
         asyncio.run(pools.run("local", lambda: 1))
         body = c.get("/metrics", headers=tenant_auth.headers).text
-    for name in ("breaker_state", "tasks_pending", "pool_waiting"):
+    for name in ("breaker_state", "breaker_stale_outcomes", "tasks_pending", "pool_waiting"):
         assert name in body, name
 
 

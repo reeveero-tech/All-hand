@@ -504,12 +504,16 @@ def _overloaded(status: int, detail: str, retry_after: float) -> HTTPException:
 _ACCEPTED_AT: Dict[str, List[float]] = defaultdict(list)
 
 
-def _check_accept_rate(tenant_id: str) -> None:
+def _reserve_accept_slot(tenant_id: str) -> Optional[float]:
     """R-164: AGOS_TASK_ACCEPT_RATE_PER_MIN accepted tasks per tenant per
-    60 s (sliding window). Checked before anything is created; a refused
-    request leaves no trace and consumes no quota."""
+    60 s (sliding window). Check AND reservation in one synchronous step —
+    no ``await`` between them, so concurrent requests on the event loop
+    cannot all pass the check before any of them is counted (R-164 review).
+    Returns the reservation (``None`` when the limit is off); the caller must
+    ``_release_accept_slot`` it unless the task is finally accepted. A
+    refused request leaves no trace and consumes no quota."""
     if not TASK_ACCEPT_RATE_PER_MIN:
-        return
+        return None
     now = time.monotonic()
     window = [t for t in _ACCEPTED_AT[tenant_id] if t > now - 60.0]
     _ACCEPTED_AT[tenant_id] = window
@@ -517,11 +521,20 @@ def _check_accept_rate(tenant_id: str) -> None:
         raise _overloaded(429, f"task acceptance rate exceeded for this tenant: max "
                                f"{TASK_ACCEPT_RATE_PER_MIN} per 60s (AGOS_TASK_ACCEPT_RATE_PER_MIN)",
                           window[0] + 60.0 - now)
+    window.append(now)
+    return now
 
 
-def _note_accepted(tenant_id: str) -> None:
-    if TASK_ACCEPT_RATE_PER_MIN:
-        _ACCEPTED_AT[tenant_id].append(time.monotonic())
+def _release_accept_slot(tenant_id: str, slot: Optional[float]) -> None:
+    """Give a reservation back: the task was not accepted (admission refused,
+    storage failed, the request turned out to be a replay, or it was
+    cancelled). Removes exactly one entry with that timestamp."""
+    if slot is None:
+        return
+    try:
+        _ACCEPTED_AT[tenant_id].remove(slot)
+    except ValueError:
+        pass                # already pruned out of the window
 
 
 def _volatile_admission(tenant_id: str) -> None:
@@ -1388,6 +1401,10 @@ async def prometheus_metrics():
             metrics.set_gauge("breaker_state", backpressure.STATE_CODE[b["state"]], {"service": name})
             metrics.set_gauge("breaker_opened", b["opened"], {"service": name})
             metrics.set_gauge("breaker_rejected", b["rejected"], {"service": name})
+            # R-164 review: outcomes ignored because the call was admitted
+            # before the breaker changed state (late successes after a
+            # Retry-After hold, non-probe answers in half-open)
+            metrics.set_gauge("breaker_stale_outcomes", b["stale"], {"service": name})
         metrics.set_gauge("tasks_pending", sum(1 for t in TASKS.values()
                                                if t.get("status") not in TERMINAL_TASK_STATES))
         
@@ -1523,24 +1540,32 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
                         "status": task_queue.public_status(existing.get("status") or "queued"),
                         "duplicate": True}
         # R-164: admission AFTER the idempotent replay (a replay is never
-        # refused — it creates nothing) and BEFORE anything is written.
-        _check_accept_rate(principal.tenant_id)
-        await _durable_admission(storage, principal.tenant_id)
-        persisted = await storage.insert_task(
-            task_id, req.specialization, req.prompt, "queued",
-            tenant_id=principal.tenant_id, payload=_durable_payload(req.prompt, req.data),
-            idempotency_key=idem, max_attempts=TASK_MAX_ATTEMPTS)
-        if not persisted:
-            # the unique (tenant, key) index may have raced us: replay it
-            if idem is not None:
-                existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
-                if existing is not None:
-                    _rebuild_task_record(existing)
-                    return {"task_id": str(existing.get("task_id")),
-                            "status": task_queue.public_status(existing.get("status") or "queued"),
-                            "duplicate": True}
-            raise _storage_unavailable("storage unavailable: the task was not accepted")
-        _note_accepted(principal.tenant_id)
+        # refused — it creates nothing) and BEFORE anything is written. The
+        # rate slot is reserved before the first await and given back on
+        # every path that does not accept a NEW task (R-164 review).
+        slot = _reserve_accept_slot(principal.tenant_id)
+        accepted = False
+        try:
+            await _durable_admission(storage, principal.tenant_id)
+            persisted = await storage.insert_task(
+                task_id, req.specialization, req.prompt, "queued",
+                tenant_id=principal.tenant_id, payload=_durable_payload(req.prompt, req.data),
+                idempotency_key=idem, max_attempts=TASK_MAX_ATTEMPTS)
+            if not persisted:
+                # the unique (tenant, key) index may have raced us: replay it
+                # (a replay consumes no quota — the finally gives it back)
+                if idem is not None:
+                    existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
+                    if existing is not None:
+                        _rebuild_task_record(existing)
+                        return {"task_id": str(existing.get("task_id")),
+                                "status": task_queue.public_status(existing.get("status") or "queued"),
+                                "duplicate": True}
+                raise _storage_unavailable("storage unavailable: the task was not accepted")
+            accepted = True     # the row exists: the slot is spent from here on
+        finally:
+            if not accepted:
+                _release_accept_slot(principal.tenant_id, slot)
         TASKS[task_id] = {
             "id": task_id,
             "specialization": req.specialization,
@@ -1572,9 +1597,12 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
             return {"task_id": replay, "status": TASKS[replay]["status"], "duplicate": True}
     # R-164: admission after the replay check, before any side effect (a
     # refused task leaves no record, idempotency entry, row, event or run).
-    _check_accept_rate(principal.tenant_id)
-    _volatile_admission(principal.tenant_id)
-    _note_accepted(principal.tenant_id)
+    slot = _reserve_accept_slot(principal.tenant_id)
+    try:
+        _volatile_admission(principal.tenant_id)
+    except BaseException:
+        _release_accept_slot(principal.tenant_id, slot)
+        raise
     if idem is not None:
         _VOLATILE_IDEMPOTENT[(principal.tenant_id, idem)] = task_id
     TASKS[task_id] = {

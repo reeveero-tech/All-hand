@@ -6,6 +6,7 @@ Persists tasks, agent stats, and events to the Supabase database.
 Uses the REST API (no external SDK needed) via aiohttp.
 """
 
+import asyncio
 import base64
 import functools
 from datetime import datetime, timezone
@@ -160,21 +161,39 @@ STORAGE_CONCURRENCY = backpressure._int_env("AGOS_STORAGE_CONCURRENCY", 100, 1, 
 _BREAKER_CAUSE = {"last": None}
 
 
+async def _breaker_on_start(session, ctx, params) -> None:
+    # R-164 review: every HTTP request takes its own breaker permit, kept in
+    # the per-request trace context, and its outcome is reported with that
+    # permit only — so the answer of a request that started before the
+    # breaker opened can neither close it nor end a half-open probe it does
+    # not own. Raising here aborts the request (aiohttp sends no terminal
+    # event to a trace whose start failed).
+    ctx.permit = backpressure.breaker("storage").check()
+
+
 async def _breaker_on_end(session, ctx, params) -> None:
+    brk, permit = backpressure.breaker("storage"), getattr(ctx, "permit", None)
     if params.response.status >= 500:
         _BREAKER_CAUSE["last"] = f"HTTP {params.response.status}"
-        backpressure.breaker("storage").failure()
+        brk.failure(permit)
     else:
-        backpressure.breaker("storage").success()
+        brk.success(permit)
 
 
 async def _breaker_on_exception(session, ctx, params) -> None:
+    brk, permit = backpressure.breaker("storage"), getattr(ctx, "permit", None)
+    if isinstance(params.exception, asyncio.CancelledError):
+        # the caller gave up (task timeout, cancel): says nothing about the
+        # store — only free a half-open probe slot
+        brk.release_probe(permit)
+        return
     _BREAKER_CAUSE["last"] = f"exception: {type(params.exception).__name__}"
-    backpressure.breaker("storage").failure()
+    brk.failure(permit)
 
 
 def storage_breaker_trace() -> aiohttp.TraceConfig:
     trace = aiohttp.TraceConfig()
+    trace.on_request_start.append(_breaker_on_start)
     trace.on_request_end.append(_breaker_on_end)
     trace.on_request_exception.append(_breaker_on_exception)
     return trace
@@ -329,7 +348,11 @@ class SupabaseStorage:
         # R-164: refuse at once while the storage breaker is open (every
         # caller is inside its operation's try/except, so this is recorded
         # as that operation's failure and returns its usual failure value).
-        backpressure.breaker("storage").check()
+        # Non-consuming: the permit itself is taken per HTTP request in the
+        # trace's on_request_start (a half-open probe slot is not spent here).
+        brk = backpressure.breaker("storage")
+        if brk.is_open():
+            raise backpressure.CircuitOpen("storage", brk.retry_after())
         if self._session is None or self._session.closed:
             if self.guarded:
                 from agent_civilization.agents.external_adapter import guarded_session_kwargs

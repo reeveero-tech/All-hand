@@ -126,6 +126,27 @@ def parse_retry_after(value: Optional[str], cap: float = RETRY_AFTER_CAP_S,
     return float(min(cap, max(0.0, delta)))
 
 
+class Permit:
+    """The right to report ONE call's outcome to a breaker (R-164 review).
+
+    ``allow()`` hands one out; ``success``/``failure``/``release_probe`` act
+    only when given the permit of the CURRENT breaker generation — every
+    state change (closed -> open, open -> half-open, half-open -> closed or
+    open, any ``hold``) starts a new generation, so the outcome of a call
+    that was admitted before that change is stale and ignored. In half-open
+    only the probe's own permit can close (or re-open) the breaker. A permit
+    reports once; later reports with it are no-ops (so a ``finally`` that
+    releases it is always safe)."""
+
+    __slots__ = ("gen", "probe", "settled")
+
+    def __init__(self, gen: int, probe: bool):
+        self.gen, self.probe, self.settled = gen, probe, False
+
+    def __bool__(self) -> bool:      # ``if not brk.allow():`` keeps working
+        return True
+
+
 class CircuitBreaker:
     def __init__(self, name: str, threshold: int, reset_s: float,
                  clock: Callable[[], float] = time.monotonic):
@@ -138,7 +159,9 @@ class CircuitBreaker:
         self._failures = 0
         self._open_until = 0.0
         self._probe_since: Optional[float] = None
-        self.stats = {"opened": 0, "rejected": 0, "held": 0}
+        self._probe: Optional[Permit] = None     # the current half-open probe
+        self._gen = 0
+        self.stats = {"opened": 0, "rejected": 0, "held": 0, "stale": 0}
 
     # -- queries ----------------------------------------------------------
     @property
@@ -175,77 +198,121 @@ class CircuitBreaker:
             return {"state": self._state, "failures": self._failures,
                     "threshold": self.threshold, "reset_s": self.reset_s, **self.stats}
 
-    # -- transitions ------------------------------------------------------
+    # -- transitions (all under self._lock) -------------------------------
+    def _new_gen(self) -> None:
+        self._gen += 1
+        self._probe, self._probe_since = None, None
+
     def _tick(self) -> None:
         now = self._clock()
         if self._state == OPEN and now >= self._open_until:
-            self._state, self._probe_since = HALF_OPEN, None
+            self._state = HALF_OPEN
+            self._new_gen()
         elif self._state == HALF_OPEN and self._probe_since is not None \
                 and now >= self._probe_since + self.reset_s:
-            # the probe never reported (cancelled/lost): allow another one
-            self._probe_since = None
+            # the probe never reported (cancelled/lost): allow another one;
+            # the lost probe's permit no longer closes anything
+            self._probe, self._probe_since = None, None
 
-    def allow(self) -> bool:
-        """May a call go through now? In half-open, the first caller gets the
-        single probe slot; the others are refused until it reports."""
+    def _current(self, permit: Optional[Permit], count: bool = True) -> bool:
+        """Is ``permit`` entitled to report now? (settles it either way;
+        ``count`` = record a refused report in stats["stale"])"""
+        if permit is None or permit.settled:
+            return False
+        permit.settled = True
+        ok = permit.gen == self._gen and (
+            (self._state == CLOSED) or
+            (self._state == HALF_OPEN and permit is self._probe))
+        # (OPEN: opening always starts a new generation, so a
+        # same-generation permit cannot exist there — refused defensively)
+        if not ok and count:
+            self.stats["stale"] += 1
+        return ok
+
+    def allow(self) -> Optional[Permit]:
+        """May a call go through now? Returns its ``Permit`` (truthy) or
+        ``None``. In half-open, the first caller gets the single probe
+        permit; the others are refused until it reports."""
         with self._lock:
             self._tick()
             if self._state == CLOSED:
-                return True
-            if self._state == HALF_OPEN and self._probe_since is None:
+                return Permit(self._gen, False)
+            if self._state == HALF_OPEN and self._probe is None:
                 self._probe_since = self._clock()
-                return True
+                self._probe = Permit(self._gen, True)
+                return self._probe
             self.stats["rejected"] += 1
-            return False
+            return None
 
-    def check(self) -> None:
+    def check(self) -> Permit:
         """``allow()`` or raise ``CircuitOpen``."""
-        if not self.allow():
+        p = self.allow()
+        if p is None:
             raise CircuitOpen(self.name, self.retry_after())
+        return p
 
-    def success(self) -> None:
-        with self._lock:
-            self._state, self._failures, self._probe_since = CLOSED, 0, None
-
-    def failure(self) -> None:
+    def success(self, permit: Optional[Permit]) -> None:
+        """The call admitted with ``permit`` reached a healthy service. Only
+        a current-generation permit counts: closed -> resets the consecutive
+        failures; half-open -> only the probe closes the breaker. A stale
+        success (the call started before an open/hold) changes nothing — it
+        can neither close the breaker nor cut a Retry-After hold short."""
         with self._lock:
             self._tick()
-            if not self.enabled:
+            if not self._current(permit):
                 return
             if self._state == HALF_OPEN:
-                self._open(self.reset_s)
+                self._state = CLOSED
+                self._new_gen()
+            self._failures = 0
+
+    def failure(self, permit: Optional[Permit]) -> None:
+        with self._lock:
+            self._tick()
+            if not self._current(permit) or not self.enabled:
+                return
+            if self._state == HALF_OPEN:
+                self._open(self.reset_s)        # the probe failed
                 return
             self._failures += 1
-            if self._state == CLOSED and self._failures >= self.threshold:
+            if self._failures >= self.threshold:
                 self._open(self.reset_s)
 
-    def release_probe(self) -> None:
-        """A call ended with an outcome that says nothing about the service's
-        health (e.g. a 4xx of the request itself, a rate-limit without
-        Retry-After): neither success nor failure — but a half-open probe slot
-        must be freed so another caller can probe."""
+    def release_probe(self, permit: Optional[Permit]) -> None:
+        """The call ended with an outcome that says nothing about the
+        service's health (a 4xx of the request itself, a rate limit without
+        Retry-After, a cancellation): neither success nor failure. Frees the
+        half-open probe slot if ``permit`` is that probe; idempotent."""
         with self._lock:
+            self._tick()
+            if not self._current(permit, count=False):
+                return
             if self._state == HALF_OPEN:
-                self._probe_since = None
+                self._probe, self._probe_since = None, None
 
     def hold(self, seconds: float) -> None:
         """The service said when to come back (``Retry-After``): refuse calls
-        until then — honoured even when the failure threshold is disabled,
-        because it is the provider's explicit instruction, not a guess."""
+        until then — honoured from ANY call (fresh information from the
+        provider, never stale), even when the failure threshold is disabled.
+        Starts a new generation: no call admitted before it can lift it."""
         seconds = min(RETRY_AFTER_CAP_S, max(0.0, float(seconds)))
         if seconds <= 0:
             return
         with self._lock:
+            self._tick()
             self.stats["held"] += 1
             until = self._clock() + seconds
             if self._state == OPEN and self._open_until >= until:
                 return
-            self._state, self._open_until, self._probe_since = OPEN, until, None
-            self.stats["opened"] += 1
+            if self._state != OPEN:
+                self.stats["opened"] += 1
+            self._state, self._open_until = OPEN, until
+            self._new_gen()
 
     def _open(self, seconds: float) -> None:
-        self._state, self._open_until, self._probe_since = OPEN, self._clock() + seconds, None
+        self._state, self._open_until = OPEN, self._clock() + seconds
         self._failures = 0
+        self._new_gen()
         self.stats["opened"] += 1
 
 
@@ -313,7 +380,7 @@ def guarded_call(name: str, fn: Callable, *args, **kwargs):
     """
     import urllib.error
     b = breaker(name)
-    b.check()
+    p = b.check()
     try:
         out = fn(*args, **kwargs)
     except urllib.error.HTTPError as e:
@@ -321,15 +388,13 @@ def guarded_call(name: str, fn: Callable, *args, **kwargs):
         if e.code in (429, 503) and ra:
             b.hold(ra)
         elif e.code >= 500:
-            b.failure()
-        else:
-            b.release_probe()
+            b.failure(p)
         raise
     except OSError:
-        b.failure()
+        b.failure(p)
         raise
-    except BaseException:
-        b.release_probe()
-        raise
-    b.success()
-    return out
+    else:
+        b.success(p)
+        return out
+    finally:
+        b.release_probe(p)      # no-op once the permit has reported

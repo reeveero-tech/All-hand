@@ -1,0 +1,62 @@
+## R-164 review — reproduction on the PRE-FIX code
+worktree at 17e7bd9 — the last CODE commit of PR #189 before the review fixes (the PR head 470348e differs from it only in docs/logs: `git diff --stat 17e7bd9 470348e -- "*.py" "*.sh"` is empty)
+copied in: tests/test_r164_review_races.py (new) + tests/test_r163_durable_queue.py (fake PostgREST + reject_insert mode only)
+$ python -m pytest tests/test_r164_review_races.py -v -p no:cacheprovider
+tests/test_r164_review_races.py::test_r164_review_late_success_does_not_lift_retry_after_hold FAILED [ 12%]
+tests/test_r164_review_races.py::test_r164_review_late_success_is_not_the_half_open_probe FAILED [ 25%]
+tests/test_r164_review_races.py::test_r164_review_queued_llm_calls_do_not_pass_an_opened_breaker FAILED [ 37%]
+tests/test_r164_review_races.py::test_r164_review_queued_llm_calls_respect_a_retry_after_from_ahead FAILED [ 50%]
+tests/test_r164_review_races.py::test_r164_review_durable_accept_rate_holds_under_concurrency FAILED [ 62%]
+tests/test_r164_review_races.py::test_r164_review_storage_failure_gives_the_slot_back FAILED [ 75%]
+tests/test_r164_review_races.py::test_r164_review_replays_never_refused_and_never_charged FAILED [ 87%]
+tests/test_r164_review_races.py::test_r164_review_concurrent_same_key_charges_one_slot FAILED [100%]
+E   AssertionError: a stale success closed the breaker during Retry-After
+E   assert 'closed' == 'open'
+E   AssertionError: a non-probe success closed the half-open breaker
+E   assert 'closed' == 'half_open'
+E   AssertionError: 5 queued request(s) reached the provider after the breaker opened
+E   assert 13 == 8
+E   AssertionError: 5 request(s) reached the provider inside Retry-After
+E   assert 13 == 8
+E   AssertionError: 10 concurrent tasks accepted past a rate of 3/min
+E   assert 10 == 3
+    assert len(failed) == 3 and all("storage unavailable" in r["json"]["detail"] for r in failed)
+E   assert (6 == 3)
+E   assert 5 == 2
+E   assert 3 == 2
+FAILED tests/test_r164_review_races.py::test_r164_review_late_success_does_not_lift_retry_after_hold - AssertionError: a stale success closed the breaker during Retry-After
+FAILED tests/test_r164_review_races.py::test_r164_review_late_success_is_not_the_half_open_probe - AssertionError: a non-probe success closed the half-open breaker
+FAILED tests/test_r164_review_races.py::test_r164_review_queued_llm_calls_do_not_pass_an_opened_breaker - AssertionError: 5 queued request(s) reached the provider after the breaker opened
+FAILED tests/test_r164_review_races.py::test_r164_review_queued_llm_calls_respect_a_retry_after_from_ahead - AssertionError: 5 request(s) reached the provider inside Retry-After
+FAILED tests/test_r164_review_races.py::test_r164_review_durable_accept_rate_holds_under_concurrency - AssertionError: 10 concurrent tasks accepted past a rate of 3/min
+FAILED tests/test_r164_review_races.py::test_r164_review_storage_failure_gives_the_slot_back - assert (6 == 3)
+FAILED tests/test_r164_review_races.py::test_r164_review_replays_never_refused_and_never_charged - assert 5 == 2
+FAILED tests/test_r164_review_races.py::test_r164_review_concurrent_same_key_charges_one_slot - assert 3 == 2
+============================== 8 failed in 7.34s ===============================
+
+## the same file AFTER the fix (working tree, Python 3.14.3)
+$ python -m pytest tests/test_r164_review_races.py -v -p no:cacheprovider
+tests/test_r164_review_races.py::test_r164_review_late_success_does_not_lift_retry_after_hold PASSED [ 11%]
+tests/test_r164_review_races.py::test_r164_review_late_success_is_not_the_half_open_probe PASSED [ 22%]
+tests/test_r164_review_races.py::test_r164_review_queued_llm_calls_do_not_pass_an_opened_breaker PASSED [ 33%]
+tests/test_r164_review_races.py::test_r164_review_queued_llm_calls_respect_a_retry_after_from_ahead PASSED [ 44%]
+tests/test_r164_review_races.py::test_r164_review_durable_accept_rate_holds_under_concurrency PASSED [ 55%]
+tests/test_r164_review_races.py::test_r164_review_storage_failure_gives_the_slot_back PASSED [ 66%]
+tests/test_r164_review_races.py::test_r164_review_replays_never_refused_and_never_charged PASSED [ 77%]
+tests/test_r164_review_races.py::test_r164_review_concurrent_same_key_charges_one_slot PASSED [ 88%]
+tests/test_r164_review_races.py::test_r164_review_storage_requests_report_with_their_own_permit PASSED [100%]Task was destroyed but it is pending!
+============================== 9 passed in 3.34s ===============================
+
+## AFTER the fix on Python 3.11.15 (CI version)
+tests/test_r164_review_races.py::test_r164_review_late_success_does_not_lift_retry_after_hold PASSED [ 11%]
+tests/test_r164_review_races.py::test_r164_review_late_success_is_not_the_half_open_probe PASSED [ 22%]
+tests/test_r164_review_races.py::test_r164_review_queued_llm_calls_do_not_pass_an_opened_breaker PASSED [ 33%]
+tests/test_r164_review_races.py::test_r164_review_queued_llm_calls_respect_a_retry_after_from_ahead PASSED [ 44%]
+tests/test_r164_review_races.py::test_r164_review_durable_accept_rate_holds_under_concurrency PASSED [ 55%]
+tests/test_r164_review_races.py::test_r164_review_storage_failure_gives_the_slot_back PASSED [ 66%]
+tests/test_r164_review_races.py::test_r164_review_replays_never_refused_and_never_charged PASSED [ 77%]
+tests/test_r164_review_races.py::test_r164_review_concurrent_same_key_charges_one_slot PASSED [ 88%]
+tests/test_r164_review_races.py::test_r164_review_storage_requests_report_with_their_own_permit PASSED [100%]
+============================== 9 passed in 3.31s ===============================
+
+note: test_r164_review_storage_requests_report_with_their_own_permit exercises the new per-request storage hooks (_breaker_on_start) and has no pre-fix run — on 17e7bd9 it fails with AttributeError (the hook did not exist); it is listed as added coverage, not as a reproduction.

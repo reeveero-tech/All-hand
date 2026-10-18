@@ -30,3 +30,21 @@ install rc=0
 [nitro] ✔ You can preview this build using npx vite preview
 [nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
 build rc=0
+
+## governance gates after commit HEAD=470348e
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 23, 'A': 9}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 32 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ git diff --stat origin/main HEAD | tail -1
+ 32 files changed, 2304 insertions(+), 50 deletions(-)
+$ git diff --name-status origin/main HEAD | cut -f1 | sort | uniq -c
+      9 A
+     23 M

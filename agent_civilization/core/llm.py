@@ -214,25 +214,38 @@ class LLMClient:
         # in-flight requests) and the shared ``llm`` circuit breaker.
         from agent_civilization.core import backpressure
         brk = backpressure.breaker("llm")
-        if not brk.allow():
+        # fast refusal without queueing (does NOT consume a half-open probe)
+        if brk.is_open():
+            keyed_stats["busy"] += 1
             return _llm_unavailable(brk.retry_after(), self.model)
         sem = _keyed_semaphore()
         limit = KEYED_MAX_WAIT_S if max_wait_s is None else max(0.0, max_wait_s)
         try:
             await _asyncio.wait_for(sem.acquire(), timeout=max(0.001, limit))
         except (TimeoutError, _asyncio.TimeoutError):
-            brk.release_probe()
             keyed_stats["busy"] += 1
             return {"ok": False, "content": "", "busy": True,
                     "error": (f"LLM busy: {KEYED_CONCURRENCY} request(s) in flight, no slot within "
                               f"{limit:.0f}s (AGOS_LLM_CONCURRENCY)"),
                     "model": self.model}
         try:
-            return await self._keyed_post(system, prompt, max_tokens, brk)
+            # R-164 review: the breaker permit is taken AFTER the slot, right
+            # before the provider call — a request that queued while the
+            # breaker was closed must not reach the provider if the calls
+            # ahead of it opened the breaker (or a Retry-After hold began)
+            # while it waited.
+            permit = brk.allow()
+            if not permit:
+                keyed_stats["busy"] += 1
+                return _llm_unavailable(brk.retry_after(), self.model)
+            try:
+                return await self._keyed_post(system, prompt, max_tokens, brk, permit)
+            finally:
+                brk.release_probe(permit)   # cancelled/unclassified: free the probe
         finally:
             sem.release()
 
-    async def _keyed_post(self, system: str, prompt: str, max_tokens: int, brk) -> dict:
+    async def _keyed_post(self, system: str, prompt: str, max_tokens: int, brk, permit) -> dict:
         from agent_civilization.core import backpressure
         try:
             session = await self._get_session()
@@ -269,16 +282,17 @@ class LLMClient:
                     if resp.status in (429, 503) and ra:
                         brk.hold(ra)
                     elif resp.status >= 500:
-                        brk.failure()
-                    else:
-                        brk.success()
+                        brk.failure(permit)
+                    elif resp.status != 429:
+                        brk.success(permit)     # the provider answered (4xx = the request's own)
+                    # 429 without Retry-After: neutral (the finally frees a probe)
                     return {
                         "ok": False,
                         "content": "",
                         "error": f"LLM HTTP {resp.status}: {body[:300]}",
                         "model": self.model,
                     }
-                brk.success()
+                brk.success(permit)
                 data = json.loads(body)
                 try:
                     content = completion_content(data)
@@ -304,9 +318,7 @@ class LLMClient:
             from agent_civilization.core import telemetry
             telemetry.annotate(kind="llm", error=e)
             if isinstance(e, (aiohttp.ClientError, _asyncio.TimeoutError, OSError)):
-                brk.failure()       # transport failure: the provider is unreachable
-            else:
-                brk.release_probe()
+                brk.failure(permit)     # transport failure: the provider is unreachable
             return {"ok": False, "content": "", "error": str(e), "model": self.model}
 
     async def close(self):
@@ -475,7 +487,8 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
             if _time.monotonic() + wait >= deadline:
                 break
             await _asyncio.sleep(wait)
-        if not brk.allow():
+        permit = brk.allow()     # checked per attempt, with the turn held (R-131 lock)
+        if not permit:
             keyless_stats["busy"] += 1
             return _llm_unavailable(brk.retry_after(), f"keyless:{KEYLESS_MODEL}", "keyless")
         attempt += 1
@@ -485,7 +498,7 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
             from agent_civilization.core import pools  # R-132: own pool
             data = await pools.run("llm", _keyless_post, system, prompt, max_tokens, remaining)
             _keyless_last = _time.monotonic()
-            brk.success()       # the provider answered (content checked below)
+            brk.success(permit)     # the provider answered (content checked below)
             try:
                 content = completion_content(data)
             except MalformedCompletion as e:
@@ -518,20 +531,22 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
                         brk.hold(ra)
                         return _llm_unavailable(ra, f"keyless:{KEYLESS_MODEL}", "keyless")
                     hint = ra
-                brk.release_probe()
+                brk.release_probe(permit)
                 continue
             keyless_stats["errors"] += 1
             if e.code >= 500:
-                brk.failure()
+                brk.failure(permit)
             else:
-                brk.release_probe()
+                brk.release_probe(permit)
             return {"ok": False, "content": "", "error": f"keyless LLM HTTP {e.code}",
                     "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}
         except Exception as e:  # noqa: BLE001 — network failure: retry within budget
             _keyless_last = _time.monotonic()
             keyless_stats["errors"] += 1
             last_err = f"{type(e).__name__}: {e}"
-            brk.failure()
+            brk.failure(permit)
+        finally:
+            brk.release_probe(permit)   # no-op once reported; frees a cancelled probe
     return {"ok": False, "content": "",
             "error": f"keyless LLM unavailable within {KEYLESS_BUDGET_S:.0f}s budget ({last_err})",
             "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}

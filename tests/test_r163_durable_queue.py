@@ -39,7 +39,7 @@ class _PostgREST(BaseHTTPRequestHandler):
 
     rows: dict = {"tasks": [], "events": [], "agent_stats": []}
     gets: list = []
-    mode: list = ["ok"]          # "ok" | "reject" (store down)
+    mode: list = ["ok"]          # "ok" | "reject" (store down) | "reject_insert"
 
     def log_message(self, *a):
         pass
@@ -85,7 +85,8 @@ class _PostgREST(BaseHTTPRequestHandler):
     def do_POST(self):  # noqa: N802
         table, _ = self._table_q()
         row = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        if self.mode[0] == "reject":
+        # "reject_insert" (R-164 review): reads answer, task inserts fail
+        if self.mode[0] == "reject" or (self.mode[0] == "reject_insert" and table == "tasks"):
             self._send(500)
             return
         idem = row.get("idempotency_key")
