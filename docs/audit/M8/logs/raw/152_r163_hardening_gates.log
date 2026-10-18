@@ -1,0 +1,41 @@
+=== ruff (تسليم scope) ===
+All checks passed!
+ruff_rc=0
+=== web tests ===
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1460.787009
+=== web build ===
+
+✓ built in 126ms
+=== root build ===
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+=== governance: status evidence ===
+::error::R-163: evidence path missing or outside docs/audit/: docs/audit/M8/logs/raw/151_r163_acceptance_main_ci.log + دفعة تقوية لاحقة (PR يلي #186): نجاة النص الكامل فوق حد الـ500 عبر الحمولة، 503 للإلغاء غير المؤكد بدل 409 زوراً، واسترداد بانتقال واحد بلا حالة retrying معلّقة — تفاصيلها في EVIDENCE وسجل `152`
+::error::Status evidence check failed: 1 violation(s) (D-066).
+csr_rc=1
+=== governance: no-delete ===
+no-delete check: origin/main...HEAD status counts (no-renames): empty diff
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+cnd_rc=0
+=== governance: atomic batch v2 ===
+atomic-batch v2: 0 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+cab_rc=0
+=== governance: status evidence ===
+::error::R-163: evidence path missing or outside docs/audit/: docs/audit/M8/logs/raw/151_r163_acceptance_main_ci.log + دفعة تقوية لاحقة (PR يلي #186): نجاة النص الكامل فوق حد الـ500 عبر الحمولة، 503 للإلغاء غير المؤكد بدل 409 زوراً، واسترداد بانتقال واحد بلا حالة retrying معلّقة — تفاصيلها في EVIDENCE وسجل `152`
+::error::Status evidence check failed: 1 violation(s) (D-066).
+csr_rc=1
+=== governance: no-delete ===
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 13, 'A': 2}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+cnd_rc=0
+=== governance: atomic batch v2 ===
+atomic-batch v2: 15 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+cab_rc=0
+=== governance: status evidence (بعد الإصلاح) ===
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+csr_rc=0

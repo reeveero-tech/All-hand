@@ -488,6 +488,94 @@ def test_r163_dead_letter_after_max_attempts(tenants, db, monkeypatch):
         assert "dead-letter" in mem["result"]["result"]["error"]
 
 
+def test_r163_full_prompt_survives_the_500_char_storage_bound(tenants, db, monkeypatch):
+    """insert_task stores only prompt[:500]; the durable row is the execution
+    source — so the full prompt travels inside the payload (_agos_prompt) and
+    the dispatcher executes on it, never on the truncated column."""
+    _enable_queue(monkeypatch)
+    seen = {}
+
+    class _StubAgent:
+        name = "analyst_996"
+        stats = {"tasks_completed": 1, "tasks_failed": 0, "total_time_s": 0.1}
+
+        async def execute(self, payload):
+            seen["prompt"] = payload["prompt"]
+            return {"ok": True, "agent": self.name, "specialization": "analyst",
+                    "elapsed_s": 0.01, "result": {"summary": "stub"}}
+
+    monkeypatch.setattr(server, "_pick_agent", lambda specialization: _StubAgent())
+    long_prompt = "R-163: " + "x" * 1200          # far above the 500-char column bound
+    with _client() as c:
+        r = c.post("/api/tasks", json={"specialization": "analyst",
+                                       "prompt": long_prompt, "data": {"k": 1}},
+                   headers=tenants.headers)
+        assert r.status_code == 202
+        tid = r.json()["task_id"]
+        assert _wait_for(lambda: any(
+            x["task_id"] == tid and x["status"] == "completed" for x in db["tasks"]))
+        # the agent executed on the FULL prompt, not the truncated column
+        assert seen["prompt"] == long_prompt and len(seen["prompt"]) == 1207
+        row = next(x for x in db["tasks"] if x["task_id"] == tid)
+        # the column really is truncated (the bound the wrapping works around)
+        assert len(row["prompt"]) == 500
+        # the data round-trips unchanged alongside the reserved prompt key
+        assert row["payload"]["data"] == {"k": 1}
+
+
+def test_r163_cancel_with_store_down_answers_503_not_409(tenants, db, monkeypatch):
+    """A failed cancel WRITE is not a finish: the endpoint must answer 503
+    (cancel not confirmed) instead of a false 409 'already finished'."""
+    _enable_queue(monkeypatch)
+    with _client() as c:
+        r = c.post("/api/tasks", json={"specialization": "analyst",
+                                       "prompt": "R-163: 503 probe"},
+                   headers=tenants.headers)
+        assert r.status_code == 202
+        tid = r.json()["task_id"]
+        _PostgREST.mode[0] = "reject"           # the store goes down
+        try:
+            rc = c.post(f"/api/tasks/{tid}/cancel", headers=tenants.headers)
+            assert rc.status_code == 503
+            assert "not confirmed" in rc.json()["detail"]
+            # nothing was cancelled: the record is still pending
+            mem = c.get(f"/api/tasks/{tid}", headers=tenants.headers).json()
+            assert mem["status"] in ("queued", "running")
+        finally:
+            _PostgREST.mode[0] = "ok"
+
+
+def test_r163_recovery_transitions_are_direct_no_retrying_strand(tenants, db, monkeypatch):
+    """The reaper recovers an expired lease in ONE conditional transition
+    (claimed/running -> queued|dead_letter directly): a crash between two
+    writes can never strand a row in `retrying` — the machine allows the
+    direct paths and the reaper uses them."""
+    _enable_queue(monkeypatch)
+    # the state machine allows the direct recovery transitions
+    assert task_queue.transition("claimed", "queued") == task_queue.TaskState.QUEUED
+    assert task_queue.transition("running", "queued") == task_queue.TaskState.QUEUED
+    assert task_queue.transition("claimed", "dead_letter") == task_queue.TaskState.DEAD_LETTER
+    assert task_queue.transition("running", "dead_letter") == task_queue.TaskState.DEAD_LETTER
+    # end-to-end: a claimed row whose lease expired in the past (a dead
+    # worker) is recovered straight to queued — retrying is never observed
+    from datetime import datetime, timedelta, timezone
+    past = (datetime.now(timezone.utc) - timedelta(seconds=3600)).isoformat(timespec="seconds")
+    db["tasks"].append({"task_id": "r163-strand", "specialization": "analyst",
+                        "prompt": "strand probe", "status": "claimed",
+                        "claim_token": "dead-token", "lease_expires_at": past,
+                        "attempts": 1, "max_attempts": 3, "tenant_id": tenants.tenant,
+                        "created_at": past, "result": None})
+    observed = set()
+    with _client():  # the lifespan starts the reaper/dispatcher loops
+        assert _wait_for(lambda: (observed.add(next(
+            x["status"] for x in db["tasks"] if x["task_id"] == "r163-strand")) or
+            next(x["status"] for x in db["tasks"] if x["task_id"] == "r163-strand") != "claimed"))
+    assert "retrying" not in observed
+    row = next(x for x in db["tasks"] if x["task_id"] == "r163-strand")
+    # recovered — possibly already re-claimed by the dispatcher, never stranded
+    assert row["status"] in ("queued", "claimed", "running", "completed", "failed")
+
+
 def test_r163_durable_run_carries_no_public_llm_consent(tenants, db, monkeypatch):
     """SEC-06 fail-closed on the durable path: the dispatcher's context has no
     request consent, so a run needing the public LLM can never send text."""

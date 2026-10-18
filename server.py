@@ -812,6 +812,28 @@ async def _run_task_durable(task_id: str, specialization: str, prompt: str,
         _registry_metrics()
 
 
+def _durable_payload(prompt: str, data: Any) -> Dict[str, Any]:
+    """R-163: the durable row is the execution source of truth, and
+    insert_task stores only ``prompt[:500]`` — so the FULL prompt travels
+    inside the payload under the reserved ``_agos_prompt`` key (the dispatcher
+    unwraps it). Without this, a durable task with a prompt longer than 500
+    chars would execute on a truncated input — silent data loss, not a logging
+    bound."""
+    return {"_agos_prompt": prompt, "data": data}
+
+
+def _unwrap_durable_payload(row: Dict[str, Any]) -> tuple:
+    """-> (full prompt, data). Rows written before this wrapping (or by the
+    storage tests) carry the raw data as payload — they fall back to the
+    stored (truncated) prompt."""
+    payload = row.get("payload")
+    if isinstance(payload, dict) and "_agos_prompt" in payload:
+        wrapped = dict(payload)
+        prompt = str(wrapped.pop("_agos_prompt"))
+        return prompt, wrapped.get("data")
+    return str(row.get("prompt") or ""), payload
+
+
 async def _queue_dispatcher() -> None:
     """Claims queued rows (fair across tenants: fewest in-flight first, oldest
     within a tenant) and runs them. Durable mode only."""
@@ -858,9 +880,9 @@ async def _queue_dispatcher() -> None:
                 "max_attempts": int(claimed.get("max_attempts") or TASK_MAX_ATTEMPTS),
             }
             _rebuild_task_record(claimed)
+            full_prompt, data = _unwrap_durable_payload(claimed)
             run = asyncio.create_task(_run_task_durable(tid, str(claimed.get("specialization")),
-                                                        str(claimed.get("prompt") or ""),
-                                                        claimed.get("payload"), token))
+                                                        full_prompt, data, token))
             _RUNNING_RUNS[tid] = run
             _BACKGROUND_TASKS.add(run)  # R-160: keep a strong reference
             run.add_done_callback(_BACKGROUND_TASKS.discard)
@@ -870,8 +892,10 @@ async def _queue_dispatcher() -> None:
 
 async def _queue_reaper() -> None:
     """Renews the lease of every live run (heartbeat) and recovers rows whose
-    lease expired (worker death / restart): claimed/running -> retrying ->
-    queued, or dead-letter once the attempts budget is exhausted."""
+    lease expired (worker death / restart). Each recovery is ONE atomic
+    conditional transition — claimed/running -> queued directly, or ->
+    dead_letter once the attempts budget is exhausted — so a crash mid-recovery
+    can never strand a row in an intermediate state."""
     storage = get_storage()
     logger.info("R-163 durable queue reaper started")
     while not _QUEUE_STOP:
@@ -890,19 +914,22 @@ async def _queue_reaper() -> None:
                     continue  # live here and renewed above — never steal
                 attempts = int(row.get("attempts") or 0)
                 max_attempts = int(row.get("max_attempts") or TASK_MAX_ATTEMPTS)
-                if not await storage.transition_task(tid, ("claimed", "running"), "retrying",
-                                                     lease_expired_before=now_iso):
-                    continue
                 after = task_queue.outcome_after_expiry(attempts, max_attempts)
                 rec = TASKS.get(tid)
                 outcome = task_queue.dead_letter_outcome(
                     rec.get("agent") if rec else None,
                     str(row.get("specialization") or ""), attempts, max_attempts)
+                # ONE atomic conditional transition per row (no retrying
+                # intermediate): a crash between two writes can never strand
+                # the row — it is either recovered in this single PATCH or left
+                # as-is for the next cycle.
                 if after is task_queue.TaskState.DEAD_LETTER:
-                    moved = await storage.transition_task(tid, ("retrying",), "dead_letter",
+                    moved = await storage.transition_task(tid, ("claimed", "running"), "dead_letter",
+                                                          lease_expired_before=now_iso,
                                                           result=outcome, elapsed_s=0)
                 else:
-                    moved = await storage.transition_task(tid, ("retrying",), "queued")
+                    moved = await storage.transition_task(tid, ("claimed", "running"), "queued",
+                                                          lease_expired_before=now_iso)
                 if not moved:
                     continue
                 _QUEUE_STATE.pop(tid, None)
@@ -1254,7 +1281,7 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
                         "duplicate": True}
         persisted = await storage.insert_task(
             task_id, req.specialization, req.prompt, "queued",
-            tenant_id=principal.tenant_id, payload=req.data,
+            tenant_id=principal.tenant_id, payload=_durable_payload(req.prompt, req.data),
             idempotency_key=idem, max_attempts=TASK_MAX_ATTEMPTS)
         if not persisted:
             # the unique (tenant, key) index may have raced us: replay it
@@ -1412,7 +1439,12 @@ async def cancel_task(request: Request, task_id: str,
         moved = await storage.transition_task(
             task_id, ("accepted", "queued", "claimed", "running", "waiting", "retrying"),
             "cancelled")
-        if not moved:
+        if moved is None:
+            # the request itself failed (store down): the cancel is NOT
+            # confirmed — the row may be re-dispatched later. Answering 409
+            # here would claim a finish that never happened.
+            raise HTTPException(503, "storage unavailable: cancel not confirmed — the task may still run")
+        if moved is False:
             # someone else finished/recovered it between the read and this write
             raise HTTPException(409, "task already finished")
     if rec is None:
