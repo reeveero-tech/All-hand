@@ -396,6 +396,9 @@ def test_server_registers_the_civilization_and_one_inproc_worker():
     snap = server.AGENT_REGISTRY.snapshot()
     total = sum(len(v) for v in server.CIVILIZATION.values())
     assert snap["agents"] >= total
+    # an earlier lifespan in this process may have stopped the worker; serving
+    # (lifespan startup or the next task) always starts from this call
+    server._start_registry_worker()
     w = server.AGENT_REGISTRY.worker(server.WORKER_ID)
     assert w.pool == "inproc" and w.capacity == server.WORKER_CAPACITY and w.state == "ready"
     a = server.CIVILIZATION["analyst"][0]
