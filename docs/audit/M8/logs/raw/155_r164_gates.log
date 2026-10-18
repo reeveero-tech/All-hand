@@ -32,3 +32,16 @@ build rc=0
 $ python3 scripts/export_contract_schemas.py --check
 contracts=27 problems=0
 rc=0
+
+## governance gates after commit HEAD=e36fa72
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 23, 'A': 21}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 44 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
