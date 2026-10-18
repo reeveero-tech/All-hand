@@ -120,3 +120,7 @@
 - **`list_queued_tasks(limit, exclude_tenants)`**: مرشح اختياري `tenant_id=not.in.(a,b)` لمسح العدالة؛ لا يُرسل إلا معرّفات بنمط `[A-Za-z0-9_-]{1,128}`.
 - **حدود الاتصال**: `AGOS_STORAGE_CONCURRENCY` (حد اتصالات aiohttp، 100) و`AGOS_STORAGE_TIMEOUT_S` (30 ث)، وقاطع `storage` يُغذّى من `TraceConfig` (نهاية الطلب ≥500 أو استثناء نقل = إخفاق؛ غير ذلك نجاح)؛ العملية المرفوضة بالقاطع تُسجَّل فاشلة كغيرها بسبب «circuit open after <آخر سبب>».
 - اختبار حي على PostgREST الحقيقي: `tests/test_r164_live_backpressure.py` (job storage).
+
+### R-164 — إصلاحات المراجعة (2026-10-18)
+- **لا ترحيل ولا تغيير مخطط أو استعلام.** قاطع `storage`: كل طلب HTTP يأخذ إذنه في `TraceConfig.on_request_start` ويُبلَّغ به في `on_request_end`/`on_request_exception` (سياق التتبع لكل طلب)، فجواب طلب بدأ قبل الفتح لا يغلق القاطع؛ و`CancelledError` (مهلة المستدعي) لم يعد إخفاق تخزين. `_get_session` فحص غير مستهلك.
+- الوهمي `_PostgREST` في اختبارات R-163 اكتسب وضع `reject_insert` (القراءة تجيب وإدراج المهام يفشل) لاختبار إعادة الحصة عند فشل الإدراج.

@@ -1,0 +1,6 @@
+## R-164 review — contract check 2026-10-18T19:29:17Z HEAD=972b08c
+$ python3 scripts/export_contract_schemas.py --check
+contracts=27 problems=0
+rc=0
+$ git diff --stat 470348e HEAD -- docs/governance/contracts/
+(empty = no contract file changed by the review fixes)
