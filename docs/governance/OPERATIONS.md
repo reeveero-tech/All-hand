@@ -316,4 +316,5 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 ### R-164 — بعد مراجعة PR #189
 - `breaker_stale_outcomes{service=…}` في `/metrics`: نتائج متأخرة أُهملت (نجاح نداء قُبل قبل `Retry-After` أو قبل الفتح، أو جواب غير المسبار في half-open). ارتفاعه طبيعي تحت عطل متقطع؛ لا إجراء مطلوب.
 - رفض 429 «task acceptance rate exceeded» قد يظهر أثناء طلبات جارية لم تكتمل بعد (حصصها محتجزة) — سلوك مقصود يمنع التجاوز؛ والطلبات التي تفشل تعيد حصصها.
+- `pool_waiting` صار دقيقاً (الجاري − عدد الخيوط) بدل طول طابور المنفّذ، فلا يُرفض نداء بـ`PoolBusy` والخيوط حرة.
 - لا متغير بيئة جديد، ولا تغيير في `render.yaml`.
