@@ -1,0 +1,22 @@
+=== R-162 acceptance evidence (دفعة m8/r162-acceptance) — collected 2026-10-18T09:43Z ===
+
+--- gh pr view 183 (owner action) ---
+{"headRefOid":"b489d9253d729ebb57b9f56f34b45d6a62636244","mergeCommit":{"oid":"5bfd46bb93b7f1d3d1a92ef965fd14f5b84cfd89"},"mergedAt":"2026-10-18T09:26:35Z","mergedBy":{"id":"U_kgDOENkzGw","is_bot":false,"login":"reeveero-tech","name":"My download bot"},"state":"MERGED","title":"R-162: standard agent registry — identity/worker/lease, capacity, liveness, drain/stop (D-081)"}
+
+--- gh run view 39115348507 (CI on main at merge_sha 5bfd46bb93b7f1d3d1a92ef965fd14f5b84cfd89) ---
+{"conclusion":"success","jobs":[{"conclusion":"success","name":"test"},{"conclusion":"success","name":"quality"},{"conclusion":"success","name":"network"},{"conclusion":"success","name":"docker"},{"conclusion":"success","name":"storage"},{"conclusion":"success","name":"audit"},{"conclusion":"success","name":"build"},{"conclusion":"skipped","name":"publish"}],"status":"completed"}
+
+--- test job summary line ---
+test	Run tests (live test suite)	2026-10-18T09:29:45.3239041Z ========== 1413 passed, 4 skipped, 4 deselected in 168.23s (0:02:48) ===========
+test	Run tests on Python 3.12	2026-10-18T09:32:35.7773388Z ========== 1413 passed, 4 skipped, 4 deselected in 156.15s (0:02:36) ===========
+test	Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists	2026-10-18T09:35:27.9013986Z ========== 1413 passed, 4 skipped, 4 deselected in 167.38s (0:02:47) ===========
+
+--- storage job R-042 + network job ---
+storage	Verify storage layer + server end-to-end	2026-10-18T09:36:06.2211029Z R-042 storage verification: 26/26 checks passed
+storage	Verify storage layer + server end-to-end	2026-10-18T09:36:08.7344157Z ============================== 4 passed in 1.58s ===============================
+network	Live network tests	2026-10-18T09:27:13.0808651Z ====================== 4 passed, 1417 deselected in 4.42s ======================
+
+--- git link check: merge commit parents ---
+5bfd46bb93b7f1d3d1a92ef965fd14f5b84cfd89 e85e093477d8398c49f4614b71b34f50b88c0cca b489d9253d729ebb57b9f56f34b45d6a62636244
+
+--- local full suite on merge_sha (Python 3.14.3) ---
