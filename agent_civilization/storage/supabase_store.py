@@ -539,17 +539,23 @@ class SupabaseStorage:
     @_traced("queue_transition")
     async def transition_task(self, task_id: str, from_statuses: tuple, to_status: str,
                               *, lease_expired_before: Optional[str] = None,
-                              **fields: Any) -> bool:
+                              **fields: Any) -> Optional[bool]:
         """A guarded queue transition (R-163 state machine): only rows in
         ``from_statuses`` move to ``to_status``. Recovery uses
         ``lease_expired_before`` so a live lease is never stolen. Confirmed
-        via ``return=representation`` (0 rows matched = False)."""
+        via ``return=representation`` (0 rows matched = False). Returns
+        ``True`` (confirmed), ``False`` (0 rows matched — the row is not in
+        ``from_statuses`` anymore), or ``None`` (the request itself failed —
+        the caller must NOT treat this as a state change; the cancel path
+        answers 503 on it rather than a false 409)."""
         filters: Dict[str, str] = {"task_id": f"eq.{task_id}",
                                   "status": f"in.({','.join(from_statuses)})"}
         if lease_expired_before is not None:
             filters["lease_expires_at"] = f"lt.{lease_expired_before}"
         body: Dict[str, Any] = {"status": to_status, **fields}
         rows = await self._queue_patch("queue_transition", filters, body)
+        if rows is None:
+            return None
         return bool(rows) and str(rows[0].get("task_id")) == task_id
 
     @_traced("update_task")
