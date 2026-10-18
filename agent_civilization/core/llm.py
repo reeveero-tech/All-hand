@@ -342,9 +342,9 @@ KEYLESS_MAX_WAIT_S = float(os.environ.get("AGOS_LLM_KEYLESS_MAX_WAIT_S", "30"))
 
 # R-164 (D-083): keyed-provider limits. Before R-164 the keyed path had no
 # concurrency bound at all (every caller opened its own request).
-from agent_civilization.core.backpressure import _float_env as _bp_float, _int_env as _bp_int  # noqa: E402
-KEYED_CONCURRENCY = _bp_int("AGOS_LLM_CONCURRENCY", 8, 1, 256)
-KEYED_MAX_WAIT_S = _bp_float("AGOS_LLM_MAX_WAIT_S", 30.0, 0.0, 600.0)
+from agent_civilization.core import backpressure as _bp  # noqa: E402
+KEYED_CONCURRENCY = _bp._int_env("AGOS_LLM_CONCURRENCY", 8, 1, 256)
+KEYED_MAX_WAIT_S = _bp._float_env("AGOS_LLM_MAX_WAIT_S", 30.0, 0.0, 600.0)
 keyed_stats = {"busy": 0}
 _keyed_sem: "_asyncio.Semaphore | None" = None
 _keyed_sem_loop = None

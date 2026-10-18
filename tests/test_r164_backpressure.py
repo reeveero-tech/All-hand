@@ -22,9 +22,14 @@ import server
 from agent_civilization.core import backpressure, llm, pools
 from agent_civilization.core import contracts as C
 from agent_civilization.storage import supabase_store as ss
-from tests.test_r163_durable_queue import (  # noqa: F401 — fixtures
-    _PostgREST, _client, _clean_tasks, _enable_queue, _row, _wait_for, db, tenants,
-)
+from tests import test_r163_durable_queue as r163
+from tests.test_r163_durable_queue import _PostgREST, _client, _enable_queue, _row, _wait_for
+
+# the R-163 fake-PostgREST fixtures, re-exported (assignment, not import:
+# the test parameters of the same name are the fixture requests)
+db = r163.db
+tenants = r163.tenants
+_clean_tasks = r163._clean_tasks          # autouse: clean TASKS/_QUEUE_STATE per test
 
 
 # ------------------------------------------------------------- primitives

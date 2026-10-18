@@ -253,17 +253,32 @@ _breakers: Dict[str, CircuitBreaker] = {}
 _breakers_lock = threading.Lock()
 
 
+def _breaker_config(name: str) -> tuple:
+    """(threshold, reset_s) from the environment. Every variable is read by
+    its literal name — greppable, and visible to the R-156 entry-point map
+    (a name built at runtime would be invisible to both)."""
+    t, r = BREAKER_SPECS[name]
+    if name == "llm":
+        return (_int_env("AGOS_BREAKER_LLM_THRESHOLD", t, 0, 1000),
+                _float_env("AGOS_BREAKER_LLM_RESET_S", float(r), 0.1, 3600.0))
+    if name == "web":
+        return (_int_env("AGOS_BREAKER_WEB_THRESHOLD", t, 0, 1000),
+                _float_env("AGOS_BREAKER_WEB_RESET_S", float(r), 0.1, 3600.0))
+    if name == "translate":
+        return (_int_env("AGOS_BREAKER_TRANSLATE_THRESHOLD", t, 0, 1000),
+                _float_env("AGOS_BREAKER_TRANSLATE_RESET_S", float(r), 0.1, 3600.0))
+    return (_int_env("AGOS_BREAKER_STORAGE_THRESHOLD", t, 0, 1000),
+            _float_env("AGOS_BREAKER_STORAGE_RESET_S", float(r), 0.1, 3600.0))
+
+
 def breaker(name: str) -> CircuitBreaker:
     if name not in BREAKER_SPECS:
         raise KeyError(f"unknown breaker {name!r}; known: {sorted(BREAKER_SPECS)}")
     with _breakers_lock:
         b = _breakers.get(name)
         if b is None:
-            threshold, reset_s = BREAKER_SPECS[name]
-            env = f"AGOS_BREAKER_{name.upper()}"
-            b = _breakers[name] = CircuitBreaker(
-                name, _int_env(env + "_THRESHOLD", threshold, 0, 1000),
-                _float_env(env + "_RESET_S", float(reset_s), 0.1, 3600.0))
+            threshold, reset_s = _breaker_config(name)
+            b = _breakers[name] = CircuitBreaker(name, threshold, reset_s)
         return b
 
 
