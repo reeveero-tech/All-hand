@@ -1,0 +1,80 @@
+# 135 R-161f — staging configuration and Supabase evidence for the new test project (2026-10-18T06:22:28Z)
+# Values of secrets are never read or printed; only names and updated_at timestamps.
+## A. Project (Supabase connector get_project, read-only)
+ref=tecghrfscighyahufmga name=geg region=ap-northeast-1 status=ACTIVE_HEALTHY postgres=17.11.0.003 created_at=2026-10-17T22:05:14.498998Z
+old project fgfbavtxfmzpjneclkya: not read, not written in this batch.
+## B. Migrations applied by the agent (connector apply_migration, 2026-10-18 05:56Z) — files from docs/sql/ unchanged:
+ef7c1e3ba9a4fece993ab355c8ac6652cccf82d08bcf1e4ea74eeacd93fb6fca  docs/sql/001_init.sql
+cd411535fda32b000ecb09367e1903b89a4e17b3012d8154826df3068e159028  docs/sql/002_tenant_isolation.sql
+$ select version,name from supabase_migrations.schema_migrations order by version
+[{"version":"20261018055633","name":"agos_001_init"},{"version":"20261018055638","name":"agos_002_tenant_isolation"}]
+$ public tables: rls / policies / tenant_id column
+[{"tbl":"agent_stats","rls":true,"policies":0,"tenant_col":null},{"tbl":"events","rls":true,"policies":0,"tenant_col":"tenant_id:text:YES"},{"tbl":"tasks","rls":true,"policies":0,"tenant_col":"tenant_id:text:YES"}]
+(RLS on with 0 policies = only service key can read/write, as designed in R-042b.)
+Security advisor (read once after migrations): rls_enabled_no_policy INFO x3 (expected, above); 1 WARN anon_security_definer_function_executable on a function not created by AGOS migrations (not investigated, not changed).
+## C. Cause of storage FAIL in 39102327940 (edge_logs 05:58:18-19Z, 7 requests)
+every request: response.status_code=401 sb_error_code=UNAUTHORIZED_INVALID_API_KEY unauthorized_hint='Invalid API key'
+request.sb.jwt.apikey.payload.role=service_role issued_at=1791845902 (= 2026-10-12T22:58:22Z) expires_at=2107421902
+new project legacy keys (get_publishable_keys, anon JWT, value not recorded): iat=1792274714 (= 2026-10-17T22:05:14Z = project creation)
+=> the secret R161_STORAGE_KEY (updated 2026-10-18T00:07:37Z) held a service_role key issued 5 days before the project existed: not a key of tecghrfscighyahufmga.
+Owner informed; owner rotated the secret: R161_STORAGE_KEY updated_at=2026-10-18T06:17:44Z.
+## D. Storage run 39103597302 as seen by Supabase (edge_logs 06:19-06:21Z, verbatim event_message)
+2026-10-18T06:19:27.657 POST | 201 | /rest/v1/tasks
+2026-10-18T06:19:28.201 PATCH | 200 | /rest/v1/tasks?task_id=eq.2d83e580e5f1&select=task_id
+2026-10-18T06:19:28.531 GET | 200 | /rest/v1/tasks?task_id=eq.2d83e580e5f1&limit=1&tenant_id=eq.r161_2d83e580e5f1
+2026-10-18T06:19:28.852 GET | 200 | /rest/v1/tasks?order=created_at.desc&limit=5&tenant_id=eq.r161_2d83e580e5f1
+2026-10-18T06:19:28.982 GET | 200 | /rest/v1/tasks?task_id=eq.2d83e580e5f1&limit=1&tenant_id=eq.r161_other_2d83e580e5f1
+2026-10-18T06:19:29.107 POST | 201 | /rest/v1/events
+2026-10-18T06:19:29.230 GET | 200 | /rest/v1/events?order=created_at.desc&limit=5&tenant_id=eq.r161_2d83e580e5f1
+2026-10-18T06:19:29.375 DELETE | 200 | /rest/v1/events?tenant_id=eq.r161_2d83e580e5f1
+2026-10-18T06:19:29.686 DELETE | 200 | /rest/v1/tasks?tenant_id=eq.r161_2d83e580e5f1
+2026-10-18T06:19:29.990 GET | 200 | /rest/v1/events?tenant_id=eq.r161_2d83e580e5f1&select=tenant_id
+2026-10-18T06:19:30.127 GET | 200 | /rest/v1/tasks?tenant_id=eq.r161_2d83e580e5f1&select=tenant_id
+(host https://tecghrfscighyahufmga.supabase.co, user agent Python/3.11 aiohttp/3.14.5 on every line)
+$ select count(*) tasks, events, agent_stats  @ 2026-10-18 06:20:27Z
+[{"tasks":0,"events":0,"agent_stats":0}]   => cleanup verified independently of the runner
+## E. Environment r161-staging variables — before this session's changes
+R161_ALLOWED_HOSTS=fgfbavtxfmzpjneclkya.supabase.co,openrouter.ai
+R161_EXTERNAL_MODEL=meta-llama/llama-3.3-70b-instruct:free
+R161_EXTERNAL_URL=https://openrouter.ai/api/v1/chat/completions
+R161_LLM_MODEL=meta-llama/llama-3.3-70b-instruct:free
+R161_LLM_URL=https://openrouter.ai/api/v1/chat/completions
+R161_STORAGE_URL=https://fgfbavtxfmzpjneclkya.supabase.co
+## E2. variables + secret timestamps now
+# env r161-staging variables @ 2026-10-18T06:04:41Z
+R161_ALLOWED_HOSTS=tecghrfscighyahufmga.supabase.co,openrouter.ai updated_at=2026-10-18T05:57:19Z
+R161_EXTERNAL_MODEL=openrouter/free updated_at=2026-10-18T05:59:31Z
+R161_EXTERNAL_URL=https://openrouter.ai/api/v1/chat/completions updated_at=2026-10-18T00:04:42Z
+R161_LLM_MODEL=liquid/lfm-2.5-2.6b:free updated_at=2026-10-18T06:01:27Z
+R161_LLM_URL=https://openrouter.ai/api/v1/chat/completions updated_at=2026-10-18T00:02:09Z
+R161_STORAGE_URL=https://tecghrfscighyahufmga.supabase.co updated_at=2026-10-18T05:57:19Z
+# env secrets (names + timestamps only)
+R161_STORAGE_KEY updated_at=2026-10-18T06:17:44Z (owner)
+R161_LLM_API_KEY updated_at=2026-10-18T00:08:24Z / R161_EXTERNAL_API_KEY updated_at=2026-10-18T00:09:59Z (owner)
+Only staging variables were changed by the agent (URL/hosts -> new project, model ids). render.yaml and production settings untouched (Q-026).
+## F. OpenRouter catalogue snapshot GET https://openrouter.ai/api/v1/models @ 2026-10-18T05:48:53Z (no key)
+sha256 74a4e752d3f28671e445f3841ac6a5dcf62a387da1a3f8b56fa27549fe44e99c ; 471 models ; ids ending ':free' or == openrouter/free: 17
+cohere/north-mini-code:free
+dots-studio/dots-3-note-preview:free
+google/gemma-4-26b-a4b-it:free
+google/gemma-4-31b-it:free
+liquid/lfm-2.5-2.6b:free
+nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+nvidia/nemotron-3-super-120b-a12b:free
+nvidia/nemotron-3-ultra-550b-a55b:free
+nvidia/nemotron-3.5-content-safety:free
+nvidia/nemotron-3.5-lightning:free
+nvidia/nemotron-3.5-super-vl:free
+openrouter/free
+poolside/laguna-s-2.1:free
+poolside/laguna-xs-2.1:free
+thinkingmachines/inkling-small:free
+thinkingmachines/inkling:free
+xingchen-agi/xing4.0-29b-a4b:free
+present meta-llama/llama-3.3-70b-instruct:free False
+present google/gemma-4-31b-it:free True
+present liquid/lfm-2.5-2.6b:free True
+present openrouter/free True
+Outcomes: google/gemma-4-31b-it:free -> HTTP 429 (upstream free-tier rate limit) for llm and external in 39102327940;
+openrouter/free -> external PASS, llm empty completion (39102435807); liquid/lfm-2.5-2.6b:free -> llm empty completion (39102564675).
+No paid model, no billing, no subscription used.

@@ -1,0 +1,73 @@
+# 137 R-161f — full suite (both agent modes, Python 3.11.15 / 3.12.13 venvs from requirements.lock + requirements-dev.lock) and gates
+# tree = commit 45b60ec content (first run started before the commit with the identical working tree)
+
+## suite_3.11_real.log
+=== python 3.11 AGOS_AGENT_IMPL=real — 2026-10-18T06:24:42Z — HEAD d8068b5 + working tree (R-161f final tree)
+========== 1387 passed, 4 skipped, 4 deselected in 186.22s (0:03:06) ===========
+rc=0
+
+## suite_3.11_specialists.log
+=== python 3.11 AGOS_AGENT_IMPL=specialists — 2026-10-18T06:27:50Z — HEAD 45b60ec + working tree (R-161f final tree)
+========== 1387 passed, 4 skipped, 4 deselected in 201.07s (0:03:21) ===========
+rc=0
+
+## suite_3.12_real.log
+=== python 3.12 AGOS_AGENT_IMPL=real — 2026-10-18T06:31:24Z — HEAD 45b60ec + working tree (R-161f final tree)
+========== 1387 passed, 4 skipped, 4 deselected in 190.42s (0:03:10) ===========
+rc=0
+
+## suite_3.12_specialists.log
+=== python 3.12 AGOS_AGENT_IMPL=specialists — 2026-10-18T06:34:36Z — HEAD 45b60ec + working tree (R-161f final tree)
+========== 1387 passed, 4 skipped, 4 deselected in 213.93s (0:03:33) ===========
+rc=0
+
+## gates
+# gates @ 2026-10-18T06:24:51Z HEAD 45b60ec08223a3012c79fedfb2d4c5279037281a
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 9, 'A': 5}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 14 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/export_contract_schemas.py --check
+2026-10-18 06:24:52,434 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:135
+2026-10-18 06:24:52,435 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-18 06:24:52,442 - agos.server - INFO - Civilization initialized: 20 specializations, 1000 civilization agents - <module>:310
+2026-10-18 06:24:52,442 - agos.server - INFO - External agents loaded: 0 - <module>:312
+2026-10-18 06:24:52,469 - agos.server - INFO - Civilization routes registered successfully - <module>:1067
+contracts=26 problems=0
+rc=0
+$ python3 scripts/scan_raw_exception_logs.py
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+$ git diff --check origin/main...HEAD
+rc=0
+$ bash /tmp/r161d/v1.sh
+docs/governance/PROJECT_STATE.md
+docs/governance/QUALITY.md
+docs/governance/ROADMAP.md
+scripts/r161_live_integration.py
+tests/test_r161f_llm_probe_budget.py
+Governance gate passed.
+rc=0
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests scripts/r161_live_integration.py
+All checks passed!
+rc=0
+$ cd web && npm test
+# tests 39 / # pass 39 / # fail 0
+rc=0
+$ cd web && npm run build
+dist/assets/index-DzPG84cf.js   172.90 kB │ gzip: 54.69 kB
+
+✓ built in 126ms
+rc=0
+$ npm run build (root)
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+rc=0

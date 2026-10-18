@@ -1,0 +1,89 @@
+# 133 R-161f — llm probe budget: before/after/mutations (2026-10-18T06:20:51Z)
+# class: mock (aiohttp fake on 127.0.0.1 that behaves like a hybrid reasoning model)
+## BEFORE (runner of main d8068b5: client.complete(..., max_tokens=16))
+$ python -m pytest tests/test_r161f_llm_probe_budget.py -q
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3 items
+
+tests/test_r161f_llm_probe_budget.py FF.                                 [100%]
+
+=================================== FAILURES ===================================
+__________ test_hybrid_reasoning_model_passes_with_the_client_budget ___________
+tests/test_r161f_llm_probe_budget.py:57: in test_hybrid_reasoning_model_passes_with_the_client_budget
+    assert r["outcome"] == "PASS" and r["connected"] is True, r
+E   AssertionError: {'target': 'llm', 'outcome': 'FAIL', 'reason': 'check failed: provider answered ok (provider: empty completion)', 'evidence_class': 'mock', ...}
+E   assert ('FAIL' == 'PASS'
+E
+E     - PASS
+E     + FAIL)
+------------------------------ Captured log call -------------------------------
+ERROR    llm:llm.py:252 LLM empty completion (provider body not logged)
+WARNING  agos.infrastructure.redis:redis_queue.py:30 Redis not available. Using in-memory fallback.
+_________________ test_probe_budget_is_the_production_default __________________
+tests/test_r161f_llm_probe_budget.py:66: in test_probe_budget_is_the_production_default
+    assert fake.budgets == [DEFAULT_BUDGET], fake.budgets
+E   AssertionError: [16]
+E   assert [16] == [1024]
+E
+E     At index 0 diff: 16 != 1024
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/test_r161f_llm_probe_budget.py::test_hybrid_reasoning_model_passes_with_the_client_budget
+FAILED tests/test_r161f_llm_probe_budget.py::test_probe_budget_is_the_production_default
+========================= 2 failed, 1 passed in 0.37s ==========================
+## FIX: scripts/r161_live_integration.py probe_llm -> client.complete(PROBE_SYSTEM, PROBE_PROMPT) (LLMClient default budget)
+diff --git a/scripts/r161_live_integration.py b/scripts/r161_live_integration.py
+index d631f32..a2cfea2 100644
+--- a/scripts/r161_live_integration.py
++++ b/scripts/r161_live_integration.py
+@@ -444,7 +444,11 @@ async def probe_llm(env: Dict[str, str], pf: Dict[str, Any], timeout_s: float) -
+         if client.provider != "openrouter":                 # never the public keyless path
+             res["reason"] = "client did not select the keyed provider"
+             return res
+-        r = await asyncio.wait_for(client.complete(PROBE_SYSTEM, PROBE_PROMPT, max_tokens=16), timeout_s)
++        # R-161f: no probe-specific budget — the client's own default, i.e.
++        # the production call shape. max_tokens=16 made hybrid reasoning
++        # models spend the budget on reasoning and answer content=null
++        # (live runs 39102435807 / 39102564675).
++        r = await asyncio.wait_for(client.complete(PROBE_SYSTEM, PROBE_PROMPT), timeout_s)
+         try:
+             C.validate("llm_result", r)
+             checks.add("result matches llm_result v1", True)
+## AFTER: new tests + all R-161 tests
+$ python -m pytest tests/test_r161f_llm_probe_budget.py tests/test_r161d_storage_connected.py tests/test_r161_live_integration.py tests/test_r161b_dns_pinning.py tests/test_r161b_workflow_gate.py tests/test_r161c_update_task_confirmation.py -q
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 124 items
+
+tests/test_r161f_llm_probe_budget.py ...                                 [  2%]
+tests/test_r161d_storage_connected.py ..........                         [ 10%]
+tests/test_r161_live_integration.py .................................... [ 39%]
+..........                                                               [ 47%]
+tests/test_r161b_dns_pinning.py .......................                  [ 66%]
+tests/test_r161b_workflow_gate.py ..........................             [ 87%]
+tests/test_r161c_update_task_confirmation.py ................            [100%]
+
+============================= 124 passed in 42.33s =============================
+## MUTATIONS (copy of the tree via git archive + changed files; each re-adds a probe-specific budget; -rfE --tb=no)
+== mutation: client.complete(PROBE_SYSTEM, PROBE_PROMPT, max_tokens=16)
+FAILED tests/test_r161f_llm_probe_budget.py::test_hybrid_reasoning_model_passes_with_the_client_budget
+FAILED tests/test_r161f_llm_probe_budget.py::test_probe_budget_is_the_production_default
+========================= 2 failed, 1 passed in 0.31s ==========================
+== mutation: client.complete(PROBE_SYSTEM, PROBE_PROMPT, max_tokens=63)
+FAILED tests/test_r161f_llm_probe_budget.py::test_hybrid_reasoning_model_passes_with_the_client_budget
+FAILED tests/test_r161f_llm_probe_budget.py::test_probe_budget_is_the_production_default
+========================= 2 failed, 1 passed in 0.31s ==========================
+== mutation: client.complete(PROBE_SYSTEM, PROBE_PROMPT, max_tokens=64)
+FAILED tests/test_r161f_llm_probe_budget.py::test_hybrid_reasoning_model_passes_with_the_client_budget
+FAILED tests/test_r161f_llm_probe_budget.py::test_probe_budget_is_the_production_default
+========================= 2 failed, 1 passed in 0.34s ==========================
+f99eb09ef20a1adb43cd562924810bee771504360b03983552acae08094faeea  scripts/r161_live_integration.py

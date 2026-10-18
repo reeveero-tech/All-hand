@@ -1,0 +1,27 @@
+# 136 R-161e — post-merge verification of PR #179 on main (2026-10-18T06:22:36Z)
+$ gh pr view 179 --json state,mergedAt,mergeCommit,headRefOid
+{"head":"3876c07853e6b7876d6bad1ba334137e1bab174e","merge":"d8068b5197e3dc903250a3ee6a696c5a133cf981","mergedAt":"2026-10-18T05:02:46Z","state":"MERGED"}
+$ git log -1 --format="%H %P %s" d8068b5
+d8068b5197e3dc903250a3ee6a696c5a133cf981 2b036a2dc5c7eb0ab8846fea8749854e248ca430 3876c07853e6b7876d6bad1ba334137e1bab174e Merge pull request #179 from reeveero-tech/m8/r185-r082-probe-and-ops-drift
+$ gh run view 39099187783 (conclusion, jobs, pytest summaries, interpreters)
+head=d8068b5197e3dc903250a3ee6a696c5a133cf981 push completed success
+  test: success
+  quality: success
+  network: success
+  storage: success
+  audit: success
+  build: success
+  docker: success
+  publish: skipped
+test	Set up Python	2026-10-18T05:02:54.8835468Z   python-version: 3.11
+test	Run tests (live test suite)	2026-10-18T05:06:07.7368163Z ========== 1384 passed, 4 skipped, 4 deselected in 178.07s (0:02:58) ===========
+test	Set up Python 3.12 (runtime version)	2026-10-18T05:06:08.6498779Z   python-version: 3.12
+test	Run tests on Python 3.12	2026-10-18T05:06:09.0681324Z Python 3.12.15
+test	Run tests on Python 3.12	2026-10-18T05:09:07.6351210Z ========== 1384 passed, 4 skipped, 4 deselected in 164.71s (0:02:44) ===========
+test	Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists	2026-10-18T05:12:08.3117689Z ========== 1384 passed, 4 skipped, 4 deselected in 175.95s (0:02:55) ===========
+quality	Set up Python	2026-10-18T05:02:54.8754621Z   python-version: 3.11
+network	Set up Python	2026-10-18T05:03:07.9904304Z   python-version: 3.11
+storage	Set up Python	2026-10-18T05:12:30.2557808Z   python-version: 3.11
+audit	Set up Python	2026-10-18T05:12:23.4784560Z   python-version: 3.11
+build	Set up Python	2026-10-18T05:12:23.8801836Z   python-version: 3.11
+d8068b5197e3dc903250a3ee6a696c5a133cf981 2b036a2dc5c7eb0ab8846fea8749854e248ca430 3876c07853e6b7876d6bad1ba334137e1bab174e Merge pull request #179 from reeveero-tech/m8/r185-r082-probe-and-ops-drift
