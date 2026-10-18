@@ -1,0 +1,21 @@
+R-163 acceptance — PR #185 merged, CI on main verified (2026-10-18)
+
+- PR #185 "R-163: durable task queue — state machine, fenced claims, leases, recovery, idempotency, cancellation (D-082)"
+  merged by owner account (mergedBy=reeveero-tech) at 2026-10-18T12:57:27Z.
+- merge_sha=ac9178308e5da2a7dc1566a7ea06dec346ebbf32 (merge commit on main; parents: bc04603 = main, c580a52 = PR head).
+- tested_sha=c580a52fef307873f6f3a7400496c47a8c496a98 (PR head — second parent of the merge ✓).
+- ci_run=39129458937 (AGOS Kernel CI/CD on main, push, head sha ac9178308e5da2a7dc1566a7ea06dec346ebbf32).
+- ci_conclusion=success.
+- Jobs: quality=success, test=success, network=success, docker=success, build=success, audit=success, storage=success, publish=skipped (D-011 — not counted as a release).
+- test job (3 steps: 3.11, 3.12, 3.12-specialists): "1449 passed, 6 skipped, 4 deselected" in all three steps
+  (matches the local suite log docs/audit/M8/logs/raw/150_r163_durable_queue_suite.log: 1449 passed, 6 skipped, 4 deselected).
+- storage job: R-163 live queue tests (2 passed against live PostgREST 12.2.3) + R-042 checks + R-161 integration
+  checker green (task_row v2) on the same local stack.
+- PR checks on the PR branch (run 39128222890) before merge: all pass (quality, test, network, docker, build,
+  audit, storage, governance pass; publish skipped per D-011).
+- Four CI failures on the branch were fixed with follow-up commits on the same branch (no force push):
+  1) restart-test server blocked on a full PIPE in specialists mode → logs to a temp file, tailed on failure;
+  2) live tests ran one asyncio.run per storage call → one loop per test, session closed in-loop;
+  3) queue PATCHes sent limit=1 without a unique-column order → PostgREST 400 (PGRST109) → limit dropped
+     (task_id filter is unique) and the unit fake now emulates the rule;
+  4) R-161 live checker failed task_row v1 strictness → contract bumped to v2 with the six optional queue columns.
