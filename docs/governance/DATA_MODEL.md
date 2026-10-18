@@ -1,6 +1,6 @@
 # نموذج البيانات (DATA_MODEL)
 
-> **آخر تحديث**: 2026-10-16 — R-143 (BUG-04): قراءة جديدة `get_task(task_id, scope=)` — صف واحد بالمفتاح الأساسي ضمن نطاق المستأجر (`task_id=eq.<id>&tenant_id=eq.<t>&limit=1`)؛ عدّاد `get_task` في `_STATS`. قبلها R-141 (BUG-02): صفوف `tasks` الناتجة عن `/api/chat` تحمل الحالة المشتقة من النتيجة (`completed`/`failed`) في الإدراج والتحديث معاً — كانت `completed` دائماً؛ و`event_data` لحدث `chat_completed` يضيف `status` بجانب `ok`. قبلها 2026-10-15 — R-119 (مصالحة ادعاءات قديمة: `agents.yaml` حُذف في R-031b/D-025؛ فجوات M0 حُلت أو وُضحت في R-022/R-042/R-042b؛ قبلها تحديث 2026-10-12 — M0)
+> **آخر تحديث**: 2026-10-18 — **R-163 (D-082)**: ترحيل جديد `docs/sql/003_task_queue.sql` يضيف لجدول `tasks` أعمدة الطابور الدائم (`claim_token`، `lease_expires_at`، `attempts`/`max_attempts`، `payload`، `idempotency_key`) مع فهرس فريد جزئي `(tenant_id, idempotency_key)` وفهرسي مسح — القسم الجديد أدناه. قبلها 2026-10-16 — R-143 (BUG-04): قراءة جديدة `get_task(task_id, scope=)` — صف واحد بالمفتاح الأساسي ضمن نطاق المستأجر (`task_id=eq.<id>&tenant_id=eq.<t>&limit=1`)؛ عدّاد `get_task` في `_STATS`. قبلها R-141 (BUG-02): صفوف `tasks` الناتجة عن `/api/chat` تحمل الحالة المشتقة من النتيجة (`completed`/`failed`) في الإدراج والتحديث معاً — كانت `completed` دائماً؛ و`event_data` لحدث `chat_completed` يضيف `status` بجانب `ok`. قبلها 2026-10-15 — R-119 (مصالحة ادعاءات قديمة: `agents.yaml` حُذف في R-031b/D-025؛ فجوات M0 حُلت أو وُضحت في R-022/R-042/R-042b؛ قبلها تحديث 2026-10-12 — M0)
 > **ملاحظة منهجية**: ما يلي مستخرج من قراءة الكود (الحمولات الفعلية والـ dataclasses)، وهو "مرصود من الاستخدام" لا مخطط معلن؛ لكن الأنواع والقيود **مُتحققة حياً** في R-042/R-042b — راجع قسم "التحقق الحي" أدناه.
 
 ## الكيانات المرصودة من الاستخدام
@@ -104,3 +104,12 @@
 - **الطلب**: `PATCH /rest/v1/tasks?task_id=eq.<id>&select=task_id` مع `Prefer: return=representation`.
 - **النجاح**: HTTP 200 ومصفوفة فيها صف `task_id` المستهدف. 204 أو `[]` أو صف آخر أو جسم غير صالح أو خطأ خادم كلها فشل يُسجَّل في `storage_stats` بسبب ثابت (`HTTP <status>`، `malformed response`، `no row updated`) بلا جسم الاستجابة.
 - **الأثر**: تحديث مهمة لم يُحفظ صفها (insert مرفوض أو انقطع) يظهر الآن فشلاً في الإحصاءات و`/health`، بعد أن كان نجاحاً.
+
+## R-163 — أعمدة الطابور الدائم في `tasks` (D-082، 2026-10-18)
+
+- **الترحيل**: `docs/sql/003_task_queue.sql` (idempotent؛ يُطبَّق بعد 001 و002 — `scripts/r042/run_local_stack.sh` يفعل).
+- **الأعمدة**: `claim_token text`، `lease_expires_at timestamptz`، `attempts int not null default 0`، `max_attempts int not null default 3`، `payload jsonb`، `idempotency_key text`.
+- **الفهارس**: `uq_tasks_tenant_idempotency_key` فريد جزئي على `(tenant_id, idempotency_key) where idempotency_key is not null`؛ `idx_tasks_queue_pick` جزئي على `(status, created_at) where status='queued'`؛ `idx_tasks_lease_expiry` جزئي على `(lease_expires_at) where status in ('claimed','running')`.
+- **قاموس `status` في الصفوف**: الحالات الداخلية العشر (accepted/queued/claimed/running/waiting/retrying/completed/failed/cancelled/dead_letter)؛ الـAPI يعرضها عبر الربط العام (راجع API.md). الصفوف القديمة بقيم 001/002 (queued/running/completed/failed) صالحة بلا ترحيل بيانات — القاموس موسَّع نحو الأعلى.
+- **الحمل `payload`**: يخزن حقل `data` من الطلب كما هو (قابل للتسلسل jsonb) ليُعاد تنفيذ المهمة المستردة؛ لا يُخزَّن أي موافقة SEC-06 (لا `allow_public_llm`) — الموافقة لا تنجو من إعادة الجدولة (fail-closed، D-082).
+- **عمليات الطابور** (كلها PATCH مشروط + `Prefer: return=representation` — الفلتر هو السياج): `claim_task` (من queued فقط)، `start_task` (claimed→running بعدّ المحاولة)، `release_task` (إرجاع بلا محاولة)، `renew_task_lease`، `finish_task` (تعيد True/False/None — None = فشل الطلب نفسه)، `transition_task` (بمرشح انتهاء صلاحية العقد كي لا يُسرق عقد حي)، `find_task_by_idempotency_key` (نطاق المستأجر في الاستعلام)، `list_queued_tasks`/`list_expired_lease_tasks` (نطاق admin — الخادم لا مستأجر طلب).

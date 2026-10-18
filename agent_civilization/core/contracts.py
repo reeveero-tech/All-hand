@@ -82,6 +82,30 @@ class TaskAccepted(_Strict):
     status: Literal["queued"]
 
 
+class TaskAcceptedV2(_Strict):
+    """202 of POST /api/tasks — v2 (R-163, D-082).
+
+    An idempotent replay (same ``idempotency_key``) returns the task's CURRENT
+    public status — the task may already have progressed past ``queued`` — plus
+    ``duplicate: true``. A first creation keeps the v1 shape exactly (status
+    ``queued``, no ``duplicate``). """
+    task_id: str = Field(pattern=_TASK_ID)
+    status: TaskStatus
+    duplicate: Optional[bool] = None
+
+
+class TaskCancelled(_Strict):
+    """200 of POST /api/tasks/{task_id}/cancel (R-163, D-082).
+
+    The task is served through the public mapping: ``cancelled`` shows as
+    ``failed`` with ``result.result.error = "cancelled"`` — the API status
+    vocabulary is unchanged. Terminal tasks answer 409 instead."""
+    task_id: str = Field(pattern=_TASK_ID)
+    status: Literal["failed"]
+    cancelled: Literal[True]
+    result: Dict[str, Any]
+
+
 class TaskRecord(_Strict):
     """A task/chat record from process memory (GET /api/tasks[/{id}], source
     memory). ``agent``/``finished_at`` appear once the run started/ended."""
@@ -367,7 +391,8 @@ class AgentStatsUpsert(_Strict):
 CONTRACTS: Dict[str, tuple] = {
     "agent_outcome":        (1, AgentOutcome, "internal+response", "agent.execute -> API/storage/web"),
     "handler_result":       (1, HandlerResult, "internal", "specialist handler (tool) -> agent outcome"),
-    "task_accepted":        (1, TaskAccepted, "response", "POST /api/tasks -> client"),
+    "task_accepted":        (2, TaskAcceptedV2, "response", "POST /api/tasks -> client"),
+    "task_cancelled":       (1, TaskCancelled, "response", "POST /api/tasks/{task_id}/cancel -> client"),
     "task_record":          (1, TaskRecord, "response", "GET /api/tasks[/{id}] (memory) -> client"),
     "execute_record":       (1, ExecuteRecord, "response", "GET /api/tasks (memory, execute variant) -> client"),
     "task_row":             (1, TaskRow, "response+storage", "PostgREST tasks row -> API -> client"),

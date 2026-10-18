@@ -484,10 +484,11 @@ def _end_unfinished(task_id: str, specialization: str, reason: str) -> None:
     rec = TASKS.get(task_id)
     if rec is None or rec.get("status") in TERMINAL_TASK_STATES:
         return
-    cancelled = rec.get("status") == "cancelled"
-    outcome = (task_queue.cancelled_outcome(rec.get("agent"), specialization) if cancelled
-               else {"ok": False, "agent": rec.get("agent"), "specialization": specialization,
-                     "elapsed_s": 0, "result": {"error": reason}})
+    prior = rec.get("result") if isinstance(rec.get("result"), dict) else None
+    cancelled = bool(prior) and isinstance(prior.get("result"), dict) \
+        and prior["result"].get("error") == "cancelled"
+    outcome = prior if cancelled else {"ok": False, "agent": rec.get("agent"), "specialization": specialization,
+                                      "elapsed_s": 0, "result": {"error": reason}}
     rec.update(status="failed", result=outcome, finished_at=time.time())
     tenant_id = rec.get("tenant_id")
     if tenant_id is not None:
@@ -1392,6 +1393,9 @@ async def cancel_task(request: Request, task_id: str,
     scope = principal.tenant_id  # never all_tenants: no admin cross-tenant cancel
     rec = TASKS.get(task_id)
     row = None
+    if rec is not None and not _visible_task(rec, scope):
+        # SEC-02: another tenant's task answers exactly like a missing one
+        raise HTTPException(404, "task not found")
     if rec is None and supabase_configured():
         row = await get_storage().get_task(task_id, scope=scope)
     if rec is None and row is None:

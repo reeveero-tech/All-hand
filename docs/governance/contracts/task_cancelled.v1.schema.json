@@ -1,0 +1,38 @@
+{
+  "$id": "agos://contracts/task_cancelled/v1",
+  "additionalProperties": false,
+  "description": "200 of POST /api/tasks/{task_id}/cancel (R-163, D-082).\n\nThe task is served through the public mapping: ``cancelled`` shows as\n``failed`` with ``result.result.error = \"cancelled\"`` — the API status\nvocabulary is unchanged. Terminal tasks answer 409 instead.",
+  "properties": {
+    "cancelled": {
+      "const": true,
+      "title": "Cancelled",
+      "type": "boolean"
+    },
+    "result": {
+      "additionalProperties": true,
+      "title": "Result",
+      "type": "object"
+    },
+    "status": {
+      "const": "failed",
+      "title": "Status",
+      "type": "string"
+    },
+    "task_id": {
+      "pattern": "^[0-9a-f]{12}$",
+      "title": "Task Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_id",
+    "status",
+    "cancelled",
+    "result"
+  ],
+  "title": "TaskCancelled",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "POST /api/tasks/{task_id}/cancel -> client"
+}

@@ -1,6 +1,6 @@
 # التشغيل والنشر (OPERATIONS)
 
-> **آخر تحديث**: 2026-10-16 — R-144 (SEC-04): حدود بث SSE `AGOS_SSE_*` ومراقبتها (القسم «حدود بث SSE»). قبلها 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
+> **آخر تحديث**: 2026-10-18 — **R-163 (D-082)**: متغيرات الطابور الدائم `AGOS_TASK_QUEUE`/`AGOS_TASK_LEASE_S`/`AGOS_TASK_REAP_S`/`AGOS_TASK_MAX_ATTEMPTS`/`AGOS_TASK_DISPATCH_BATCH`/`AGOS_TASK_DISPATCH_IDLE_S` (القسم «الطابور الدائم»). قبلها 2026-10-16 — R-144 (SEC-04): حدود بث SSE `AGOS_SSE_*` ومراقبتها (القسم «حدود بث SSE»). قبلها 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
 
 ## البناء والتشغيل المحلي
 
@@ -106,6 +106,12 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_WEB_WAIT_S` (R-132) | core/agents/real_dispatcher.py | 20 ث أقصى انتظار (طابور + نداء) لاحتياطي ويب educator وترجمة communicator |
 | `AGOS_LLM_KEYLESS_URL` / `AGOS_LLM_KEYLESS_MODEL` (R-116) | core/llm.py | `https://text.pollinations.ai/openai` / `openai` |
 | `AGOS_AGENT_IMPL` | agents/real/real_agents.py | غير مضبوط = `real` (الافتراضي)؛ `specialists` يبني الحضارة من أصناف `specialists/` (D-037). (R-104: `process_text()` — دالة وحدة لا صنف — مُفوَّضة إليها من `_data_processor` لمدخل نصي فقط؛ بلا `OPENROUTER_API_KEY` يُنشر فشل LLM صراحةً) |
+| `AGOS_TASK_QUEUE` (R-163، D-082) | server.py | غير مضبوط = متطاير (السلوك التاريخي). `1` يفعّل الطابور الدائم — يتطلب `SUPABASE_URL`+مفتاح خدمة مُعدّين وإلا تُتجاهل القيمة ويبقى المتطاير. التراجع: إزالة المتغير (المهام قيد الجري تُنهى عبر الحد المتبقي في القسم) |
+| `AGOS_TASK_LEASE_S` (R-163) | server.py | 60 ث عمر عقد المطالبة (≥1) |
+| `AGOS_TASK_REAP_S` (R-163) | server.py | 5 ث فاصل دورة المُحصّل (≥0.2) |
+| `AGOS_TASK_MAX_ATTEMPTS` (R-163) | server.py | 3 محاولات قصوى للمهمة (فوقها `dead_letter`) |
+| `AGOS_TASK_DISPATCH_BATCH` (R-163) | server.py | 50 مهمة كحد لاستعلام كل دورة إرسال (1..1000) |
+| `AGOS_TASK_DISPATCH_IDLE_S` (R-163) | server.py | 0.2 ث انتظار دورة الإرسال عند الخمول (≥0.05) |
 | `AGOS_WORKER_CAPACITY` (R-162، D-081) | server.py + core/agent_registry.py | 1024 مهمة جارية في وقت واحد لعامل العملية (1..100000؛ قيمة غير صالحة توقف الإقلاع). عند بلوغها تنتهي المهمة الجديدة `failed` بسبب `worker capacity saturated: …` فوراً، بلا انتظار. التراجع: إزالة المتغير |
 | `EXTERNAL_AGENTS` | agents/external_adapter.py | `""` — بلا وكيل خارجي (لا هنا ولا عبر `POST /api/agents/external`) ترد مهام `external` بـ409 فوراً (R-140، BUG-01) |
 | `REDIS_URL` | agos_kernel/infrastructure/redis_queue.py | `redis://localhost:6379` |
@@ -277,3 +283,12 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
   - **MCP**: ليس هدفاً في التشغيل الحي (قرار المالك). اطلب `storage,llm,external`.
 - **حالة R-161 (محدّثة، R-161g)**: `done`. التشغيل 39105410408 من main ‏`ecbbf45` كانت نتيجته live_integration ‏PASS=3 (`139`). **بعد القبول حُذفت الأسرار الثلاثة من `r161-staging`** (`140`)، فأي تشغيل لاحق يحتاج أن يعيد المالك إدخالها: `R161_STORAGE_KEY` (‏Secret key من المشروع نفسه)، و`R161_LLM_API_KEY`، و`R161_EXTERNAL_API_KEY`. المتغيرات (vars) باقية. والمفاتيح القديمة ما زالت صالحة لدى المزودين حتى يبطلها المالك (Q-027).
 - **سابقاً**: `blocked` بـQ-025 حتى يجتاز تشغيل يدوي فعلي بنتائج live_integration للأهداف الثلاثة. التشغيل الأول 39082180770 فشل (`125`، `126`). على المشروع الجديد: storage ‏PASS ‏(39103597302)، وexternal ‏PASS ‏(39102435807)، وllm ينتظر التشغيل بعد إصلاح المسبار (`134`).
+
+## الطابور الدائم للمهام (R-163، D-082)
+
+- **التفعيل**: `AGOS_TASK_QUEUE=1` مع `SUPABASE_URL`+مفتاح خدمة مُعدَّين. بلا أي منهما يبقى الوضع المتطاير (السلوك التاريخي) — الخيار متعمّد كسابقة D-037 ولا يغيّر السلوك إلا بقرار مشغّل.
+- **قبل أول تشغيل متين**: طبّق `docs/sql/003_task_queue.sql` على قاعدة Supabase (idempotent) — `bash scripts/r042/run_local_stack.sh` يطبّقه ويشغّل اختبارات R-163 الحية على المخزن المحلي.
+- **السلوك المتين**: `POST /api/tasks` يحفظ المهمة أولاً (`queued`) ثم تُقبل (503 صريح إن فشل الحفظ — لا قبول بلا صف). المُرسِل (دورة إرسال داخل الخادم) يطالب بها برمز سياج `claim_token` وعقد `lease_expires_at`، ثم يجريها ويكتب النتيجة بكتابة مشروطة برمز السياج. المُحصّل (كل `AGOS_TASK_REAP_S`) يجدد عقد الحيّ ويسترد المنتهي: محاولة جديدة ما لم تتجاوز `AGOS_TASK_MAX_ATTEMPTS` (فوقها `dead_letter`).
+- **ما يلاحظه المشغّل عند التعطيل** (`AGOS_TASK_QUEUE` مرفوع بعد تشغيل متين): المهام قيد الجري تُعالَج كما في الوضع المتطاير (الحد المتبقي للنهاية غير المنتهية)، والصفوف تبقى كما هي — لا تُفقد ولا تُنشأ حلقة مراجعة؛ إعادة التفعيل تستأنف الاسترداد من الصفوف.
+- **الحد المتبقي (G-160-2 متطاير)**: إلغاء مهمة متطايرة يُحدّث الذاكرة فقط؛ صف التخزين لا يُحدّث أثناء الإلغاء — في الوضع المتين تُحدّث بالكتابة المسوّجة `transition_task`.
+- **السجلات**: دورتا الإرسال والمحصّل تسجّل الأحداث المهمة (`startup: queue_mode=…` عند الإقلاع، `storage unavailable, retrying…` عند انقطاع التخزين). لا تُطبع أي حمولة مهمة في السجلات.

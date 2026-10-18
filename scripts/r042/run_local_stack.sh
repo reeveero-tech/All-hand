@@ -19,10 +19,11 @@ JWT_SECRET="${JWT_SECRET:-r042-local-test-secret-not-a-real-key-000}"
 PGRST_PORT="${PGRST_PORT:-3000}"
 PROXY_PORT="${PROXY_PORT:-54321}"
 
-echo "== apply schema (Supabase role emulation + docs/sql/001_init.sql + 002_tenant_isolation.sql)"
+echo "== apply schema (Supabase role emulation + docs/sql/001_init.sql + 002_tenant_isolation.sql + 003_task_queue.sql)"
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f scripts/r042/supabase_roles.sql
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f docs/sql/001_init.sql
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f docs/sql/002_tenant_isolation.sql  # SEC-02
+psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f docs/sql/003_task_queue.sql  # R-163 durable queue
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -q -f scripts/r042/grants_after_schema.sql
 psql "$ADMIN_URI" -v ON_ERROR_STOP=1 -c "select table_name, column_name, data_type from information_schema.columns where table_schema='public' order by table_name, ordinal_position"
 
@@ -64,6 +65,10 @@ python scripts/run_r042_storage_verify.py
 echo "== server end-to-end with live storage"
 export R042_LIVE=1
 python -m pytest tests/test_r042_live_storage.py -v -p no:cacheprovider
+
+echo "== R-163 durable queue against the same local stack"
+export R163_LIVE=1
+python -m pytest tests/test_r163_live_queue.py -v -p no:cacheprovider
 
 echo "== R-161 runner against the same local stack (local_integration)"
 # loopback endpoint + the throwaway service key minted above: class

@@ -185,6 +185,13 @@ def test_a_version_bump_keeps_the_previous_schema_file(tmp_path, monkeypatch, ca
     bumped["ready"]["x-contract-version"] = 2
     for name, s in bumped.items():
         (tmp_path / f"{name}.v{s['x-contract-version']}.schema.json").write_text(exporter._dump(s))
+    # R-163: contracts already beyond v1 (task_accepted v2) must carry their
+    # previous version files into the temp dir — the exporter keeps them in OUT
+    for name, s in schemas.items():
+        for v in range(1, s["x-contract-version"]):
+            src = exporter.OUT / f"{name}.v{v}.schema.json"
+            if src.exists():
+                (tmp_path / src.name).write_text(src.read_text())
     monkeypatch.setattr(exporter, "OUT", tmp_path)
     assert exporter.check(bumped) == 1
     out = capsys.readouterr().out
