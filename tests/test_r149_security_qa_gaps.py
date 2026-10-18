@@ -147,10 +147,19 @@ class _R149PostgREST(BaseHTTPRequestHandler):
             return
         key = "task_id" if "task_id" in q else next(iter(q))
         want = q[key][0].removeprefix("eq.")
+        matched = []
         for r in self.rows[table]:
             if str(r.get(key)) == want:
                 r.update(copy.deepcopy(patch))
-        self._send(204)
+                matched.append(r)
+        # R-161c: like PostgREST — return=representation answers 200 with the
+        # updated rows (projected by select=), [] when nothing matched;
+        # without it, 204 whether or not a row matched
+        if "return=representation" in (self.headers.get("Prefer") or ""):
+            cols = q["select"][0].split(",") if "select" in q else None
+            self._send(200, [{c: r.get(c) for c in cols} if cols else r for r in matched])
+        else:
+            self._send(204)
 
     def do_GET(self):  # noqa: N802
         table, q = self._table_q()
@@ -308,7 +317,14 @@ def test_chat_with_initial_save_rejected_403_attempts_the_true_update(
     assert patch[3]["status"] == "completed" and patch[3]["result"]["ok"] is True
     # nothing was saved (the only accepted row would have been the insert)
     assert _R149PostgREST.rows["tasks"] == []
-    assert ss.storage_stats()["last_error"]["reason"] == "HTTP 403"
+    # R-161c: the insert's 403 is recorded, and the update is no longer
+    # counted as a success — it matched no row, so nothing was updated
+    stats = ss.storage_stats()
+    assert stats["operations"]["insert_task"] == {"ok": 0, "failed": 1}
+    assert stats["operations"]["update_task"] == {"ok": 0, "failed": 1}
+    assert stats["last_error"]["operation"] == "update_task"
+    assert stats["last_error"]["reason"] == "no row updated"
+    assert MARKER not in json.dumps(stats)
 
 
 def test_chat_with_final_update_rejected_500_keeps_memory_truth(
@@ -339,8 +355,10 @@ def test_chat_with_transport_cut_before_response(tenant_auth, postgrest, agent_o
     # recovered, so last_ok reflects the last operation, not the cut
     stats = ss.storage_stats()
     assert stats["operations"]["insert_task"]["failed"] >= 1
-    assert stats["last_error"]["operation"] == "insert_task"
-    assert stats["last_error"]["reason"].startswith("exception: ")
+    # R-161c: the row was never created, so the update matched nothing and is
+    # a failure too (it used to be counted ok on a bare 204)
+    assert stats["operations"]["update_task"] == {"ok": 0, "failed": 1}
+    assert stats["last_error"]["operation"] == "update_task"
     # the later writes still happened (the cut did not abort the request)
     assert [w[0:2] for w in _writes()] == [("POST", "tasks"), ("PATCH", "tasks"),
                                            ("POST", "agent_stats"), ("POST", "events")]

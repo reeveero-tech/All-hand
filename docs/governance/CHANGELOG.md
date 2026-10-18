@@ -1,5 +1,25 @@
 # سجل التغييرات (CHANGELOG)
 
+## 2026-10-18 — R-161c (M8/P2): أدلة التشغيل الحي الفاشل 39082180770 + تأكيد `update_task` بالصف المحدّث (دفعة m8/r161c-live-run-evidence-update-task، D-075)
+
+- **التشغيل 39082180770** (يدوي، المالك، main عند `457a0c1`):
+  - البوابة OPEN بإعداد حقيقي، ثم موافقة المراجع.
+  - storage ‏FAIL (HTTP 400: لا `tenant_id`، لأن 002 غير مطبق). llm وexternal ‏FAIL ‏(HTTP 404: معرّف النموذج غير موجود لدى OpenRouter). mcp ‏NOT_RUN. كلها live_integration.
+  - لا أسرار في السجل، ولا صف أُنشئ أو عُدّل في المشروع.
+- **مُصلح**: `agent_civilization/storage/supabase_store.py`:
+  - `update_task` يطلب `Prefer: return=representation` و`select=task_id`، ولا ينجح إلا بـ200 وصف المهمة المستهدفة.
+  - 204 أو `[]` أو صف آخر أو استجابة غير صالحة أو خطأ خادم = فشل بسبب ثابت. كان يقبل 200/204، فظهر `[ok]` كاذب في 39082180770.
+- **مُعدل**: `scripts/r161_live_integration.py`: اسم الفحص صار «update_task updated the row».
+- **مُعدل (الاختبارات)**: fakes لتطابق PostgREST في `test_r149_security_qa_gaps.py` و`test_r159_telemetry.py` و`test_r161_live_integration.py` و`test_storage_payloads.py`. توقع R-149 صار «no row updated» حين لا صف.
+- **مضاف**: `tests/test_r161c_update_task_confirmation.py` (16)، وQ-026، وD-075.
+- **الحالة**: R-161 يبقى `blocked` (Q-025 بشروط إعادة محدثة)، وG-161-5 مخففة غير مغلقة، وG-161-7 جديدة. R-162 لم يبدأ.
+- **لم يُشغَّل**: أي تكامل حي. لا كتابة في مشروع Supabase، ولا تغيير في البيئة أو الأسرار أو حماية الفرع.
+- **الأدلة**:
+  - `125`: السجل الأصلي كما نُزّل.
+  - `126`: التشخيص قراءةً فقط، وما تعذّر الحصول عليه (artifact التقرير، HTTP 401، لم يُعَد بناؤه).
+  - `127`: الاختبارات قبل/بعد، والحزمة بالوضعين، والبوابات.
+- **وثائق**: ROADMAP، وPROJECT_STATE، وOPEN_QUESTIONS (Q-025 محدث، وQ-026)، وDECISIONS (D-075)، وDATA_MODEL، وOPERATIONS، وQUALITY، وSECURITY، و`docs/audit/M8/EVIDENCE.md`. لا حذف ولا نقل ولا إعادة تسمية.
+
 ## 2026-10-18 — R-161b (M8/P2): تثبيت DNS عند الاتصال (G-161-3) + بوابة staging مغلقة افتراضياً (G-161-5) + R-161 ‏`blocked` بـQ-025 (دفعة m8/r161b-dns-pinning-env-gate، D-074)
 
 - **الحالة**: R-161 ‏`blocked` (blocker=Q-025). PR #175 مدموجة (`fcc869b`، CI main 39068752136 success)، لكن live_integration ‏NOT_RUN وMCP بلا عميل. R-162 يبقى planned.

@@ -98,3 +98,9 @@
 - **لا تغيير في المخطط ولا في الجداول ولا في الأعمدة ولا في شكل الصفوف** (`task_row` v1 كما هو).
 - **مُعامل اختياري في المُنشئ**: `SupabaseStorage(*, guarded=False, allow_private=False)`. مع `guarded=True` تُفتح جلسة HTTP عبر `guarded_session_kwargs` (SEC-05): العنوان المفحوص مثبت عند الاتصال، ولا ذاكرة DNS، وTLS بالاسم الأصلي، والتحويلات مرفوضة.
 - **من يستخدمه**: مشغل التكامل `scripts/r161_live_integration.py` فقط. نسخة الخادم الافتراضية (`guarded=False`) بلا تغيير في السلوك.
+
+## R-161c — تأكيد `update_task` (D-075، 2026-10-18)
+- **لا تغيير في المخطط ولا الجداول ولا الأعمدة ولا شكل الحمولة** (`storage_task_update` v1 كما هو).
+- **الطلب**: `PATCH /rest/v1/tasks?task_id=eq.<id>&select=task_id` مع `Prefer: return=representation`.
+- **النجاح**: HTTP 200 ومصفوفة فيها صف `task_id` المستهدف. 204 أو `[]` أو صف آخر أو جسم غير صالح أو خطأ خادم كلها فشل يُسجَّل في `storage_stats` بسبب ثابت (`HTTP <status>`، `malformed response`، `no row updated`) بلا جسم الاستجابة.
+- **الأثر**: تحديث مهمة لم يُحفظ صفها (insert مرفوض أو انقطع) يظهر الآن فشلاً في الإحصاءات و`/health`، بعد أن كان نجاحاً.

@@ -72,9 +72,14 @@ class FakePostgREST:
             self.tables[table].append(row)
             return web.Response(status=201)
         if request.method == "PATCH":
-            for r in self.tables[table]:
-                if self._match(r, q):
-                    r.update(json.loads(body))
+            matched = [r for r in self.tables[table] if self._match(r, q)]
+            for r in matched:
+                r.update(json.loads(body))
+            # R-161c: like PostgREST — return=representation answers 200 with
+            # the updated rows (projected by select=), [] if none matched
+            if "return=representation" in request.headers.get("Prefer", ""):
+                cols = q["select"].split(",") if "select" in q else None
+                return web.json_response([{c: r.get(c) for c in cols} if cols else r for r in matched])
             return web.Response(status=204)
         if request.method == "GET":
             if self.mode == "malformed" and table == "tasks" and "select" not in q:

@@ -213,6 +213,38 @@ async def _accepted(r: aiohttp.ClientResponse, op: str, codes: tuple) -> bool:
     return False
 
 
+async def _updated_row(r: aiohttp.ClientResponse, op: str, key: str, value: str) -> bool:
+    """R-161c (write confirmation): an update succeeded only if the backend
+    answered 200 with a JSON array holding the row whose ``key`` equals
+    ``value`` (``Prefer: return=representation``). Every other answer is a
+    failure of ``op`` with a fixed reason — never the body (R-149):
+
+    - HTTP status other than 200 (204 included: the backend did not return
+      the row, so nothing proves it was updated) -> ``HTTP <status>``;
+    - not JSON, not a list, or a malformed row -> ``malformed response``;
+    - no row with that key (0 rows matched) -> ``no row updated``.
+    """
+    if r.status != 200:
+        _record(op, False, f"HTTP {r.status}")
+        logger.warning("%s not confirmed: HTTP %s", op, r.status)
+        return False
+    try:
+        body = await r.json(content_type=None)
+    except Exception:  # noqa: BLE001 - invalid JSON is a malformed response
+        body = None
+    if not isinstance(body, list) or any(
+            not isinstance(x, dict) or not isinstance(x.get(key), (str, int)) for x in body):
+        logger.warning("%s: malformed response", op)
+        _record(op, False, "malformed response")
+        return False
+    if not any(str(x[key]) == str(value) for x in body):
+        logger.warning("%s: no row updated", op)
+        _record(op, False, "no row updated")
+        return False
+    _record(op, True)
+    return True
+
+
 def _scoped_params(limit: int, scope) -> Dict[str, str]:
     params = {"order": "created_at.desc", "limit": str(int(limit))}
     if scope is not ALL_TENANTS:
@@ -310,11 +342,16 @@ class SupabaseStorage:
                 payload["elapsed_s"] = elapsed_s
             if status in ("completed", "failed"):
                 payload["finished_at"] = "now()"
+            # R-161c: a PATCH that matches no row still answers 204 (or 200
+            # with []), so "accepted" alone never proved the task was updated.
+            # Ask PostgREST for the updated key only and require that row.
             async with session.patch(
-                f"{self.url}/rest/v1/tasks?task_id=eq.{task_id}",
+                f"{self.url}/rest/v1/tasks",
+                params={"task_id": f"eq.{task_id}", "select": "task_id"},
                 json=payload,
+                headers={"Prefer": "return=representation"},
             ) as r:
-                return await _accepted(r, "update_task", (200, 204))
+                return await _updated_row(r, "update_task", "task_id", task_id)
         except Exception as e:
             logger.warning("update_task failed: %s", type(e).__name__)
             _record_exception("update_task", e)

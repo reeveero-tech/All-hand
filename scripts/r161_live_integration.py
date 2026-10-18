@@ -329,7 +329,7 @@ async def probe_storage(env: Dict[str, str], pf: Dict[str, Any], timeout_s: floa
         ok = await store.insert_task(task_id, "analyst", "R-161 synthetic probe (no user data)",
                                      status="queued", tenant_id=tenant)
         checks.add("insert_task accepted", ok)
-        checks.add("update_task accepted", await store.update_task(
+        checks.add("update_task updated the row", await store.update_task(
             task_id, "completed", agent_name=f"r161_agent_{run}", result={"ok": True, "answer": "r161"}, elapsed_s=0.001))
         row = await store.get_task(task_id, scope=tenant)
         checks.add("get_task returns the row", row is not None)
@@ -377,7 +377,7 @@ async def probe_storage(env: Dict[str, str], pf: Dict[str, Any], timeout_s: floa
                 + "cleanup failed: " + res["cleanup"]["detail"]
         # connected = the store really answered (a write accepted or a row
         # read back); "other tenant cannot read" is true without any server
-        answered = {"insert_task accepted", "update_task accepted", "get_task returns the row",
+        answered = {"insert_task accepted", "update_task updated the row", "get_task returns the row",
                     "insert_event accepted", "get_events returns the event"}
         if any(c["ok"] for c in checks.items if c["name"] in answered):
             res["connected"] = True

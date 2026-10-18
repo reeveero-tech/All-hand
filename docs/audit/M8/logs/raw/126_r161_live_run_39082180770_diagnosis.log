@@ -1,0 +1,86 @@
+# 126 R-161c — diagnosis of the live run 39082180770 (read-only; nothing was changed anywhere)
+# collected 2026-10-18 00:50–01:10Z by the builder agent; no live integration was run by this batch
+
+## A. the run (GitHub API, gh run view 39082180770 --json …)
+run 39082180770 | workflow "R-161 Live Integration (manual)" | event workflow_dispatch | branch main | head 457a0c1c802fe7520ae1a750effef4ccad7126e1 | attempt 1
+actor=reeveero-tech triggering_actor=reeveero-tech | created 2026-10-18T00:16:50Z | updated 2026-10-18T00:33:46Z | conclusion failure
+job "staging readiness gate (no environment, no secrets)" id 117541229891: success, 00:16:54Z–00:17:00Z
+  step 3 "Check branch, owner declaration and environment protection": success
+  output (log 125): "R-161 staging gate: OPEN — r161-staging exists, has required reviewers, deploys only from main; owner declared it ready."
+job "live" id 117541258736: failure, started 00:33:29Z (after the required-reviewer approval; ~16.5 min after the gate) – completed 00:33:46Z
+  steps 1–6 success (checkout, Python, locked deps, runner, upload of the redacted report); step 7 "Fail unless every requested target passed": failure (runner_rc=1)
+
+## B. runner report as printed in the job log (log 125, lines at 00:33:43Z) — evidence class of every requested target: live_integration
+target    outcome  class             host                               connected cleanup  reason
+storage   FAIL     live_integration  fgfbavtxfmzpjneclkya.supabase.co   True      FAILED   check failed: insert_task accepted; cleanup failed: DELETE events -> HTTP 400
+  checks: [FAIL] insert_task accepted | [ok] update_task accepted | [FAIL] get_task returns the row | [FAIL] get_tasks scoped to the run tenant
+          [ok] other tenant cannot read the row | [FAIL] insert_event accepted | [FAIL] get_events returns the event
+llm       FAIL     live_integration  openrouter.ai                      True      ok       check failed: provider answered ok (provider answered HTTP 404)
+external  FAIL     live_integration  openrouter.ai                      True      ok       check failed: external agent answered ok (HTTP 404)
+mcp       NOT_RUN  -                 -                                  False     -        not requested
+summary: live_integration: FAIL=3; unclassified: NOT_RUN=1 ; exit_code=1
+"report checked: no secret value present" (workflow step) ; artifact r161-integration-report id 12119114952, 1034 bytes,
+  sha256 68647dacc49ec004c4884baf21ee0625d0aa6936cafd92868af645cd9db216e9 (as printed by upload-artifact)
+
+## C. what could NOT be obtained (stated, not reconstructed)
+- the artifact r161_report.json itself: `gh run download 39082180770 -n r161-integration-report` -> HTTP 401 (the session token has no
+  artifact scope) at 00:5xZ; retried 01:0xZ -> "Try authenticating with: gh auth login" (rate-limited anonymous API). No substitute
+  report was written; sections B/E come from the job log only.
+- the PostgREST error bodies (the runner and supabase_store never log bodies — R-149) and the provider 404 bodies: not in the log by design.
+- Supabase API/edge request logs for 00:33Z: the log query tool was called with a wrong argument shape and was not retried; not obtained.
+- a second download of the job log (01:0xZ) -> HTTP 403 rate limit; log 125 is the download of 00:52:58Z, kept byte-for-byte:
+  sha256 68adcb501118547c0c16737655207008dfacb50ee29236a5a67dc07cf9207b1e, 545 lines, 73710 bytes.
+
+## D. secrets check of log 125 (local grep)
+$ grep -cE 'eyJ[A-Za-z0-9_-]{10,}|sk-or-[A-Za-z0-9]|sb_secret_[A-Za-z0-9]|sb_publishable_|Bearer [A-Za-z0-9._-]{8,}|postgres(ql)?://' 125_…original.log
+0
+$ grep -c '\*\*\*' 125_…original.log      # GitHub masking of GH_TOKEN, token, R161_STORAGE_KEY, R161_LLM_API_KEY, R161_EXTERNAL_API_KEY
+9
+non-secret settings visible in the log (env vars, not credentials): R161_ALLOWED_HOSTS, R161_STORAGE_URL, R161_LLM_URL, R161_LLM_MODEL,
+R161_EXTERNAL_URL, R161_EXTERNAL_MODEL (= meta-llama/llama-3.3-70b-instruct:free), R161_CREDENTIAL_EXPIRES_AT=2026-10-22T00:00:00Z,
+R161_TIMEOUT_S=30, R161_LIVE=1.
+
+## E. the staging environment the owner prepared (GitHub API GETs, read-only)
+environment r161-staging id 24602417387 created_at 2026-10-17T23:48:31Z (before the dispatch at 00:16:50Z -> not auto-created by the run)
+  protection_rules: branch_policy ; required_reviewers [User reeveero-tech] prevent_self_review=false ; can_admins_bypass=true
+  deployment_branch_policy: protected_branches=false custom_branch_policies=true ; branch policies: [main (type branch)] total 1
+repo variable R161_STAGING_READY=owner-verified created 2026-10-18T00:12:27Z
+environment variables (names only): R161_STORAGE_URL 23:56:31Z, R161_ALLOWED_HOSTS 00:00:00Z, R161_LLM_URL 00:02:09Z,
+  R161_LLM_MODEL 00:03:24Z, R161_EXTERNAL_URL 00:04:42Z, R161_EXTERNAL_MODEL 00:05:48Z
+environment secrets (names only): R161_STORAGE_KEY 00:07:37Z, R161_LLM_API_KEY 00:08:24Z, R161_EXTERNAL_API_KEY 00:09:59Z
+note: prevent_self_review=false and can_admins_bypass=true — the approver is the dispatcher (one person); recorded, not changed.
+
+## F. storage target — Supabase project (Supabase connector, read-only)
+list_projects -> exactly ONE project in the account: ref fgfbavtxfmzpjneclkya, region ap-northeast-2, ACTIVE_HEALTHY, Postgres 17,
+  created 2026-10-12T22:58:22Z (before R-161) — the same host as R161_STORAGE_URL.
+list_tables(public, verbose):
+  public.tasks  rls=on rows=4  columns: task_id(pk) specialization prompt status agent_name result elapsed_s created_at finished_at
+  public.events rls=on rows=6  columns: id(pk, identity) event_type event_data created_at
+  public.agent_stats rls=on rows=2
+  -> NO tenant_id column in tasks or events: docs/sql/001_init.sql is applied, docs/sql/002_tenant_isolation.sql is not.
+execute_sql (aggregates only; no row content was read):
+  select count(*), count(*) filter (where created_at >= '2026-10-18T00:30:00Z'), max(created_at) … per table
+  tasks: total 4, since_run 0, finished_since_run 0, latest 2026-10-13 03:58:19Z
+  events: total 6, since_run 0, latest 2026-10-13 03:58:21Z
+  agent_stats: total 2, updated_since_run 0, latest 2026-10-13 03:58:21Z
+  -> the run created, updated and deleted nothing. Pre-existing rows exist: the project is NOT the empty isolated test project Q-025 requires.
+
+## G. root cause per storage check (from F + the code of 457a0c1)
+insert_task / insert_event: the row carries tenant_id -> PostgREST 400 (column does not exist) -> FAIL (correct).
+get_task / get_tasks / get_events: the filter tenant_id=eq.<run tenant> -> 400 -> FAIL (correct).
+cleanup: DELETE …?tenant_id=eq.<run tenant> -> 400 -> "cleanup failed" (correct: it cannot prove the run left nothing; F proves it).
+update_task: PATCH tasks?task_id=eq.<random run id> sends no tenant_id; it matched 0 rows and PostgREST answered 204 —
+  supabase_store.update_task accepted (200, 204) alone, so the check printed [ok] although NOTHING was updated -> a false "ok".
+  It was also the only check that made `connected=True` for storage (definition: a write accepted or a row read back).
+  -> fixed in this batch (R-161c, log 127).
+"other tenant cannot read the row" [ok]: true without any server (documented in R-161); it does not show the store worked.
+
+## H. llm / external — OpenRouter model id (public catalogue, read-only)
+$ curl -s https://openrouter.ai/api/v1/models | python3 -c "… 'meta-llama/llama-3.3-70b-instruct:free' in ids …"
+471 False ['meta-llama/llama-3.3-70b-instruct']
+-> the configured id is not in the catalogue at review time (only the paid variant is); both targets used it -> HTTP 404 (consistent).
+   connected=True for both is correct: the provider answered (HTTP 404).
+note: render.yaml also sets LLM_MODEL=meta-llama/llama-3.3-70b-instruct:free — the same id; not changed in this batch (Q-026).
+
+## I. not done by this batch (by instruction)
+no live integration re-run; nothing written to the Supabase project; no environment/secret/variable created or changed; no branch-protection change.

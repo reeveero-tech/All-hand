@@ -1,0 +1,545 @@
+staging readiness gate (no environment, no secrets)	Set up job	﻿2026-10-18T00:16:55.3981981Z Current runner version: '2.337.0'
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4009104Z ##[group]Runner Image Provisioner
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4010004Z Hosted Compute Agent
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4010705Z Version: 20261012.601
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4011433Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4012160Z Build Date: 2026-10-12T17:48:21Z
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4012890Z Worker ID: {f72a1517-d470-4420-9a49-99fc92876210}
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4013588Z Region: westus
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4014116Z Cloud: Azure
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4014784Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4016532Z ##[group]Operating System
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4017283Z Ubuntu
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4017815Z 26.04.1
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4018743Z LTS
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4019404Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4019969Z ##[group]Runner Image
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4020648Z Image: ubuntu-26.04
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4021244Z Version: 20261012.163.1
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4022322Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261012.163/images/ubuntu/Ubuntu2604-Readme.md
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4024184Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261012.163
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4025196Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4026421Z ##[group]GITHUB_TOKEN Permissions
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4028961Z Actions: read
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4029673Z Contents: read
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4030249Z Metadata: read
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4030869Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4033039Z Secret source: Actions
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4034528Z Cache mode: write
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4035344Z Prepare workflow directory
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4392133Z Prepare all required actions
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.4442857Z Getting action download info
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.7715676Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+staging readiness gate (no environment, no secrets)	Set up job	2026-10-18T00:16:55.9617943Z Complete job name: staging readiness gate (no environment, no secrets)
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	﻿2026-10-18T00:16:56.0613429Z ##[group]Run actions/checkout@v7
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0614350Z with:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0614824Z   persist-credentials: false
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0615368Z   repository: reeveero-tech/All-hand
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0619722Z   token: ***
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0620171Z   ssh-strict: true
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0620695Z   ssh-user: git
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0621420Z   clean: true
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0622166Z   sparse-checkout-cone-mode: true
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0622708Z   fetch-depth: 1
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0623142Z   fetch-tags: false
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0623593Z   show-progress: true
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0624037Z   lfs: false
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0624453Z   submodules: false
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0624903Z   set-safe-directory: true
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0625408Z   allow-unsafe-pr-checkout: false
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.0626276Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1712105Z Syncing repository: reeveero-tech/All-hand
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1714630Z ##[group]Getting Git version info
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1715417Z Working directory is '/home/runner/work/All-hand/All-hand'
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1716986Z [command]/usr/bin/git version
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1741284Z git version 2.55.0
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1765762Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1778899Z Temporarily overriding HOME='/home/runner/work/_temp/de564318-8c81-444d-ae34-43d460d83f44' before making global git config changes
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1780849Z Adding repository directory to the temporary git global config as a safe directory
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1783921Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1845338Z Deleting the contents of '/home/runner/work/All-hand/All-hand'
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1848606Z ##[group]Determining repository object format
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1850593Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1851336Z ##[group]Initializing the repository
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1856563Z [command]/usr/bin/git init /home/runner/work/All-hand/All-hand
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1969937Z hint: Using 'master' as the name for the initial branch. This default branch name
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1972878Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1976385Z hint: to use in all of your new repositories, which will suppress this warning,
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1977507Z hint: call:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1978564Z hint:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1979887Z hint: 	git config --global init.defaultBranch <name>
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1980962Z hint:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1981685Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1983054Z hint: 'development'. The just-created branch can be renamed via this command:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1984198Z hint:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1984987Z hint: 	git branch -m <name>
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1985690Z hint:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1986329Z hint: Disable this message with "git config set advice.defaultBranchName false"
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1987347Z Initialized empty Git repository in /home/runner/work/All-hand/All-hand/.git/
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.1989471Z [command]/usr/bin/git remote add origin https://github.com/reeveero-tech/All-hand
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2047224Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2048640Z ##[group]Disabling automatic garbage collection
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2052164Z [command]/usr/bin/git config --local gc.auto 0
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2091558Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2092859Z ##[group]Setting up auth
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2093422Z Removing SSH command configuration
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2099581Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2142300Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2574223Z Removing HTTP extra header
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2587712Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2617411Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2944089Z Removing includeIf entries pointing to credentials config files
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2951720Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.2996246Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.3287720Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.3330423Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git.path /home/runner/work/_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.3363986Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.3400556Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.3434011Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.3464625Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.3465921Z ##[group]Fetching the repository
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:56.3472246Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +457a0c1c802fe7520ae1a750effef4ccad7126e1:refs/remotes/origin/main
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1488423Z From https://github.com/reeveero-tech/All-hand
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1489758Z  * [new ref]         457a0c1c802fe7520ae1a750effef4ccad7126e1 -> origin/main
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1498653Z [command]/usr/bin/git branch --list --remote origin/main
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1529974Z   origin/main
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1541559Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1569794Z 457a0c1c802fe7520ae1a750effef4ccad7126e1
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1579950Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1580755Z ##[group]Determining the checkout info
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1581609Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1589461Z [command]/usr/bin/git sparse-checkout disable
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1643818Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1679669Z ##[group]Checking out the ref
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.1683740Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3139193Z Switched to a new branch 'main'
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3141138Z branch 'main' set up to track 'origin/main'.
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3162133Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3215295Z [command]/usr/bin/git log -1 --format=%H
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3243850Z 457a0c1c802fe7520ae1a750effef4ccad7126e1
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3253328Z ##[group]Removing auth
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3254729Z Removing SSH command configuration
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3256652Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3291519Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3575365Z Removing HTTP extra header
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3578864Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3616445Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3893089Z Removing includeIf entries pointing to credentials config files
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3896721Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3922104Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3924603Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3926833Z includeif.gitdir:/github/workspace/.git.path
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3929590Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3934481Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3956445Z /home/runner/work/_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.3967606Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-07230fed\-588a\-44fc\-b2ab\-8efdc0b54a7e\.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4003352Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4029160Z /home/runner/work/_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4039107Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-07230fed\-588a\-44fc\-b2ab\-8efdc0b54a7e\.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4076884Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4140809Z /github/runner_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4149147Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-07230fed\-588a\-44fc\-b2ab\-8efdc0b54a7e\.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4189129Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4212211Z /github/runner_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4223296Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-07230fed\-588a\-44fc\-b2ab\-8efdc0b54a7e\.config
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4259292Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4533158Z Removing credentials config '/home/runner/work/_temp/git-credentials-07230fed-588a-44fc-b2ab-8efdc0b54a7e.config'
+staging readiness gate (no environment, no secrets)	Run actions/checkout@v7	2026-10-18T00:16:57.4542084Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	﻿2026-10-18T00:16:57.4797425Z ##[group]Run python3 scripts/r161_staging_gate.py
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	2026-10-18T00:16:57.4799256Z ^[[36;1mpython3 scripts/r161_staging_gate.py^[[0m
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	2026-10-18T00:16:57.4969374Z shell: /usr/bin/bash -e {0}
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	2026-10-18T00:16:57.4970666Z env:
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	2026-10-18T00:16:57.4971674Z   GATE_REF: refs/heads/main
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	2026-10-18T00:16:57.4972882Z   GATE_READY: owner-verified
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	2026-10-18T00:16:57.4983682Z   GH_TOKEN: ***
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	2026-10-18T00:16:57.4984637Z ##[endgroup]
+staging readiness gate (no environment, no secrets)	Check branch, owner declaration and environment protection	2026-10-18T00:16:58.0262356Z R-161 staging gate: OPEN — r161-staging exists, has required reviewers, deploys only from main; owner declared it ready.
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	﻿2026-10-18T00:16:58.0605840Z Post job cleanup.
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.1473612Z [command]/usr/bin/git version
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.1521996Z git version 2.55.0
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.1566181Z Temporarily overriding HOME='/home/runner/work/_temp/597f3f93-1d89-4310-9121-5af1af96e28f' before making global git config changes
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.1665138Z Adding repository directory to the temporary git global config as a safe directory
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.1667494Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.1692370Z Removing SSH command configuration
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.1693501Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.1697385Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.2014005Z Removing HTTP extra header
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.2021803Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.2064375Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.2374991Z Removing includeIf entries pointing to credentials config files
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.2381439Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+staging readiness gate (no environment, no secrets)	Post Run actions/checkout@v7	2026-10-18T00:16:58.2417421Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+staging readiness gate (no environment, no secrets)	Complete job	﻿2026-10-18T00:16:58.2847330Z Evaluate and set job outputs
+staging readiness gate (no environment, no secrets)	Complete job	2026-10-18T00:16:58.2854164Z Set output 'environment'
+staging readiness gate (no environment, no secrets)	Complete job	2026-10-18T00:16:58.2856334Z Cleaning up orphan processes
+live	Set up job	﻿2026-10-18T00:33:29.8117918Z Current runner version: '2.337.0'
+live	Set up job	2026-10-18T00:33:29.8139107Z ##[group]Runner Image Provisioner
+live	Set up job	2026-10-18T00:33:29.8139989Z Hosted Compute Agent
+live	Set up job	2026-10-18T00:33:29.8140487Z Version: 20261012.601
+live	Set up job	2026-10-18T00:33:29.8141063Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+live	Set up job	2026-10-18T00:33:29.8141691Z Build Date: 2026-10-12T17:48:21Z
+live	Set up job	2026-10-18T00:33:29.8142279Z Worker ID: {0e16cf40-cfce-4dbd-9f02-4666a8069843}
+live	Set up job	2026-10-18T00:33:29.8142898Z Region: centralus
+live	Set up job	2026-10-18T00:33:29.8143396Z Cloud: Azure
+live	Set up job	2026-10-18T00:33:29.8143851Z ##[endgroup]
+live	Set up job	2026-10-18T00:33:29.8145078Z ##[group]Operating System
+live	Set up job	2026-10-18T00:33:29.8145614Z Ubuntu
+live	Set up job	2026-10-18T00:33:29.8146084Z 26.04.1
+live	Set up job	2026-10-18T00:33:29.8146551Z LTS
+live	Set up job	2026-10-18T00:33:29.8147289Z ##[endgroup]
+live	Set up job	2026-10-18T00:33:29.8147838Z ##[group]Runner Image
+live	Set up job	2026-10-18T00:33:29.8148391Z Image: ubuntu-26.04
+live	Set up job	2026-10-18T00:33:29.8149039Z Version: 20261012.163.1
+live	Set up job	2026-10-18T00:33:29.8149930Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261012.163/images/ubuntu/Ubuntu2604-Readme.md
+live	Set up job	2026-10-18T00:33:29.8151389Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261012.163
+live	Set up job	2026-10-18T00:33:29.8152167Z ##[endgroup]
+live	Set up job	2026-10-18T00:33:29.8153123Z ##[group]GITHUB_TOKEN Permissions
+live	Set up job	2026-10-18T00:33:29.8155028Z Contents: read
+live	Set up job	2026-10-18T00:33:29.8155620Z Metadata: read
+live	Set up job	2026-10-18T00:33:29.8156079Z ##[endgroup]
+live	Set up job	2026-10-18T00:33:29.8157848Z Secret source: Actions
+live	Set up job	2026-10-18T00:33:29.8158812Z Cache mode: write
+live	Set up job	2026-10-18T00:33:29.8159471Z Prepare workflow directory
+live	Set up job	2026-10-18T00:33:29.8435369Z Prepare all required actions
+live	Set up job	2026-10-18T00:33:29.8475712Z Getting action download info
+live	Set up job	2026-10-18T00:33:30.0513853Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+live	Set up job	2026-10-18T00:33:30.1264065Z Download action repository 'actions/setup-python@v7' (SHA:5fda3b95a4ea91299a34e894583c3862153e4b97)
+live	Set up job	2026-10-18T00:33:30.2013746Z Download action repository 'actions/upload-artifact@v7' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+live	Set up job	2026-10-18T00:33:30.7247375Z Complete job name: live
+live	Run actions/checkout@v7	﻿2026-10-18T00:33:30.7878291Z ##[group]Run actions/checkout@v7
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7879663Z with:
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7880203Z   persist-credentials: false
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7880873Z   repository: reeveero-tech/All-hand
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7887992Z   token: ***
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7888902Z   ssh-strict: true
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7889706Z   ssh-user: git
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7890375Z   clean: true
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7891089Z   sparse-checkout-cone-mode: true
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7891911Z   fetch-depth: 1
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7892582Z   fetch-tags: false
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7893236Z   show-progress: true
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7893911Z   lfs: false
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7894488Z   submodules: false
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7895028Z   set-safe-directory: true
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7895611Z   allow-unsafe-pr-checkout: false
+live	Run actions/checkout@v7	2026-10-18T00:33:30.7896615Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8881584Z Syncing repository: reeveero-tech/All-hand
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8884569Z ##[group]Getting Git version info
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8885905Z Working directory is '/home/runner/work/All-hand/All-hand'
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8887836Z [command]/usr/bin/git version
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8922771Z git version 2.55.0
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8953066Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8984353Z Temporarily overriding HOME='/home/runner/work/_temp/8c8cf8e4-498f-4204-bc7d-34f56f6a2fb1' before making global git config changes
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8986683Z Adding repository directory to the temporary git global config as a safe directory
+live	Run actions/checkout@v7	2026-10-18T00:33:30.8996033Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9040591Z Deleting the contents of '/home/runner/work/All-hand/All-hand'
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9052063Z ##[group]Determining repository object format
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9053636Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9055001Z ##[group]Initializing the repository
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9055978Z [command]/usr/bin/git init /home/runner/work/All-hand/All-hand
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9179774Z hint: Using 'master' as the name for the initial branch. This default branch name
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9181458Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9183048Z hint: to use in all of your new repositories, which will suppress this warning,
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9184277Z hint: call:
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9184986Z hint:
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9185897Z hint: 	git config --global init.defaultBranch <name>
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9187095Z hint:
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9188145Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9189717Z hint: 'development'. The just-created branch can be renamed via this command:
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9190887Z hint:
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9191687Z hint: 	git branch -m <name>
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9192682Z hint:
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9193830Z hint: Disable this message with "git config set advice.defaultBranchName false"
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9195355Z Initialized empty Git repository in /home/runner/work/All-hand/All-hand/.git/
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9207890Z [command]/usr/bin/git remote add origin https://github.com/reeveero-tech/All-hand
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9244282Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9245660Z ##[group]Disabling automatic garbage collection
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9246805Z [command]/usr/bin/git config --local gc.auto 0
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9275122Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9276483Z ##[group]Setting up auth
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9277340Z Removing SSH command configuration
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9278816Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9303556Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9663883Z Removing HTTP extra header
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9669306Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9694761Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9885304Z Removing includeIf entries pointing to credentials config files
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9889294Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+live	Run actions/checkout@v7	2026-10-18T00:33:30.9911576Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+live	Run actions/checkout@v7	2026-10-18T00:33:31.0097394Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+live	Run actions/checkout@v7	2026-10-18T00:33:31.0126660Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git.path /home/runner/work/_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config
+live	Run actions/checkout@v7	2026-10-18T00:33:31.0153466Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config
+live	Run actions/checkout@v7	2026-10-18T00:33:31.0180714Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config
+live	Run actions/checkout@v7	2026-10-18T00:33:31.0205742Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config
+live	Run actions/checkout@v7	2026-10-18T00:33:31.0227597Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:31.0228555Z ##[group]Fetching the repository
+live	Run actions/checkout@v7	2026-10-18T00:33:31.0232685Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +457a0c1c802fe7520ae1a750effef4ccad7126e1:refs/remotes/origin/main
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8296227Z From https://github.com/reeveero-tech/All-hand
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8299056Z  * [new ref]         457a0c1c802fe7520ae1a750effef4ccad7126e1 -> origin/main
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8303541Z [command]/usr/bin/git branch --list --remote origin/main
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8324739Z   origin/main
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8330797Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8349039Z 457a0c1c802fe7520ae1a750effef4ccad7126e1
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8353236Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8355207Z ##[group]Determining the checkout info
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8357929Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8359763Z [command]/usr/bin/git sparse-checkout disable
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8401862Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8426604Z ##[group]Checking out the ref
+live	Run actions/checkout@v7	2026-10-18T00:33:31.8429552Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9417734Z Switched to a new branch 'main'
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9420340Z branch 'main' set up to track 'origin/main'.
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9431217Z ##[endgroup]
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9472204Z [command]/usr/bin/git log -1 --format=%H
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9492854Z 457a0c1c802fe7520ae1a750effef4ccad7126e1
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9499199Z ##[group]Removing auth
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9500838Z Removing SSH command configuration
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9503468Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9529648Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9727662Z Removing HTTP extra header
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9730699Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9752570Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9946914Z Removing includeIf entries pointing to credentials config files
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9950783Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9964770Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9968011Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9971127Z includeif.gitdir:/github/workspace/.git.path
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9974032Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9980588Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9988291Z /home/runner/work/_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config
+live	Run actions/checkout@v7	2026-10-18T00:33:31.9997552Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-faf549fa\-1da4\-4ba9\-bec7\-ff27c9fe073b\.config
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0022194Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0039666Z /home/runner/work/_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0053048Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-faf549fa\-1da4\-4ba9\-bec7\-ff27c9fe073b\.config
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0080791Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0102520Z /github/runner_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0109863Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-faf549fa\-1da4\-4ba9\-bec7\-ff27c9fe073b\.config
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0130843Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0146788Z /github/runner_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0152803Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-faf549fa\-1da4\-4ba9\-bec7\-ff27c9fe073b\.config
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0177769Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0375950Z Removing credentials config '/home/runner/work/_temp/git-credentials-faf549fa-1da4-4ba9-bec7-ff27c9fe073b.config'
+live	Run actions/checkout@v7	2026-10-18T00:33:32.0380567Z ##[endgroup]
+live	Set up Python	﻿2026-10-18T00:33:32.0587702Z ##[group]Run actions/setup-python@v7
+live	Set up Python	2026-10-18T00:33:32.0588062Z with:
+live	Set up Python	2026-10-18T00:33:32.0588325Z   python-version: 3.11
+live	Set up Python	2026-10-18T00:33:32.0588868Z   check-latest: false
+live	Set up Python	2026-10-18T00:33:32.0591143Z   token: ***
+live	Set up Python	2026-10-18T00:33:32.0591432Z   update-environment: true
+live	Set up Python	2026-10-18T00:33:32.0591778Z   allow-prereleases: false
+live	Set up Python	2026-10-18T00:33:32.0592054Z   freethreaded: false
+live	Set up Python	2026-10-18T00:33:32.0592321Z ##[endgroup]
+live	Set up Python	2026-10-18T00:33:32.1530380Z ##[group]Installed versions
+live	Set up Python	2026-10-18T00:33:32.1606929Z Successfully set up CPython (3.11.17)
+live	Set up Python	2026-10-18T00:33:32.1607745Z ##[endgroup]
+live	Install dependencies (locked)	﻿2026-10-18T00:33:32.1720270Z ##[group]Run python -m pip install pip==26.2.1
+live	Install dependencies (locked)	2026-10-18T00:33:32.1720743Z ^[[36;1mpython -m pip install pip==26.2.1^[[0m
+live	Install dependencies (locked)	2026-10-18T00:33:32.1721254Z ^[[36;1mpip install --require-hashes -r requirements.lock^[[0m
+live	Install dependencies (locked)	2026-10-18T00:33:32.1876759Z shell: /usr/bin/bash -e {0}
+live	Install dependencies (locked)	2026-10-18T00:33:32.1877248Z env:
+live	Install dependencies (locked)	2026-10-18T00:33:32.1877907Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Install dependencies (locked)	2026-10-18T00:33:32.1878423Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+live	Install dependencies (locked)	2026-10-18T00:33:32.1879092Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Install dependencies (locked)	2026-10-18T00:33:32.1879552Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Install dependencies (locked)	2026-10-18T00:33:32.1879955Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Install dependencies (locked)	2026-10-18T00:33:32.1880392Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+live	Install dependencies (locked)	2026-10-18T00:33:32.1880771Z ##[endgroup]
+live	Install dependencies (locked)	2026-10-18T00:33:33.9169644Z Requirement already satisfied: pip==26.2.1 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (26.2.1)
+live	Install dependencies (locked)	2026-10-18T00:33:34.5322190Z Collecting aiohappyeyeballs==2.7.1 (from -r requirements.lock (line 7))
+live	Install dependencies (locked)	2026-10-18T00:33:34.5902472Z   Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:34.9900106Z Collecting aiohttp==3.14.5 (from -r requirements.lock (line 11))
+live	Install dependencies (locked)	2026-10-18T00:33:35.0059858Z   Downloading aiohttp-3.14.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.9 MB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.0854869Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.9/1.9 MB 39.9 MB/s  0:00:00
+live	Install dependencies (locked)	2026-10-18T00:33:35.1086738Z Collecting aiosignal==1.4.0 (from -r requirements.lock (line 174))
+live	Install dependencies (locked)	2026-10-18T00:33:35.1243343Z   Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.1462640Z Collecting annotated-doc==0.0.5 (from -r requirements.lock (line 178))
+live	Install dependencies (locked)	2026-10-18T00:33:35.1616162Z   Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.1831990Z Collecting annotated-types==0.8.0 (from -r requirements.lock (line 182))
+live	Install dependencies (locked)	2026-10-18T00:33:35.1996608Z   Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.2241941Z Collecting anyio==4.15.1 (from -r requirements.lock (line 186))
+live	Install dependencies (locked)	2026-10-18T00:33:35.2401912Z   Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.2634470Z Collecting attrs==26.1.0 (from -r requirements.lock (line 192))
+live	Install dependencies (locked)	2026-10-18T00:33:35.2786358Z   Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.3036715Z Collecting click==8.5.0 (from -r requirements.lock (line 196))
+live	Install dependencies (locked)	2026-10-18T00:33:35.3192712Z   Downloading click-8.5.0-py3-none-any.whl (125 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.3562920Z Collecting fastapi==0.143.3 (from -r requirements.lock (line 200))
+live	Install dependencies (locked)	2026-10-18T00:33:35.3719025Z   Downloading fastapi-0.143.3-py3-none-any.whl (144 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.4271317Z Collecting frozenlist==1.8.0 (from -r requirements.lock (line 204))
+live	Install dependencies (locked)	2026-10-18T00:33:35.4429415Z   Downloading frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.4651248Z Collecting h11==0.16.0 (from -r requirements.lock (line 338))
+live	Install dependencies (locked)	2026-10-18T00:33:35.4805168Z   Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.5164181Z Collecting httptools==0.9.0 (from -r requirements.lock (line 342))
+live	Install dependencies (locked)	2026-10-18T00:33:35.5322403Z   Downloading httptools-0.9.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (499 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.5572088Z Collecting idna==3.20 (from -r requirements.lock (line 462))
+live	Install dependencies (locked)	2026-10-18T00:33:35.5726366Z   Downloading idna-3.20-py3-none-any.whl (69 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.7632556Z Collecting multidict==7.1.0 (from -r requirements.lock (line 468))
+live	Install dependencies (locked)	2026-10-18T00:33:35.7788145Z   Downloading multidict-7.1.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (480 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.8091718Z Collecting opentelemetry-api==1.45.1 (from -r requirements.lock (line 643))
+live	Install dependencies (locked)	2026-10-18T00:33:35.8245116Z   Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.8801976Z Collecting propcache==0.5.4 (from -r requirements.lock (line 647))
+live	Install dependencies (locked)	2026-10-18T00:33:35.8981178Z   Downloading propcache-0.5.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (235 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:35.9753815Z Collecting pydantic==2.14.1 (from -r requirements.lock (line 789))
+live	Install dependencies (locked)	2026-10-18T00:33:35.9911119Z   Downloading pydantic-2.14.1-py3-none-any.whl (488 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.4723002Z Collecting pydantic-core==2.50.1 (from -r requirements.lock (line 795))
+live	Install dependencies (locked)	2026-10-18T00:33:36.4881289Z   Downloading pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.5159628Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 74.0 MB/s  0:00:00
+live	Install dependencies (locked)	2026-10-18T00:33:36.5401181Z Collecting python-dotenv==1.2.4 (from -r requirements.lock (line 934))
+live	Install dependencies (locked)	2026-10-18T00:33:36.5555219Z   Downloading python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.5785674Z Collecting python-multipart==0.0.32 (from -r requirements.lock (line 938))
+live	Install dependencies (locked)	2026-10-18T00:33:36.5939823Z   Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.6307829Z Collecting pyyaml==6.0.3 (from -r requirements.lock (line 942))
+live	Install dependencies (locked)	2026-10-18T00:33:36.6474588Z   Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.6522116Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 806.6/806.6 kB 188.8 MB/s  0:00:00
+live	Install dependencies (locked)	2026-10-18T00:33:36.6794611Z Collecting starlette==1.8.0 (from -r requirements.lock (line 1019))
+live	Install dependencies (locked)	2026-10-18T00:33:36.6951036Z   Downloading starlette-1.8.0-py3-none-any.whl (79 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.7196045Z Collecting typing-extensions==4.16.0 (from -r requirements.lock (line 1023))
+live	Install dependencies (locked)	2026-10-18T00:33:36.7361069Z   Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.7577563Z Collecting typing-inspection==0.4.4 (from -r requirements.lock (line 1036))
+live	Install dependencies (locked)	2026-10-18T00:33:36.7736257Z   Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.8021761Z Collecting uvicorn==0.54.0 (from uvicorn[standard]==0.54.0->-r requirements.lock (line 1042))
+live	Install dependencies (locked)	2026-10-18T00:33:36.8176006Z   Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.8566661Z Collecting uvloop==0.23.0 (from -r requirements.lock (line 1046))
+live	Install dependencies (locked)	2026-10-18T00:33:36.8725665Z   Downloading uvloop-0.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (4.0 MB)
+live	Install dependencies (locked)	2026-10-18T00:33:36.8945531Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.0/4.0 MB 185.6 MB/s  0:00:00
+live	Install dependencies (locked)	2026-10-18T00:33:36.9552554Z Collecting watchfiles==1.3.0 (from -r requirements.lock (line 1109))
+live	Install dependencies (locked)	2026-10-18T00:33:36.9714457Z   Downloading watchfiles-1.3.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (458 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:37.0542595Z Collecting websockets==17.2 (from -r requirements.lock (line 1144))
+live	Install dependencies (locked)	2026-10-18T00:33:37.0698382Z   Downloading websockets-17.2-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (225 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:37.2669158Z Collecting yarl==1.25.1 (from -r requirements.lock (line 1294))
+live	Install dependencies (locked)	2026-10-18T00:33:37.2831579Z   Downloading yarl-1.25.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (117 kB)
+live	Install dependencies (locked)	2026-10-18T00:33:37.3574042Z Installing collected packages: websockets, uvloop, typing-extensions, pyyaml, python-multipart, python-dotenv, propcache, multidict, idna, httptools, h11, frozenlist, click, attrs, annotated-types, annotated-doc, aiohappyeyeballs, yarl, uvicorn, typing-inspection, pydantic-core, opentelemetry-api, anyio, aiosignal, watchfiles, starlette, pydantic, aiohttp, fastapi
+live	Install dependencies (locked)	2026-10-18T00:33:38.4210136Z 
+live	Install dependencies (locked)	2026-10-18T00:33:38.4225262Z Successfully installed aiohappyeyeballs-2.7.1 aiohttp-3.14.5 aiosignal-1.4.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 click-8.5.0 fastapi-0.143.3 frozenlist-1.8.0 h11-0.16.0 httptools-0.9.0 idna-3.20 multidict-7.1.0 opentelemetry-api-1.45.1 propcache-0.5.4 pydantic-2.14.1 pydantic-core-2.50.1 python-dotenv-1.2.4 python-multipart-0.0.32 pyyaml-6.0.3 starlette-1.8.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0 uvloop-0.23.0 watchfiles-1.3.0 websockets-17.2 yarl-1.25.1
+live	Run the integration runner	﻿2026-10-18T00:33:38.5323226Z ##[group]Run set +e
+live	Run the integration runner	2026-10-18T00:33:38.5323584Z ^[[36;1mset +e^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5324034Z ^[[36;1mpython scripts/r161_live_integration.py --targets "$TARGETS" --report r161_report.json^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5324528Z ^[[36;1mrc=$?^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5324907Z ^[[36;1mecho "== Check the report for secret values (it must not be uploaded otherwise)"^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5325360Z ^[[36;1mpython - <<'PY'^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5325717Z ^[[36;1mimport os, pathlib, sys^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5326029Z ^[[36;1mp = pathlib.Path("r161_report.json")^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5326405Z ^[[36;1mtext = p.read_text() if p.exists() else ""^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5326844Z ^[[36;1mleaked = [n for n in ("R161_STORAGE_KEY", "R161_LLM_API_KEY", "R161_EXTERNAL_API_KEY")^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5327383Z ^[[36;1m          if len(os.environ.get(n, "")) >= 4 and os.environ[n] in text]^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5327776Z ^[[36;1mif leaked:^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5328029Z ^[[36;1m    p.unlink()^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5328458Z ^[[36;1m    print("FAIL: report contained the value of " + ", ".join(leaked) + " — not uploaded")^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5329135Z ^[[36;1m    sys.exit(1)^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5329541Z ^[[36;1mprint("report checked: no secret value present")^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5329872Z ^[[36;1mPY^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5330128Z ^[[36;1mcheck=$?^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5330403Z ^[[36;1m[ "$check" -eq 0 ] || rc=1^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5330754Z ^[[36;1mecho "runner_rc=$rc" | tee r161_rc.txt^[[0m
+live	Run the integration runner	2026-10-18T00:33:38.5366329Z shell: /usr/bin/bash -e {0}
+live	Run the integration runner	2026-10-18T00:33:38.5366759Z env:
+live	Run the integration runner	2026-10-18T00:33:38.5367116Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Run the integration runner	2026-10-18T00:33:38.5367612Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+live	Run the integration runner	2026-10-18T00:33:38.5368052Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Run the integration runner	2026-10-18T00:33:38.5368438Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Run the integration runner	2026-10-18T00:33:38.5369049Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Run the integration runner	2026-10-18T00:33:38.5369499Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+live	Run the integration runner	2026-10-18T00:33:38.5369875Z   TARGETS: storage,llm,external
+live	Run the integration runner	2026-10-18T00:33:38.5370164Z   R161_LIVE: 1
+live	Run the integration runner	2026-10-18T00:33:38.5370481Z   R161_CREDENTIAL_EXPIRES_AT: 2026-10-22T00:00:00Z
+live	Run the integration runner	2026-10-18T00:33:38.5370901Z   R161_ALLOWED_HOSTS: fgfbavtxfmzpjneclkya.supabase.co,openrouter.ai
+live	Run the integration runner	2026-10-18T00:33:38.5371449Z   R161_TIMEOUT_S: 30
+live	Run the integration runner	2026-10-18T00:33:38.5371813Z   R161_STORAGE_URL: https://fgfbavtxfmzpjneclkya.supabase.co
+live	Run the integration runner	2026-10-18T00:33:38.5373204Z   R161_STORAGE_KEY: ***
+live	Run the integration runner	2026-10-18T00:33:38.5373545Z   R161_LLM_URL: https://openrouter.ai/api/v1/chat/completions
+live	Run the integration runner	2026-10-18T00:33:38.5373980Z   R161_LLM_MODEL: meta-llama/llama-3.3-70b-instruct:free
+live	Run the integration runner	2026-10-18T00:33:38.5374484Z   R161_LLM_API_KEY: ***
+live	Run the integration runner	2026-10-18T00:33:38.5374856Z   R161_EXTERNAL_URL: https://openrouter.ai/api/v1/chat/completions
+live	Run the integration runner	2026-10-18T00:33:38.5375288Z   R161_EXTERNAL_MODEL: meta-llama/llama-3.3-70b-instruct:free
+live	Run the integration runner	2026-10-18T00:33:38.5375829Z   R161_EXTERNAL_API_KEY: ***
+live	Run the integration runner	2026-10-18T00:33:38.5376132Z ##[endgroup]
+live	Run the integration runner	2026-10-18T00:33:40.1437685Z WARNING storage: insert_task rejected: HTTP 400
+live	Run the integration runner	2026-10-18T00:33:40.1476245Z WARNING agos.infrastructure.redis: Redis not available. Using in-memory fallback.
+live	Run the integration runner	2026-10-18T00:33:41.7863804Z WARNING storage: get_task rejected: HTTP 400
+live	Run the integration runner	2026-10-18T00:33:42.0332676Z WARNING storage: get_tasks rejected: HTTP 400
+live	Run the integration runner	2026-10-18T00:33:42.2512514Z WARNING storage: get_task rejected: HTTP 400
+live	Run the integration runner	2026-10-18T00:33:42.4859098Z WARNING storage: insert_event rejected: HTTP 400
+live	Run the integration runner	2026-10-18T00:33:42.7216750Z WARNING storage: get_events rejected: HTTP 400
+live	Run the integration runner	2026-10-18T00:33:43.3319050Z ERROR llm: LLM error: HTTP 404 (provider response body not logged)
+live	Run the integration runner	2026-10-18T00:33:43.4591430Z WARNING external_agents: external agent r161_probe failed: HTTP 404
+live	Run the integration runner	2026-10-18T00:33:43.4611906Z R-161 integration report v1 git_sha=457a0c1c802f simulated=False exit_code=1
+live	Run the integration runner	2026-10-18T00:33:43.4613000Z   storage   FAIL     class=live_integration  host=fgfbavtxfmzpjneclkya.supabase.co connected=True cleanup=FAILED reason=check failed: insert_task accepted; cleanup failed: DELETE events -> HTTP 400
+live	Run the integration runner	2026-10-18T00:33:43.4614012Z       [FAIL] insert_task accepted
+live	Run the integration runner	2026-10-18T00:33:43.4614363Z       [ok] update_task accepted
+live	Run the integration runner	2026-10-18T00:33:43.4614696Z       [FAIL] get_task returns the row
+live	Run the integration runner	2026-10-18T00:33:43.4615089Z       [FAIL] get_tasks scoped to the run tenant
+live	Run the integration runner	2026-10-18T00:33:43.4615427Z       [ok] other tenant cannot read the row
+live	Run the integration runner	2026-10-18T00:33:43.4615728Z       [FAIL] insert_event accepted
+live	Run the integration runner	2026-10-18T00:33:43.4616054Z       [FAIL] get_events returns the event
+live	Run the integration runner	2026-10-18T00:33:43.4616706Z   llm       FAIL     class=live_integration  host=openrouter.ai connected=True cleanup=ok reason=check failed: provider answered ok (provider answered HTTP 404)
+live	Run the integration runner	2026-10-18T00:33:43.4617301Z       [ok] result matches llm_result v1
+live	Run the integration runner	2026-10-18T00:33:43.4617899Z       [FAIL] provider answered ok — provider answered HTTP 404
+live	Run the integration runner	2026-10-18T00:33:43.4618505Z   external  FAIL     class=live_integration  host=openrouter.ai connected=True cleanup=ok reason=check failed: external agent answered ok (HTTP 404)
+live	Run the integration runner	2026-10-18T00:33:43.4619422Z       [ok] outcome matches agent_outcome v1
+live	Run the integration runner	2026-10-18T00:33:43.4619805Z       [FAIL] external agent answered ok — HTTP 404
+live	Run the integration runner	2026-10-18T00:33:43.4620280Z   mcp       NOT_RUN  class=-                 host=- connected=False cleanup=- reason=not requested
+live	Run the integration runner	2026-10-18T00:33:43.4620784Z   summary: live_integration: FAIL=3; unclassified: NOT_RUN=1
+live	Run the integration runner	2026-10-18T00:33:43.4621264Z   NOTE: only live_integration PASS rows are live evidence; mock and local_integration are not.
+live	Run the integration runner	2026-10-18T00:33:43.5015445Z == Check the report for secret values (it must not be uploaded otherwise)
+live	Run the integration runner	2026-10-18T00:33:43.5164737Z report checked: no secret value present
+live	Run the integration runner	2026-10-18T00:33:43.5215746Z runner_rc=1
+live	Upload the redacted report	﻿2026-10-18T00:33:43.5281673Z ##[group]Run actions/upload-artifact@v7
+live	Upload the redacted report	2026-10-18T00:33:43.5282009Z with:
+live	Upload the redacted report	2026-10-18T00:33:43.5282282Z   name: r161-integration-report
+live	Upload the redacted report	2026-10-18T00:33:43.5282581Z   path: r161_report.json
+live	Upload the redacted report	2026-10-18T00:33:43.5282902Z   if-no-files-found: warn
+live	Upload the redacted report	2026-10-18T00:33:43.5283190Z   retention-days: 30
+live	Upload the redacted report	2026-10-18T00:33:43.5283456Z   compression-level: 6
+live	Upload the redacted report	2026-10-18T00:33:43.5283715Z   overwrite: false
+live	Upload the redacted report	2026-10-18T00:33:43.5283967Z   include-hidden-files: false
+live	Upload the redacted report	2026-10-18T00:33:43.5284278Z   archive: true
+live	Upload the redacted report	2026-10-18T00:33:43.5284633Z env:
+live	Upload the redacted report	2026-10-18T00:33:43.5284937Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Upload the redacted report	2026-10-18T00:33:43.5285373Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+live	Upload the redacted report	2026-10-18T00:33:43.5285805Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Upload the redacted report	2026-10-18T00:33:43.5286232Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Upload the redacted report	2026-10-18T00:33:43.5286612Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Upload the redacted report	2026-10-18T00:33:43.5286994Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+live	Upload the redacted report	2026-10-18T00:33:43.5287429Z ##[endgroup]
+live	Upload the redacted report	2026-10-18T00:33:43.6444535Z With the provided path, there will be 1 file uploaded
+live	Upload the redacted report	2026-10-18T00:33:43.6458271Z Artifact name is valid!
+live	Upload the redacted report	2026-10-18T00:33:43.6458992Z Root directory input is valid!
+live	Upload the redacted report	2026-10-18T00:33:43.9001633Z Uploading artifact: r161-integration-report.zip
+live	Upload the redacted report	2026-10-18T00:33:43.9036811Z Beginning upload of artifact content to blob storage
+live	Upload the redacted report	2026-10-18T00:33:44.0852212Z Uploaded bytes 1034
+live	Upload the redacted report	2026-10-18T00:33:44.1286978Z Finished uploading artifact content to blob storage!
+live	Upload the redacted report	2026-10-18T00:33:44.1288290Z SHA256 digest of uploaded artifact is 68647dacc49ec004c4884baf21ee0625d0aa6936cafd92868af645cd9db216e9
+live	Upload the redacted report	2026-10-18T00:33:44.1289348Z Finalizing artifact upload
+live	Upload the redacted report	2026-10-18T00:33:44.4480035Z Artifact r161-integration-report successfully finalized. Artifact ID 12119114952
+live	Upload the redacted report	2026-10-18T00:33:44.4481112Z Artifact r161-integration-report has been successfully uploaded! Final size is 1034 bytes. Artifact ID is 12119114952
+live	Upload the redacted report	2026-10-18T00:33:44.4482363Z Artifact download URL: https://github.com/reeveero-tech/All-hand/actions/runs/39082180770/artifacts/12119114952
+live	Fail unless every requested target passed	﻿2026-10-18T00:33:44.4586817Z ##[group]Run rc=$(sed -n 's/^runner_rc=//p' r161_rc.txt)
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4587326Z ^[[36;1mrc=$(sed -n 's/^runner_rc=//p' r161_rc.txt)^[[0m
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4587807Z ^[[36;1mecho "runner exit code: ${rc:-missing} (0 PASS, 1 FAIL, 2 BLOCKED, 3 nothing ran)"^[[0m
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4588288Z ^[[36;1m[ "${rc:-1}" = "0" ]^[[0m
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4623928Z shell: /usr/bin/bash -e {0}
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4624294Z env:
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4625060Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4625519Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4626027Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4626443Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4626853Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4627283Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4627636Z ##[endgroup]
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4695178Z runner exit code: 1 (0 PASS, 1 FAIL, 2 BLOCKED, 3 nothing ran)
+live	Fail unless every requested target passed	2026-10-18T00:33:44.4706090Z ##[error]Process completed with exit code 1.
+live	Post Run actions/checkout@v7	﻿2026-10-18T00:33:44.4807699Z Post job cleanup.
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5530916Z [command]/usr/bin/git version
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5571266Z git version 2.55.0
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5612599Z Temporarily overriding HOME='/home/runner/work/_temp/9b5f68ad-44b1-4cca-8e9a-37c49529b4aa' before making global git config changes
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5613655Z Adding repository directory to the temporary git global config as a safe directory
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5617291Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5645470Z Removing SSH command configuration
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5651656Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5680657Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5885749Z Removing HTTP extra header
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5890442Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.5917178Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.6122884Z Removing includeIf entries pointing to credentials config files
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.6126445Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+live	Post Run actions/checkout@v7	2026-10-18T00:33:44.6150290Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+live	Complete job	﻿2026-10-18T00:33:44.6455582Z Cleaning up orphan processes
