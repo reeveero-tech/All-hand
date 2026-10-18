@@ -460,7 +460,7 @@ class SupabaseStorage:
         store failure — the caller must NOT run the task)."""
         rows = await self._queue_patch(
             "queue_claim",
-            {"task_id": f"eq.{task_id}", "status": "eq.queued", "limit": "1"},
+            {"task_id": f"eq.{task_id}", "status": "eq.queued"},
             {"status": "claimed", "claim_token": claim_token,
              "lease_expires_at": lease_expires_at},
         )
@@ -479,7 +479,7 @@ class SupabaseStorage:
         rows = await self._queue_patch(
             "queue_start",
             {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
-             "status": "eq.claimed", "limit": "1"},
+             "status": "eq.claimed"},
             {"status": "running", "attempts": int(attempts)},
         )
         return bool(rows) and str(rows[0].get("task_id")) == task_id
@@ -491,7 +491,7 @@ class SupabaseStorage:
         rows = await self._queue_patch(
             "queue_release",
             {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
-             "status": "eq.claimed", "limit": "1"},
+             "status": "eq.claimed"},
             {"status": to_status},
         )
         return bool(rows) and str(rows[0].get("task_id")) == task_id
@@ -503,7 +503,7 @@ class SupabaseStorage:
         rows = await self._queue_patch(
             "queue_renew",
             {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
-             "status": "in.(claimed,running)", "limit": "1"},
+             "status": "in.(claimed,running)"},
             {"lease_expires_at": lease_expires_at},
         )
         return bool(rows) and str(rows[0].get("task_id")) == task_id
@@ -529,7 +529,7 @@ class SupabaseStorage:
         rows = await self._queue_patch(
             "queue_finish",
             {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
-             "status": "in.(claimed,running)", "limit": "1"},
+             "status": "in.(claimed,running)"},
             body,
         )
         if rows is None:
@@ -545,8 +545,7 @@ class SupabaseStorage:
         ``lease_expired_before`` so a live lease is never stolen. Confirmed
         via ``return=representation`` (0 rows matched = False)."""
         filters: Dict[str, str] = {"task_id": f"eq.{task_id}",
-                                  "status": f"in.({','.join(from_statuses)})",
-                                  "limit": "1"}
+                                  "status": f"in.({','.join(from_statuses)})"}
         if lease_expired_before is not None:
             filters["lease_expires_at"] = f"lt.{lease_expired_before}"
         body: Dict[str, Any] = {"status": to_status, **fields}

@@ -103,6 +103,13 @@ class _PostgREST(BaseHTTPRequestHandler):
         if self.mode[0] == "reject":
             self._send(500)
             return
+        # PostgREST 12 (PGRST109): restricting an UPDATE with `limit` requires
+        # an explicit `order` on a unique column — emulate it so the unit suite
+        # catches this class of mistake without a live PostgREST.
+        if "limit" in q and not q.get("order", "").startswith("task_id"):
+            self._send(400, {"code": "PGRST109", "message":
+                             "limit on PATCH requires an order on a unique column"})
+            return
         patch = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         matched = self._matched(table, q)
         for r in matched:
