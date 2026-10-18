@@ -315,6 +315,14 @@
 - **مُعدلة لتطابق PostgREST** (`return=representation` ← 200 والصفوف، وإلا 204): fakes في `test_r149_security_qa_gaps.py` و`test_r159_telemetry.py` و`test_r161_live_integration.py` و`test_storage_payloads.py`. وفي R-149 صار التوقع الصادق: تحديث بلا صف = فشل `no row updated`.
 - **التوافق مع PostgREST الحقيقي**: job ‏`storage` في CI (PostgreSQL 17 + PostgREST 12.2.3، local_integration).
 
+## R-161f — ميزانية مسبار llm (D-078)
+- `tests/test_r161f_llm_probe_budget.py` (3، فئة mock، aiohttp على 127.0.0.1، fake يحاكي نموذجاً هجيناً ذا استدلال يعيد `content: null` إذا كانت الميزانية دون 64):
+  - المسبار يجتاز بميزانية العميل، وكل طلب يرسل `max_tokens` = القيمة الافتراضية لـ`LLMClient.complete`.
+  - الميزانية المرسلة هي افتراضي الإنتاج (≥ 256)، لا قيمة خاصة بالمسبار.
+  - عدم التخفيف: مزود يعيد إكمالاً فارغاً بأي ميزانية ← FAIL بـ`empty completion` و`connected=True`، ولا مفتاح في التقرير.
+- **قبل** (مشغل main): 2 فشل، يطابقان التشغيلين الحيين 39102435807 و39102564675. **بعد**: 3/3. **طفرات** 3/3 مقتولة (`max_tokens` = 16 و63 و64) (`133`).
+- **التحقق الحي**: لا يثبته هذا الاختبار. يثبته تشغيل live_integration بعد الدمج.
+
 ## R-161e — حارس مسبار R-082 وانحراف `PYTHON_VERSION` (D-077، Q-026)
 - `tests/test_r185_r082_probe_and_ops_drift.py` (5، فئة mock: fake PostgREST على 127.0.0.1 داخل المسبار، والسكربت الحقيقي في عملية جديدة ببيئة نظيفة):
   - المسبار يصل إلى التخزين (POST 202 / GET 200، وطلبات > 0 في المرحلتين 2/3) وانتقالات R-082: انقطاع ← degraded ‏(ClientConnectorError)، و401 ← degraded ‏(HTTP 401)، والتعافي ← healthy.

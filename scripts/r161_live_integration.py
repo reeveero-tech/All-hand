@@ -444,7 +444,11 @@ async def probe_llm(env: Dict[str, str], pf: Dict[str, Any], timeout_s: float) -
         if client.provider != "openrouter":                 # never the public keyless path
             res["reason"] = "client did not select the keyed provider"
             return res
-        r = await asyncio.wait_for(client.complete(PROBE_SYSTEM, PROBE_PROMPT, max_tokens=16), timeout_s)
+        # R-161f: no probe-specific budget — the client's own default, i.e.
+        # the production call shape. max_tokens=16 made hybrid reasoning
+        # models spend the budget on reasoning and answer content=null
+        # (live runs 39102435807 / 39102564675).
+        r = await asyncio.wait_for(client.complete(PROBE_SYSTEM, PROBE_PROMPT), timeout_s)
         try:
             C.validate("llm_result", r)
             checks.add("result matches llm_result v1", True)
