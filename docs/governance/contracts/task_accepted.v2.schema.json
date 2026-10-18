@@ -1,0 +1,43 @@
+{
+  "$id": "agos://contracts/task_accepted/v2",
+  "additionalProperties": false,
+  "description": "202 of POST /api/tasks — v2 (R-163, D-082).\n\nAn idempotent replay (same ``idempotency_key``) returns the task's CURRENT\npublic status — the task may already have progressed past ``queued`` — plus\n``duplicate: true``. A first creation keeps the v1 shape exactly (status\n``queued``, no ``duplicate``). ",
+  "properties": {
+    "duplicate": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Duplicate"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "completed",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "task_id": {
+      "pattern": "^[0-9a-f]{12}$",
+      "title": "Task Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_id",
+    "status"
+  ],
+  "title": "TaskAcceptedV2",
+  "type": "object",
+  "x-contract-version": 2,
+  "x-direction": "response",
+  "x-flow": "POST /api/tasks -> client"
+}

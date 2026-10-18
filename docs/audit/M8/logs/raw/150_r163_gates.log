@@ -1,0 +1,12 @@
+=== governance: status evidence ===
+::error::R-163: pr must look like #N, got '#PR_NUMBER'
+::error::Status evidence check failed: 1 violation(s) (D-066).
+csr_rc=1
+=== governance: no-delete ===
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 15, 'A': 9}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+cnd_rc=0
+=== governance: atomic batch v2 ===
+atomic-batch v2: 24 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+cab_rc=0

@@ -18,6 +18,20 @@
       "description": "Optional payload for tool-enabled specializations",
       "title": "Data"
     },
+    "idempotency_key": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Idempotency key: a duplicate request replays the same task",
+      "title": "Idempotency Key"
+    },
     "prompt": {
       "maxLength": 20000,
       "minLength": 1,

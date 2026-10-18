@@ -281,9 +281,9 @@
       "title": "TaskRecord",
       "type": "object"
     },
-    "TaskRow": {
+    "TaskRowV2": {
       "additionalProperties": false,
-      "description": "A ``tasks`` row as PostgREST returns it (docs/sql/001 + 002), i.e. a\nGET /api/tasks item with source=database. GET /api/tasks/{id} adds ``id``\n(= task_id) and ``source``.",
+      "description": "A ``tasks`` row as PostgREST returns it (docs/sql/001 + 002 + 003),\ni.e. a GET /api/tasks item with source=database. v2 (R-163, D-082): the\ndurable-queue columns are part of the row — all optional, because 001/002\nrows and the volatile mode never set them. GET /api/tasks/{id} adds ``id``\n(= task_id) and ``source``.",
       "properties": {
         "agent_name": {
           "anyOf": [
@@ -296,6 +296,30 @@
           ],
           "default": null,
           "title": "Agent Name"
+        },
+        "attempts": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempts"
+        },
+        "claim_token": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Claim Token"
         },
         "created_at": {
           "title": "Created At",
@@ -336,6 +360,55 @@
           ],
           "default": null,
           "title": "Id"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        },
+        "lease_expires_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lease Expires At"
+        },
+        "max_attempts": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Attempts"
+        },
+        "payload": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payload"
         },
         "prompt": {
           "anyOf": [
@@ -406,7 +479,7 @@
         "status",
         "created_at"
       ],
-      "title": "TaskRow",
+      "title": "TaskRowV2",
       "type": "object"
     }
   },
@@ -436,7 +509,7 @@
             "$ref": "#/$defs/ExecuteRecord"
           },
           {
-            "$ref": "#/$defs/TaskRow"
+            "$ref": "#/$defs/TaskRowV2"
           }
         ]
       },

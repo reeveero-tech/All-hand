@@ -1,0 +1,205 @@
+{
+  "$id": "agos://contracts/task_row/v2",
+  "additionalProperties": false,
+  "description": "A ``tasks`` row as PostgREST returns it (docs/sql/001 + 002 + 003),\ni.e. a GET /api/tasks item with source=database. v2 (R-163, D-082): the\ndurable-queue columns are part of the row — all optional, because 001/002\nrows and the volatile mode never set them. GET /api/tasks/{id} adds ``id``\n(= task_id) and ``source``.",
+  "properties": {
+    "agent_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Agent Name"
+    },
+    "attempts": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attempts"
+    },
+    "claim_token": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Claim Token"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "elapsed_s": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Elapsed S"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Id"
+    },
+    "idempotency_key": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Idempotency Key"
+    },
+    "lease_expires_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lease Expires At"
+    },
+    "max_attempts": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Max Attempts"
+    },
+    "payload": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Payload"
+    },
+    "prompt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prompt"
+    },
+    "result": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result"
+    },
+    "source": {
+      "anyOf": [
+        {
+          "const": "database",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source"
+    },
+    "specialization": {
+      "title": "Specialization",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "tenant_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tenant Id"
+    }
+  },
+  "required": [
+    "task_id",
+    "specialization",
+    "status",
+    "created_at"
+  ],
+  "title": "TaskRowV2",
+  "type": "object",
+  "x-contract-version": 2,
+  "x-direction": "response+storage",
+  "x-flow": "PostgREST tasks row -> API -> client"
+}

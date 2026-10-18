@@ -48,6 +48,7 @@ from agent_civilization.agents.external_adapter import (
 )
 from agent_civilization.core import experience, safety, telemetry, tenancy
 from agent_civilization.core import agent_registry
+from agent_civilization.core import task_queue
 from agent_civilization.core.tenancy import ALL_TENANTS, Principal
 from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
 from agent_civilization.routing import route as route_request
@@ -102,7 +103,9 @@ async def _lifespan(_app):
     R-078: classify the Supabase key at startup and warn loudly if it is a public one."""
     log_key_status()
     _start_registry_worker()  # R-162: a fresh worker after a previous shutdown
+    _start_queue_loops()  # R-163: durable dispatcher + reaper (storage configured)
     yield
+    _stop_queue_loops()  # R-163: no lease renewal after shutdown
     _stop_registry_worker()  # R-162: no lease outlives the worker
     await experience.persist()  # R-103: no-op unless AGOS_MEMORY_FILE is set
     await get_storage().close()
@@ -388,6 +391,23 @@ def _visible_task(task: Optional[Dict[str, Any]], scope) -> bool:
 STARTED_AT = time.time()
 MAX_TASKS_KEPT = 500
 
+# R-163 (D-082) — durable task queue configuration.
+# Lease: how long a claim owns a task before the reaper may recover it
+# (worker death). Renewal: the reaper extends live leases every reap pass.
+TASK_LEASE_S = max(1.0, float(os.environ.get("AGOS_TASK_LEASE_S", "60") or 60))
+TASK_REAP_S = max(0.1, float(os.environ.get("AGOS_TASK_REAP_S", "5") or 5))
+TASK_MAX_ATTEMPTS = agent_registry.positive_int_env("AGOS_TASK_MAX_ATTEMPTS", 3, 1, 100)
+TASK_DISPATCH_BATCH = agent_registry.positive_int_env("AGOS_TASK_DISPATCH_BATCH", 50, 1, 1000)
+TASK_DISPATCH_IDLE_S = max(0.05, float(os.environ.get("AGOS_TASK_DISPATCH_IDLE_S", "0.2") or 0.2))
+
+# R-163 (D-082): the durable queue is OPT-IN (precedent: AGOS_AGENT_IMPL,
+# D-037) — active only when storage is configured AND the operator explicitly
+# enables it. Default off keeps the volatile path (and its documented limits)
+# for every deployment that has not opted in; enabling it in production is an
+# owner decision (Q-026: no production setting changes without one).
+def _queue_enabled() -> bool:
+    return os.environ.get("AGOS_TASK_QUEUE", "0") == "1" and supabase_configured()
+
 # BUG-05 (R-147): the startup log used to report specializations * a hardcoded
 # 50 ("1000 agents total") even though AGENTS_PER_SPEC has controlled the actual
 # count since R-041 (R-041/D-029).  The logged count is now the ACTUAL sum of
@@ -434,19 +454,41 @@ _BACKGROUND_TASKS: set = set()
 
 TERMINAL_TASK_STATES = ("completed", "failed")
 
+# R-163 (D-082): internal queue state per task — NEVER served on the API (the
+# public record keeps its four-value status vocabulary; task_queue maps).
+# state: task_queue.TaskState value; claim_token: the storage fence; attempts:
+# executions that reached running; max_attempts: bound before dead-letter.
+_QUEUE_STATE: Dict[str, Dict[str, Any]] = {}
+
+# R-163: durable runs keyed by task_id (cancel needs the asyncio handle).
+_RUNNING_RUNS: Dict[str, asyncio.Task] = {}
+
+# R-163: idempotency for the volatile mode (no storage): (tenant, key) -> id.
+# Durable mode relies on the storage unique index instead.
+_VOLATILE_IDEMPOTENT: Dict[tuple, str] = {}
+
+# R-163: dispatcher/reaper loops (durable mode only) and their stop flag.
+_QUEUE_LOOPS: List[asyncio.Task] = []
+_QUEUE_STOP = False
+
 
 def _end_unfinished(task_id: str, specialization: str, reason: str) -> None:
     """R-160: a task record never stays queued/running after its run exits —
     on cancellation (shutdown) or an unexpected error it ends ``failed`` with a
-    FIXED reason (no exception text). Synchronous on purpose: it must also work
+    FIXED reason (no exception text). R-163: when the record was already moved
+    to ``cancelled`` by the cancel endpoint, the outcome says "cancelled".
+    Synchronous on purpose: it must also work
     while the loop is cancelling. Only the memory record and the in-process SSE
     bus are updated; a storage row already written as ``running`` is not
     rewritten here (no await during cancellation) — documented gap G-160-2."""
     rec = TASKS.get(task_id)
     if rec is None or rec.get("status") in TERMINAL_TASK_STATES:
         return
-    outcome = {"ok": False, "agent": rec.get("agent"), "specialization": specialization,
-               "elapsed_s": 0, "result": {"error": reason}}
+    prior = rec.get("result") if isinstance(rec.get("result"), dict) else None
+    cancelled = bool(prior) and isinstance(prior.get("result"), dict) \
+        and prior["result"].get("error") == "cancelled"
+    outcome = prior if cancelled else {"ok": False, "agent": rec.get("agent"), "specialization": specialization,
+                                      "elapsed_s": 0, "result": {"error": reason}}
     rec.update(status="failed", result=outcome, finished_at=time.time())
     tenant_id = rec.get("tenant_id")
     if tenant_id is not None:
@@ -568,6 +610,341 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
     })
 
 
+# ============================================================================
+# R-163 (D-082) — DURABLE TASK QUEUE: dispatcher, reaper, fenced execution
+# ============================================================================
+# Only active when storage is configured (durable mode). Without storage the
+# volatile path above is unchanged and its limits are documented (no restart
+# recovery without a durable store — see OPERATIONS.md).
+
+_QUEUE_BACKOFF: Dict[str, float] = {}
+
+
+def _lease_deadline() -> str:
+    return (datetime.now(timezone.utc) + timedelta(seconds=TASK_LEASE_S)).isoformat(timespec="seconds")
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _release_registry_lease(task_id: str) -> None:
+    """R-162: the registry lease ends with the run, whatever its outcome."""
+    if AGENT_REGISTRY.lease(task_id) is not None:
+        AGENT_REGISTRY.release(task_id)
+
+
+def _rebuild_task_record(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure the in-memory record exists for a durable task — rebuilt from
+    the storage row after a restart or a claim of a task whose creator's
+    process is gone. The served ``status`` is the public mapping (D-082)."""
+    tid = str(row.get("task_id"))
+    if tid in TASKS:
+        return TASKS[tid]
+    created = row.get("created_at")
+    try:
+        created_s = datetime.fromisoformat(str(created)).timestamp() if created else time.time()
+    except ValueError:
+        created_s = time.time()
+    rec = TASKS.setdefault(tid, {
+        "id": tid,
+        "specialization": row.get("specialization"),
+        "prompt": (row.get("prompt") or "")[:500],
+        "status": task_queue.public_status(row.get("status") or "queued"),
+        "created_at": created_s,
+        "result": row.get("result"),
+        "tenant_id": row.get("tenant_id"),
+    })
+    _prune_tasks()
+    return rec
+
+
+async def _finish_durable(task_id: str, specialization: str, claim_token: str,
+                          outcome: Dict[str, Any], sp, agent=None) -> None:
+    """End a durable task: memory record first (visible even if the store is
+    down), then the FENCED storage write (only the claim owner can end it),
+    then events/SSE — and a bounded reconciliation retry when the store itself
+    failed (no silent loss: the record stays terminal in memory and the write
+    is retried before the lease is given up)."""
+    rec = TASKS.get(task_id)
+    status = "completed" if outcome.get("ok") else "failed"
+    if rec is not None:
+        rec.update(status=status, result=outcome, finished_at=time.time())
+    sp.set(outcome="ok" if outcome.get("ok") else "fail")
+    storage = get_storage()
+    confirmed = await storage.finish_task(task_id, claim_token, status,
+                                          agent_name=agent.name if agent is not None else None,
+                                          result=outcome, elapsed_s=outcome.get("elapsed_s", 0))
+    if confirmed is None:
+        # store failure (not a lost claim): reconcile with bounded retries —
+        # while the lease is ours the reaper will not recover the row
+        for _ in range(3):
+            await asyncio.sleep(0.5)
+            confirmed = await storage.finish_task(task_id, claim_token, status,
+                                                  agent_name=agent.name if agent is not None else None,
+                                                  result=outcome, elapsed_s=outcome.get("elapsed_s", 0))
+            if confirmed is not False:
+                break
+    _QUEUE_STATE.pop(task_id, None)
+    if confirmed is not True:
+        # 0 rows matched: the claim is not ours anymore (recovered/cancelled)
+        # — a late result is discarded, never resurrected (R-162 semantics)
+        logger.warning("Task %s result discarded: claim no longer held", task_id)
+        sp.set(outcome="orphaned")
+        return
+    if agent is not None:
+        await storage.upsert_agent_stats(
+            agent.name, specialization,
+            agent.stats["tasks_completed"], agent.stats["tasks_failed"], agent.stats["total_time_s"]
+        )
+    tenant_id = rec.get("tenant_id") if rec is not None else None
+    await storage.insert_event("task_completed", {
+        "task_id": task_id, "agent": agent.name if agent is not None else None,
+        "specialization": specialization, "ok": bool(outcome.get("ok"))
+    }, tenant_id=tenant_id)
+    if tenant_id is not None:
+        await _publish(tenant_id, {
+            "type": "task_completed", "task_id": task_id,
+            "agent": agent.name if agent is not None else None,
+            "specialization": specialization, "ok": bool(outcome.get("ok")),
+            "elapsed_s": outcome.get("elapsed_s", 0),
+        })
+
+
+async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt: str,
+                                  data: Any, claim_token: str) -> None:
+    """The durable execution path (R-163). Differences from the volatile path:
+
+    - SEC-06: the dispatcher's context carries NO request consent — the
+      original request's ``allow_public_llm`` does not survive into it, so an
+      agent needing the public (keyless) LLM fails closed with the fixed
+      no-consent reason (documented D-082 limit: recovered/re-dispatched tasks
+      never resurrect consent).
+    - The storage row is the fenced source of truth: claimed -> running
+      (attempt counted) -> terminal, all conditional on the claim token.
+    - Registry saturation gives the claim back (queued, no attempt) instead
+      of failing the task — the dispatcher retries when capacity frees.
+    """
+    info = _QUEUE_STATE.get(task_id) or {}
+    rec = TASKS.get(task_id)
+    tenant_id = info.get("tenant_id") or (rec or {}).get("tenant_id")
+    if tenant_id is None:
+        sp.set(outcome="fail")
+        return
+    tenancy.set_tenant(tenant_id)
+    storage = get_storage()
+    attempts = int(info.get("attempts") or 0) + 1
+    if not await storage.start_task(task_id, claim_token, attempts):
+        # the claim is gone (recovered/cancelled) or the store is down — the
+        # task must NOT run: the reaper/owner will decide its fate
+        logger.warning("Task %s not started: claim not held", task_id)
+        _QUEUE_STATE.pop(task_id, None)
+        sp.set(outcome="orphaned")
+        return
+    info["state"], info["attempts"] = "running", attempts
+    if rec is not None:
+        rec["status"] = "running"
+    try:
+        agent = _pick_agent(specialization)
+    except HTTPException as e:
+        reason = NO_EXTERNAL_AGENT if specialization == "external" else str(e.detail)
+        await _finish_durable(task_id, specialization, claim_token,
+                              {"ok": False, "agent": None, "specialization": specialization,
+                               "elapsed_s": 0, "result": {"error": reason}}, sp, agent=None)
+        return
+    try:
+        _start_registry_worker()
+        AGENT_REGISTRY.heartbeat(WORKER_ID)
+        AGENT_REGISTRY.acquire(task_id, _ensure_identity(agent, specialization), worker_id=WORKER_ID)
+    except agent_registry.RegistryError as e:
+        if isinstance(e, agent_registry.Saturated):
+            # capacity: give the claim back without consuming an attempt —
+            # the task stays queued and is retried when capacity frees
+            _QUEUE_BACKOFF[task_id] = time.time() + 2.0
+            await storage.release_task(task_id, claim_token, "queued")
+            _QUEUE_STATE.pop(task_id, None)
+            if rec is not None:
+                rec["status"] = "queued"
+            sp.set(outcome="deferred")
+            return
+        await _finish_durable(task_id, specialization, claim_token,
+                              {"ok": False, "agent": None, "specialization": specialization,
+                               "elapsed_s": 0, "result": {"error": "worker not available"}}, sp, agent=None)
+        return
+    if rec is not None:
+        rec["agent"] = agent.name
+    await _publish(tenant_id, {"type": "task_started", "task_id": task_id, "agent": agent.name,
+                               "specialization": specialization})
+    outcome = await agent.execute({"prompt": prompt, "data": data})
+    if (TASKS.get(task_id) or {}).get("status") in TERMINAL_TASK_STATES \
+            or AGENT_REGISTRY.lease(task_id) is None:
+        logger.warning("Task %s late result discarded: its lease had ended", task_id)
+        sp.set(outcome="orphaned")
+        return
+    await _finish_durable(task_id, specialization, claim_token, outcome, sp, agent=agent)
+
+
+async def _run_task_durable(task_id: str, specialization: str, prompt: str,
+                           data: Any, claim_token: str) -> None:
+    telemetry.bind_task(task_id)
+    try:
+        with telemetry.span("task", "run", specialization=specialization) as sp:
+            await _run_task_durable_traced(sp, task_id, specialization, prompt, data, claim_token)
+    except asyncio.CancelledError:
+        # the run was cancelled (endpoint or shutdown): the caller already
+        # moved the record and the row to cancelled — only release the lease
+        rec = TASKS.get(task_id)
+        if rec is not None and rec.get("status") not in TERMINAL_TASK_STATES:
+            rec.update(status="failed", result=task_queue.cancelled_outcome(rec.get("agent"), specialization),
+                       finished_at=time.time())
+        raise
+    except Exception as e:  # noqa: BLE001 — the run must end the record, not vanish
+        logger.error("Task %s durable run failed: %s", task_id, type(e).__name__)
+        rec = TASKS.get(task_id)
+        if rec is not None and rec.get("status") not in TERMINAL_TASK_STATES:
+            rec.update(status="failed",
+                       result={"ok": False, "agent": rec.get("agent"), "specialization": specialization,
+                               "elapsed_s": 0, "result": {"error": "task failed: internal error"}},
+                       finished_at=time.time())
+    finally:
+        _RUNNING_RUNS.pop(task_id, None)
+        _release_registry_lease(task_id)
+        _registry_metrics()
+
+
+async def _queue_dispatcher() -> None:
+    """Claims queued rows (fair across tenants: fewest in-flight first, oldest
+    within a tenant) and runs them. Durable mode only."""
+    storage = get_storage()
+    logger.info("R-163 durable queue dispatcher started (lease=%ss, reap=%ss)", TASK_LEASE_S, TASK_REAP_S)
+    while not _QUEUE_STOP:
+        try:
+            if len(_RUNNING_RUNS) >= WORKER_CAPACITY:
+                await asyncio.sleep(TASK_DISPATCH_IDLE_S)
+                continue
+            rows = await storage.list_queued_tasks(TASK_DISPATCH_BATCH)
+        except Exception as e:  # noqa: BLE001 — a failed scan must not kill the loop
+            logger.warning("queue dispatcher scan failed: %s", type(e).__name__)
+            rows = None
+        if not rows:
+            await asyncio.sleep(TASK_DISPATCH_IDLE_S)
+            continue
+        inflight: Dict[str, int] = defaultdict(int)
+        for info in _QUEUE_STATE.values():
+            if info.get("state") in ("claimed", "running"):
+                inflight[str(info.get("tenant_id"))] = inflight.get(str(info.get("tenant_id")), 0) + 1
+        now = time.time()
+        for row in sorted(rows, key=lambda r: (inflight.get(str(r.get("tenant_id")), 0),
+                                              str(r.get("created_at") or ""))):
+            if _QUEUE_STOP:
+                break
+            tid = str(row.get("task_id"))
+            if tid in _RUNNING_RUNS or _QUEUE_BACKOFF.get(tid, 0) > now:
+                continue
+            if _QUEUE_STATE.get(tid, {}).get("state") in ("claimed", "running"):
+                continue
+            token = uuid.uuid4().hex
+            try:
+                claimed = await storage.claim_task(tid, token, _lease_deadline())
+            except Exception as e:  # noqa: BLE001
+                logger.warning("claim of %s failed: %s", tid, type(e).__name__)
+                claimed = None
+            if claimed is None:
+                continue
+            _QUEUE_STATE[tid] = {
+                "task_id": tid, "tenant_id": claimed.get("tenant_id"),
+                "state": "claimed", "claim_token": token,
+                "attempts": int(claimed.get("attempts") or 0),
+                "max_attempts": int(claimed.get("max_attempts") or TASK_MAX_ATTEMPTS),
+            }
+            _rebuild_task_record(claimed)
+            run = asyncio.create_task(_run_task_durable(tid, str(claimed.get("specialization")),
+                                                        str(claimed.get("prompt") or ""),
+                                                        claimed.get("payload"), token))
+            _RUNNING_RUNS[tid] = run
+            _BACKGROUND_TASKS.add(run)  # R-160: keep a strong reference
+            run.add_done_callback(_BACKGROUND_TASKS.discard)
+            run.add_done_callback(lambda _r, tid=tid: _RUNNING_RUNS.pop(tid, None))
+            inflight[str(claimed.get("tenant_id"))] = inflight.get(str(claimed.get("tenant_id")), 0) + 1
+
+
+async def _queue_reaper() -> None:
+    """Renews the lease of every live run (heartbeat) and recovers rows whose
+    lease expired (worker death / restart): claimed/running -> retrying ->
+    queued, or dead-letter once the attempts budget is exhausted."""
+    storage = get_storage()
+    logger.info("R-163 durable queue reaper started")
+    while not _QUEUE_STOP:
+        try:
+            for tid, info in list(_QUEUE_STATE.items()):
+                if tid in _RUNNING_RUNS and info.get("state") in ("claimed", "running"):
+                    try:
+                        await storage.renew_task_lease(tid, str(info.get("claim_token")), _lease_deadline())
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning("lease renewal of %s failed: %s", tid, type(e).__name__)
+            now_iso = _now_iso()
+            rows = await storage.list_expired_lease_tasks(TASK_DISPATCH_BATCH)
+            for row in rows or []:
+                tid = str(row.get("task_id"))
+                if tid in _RUNNING_RUNS:
+                    continue  # live here and renewed above — never steal
+                attempts = int(row.get("attempts") or 0)
+                max_attempts = int(row.get("max_attempts") or TASK_MAX_ATTEMPTS)
+                if not await storage.transition_task(tid, ("claimed", "running"), "retrying",
+                                                     lease_expired_before=now_iso):
+                    continue
+                after = task_queue.outcome_after_expiry(attempts, max_attempts)
+                rec = TASKS.get(tid)
+                outcome = task_queue.dead_letter_outcome(
+                    rec.get("agent") if rec else None,
+                    str(row.get("specialization") or ""), attempts, max_attempts)
+                if after is task_queue.TaskState.DEAD_LETTER:
+                    moved = await storage.transition_task(tid, ("retrying",), "dead_letter",
+                                                          result=outcome, elapsed_s=0)
+                else:
+                    moved = await storage.transition_task(tid, ("retrying",), "queued")
+                if not moved:
+                    continue
+                _QUEUE_STATE.pop(tid, None)
+                if rec is not None and rec.get("status") not in TERMINAL_TASK_STATES:
+                    if after is task_queue.TaskState.DEAD_LETTER:
+                        rec.update(status="failed", result=outcome, finished_at=time.time())
+                    else:
+                        rec.update(status="queued", result=None, finished_at=None)
+                if after is task_queue.TaskState.DEAD_LETTER:
+                    tenant_id = row.get("tenant_id")
+                    if tenant_id is not None:
+                        await storage.insert_event("task_completed", {
+                            "task_id": tid, "agent": None,
+                            "specialization": row.get("specialization"), "ok": False,
+                        }, tenant_id=tenant_id)
+                        await _publish(tenant_id, {"type": "task_completed", "task_id": tid,
+                                                   "agent": None, "specialization": row.get("specialization"),
+                                                   "ok": False, "elapsed_s": 0})
+        except Exception as e:  # noqa: BLE001 — a failed pass must not kill the loop
+            logger.warning("queue reaper pass failed: %s", type(e).__name__)
+        await asyncio.sleep(TASK_REAP_S)
+
+
+def _start_queue_loops() -> None:
+    """Durable mode: dispatcher + reaper, and one immediate recovery pass is
+    simply the reaper's first pass (expired leases from a dead process)."""
+    global _QUEUE_STOP
+    if not _queue_enabled() or _QUEUE_LOOPS:
+        return
+    _QUEUE_STOP = False
+    _QUEUE_LOOPS.append(asyncio.create_task(_queue_dispatcher()))
+    _QUEUE_LOOPS.append(asyncio.create_task(_queue_reaper()))
+
+
+def _stop_queue_loops() -> None:
+    global _QUEUE_STOP
+    _QUEUE_STOP = True
+    for loop in _QUEUE_LOOPS:
+        loop.cancel()
+    _QUEUE_LOOPS.clear()
+
+
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
@@ -581,6 +958,11 @@ class TaskRequest(BaseModel):
     # the prompt text, the API key or the operator's AGOS_LLM_KEYLESS.
     allow_public_llm: bool = Field(False, strict=True,
                                   description="Consent to send this request's text to the external public LLM provider")
+    # R-163 (D-082): optional idempotency key — one task per (tenant, key). A
+    # duplicate POST with the same key replays the existing task (no second
+    # run, no second side effect). Max 128 chars; ignored when empty.
+    idempotency_key: Optional[str] = Field(None, max_length=128,
+                                           description="Idempotency key: a duplicate request replays the same task")
 
 
 class ChatRequest(BaseModel):
@@ -851,6 +1233,69 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
         # task_id, TASKS record, storage write, event, SSE or background run.
         raise HTTPException(409, NO_EXTERNAL_AGENT)
     task_id = uuid.uuid4().hex[:12]
+    # R-163 (D-082) — durable mode: the storage row is the source of truth. The
+    # task is persisted BEFORE it is accepted (503 when the store is down: no
+    # silent loss — an unaccepted task has no side effect at all), and the
+    # dispatcher (not this request) claims and runs it. The request's consent
+    # context does NOT follow the task into the dispatcher (SEC-06 fail-closed,
+    # D-082): a durable run that needs the public LLM fails with the fixed
+    # no-consent reason instead of resurrecting consent.
+    if supabase_configured() and _queue_enabled():
+        storage = get_storage()
+        idem = (req.idempotency_key or "").strip() or None
+        if idem is not None:
+            existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
+            if existing is not None:
+                # idempotent replay: the SAME task, its CURRENT public status,
+                # and no second run or side effect
+                _rebuild_task_record(existing)
+                return {"task_id": str(existing.get("task_id")),
+                        "status": task_queue.public_status(existing.get("status") or "queued"),
+                        "duplicate": True}
+        persisted = await storage.insert_task(
+            task_id, req.specialization, req.prompt, "queued",
+            tenant_id=principal.tenant_id, payload=req.data,
+            idempotency_key=idem, max_attempts=TASK_MAX_ATTEMPTS)
+        if not persisted:
+            # the unique (tenant, key) index may have raced us: replay it
+            if idem is not None:
+                existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
+                if existing is not None:
+                    _rebuild_task_record(existing)
+                    return {"task_id": str(existing.get("task_id")),
+                            "status": task_queue.public_status(existing.get("status") or "queued"),
+                            "duplicate": True}
+            raise HTTPException(503, "storage unavailable: the task was not accepted")
+        TASKS[task_id] = {
+            "id": task_id,
+            "specialization": req.specialization,
+            "prompt": req.prompt[:500],
+            "status": "queued",
+            "created_at": time.time(),
+            "result": None,
+            "tenant_id": principal.tenant_id,
+        }
+        _QUEUE_STATE[task_id] = {"task_id": task_id, "tenant_id": principal.tenant_id,
+                                "state": "queued", "claim_token": None,
+                                "attempts": 0, "max_attempts": TASK_MAX_ATTEMPTS}
+        _prune_tasks()
+        telemetry.bind_task(task_id)
+        telemetry.event("task", "queued", specialization=req.specialization)
+        await storage.insert_event("task_created", {"task_id": task_id, "specialization": req.specialization},
+                                   tenant_id=principal.tenant_id)
+        await _publish(principal.tenant_id, {"type": "task_created", "task_id": task_id,
+                                             "specialization": req.specialization})
+        logger.info(f"Task created: {task_id} for specialization: {req.specialization} (durable)")
+        return {"task_id": task_id, "status": "queued"}
+    # volatile mode (no storage): the pre-R-163 behaviour — direct execution,
+    # the request's consent follows the run, and restart recovery is not
+    # possible (documented limit, OPERATIONS.md). Idempotency is in-memory.
+    idem = (req.idempotency_key or "").strip() or None
+    if idem is not None:
+        replay = _VOLATILE_IDEMPOTENT.get((principal.tenant_id, idem))
+        if replay is not None and replay in TASKS:
+            return {"task_id": replay, "status": TASKS[replay]["status"], "duplicate": True}
+        _VOLATILE_IDEMPOTENT[(principal.tenant_id, idem)] = task_id
     TASKS[task_id] = {
         "id": task_id,
         "specialization": req.specialization,
@@ -894,6 +1339,10 @@ async def list_tasks(request: Request, limit: int = 50, all_tenants: bool = Fals
     if supabase_configured():
         db_tasks = await storage.get_tasks(limit=limit, scope=scope)
         if db_tasks:
+            # R-163: serve the public status mapping for internal queue states
+            for row in db_tasks:
+                if row.get("status") not in ("queued", "running", "completed", "failed"):
+                    row["status"] = task_queue.public_status(row.get("status") or "queued")
             return {"count": len(db_tasks), "tasks": db_tasks, "source": "database"}
     mine = [t for t in TASKS.values() if _visible_task(t, scope)]
     items = sorted(mine, key=lambda t: t["created_at"], reverse=True)[: min(limit, 200)]
@@ -920,9 +1369,71 @@ async def get_task(request: Request, task_id: str, all_tenants: bool = False,
         row = await get_storage().get_task(task_id, scope=scope)
         if row is not None:
             # the stored row as is, plus ``id`` (= task_id, the memory record's
-            # key) and ``source`` — no other field is added or invented
+            # key) and ``source`` — no other field is added or invented.
+            # R-163: internal queue states (claimed/retrying/...) are served
+            # through the public mapping (D-082) — the API vocabulary is intact
+            row = dict(row)
+            if row.get("status") not in ("queued", "running", "completed", "failed"):
+                row["status"] = task_queue.public_status(row.get("status") or "queued")
             return {**row, "id": row["task_id"], "source": "database"}
     raise HTTPException(404, "task not found")
+
+
+@app.post("/api/tasks/{task_id}/cancel")
+@rate_limit
+async def cancel_task(request: Request, task_id: str,
+                      api_key: Optional[str] = Security(api_key_header)):
+    """R-163: cancel a task of the caller's tenant (SEC-02: another tenant's
+    task answers exactly like a missing one — 404). Terminal tasks answer 409
+    (the record is kept as it ended). Non-terminal: the record and the durable
+    row move to ``cancelled`` (served as ``failed`` with result error
+    "cancelled" — D-082 public mapping), a live run is cancelled, and the fenced
+    write guarantees a late result can never resurrect it."""
+    principal = require_principal(api_key)
+    scope = principal.tenant_id  # never all_tenants: no admin cross-tenant cancel
+    rec = TASKS.get(task_id)
+    row = None
+    if rec is not None and not _visible_task(rec, scope):
+        # SEC-02: another tenant's task answers exactly like a missing one
+        raise HTTPException(404, "task not found")
+    if rec is None and supabase_configured():
+        row = await get_storage().get_task(task_id, scope=scope)
+    if rec is None and row is None:
+        raise HTTPException(404, "task not found")
+    current = (rec or row or {}).get("status")
+    try:
+        internal = task_queue.state(current)
+    except ValueError:
+        internal = task_queue.TaskState.QUEUED  # unknown status: treat as pending
+    if task_queue.is_terminal(internal):
+        raise HTTPException(409, f"task already finished: {task_queue.public_status(internal)}")
+    storage = get_storage()
+    if supabase_configured():
+        moved = await storage.transition_task(
+            task_id, ("accepted", "queued", "claimed", "running", "waiting", "retrying"),
+            "cancelled")
+        if not moved:
+            # someone else finished/recovered it between the read and this write
+            raise HTTPException(409, "task already finished")
+    if rec is None:
+        rec = _rebuild_task_record(row or {"task_id": task_id, "status": "cancelled",
+                                           "tenant_id": scope})
+    outcome = task_queue.cancelled_outcome(rec.get("agent"), rec.get("specialization") or "")
+    rec.update(status="failed", result=outcome, finished_at=time.time())
+    _QUEUE_STATE.pop(task_id, None)
+    run = _RUNNING_RUNS.get(task_id)
+    if run is not None and not run.done():
+        run.cancel()  # its result is discarded: the row is terminal now
+    tenant_id = rec.get("tenant_id")
+    if tenant_id is not None:
+        await storage.insert_event("task_completed", {
+            "task_id": task_id, "agent": rec.get("agent"),
+            "specialization": rec.get("specialization"), "ok": False,
+        }, tenant_id=tenant_id)
+        await _publish(tenant_id, {"type": "task_completed", "task_id": task_id,
+                                  "agent": rec.get("agent"), "specialization": rec.get("specialization"),
+                                  "ok": False, "elapsed_s": 0})
+    return {"task_id": task_id, "status": "failed", "cancelled": True, "result": outcome}
 
 
 @app.get("/api/memory")
