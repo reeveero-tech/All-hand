@@ -691,3 +691,17 @@
 
 ### الحزمة والبوابات (`137`)
 - 1387 passed, 4 skipped, 4 deselected بالوضعين على 3.11.15 و3.12.13 (= 1384 + 3).
+
+## R-161g — قبول R-161 (`done`، D-079، 2026-10-18)
+الفرع `m8/r161g-acceptance`، والأساس main ‏`ecbbf45`. لا تغيير في الكود.
+- **R-161f مدموجة**: PR #180، وSHA الدمج `ecbbf456a3b4f78606b385e73ebcb213789bac92`، والمختبر `2d9b0f3a61626910d22277ccd7759b0b574bcbc0`. CI الـPR ‏39104780707 وgovernance ‏39104780530 ناجحان. CI main ‏39105405500 ‏success بكل وظائفه (publish متخطى، D-011)، و1387 passed, 4 skipped, 4 deselected في خطوات test الثلاث (`138`).
+- **التشغيل الحي للقبول** 39105410408 (`139`، سجل الوظيفتين حرفياً):
+  - live_integration PASS=3:
+    - storage: تسعة فحوص، و`cleanup=ok`.
+    - llm: ‏`liquid/lfm-2.5-2.6b:free`.
+    - external: ‏`openrouter/free`.
+  - mcp ‏NOT_RUN، و`simulated=False`، و`exit_code=0`، و«no secret value present».
+  - الموافقة مسجلة باسم reeveero-tech، بتعليق صريح.
+- **Supabase بعد التشغيل**: الجداول 0/0/0. سجلات edge المستوعبة 8 من 11 طلباً. الغائبة PATCH، وGET events، وDELETE events، وسُجّلت قيداً كما هي.
+- **الأسرار** (`140`): حذف ثلاثة أسرار (204 لكلٍّ منها)، والعدد الآن 0. المفاتيح ما زالت صالحة لدى المزودين بقرار المالك «لا تُبطل الآن» (Q-027).
+- **الحالة**: R-161 ‏`done`. فحص الحالة والحوكمة في `141`.

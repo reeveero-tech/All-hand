@@ -1,0 +1,25 @@
+# 138 R-161 acceptance — PR #180 merged, main CI on the merge SHA (2026-10-18T07:00:08Z)
+$ gh pr view 180 --json state,mergedAt,mergeCommit,headRefOid
+{"head":"2d9b0f3a61626910d22277ccd7759b0b574bcbc0","merge":"ecbbf456a3b4f78606b385e73ebcb213789bac92","mergedAt":"2026-10-18T06:49:27Z","state":"MERGED"}
+$ git log -1 --format="%H %P %s" ecbbf45
+ecbbf456a3b4f78606b385e73ebcb213789bac92 d8068b5197e3dc903250a3ee6a696c5a133cf981 2d9b0f3a61626910d22277ccd7759b0b574bcbc0 Merge pull request #180 from reeveero-tech/m8/r161f-live-run-llm-probe-budget
+merge_sha=ecbbf456a3b4f78606b385e73ebcb213789bac92 tested_sha(second parent)=2d9b0f3a61626910d22277ccd7759b0b574bcbc0
+PR CI: AGOS Kernel CI/CD 39104780707 success (quality, test, network, storage, build, audit, docker; publish skipped D-011); governance 39104780530 success
+$ gh api repos/reeveero-tech/All-hand/actions/runs/39105405500 (AGOS Kernel CI/CD on main, head ecbbf456a3b4f78606b385e73ebcb213789bac92)
+status=completed conclusion=success
+  job test: success
+  job quality: success
+  job network: success
+  job docker: success
+  job storage: success
+  job build: success
+  job audit: success
+  job publish: skipped
+## pytest summaries in job test (117610045307), verbatim:
+2026-10-18T06:52:49.5438241Z ========== 1387 passed, 4 skipped, 4 deselected in 178.91s (0:02:58) ===========
+2026-10-18T06:52:50.6229936Z Python 3.12.15
+2026-10-18T06:55:43.6249174Z ========== 1387 passed, 4 skipped, 4 deselected in 164.21s (0:02:44) ===========
+2026-10-18T06:58:43.7012791Z ========== 1387 passed, 4 skipped, 4 deselected in 175.60s (0:02:55) ===========
+## job storage: tests/test_r042_live_storage.py 4 passed (PostgreSQL+PostgREST local in CI) + runner storage PASS class=local_integration
+## job network: 4 passed, 1391 deselected
+## live integration acceptance run: 39105410408 (see 139) — conclusion success
