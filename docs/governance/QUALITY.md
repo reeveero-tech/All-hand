@@ -314,3 +314,12 @@
 - **قبل الإصلاح** (كود main): 9 فشل و7 نجاح. **بعده**: 16/16 (`127`).
 - **مُعدلة لتطابق PostgREST** (`return=representation` ← 200 والصفوف، وإلا 204): fakes في `test_r149_security_qa_gaps.py` و`test_r159_telemetry.py` و`test_r161_live_integration.py` و`test_storage_payloads.py`. وفي R-149 صار التوقع الصادق: تحديث بلا صف = فشل `no row updated`.
 - **التوافق مع PostgREST الحقيقي**: job ‏`storage` في CI (PostgreSQL 17 + PostgREST 12.2.3، local_integration).
+
+## R-161d — اختبارات تعريف `connected` للتخزين (D-076، G-161-7)
+- `tests/test_r161d_storage_connected.py` (10، فئة mock، aiohttp على 127.0.0.1، يعيد استخدام fakes ‏`test_r161_live_integration.py`):
+  - شكل 39082180770 (مخطط 001 بلا 002: 400 لكل طلب يذكر `tenant_id`، والتنظيف `DELETE events -> HTTP 400`) ← `FAIL` و`connected=True`.
+  - رفض المصادقة 401، والإجابة المشوهة ← `connected=True`.
+  - إجابة التنظيف وحدها (الخطوات بلا إجابة)، وإجابات الخطوات وحدها (التنظيف بلا إجابة) ← `connected=True`.
+  - الاتصال المرفوض، والمهلة بلا أي إجابة ← `connected=False`.
+  - عدم الانحدار: الفحص الناجح ما زال PASS و`connected=True`؛ المراقب يُزال بعد الفحص؛ لا جسم ولا مفتاح في التقرير.
+- **قبل الإصلاح** (مشغل main): 4 فشل و6 نجاح. **بعده**: 10/10، و121/121 مع كل اختبارات R-161. **طفرات**: 4/4 مقتولة (المراقب، إجابة التنظيف، إعادة الأصل، احتساب الاستثناءات) (`128`).

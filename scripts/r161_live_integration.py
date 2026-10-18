@@ -265,6 +265,12 @@ async def _public_dns_check(url: str) -> Optional[str]:
         return f"endpoint check failed: {type(e).__name__}"
 
 
+# R-161d: fixed reasons of supabase_store that prove an HTTP answer, and the
+# cleanup's own "<METHOD|verify> <table> -> HTTP NNN" detail.
+_STORE_ANSWER_RE = re.compile(r"^(HTTP \d{3}|malformed response|no row updated)$")
+_CLEANUP_ANSWER_RE = re.compile(r"-> HTTP \d{3}$")
+
+
 class _StorageCleanup:
     """Deletes ONLY the rows of this run: tenant_id = the run's unique
     synthetic tenant (never a shared filter). Verifies nothing is left."""
@@ -319,6 +325,20 @@ async def probe_storage(env: Dict[str, str], pf: Dict[str, Any], timeout_s: floa
     checks = _Checks()
     saved = (st.SUPABASE_URL, st.SUPABASE_KEY, st.SUPABASE_KEY_SOURCE)
     st.SUPABASE_URL, st.SUPABASE_KEY, st.SUPABASE_KEY_SOURCE = url, key, "R161_STORAGE_KEY"
+    # R-161d (G-161-7): observe, for this probe only, whether the store gave
+    # any HTTP answer. supabase_store records every operation outcome through
+    # its module-level _record (fixed reasons only: "HTTP NNN", "malformed
+    # response", "no row updated", "exception: <type>"); a success or one of
+    # the first three is an answer, an exception is not. Only a boolean is
+    # kept — never a reason text or a body. Restored in the finally below.
+    answered_http = {"seen": False}
+    original_record = st._record
+
+    def _observe(op, ok, reason=None):
+        if ok or _STORE_ANSWER_RE.match(reason or ""):
+            answered_http["seen"] = True
+        return original_record(op, ok, reason)
+    st._record = _observe
     allow_private = pf["class"] != "live_integration"
     store = st.SupabaseStorage(guarded=True, allow_private=allow_private)   # G-161-3
     cleanup = _StorageCleanup(url, key, tenant, allow_private)
@@ -365,6 +385,7 @@ async def probe_storage(env: Dict[str, str], pf: Dict[str, Any], timeout_s: floa
         except Exception:  # noqa: BLE001
             pass
         st.SUPABASE_URL, st.SUPABASE_KEY, st.SUPABASE_KEY_SOURCE = saved
+        st._record = original_record
         # cleanup always runs — also after a timeout, an error or a cancel —
         # and its own failure is a FAIL of the target (never hidden)
         try:
@@ -375,11 +396,17 @@ async def probe_storage(env: Dict[str, str], pf: Dict[str, Any], timeout_s: floa
             res["outcome"] = "FAIL"
             res["reason"] = (res["reason"] + "; " if res["reason"] and res["reason"] != "all checks passed" else "") \
                 + "cleanup failed: " + res["cleanup"]["detail"]
-        # connected = the store really answered (a write accepted or a row
-        # read back); "other tenant cannot read" is true without any server
+        # connected = the store really answered over HTTP — the definition the
+        # llm/external targets use (R-161d, G-161-7): a status of any kind, a
+        # malformed answer or a confirmed write/read during the steps, or an
+        # HTTP status answered to the cleanup. A refused connection, a DNS
+        # failure or a timeout with no answer is not connected. ("other
+        # tenant cannot read" is true without any server, so it never counts.)
         answered = {"insert_task accepted", "update_task updated the row", "get_task returns the row",
                     "insert_event accepted", "get_events returns the event"}
-        if any(c["ok"] for c in checks.items if c["name"] in answered):
+        cl = res["cleanup"] or {}
+        if answered_http["seen"] or any(c["ok"] for c in checks.items if c["name"] in answered) \
+                or cl.get("ok") or _CLEANUP_ANSWER_RE.search(str(cl.get("detail") or "")):
             res["connected"] = True
     return res
 
