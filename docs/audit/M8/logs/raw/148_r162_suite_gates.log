@@ -1,0 +1,90 @@
+# 148 R-162 — full suite (both modes, 3.11 and 3.12 from the locks), web/root builds and governance gates (2026-10-18T09:09:06Z)
+# suite run on commit 9569590 (code + tests final; later commits are docs/evidence only)
+# note: an earlier full run on the uncommitted draft found 12 failures (worker left 'stopped' after a test lifespan -> 'worker not available'; nameless stub executors; R-156 map reads HEAD so uncommitted files were unmapped). Fixed in code + tests (M11-M14 in 146); that run's raw output was overwritten by the rerun and is not kept.
+
+=== python 3.11 AGOS_AGENT_IMPL=real — 2026-10-18T08:54:21Z — HEAD 9569590 (R-162, working tree)
+========== 1413 passed, 4 skipped, 4 deselected in 188.03s (0:03:08) ===========
+rc=0
+
+=== python 3.11 AGOS_AGENT_IMPL=specialists — 2026-10-18T08:57:31Z — HEAD 9569590 (R-162, working tree)
+========== 1413 passed, 4 skipped, 4 deselected in 203.17s (0:03:23) ===========
+rc=0
+
+=== python 3.12 AGOS_AGENT_IMPL=real — 2026-10-18T09:01:07Z — HEAD 9569590 (R-162, working tree)
+========== 1413 passed, 4 skipped, 4 deselected in 195.21s (0:03:15) ===========
+rc=0
+
+=== python 3.12 AGOS_AGENT_IMPL=specialists — 2026-10-18T09:04:23Z — HEAD 9569590 (R-162, working tree)
+========== 1413 passed, 4 skipped, 4 deselected in 208.72s (0:03:28) ===========
+rc=0
+
+=== web: npm test + build; root: npm run build — 2026-10-18T08:44:02Z HEAD 0a99cec
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1528.906253
+web test rc=0
+dist/assets/index-B6dOodBA.css   12.26 kB │ gzip:  2.99 kB
+dist/assets/index-DzPG84cf.js   172.90 kB │ gzip: 54.69 kB
+
+✓ built in 173ms
+web build rc=0
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+root build rc=0
+
+=== gates at 014dc996c5d70933e6871e57c1007568fba5e259 vs origin/main e85e093477d8398c49f4614b71b34f50b88c0cca — 2026-10-18T09:08:40Z
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'A': 6, 'M': 10}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 16 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/export_contract_schemas.py --check
+2026-10-18 09:08:41,958 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:138
+2026-10-18 09:08:41,959 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-18 09:08:41,969 - agos.server - INFO - Civilization initialized: 20 specializations, 1000 civilization agents - <module>:396
+2026-10-18 09:08:41,969 - agos.server - INFO - External agents loaded: 0 - <module>:398
+2026-10-18 09:08:41,997 - agos.server - INFO - Civilization routes registered successfully - <module>:1197
+contracts=26 problems=0
+rc=0
+$ python3 scripts/scan_raw_exception_logs.py
+flagged=3 reviewed=3 unreviewed=0 stale_reviewed=0
+rc=0
+$ git diff --check origin/main...HEAD
+docs/audit/M8/EVIDENCE.md:731: new blank line at EOF.
+rc=2
+$ bash /tmp/r161d/v1.sh
+docs/governance/QUALITY.md
+docs/governance/ROADMAP.md
+scripts/r162_registry_scale.py
+server.py
+tests/test_r162_agent_registry.py
+Governance gate passed.
+rc=0
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+All checks passed!
+rc=0
+$ ruff check --select F,E722 scripts/r162_registry_scale.py
+All checks passed!
+rc=0
+
+=== gates rerun after the newline fix at 40effa1c3885979ed993289bcecfbfb794beffb9 — 2026-10-18T09:09:05Z
+$ git diff --check origin/main...HEAD
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 16 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
