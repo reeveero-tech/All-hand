@@ -11,14 +11,14 @@ from agent_civilization.storage import supabase_store as ss
 
 
 class _Resp:
-    def __init__(self, status, text=""):
-        self.status, self._text = status, text
+    def __init__(self, status, text="", body=None):
+        self.status, self._text, self._body = status, text, ([] if body is None else body)
 
     async def text(self):
         return self._text
 
-    async def json(self):
-        return []
+    async def json(self, **kw):
+        return self._body
 
     async def __aenter__(self):
         return self
@@ -28,12 +28,12 @@ class _Resp:
 
 
 class _Session:
-    def __init__(self, status=201):
-        self.calls, self.status, self.closed = [], status, False
+    def __init__(self, status=201, body=None):
+        self.calls, self.status, self.body, self.closed = [], status, body, False
 
     def _req(self, method, url, **kw):
         self.calls.append((method, url, kw))
-        return _Resp(self.status, '{"message":"denied"}')
+        return _Resp(self.status, '{"message":"denied"}', self.body)
 
     def post(self, url, **kw):
         return self._req("POST", url, **kw)
@@ -45,11 +45,11 @@ class _Session:
         return self._req("GET", url, **kw)
 
 
-def _store(monkeypatch, status=201):
+def _store(monkeypatch, status=201, body=None):
     monkeypatch.setattr(ss, "SUPABASE_URL", "http://x")
     monkeypatch.setattr(ss, "SUPABASE_KEY", "k")
     st = ss.SupabaseStorage()
-    sess = _Session(status)
+    sess = _Session(status, body)
 
     async def _get():
         return sess
@@ -58,7 +58,8 @@ def _store(monkeypatch, status=201):
 
 
 def test_update_task_sends_result_as_object(monkeypatch):
-    st, sess = _store(monkeypatch, 204)
+    # R-161c: success needs the updated row back (return=representation)
+    st, sess = _store(monkeypatch, 200, [{"task_id": "t1"}])
     result = {"ok": True, "nested": {"n": [1, 2]}}
     assert asyncio.run(st.update_task("t1", "completed", agent_name="a", result=result, elapsed_s=0.1))
     payload = sess.calls[0][2]["json"]

@@ -17,6 +17,7 @@ import json
 import logging
 import re
 import threading
+import urllib.parse
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -130,8 +131,15 @@ class _FakePostgREST(BaseHTTPRequestHandler):
             self.rfile.read(n)
         self.calls.append((self.command, self.path.split("?")[0]))
         code = self.reject or (201 if self.command == "POST" else 200 if self.command == "GET" else 204)
+        body = {"message": BACKEND_SECRET} if self.reject else []
+        # R-161c: like PostgREST, a PATCH with return=representation answers 200
+        # with the updated key (the fake accepts every insert, so the row exists)
+        if (not self.reject and self.command == "PATCH"
+                and "return=representation" in (self.headers.get("Prefer") or "")):
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            code, body = 200, [{"task_id": q["task_id"][0].removeprefix("eq.")}]
         # a 204 carries no body (a body on 204 made aiohttp fail intermittently)
-        data = b"" if code == 204 else json.dumps({"message": BACKEND_SECRET} if self.reject else []).encode()
+        data = b"" if code == 204 else json.dumps(body).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
