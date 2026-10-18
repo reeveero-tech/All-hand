@@ -300,23 +300,38 @@ class SupabaseStorage:
 
     @_traced("insert_task")
     async def insert_task(self, task_id: str, specialization: str, prompt: str, status: str = "queued",
-                          *, tenant_id: Optional[str] = None) -> bool:
+                          *, tenant_id: Optional[str] = None, payload: Any = None,
+                          idempotency_key: Optional[str] = None,
+                          max_attempts: Optional[int] = None) -> bool:
         """SEC-02: ``tenant_id`` is the owner, fixed at insert (``update_task``
         never changes it). A row inserted without one is untenanted: no tenant
-        can read it (quarantined, admin ``ALL_TENANTS`` only)."""
+        can read it (quarantined, admin ``ALL_TENANTS`` only).
+
+        R-163 (D-082): ``payload`` persists the request's ``data`` so a
+        recovered task can be re-executed after a restart; ``idempotency_key``
+        enforces one task per (tenant, key); ``max_attempts`` bounds retries
+        before dead-letter. All optional — the pre-R-163 call shape is intact.
+        """
         if not is_configured():
             return False
+        row: Dict[str, Any] = {
+            "task_id": task_id,
+            "specialization": specialization,
+            "prompt": prompt[:500],
+            "status": status,
+            "tenant_id": tenant_id,
+        }
+        if payload is not None:
+            row["payload"] = _jsonable(payload)
+        if idempotency_key is not None:
+            row["idempotency_key"] = idempotency_key[:128]
+        if max_attempts is not None:
+            row["max_attempts"] = int(max_attempts)
         try:
             session = await self._get_session()
             async with session.post(
                 f"{self.url}/rest/v1/tasks",
-                json={
-                    "task_id": task_id,
-                    "specialization": specialization,
-                    "prompt": prompt[:500],
-                    "status": status,
-                    "tenant_id": tenant_id,
-                },
+                json=row,
             ) as r:
                 return await _accepted(r, "insert_task", (200, 201))
         except Exception as e:
@@ -325,6 +340,218 @@ class SupabaseStorage:
             # raw text is not trusted (all handlers below log the same way).
             _record_exception("insert_task", e)
             return False
+
+    # ------------------------------------------------- R-163 durable queue
+
+    async def _queue_patch(self, op: str, filters: Dict[str, str],
+                          body: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
+        """Conditional PATCH on ``tasks`` with ``Prefer: return=representation``.
+
+        The filters ARE the fence (R-163, D-082): the update applies only to
+        rows matching every filter (status, claim_token, lease deadline…), so
+        a stale worker's write matches 0 rows and is discarded — no
+        read-modify-write race. Returns the updated rows (empty list = nothing
+        matched), or ``None`` when the request itself failed (network/HTTP
+        error).
+        """
+        if not is_configured():
+            return None
+        try:
+            session = await self._get_session()
+            async with session.patch(
+                f"{self.url}/rest/v1/tasks",
+                params=filters,
+                json=body,
+                headers={"Prefer": "return=representation"},
+            ) as r:
+                if r.status != 200:
+                    _record(op, False, f"HTTP {r.status}")
+                    logger.warning("%s rejected: HTTP %s", op, r.status)
+                    return None
+                try:
+                    rows = await r.json(content_type=None)
+                except Exception:  # noqa: BLE001 - malformed response
+                    rows = None
+                if not isinstance(rows, list):
+                    _record(op, False, "malformed response")
+                    logger.warning("%s: malformed response", op)
+                    return None
+                _record(op, True)
+                return rows
+        except Exception as e:  # noqa: BLE001 - the caller decides failure
+            logger.warning("%s failed: %s", op, type(e).__name__)
+            _record_exception(op, e)
+            return None
+
+    @_traced("queue_find_idempotent")
+    async def find_task_by_idempotency_key(self, idempotency_key: str, *, scope) -> Optional[Dict[str, Any]]:
+        """The task a (tenant, key) pair already maps to — tenant-scoped in the
+        query (SEC-02: another tenant's key is invisible, like a missing one).
+        Returns ``None`` when absent or unreadable (the caller treats an
+        unreadable store as no replay, never as a new insert)."""
+        if not is_configured():
+            return None
+        params: Dict[str, str] = {"idempotency_key": f"eq.{idempotency_key[:128]}",
+                                 "limit": "1", "order": "created_at.asc"}
+        if scope is not ALL_TENANTS:
+            params["tenant_id"] = f"eq.{scope}"
+        try:
+            session = await self._get_session()
+            async with session.get(f"{self.url}/rest/v1/tasks", params=params) as r:
+                if r.status != 200:
+                    _record("queue_find_idempotent", False, f"HTTP {r.status}")
+                    return None
+                rows = _rows("queue_find_idempotent", await r.json(content_type=None), "task_id")
+                return rows[0] if rows else None
+        except Exception as e:  # noqa: BLE001
+            logger.warning("queue_find_idempotent failed: %s", type(e).__name__)
+            _record_exception("queue_find_idempotent", e)
+            return None
+
+    @_traced("queue_list_queued")
+    async def list_queued_tasks(self, limit: int = 50) -> Optional[List[Dict[str, Any]]]:
+        """Queued rows, oldest first — the dispatcher's claim scan (admin
+        scope: the dispatcher is the server, not a tenant request)."""
+        if not is_configured():
+            return None
+        params: Dict[str, str] = {"status": "eq.queued", "order": "created_at.asc",
+                                  "limit": str(int(limit))}
+        try:
+            session = await self._get_session()
+            async with session.get(f"{self.url}/rest/v1/tasks", params=params) as r:
+                if r.status != 200:
+                    _record("queue_list_queued", False, f"HTTP {r.status}")
+                    return None
+                return _rows("queue_list_queued", await r.json(content_type=None), "task_id")
+        except Exception as e:  # noqa: BLE001
+            logger.warning("queue_list_queued failed: %s", type(e).__name__)
+            _record_exception("queue_list_queued", e)
+            return None
+
+    @_traced("queue_list_expired")
+    async def list_expired_lease_tasks(self, limit: int = 50) -> Optional[List[Dict[str, Any]]]:
+        """Leased rows (claimed/running) whose lease deadline already passed —
+        the reaper's recovery scan (admin scope, all tenants)."""
+        if not is_configured():
+            return None
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        params: Dict[str, str] = {"status": "in.(claimed,running)",
+                                  "lease_expires_at": f"lt.{now}",
+                                  "order": "lease_expires_at.asc",
+                                  "limit": str(int(limit))}
+        try:
+            session = await self._get_session()
+            async with session.get(f"{self.url}/rest/v1/tasks", params=params) as r:
+                if r.status != 200:
+                    _record("queue_list_expired", False, f"HTTP {r.status}")
+                    return None
+                return _rows("queue_list_expired", await r.json(content_type=None), "task_id")
+        except Exception as e:  # noqa: BLE001 - the caller decides failure
+            logger.warning("queue_list_expired failed: %s", type(e).__name__)
+            _record_exception("queue_list_expired", e)
+            return None
+
+    @_traced("queue_claim")
+    async def claim_task(self, task_id: str, claim_token: str, lease_expires_at: str) -> Optional[Dict[str, Any]]:
+        """Atomically claim a queued row: PATCH ...?task_id=eq.X&status=eq.queued
+        -> claimed + token + deadline. Returns the updated row (the claim is
+        fenced by the token written in this same conditional update), or
+        ``None`` when the claim did not happen (already claimed / cancelled /
+        store failure — the caller must NOT run the task)."""
+        rows = await self._queue_patch(
+            "queue_claim",
+            {"task_id": f"eq.{task_id}", "status": "eq.queued", "limit": "1"},
+            {"status": "claimed", "claim_token": claim_token,
+             "lease_expires_at": lease_expires_at},
+        )
+        if rows is None:
+            return None
+        for row in rows:
+            if str(row.get("task_id")) == task_id and row.get("claim_token") == claim_token:
+                return row
+        _record("queue_claim", False, "no row updated")
+        return None
+
+    @_traced("queue_start")
+    async def start_task(self, task_id: str, claim_token: str, attempts: int) -> bool:
+        """claimed -> running, counting the execution attempt. Fenced by the
+        claim token: only the current owner can start it."""
+        rows = await self._queue_patch(
+            "queue_start",
+            {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
+             "status": "eq.claimed", "limit": "1"},
+            {"status": "running", "attempts": int(attempts)},
+        )
+        return bool(rows) and str(rows[0].get("task_id")) == task_id
+
+    @_traced("queue_release")
+    async def release_task(self, task_id: str, claim_token: str, to_status: str = "queued") -> bool:
+        """Give the claim back without an execution attempt (e.g. worker at
+        capacity): claimed -> queued. Fenced by the claim token."""
+        rows = await self._queue_patch(
+            "queue_release",
+            {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
+             "status": "eq.claimed", "limit": "1"},
+            {"status": to_status},
+        )
+        return bool(rows) and str(rows[0].get("task_id")) == task_id
+
+    @_traced("queue_renew")
+    async def renew_task_lease(self, task_id: str, claim_token: str, lease_expires_at: str) -> bool:
+        """Extend the lease of a live run (worker heartbeat). Fenced by the
+        claim token; a recovered task (new owner) makes this a no-op."""
+        rows = await self._queue_patch(
+            "queue_renew",
+            {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
+             "status": "in.(claimed,running)", "limit": "1"},
+            {"lease_expires_at": lease_expires_at},
+        )
+        return bool(rows) and str(rows[0].get("task_id")) == task_id
+
+    @_traced("queue_finish")
+    async def finish_task(self, task_id: str, claim_token: str, status: str,
+                          agent_name: Optional[str] = None, result: Any = None,
+                          elapsed_s: float = 0) -> Optional[bool]:
+        """End a leased row (claimed/running -> completed/failed/cancelled),
+        fenced by the claim token: a stale worker's late result matches 0 rows
+        and is discarded (same guarantee the R-162 registry lease gives in
+        memory). The write is confirmed via ``return=representation``.
+
+        Returns ``True`` (confirmed), ``False`` (0 rows matched — the claim is
+        not ours anymore), or ``None`` (the request itself failed — the caller
+        reconciles; never a silent loss)."""
+        body: Dict[str, Any] = {"status": status}
+        if agent_name is not None:
+            body["agent_name"] = agent_name
+        if result is not None:
+            body["result"] = _jsonable(result)
+        body["elapsed_s"] = float(elapsed_s)
+        rows = await self._queue_patch(
+            "queue_finish",
+            {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
+             "status": "in.(claimed,running)", "limit": "1"},
+            body,
+        )
+        if rows is None:
+            return None
+        return bool(rows) and str(rows[0].get("task_id")) == task_id
+
+    @_traced("queue_transition")
+    async def transition_task(self, task_id: str, from_statuses: tuple, to_status: str,
+                              *, lease_expired_before: Optional[str] = None,
+                              **fields: Any) -> bool:
+        """A guarded queue transition (R-163 state machine): only rows in
+        ``from_statuses`` move to ``to_status``. Recovery uses
+        ``lease_expired_before`` so a live lease is never stolen. Confirmed
+        via ``return=representation`` (0 rows matched = False)."""
+        filters: Dict[str, str] = {"task_id": f"eq.{task_id}",
+                                  "status": f"in.({','.join(from_statuses)})",
+                                  "limit": "1"}
+        if lease_expired_before is not None:
+            filters["lease_expires_at"] = f"lt.{lease_expired_before}"
+        body: Dict[str, Any] = {"status": to_status, **fields}
+        rows = await self._queue_patch("queue_transition", filters, body)
+        return bool(rows) and str(rows[0].get("task_id")) == task_id
 
     @_traced("update_task")
     async def update_task(self, task_id: str, status: str, agent_name: str = None,
