@@ -166,15 +166,21 @@ def test_failover_does_not_reassign_an_answered_subtask():
 def test_delegation_beyond_the_depth_limit_is_refused():
     co = C.GroupCoordinator(participants(5), max_delegation_depth=2)
     co.distribute(subtasks(1))
+    # real sequential handoffs (D-088: the engine owns the path; the chain
+    # argument is deprecated and ignored)
+    co.delegate("p0", "p1", "s0")
+    co.delegate("p1", "p2", "s0")
     with pytest.raises(C.DelegationTooDeep, match="depth 3 exceeds"):
-        co.delegate("p2", "p3", "s0", chain=["p0", "p1", "p2"])
+        co.delegate("p2", "p3", "s0")
 
 
 def test_delegation_cycle_is_refused():
     co = C.GroupCoordinator(participants(3))
     co.distribute(subtasks(1))
+    # a real handoff first, then the cycle back to p0 (engine-owned path)
+    co.delegate("p0", "p1", "s0")
     with pytest.raises(C.DelegationCycle, match="cycle"):
-        co.delegate("p1", "p0", "s0", chain=["p0", "p1"])
+        co.delegate("p1", "p0", "s0")
 
 
 def test_delegation_to_an_unknown_participant_is_refused():
@@ -804,3 +810,97 @@ def test_only_the_assignee_may_delegate_its_subtask_r166d():
     co.distribute(subtasks(1))
     with pytest.raises(C.CoordinationError, match="not the assignee"):
         co.delegate("p1", "p2", "s0")     # p1 does not own s0
+
+
+# =====================================================================
+# R-166d (continued) — second review round on the delegation path: engine
+# history, generation fencing, and post-completion guards. Written BEFORE
+# the fixes and failed on the ownership-fix code (red run saved in
+# docs/audit/M8/logs/raw/185_r166d2_red.log).
+# =====================================================================
+
+def test_delegation_cycle_detected_from_engine_history_r166d():
+    """Sequential delegations must be checked against the ENGINE's own
+    record of the path — omitting the caller-side chain argument must not
+    drop history: p0 -> p1 then p1 -> p0 is a cycle."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    co.delegate("p0", "p1", "s0")
+    with pytest.raises(C.DelegationCycle, match="cycle"):
+        co.delegate("p1", "p0", "s0")   # no chain argument — engine history
+
+
+def test_delegation_depth_enforced_from_engine_history_r166d():
+    """With max_delegation_depth=1, a SECOND sequential delegation must be
+    refused on the engine's own record (no caller-provided chain)."""
+    co = C.GroupCoordinator(participants(5), max_delegation_depth=1)
+    co.distribute(subtasks(1))
+    co.delegate("p0", "p1", "s0")
+    with pytest.raises(C.DelegationTooDeep, match="depth"):
+        co.delegate("p1", "p2", "s0")   # engine history says path length 2
+
+
+def test_delegation_round_trip_back_to_p0_is_refused_as_a_cycle_r166d():
+    """The fencing hole the review flagged (ownership returning to p0 via a
+    delegation round trip) is now structurally IMPOSSIBLE: p0 -> p1 then
+    p1 -> p0 is a cycle on the engine-owned path and is refused — ownership
+    stays with p1, no state changes, and the generation never rewinds."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    first = co.delegate("p0", "p1", "s0")
+    with pytest.raises(C.DelegationCycle, match="cycle"):
+        co.delegate("p1", "p0", "s0")
+    assert co._expected["s0"] == "p1"          # ownership stayed with p1
+    assert co._messages_sent == 2             # work + first delegation only
+    # p0's stale result (from generation 0) is rejected on every axis:
+    # not the assignee AND wrong generation
+    stale = co.submit_result(C.CoordinationMessage(
+        "r:s0:stale", "result", "s0", "p0", {"ok": True}, attempt=0))
+    assert stale is False
+    # the current generation's result from the current assignee IS accepted
+    current = co.submit_result(C.CoordinationMessage(
+        "r:s0:cur", "result", "s0", "p1", {"ok": True}, attempt=first.attempt))
+    assert current is True
+    rep = co.finalize()
+    assert rep.ok is True
+
+
+def test_delegation_after_a_result_is_refused_r166d():
+    """A subtask that already has a result cannot be delegated again — no
+    new work message for a completed subtask (side-effect duplication), and
+    NO state changes (ownership, load, message counter)."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    co.submit_result(C.CoordinationMessage("r:s0", "result", "s0", "p0",
+                                           {"ok": True}, attempt=0))
+    with pytest.raises(C.CoordinationError, match="already has a result"):
+        co.delegate("p0", "p1", "s0")
+    assert co._expected["s0"] == "p0"          # ownership unchanged
+    assert co._messages_sent == 1              # only the original work message
+
+
+def test_delegation_after_finalize_is_refused_r166d():
+    """A closed round (finalize) cannot issue new delegation work — and no
+    state changes."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    co.finalize()
+    with pytest.raises(C.CoordinationError, match="finalized"):
+        co.delegate("p0", "p1", "s0")
+    assert co._expected["s0"] == "p0"
+    assert co._messages_sent == 1
+
+
+def test_unstamped_result_after_delegation_is_rejected_r166d():
+    """After a handoff, a result with NO generation stamp cannot be accepted
+    for the subtask — currency is unprovable (the generation advanced with
+    the ownership transition)."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    co.delegate("p0", "p1", "s0")
+    unstamped = co.submit_result(C.CoordinationMessage(
+        "r:s0:unstamped", "result", "s0", "p1", {"ok": True}))
+    assert unstamped is False
+    rep = co.finalize()
+    assert rep.ok is False
+    assert rep.missing == ["s0"]

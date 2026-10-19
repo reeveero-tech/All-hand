@@ -1,0 +1,6 @@
+# R-166d second-round mutations (engine history / generation / guards) — 2026-10-19T10:29:46Z
+MUTATION F1 engine-owned delegation path removed (caller chain fallback): CAUGHT (=================== 5 failed, 62 passed, 1 warning in 0.70s ====================)
+MUTATION F2 generation bump removed on delegation: CAUGHT (=================== 4 failed, 63 passed, 1 warning in 0.69s ====================)
+MUTATION F3 post-completion guards removed (delegate after result/finalize): CAUGHT (=================== 2 failed, 65 passed, 1 warning in 0.66s ====================)
+
+# summary: 3 caught, 0 not caught
