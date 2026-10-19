@@ -1801,7 +1801,7 @@
 
 #### R-166 — تنسيق متعدد الوكلاء
 - الحالة: **awaiting_merge**
-- أدلة الحالة (R-154): branch=m8/r166-coordination | الحزمة 1602+7+4 على Python 3.14 و3.12 محلياً (`164_r166_suite_py*.log`؛ 1602 = 1559 + 43 اختباراً في `tests/test_r166_coordination.py`) و3.11 في CI (خطوة test الأولى live-suite) | 8 طفرات في `coordination.py` كلها مكشوفة بالاختبارات (`162_r166_mutations.log`) | العقود جمعية بصفر كسر وعقدان جديدان (`coordination_report` v1 و`coordinate_request` v1 — `163_r166_gates.log` و`docs/governance/contracts/`) | ruff صفر وweb ‏39/39 والبناءان ناجحان (`163_r166_gates.log`) | خريطة نقاط الدخول محدثة (`POST /civilization/coordinate` في الخريطة) | D-085؛ ليس إعلان جاهزية إنتاج
+- أدلة الحالة (R-154): branch=m8/r166-coordination | pr=#194 | الحزمة 1602+7+4 على Python 3.14 و3.12 محلياً (`164_r166_suite_py*.log`؛ 1602 = 1559 + 43 اختباراً في `tests/test_r166_coordination.py`) و3.11 في CI (خطوة test الأولى live-suite) | 8 طفرات في `coordination.py` كلها مكشوفة بالاختبارات (`162_r166_mutations.log`) | العقود جمعية بصفر كسر وعقدان جديدان (`coordination_report` v1 و`coordinate_request` v1 — `163_r166_gates.log` و`docs/governance/contracts/`) | ruff صفر وweb ‏39/39 والبناءان ناجحان (`163_r166_gates.log`) | خريطة نقاط الدخول محدثة (`POST /civilization/coordinate` في الخريطة) | D-085؛ ليس إعلان جاهزية إنتاج
 - المرحلة: P3 (أولوية عالية)؛ الاعتماديات: R-165
 - المرجع ومعايير القبول التفصيلية: [`roadmap/P3_AGENT_COORDINATION_AR.md`](roadmaps/revival-scale/roadmap/P3_AGENT_COORDINATION_AR.md)
 - النطاق (نص الخارطة الرئيسية): سياسة تقسيم العمل وتجميع النتائج، اختيار خبراء، منع الحلقات اللانهائية، حد أقصى للتفويض، قفل/تسليم الموارد، رسالة idempotent، واختبارات آلاف المشاركين المنطقيين ورسائل فاشلة/متأخرة/مكررة.

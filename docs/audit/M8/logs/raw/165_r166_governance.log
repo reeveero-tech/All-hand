@@ -1,0 +1,12 @@
+# R-166 governance gates (local) — 61bfce1 — 2026-10-19T05:55:43Z
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+exit=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 10, 'A': 9}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 19 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+exit=0
