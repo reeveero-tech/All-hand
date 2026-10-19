@@ -1,0 +1,50 @@
+## R-164 gates — 2026-10-18T16:19:31Z HEAD=17e7bd9 (python Python 3.14.3, node v20.20.2)
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+All checks passed!
+rc=0
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+All checks passed!
+rc=0
+$ cd web && npm install && npm test && npm run build
+
+up to date in 384ms
+install rc=0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1503.911727
+test rc=0
+dist/assets/index-B6dOodBA.css   12.26 kB │ gzip:  2.99 kB
+dist/assets/index-DzPG84cf.js   172.90 kB │ gzip: 54.69 kB
+
+✓ built in 129ms
+build rc=0
+$ npm install && npm run build (root)
+
+up to date in 856ms
+install rc=0
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+build rc=0
+
+## governance gates after commit HEAD=470348e
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 23, 'A': 9}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 32 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ git diff --stat origin/main HEAD | tail -1
+ 32 files changed, 2304 insertions(+), 50 deletions(-)
+$ git diff --name-status origin/main HEAD | cut -f1 | sort | uniq -c
+      9 A
+     23 M

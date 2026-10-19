@@ -346,6 +346,12 @@ class LLMResult(_Strict):
     model: str
     provider: Optional[Literal["keyless"]] = None
     attempts: Optional[int] = None
+    # R-164 (additive, optional): ``busy`` marks an admission refusal (R-131
+    # keyless queue / R-164 keyed concurrency / open breaker) — it was
+    # already returned before R-164 but missing from this strict model;
+    # ``retry_after`` = seconds until the provider may be tried again.
+    busy: Optional[StrictBool] = None
+    retry_after: Optional[int] = None
 
     @model_validator(mode="after")
     def _ok_means_content(self):

@@ -209,6 +209,44 @@ class LLMClient:
                 "error": "OPENROUTER_API_KEY is not configured. Set it in the environment to enable real agent intelligence.",
                 "model": self.model,
             }
+        # R-164 (D-083): the keyed provider gets its own concurrency limit
+        # (bounded wait -> explicit busy, never an unbounded pile-up of
+        # in-flight requests) and the shared ``llm`` circuit breaker.
+        from agent_civilization.core import backpressure
+        brk = backpressure.breaker("llm")
+        # fast refusal without queueing (does NOT consume a half-open probe)
+        if brk.is_open():
+            keyed_stats["busy"] += 1
+            return _llm_unavailable(brk.retry_after(), self.model)
+        sem = _keyed_semaphore()
+        limit = KEYED_MAX_WAIT_S if max_wait_s is None else max(0.0, max_wait_s)
+        try:
+            await _asyncio.wait_for(sem.acquire(), timeout=max(0.001, limit))
+        except (TimeoutError, _asyncio.TimeoutError):
+            keyed_stats["busy"] += 1
+            return {"ok": False, "content": "", "busy": True,
+                    "error": (f"LLM busy: {KEYED_CONCURRENCY} request(s) in flight, no slot within "
+                              f"{limit:.0f}s (AGOS_LLM_CONCURRENCY)"),
+                    "model": self.model}
+        try:
+            # R-164 review: the breaker permit is taken AFTER the slot, right
+            # before the provider call — a request that queued while the
+            # breaker was closed must not reach the provider if the calls
+            # ahead of it opened the breaker (or a Retry-After hold began)
+            # while it waited.
+            permit = brk.allow()
+            if not permit:
+                keyed_stats["busy"] += 1
+                return _llm_unavailable(brk.retry_after(), self.model)
+            try:
+                return await self._keyed_post(system, prompt, max_tokens, brk, permit)
+            finally:
+                brk.release_probe(permit)   # cancelled/unclassified: free the probe
+        finally:
+            sem.release()
+
+    async def _keyed_post(self, system: str, prompt: str, max_tokens: int, brk, permit) -> dict:
+        from agent_civilization.core import backpressure
         try:
             session = await self._get_session()
             async with session.post(
@@ -235,12 +273,26 @@ class LLMClient:
                     logger.error("LLM error: HTTP %s (provider response body not logged)", resp.status)
                     from agent_civilization.core import telemetry
                     telemetry.annotate(kind="llm", http_status=resp.status)
+                    # R-164: honour the provider's Retry-After (hold the
+                    # breaker so the next calls fail fast instead of
+                    # hammering a rate-limited provider); 5xx counts as a
+                    # provider failure; any other status is the request's own.
+                    headers = getattr(resp, "headers", None) or {}
+                    ra = backpressure.parse_retry_after(headers.get("Retry-After"))
+                    if resp.status in (429, 503) and ra:
+                        brk.hold(ra)
+                    elif resp.status >= 500:
+                        brk.failure(permit)
+                    elif resp.status != 429:
+                        brk.success(permit)     # the provider answered (4xx = the request's own)
+                    # 429 without Retry-After: neutral (the finally frees a probe)
                     return {
                         "ok": False,
                         "content": "",
                         "error": f"LLM HTTP {resp.status}: {body[:300]}",
                         "model": self.model,
                     }
+                brk.success(permit)
                 data = json.loads(body)
                 try:
                     content = completion_content(data)
@@ -265,6 +317,8 @@ class LLMClient:
             logger.error("LLM call failed: %s", type(e).__name__)
             from agent_civilization.core import telemetry
             telemetry.annotate(kind="llm", error=e)
+            if isinstance(e, (aiohttp.ClientError, _asyncio.TimeoutError, OSError)):
+                brk.failure(permit)     # transport failure: the provider is unreachable
             return {"ok": False, "content": "", "error": str(e), "model": self.model}
 
     async def close(self):
@@ -297,6 +351,36 @@ KEYLESS_CALL_TIMEOUT_S = 45.0
 # the 90 s budget started before the queue: callers deep in the queue spent
 # it all waiting and failed with "no attempt" (RISK-028).
 KEYLESS_MAX_WAIT_S = float(os.environ.get("AGOS_LLM_KEYLESS_MAX_WAIT_S", "30"))
+
+# R-164 (D-083): keyed-provider limits. Before R-164 the keyed path had no
+# concurrency bound at all (every caller opened its own request).
+from agent_civilization.core import backpressure as _bp  # noqa: E402
+KEYED_CONCURRENCY = _bp._int_env("AGOS_LLM_CONCURRENCY", 8, 1, 256)
+KEYED_MAX_WAIT_S = _bp._float_env("AGOS_LLM_MAX_WAIT_S", 30.0, 0.0, 600.0)
+keyed_stats = {"busy": 0}
+_keyed_sem: "_asyncio.Semaphore | None" = None
+_keyed_sem_loop = None
+
+
+def _keyed_semaphore() -> "_asyncio.Semaphore":
+    global _keyed_sem, _keyed_sem_loop
+    loop = _asyncio.get_running_loop()
+    if _keyed_sem is None or _keyed_sem_loop is not loop:
+        _keyed_sem, _keyed_sem_loop = _asyncio.Semaphore(KEYED_CONCURRENCY), loop
+    return _keyed_sem
+
+
+def _llm_unavailable(retry_after: float, model: str, provider: str | None = None) -> dict:
+    """R-164: the ``llm`` breaker is open (provider failing or it asked us
+    to back off): fail at once — the caller's fallback runs now instead of
+    after a full timeout — with the seconds until the next attempt."""
+    import math
+    ra = max(1, int(math.ceil(retry_after)))
+    out = {"ok": False, "content": "", "busy": True, "retry_after": ra,
+           "error": f"LLM provider unavailable (circuit open), retry in ~{ra}s", "model": model}
+    if provider:
+        out["provider"] = provider
+    return out
 _keyless_lock: "_asyncio.Lock | None" = None
 _keyless_last = 0.0
 _keyless_waiting = 0
@@ -356,6 +440,12 @@ async def _keyless_complete(system: str, prompt: str, max_tokens: int,
     if _keyless_lock is None:
         _keyless_lock = _asyncio.Lock()
     limit = KEYLESS_MAX_WAIT_S if max_wait_s is None else max(0.0, max_wait_s)
+    from agent_civilization.core import backpressure
+    brk = backpressure.breaker("llm")
+    if brk.is_open():
+        # R-164: provider down / asked us to wait — do not even queue.
+        keyless_stats["busy"] += 1
+        return _llm_unavailable(brk.retry_after(), f"keyless:{KEYLESS_MODEL}", "keyless")
     ahead = _keyless_waiting + (1 if _keyless_lock.locked() else 0)
     est = ahead * KEYLESS_MIN_SPACING_S + max(0.0, _keyless_last + KEYLESS_MIN_SPACING_S - _time.monotonic())
     if ahead and est > limit:
@@ -378,16 +468,29 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
     """The bounded retry loop; runs with the lock held. The budget starts now,
     when it is this caller's turn (R-131), not when it joined the queue."""
     global _keyless_last
+    from agent_civilization.core import backpressure
+    brk = backpressure.breaker("llm")
     deadline = _time.monotonic() + KEYLESS_BUDGET_S
     last_err = "no attempt"
     attempt = 0
+    hint = None     # R-164: the provider's own Retry-After for the next try
     while _time.monotonic() < deadline:
-        wait = KEYLESS_MIN_SPACING_S * (2 ** min(attempt, 3)) if attempt else 0.0
+        # R-164: same envelope as before (spacing * 2**min(n,3)) but with
+        # equal jitter (the lower half is random), so callers that failed
+        # together do not retry together; a provider Retry-After wins.
+        wait = (backpressure.backoff_delay(attempt + 1, KEYLESS_MIN_SPACING_S, KEYLESS_MIN_SPACING_S * 8)
+                if attempt else 0.0)
+        if hint is not None:
+            wait, hint = max(wait, hint), None
         wait = max(wait, _keyless_last + KEYLESS_MIN_SPACING_S - _time.monotonic())
         if wait > 0:
             if _time.monotonic() + wait >= deadline:
                 break
             await _asyncio.sleep(wait)
+        permit = brk.allow()     # checked per attempt, with the turn held (R-131 lock)
+        if not permit:
+            keyless_stats["busy"] += 1
+            return _llm_unavailable(brk.retry_after(), f"keyless:{KEYLESS_MODEL}", "keyless")
         attempt += 1
         keyless_stats["calls"] += 1
         remaining = max(1.0, min(KEYLESS_CALL_TIMEOUT_S, deadline - _time.monotonic()))
@@ -395,6 +498,7 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
             from agent_civilization.core import pools  # R-132: own pool
             data = await pools.run("llm", _keyless_post, system, prompt, max_tokens, remaining)
             _keyless_last = _time.monotonic()
+            brk.success(permit)     # the provider answered (content checked below)
             try:
                 content = completion_content(data)
             except MalformedCompletion as e:
@@ -418,14 +522,31 @@ async def _keyless_attempts(system: str, prompt: str, max_tokens: int) -> dict:
             if e.code in (402, 429, 503):
                 keyless_stats["rate_limited"] += 1
                 last_err = f"HTTP {e.code} (rate limited)"
+                ra = backpressure.parse_retry_after(e.headers.get("Retry-After") if e.headers else None)
+                if ra:
+                    if _time.monotonic() + ra >= deadline:
+                        # R-164: the provider asked for longer than this
+                        # call's budget — stop now (no hammering), and make
+                        # the next callers fail fast until then.
+                        brk.hold(ra)
+                        return _llm_unavailable(ra, f"keyless:{KEYLESS_MODEL}", "keyless")
+                    hint = ra
+                brk.release_probe(permit)
                 continue
             keyless_stats["errors"] += 1
+            if e.code >= 500:
+                brk.failure(permit)
+            else:
+                brk.release_probe(permit)
             return {"ok": False, "content": "", "error": f"keyless LLM HTTP {e.code}",
                     "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}
         except Exception as e:  # noqa: BLE001 — network failure: retry within budget
             _keyless_last = _time.monotonic()
             keyless_stats["errors"] += 1
             last_err = f"{type(e).__name__}: {e}"
+            brk.failure(permit)
+        finally:
+            brk.release_probe(permit)   # no-op once reported; frees a cancelled probe
     return {"ok": False, "content": "",
             "error": f"keyless LLM unavailable within {KEYLESS_BUDGET_S:.0f}s budget ({last_err})",
             "model": f"keyless:{KEYLESS_MODEL}", "provider": "keyless"}

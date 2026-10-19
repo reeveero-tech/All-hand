@@ -69,6 +69,8 @@ python -m pytest tests/test_r042_live_storage.py -v -p no:cacheprovider
 echo "== R-163 durable queue against the same local stack"
 export R163_LIVE=1
 python -m pytest tests/test_r163_live_queue.py -v -p no:cacheprovider
+# R-164: the admission count and the fairness exclusion scan on real PostgREST
+python -m pytest tests/test_r164_live_backpressure.py -v -p no:cacheprovider
 
 echo "== R-161 runner against the same local stack (local_integration)"
 # loopback endpoint + the throwaway service key minted above: class

@@ -165,7 +165,7 @@ async def _refuse_redirect(session, ctx, params) -> None:
     raise _FixedClientError("redirect refused by the outbound policy")
 
 
-def guarded_session_kwargs(allow_private: bool) -> Dict[str, Any]:
+def guarded_session_kwargs(allow_private: bool, limit: int = 100) -> Dict[str, Any]:
     """R-161b (G-161-3): the SEC-05 guarantees for OTHER aiohttp clients
     (storage, LLM) — not a parallel mechanism: the same ``GuardedResolver``
     (one resolution per connection, EVERY address vetted by
@@ -178,7 +178,8 @@ def guarded_session_kwargs(allow_private: bool) -> Dict[str, Any]:
     """
     trace = aiohttp.TraceConfig()
     trace.on_request_redirect.append(_refuse_redirect)
-    connector = aiohttp.TCPConnector(resolver=GuardedResolver(allow_private),
+    # R-164: ``limit`` = the caller's connection bound (aiohttp's default 100).
+    connector = aiohttp.TCPConnector(resolver=GuardedResolver(allow_private), limit=limit,
                                      use_dns_cache=False, ssl=safety.tls_context())
     return {"connector": connector, "trace_configs": [trace]}
 

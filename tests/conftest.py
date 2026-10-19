@@ -288,3 +288,20 @@ def _fresh_rate_limit_window():
     if srv is not None and hasattr(srv, "request_counts"):
         srv.request_counts.clear()
     yield
+
+
+@pytest.fixture(autouse=True)
+def _fresh_backpressure_state():
+    """R-164 test isolation: the circuit breakers (process-wide, like the
+    services they guard) and the per-tenant acceptance window would carry an
+    open breaker or a used quota from one test into the next (a test that
+    simulates a dead store opens the ``storage`` breaker). Each test starts
+    with every breaker closed and re-read from its environment."""
+    import sys
+    from agent_civilization.core import backpressure
+    backpressure.reset_all()
+    srv = sys.modules.get("server")
+    if srv is not None and hasattr(srv, "_ACCEPTED_AT"):
+        srv._ACCEPTED_AT.clear()
+    yield
+    backpressure.reset_all()

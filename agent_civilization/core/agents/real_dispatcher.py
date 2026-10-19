@@ -179,7 +179,16 @@ def _clean_html(fragment: str) -> str:
 
 
 def _web_search(query: str, limit: int = 5, timeout: float = 10.0):
-    """Live web results (title, url, snippet) from DuckDuckGo's HTML endpoint."""
+    """Live web results (title, url, snippet) from DuckDuckGo's HTML endpoint.
+
+    R-164 (D-083): behind the ``web`` circuit breaker — when the provider is
+    failing, callers get ``CircuitOpen`` at once (their existing fallback
+    runs) instead of each holding a ``web`` pool thread for a full timeout."""
+    from agent_civilization.core import backpressure
+    return backpressure.guarded_call("web", _web_search_raw, query, limit, timeout)
+
+
+def _web_search_raw(query: str, limit: int = 5, timeout: float = 10.0):
     body = urllib.parse.urlencode({"q": query}).encode()
     req = urllib.request.Request(_DDG_HTML, data=body, method="POST", headers={
         "User-Agent": "Mozilla/5.0 (AGOS-Research/1.0)",
@@ -230,6 +239,12 @@ def _parse_translation(text: str):
 
 
 def _mymemory(phrase: str, source: str, target: str, timeout: float = 10.0) -> str:
+    """R-164: the translation provider behind its own ``translate`` breaker."""
+    from agent_civilization.core import backpressure
+    return backpressure.guarded_call("translate", _mymemory_raw, phrase, source, target, timeout)
+
+
+def _mymemory_raw(phrase: str, source: str, target: str, timeout: float = 10.0) -> str:
     url = "https://api.mymemory.translated.net/get?" + urllib.parse.urlencode(
         {"q": phrase, "langpair": f"{source}|{target}"})
     req = urllib.request.Request(url, headers={"User-Agent": "AGOS-Civilization/1.0"})

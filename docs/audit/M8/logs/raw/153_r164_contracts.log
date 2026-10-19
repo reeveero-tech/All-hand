@@ -1,0 +1,14 @@
+## R-164 contract check — 2026-10-18T16:19:12Z HEAD=17e7bd9
+$ python3 scripts/export_contract_schemas.py --check
+contracts=27 problems=0
+rc=0
+
+## classify_changes(origin/main llm_result.v1, HEAD llm_result.v1)
+{
+ "additive": [
+  ".busy: added (optional)",
+  ".retry_after: added (optional)"
+ ],
+ "breaking": []
+}
+contract files on origin/main: 31 | HEAD: 31

@@ -1,0 +1,57 @@
+## R-164 review — R-082 storage failure probe after the per-request storage permit — 2026-10-18T19:22:26Z base=470348e + working tree
+$ python scripts/run_r082_storage_failure_probe.py
+2026-10-18 19:22:26,527 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:129
+2026-10-18 19:22:26,527 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:143
+2026-10-18 19:22:26,528 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-18 19:22:26,592 - storage - WARNING - insert_task failed: ClientConnectorError - insert_task:411
+2026-10-18 19:22:26,593 - storage - WARNING - insert_event failed: ClientConnectorError - insert_event:823
+2026-10-18 19:22:26,595 - storage - WARNING - update_task failed: ClientConnectorError - update_task:704
+2026-10-18 19:22:26,597 - storage - WARNING - update_task failed: ClientConnectorError - update_task:704
+2026-10-18 19:22:26,598 - storage - WARNING - get_tasks failed: ClientConnectorError - get_tasks:725
+2026-10-18 19:22:26,598 - storage - WARNING - upsert_agent_stats failed: ClientConnectorError - upsert_agent_stats:785
+2026-10-18 19:22:26,599 - storage - WARNING - insert_event failed: CircuitOpen - insert_event:823
+2026-10-18 19:22:26,600 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:150
+2026-10-18 19:22:27,151 - storage - WARNING - insert_task rejected: HTTP 401 - _accepted:275
+2026-10-18 19:22:27,152 - storage - WARNING - insert_event rejected: HTTP 401 - _accepted:275
+2026-10-18 19:22:27,155 - storage - WARNING - update_task not confirmed: HTTP 401 - _updated_row:292
+2026-10-18 19:22:27,156 - storage - WARNING - get_tasks rejected: HTTP 401 - _accepted:275
+2026-10-18 19:22:27,158 - storage - WARNING - update_task not confirmed: HTTP 401 - _updated_row:292
+2026-10-18 19:22:27,159 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:150
+2026-10-18 19:22:27,160 - storage - WARNING - upsert_agent_stats rejected: HTTP 401 - _accepted:275
+2026-10-18 19:22:27,162 - storage - WARNING - insert_event rejected: HTTP 401 - _accepted:275
+2026-10-18 19:22:27,222 - agos.infrastructure.redis - WARNING - Redis not available, using in-memory fallback - connect:150
+[1 down (connection refused)] API: POST /api/tasks -> 202, GET /api/tasks -> 200; requests reaching the fake storage: 0
+    /health=degraded storage=degraded msg='last storage operation failed: insert_event (circuit open after exception: ClientConnectorError) at 2026-10-18T19:22:26+00:00'
+    details: last_ok=False last_error={"operation": "insert_event", "reason": "circuit open after exception: ClientConnectorError", "at": "2026-10-18T19:22:26+00:00"}
+    /metrics storage lines: 90
+      agos_ops_total{kind="storage",op="get_tasks",outcome="fail"} 1.0
+      agos_ops_total{kind="storage",op="insert_event",outcome="fail"} 2.0
+      agos_ops_total{kind="storage",op="insert_task",outcome="fail"} 1.0
+      agos_ops_total{kind="storage",op="update_task",outcome="fail"} 2.0
+      agos_ops_total{kind="storage",op="upsert_agent_stats",outcome="fail"} 1.0
+      agos_op_duration_seconds_bucket{kind="storage",op="get_tasks",le="0.005"} 1
+    storage breaker (R-164): state=open opened=1 rejected=0
+[2 HTTP 401 (key revoked)] API: POST /api/tasks -> 202, GET /api/tasks -> 200; requests reaching the fake storage: 4
+    /health=degraded storage=degraded msg='last storage operation failed: update_task (HTTP 401) at 2026-10-18T19:22:27+00:00'
+    details: last_ok=False last_error={"operation": "update_task", "reason": "HTTP 401", "at": "2026-10-18T19:22:27+00:00"}
+    /metrics storage lines: 90
+      agos_ops_total{kind="storage",op="get_tasks",outcome="fail"} 2.0
+      agos_ops_total{kind="storage",op="insert_event",outcome="fail"} 3.0
+      agos_ops_total{kind="storage",op="insert_task",outcome="fail"} 2.0
+      agos_ops_total{kind="storage",op="update_task",outcome="fail"} 4.0
+      agos_ops_total{kind="storage",op="upsert_agent_stats",outcome="fail"} 2.0
+      agos_op_duration_seconds_bucket{kind="storage",op="get_tasks",le="0.005"} 2
+    storage breaker (R-164): state=closed opened=1 rejected=0
+[3 recovered (201/200)] API: POST /api/tasks -> 202, GET /api/tasks -> 200; requests reaching the fake storage: 4
+    /health=healthy storage=healthy msg='Supabase configured'
+    details: last_ok=True last_error={"operation": "insert_event", "reason": "HTTP 401", "at": "2026-10-18T19:22:27+00:00"}
+    /metrics storage lines: 95
+      agos_ops_total{kind="storage",op="get_tasks",outcome="fail"} 2.0
+      agos_ops_total{kind="storage",op="get_tasks",outcome="ok"} 1.0
+      agos_ops_total{kind="storage",op="insert_event",outcome="fail"} 4.0
+      agos_ops_total{kind="storage",op="insert_event",outcome="ok"} 1.0
+      agos_ops_total{kind="storage",op="insert_task",outcome="fail"} 2.0
+      agos_ops_total{kind="storage",op="insert_task",outcome="ok"} 1.0
+    storage breaker (R-164): state=closed opened=1 rejected=0
+probe reached storage in every phase that expects it
+rc=0

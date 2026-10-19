@@ -1,0 +1,47 @@
+## R-164 — gates after the pool-cap fix — 2026-10-18T20:02:16Z HEAD=0f5e619 + docs in the working tree
+$ 15 x /tmp/v312 (Python 3.12, CI production version): pytest tests/test_r164_backpressure.py -k web_pool_saturation  (the test CI run 39159170212 failed)
+      3 ======================= 1 passed, 31 deselected in 1.12s =======================
+      3 ======================= 1 passed, 31 deselected in 1.13s =======================
+      7 ======================= 1 passed, 31 deselected in 1.14s =======================
+      1 ======================= 1 passed, 31 deselected in 1.15s =======================
+      1 ======================= 1 passed, 31 deselected in 1.18s =======================
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+All checks passed!
+rc=0
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+All checks passed!
+rc=0
+$ cd web && npm install && npm test && npm run build
+up to date in 339ms
+install rc=0
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1517.600247
+test rc=0
+
+✓ built in 139ms
+build rc=0
+$ npm install && npm run build (root)
+up to date in 679ms
+install rc=0
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+build rc=0
+$ python3 scripts/export_contract_schemas.py --check
+contracts=27 problems=0
+rc=0
+
+## governance gates after commit HEAD=e36fa72
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 23, 'A': 21}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 44 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0

@@ -113,3 +113,14 @@
 - **قاموس `status` في الصفوف**: الحالات الداخلية العشر (accepted/queued/claimed/running/waiting/retrying/completed/failed/cancelled/dead_letter)؛ الـAPI يعرضها عبر الربط العام (راجع API.md). الصفوف القديمة بقيم 001/002 (queued/running/completed/failed) صالحة بلا ترحيل بيانات — القاموس موسَّع نحو الأعلى.
 - **الحمل `payload`**: كائن `{"_agos_prompt": <النص الكامل>, "data": <حقل data>}` (R-163 تصحيح لاحق): عمود `prompt` في الصف مخزون مقطوعاً إلى 500 حرف (`insert_task`)، والصف هو مصدر التنفيذ في الوضع المتين — فالنص الكامل يسافر داخل الحمولة تحت المفتاح المحجوز `_agos_prompt` ويستخرجه المُرسِل (الصفوف القديمة/الأولية بحمل خام تسقط إلى عمود `prompt` المقطوع). لا يُخزَّن أي موافقة SEC-06 (لا `allow_public_llm`) ولا تُنقل لسياق المُرسِل — كل تشغيل متين (الأول والمسترد) يعمل fail-closed (D-082).
 - **عمليات الطابور** (كلها PATCH مشروط + `Prefer: return=representation` — الفلتر هو السياج): `claim_task` (من queued فقط)، `start_task` (claimed→running بعدّ المحاولة)، `release_task` (إرجاع بلا محاولة)، `renew_task_lease`، `finish_task` (تعيد True/False/None — None = فشل الطلب نفسه)، `transition_task` (بمرشح انتهاء صلاحية العقد كي لا يُسرق عقد حي)، `find_task_by_idempotency_key` (نطاق المستأجر في الاستعلام)، `list_queued_tasks`/`list_expired_lease_tasks` (نطاق admin — الخادم لا مستأجر طلب).
+
+## R-164 — قراءتان جديدتان، بلا تغيير مخطط (D-083، 2026-10-18)
+- **لا ترحيل ولا عمود جديد**؛ `docs/sql/` بلا تغيير، وعقدا `task_row` v2/`storage_task_*` كما هما.
+- **`count_pending_tasks(scope, limit)`**: `GET /rest/v1/tasks?select=task_id&status=in.(accepted,queued,claimed,running,waiting,retrying)[&tenant_id=eq.<t>]&limit=<cap>` — عدّ سقف القبول المتين، يقرأ ≤ السقف صفاً (`ALL_TENANTS` لسقف الخدمة — نطاق الخادم لا طلب مستأجر). `None` = لم يجب التخزين.
+- **`list_queued_tasks(limit, exclude_tenants)`**: مرشح اختياري `tenant_id=not.in.(a,b)` لمسح العدالة؛ لا يُرسل إلا معرّفات بنمط `[A-Za-z0-9_-]{1,128}`.
+- **حدود الاتصال**: `AGOS_STORAGE_CONCURRENCY` (حد اتصالات aiohttp، 100) و`AGOS_STORAGE_TIMEOUT_S` (30 ث)، وقاطع `storage` يُغذّى من `TraceConfig` (نهاية الطلب ≥500 أو استثناء نقل = إخفاق؛ غير ذلك نجاح)؛ العملية المرفوضة بالقاطع تُسجَّل فاشلة كغيرها بسبب «circuit open after <آخر سبب>».
+- اختبار حي على PostgREST الحقيقي: `tests/test_r164_live_backpressure.py` (job storage).
+
+### R-164 — إصلاحات المراجعة (2026-10-18)
+- **لا ترحيل ولا تغيير مخطط أو استعلام.** قاطع `storage`: كل طلب HTTP يأخذ إذنه في `TraceConfig.on_request_start` ويُبلَّغ به في `on_request_end`/`on_request_exception` (سياق التتبع لكل طلب)، فجواب طلب بدأ قبل الفتح لا يغلق القاطع؛ و`CancelledError` (مهلة المستدعي) لم يعد إخفاق تخزين. `_get_session` فحص غير مستهلك.
+- الوهمي `_PostgREST` في اختبارات R-163 اكتسب وضع `reject_insert` (القراءة تجيب وإدراج المهام يفشل) لاختبار إعادة الحصة عند فشل الإدراج.

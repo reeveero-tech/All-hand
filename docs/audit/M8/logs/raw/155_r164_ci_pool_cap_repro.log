@@ -1,0 +1,56 @@
+## R-164 — CI finding on PR #189 after the review fixes
+CI run 39159170212 (head 66eda13), job test, one Python 3.12 run: FAILED tests/test_r164_backpressure.py::test_r164_web_pool_saturation_does_not_stall_local_net_or_storage — assert load['waiting'] == 3 -> 2 == 3; the other runs: 1493 passed.
+cause: pools.run's queue cap read ThreadPoolExecutor._work_queue.qsize(), which also counts calls that IDLE threads have not picked up yet -> in a burst the cap refused calls (PoolBusy) while threads were free; load()['waiting'] was off for the same reason.
+
+## BEFORE the fix — worktree at 66eda13
+$ Python 3.14.3: pytest tests/test_r164_review_races.py -k pool_cap
+E   AssertionError: 4 call(s) refused with PoolBusy while threads were free
+E   assert 4 == 0
+======================= 1 failed, 9 deselected in 1.51s ========================
+$ Python 3.11.15: pytest tests/test_r164_review_races.py -k pool_cap
+E   AssertionError: 4 call(s) refused with PoolBusy while threads were free
+E   assert 4 == 0
+======================= 1 failed, 9 deselected in 1.41s ========================
+
+$ stress probe (source below), 6 processes x 200 warm-pool bursts, before the fix:
+premature PoolBusy in 2/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 1/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+
+## AFTER the fix — working tree (pools.py in-flight counter)
+$ Python 3.14.3: pytest tests/test_r164_review_races.py -k pool_cap
+======================= 1 passed, 9 deselected in 1.40s ========================
+$ Python 3.11.15: pytest tests/test_r164_review_races.py -k pool_cap
+======================= 1 passed, 9 deselected in 1.38s ========================
+$ stress probe, 6 processes x 200 warm-pool bursts, after the fix:
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+premature PoolBusy in 0/200 bursts of size+3 calls on a warm pool (cap 3)
+
+## stress probe source
+import asyncio, os, threading, sys
+os.environ["AGOS_POOL_WEB_QUEUE"] = "3"
+sys.path.insert(0, ".")
+from agent_civilization.core import pools
+fails = 0
+N = 200
+for i in range(N):
+    pass  # warm pool (threads from the previous burst stay idle)
+    gate = threading.Event()
+    async def go():
+        size = pools.size("web")
+        futs = [asyncio.ensure_future(pools.run("web", gate.wait, 5)) for _ in range(size + 3)]
+        await asyncio.sleep(0.05)
+        busy = sum(1 for f in futs if f.done() and isinstance(f.exception(), pools.PoolBusy))
+        gate.set()
+        await asyncio.gather(*futs, return_exceptions=True)
+        return busy
+    if asyncio.run(go()):
+        fails += 1
+print(f"premature PoolBusy in {fails}/{N} bursts of size+3 calls on a warm pool (cap 3)")
