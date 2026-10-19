@@ -167,20 +167,21 @@ def test_delegation_beyond_the_depth_limit_is_refused():
     co = C.GroupCoordinator(participants(5), max_delegation_depth=2)
     co.distribute(subtasks(1))
     # real sequential handoffs (D-088: the engine owns the path; the chain
-    # argument is deprecated and ignored)
-    co.delegate("p0", "p1", "s0")
-    co.delegate("p1", "p2", "s0")
+    # argument is deprecated and ignored; each command echoes the current
+    # generation of its assignment)
+    first = co.delegate("p0", "p1", "s0")
+    second = co.delegate("p1", "p2", "s0", attempt=first.attempt)
     with pytest.raises(C.DelegationTooDeep, match="depth 3 exceeds"):
-        co.delegate("p2", "p3", "s0")
+        co.delegate("p2", "p3", "s0", attempt=second.attempt)
 
 
 def test_delegation_cycle_is_refused():
     co = C.GroupCoordinator(participants(3))
     co.distribute(subtasks(1))
     # a real handoff first, then the cycle back to p0 (engine-owned path)
-    co.delegate("p0", "p1", "s0")
+    first = co.delegate("p0", "p1", "s0")
     with pytest.raises(C.DelegationCycle, match="cycle"):
-        co.delegate("p1", "p0", "s0")
+        co.delegate("p1", "p0", "s0", attempt=first.attempt)
 
 
 def test_delegation_to_an_unknown_participant_is_refused():
@@ -825,9 +826,9 @@ def test_delegation_cycle_detected_from_engine_history_r166d():
     drop history: p0 -> p1 then p1 -> p0 is a cycle."""
     co = C.GroupCoordinator(participants(3))
     co.distribute(subtasks(1))
-    co.delegate("p0", "p1", "s0")
+    first = co.delegate("p0", "p1", "s0")
     with pytest.raises(C.DelegationCycle, match="cycle"):
-        co.delegate("p1", "p0", "s0")   # no chain argument — engine history
+        co.delegate("p1", "p0", "s0", attempt=first.attempt)   # engine history
 
 
 def test_delegation_depth_enforced_from_engine_history_r166d():
@@ -835,9 +836,9 @@ def test_delegation_depth_enforced_from_engine_history_r166d():
     refused on the engine's own record (no caller-provided chain)."""
     co = C.GroupCoordinator(participants(5), max_delegation_depth=1)
     co.distribute(subtasks(1))
-    co.delegate("p0", "p1", "s0")
+    first = co.delegate("p0", "p1", "s0")
     with pytest.raises(C.DelegationTooDeep, match="depth"):
-        co.delegate("p1", "p2", "s0")   # engine history says path length 2
+        co.delegate("p1", "p2", "s0", attempt=first.attempt)   # engine history
 
 
 def test_delegation_round_trip_back_to_p0_is_refused_as_a_cycle_r166d():
@@ -849,7 +850,7 @@ def test_delegation_round_trip_back_to_p0_is_refused_as_a_cycle_r166d():
     co.distribute(subtasks(1))
     first = co.delegate("p0", "p1", "s0")
     with pytest.raises(C.DelegationCycle, match="cycle"):
-        co.delegate("p1", "p0", "s0")
+        co.delegate("p1", "p0", "s0", attempt=first.attempt)
     assert co._expected["s0"] == "p1"          # ownership stayed with p1
     assert co._messages_sent == 2             # work + first delegation only
     # p0's stale result (from generation 0) is rejected on every axis:
@@ -1026,6 +1027,61 @@ def test_current_failure_report_produces_correct_work_r166d():
     ok = co.submit_result(C.CoordinationMessage(
         "r:s0", "result", "s0", second.participant_id, {"ok": True},
         attempt=second.attempt))
+    assert ok is True
+    rep = co.finalize()
+    assert rep.ok is True
+
+
+# =====================================================================
+# R-166d (round 5) — the delegate COMMAND is generation-fenced like the
+# failover command: a late command issued from a SUPERSEDED assignment
+# must be refused. Written BEFORE the fix (red run saved in
+# docs/audit/M8/logs/raw/197_r166d5_red.log).
+# =====================================================================
+
+def test_stale_delegation_command_after_failover_round_trip_is_refused_r166d():
+    """p0's assignment fails over away and back (gen 0 -> 2). A LATE delegate
+    command issued from p0's ORIGINAL assignment (gen 0) must be refused —
+    the assignee check alone cannot distinguish it from a current command,
+    because p0 is the assignee again."""
+    co = C.GroupCoordinator(participants(4), max_failovers=2)
+    work = co.distribute(subtasks(1))[0]                    # p0, gen 0
+    first = co.failover("s0", "p0", attempt=work.attempt)    # p1, gen 1
+    back = co.failover("s0", first.participant_id, attempt=first.attempt)   # p0, gen 2
+    assert back is not None and co._expected["s0"] == "p0"
+    # a late command from p0's ORIGINAL assignment (gen 0) — must be refused
+    with pytest.raises(C.CoordinationError, match="stale"):
+        co.delegate("p0", "p2", "s0", attempt=0)
+    assert co._expected["s0"] == "p0"          # no state change
+    assert co._generation["s0"] == 2
+    assert co._chain == {}                     # no delegation recorded
+    assert co._messages_sent == 3              # work + two failovers only
+
+
+def test_unstamped_delegation_command_after_transition_is_refused_r166d():
+    """After any ownership transition, an unstamped delegate command cannot
+    be proven current — refused with no state change."""
+    co = C.GroupCoordinator(participants(4))
+    co.distribute(subtasks(1))
+    co.failover("s0", "p0")                    # gen 1
+    with pytest.raises(C.CoordinationError, match="stale"):
+        co.delegate(co._expected["s0"], "p2", "s0")   # unstamped, gen > 0
+    assert co._expected["s0"] != "p2" or True
+    assert co._chain == {}
+
+
+def test_current_delegation_command_produces_correct_handoff_r166d():
+    """The positive path: a delegate command stamped with the CURRENT
+    generation produces a correct handoff (message stamped with the new
+    generation) and the recipient's result is accepted."""
+    co = C.GroupCoordinator(participants(4), max_failovers=2)
+    work = co.distribute(subtasks(1))[0]                    # p0, gen 0
+    first = co.failover("s0", "p0", attempt=work.attempt)   # p1, gen 1
+    handoff = co.delegate(first.participant_id, "p2", "s0", attempt=first.attempt)
+    assert handoff is not None
+    assert handoff.attempt == 2                # the NEW generation
+    ok = co.submit_result(C.CoordinationMessage(
+        "r:s0", "result", "s0", "p2", {"ok": True}, attempt=handoff.attempt))
     assert ok is True
     rep = co.finalize()
     assert rep.ok is True

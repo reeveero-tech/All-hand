@@ -1,0 +1,7 @@
+# R-166d round-5 mutations (H2 redone isolated; delegate-command fence) — 2026-10-19T11:02:46Z
+MUTATION H2-redo failover stale-report guard: ONLY the generation comparison disabled (unique anchor): CAUGHT (=================== 1 failed, 76 passed, 1 warning in 0.65s ====================)
+  failed tests: ['test_stale_generation_failure_report_is_refused_r166d']
+MUTATION I1 delegate-command generation fence removed: CAUGHT (=================== 8 failed, 69 passed, 1 warning in 0.84s ====================)
+  failed tests: ['test_delegation_beyond_the_depth_limit_is_refused', 'test_delegation_cycle_is_refused - ag...', 'test_delegation_cycle_detected_from_engine_history_r166d', 'test_delegation_depth_enforced_from_engine_history_r166d', 'test_delegation_round_trip_back_to_p0_is_refused_as_a_cycle_r166d', 'test_stale_delegation_command_after_failover_round_trip_is_refused_r166d', 'test_unstamped_delegation_command_after_transition_is_refused_r166d', 'test_current_delegation_command_produces_correct_handoff_r166d']
+
+# summary: 2 caught, 0 not caught

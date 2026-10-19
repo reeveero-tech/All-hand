@@ -342,6 +342,7 @@ class GroupCoordinator:
     def delegate(
         self, from_participant: str, to_participant: str, subtask_id: str,
         chain: Optional[Sequence[str]] = None,
+        attempt: Optional[int] = None,
     ) -> CoordinationMessage:
         """A participant hands its subtask to another participant.
 
@@ -372,6 +373,22 @@ class GroupCoordinator:
             raise CoordinationError(
                 f"{from_participant!r} is not the assignee of {subtask_id!r} — "
                 "only the assignee may delegate its subtask")
+        # the COMMAND is generation-fenced (D-088): after any ownership
+        # transition it must echo the CURRENT generation — a late command
+        # from a superseded assignment is indistinguishable by identity
+        # alone (the ownership may have returned to the same participant)
+        command_generation = self._generation.get(subtask_id, 0)
+        if command_generation > 0:
+            if attempt != command_generation:
+                raise CoordinationError(
+                    f"stale delegation command for {subtask_id!r}: it carries "
+                    f"attempt {attempt!r} but the current assignment generation "
+                    f"is {command_generation} — a command from a superseded "
+                    "assignment cannot hand off ongoing work")
+        elif attempt not in (None, 0):
+            raise CoordinationError(
+                f"stale delegation command for {subtask_id!r}: attempt "
+                f"{attempt!r} is out of range for a first-generation assignment")
         # the engine's own record of the path is authoritative
         path = list(self._chain.get(subtask_id) or [from_participant])
         if to_participant in path:
