@@ -1,13 +1,19 @@
 R-165 acceptance — PR #191 merged, CI on main verified (2026-10-19)
+[corrected in m8/r165f-acceptance-evidence-fix: parent SHA typo, merge timestamp
+ from the merge record itself (not the CI push time), and the authorization record —
+ see the erratum note at the end. Raw command outputs: 160_r165_merge_record_raw.log]
 
-- PR #191 "R-165: DAG plans, typed stage artifacts, stage approvals, resume (D-084)" merged on the
-  owner's explicit approval in this session (2026-10-19, "ادمجه وأكمل"), by the owner account
-  (mergedBy=reeveero-tech), plain merge commit (no squash, no [publish]).
+- PR #191 "R-165: DAG plans, typed stage artifacts, stage approvals, resume (D-084)" merged
+  on the owner's explicit approval in this session (2026-10-19, request_user_input answer
+  "ادمجه وأكمل"), by the owner account (mergedBy=reeveero-tech, mergedAt=2026-10-19T04:14:46Z),
+  plain merge commit (no squash, no [publish]).
 - merge_sha=da1976e75a84583b788d2c22c5b362dd0842e7fc (merge commit on main; parents:
-  29b133bb12c38117dbff085faf214529dd0659f7b = main, 3bc7c81 = PR head).
+  29b133bb12c38117dbff085faf214529dd0659f7 = main, 3bc7c81 = PR head — both verified with
+  `git show -s --format='%H%n%P' da1976e`).
 - tested_sha=3bc7c81400640c715c1085f044b019471474b320 (PR head — second parent of the merge ✓;
-  the same head all PR checks ran against).
-- ci_run=39198499777 (AGOS Kernel CI/CD on main, push, head sha da1976e75a84583b788d2c22c5b362dd0842e7fc).
+  the same head all PR checks ran against; headRefOid from `gh pr view 191`).
+- ci_run=39198499777 (AGOS Kernel CI/CD on main, push, headSha=da1976e75a84583b788d2c22c5b362dd0842e7fc,
+  displayTitle "Merge pull request #191 from reeveero-tech/m8/r165-dag").
 - ci_conclusion=success.
 - Jobs: quality=success, test=success, network=success, storage=success, build=success,
   docker=success, audit=success, publish=skipped (D-011 — not counted as a release).
@@ -15,10 +21,11 @@ R-165 acceptance — PR #191 merged, CI on main verified (2026-10-19)
   4 deselected" in all three steps — matches the PR's local suites
   docs/audit/M8/logs/raw/157_r165_suite_py314.log / _py311.log / _py312.log (1559 = 1494 + 65
   tests in tests/test_r165_dag.py), and matches a fresh local run on merged main in this session:
-  "1559 passed, 7 skipped, 4 deselected in 230.78s" (Python 3.14.3, same tree as merge_sha).
+  "1559 passed, 7 skipped, 4 deselected in 230.78s" (Python 3.14.3, same tree as merge_sha;
+  raw local log preserved in 160_r165_merge_record_raw.log).
   (The "1056 passed …" / "3 failed, 1053 passed …" strings in the test log are input fixtures of
   the R-158 pytest-summary parser tests, not results.)
-- storage job (live PostgREST on PostgreSQL 17 in CI): R-042 storage verification 26/26 checks
+- storage job (live PostgREST on PostgreSQL in CI): R-042 storage verification 26/26 checks
   passed + 4/4 live tests; R-163 live queue 2/2 passed; R-164 live backpressure 1/1 passed;
   R-161 integration checker exit_code=0 (git_sha=da1976e…).
 - network job: 4 passed, 1566 deselected (network marker).
@@ -26,15 +33,29 @@ R-165 acceptance — PR #191 merged, CI on main verified (2026-10-19)
   (web and root, production and full).
 - PR checks on the PR branch before merge (on 3bc7c81): all pass — quality, test, build, docker,
   audit, storage, network, governance; publish skipped per D-011.
-- Batch review in this session (the predecessor's "للمراجعة دون دمج" was addressed to the
-  reviewer; the reviewer of record is this session): full local suite on the branch (1559+7+4,
+- Batch review in this session before merging: full local suite on the branch (1559+7+4,
   identical to the PR claim), ruff F,E722 clean, web/ and root builds succeed, code review of
   dag.py / orchestrator delegation / civilization_routes.py found the approval gate central in
   the engine (not UI-only), tenant-scoped run records (uniform 404 across tenants), SEC-06
   consent preserved on the resume path, and the task record never left "running" on PlanError.
+  Note on trees: the local web/root builds ran on the R-165 branch tree; main's own build
+  result is from CI (green at 29b133b, run 39184776448).
 - Baseline before merge (main 29b133b, this session): pytest 1494 passed, 7 skipped,
   4 deselected — matches PROJECT_STATE exactly; no docs-vs-reality gap found (no repair item).
 - Not claimed: production readiness. Untested/limits: run records are in-process memory only —
   lost on restart, not shared between instances (RISK-035); no idempotency key for
   /civilization/execute; no external-side-effect compensation; auto_router plans stay linear;
   RISK-033 and RISK-034 open; Q-026 open; no deploy, no billing. R-166 not started.
+
+ERRATUM (m8/r165f, 2026-10-19): the first version of this log (a) mis-copied the first
+parent as …0659f7b (an extra trailing character; correct value 29b133bb12c38117dbff085faf214529dd0659f7),
+(b) used the CI push time 04:14:49Z as the merge time (correct mergedAt=2026-10-19T04:14:46Z from
+the merge record), and (c) asserted that the predecessor's "للمراجعة دون دمج" note was "addressed
+to the reviewer" — an unproven interpretation, removed. The merge authorization of record is the
+owner's explicit in-session approval ("ادمجه وأكمل") collected via request_user_input before
+merging; the predecessor's note is kept only as a fact about the PR body, with no interpretation.
+
+Follow-up (same correction batch): the acceptance PR #192 itself was merged by the owner account
+(mergedAt=2026-10-19T04:43:53Z, mergeCommit=cc49945e84d2b88b800f8726923ce671139523e0), and CI on
+main at that merge SHA is green: run 39200941983, conclusion=success (all jobs success, publish
+skipped per D-011).
