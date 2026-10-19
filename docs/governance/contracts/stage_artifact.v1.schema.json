@@ -1,0 +1,92 @@
+{
+  "$id": "agos://contracts/stage_artifact/v1",
+  "additionalProperties": false,
+  "description": "R-165 (D-084): a typed, schema-validated stage output. Downstream\nstages consume these (``work[\"inputs\"]`` / ``work[\"artifact\"]``) instead\nof a truncated text summary. Exactly the field named by ``kind`` is set.",
+  "properties": {
+    "analysis": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Analysis"
+    },
+    "code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Code"
+    },
+    "kind": {
+      "enum": [
+        "code",
+        "sql",
+        "analysis",
+        "text"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "source_file": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source File"
+    },
+    "sql": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sql"
+    },
+    "stage": {
+      "minLength": 1,
+      "title": "Stage",
+      "type": "string"
+    },
+    "text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Text"
+    }
+  },
+  "required": [
+    "kind",
+    "stage"
+  ],
+  "title": "StageArtifact",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "internal",
+  "x-flow": "DAG stage output -> dependent stages (R-165)"
+}

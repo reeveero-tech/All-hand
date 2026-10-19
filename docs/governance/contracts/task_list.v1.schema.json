@@ -130,6 +130,19 @@
           "default": null,
           "title": "Result"
         },
+        "run_id": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{32}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
         "status": {
           "enum": [
             "running",

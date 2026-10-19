@@ -4,7 +4,9 @@ Server additions — routes exposed by AGOS Civilization 4.0.
 These are appended to `server.py`; they add:
   - POST /civilization/execute   : full auto-routed pipeline (no user spec choice)
   - GET  /civilization/registry  : the curated OSS agents registry
-  - GET  /civilization/plan      : preview the plan for a prompt (no execution)
+  - POST /civilization/plan      : preview the plan for a prompt (no execution)
+  - GET  /civilization/runs/{run_id}         : a DAG run report (R-165)
+  - POST /civilization/runs/{run_id}/resume  : resume it, with new approvals (R-165)
 
 The user does NOT choose a specialization; the civilization decides.
 """
@@ -13,7 +15,7 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
@@ -21,7 +23,9 @@ from pydantic import BaseModel, Field
 
 from agent_civilization.registry import AGENTS, as_list, total_agents
 from agent_civilization.routing import route as auto_route
-from agent_civilization.pipeline import execute_plan
+from agent_civilization.pipeline import dag, execute_plan
+
+_STAGE_NAME = r"^[A-Za-z0-9_.-]{1,64}$"
 
 
 class ExecuteRequest(BaseModel):
@@ -29,6 +33,16 @@ class ExecuteRequest(BaseModel):
     data: Optional[Any] = None
     # SEC-06 (R-145): explicit per-request consent to the public (keyless) LLM
     # provider — strict bool, default False (a missing field is refusal).
+    allow_public_llm: bool = Field(False, strict=True)
+    # R-165 (D-084): stages approved by name. A sensitive stage (code
+    # execution, external request, self-modification) runs only when listed;
+    # otherwise the run stops it at "awaiting_approval" (resume later).
+    approve_stages: List[str] = Field(default_factory=list, max_length=dag.MAX_STAGES)
+
+
+class ResumeRequest(BaseModel):
+    """R-165: POST /civilization/runs/{run_id}/resume."""
+    approve_stages: List[str] = Field(default_factory=list, max_length=dag.MAX_STAGES)
     allow_public_llm: bool = Field(False, strict=True)
 
 
@@ -63,7 +77,11 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
     async def preview_plan(req: ExecuteRequest, api_key: Optional[str] = Security(api_key_header)):
         _guard(api_key)
         plan = auto_route(req.message)
-        return {"plan": plan}
+        try:
+            # R-165: the normalized DAG (depends_on, requires_approval, order, budget)
+            return {"plan": dag.normalize_plan(plan)}
+        except dag.PlanError as exc:
+            raise HTTPException(400, f"invalid plan: {exc}") from None
 
     @app.post("/civilization/execute")
     async def execute(req: ExecuteRequest, api_key: Optional[str] = Security(api_key_header)):
@@ -89,7 +107,15 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         from agent_civilization.core.llm import reset_public_llm_consent, set_public_llm_consent
         token = set_public_llm_consent(req.allow_public_llm)
         try:
-            result = await execute_plan(plan, civilization, data=req.data)
+            result = await execute_plan(plan, civilization, data=req.data,
+                                        approvals=set(req.approve_stages),
+                                        tenant_id=principal.tenant_id, task_id=task_id)
+        except dag.PlanError as exc:
+            rec = tasks_store.get(task_id)
+            if rec is not None:
+                rec.update(status="failed", finished_at=time.time(),
+                           result={"error": "invalid plan"})
+            raise HTTPException(400, f"invalid plan: {exc}") from None
         except BaseException:
             # R-160 (task lifecycle contract v1): the record never stays
             # "running" after the handler exits (error or cancellation); the
@@ -103,4 +129,44 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             reset_public_llm_consent(token)
         tasks_store[task_id]["status"] = "completed"
         tasks_store[task_id]["result"] = result
+        tasks_store[task_id]["run_id"] = result["run_id"]
         return {"task_id": task_id, **result}
+
+    def _principal(api_key):
+        if require_principal is None:
+            raise HTTPException(401, "authentication is not configured for this route")
+        return require_principal(api_key)
+
+    @app.get("/civilization/runs/{run_id}")
+    async def get_run(run_id: str, api_key: Optional[str] = Security(api_key_header)):
+        principal = _principal(api_key)
+        try:
+            run = dag.RUNS.get(run_id, principal.tenant_id)
+        except dag.RunNotFound:
+            raise HTTPException(404, "run not found") from None
+        return {"task_id": run.task_id, **dag.report(run)}
+
+    @app.post("/civilization/runs/{run_id}/resume")
+    async def resume_run(run_id: str, req: ResumeRequest,
+                         api_key: Optional[str] = Security(api_key_header)):
+        principal = _principal(api_key)
+        from agent_civilization.core.llm import reset_public_llm_consent, set_public_llm_consent
+        try:
+            run = dag.RUNS.get(run_id, principal.tenant_id)
+        except dag.RunNotFound:
+            raise HTTPException(404, "run not found") from None
+        token = set_public_llm_consent(req.allow_public_llm)
+        try:
+            result = await dag.resume_run(run_id, principal.tenant_id, civilization,
+                                          approvals=req.approve_stages)
+        except dag.RunNotFound:
+            raise HTTPException(404, "run not found") from None
+        except dag.RunBusy:
+            raise HTTPException(409, "run is executing") from None
+        finally:
+            reset_public_llm_consent(token)
+        rec = tasks_store.get(run.task_id) if run.task_id else None
+        if rec is not None and rec.get("tenant_id") == principal.tenant_id:
+            rec["result"] = result
+            rec["finished_at"] = time.time()
+        return {"task_id": run.task_id, **result}
