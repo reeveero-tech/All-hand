@@ -1,0 +1,13 @@
+# R-166 acceptance governance gates (local) — e8d62c0 — 2026-10-19T06:38:52Z
+$ python3 scripts/check_status_evidence.py .
+::error::R-166: evidence path missing or outside docs/audit/: docs/audit/M8/logs/raw/166_r166_acceptance_main_ci.log (والمخرجات الخام `167_r166_merge_record_raw.log`)
+::error::Status evidence check failed: 1 violation(s) (D-066).
+exit=1
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 4, 'A': 2}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+exit=0
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 6 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+exit=0
