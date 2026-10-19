@@ -273,8 +273,15 @@ class GroupCoordinator:
 
     # ----------------------------------------------------------- failover
 
-    def failover(self, subtask_id: str, from_participant: str) -> Optional[CoordinationMessage]:
+    def failover(self, subtask_id: str, from_participant: str,
+                  attempt: Optional[int] = None) -> Optional[CoordinationMessage]:
         """Reassign a failed subtask to another participant of the same specialty.
+
+        The failure REPORT is fenced (D-088): it must come from the CURRENT
+        assignee and — once the subtask has transitioned — carry the CURRENT
+        generation stamp (the work message's attempt). A stale report (from a
+        previous owner, or about a superseded generation) is refused with NO
+        state changes: an old failure event must never reassign ongoing work.
 
         Bounded by ``max_failovers`` and by the message budget. NOTE (D-086):
         failover is an explicit engine capability — it re-executes the subtask,
@@ -288,6 +295,22 @@ class GroupCoordinator:
                 "the coordination round is finalized — cannot fail over")
         if subtask_id in self._results:
             return None  # already answered; nothing to fail over
+        if self._expected[subtask_id] != from_participant:
+            raise CoordinationError(
+                f"{from_participant!r} is not the assignee of {subtask_id!r} — "
+                "a failure report from a previous owner cannot reassign ongoing work")
+        current_generation = self._generation.get(subtask_id, 0)
+        if current_generation > 0:
+            if attempt != current_generation:
+                raise CoordinationError(
+                    f"stale failure report for {subtask_id!r}: it carries attempt "
+                    f"{attempt!r} but the current assignment generation is "
+                    f"{current_generation} — a report about a superseded generation "
+                    "cannot reassign ongoing work")
+        elif attempt not in (None, 0):
+            raise CoordinationError(
+                f"stale failure report for {subtask_id!r}: attempt {attempt!r} "
+                "is out of range for a first-generation assignment")
         used = self._failovers.get(subtask_id, 0)
         if used >= self.max_failovers:
             return None

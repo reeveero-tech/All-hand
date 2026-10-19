@@ -144,7 +144,7 @@ def test_failover_is_bounded_by_max_failovers():
     co.distribute(subtasks(1))
     first = co.failover("s0", co._expected["s0"])
     assert first is not None
-    second = co.failover("s0", co._expected["s0"])
+    second = co.failover("s0", co._expected["s0"], attempt=first.attempt)
     assert second is None
 
 
@@ -720,9 +720,9 @@ def test_stale_result_after_round_trip_failover_is_rejected_r166c():
     again."""
     co = C.GroupCoordinator(participants(3), max_failovers=2)
     co.distribute(subtasks(1))
-    # fail over twice: p0 -> p1 -> p0
-    co.failover("s0", co._expected["s0"])          # now p1
-    co.failover("s0", co._expected["s0"])          # back to p0
+    # fail over twice: p0 -> p1 -> p0 (the second report echoes generation 1)
+    first = co.failover("s0", co._expected["s0"])          # now p1
+    co.failover("s0", co._expected["s0"], attempt=first.attempt)   # back to p0
     assert co._expected["s0"] == "p0"
     # a result from p0 stamped with its FIRST attempt (attempt=0)
     stale = co.submit_result(C.CoordinationMessage("r:s0:stale", "result", "s0", "p0",
@@ -921,8 +921,8 @@ def test_failover_message_stamp_matches_generation_after_delegation_r166d():
     previous-generation result is rejected."""
     co = C.GroupCoordinator(participants(4))
     co.distribute(subtasks(1))
-    co.delegate("p0", "p1", "s0")            # generation 1, owner p1
-    retry = co.failover("s0", "p1")           # generation 2, new owner
+    handoff = co.delegate("p0", "p1", "s0")    # generation 1, owner p1
+    retry = co.failover("s0", "p1", attempt=handoff.attempt)   # generation 2
     assert retry is not None
     assert retry.attempt == 2                  # the message carries the GENERATION
     # the new owner's result stamped with the message's attempt: accepted
@@ -940,8 +940,8 @@ def test_previous_generation_result_rejected_after_mixed_transitions_r166d():
     generation."""
     co = C.GroupCoordinator(participants(4))
     co.distribute(subtasks(1))
-    co.delegate("p0", "p1", "s0")            # generation 1
-    retry = co.failover("s0", "p1")           # generation 2
+    handoff = co.delegate("p0", "p1", "s0")    # generation 1
+    retry = co.failover("s0", "p1", attempt=handoff.attempt)   # generation 2
     stale = co.submit_result(C.CoordinationMessage(
         "r:s0:old", "result", "s0", "p1", {"ok": True}, attempt=1))
     assert stale is False
@@ -965,3 +965,67 @@ def test_failover_after_finalize_is_refused_r166d():
     assert co._load["p0"] == 1
     assert co._messages_sent == 1
     assert co._failovers == {}
+
+
+# =====================================================================
+# R-166d (round 4) — the failover COMMAND itself must be fenced: a stale
+# failure report (from a previous owner, or about a superseded generation)
+# must not reassign ongoing work. Written BEFORE the fix (red run saved in
+# docs/audit/M8/logs/raw/193_r166d4_red.log).
+# =====================================================================
+
+def test_stale_failure_report_from_previous_owner_is_refused_r166d():
+    """distribute -> p0 (gen 0); delegate p0->p1 (gen 1). A failure report
+    from p0 (the PREVIOUS owner) must be refused — it must not reassign p1's
+    ongoing work — with NO state changes."""
+    co = C.GroupCoordinator(participants(4))
+    co.distribute(subtasks(1))
+    co.delegate("p0", "p1", "s0")
+    with pytest.raises(C.CoordinationError, match="not the assignee"):
+        co.failover("s0", "p0")            # stale report from the previous owner
+    assert co._expected["s0"] == "p1"       # ownership unchanged
+    assert co._generation["s0"] == 1        # generation unchanged
+    assert co._failovers == {}              # no failover recorded
+    assert co._messages_sent == 2            # work + delegation only
+    assert co._load["p1"] == 1 and co._load["p0"] == 0
+
+
+def test_failure_report_from_unknown_participant_is_refused_r166d():
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    with pytest.raises(C.CoordinationError, match="not the assignee"):
+        co.failover("s0", "ghost")
+
+
+def test_stale_generation_failure_report_is_refused_r166d():
+    """A failure report stamped with a SUPERSEDED generation must not
+    reassign the current assignment — even from the current assignee (the
+    ownership returned to them via a failover)."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))                     # p0, gen 0
+    co.failover("s0", "p0")                        # p1, gen 1
+    back = co.failover("s0", "p1", attempt=1)      # p0 again, gen 2
+    assert back is not None and co._expected["s0"] == "p0"
+    with pytest.raises(C.CoordinationError, match="stale"):
+        co.failover("s0", "p0", attempt=1)        # report about gen 1 — stale
+    assert co._expected["s0"] == "p0"
+    assert co._generation["s0"] == 2
+
+
+def test_current_failure_report_produces_correct_work_r166d():
+    """The positive path: a CURRENT failure report (current assignee, current
+    generation) still produces a correct work message stamped with the new
+    generation, and its result is accepted."""
+    co = C.GroupCoordinator(participants(4))
+    co.distribute(subtasks(1))                     # p0, gen 0
+    first = co.failover("s0", "p0")                # p1, gen 1
+    assert first.attempt == 1
+    second = co.failover("s0", "p1", attempt=1)    # p2, gen 2
+    assert second is not None
+    assert second.attempt == 2
+    ok = co.submit_result(C.CoordinationMessage(
+        "r:s0", "result", "s0", second.participant_id, {"ok": True},
+        attempt=second.attempt))
+    assert ok is True
+    rep = co.finalize()
+    assert rep.ok is True

@@ -1,0 +1,5 @@
+# R-166d round-4 mutations (failover command fencing) — 2026-10-19T10:51:36Z
+MUTATION H1 failover-report assignee check removed: CAUGHT (=================== 2 failed, 72 passed, 1 warning in 0.66s ====================)
+MUTATION H2 failover-report generation check removed: CAUGHT (=================== 6 failed, 68 passed, 1 warning in 0.78s ====================)
+
+# summary: 2 caught, 0 not caught
