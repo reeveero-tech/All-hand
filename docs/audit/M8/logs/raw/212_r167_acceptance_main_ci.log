@@ -1,0 +1,33 @@
+=== R-167 acceptance record (2026-10-19T23:10Z) ===
+--- merge commit 2a2ce88:
+2a2ce8891ed168113ba229659cd616fe675fb399
+52e5bdb285f6249632d22f940e375c2fc4f06ce1 b5cbf36622d5fdceae0b948010615d54c5095e63
+Merge pull request #202 from reeveero-tech/m8/r167-unified-memory
+--- PR #202 state:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json,sys; p=json.load(sys.stdin); print(p['state'], 'merged_at', p['merged_at'])
+                                                   ~^^^^^^^^^
+KeyError: 'state'
+--- CI on main at 2a2ce88 (run 39337937412) jobs:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json,sys; [print(j['name'], j['conclusion']) for j in json.load(sys.stdin)['jobs']]
+                                                                 ~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+KeyError: 'jobs'
+--- local suite on main at 2a2ce88:
+===== 1671 passed, 7 skipped, 4 deselected, 1 warning in 235.48s (0:03:55) =====
+--- PR #202 (with token):
+closed merged_at 2026-10-19T22:52:30Z
+--- CI on main at 2a2ce88 (run 39337937412) jobs:
+quality success
+test success
+network success
+docker success
+storage success
+build success
+audit success
+publish skipped
+--- local suite on main at 2a2ce88: 1671 passed, 7 skipped, 4 deselected (236s)
+--- CI test job 118352019323 (run 39337937412) — three steps:
+1671 passed, 7 skipped, 4 deselected in 236.88s / 218.63s / 231.56s
