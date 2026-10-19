@@ -1,0 +1,20 @@
+# R-166b PR CI — 2026-10-19 — branch m8/r166b-review-fixes, head 29a8b8a
+# workflows:
+{"conclusion":"success","head_sha":"29a8b8af15dd491a2036c5392caac5690123317c","id":39216705744,"name":"Governance Gate","status":"completed"}
+{"conclusion":"success","head_sha":"29a8b8af15dd491a2036c5392caac5690123317c","id":39216705707,"name":"AGOS Kernel CI/CD","status":"completed"}
+# AGOS Kernel CI/CD 39216705707 jobs:
+{"conclusion":"success","id":117942141691,"name":"quality"}
+{"conclusion":"success","id":117942142133,"name":"test"}
+{"conclusion":"success","id":117942226827,"name":"network"}
+{"conclusion":"success","id":117946431948,"name":"build"}
+{"conclusion":"success","id":117946431964,"name":"docker"}
+{"conclusion":"success","id":117946431988,"name":"storage"}
+{"conclusion":"success","id":117946432057,"name":"audit"}
+{"conclusion":"skipped","id":117946573069,"name":"publish"}
+# test job 117942142133 summary lines:
+2026-10-19T07:34:30.1987121Z tests/test_r158_test_baseline.py::test_pytest_summary_parser[==== 1056 passed, 4 skipped, 4 deselected in 132.72s (0:02:12) ====-expected0] PASSED [ 39%]
+2026-10-19T07:34:30.2017575Z tests/test_r158_test_baseline.py::test_pytest_summary_parser[===== 3 failed, 1053 passed, 4 skipped, 4 deselected in 149.15s (0:02:29) ======-expected1] PASSED [ 39%]
+2026-10-19T07:37:17.6351951Z ========== 1612 passed, 7 skipped, 4 deselected in 239.25s (0:03:59) ===========
+2026-10-19T07:41:12.5670942Z ========== 1612 passed, 7 skipped, 4 deselected in 224.37s (0:03:44) ===========
+2026-10-19T07:45:13.8336110Z ========== 1612 passed, 7 skipped, 4 deselected in 236.59s (0:03:56) ===========
+# Governance Gate 39216705744: success
