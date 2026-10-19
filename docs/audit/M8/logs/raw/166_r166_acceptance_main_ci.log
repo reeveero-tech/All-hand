@@ -1,0 +1,39 @@
+R-166 acceptance — PR #194 merged, CI on main verified (2026-10-19)
+[all values below were extracted programmatically from git / the GitHub API in
+this session — no hand-copied SHAs or timestamps; raw outputs: 167_r166_merge_record_raw.log]
+
+- PR #194 "R-166: group coordination — fair fan-out/fan-in, idempotent messages,
+  loss detection (D-085)" merged on the owner's standing handoff instruction
+  (§5.7: merge with --merge after all CI checks pass), by the owner account
+  (mergedBy=reeveero-tech, mergedAt=2026-10-19T06:10:04Z from `gh pr view 194`),
+  plain merge commit (no squash, no [publish]).
+- merge_sha=56636f8f5c634925a7d4119549595f63edf6b8bd (merge commit on main; parents
+  55c42f68d87616e14ae5e2e90d6bb75fdd68c4d0 = main, 24b73c8 = PR head — verified with
+  `git show -s --format='%H%n%P' 56636f8`).
+- tested_sha=24b73c8623f836d7367004d836d7c2fd9e81d0c5 (PR head — second parent of the
+  merge ✓; headRefOid from `gh pr view 194`; the same head all PR checks ran against).
+- ci_run=39208353044 (AGOS Kernel CI/CD on main, push, headSha=56636f8…, displayTitle
+  "Merge pull request #194 from reeveero-tech/m8/r166-coordination", 12m33s).
+- ci_conclusion=success.
+- Jobs (gh api …/runs/39208353044/jobs): quality=success, test=success, network=success,
+  build=success, audit=success, docker=success, storage=success, publish=skipped
+  (D-011 — not counted as a release).
+- test job (3 steps): "1602 passed, 7 skipped, 4 deselected" in ALL THREE steps
+  (3.11 live-suite 229.80s, 3.12 213.33s, 3.12-specialists 224.88s — from the job logs
+  API, timestamps 06:14:15Z / 06:18:01Z / 06:21:50Z). Local suites: the 3.12.13 run on
+  the final branch tree is 1602+7+4 (`164_r166_suite_py312.log` — 43 R-166 tests);
+  the 3.14.3 run (`164_r166_suite_py314.log`) predates the last 2 contract-test
+  additions and shows 1600+7+4 (41 R-166 tests at that tree) — recorded as it is.
+  1602 = 1559 + 43 tests in `tests/test_r166_coordination.py`.
+  (The "1056 passed …" / "3 failed, 1053 passed …" strings in the test log are input
+  fixtures of the R-158 pytest-summary parser tests, not results.)
+- PR checks on the PR branch before merge (on 24b73c8): all pass — quality, test,
+  build, docker, audit, storage, network, governance; publish skipped per D-011.
+- Baseline before merge (main 55c42f6, this session): pytest 1602 passed, 7 skipped,
+  4 deselected — no docs-vs-reality gap found (no repair item).
+- Not claimed: production readiness. Untested/limits: the coordination record is
+  in-request only (no state across requests or instances — same pattern as RISK-035);
+  the 100/1k/10k participant metrics are engine bookkeeping (logical participants
+  with no resources), not a claim of running 10k real agents; RISK-035, RISK-033 and
+  RISK-034 open; Q-026 open; no deploy, no billing, `render.yaml` unchanged.
+  R-167 not started.

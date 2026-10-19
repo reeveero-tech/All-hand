@@ -1,0 +1,34 @@
+# R-166 merge record — raw command outputs (this session, 2026-10-19)
+
+$ git show -s --format="%H%n%P" 56636f8
+56636f8f5c634925a7d4119549595f63edf6b8bd
+55c42f68d87616e14ae5e2e90d6bb75fdd68c4d0 24b73c8623f836d7367004d836d7c2fd9e81d0c5
+
+$ gh pr view 194 --json mergedAt,mergedBy,mergeCommit,headRefOid,url
+{"headRefOid":"24b73c8623f836d7367004d836d7c2fd9e81d0c5","mergeCommit":"56636f8f5c634925a7d4119549595f63edf6b8bd","mergedAt":"2026-10-19T06:10:04Z","mergedBy":"reeveero-tech","url":"https://github.com/reeveero-tech/All-hand/pull/194"}
+
+$ gh run view 39208353044 --json status,conclusion
+{"conclusion":"success","status":"completed"}
+
+$ gh api repos/reeveero-tech/All-hand/actions/runs/39208353044/jobs (name+conclusion)
+{"conclusion":"success","name":"quality"}
+{"conclusion":"success","name":"test"}
+{"conclusion":"success","name":"network"}
+{"conclusion":"success","name":"build"}
+{"conclusion":"success","name":"audit"}
+{"conclusion":"success","name":"docker"}
+{"conclusion":"success","name":"storage"}
+{"conclusion":"skipped","name":"publish"}
+
+$ test job logs (gh api .../jobs/117916006755/logs) — the three pytest summaries
+2026-10-19T06:14:15.6652335Z ========== 1602 passed, 7 skipped, 4 deselected in 229.80s (0:03:49) ===========
+2026-10-19T06:18:01.5813725Z ========== 1602 passed, 7 skipped, 4 deselected in 213.33s (0:03:33) ===========
+2026-10-19T06:21:50.2492794Z ========== 1602 passed, 7 skipped, 4 deselected in 224.88s (0:03:44) ===========
+
+$ local suite on the branch tree, Python 3.14.3 (NOTE: this run predates the last
+2 contract-test additions — 41 R-166 tests, hence 1600; the final-tree local full run
+is the 3.12 one below, and CI on main at merge_sha confirms 1602 on all 3 Pythons)
+===== 1600 passed, 7 skipped, 4 deselected, 1 warning in 234.79s (0:03:54) =====
+
+$ local suite on the final branch tree (m8/r166-coordination @ 24b73c8), Python 3.12.13
+===== 1602 passed, 7 skipped, 4 deselected, 1 warning in 242.66s (0:04:02) =====
