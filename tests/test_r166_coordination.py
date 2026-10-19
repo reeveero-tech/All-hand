@@ -426,3 +426,26 @@ def test_coordinate_endpoint_reports_missing_never_hidden_success(client):
     if body["ok"] is False:
         assert body["missing"]
         assert body["incomplete_reason"] == "missing results"
+
+
+def test_coordinate_endpoint_response_matches_the_coordination_report_contract(client):
+    """R-166: the response validates against the coordination_report v1
+    contract (contracts.py -> docs/governance/contracts/)."""
+    from agent_civilization.core import contracts
+    r = client.post("/civilization/coordinate",
+                    json={"message": "analyze 3 and 4", "specializations": ["analyst"]})
+    assert r.status_code == 200, r.text
+    contracts.validate("coordination_report", r.json())
+
+
+def test_coordinate_request_model_matches_the_coordinate_request_contract():
+    """R-166: the request model is the single source of truth of its schema
+    (REQUEST_MODELS -> docs/governance/contracts/coordinate_request.v1)."""
+    from agent_civilization.civilization_routes import CoordinateRequest
+    payload = {"message": "hi", "specializations": ["analyst"],
+               "participants_per_specialty": 2, "allow_public_llm": False}
+    req = CoordinateRequest.model_validate(payload)
+    assert req.allow_public_llm is False
+    with pytest.raises(Exception):
+        CoordinateRequest.model_validate({"message": "hi",
+                                         "participants_per_specialty": 999})

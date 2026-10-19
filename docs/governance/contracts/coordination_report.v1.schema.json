@@ -1,0 +1,53 @@
+{
+  "$id": "agos://contracts/coordination_report/v1",
+  "additionalProperties": false,
+  "description": "R-166 (D-085): the response of POST /civilization/coordinate. A\nfan-out/fan-in round over the real civilization agents — ok is True only\nwhen every subtask has a result (loss detection, never a hidden success).",
+  "properties": {
+    "incomplete_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Incomplete Reason"
+    },
+    "metrics": {
+      "additionalProperties": true,
+      "title": "Metrics",
+      "type": "object"
+    },
+    "missing": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing",
+      "type": "array"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "results": {
+      "additionalProperties": true,
+      "title": "Results",
+      "type": "object"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_id",
+    "ok"
+  ],
+  "title": "CoordinationReportContract",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "api",
+  "x-flow": "POST /civilization/coordinate response (R-166)"
+}

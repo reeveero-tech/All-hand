@@ -244,6 +244,18 @@ class ExecuteResponse(_Strict):
     ignored_approvals: Optional[List[str]] = None
 
 
+class CoordinationReportContract(_Strict):
+    """R-166 (D-085): the response of POST /civilization/coordinate. A
+    fan-out/fan-in round over the real civilization agents — ok is True only
+    when every subtask has a result (loss detection, never a hidden success)."""
+    task_id: str
+    ok: bool
+    incomplete_reason: Optional[str] = None
+    results: Dict[str, Any] = Field(default_factory=dict)
+    missing: List[str] = Field(default_factory=list)
+    metrics: Dict[str, Any] = Field(default_factory=dict)
+
+
 class StageArtifact(_Strict):
     """R-165 (D-084): a typed, schema-validated stage output. Downstream
     stages consume these (``work["inputs"]`` / ``work["artifact"]``) instead
@@ -498,6 +510,7 @@ CONTRACTS: Dict[str, tuple] = {
     "storage_event_insert": (1, EventInsert, "storage", "SupabaseStorage.insert_event -> PostgREST"),
     "storage_agent_stats":  (1, AgentStatsUpsert, "storage", "SupabaseStorage.upsert_agent_stats -> PostgREST"),
     "stage_artifact":       (1, StageArtifact, "internal", "DAG stage output -> dependent stages (R-165)"),
+    "coordination_report":  (1, CoordinationReportContract, "api", "POST /civilization/coordinate response (R-166)"),
 }
 
 #: request models are the server's own (single source of truth) — resolved lazily
@@ -507,6 +520,7 @@ REQUEST_MODELS = {
     "external_agent_request": ("server", "ExternalAgentRequest"),
     "execute_request": ("agent_civilization.civilization_routes", "ExecuteRequest"),
     "resume_request": ("agent_civilization.civilization_routes", "ResumeRequest"),
+    "coordinate_request": ("agent_civilization.civilization_routes", "CoordinateRequest"),
 }
 REQUEST_VERSION = 1
 
