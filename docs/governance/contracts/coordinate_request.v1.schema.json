@@ -1,0 +1,46 @@
+{
+  "$id": "agos://contracts/coordinate_request/v1",
+  "description": "R-166 (D-085): POST /civilization/coordinate.\n\nA fan-out/fan-in coordination round: the message becomes one subtask per\nrequested specialization (default: the specializations of the auto-routed\nplan), distributed fairly across the real civilization agents, executed,\ngathered with loss detection, and reduced into a report with metrics.",
+  "properties": {
+    "allow_public_llm": {
+      "default": false,
+      "title": "Allow Public Llm",
+      "type": "boolean"
+    },
+    "message": {
+      "title": "Message",
+      "type": "string"
+    },
+    "participants_per_specialty": {
+      "default": 1,
+      "maximum": 50,
+      "minimum": 1,
+      "title": "Participants Per Specialty",
+      "type": "integer"
+    },
+    "specializations": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Specializations"
+    }
+  },
+  "required": [
+    "message"
+  ],
+  "title": "CoordinateRequest",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "request",
+  "x-flow": "client -> API",
+  "x-unknown-fields": "ignored by the server (not rejected)"
+}

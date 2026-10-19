@@ -1,0 +1,63 @@
+# R-166 gates (local) — 921de9e — 2026-10-19T05:52:58Z
+$ ruff check --select F,E722 ...
+All checks passed!
+exit=0
+$ python -m pytest tests/test_r166_coordination.py -q
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 43 items
+
+tests/test_r166_coordination.py ........................................ [ 93%]
+...                                                                      [100%]
+
+=============================== warnings summary ===============================
+../../../../tmp/venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /tmp/venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 43 passed, 1 warning in 0.56s =========================
+exit=0
+$ python scripts/export_contract_schemas.py --check
+2026-10-19 05:53:00,306 - agos.server - INFO - startup: AGOS_ENV=test, 0 credential(s) for 0 tenant(s) - <module>:89
+2026-10-19 05:53:00,306 - agos.server - WARNING - startup: no credentials (AGOS_ENV=test) — every tenant-data route answers 401 - <module>:92
+2026-10-19 05:53:00,306 - agos.server - WARNING - CORS is open to all origins. Set AGOS_ALLOWED_ORIGINS for production. - <module>:129
+2026-10-19 05:53:00,306 - agos.server - WARNING - CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set. - <module>:143
+2026-10-19 05:53:00,307 - agos.infrastructure.redis - WARNING - Redis not available. Using in-memory fallback. - <module>:30
+2026-10-19 05:53:00,313 - agos.server - INFO - Civilization initialized: 20 specializations, 1000 civilization agents - <module>:450
+2026-10-19 05:53:00,313 - agos.server - INFO - External agents loaded: 0 - <module>:452
+2026-10-19 05:53:00,345 - agos.server - INFO - Civilization routes registered successfully - <module>:2031
+contracts=31 problems=0
+exit=0
+$ cd web && npm test
+# skipped 0
+# todo 0
+# duration_ms 1509.523126
+$ cd web && npm run build
+
+✓ built in 127ms
+$ npm run build (root)
+exit=0
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+
+(note — the web-test exit codes above were lost to a script path bug; the raw
+outputs are reproduced here from the same run)
+$ cd web && npm test (raw tail)
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1509.523126
+$ cd web && npm run build (raw tail)
+dist/assets/index-B6dOodBA.css   12.26 kB │ gzip:  2.99 kB
+dist/assets/index-DzPG84cf.js   172.90 kB │ gzip: 54.69 kB
+
+✓ built in 127ms
+# web tests: 39/39 pass (exit 0); web build: success; root build: success

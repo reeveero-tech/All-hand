@@ -13,9 +13,10 @@ The user does NOT choose a specialization; the civilization decides.
 
 from __future__ import annotations
 
+import asyncio
 import time
 import uuid
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
@@ -24,6 +25,7 @@ from pydantic import BaseModel, Field
 from agent_civilization.registry import AGENTS, as_list, total_agents
 from agent_civilization.routing import route as auto_route
 from agent_civilization.pipeline import dag, execute_plan
+from agent_civilization.core import coordination
 
 _STAGE_NAME = r"^[A-Za-z0-9_.-]{1,64}$"
 
@@ -43,6 +45,20 @@ class ExecuteRequest(BaseModel):
 class ResumeRequest(BaseModel):
     """R-165: POST /civilization/runs/{run_id}/resume."""
     approve_stages: List[str] = Field(default_factory=list, max_length=dag.MAX_STAGES)
+    allow_public_llm: bool = Field(False, strict=True)
+
+
+class CoordinateRequest(BaseModel):
+    """R-166 (D-085): POST /civilization/coordinate.
+
+    A fan-out/fan-in coordination round: the message becomes one subtask per
+    requested specialization (default: the specializations of the auto-routed
+    plan), distributed fairly across the real civilization agents, executed,
+    gathered with loss detection, and reduced into a report with metrics.
+    """
+    message: str
+    specializations: Optional[List[str]] = None
+    participants_per_specialty: int = Field(1, ge=1, le=50)
     allow_public_llm: bool = Field(False, strict=True)
 
 
@@ -170,3 +186,106 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             rec["result"] = result
             rec["finished_at"] = time.time()
         return {"task_id": run.task_id, **result}
+
+    @app.post("/civilization/coordinate")
+    async def coordinate(req: CoordinateRequest, api_key: Optional[str] = Security(api_key_header)):
+        """R-166 (D-085): fan-out/fan-in over the real civilization agents.
+
+        The message becomes one subtask per requested specialization (default:
+        the specializations of the auto-routed plan), assigned fairly across
+        participants, executed by real agents, gathered with loss detection and
+        reduced into a report with metrics. A subtask whose participant never
+        answers makes the round incomplete — never a hidden success.
+        """
+        principal = _principal(api_key)
+        if not req.message.strip():
+            raise HTTPException(400, "message is required")
+        plan = auto_route(req.message)
+        stages = plan.get("stages", []) if isinstance(plan, dict) else plan
+        specs = req.specializations or [st["specialization"] for st in stages]
+        unknown = [s for s in specs if not civilization.get(s)]
+        if unknown:
+            raise HTTPException(400, f"unknown specializations: {', '.join(sorted(set(unknown)))}")
+        task_id = str(uuid.uuid4())
+        tasks_store[task_id] = {
+            "id": task_id,
+            "message": req.message,
+            "plan": plan,
+            "status": "running",
+            "created_at": time.time(),
+            "tenant_id": principal.tenant_id,
+        }
+        prune_tasks()
+
+        # participants: real agents, capped per specialty; ids are unique
+        # because agent names are unique inside a pool
+        participants: List[coordination.Participant] = []
+        agent_by_pid: Dict[str, Any] = {}
+        for spec in dict.fromkeys(specs):  # dedupe, keep order
+            pool = civilization.get(spec, [])
+            for agent in pool[: req.participants_per_specialty]:
+                pid = f"{spec}:{agent.name}"
+                participants.append(coordination.Participant(participant_id=pid, specialty=spec))
+                agent_by_pid[pid] = agent
+        if not participants:
+            rec = tasks_store[task_id]
+            rec.update(status="failed", finished_at=time.time(),
+                       result={"error": "no participants"})
+            raise HTTPException(400, "no participants available")
+
+        subtasks = [
+            coordination.Subtask(subtask_id=f"sub-{i}", specialty=spec,
+                                 payload={"message": req.message, "specialization": spec})
+            for i, spec in enumerate(dict.fromkeys(specs))
+        ]
+
+        from agent_civilization.core.llm import reset_public_llm_consent, set_public_llm_consent
+        token = set_public_llm_consent(req.allow_public_llm)
+
+        async def execute(msg: coordination.CoordinationMessage) -> coordination.CoordinationMessage:
+            agent = agent_by_pid[msg.participant_id]
+            try:
+                res = await asyncio.wait_for(
+                    agent.execute({"goal": req.message, "data": msg.body,
+                                   "specialization": msg.subtask_id}),
+                    timeout=60.0)
+                body = res
+            except asyncio.TimeoutError:
+                body = {"ok": False, "error": "participant timed out"}
+            except Exception as exc:  # noqa: BLE001
+                body = {"ok": False, "error": f"participant error: {type(exc).__name__}"}
+            return coordination.CoordinationMessage(
+                message_id=f"result:{msg.subtask_id}:{msg.participant_id}",
+                kind="result",
+                subtask_id=msg.subtask_id,
+                participant_id=msg.participant_id,
+                body=body,
+            )
+
+        try:
+            report = await coordination.run_coordination(
+                subtasks, participants, execute)
+        except coordination.CoordinationError as exc:
+            rec = tasks_store[task_id]
+            rec.update(status="failed", finished_at=time.time(),
+                       result={"error": f"coordination refused: {exc}"})
+            raise HTTPException(400, f"coordination refused: {exc}") from None
+        finally:
+            reset_public_llm_consent(token)
+
+        rec = tasks_store[task_id]
+        rec["status"] = "completed" if report.ok else "failed"
+        rec["finished_at"] = time.time()
+        rec["result"] = {
+            "ok": report.ok,
+            "results": report.results,
+            "missing": report.missing,
+        }
+        return {
+            "task_id": task_id,
+            "ok": report.ok,
+            "incomplete_reason": report.incomplete_reason,
+            "results": report.results,
+            "missing": report.missing,
+            "metrics": report.metrics(),
+        }

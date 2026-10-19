@@ -1,6 +1,6 @@
 # المعمارية (ARCHITECTURE)
 
-> **آخر تحديث**: 2026-10-18 — **R-163 (D-082)**: طابور مهام دائم اختياري (تفصيل تدفق `POST /api/tasks` المتين في «التدفقات المُتحققة») — وحدة قاموس الحالة `core/task_queue.py`، عمليات تخزين مُسيّجة `supabase_store.py`، حلقتا إرسال ومحصّل في `server.py`، ترحيل `docs/sql/003_task_queue.sql`. قبلها 2026-10-16 — R-145/SEC-06 (بوابة خروج LLM المركزية في `core/llm.py`: المزود العام يحتاج تفعيل المشغّل وموافقة الطلب معاً). قبلها 2026-10-15 — R-132 (`core/pools.py`). قبلها R-119 (مصالحة ادعاءات قديمة مع الواقع — خلل وثائق مقابل واقع).
+> **آخر تحديث**: 2026-10-19 — **R-166 (D-085)**: وحدة تنسيق جماعي جديدة `agent_civilization/core/coordination.py` (fan-out/fan-in فوق مشاركين منطقيين: توزيع عادل، idempotency بالرسالة، كشف فقد صريح، failover، حدود تفويض) ونقطة نهاية `POST /civilization/coordinate` (الصف 27)؛ `civilization_routes.py` صار 4 مسارات /civilization/*. قبلها > **آخر تحديث**: 2026-10-18 — **R-163 (D-082)**: طابور مهام دائم اختياري (تفصيل تدفق `POST /api/tasks` المتين في «التدفقات المُتحققة») — وحدة قاموس الحالة `core/task_queue.py`، عمليات تخزين مُسيّجة `supabase_store.py`، حلقتا إرسال ومحصّل في `server.py`، ترحيل `docs/sql/003_task_queue.sql`. قبلها 2026-10-16 — R-145/SEC-06 (بوابة خروج LLM المركزية في `core/llm.py`: المزود العام يحتاج تفعيل المشغّل وموافقة الطلب معاً). قبلها 2026-10-15 — R-132 (`core/pools.py`). قبلها R-119 (مصالحة ادعاءات قديمة مع الواقع — خلل وثائق مقابل واقع).
 >
 > **حدود الأقسام**: "المسار الحي (المُتحقق منه)"، "التدفقات المُتحققة"، "تحديث R-032"، و"قرار مصير `agos-kernel/`" أقسام حالية مرجعية. "مسارات غير مرتبطة بمسار التشغيل المُتحقق منه"، "جرد الدلائل الجذرية"، "جرد ملفات `specialists/`"، "جرد ازدواج `agos-kernel/`"، و"نقاط الالتباس المعمارية" سجل تاريخي لجرد M0 (2026-10-12) — الحالة الحالية موسومة داخل كل منها بـ"مصالحة R-119". لا يُقرأ أي وصف في سجل M0 كوصف حالي دون وسم مصالحة.
 >
@@ -25,9 +25,10 @@ All-hand/ (الجذر — 10 أدلة جذرية متتبعة، 1,546 ملفاً
 │   ├── core/pools.py            ← مجمّعات خيوط مسماة llm/web/net/local لكل استدعاء حاجب (R-132، D-055)
 │   ├── routing/auto_router.py   ← route() (الاسم الأصلي للدالة `route`؛ `civilization_routes.py` يستوردها كـalias تحت الاسم `auto_route`: `from agent_civilization.routing import route as auto_route`)؛ توجيه محلي بالفعل (R-106)
 │   ├── pipeline/orchestrator.py ← execute_plan() → pipeline/dag.py (R-165: DAG، قطع بنيوية، موافقات، استئناف)
+│   ├── core/coordination.py      ← تنسيق جماعي fan-out/fan-in (R-166: عدالة، idempotency، كشف فقد)
 │   ├── registry/oss_agents.py   ← سجل ~320 وكيل OSS (dataclass ثابت)
 │   ├── storage/supabase_store.py ← طبقة Supabase REST
-│   └── civilization_routes.py   ← 3 مسارات /civilization/* (تسجيل ديناميكي)
+│   └── civilization_routes.py   ← 4 مسارات /civilization/* (تسجيل ديناميكي)
 ├── agos_kernel/                 ← البنية التحتية المستوردة من server.py (9 ملفات)
 │   └── infrastructure/          ← circuit_breaker, metrics, health, redis_queue
 ├── web/                         ← واجهة React/Vite — بناء ناجح، تُخدم عبر Docker
