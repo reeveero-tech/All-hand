@@ -1,0 +1,5 @@
+# R-166d mutations (delegation handoff) — 2026-10-19T10:09:15Z
+MUTATION E1 ownership transfer removed from delegate (recipient cannot complete): CAUGHT (=================== 2 failed, 59 passed, 1 warning in 0.65s ====================)
+MUTATION E2 assignee authorization removed (anyone may delegate any subtask): CAUGHT (=================== 1 failed, 60 passed, 1 warning in 0.63s ====================)
+
+# summary: 2 caught, 0 not caught

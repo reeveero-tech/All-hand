@@ -197,8 +197,9 @@ class GroupCoordinator:
         self._finalized = False
         self._started_at = 0.0
         self._load: Dict[str, int] = {}                # participant_id -> assigned subtasks
-        self._failovers: Dict[str, int] = {}          # subtask_id -> attempts used
-        self._attempt: Dict[str, int] = {}           # subtask_id -> current attempt (D-087 fencing)
+        self._failovers: Dict[str, int] = {}          # subtask_id -> failovers used (bounded)
+        self._generation: Dict[str, int] = {}         # subtask_id -> ownership generation (D-088 fencing)
+        self._chain: Dict[str, List[str]] = {}        # subtask_id -> engine-owned delegation path
         self._duplicates: List[str] = []
         self._late: List[str] = []
         self._out_of_order: List[str] = []
@@ -238,7 +239,7 @@ class GroupCoordinator:
             cursor[st.specialty] = i + 1
             self._assignments[st.subtask_id] = pid
             self._expected[st.subtask_id] = pid
-            self._attempt[st.subtask_id] = 0
+            self._generation[st.subtask_id] = 0
             self._load[pid] = self._load.get(pid, 0) + 1
             msg = CoordinationMessage(
                 message_id=f"work:{st.subtask_id}:{pid}",
@@ -272,8 +273,15 @@ class GroupCoordinator:
 
     # ----------------------------------------------------------- failover
 
-    def failover(self, subtask_id: str, from_participant: str) -> Optional[CoordinationMessage]:
+    def failover(self, subtask_id: str, from_participant: str,
+                  attempt: Optional[int] = None) -> Optional[CoordinationMessage]:
         """Reassign a failed subtask to another participant of the same specialty.
+
+        The failure REPORT is fenced (D-088): it must come from the CURRENT
+        assignee and — once the subtask has transitioned — carry the CURRENT
+        generation stamp (the work message's attempt). A stale report (from a
+        previous owner, or about a superseded generation) is refused with NO
+        state changes: an old failure event must never reassign ongoing work.
 
         Bounded by ``max_failovers`` and by the message budget. NOTE (D-086):
         failover is an explicit engine capability — it re-executes the subtask,
@@ -282,8 +290,27 @@ class GroupCoordinator:
         """
         if subtask_id not in self._expected:
             raise CoordinationError(f"unknown subtask {subtask_id!r}")
+        if self._finalized:
+            raise CoordinationError(
+                "the coordination round is finalized — cannot fail over")
         if subtask_id in self._results:
             return None  # already answered; nothing to fail over
+        if self._expected[subtask_id] != from_participant:
+            raise CoordinationError(
+                f"{from_participant!r} is not the assignee of {subtask_id!r} — "
+                "a failure report from a previous owner cannot reassign ongoing work")
+        current_generation = self._generation.get(subtask_id, 0)
+        if current_generation > 0:
+            if attempt != current_generation:
+                raise CoordinationError(
+                    f"stale failure report for {subtask_id!r}: it carries attempt "
+                    f"{attempt!r} but the current assignment generation is "
+                    f"{current_generation} — a report about a superseded generation "
+                    "cannot reassign ongoing work")
+        elif attempt not in (None, 0):
+            raise CoordinationError(
+                f"stale failure report for {subtask_id!r}: attempt {attempt!r} "
+                "is out of range for a first-generation assignment")
         used = self._failovers.get(subtask_id, 0)
         if used >= self.max_failovers:
             return None
@@ -297,7 +324,7 @@ class GroupCoordinator:
                 f"failover of {subtask_id!r} would exceed the budget of {self.max_messages}")
         self._failovers[subtask_id] = used + 1
         self._expected[subtask_id] = pool[0]
-        self._attempt[subtask_id] = used + 1
+        self._generation[subtask_id] = self._generation.get(subtask_id, 0) + 1
         self._load[pool[0]] = self._load.get(pool[0], 0) + 1
         self._load[current] = max(0, self._load.get(current, 1) - 1)
         self._messages_sent += 1
@@ -307,7 +334,7 @@ class GroupCoordinator:
             subtask_id=subtask_id,
             participant_id=pool[0],
             body=None,
-            attempt=used + 1,
+            attempt=self._generation[subtask_id],   # the GENERATION, not the counter
         )
 
     # ------------------------------------------------------------ delegation
@@ -315,16 +342,55 @@ class GroupCoordinator:
     def delegate(
         self, from_participant: str, to_participant: str, subtask_id: str,
         chain: Optional[Sequence[str]] = None,
+        attempt: Optional[int] = None,
     ) -> CoordinationMessage:
         """A participant hands its subtask to another participant.
 
-        ``chain`` is the delegation chain so far, ending with the delegator.
-        Depth beyond ``max_delegation_depth`` is refused; a cycle (any
-        participant appearing twice) is refused.
+        The ENGINE owns the delegation path (``self._chain``) — the caller's
+        ``chain`` argument is deprecated and ignored; an omitted or truncated
+        caller-side chain can never drop engine history. Depth beyond
+        ``max_delegation_depth`` is refused; a cycle (any participant already
+        on the path) is refused. A subtask that already has a result, or a
+        round closed by ``finalize()``, cannot be delegated (no new work for
+        completed work — no side-effect duplication). Only the CURRENT
+        assignee may hand off its subtask, and the handoff MOVES OWNERSHIP
+        (D-088): the recipient becomes the assignee, the ownership GENERATION
+        advances (fencing: results must carry the current generation), and
+        the previous owner can no longer complete the subtask. A handoff is
+        not a re-execution — the generation advances but the failover
+        counter does not.
         """
-        path = list(chain or [from_participant])
-        if from_participant not in path:
-            path.append(from_participant)
+        if subtask_id not in self._expected:
+            raise CoordinationError(f"unknown subtask {subtask_id!r}")
+        if subtask_id in self._results:
+            raise CoordinationError(
+                f"subtask {subtask_id!r} already has a result — cannot delegate")
+        if self._finalized:
+            raise CoordinationError("the coordination round is finalized — cannot delegate")
+        if to_participant not in self.participants:
+            raise CoordinationError(f"unknown participant {to_participant!r}")
+        if self._expected[subtask_id] != from_participant:
+            raise CoordinationError(
+                f"{from_participant!r} is not the assignee of {subtask_id!r} — "
+                "only the assignee may delegate its subtask")
+        # the COMMAND is generation-fenced (D-088): after any ownership
+        # transition it must echo the CURRENT generation — a late command
+        # from a superseded assignment is indistinguishable by identity
+        # alone (the ownership may have returned to the same participant)
+        command_generation = self._generation.get(subtask_id, 0)
+        if command_generation > 0:
+            if attempt != command_generation:
+                raise CoordinationError(
+                    f"stale delegation command for {subtask_id!r}: it carries "
+                    f"attempt {attempt!r} but the current assignment generation "
+                    f"is {command_generation} — a command from a superseded "
+                    "assignment cannot hand off ongoing work")
+        elif attempt not in (None, 0):
+            raise CoordinationError(
+                f"stale delegation command for {subtask_id!r}: attempt "
+                f"{attempt!r} is out of range for a first-generation assignment")
+        # the engine's own record of the path is authoritative
+        path = list(self._chain.get(subtask_id) or [from_participant])
         if to_participant in path:
             raise DelegationCycle(
                 f"delegation cycle detected: {' -> '.join(path + [to_participant])}")
@@ -332,18 +398,27 @@ class GroupCoordinator:
             raise DelegationTooDeep(
                 f"delegation depth {len(path)} exceeds the limit of "
                 f"{self.max_delegation_depth}")
-        if to_participant not in self.participants:
-            raise CoordinationError(f"unknown participant {to_participant!r}")
         if self._messages_sent + 1 > self.max_messages:
             raise MessageBudgetExceeded(
                 f"delegation of {subtask_id!r} would exceed the budget of {self.max_messages}")
         self._messages_sent += 1
+        # the handoff moves ownership (D-088): the recipient becomes the
+        # assignee; the previous owner can no longer complete the subtask;
+        # the ownership GENERATION advances (fencing) but the failover
+        # counter does not (a handoff is not a re-execution)
+        self._expected[subtask_id] = to_participant
+        self._assignments[subtask_id] = to_participant
+        self._chain[subtask_id] = path + [to_participant]
+        self._generation[subtask_id] = self._generation.get(subtask_id, 0) + 1
+        self._load[from_participant] = max(0, self._load.get(from_participant, 1) - 1)
+        self._load[to_participant] = self._load.get(to_participant, 0) + 1
         return CoordinationMessage(
             message_id=f"delegate:{subtask_id}:{from_participant}->{to_participant}",
             kind="delegate",
             subtask_id=subtask_id,
             participant_id=to_participant,
             body=None,
+            attempt=self._generation[subtask_id],
         )
 
     # ---------------------------------------------------------- result intake
@@ -377,9 +452,9 @@ class GroupCoordinator:
             # not the assignee: a foreign or stale (post-failover) answer
             self._late.append(message.message_id)
             return False
-        current_attempt = self._attempt.get(message.subtask_id, 0)
-        reassigned = self._failovers.get(message.subtask_id, 0) > 0
-        if reassigned:
+        current_attempt = self._generation.get(message.subtask_id, 0)
+        transitioned = current_attempt > 0   # any ownership transition (failover/delegation)
+        if transitioned:
             # the subtask was reassigned at least once: only a result stamped
             # with the CURRENT attempt is provably not from a superseded try
             if message.attempt != current_attempt:
