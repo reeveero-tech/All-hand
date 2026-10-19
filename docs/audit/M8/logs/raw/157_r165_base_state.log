@@ -1,0 +1,13 @@
+# R-165 base state — 2026-10-19T02:48:42Z
+$ git rev-parse --short origin/main
+29b133b
+$ gh run list --branch main --limit 3
+39184776448 29b133b completed success
+39182337299 6f3831b completed success
+39138199717 d143fbf completed success
+$ gh pr list --state open
+(none open)
+# pre-R-165 facts (main 29b133b): agent_civilization/pipeline/orchestrator.py execute_plan = linear loop; context = last 3 outputs cut to [:800]; no depends_on, retry, deadline, budget, approval or resume
+118:                        + "\n---\n".join(context_snippets[-3:])
+131:                        "context": list(context_snippets[-3:]),
+160:                        context_snippets.append(f"[{stage['name']}@{agent.name}] {output_text[:800]}")

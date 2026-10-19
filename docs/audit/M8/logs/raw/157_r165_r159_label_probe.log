@@ -1,0 +1,9 @@
+# R-165: tests/test_r159_telemetry.py::test_series_do_not_grow_with_task_or_trace_ids — the old 'len >= 32' heuristic rejected the real route template /civilization/runs/{run_id}/resume (34 chars; 1 failed on 3.14/3.11/3.12 at 1555 passed).
+# The new check: no task0*/hex>=12 value; http op must be a route template (literal segments + {param}) with no numeric segment.
+# Probe (temporary file, deleted after the run): inject one series, run the real test.
+tests/_neg_label_test.py::test_probe[/api/tasks/12345] PASSED            [ 20%]
+tests/_neg_label_test.py::test_probe[/api/tasks/1a23fbe7-b4b7-4103-b617-1a0d0eb10776] PASSED [ 40%]
+tests/_neg_label_test.py::test_probe[task0abc] PASSED                    [ 60%]
+tests/_neg_label_test.py::test_probe[/civilization/runs/{run_id}/resume] PASSED [ 80%]
+tests/_neg_label_test.py::test_probe[/{full_path}] PASSED                [100%]
+============================== 5 passed in 0.56s ===============================

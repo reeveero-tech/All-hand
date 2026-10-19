@@ -1,0 +1,27 @@
+# R-165 gates — HEAD c630164 — 2026-10-19T02:46:59Z
+$ ruff check --select F,E722 --exclude agent_civilization/agents/specialists server.py agent_civilization agos_kernel tests
+All checks passed!
+exit=0
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests scripts
+All checks passed!
+exit=0
+ruff 0.17.0
+$ cd web && npm test
+# tests 39
+# suites 0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2662.816412
+$ cd web && npm run build
+dist/assets/index-B6dOodBA.css   12.26 kB │ gzip:  2.99 kB
+dist/assets/index-DzPG84cf.js   172.90 kB │ gzip: 54.69 kB
+
+✓ built in 275ms
+$ npm run build (root)
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt

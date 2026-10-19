@@ -893,3 +893,52 @@
   - الحدود لكل عملية، وسقف الطابور المتين غير ذري (RISK-033).
   - الافتراضات غير مقيسة على حمل إنتاج (RISK-034).
   - Q-026 مفتوحة، ولا نشر ولا فوترة، و`render.yaml` لم يتغير. R-165 لم تبدأ.
+
+## R-165 — خطط DAG واعتمادات المراحل (`awaiting_merge`، دفعة m8/r165-dag، D-084، 2026-10-19)
+
+### فحص الواقع قبل العمل
+- main = `29b133b` (دمج PR #190)، وCI على main ناجح في آخر ثلاثة تشغيلات (39184776448، 39182337299، 39138199717)، ولا PRs مفتوحة — `logs/raw/157_r165_base_state.log`.
+- **ما كان موجوداً**: `execute_plan` حلقة خطية؛ كل مرحلة تتلقى آخر ثلاث إجابات مقصوصة إلى 800 حرف (`output_text[:800]`). لا اعتماديات، ولا كشف دورات، ولا إعادة لمرحلة، ولا مهلة، ولا ميزانية، ولا موافقة، ولا استئناف. والمسار `/civilization/execute` خارج مهلة R-164.
+- **النطاق المعتمد من المالك**: البنود الستة، والسجل في الذاكرة، والموافقة بحقل `approve_stages`.
+
+### ما تغيّر
+- **`agent_civilization/pipeline/dag.py` (جديد)**: تطبيع الخطة والتحقق منها، وترتيب طوبولوجي، وقطع بنيوية بعقد `stage_artifact` v1، وجدولة متوازية محدودة، وإعادة موضعية بتذبذب، ومهلة لكل مرحلة ومهلة كلية، وميزانية تشغيلات، وموافقات للمراحل الحساسة، وإلغاء، وسجل تشغيل لكل مستأجر، واستئناف لا يعيد الناجح، وتقرير شامل.
+- **`pipeline/orchestrator.py`**: `execute_plan` يفوّض إلى المحرك بالتوقيع نفسه، مع وسائط اختيارية. `approvals=None` للمتصلين الداخليين.
+- **`civilization_routes.py`**:
+  - `approve_stages` في `ExecuteRequest`، و`ResumeRequest`، و400 لخطة غير صالحة.
+  - `GET /civilization/runs/{run_id}` و`POST /civilization/runs/{run_id}/resume` (404 لمستأجر آخر، 409 لتشغيل جارٍ).
+  - `/civilization/plan` يعيد الـDAG المطبّع، وسجل المهمة يحمل `run_id`.
+- **`core/contracts.py`**:
+  - `StageArtifact` و`resume_request`.
+  - حقول اختيارية جمعية في `ExecuteResponse` و`ExecuteRecord`.
+  - المخططات مُعاد توليدها (29 عقداً، 31 ملفاً)، ومثال `task_list.memory.json` مُحدَّث من رد حي.
+- **`tests/test_r165_dag.py` (65)**، و`tests/test_r159_telemetry.py`: فحص تسميات المقاييس صار دقيقاً (انظر QUALITY).
+
+### الأدلة
+| السجل | المحتوى |
+|---|---|
+| `logs/raw/157_r165_suite_py314.log` | `pytest tests/`: 1559 passed, 7 skipped, 4 deselected — Python 3.14.3 |
+| `logs/raw/157_r165_suite_py311.log` | 1559 passed, 7 skipped, 4 deselected — Python 3.11.15 |
+| `logs/raw/157_r165_suite_py312.log` | 1559 passed, 7 skipped, 4 deselected — Python 3.12.13 (إصدار الإنتاج) |
+| `logs/raw/157_r165_gates.log` | ruff صفر (النطاقان)، web ‏`npm test` ‏39/39، بناء web والجذر |
+| `logs/raw/157_r165_contracts.log` | `--check`: ‏29 عقداً بلا مشكلة؛ 4 عقود متغيرة جمعياً، وصفر كسر؛ عقدان جديدان |
+| `logs/raw/157_r165_contracts_base/` | أصول المقارنة المجمّدة من main ‏`29b133b` (يقرؤها اختبار التوافق) |
+| `logs/raw/157_r165_mutations.log` | 8 تحويرات في `dag.py`، كل منها يُسقط اختباراً واحداً على الأقل |
+| `logs/raw/157_r165_r159_label_probe.log` | فحص R-159 الجديد يرفض 3 سلاسل تحمل معرّفات ويقبل قالبي مسار |
+| `logs/raw/157_r165_governance.log` | بوابات الحوكمة الثلاث محلياً |
+
+### خريطة معايير القبول
+| المعيار (P3) | الاختبار |
+|---|---|
+| workflow ناجح | `test_successful_dag_passes_full_typed_artifacts_downstream`، `test_http_execute_reports_the_run_and_get_returns_it` |
+| stage failure | `test_a_failed_stage_blocks_only_its_dependents`، `test_missing_agent_pool_…`، `test_an_agent_exception_…` |
+| invalid artifact | `test_an_invalid_artifact_fails_the_stage_and_blocks_dependents`، `test_a_missing_declared_output_kind_…`، `test_stage_artifact_contract` (11) |
+| cycle rejected | `test_malformed_plans_are_rejected_before_anything_runs` (15)، `test_http_malformed_plan_is_400_…` |
+| deadline/cancel | `test_stage_timeout_…`، `test_plan_deadline_…`، `test_external_cancellation_…` |
+| replay safe | `test_resume_after_approval_never_reexecutes_succeeded_stages`، `test_resume_after_failure_…`، `test_http_sensitive_stage_needs_approval_then_resume_…` |
+| report شامل | `test_successful_dag_…` (كل الحقول + عقد `execute_response`) |
+| موافقات/ميزانية/توازي/إعادة/عزل | `test_a_sensitive_stage_waits_…`، `test_budget_…`، `test_independent_stages_run_in_parallel_…`، `test_local_retry_…`، `test_resume_is_tenant_scoped_…` |
+
+### ليس إعلان جاهزية إنتاج
+- السجل في ذاكرة العملية (RISK-035 جديد). RISK-033 وRISK-034 مفتوحتان، وQ-026 مفتوحة.
+- لا نشر، ولا فوترة، ولا تغيير في `render.yaml` أو الأسرار أو حماية الفرع. R-166 لم تبدأ.

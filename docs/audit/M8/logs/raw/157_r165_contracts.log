@@ -1,0 +1,10 @@
+# R-165 contract classification vs main 29b133b (scripts/export_contract_schemas.py --check + contracts.classify_changes)
+$ python3 scripts/export_contract_schemas.py --check
+contracts=29 problems=0 exit= 0
+CHANGED  execute_record.v1.schema.json {"additive": [".run_id: added (optional)"], "breaking": []}
+CHANGED  execute_request.v1.schema.json {"additive": [".approve_stages: added (optional)"], "breaking": []}
+CHANGED  execute_response.v1.schema.json {"additive": [".budget: added (optional)", ".ignored_approvals: added (optional)", ".order: added (optional)", ".pending_approvals: added (optional)", ".run_id: added (optional)", ".status: added (optional)"], "breaking": []}
+NEW      resume_request.v1.schema.json
+NEW      stage_artifact.v1.schema.json
+CHANGED  task_list.v1.schema.json {"additive": [".tasks[]<anyOf1>.run_id: added (optional)"], "breaking": []}
+schema files: before 29 after 31 | breaking changes: 0
