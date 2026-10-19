@@ -245,14 +245,19 @@ class ExecuteResponse(_Strict):
 
 
 class CoordinationReportContract(_Strict):
-    """R-166 (D-085): the response of POST /civilization/coordinate. A
-    fan-out/fan-in round over the real civilization agents — ok is True only
-    when every subtask has a result (loss detection, never a hidden success)."""
+    """R-166 (D-085, amended D-086): the response of POST /civilization/coordinate.
+    A fan-out/fan-in round over the real civilization agents — ok is True only
+    when every subtask has a result AND no result reports failure (loss and
+    failure detection, never a hidden success). Sensitive specializations
+    without an explicit approval are reported as pending_approvals and never
+    executed."""
     task_id: str
     ok: bool
     incomplete_reason: Optional[str] = None
     results: Dict[str, Any] = Field(default_factory=dict)
     missing: List[str] = Field(default_factory=list)
+    failed: List[str] = Field(default_factory=list)
+    pending_approvals: List[str] = Field(default_factory=list)
     metrics: Dict[str, Any] = Field(default_factory=dict)
 
 

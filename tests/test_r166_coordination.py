@@ -257,7 +257,10 @@ def test_run_coordination_gathers_every_result():
     assert rep.side_effects == 3
 
 
-def test_run_coordination_applies_failover_when_a_participant_fails():
+def test_run_coordination_does_not_auto_failover_on_participant_failure():
+    """D-086: a failing participant leaves the subtask MISSING — the round
+    does not blindly re-execute an unconfirmed side effect on another
+    participant. Failover is an explicit engine capability, not automatic."""
     ps = participants(3)
     sts = subtasks(1)
     failures = {"p0"}
@@ -269,12 +272,9 @@ def test_run_coordination_applies_failover_when_a_participant_fails():
                                     msg.participant_id, {"ok": True})
 
     rep = asyncio.run(C.run_coordination(sts, ps, execute))
-    # the subtask either failed over to a healthy participant or is missing —
-    # but it is never reported as a hidden success
-    if rep.ok:
-        assert rep.failovers >= 1
-    else:
-        assert rep.missing == ["s0"]
+    assert rep.ok is False
+    assert rep.failovers == 0            # no automatic re-execution
+    assert rep.missing == ["s0"]
 
 
 def test_run_coordination_reports_loss_when_every_attempt_fails():
@@ -449,3 +449,188 @@ def test_coordinate_request_model_matches_the_coordinate_request_contract():
     with pytest.raises(Exception):
         CoordinateRequest.model_validate({"message": "hi",
                                          "participants_per_specialty": 999})
+
+
+# =====================================================================
+# R-166b — review-fix tests (D-086). These were written BEFORE the fixes
+# and failed on the merged R-166 code (red run saved in
+# docs/audit/M8/logs/raw/169_r166b_red.log); they encode the acceptance
+# gaps the review found in the merged batch.
+# =====================================================================
+
+def test_failed_result_body_makes_the_round_not_ok_r166b():
+    """A participant answering {ok: False} is NOT a round success: the report
+    must fail with the failed subtask listed, never hidden."""
+    co = C.GroupCoordinator(participants(2))
+    work = co.distribute(subtasks(2))
+    for m in work:
+        body = {"ok": False, "error": "participant failed"} if m.subtask_id == "s0" else {"ok": True}
+        co.submit_result(C.CoordinationMessage(f"r:{m.subtask_id}", "result", m.subtask_id,
+                                               m.participant_id, body))
+    rep = co.finalize()
+    assert rep.ok is False
+    assert rep.failed == ["s0"]
+    assert rep.missing == []
+
+
+def test_metrics_include_failed_count_r166b():
+    co = C.GroupCoordinator(participants(1))
+    co.distribute(subtasks(1))
+    co.submit_result(C.CoordinationMessage("r:s0", "result", "s0", "p0", {"ok": False}))
+    rep = co.finalize()
+    assert rep.metrics()["failed"] == 1
+
+
+def test_submit_result_from_unassigned_participant_is_rejected_r166b():
+    """A result for a subtask from a participant that is NOT its assignee is
+    classified (foreign), never counted as the subtask's answer."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    foreign = co.submit_result(C.CoordinationMessage("r:s0:foreign", "result", "s0", "p2", {"ok": True}))
+    assert foreign is False
+    rep = co.finalize()
+    assert rep.ok is False            # the real assignee never answered
+    assert rep.missing == ["s0"]
+    assert "r:s0:foreign" in rep.late_message_ids
+
+
+def test_result_from_old_participant_after_failover_is_not_accepted_r166b():
+    """After a failover, a late answer from the OLD participant must not be
+    accepted for the subtask (stale-attempt fencing via assignee ownership)."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    old = co._expected["s0"]
+    retry = co.failover("s0", old)
+    assert retry is not None
+    stale = co.submit_result(C.CoordinationMessage("r:s0:old", "result", "s0", old, {"ok": True}))
+    assert stale is False
+    rep = co.finalize()
+    assert rep.ok is False            # the new assignee never answered
+    assert rep.missing == ["s0"]
+
+
+def test_delegate_and_failover_enforce_message_budget_r166b():
+    """delegate() and failover() must respect the bounded-message budget, not
+    only distribute()."""
+    co = C.GroupCoordinator(participants(4), max_messages=1)
+    co.distribute(subtasks(1))
+    with pytest.raises(C.MessageBudgetExceeded):
+        co.failover("s0", co._expected["s0"])
+    co2 = C.GroupCoordinator(participants(4), max_messages=1)
+    co2.distribute(subtasks(1))
+    with pytest.raises(C.MessageBudgetExceeded):
+        co2.delegate("p0", "p1", "s0")
+
+
+def test_fairness_spread_counts_zero_load_participants_per_specialty_r166b():
+    """The spread is per specialty and includes zero-load participants of that
+    specialty — 1 subtask over 2 participants of one specialty is a spread of 1,
+    not 0."""
+    co = C.GroupCoordinator([C.Participant("a0", "analyst"), C.Participant("a1", "analyst"),
+                            C.Participant("w0", "writer")])
+    co.distribute([C.Subtask("s0", "analyst")])
+    assert co.fairness_spread() == 1
+
+
+def test_run_coordination_does_not_reexecute_after_participant_failure_r166b():
+    """run_coordination must NOT blindly re-execute an unconfirmed side effect:
+    a failing participant leaves the subtask missing (reported), and the real
+    effect happens exactly once. Failover stays an explicit engine API."""
+    effects = []
+
+    async def execute(msg):
+        effects.append(msg.participant_id)   # the real side effect
+        if msg.participant_id == "p0":
+            raise RuntimeError("failed after the effect")
+        return C.CoordinationMessage(f"r:{msg.subtask_id}", "result", msg.subtask_id,
+                                    msg.participant_id, {"ok": True})
+
+    ps = participants(3)
+    sts = subtasks(1)
+    rep = asyncio.run(C.run_coordination(sts, ps, execute))
+    assert effects.count("p0") == 1          # executed once, not retried blindly
+    assert rep.ok is False
+    assert rep.missing == ["s0"]
+
+
+def test_coordinate_endpoint_failed_participant_is_not_hidden_success_r166b(client):
+    """Through the real endpoint: an agent that answers ok=False must NOT
+    produce a 'completed' task with ok=True."""
+    import server
+
+    async def failing_execute(work):
+        return {"ok": False, "error": "participant failed"}
+
+    original = server.CIVILIZATION["analyst"][0].execute
+    server.CIVILIZATION["analyst"][0].execute = failing_execute
+    try:
+        r = client.post("/civilization/coordinate",
+                        json={"message": "analyze 5", "specializations": ["analyst"],
+                              "participants_per_specialty": 1})
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["ok"] is False
+        assert body["failed"]
+        rec = server.TASKS[body["task_id"]]
+        assert rec["status"] == "failed"
+    finally:
+        server.CIVILIZATION["analyst"][0].execute = original
+
+
+def test_coordinate_sensitive_specialization_requires_approval_r166b(client):
+    """R-165's approval gate must not be bypassable via /civilization/coordinate:
+    a sensitive specialization (test_runner) is NOT executed without an explicit
+    approval; with approval it runs."""
+    import server
+
+    executed = []
+
+    async def spying_execute(work):
+        executed.append(work)
+        return {"ok": True}
+
+    original = server.CIVILIZATION["test_runner"][0].execute
+    server.CIVILIZATION["test_runner"][0].execute = spying_execute
+    try:
+        # without approval: not executed, reported as pending
+        r = client.post("/civilization/coordinate",
+                        json={"message": "run this code", "specializations": ["test_runner"]})
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["ok"] is False
+        assert body["pending_approvals"] == ["test_runner"]
+        assert executed == []             # nothing ran
+        assert body["metrics"]["executed"] == 0
+        # with approval: executed
+        r2 = client.post("/civilization/coordinate",
+                         json={"message": "run this code", "specializations": ["test_runner"],
+                               "approve_stages": ["test_runner"]})
+        assert r2.status_code == 200, r2.text
+        body2 = r2.json()
+        assert body2["ok"] is True
+        assert len(executed) == 1
+        assert body2["metrics"]["executed"] == 1
+    finally:
+        server.CIVILIZATION["test_runner"][0].execute = original
+
+
+def test_coordinate_payload_carries_real_specialization_r166b(client):
+    """The work payload must carry the real specialization, not the subtask id
+    ('sub-0')."""
+    import server
+
+    seen = []
+
+    async def spying_execute(work):
+        seen.append(work)
+        return {"ok": True}
+
+    original = server.CIVILIZATION["analyst"][0].execute
+    server.CIVILIZATION["analyst"][0].execute = spying_execute
+    try:
+        r = client.post("/civilization/coordinate",
+                        json={"message": "analyze 6", "specializations": ["analyst"]})
+        assert r.status_code == 200, r.text
+        assert seen and seen[0].get("specialization") == "analyst"
+    finally:
+        server.CIVILIZATION["analyst"][0].execute = original

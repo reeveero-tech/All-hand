@@ -1,0 +1,78 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 53 items / 43 deselected / 10 selected
+
+tests/test_r166_coordination.py FFFFFFFFFF                               [100%]
+
+=================================== FAILURES ===================================
+_____________ test_failed_result_body_makes_the_round_not_ok_r166b _____________
+tests/test_r166_coordination.py:471: in test_failed_result_body_makes_the_round_not_ok_r166b
+    assert rep.ok is False
+E   AssertionError: assert True is False
+E    +  where True = CoordinationReport(ok=True, incomplete_reason=None, subtasks=2, results={'s0': {'ok': False, 'error': 'participant fai...ges_sent=2, messages_delivered=2, side_effects=2, fairness_spread=0, participants=2, duration_s=4.6054999984335154e-05).ok
+___________________ test_metrics_include_failed_count_r166b ____________________
+tests/test_r166_coordination.py:481: in test_metrics_include_failed_count_r166b
+    assert rep.metrics()["failed"] == 1
+           ^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'failed'
+_______ test_submit_result_from_unassigned_participant_is_rejected_r166b _______
+tests/test_r166_coordination.py:490: in test_submit_result_from_unassigned_participant_is_rejected_r166b
+    assert foreign is False
+E   assert True is False
+____ test_result_from_old_participant_after_failover_is_not_accepted_r166b _____
+tests/test_r166_coordination.py:506: in test_result_from_old_participant_after_failover_is_not_accepted_r166b
+    assert stale is False
+E   assert True is False
+___________ test_delegate_and_failover_enforce_message_budget_r166b ____________
+tests/test_r166_coordination.py:517: in test_delegate_and_failover_enforce_message_budget_r166b
+    with pytest.raises(C.MessageBudgetExceeded):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE MessageBudgetExceeded
+____ test_fairness_spread_counts_zero_load_participants_per_specialty_r166b ____
+tests/test_r166_coordination.py:532: in test_fairness_spread_counts_zero_load_participants_per_specialty_r166b
+    assert co.fairness_spread() == 1
+E   assert 0 == 1
+E    +  where 0 = fairness_spread()
+E    +    where fairness_spread = <agent_civilization.core.coordination.GroupCoordinator object at 0x7f102fe31250>.fairness_spread
+___ test_run_coordination_does_not_reexecute_after_participant_failure_r166b ___
+tests/test_r166_coordination.py:552: in test_run_coordination_does_not_reexecute_after_participant_failure_r166b
+    assert rep.ok is False
+E   AssertionError: assert True is False
+E    +  where True = CoordinationReport(ok=True, incomplete_reason=None, subtasks=1, results={'s0': {'ok': True}}, missing=[], duplicated_m...ages_sent=2, messages_delivered=1, side_effects=1, fairness_spread=1, participants=3, duration_s=8.275499931187369e-05).ok
+___ test_coordinate_endpoint_failed_participant_is_not_hidden_success_r166b ____
+tests/test_r166_coordination.py:572: in test_coordinate_endpoint_failed_participant_is_not_hidden_success_r166b
+    assert body["ok"] is False
+E   assert True is False
+_______ test_coordinate_sensitive_specialization_requires_approval_r166b _______
+tests/test_r166_coordination.py:600: in test_coordinate_sensitive_specialization_requires_approval_r166b
+    assert body["ok"] is False
+E   assert True is False
+__________ test_coordinate_payload_carries_real_specialization_r166b ___________
+tests/test_r166_coordination.py:634: in test_coordinate_payload_carries_real_specialization_r166b
+    assert seen and seen[0].get("specialization") == "analyst"
+E   AssertionError: assert ([{'goal': 'analyze 6', 'data': {'message': 'analyze 6', 'specialization': 'analyst'}, 'specialization': 'sub-0'}] and 'sub-0' == 'analyst'
+E     
+E     - analyst
+E     + sub-0)
+=============================== warnings summary ===============================
+../../../../tmp/venv/lib/python3.14/site-packages/fastapi/testclient.py:1
+  /tmp/venv/lib/python3.14/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_r166_coordination.py::test_failed_result_body_makes_the_round_not_ok_r166b
+FAILED tests/test_r166_coordination.py::test_metrics_include_failed_count_r166b
+FAILED tests/test_r166_coordination.py::test_submit_result_from_unassigned_participant_is_rejected_r166b
+FAILED tests/test_r166_coordination.py::test_result_from_old_participant_after_failover_is_not_accepted_r166b
+FAILED tests/test_r166_coordination.py::test_delegate_and_failover_enforce_message_budget_r166b
+FAILED tests/test_r166_coordination.py::test_fairness_spread_counts_zero_load_participants_per_specialty_r166b
+FAILED tests/test_r166_coordination.py::test_run_coordination_does_not_reexecute_after_participant_failure_r166b
+FAILED tests/test_r166_coordination.py::test_coordinate_endpoint_failed_participant_is_not_hidden_success_r166b
+FAILED tests/test_r166_coordination.py::test_coordinate_sensitive_specialization_requires_approval_r166b
+FAILED tests/test_r166_coordination.py::test_coordinate_payload_carries_real_specialization_r166b
+================= 10 failed, 43 deselected, 1 warning in 0.57s =================
