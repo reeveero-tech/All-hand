@@ -876,6 +876,7 @@ def test_delegation_after_a_result_is_refused_r166d():
     with pytest.raises(C.CoordinationError, match="already has a result"):
         co.delegate("p0", "p1", "s0")
     assert co._expected["s0"] == "p0"          # ownership unchanged
+    assert co._load["p0"] == 1 and co._load.get("p1", 0) == 0   # load unchanged
     assert co._messages_sent == 1              # only the original work message
 
 
@@ -888,6 +889,7 @@ def test_delegation_after_finalize_is_refused_r166d():
     with pytest.raises(C.CoordinationError, match="finalized"):
         co.delegate("p0", "p1", "s0")
     assert co._expected["s0"] == "p0"
+    assert co._load["p0"] == 1 and co._load.get("p1", 0) == 0   # load unchanged
     assert co._messages_sent == 1
 
 
@@ -904,3 +906,62 @@ def test_unstamped_result_after_delegation_is_rejected_r166d():
     rep = co.finalize()
     assert rep.ok is False
     assert rep.missing == ["s0"]
+
+
+# =====================================================================
+# R-166d (round 3) — failover message stamp must match the generation, and
+# failover is guarded after finalize. Written BEFORE the fixes (red run
+# saved in docs/audit/M8/logs/raw/189_r166d3_red.log).
+# =====================================================================
+
+def test_failover_message_stamp_matches_generation_after_delegation_r166d():
+    """Mixed path: distribute (gen 0) -> delegate p0->p1 (gen 1) -> failover
+    from p1 (gen 2). The failover message MUST carry generation 2 — the
+    recipient's result stamped with the message's attempt is accepted, and a
+    previous-generation result is rejected."""
+    co = C.GroupCoordinator(participants(4))
+    co.distribute(subtasks(1))
+    co.delegate("p0", "p1", "s0")            # generation 1, owner p1
+    retry = co.failover("s0", "p1")           # generation 2, new owner
+    assert retry is not None
+    assert retry.attempt == 2                  # the message carries the GENERATION
+    # the new owner's result stamped with the message's attempt: accepted
+    current = co.submit_result(C.CoordinationMessage(
+        "r:s0:cur", "result", "s0", retry.participant_id, {"ok": True},
+        attempt=retry.attempt))
+    assert current is True
+    rep = co.finalize()
+    assert rep.ok is True
+
+
+def test_previous_generation_result_rejected_after_mixed_transitions_r166d():
+    """On the mixed path, a result stamped with a superseded generation is
+    rejected even from the participant that was the assignee at that
+    generation."""
+    co = C.GroupCoordinator(participants(4))
+    co.distribute(subtasks(1))
+    co.delegate("p0", "p1", "s0")            # generation 1
+    retry = co.failover("s0", "p1")           # generation 2
+    stale = co.submit_result(C.CoordinationMessage(
+        "r:s0:old", "result", "s0", "p1", {"ok": True}, attempt=1))
+    assert stale is False
+    current = co.submit_result(C.CoordinationMessage(
+        "r:s0:cur", "result", "s0", retry.participant_id, {"ok": True},
+        attempt=retry.attempt))
+    assert current is True
+    rep = co.finalize()
+    assert rep.ok is True
+
+
+def test_failover_after_finalize_is_refused_r166d():
+    """A closed round (finalize) must not issue failover work either — no
+    new work message and NO state changes (ownership, load, counters)."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    co.finalize()
+    with pytest.raises(C.CoordinationError, match="finalized"):
+        co.failover("s0", "p0")
+    assert co._expected["s0"] == "p0"
+    assert co._load["p0"] == 1
+    assert co._messages_sent == 1
+    assert co._failovers == {}

@@ -283,6 +283,9 @@ class GroupCoordinator:
         """
         if subtask_id not in self._expected:
             raise CoordinationError(f"unknown subtask {subtask_id!r}")
+        if self._finalized:
+            raise CoordinationError(
+                "the coordination round is finalized — cannot fail over")
         if subtask_id in self._results:
             return None  # already answered; nothing to fail over
         used = self._failovers.get(subtask_id, 0)
@@ -308,7 +311,7 @@ class GroupCoordinator:
             subtask_id=subtask_id,
             participant_id=pool[0],
             body=None,
-            attempt=used + 1,
+            attempt=self._generation[subtask_id],   # the GENERATION, not the counter
         )
 
     # ------------------------------------------------------------ delegation
