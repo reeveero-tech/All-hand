@@ -1,0 +1,25 @@
+# R-166d acceptance — main CI at merge SHA — 2026-10-19
+merge commit:
+e38b110a117f2b506164790092fab38e463bd96a
+879e70080c95c4d778fd8e173426acce4a00d8c3 70c5bf6b3bb011f91bff03e519c3b695516a114a
+2026-10-19T14:30:39+03:00
+Merge pull request #200 from reeveero-tech/m8/r166d-delegation-handoff
+
+pr merge record (gh api):
+{"head":"70c5bf6b3bb011f91bff03e519c3b695516a114a","merge_commit_sha":"e38b110a117f2b506164790092fab38e463bd96a","merged_at":"2026-10-19T11:30:39Z","merged_by":"reeveero-tech","number":200,"state":"closed"}
+
+CI run on main (head e38b110):
+{"conclusion":"success","event":"push","head_sha":"e38b110a117f2b506164790092fab38e463bd96a","id":39245157801,"run_started_at":"2026-10-19T11:30:43Z","status":"completed","updated_at":"2026-10-19T11:43:44Z"}
+jobs:
+{"conclusion":"success","name":"test"}
+{"conclusion":"success","name":"quality"}
+{"conclusion":"success","name":"network"}
+{"conclusion":"success","name":"build"}
+{"conclusion":"success","name":"docker"}
+{"conclusion":"success","name":"storage"}
+{"conclusion":"success","name":"audit"}
+{"conclusion":"skipped","name":"publish"}
+test summary lines:
+2026-10-19T11:35:03.6018000Z ========== 1636 passed, 7 skipped, 4 deselected in 242.74s (0:04:02) ===========
+2026-10-19T11:38:57.6474281Z ========== 1636 passed, 7 skipped, 4 deselected in 222.88s (0:03:42) ===========
+2026-10-19T11:42:55.3002429Z ========== 1636 passed, 7 skipped, 4 deselected in 233.48s (0:03:53) ===========
