@@ -1,0 +1,12 @@
+# R-166 mutations on coordination.py — 2026-10-19T05:52:44Z
+# each mutation is applied, the R-166 tests run, and at least one must FAIL
+MUTATION M1 round-robin broken (always first participant): CAUGHT (tests fail: =================== 1 failed, 42 passed, 1 warning in 0.58s ====================)
+MUTATION M2 duplicate messages not detected: CAUGHT (tests fail: =================== 1 failed, 42 passed, 1 warning in 0.59s ====================)
+MUTATION M3 missing results hidden (no loss detection): CAUGHT (tests fail: =================== 6 failed, 37 passed, 1 warning in 0.63s ====================)
+MUTATION M4 side effects counted on duplicates too: CAUGHT (tests fail: =================== 1 failed, 42 passed, 1 warning in 0.57s ====================)
+MUTATION M5 failover disabled: CAUGHT (tests fail: =================== 2 failed, 41 passed, 1 warning in 0.60s ====================)
+MUTATION M6 delegation depth unbounded: CAUGHT (tests fail: =================== 1 failed, 42 passed, 1 warning in 0.58s ====================)
+MUTATION M7 delegation cycles allowed: CAUGHT (tests fail: =================== 1 failed, 42 passed, 1 warning in 0.57s ====================)
+MUTATION M8 message budget not enforced: CAUGHT (tests fail: =================== 1 failed, 42 passed, 1 warning in 0.57s ====================)
+
+# summary: 8 caught, 0 not caught
