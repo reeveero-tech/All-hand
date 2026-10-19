@@ -340,9 +340,22 @@ def test_series_do_not_grow_with_task_or_trace_ids():
     run(500)
     s510, labels = _ops_series()
     assert s510 == s10                                       # constant, not linear in ids
+    # R-165: the length heuristic (len >= 32 == "an id") misfired on a real
+    # route template (`/civilization/runs/{run_id}/resume`, 34 chars). The
+    # check is now exact and stricter: no value is id-shaped, and every http
+    # op is a registered route template (or "<unmatched>").
+    import re
+    import server
+    templates = {getattr(r, "path", None) for r in server.app.routes} | {"<unmatched>"}
     for lab in labels:
         assert set(lab) <= {"kind", "op", "outcome"}
-        assert not any(v.startswith("task0") or len(v) >= 32 for v in lab.values())
+        for v in lab.values():
+            assert not v.startswith("task0"), lab
+            assert not re.search(r"[0-9a-f]{12,}", v), lab            # task/trace/run ids
+        if lab.get("kind") == "http":
+            assert lab["op"] in templates, lab
+        else:
+            assert len(lab.get("op", "")) < 32, lab
 
 
 # =============================================== integration (local, mocks) ==

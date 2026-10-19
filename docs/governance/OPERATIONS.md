@@ -1,6 +1,6 @@
 # التشغيل والنشر (OPERATIONS)
 
-> **آخر تحديث**: 2026-10-18 — **R-163 (D-082)**: متغيرات الطابور الدائم `AGOS_TASK_QUEUE`/`AGOS_TASK_LEASE_S`/`AGOS_TASK_REAP_S`/`AGOS_TASK_MAX_ATTEMPTS`/`AGOS_TASK_DISPATCH_BATCH`/`AGOS_TASK_DISPATCH_IDLE_S` (القسم «الطابور الدائم»). قبلها 2026-10-16 — R-144 (SEC-04): حدود بث SSE `AGOS_SSE_*` ومراقبتها (القسم «حدود بث SSE»). قبلها 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
+> **آخر تحديث**: 2026-10-19 — **R-165 (D-084)**: تسعة متغيرات لخطط DAG (`AGOS_PLAN_TIMEOUT_S`، `AGOS_STAGE_TIMEOUT_S`، `AGOS_STAGE_MAX_ATTEMPTS`، `AGOS_PLAN_MAX_STAGE_RUNS`، `AGOS_PLAN_PARALLEL`، `AGOS_STAGE_RETRY_BASE_S`/`_CAP_S`، `AGOS_STAGE_CONTEXT_CHARS`، `AGOS_PLAN_RUNS_KEPT`)، وكلها اختيارية بقيم افتراضية آمنة. قبلها 2026-10-18 — **R-163 (D-082)**: متغيرات الطابور الدائم `AGOS_TASK_QUEUE`/`AGOS_TASK_LEASE_S`/`AGOS_TASK_REAP_S`/`AGOS_TASK_MAX_ATTEMPTS`/`AGOS_TASK_DISPATCH_BATCH`/`AGOS_TASK_DISPATCH_IDLE_S` (القسم «الطابور الدائم»). قبلها 2026-10-16 — R-144 (SEC-04): حدود بث SSE `AGOS_SSE_*` ومراقبتها (القسم «حدود بث SSE»). قبلها 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
 
 ## البناء والتشغيل المحلي
 
@@ -318,3 +318,21 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 - رفض 429 «task acceptance rate exceeded» قد يظهر أثناء طلبات جارية لم تكتمل بعد (حصصها محتجزة) — سلوك مقصود يمنع التجاوز؛ والطلبات التي تفشل تعيد حصصها.
 - `pool_waiting` صار دقيقاً (الجاري − عدد الخيوط) بدل طول طابور المنفّذ، فلا يُرفض نداء بـ`PoolBusy` والخيوط حرة.
 - لا متغير بيئة جديد، ولا تغيير في `render.yaml`.
+
+## خطط DAG واعتمادات المراحل (R-165، D-084)
+| المتغير | المكان | الافتراضي والمعنى |
+|---|---|---|
+| `AGOS_PLAN_TIMEOUT_S` | pipeline/dag.py | 600 ث مهلة كلية لتشغيل خطة (1..86400). الجاري يُلغى (`timed_out`) والباقي `skipped` |
+| `AGOS_STAGE_TIMEOUT_S` | pipeline/dag.py | 300 ث لكل محاولة مرحلة (1..86400)؛ خطة تطلب أكثر تُقصّ إليه |
+| `AGOS_STAGE_MAX_ATTEMPTS` | pipeline/dag.py | 1 محاولة افتراضياً (1..5). لا إعادة ما لم يُطلب. المراحل الحساسة دائماً 1 |
+| `AGOS_PLAN_MAX_STAGE_RUNS` | pipeline/dag.py | 64 تشغيل مرحلة لكل تشغيل خطة (1..1000)، يشمل الإعادات والاستئنافات. البلوغ → `budget_exhausted` |
+| `AGOS_PLAN_PARALLEL` | pipeline/dag.py | 4 مراحل مستقلة متزامنة (1..32) |
+| `AGOS_STAGE_RETRY_BASE_S` / `AGOS_STAGE_RETRY_CAP_S` | pipeline/dag.py | 0.5 / 10 ث تراجع بتذبذب بين محاولات المرحلة |
+| `AGOS_STAGE_CONTEXT_CHARS` | pipeline/dag.py | 8000 حرف من نص الأسلاف في موجّه المرحلة (500..200000). ما زاد يُقصّ بعلامة صريحة، والقطع الكاملة في `work["inputs"]` |
+| `AGOS_PLAN_RUNS_KEPT` | pipeline/dag.py | 200 سجل تشغيل في الذاكرة (1..10000)، يُقلَّم الأقدم غير النشط |
+
+- **قيمة غير صالحة** توقف الإقلاع برسالة باسم المتغير، وهذا مُثبت باختبار.
+- **ما يراه المشغّل**: طلب برمجي افتراضي صار ينتهي بـ`status: awaiting_approval`، ومرحلة `test` في `pending_approvals`، ما لم يرسل العميل `approve_stages: ["test"]`. ويُستأنف التشغيل عبر `POST /civilization/runs/{run_id}/resume`.
+- **سياسة تنفيذ الكود (R-100) باقية**: الموافقة لا تتجاوز `AGOS_ALLOW_CODE_EXEC`/`AGOS_API_KEY`؛ المرحلة الموافَق عليها قد تُرفض بالسياسة.
+- **السجل في ذاكرة العملية**: إعادة التشغيل تفقد التشغيلات المنتظرة (resume ← 404)، ولا يُشارك بين النسخ (RISK-035).
+- لا تغيير في `render.yaml`، ولا سر جديد، ولا ترحيل قاعدة بيانات.

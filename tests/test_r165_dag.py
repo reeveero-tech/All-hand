@@ -584,3 +584,15 @@ def test_contract_change_is_additive_only():
         assert ch["breaking"] == [] and ch["additive"], (n, ch)
     for n in ("stage_artifact", "resume_request"):
         assert (root / f"docs/governance/contracts/{n}.v1.schema.json").is_file()
+
+
+@pytest.mark.parametrize("var,val", [("AGOS_PLAN_PARALLEL", "0"), ("AGOS_STAGE_MAX_ATTEMPTS", "9"),
+                                     ("AGOS_PLAN_TIMEOUT_S", "abc")])
+def test_invalid_r165_settings_stop_server_startup(var, val):
+    import os
+    import subprocess
+    import sys
+    env = {**os.environ, "AGOS_ENV": "test", var: val}
+    r = subprocess.run([sys.executable, "-c", "import server"], env=env, capture_output=True, text=True,
+                       cwd=str(__import__("pathlib").Path(__file__).resolve().parents[1]), timeout=120)
+    assert r.returncode != 0 and var in r.stderr, r.stderr[-400:]
