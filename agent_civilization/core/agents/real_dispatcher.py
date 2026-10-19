@@ -1465,8 +1465,8 @@ async def _self_developer(work: Dict[str, Any]) -> Dict[str, Any]:
     # retest runs in the same tenant context, so what it stores stays there.
     tenant = _exp.tenancy.current_tenant()
     if _exp.enabled() and tenant is not None:
-        mem = _exp.memory()
-        failed = [e for e in mem._memories.values()
+        st = _exp.mem_store()
+        failed = [e for e in st.entries()
                   if e.metadata.get("tenant_id") == tenant
                   and e.metadata.get("layer") == "experience" and not e.metadata.get("ok")
                   and e.metadata.get("specialization") != "self_developer" and e.metadata.get("goal")]
@@ -1504,7 +1504,7 @@ async def _self_developer(work: Dict[str, Any]) -> Dict[str, Any]:
                     if item["fixed"]:
                         ids = [e.memory_id for e in failed if e.metadata.get("goal") == goal]
                         for mid in ids:
-                            if await mem.forget(mid):
+                            if await st.delete(mid):
                                 retired += 1
                         item["retired_memories"] = len(ids)
                     else:

@@ -51,7 +51,8 @@ from datetime import datetime
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from agos_kernel.agent_production.learning_runtime import LearningRuntime
-from agos_kernel.agent_production.memory_system import MemorySystem, MemoryType
+from agos_kernel.agent_production.memory_store import store_for
+from agos_kernel.agent_production.memory_system import MemoryQuery, MemorySystem, MemoryType
 from agent_civilization.core import telemetry, tenancy
 from agent_civilization.core.tenancy import ALL_TENANTS
 
@@ -90,6 +91,21 @@ def memory() -> MemorySystem:
     return _memory
 
 
+def mem_store():
+    """R-167: the unified memory contract over the CURRENT singleton.
+
+    A fresh wrapper per call — reset() drops the singleton and a cached store
+    would keep pointing at the dropped system. The contract adds no state of
+    its own; everything lives in the wrapped engine.
+    """
+    return store_for(memory())
+
+
+def entries() -> List:
+    """Pure iteration over every memory entry (the public contract path)."""
+    return mem_store().entries()
+
+
 def learning(tenant_id: Optional[str] = None) -> LearningRuntime:
     """The tenant's LearningRuntime (default: the current tenant). SEC-02: there
     is no shared learning — a tenant only ever reads its own measurements."""
@@ -125,10 +141,10 @@ async def forget_tenant(tenant_id: str) -> int:
     if tenant_id is ALL_TENANTS:
         raise ValueError("use reset() for all tenants")
     await _ensure_loaded()
-    mem = memory()
-    ids = [mid for mid, e in list(mem._memories.items()) if _tenant_of(e) == tenant_id]
+    st = mem_store()
+    ids = [e.memory_id for e in st.entries() if _tenant_of(e) == tenant_id]
     for mid in ids:
-        await mem.forget(mid)
+        await st.delete(mid)
     _learnings.pop(tenant_id, None)
     return len(ids)
 
@@ -185,11 +201,11 @@ async def _ensure_loaded() -> None:
     if _loaded:
         return
     _loaded = True
-    mem = memory()
-    if not mem._persistence_file:
+    st = mem_store()
+    if st.persistence_path is None:
         return
-    await mem.load()
-    for entry in sorted(mem._memories.values(), key=lambda e: e.created_at):
+    await memory().load()
+    for entry in sorted(st.entries(), key=lambda e: e.created_at):
         md = entry.metadata
         if md.get("layer") == "experience" and md.get("tenant_id"):  # untenanted = quarantined
             learning(md["tenant_id"]).record_task(agent_id=md.get("agent", "?"), task_type=md["specialization"],
@@ -210,14 +226,17 @@ async def recall(specialization: str, work: Dict[str, Any], limit: int = RECALL_
     if tid is None or tid is ALL_TENANTS:
         return []  # SEC-02: no tenant, no recall; recall never crosses tenants
     tenancy.check_scope(tid)
-    mem = memory()
+    st = mem_store()
     query_words = words(_work_text(work))
-    ids = mem._index_by_tag.get(f"spec:{specialization}", set()) & mem._index_by_tag.get(f"tenant:{tid}", set())
+    # R-167: the tag intersection goes through the contract search; the
+    # metadata.tenant_id check below stays — it is the SEC-02 authority, not
+    # the tag (the two views can disagree and metadata wins)
+    hits = await st.search(MemoryQuery(
+        tags={f"spec:{specialization}", f"tenant:{tid}"}, limit=None))
     now = datetime.utcnow()
     scored = []
-    for mid in ids:
-        e = mem._memories.get(mid)
-        if e is None or _tenant_of(e) != tid:
+    for e in hits:
+        if _tenant_of(e) != tid:
             continue
         score = jaccard(query_words, set(e.metadata.get("words") or []))
         if score >= MIN_RECALL_SCORE:
@@ -249,7 +268,7 @@ async def _researcher_fallback(work: Dict[str, Any], result: Dict[str, Any],
         return None  # only a failed live call, never an empty query
     for r in recalled:
         if r["ok"] and r["score"] >= FALLBACK_MIN_SCORE:
-            entry = memory()._memories.get(r["memory_id"])
+            entry = mem_store().get(r["memory_id"])
             if entry is None or "tool_output" not in entry.metadata \
                     or _tenant_of(entry) is None or _tenant_of(entry) != tenancy.current_tenant():
                 continue
@@ -281,7 +300,7 @@ async def _store(specialization: str, agent: str, work: Dict[str, Any], result: 
         blob = json.dumps(result.get("tool_output") or {}, ensure_ascii=False, default=str)
         if len(blob) <= _TOOL_OUTPUT_LIMIT:
             metadata["tool_output"] = result.get("tool_output") or {}
-    mid = await memory().store(
+    mid = await mem_store().write(
         content=f"{specialization}: {prompt[:200]} -> {'ok' if ok else 'failed'}: {answer[:200]}",
         memory_type=MemoryType.EPISODIC,
         tags={f"spec:{specialization}", "success" if ok else "failure", f"kind:{kind}", f"tenant:{tenant_id}"},
@@ -348,9 +367,9 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
 
 def public_stats() -> Dict[str, Any]:
     """What /api/system/status may show without a tenant: configuration only."""
-    mem = memory()
-    return {"enabled": enabled(), "max_entries": mem._max_entries,
-            "persistence_file": bool(mem._persistence_file), "scope": "per-tenant"}
+    st = mem_store()
+    return {"enabled": enabled(), "max_entries": st.capacity,
+            "persistence_file": st.persistence_path is not None, "scope": "per-tenant"}
 
 
 def _learning_view(runtimes: List[LearningRuntime]) -> Dict[str, Any]:
@@ -372,16 +391,17 @@ def stats(scope) -> Dict[str, Any]:
     """Memory and learning of one tenant, or of all tenants for an admin
     (``ALL_TENANTS``) — then also the number of quarantined untenanted entries."""
     tenancy.check_scope(scope)
-    mem = memory()
-    out = {"enabled": enabled(), "max_entries": mem._max_entries, "persistence_file": bool(mem._persistence_file)}
+    st = mem_store()
+    all_entries = st.entries()
+    out = {"enabled": enabled(), "max_entries": st.capacity, "persistence_file": st.persistence_path is not None}
     if scope is ALL_TENANTS:
-        out["memories"] = len(mem._memories)
-        out["quarantined_untenanted"] = sum(1 for e in mem._memories.values() if _tenant_of(e) is None)
-        out["tenants"] = len({_tenant_of(e) for e in mem._memories.values() if _tenant_of(e)})
+        out["memories"] = len(all_entries)
+        out["quarantined_untenanted"] = sum(1 for e in all_entries if _tenant_of(e) is None)
+        out["tenants"] = len({_tenant_of(e) for e in all_entries if _tenant_of(e)})
         out["learning"] = _learning_view(list(_learnings.values()))
     else:
         out["tenant_id"] = scope
-        out["memories"] = sum(1 for e in mem._memories.values() if _tenant_of(e) == scope)
+        out["memories"] = sum(1 for e in all_entries if _tenant_of(e) == scope)
         out["learning"] = _learning_view([_learnings[scope]] if scope in _learnings else [])
     return out
 
@@ -391,10 +411,10 @@ async def search(q: str = "", specialization: Optional[str] = None, limit: int =
     """Memories of ``scope`` (a tenant id, or ALL_TENANTS for an admin). No scope -> refused."""
     tenancy.check_scope(scope)
     await _ensure_loaded()
-    mem = memory()
+    st = mem_store()
     qw = words(q)
     out = []
-    for e in mem._memories.values():
+    for e in st.entries():
         md = e.metadata
         if md.get("layer") != "experience" or not _visible(e, scope):
             continue

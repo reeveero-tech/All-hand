@@ -70,7 +70,12 @@ class MemoryQuery:
     tags: Optional[Set[str]] = None
     min_importance: float = 0.0
     since: Optional[datetime] = None
-    limit: int = 10
+    limit: Optional[int] = 10  # None = explicitly unbounded (R-167)
+    # R-167: exact-match metadata filter (the LAST field — positional calls
+    # stay compatible). A key maps only when present in metadata; a None value
+    # matches entries whose metadata carries that key with value None (never
+    # entries missing the key).
+    metadata_equals: Optional[Dict[str, Any]] = None
 
 
 class MemorySystem:
@@ -140,7 +145,15 @@ class MemorySystem:
             importance=importance,
         )
         
-        # Store entry
+        # Store entry (replaces any entry with the same id)
+        if memory_id in self._memories:
+            # R-167: re-index on replace — before, the OLD type/tag index
+            # entries were left behind, so stale filters kept matching the
+            # replaced entry and forget() could leave dangling references.
+            old = self._memories[memory_id]
+            self._index_by_type[old.memory_type].discard(memory_id)
+            for tag in old.tags:
+                self._index_by_tag[tag].discard(memory_id)
         self._memories[memory_id] = entry
         
         # Update indexes
@@ -221,6 +234,16 @@ class MemorySystem:
             results = {
                 mid for mid in results
                 if self._memories[mid].created_at >= query.since
+            }
+        
+        # R-167: exact-match metadata filter (a key matches only when present;
+        # a None value matches present-with-None, never missing keys)
+        if query.metadata_equals:
+            results = {
+                mid for mid in results
+                if all(k in self._memories[mid].metadata
+                       and self._memories[mid].metadata[k] == v
+                       for k, v in query.metadata_equals.items())
             }
         
         # Sort by importance and recency
@@ -381,7 +404,20 @@ class MemorySystem:
         logger.info(f"Pruned {to_remove} memories")
     
     async def persist(self) -> None:
-        """Persist memory to disk."""
+        """Persist memory to disk (compat surface: errors are logged, not raised).
+
+        R-167: the strict core ``_persist_strict`` raises; this wrapper keeps
+        the pre-contract swallow-and-log behavior for existing callers. The
+        contract (memory_store) calls the strict core and reports a bool.
+        """
+        try:
+            self._persist_strict()
+        except Exception as e:
+            # R-159: exception TYPE only — the text can echo stored contents
+            logger.error("Failed to persist memory: %s", type(e).__name__)
+
+    def _persist_strict(self) -> None:
+        """The persist core: writes or raises (R-167 — inspectable failure)."""
         if not self._persistence_file:
             return
         
@@ -389,53 +425,53 @@ class MemorySystem:
             memory_id: entry.to_dict()
             for memory_id, entry in self._memories.items()
         }
-        
-        try:
-            # R-103: atomic write — a crash mid-write no longer truncates the file
-            tmp = f"{self._persistence_file}.tmp"
-            with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, default=str)
-            os.replace(tmp, self._persistence_file)
-            logger.info(f"Memory persisted to {self._persistence_file}")
-        except Exception as e:
-            # R-159: exception TYPE only — the text can echo stored contents
-            logger.error("Failed to persist memory: %s", type(e).__name__)
+        # R-103: atomic write — a crash mid-write no longer truncates the file
+        tmp = f"{self._persistence_file}.tmp"
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, default=str)
+        os.replace(tmp, self._persistence_file)
+        logger.info(f"Memory persisted to {self._persistence_file}")
     
     async def load(self) -> None:
-        """Load memory from disk."""
-        if not self._persistence_file:
-            return
-        
-        if not os.path.exists(self._persistence_file):
-            return
-        
+        """Load memory from disk (compat surface: errors are logged, not raised)."""
         try:
-            with open(self._persistence_file, 'r') as f:
-                data = json.load(f)
-            
-            for memory_id, entry_data in data.items():
-                entry_data['tags'] = set(entry_data.get('tags', []))
-                # R-103: restore types — before, memory_type stayed a str (the type
-                # index then keyed by str, so type filters missed loaded entries) and
-                # the datetimes stayed str (sorting by last_accessed.timestamp() raised).
-                entry_data['memory_type'] = MemoryType(entry_data['memory_type'])
-                for k in ('created_at', 'last_accessed'):
-                    if isinstance(entry_data.get(k), str):
-                        entry_data[k] = datetime.fromisoformat(entry_data[k])
-                entry = MemoryEntry(**{
-                    k: v for k, v in entry_data.items()
-                    if k in MemoryEntry.__dataclass_fields__
-                })
-                self._memories[memory_id] = entry
-                
-                # Rebuild indexes
-                self._index_by_type[entry.memory_type].add(memory_id)
-                for tag in entry.tags:
-                    self._index_by_tag[tag].add(memory_id)
-            
-            logger.info(f"Memory loaded from {self._persistence_file}")
+            self._load_strict()
         except Exception as e:
+            # R-159: exception TYPE only
             logger.error("Failed to load memory: %s", type(e).__name__)
+
+    def _load_strict(self) -> bool:
+        """The load core: True if a file was loaded, False if there is no file;
+        RAISES on corruption BEFORE any state change (R-167 — no partial state)."""
+        if not self._persistence_file:
+            return False
+        if not os.path.exists(self._persistence_file):
+            return False
+        with open(self._persistence_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)  # a corrupt file raises before any state is touched
+        
+        for memory_id, entry_data in data.items():
+            entry_data['tags'] = set(entry_data.get('tags', []))
+            # R-103: restore types — before, memory_type stayed a str (the type
+            # index then keyed by str, so type filters missed loaded entries) and
+            # the datetimes stayed str (sorting by last_accessed.timestamp() raised).
+            entry_data['memory_type'] = MemoryType(entry_data['memory_type'])
+            for k in ('created_at', 'last_accessed'):
+                if isinstance(entry_data.get(k), str):
+                    entry_data[k] = datetime.fromisoformat(entry_data[k])
+            entry = MemoryEntry(**{
+                k: v for k, v in entry_data.items()
+                if k in MemoryEntry.__dataclass_fields__
+            })
+            self._memories[memory_id] = entry
+            
+            # Rebuild indexes
+            self._index_by_type[entry.memory_type].add(memory_id)
+            for tag in entry.tags:
+                self._index_by_tag[tag].add(memory_id)
+        
+        logger.info(f"Memory loaded from {self._persistence_file}")
+        return True
     
     def get_stats(self) -> Dict[str, Any]:
         """Get memory statistics."""

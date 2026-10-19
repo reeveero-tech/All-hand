@@ -1,0 +1,11 @@
+strategy  records entries  write_ms search_ms   hits persist_ms   load_ms  loaded
+process       100     100       0.9       0.1    100       None      None    None
+file          100     100       0.8       0.1    100 1.7502320042694919 0.7491459982702509     100
+process      1000    1000       8.2       1.2   1000       None      None    None
+file         1000    1000      13.2       1.8   1000 28.04119000211358 8.195458001864608    1000
+process     10000   10000      85.4      16.0  10000       None      None    None
+file        10000   10000      88.1      16.2  10000 164.5410359997186 81.31499900628114   10000
+
+notes: capacity set to n+1000 for every run (no pruning during the run);
+persist/load are measured SEPARATELY (snapshot model — writes are in-memory
+for both strategies); search is the tag-intersection + substring query.
