@@ -1823,7 +1823,7 @@
 ### المرحلة P4 — أولوية عالية ([`P4_MEMORY_QUALITY_AR.md`](roadmaps/revival-scale/roadmap/P4_MEMORY_QUALITY_AR.md))
 
 #### R-167 — توحيد طبقة التجربة والذاكرة
-- الحالة: **in_progress**
+- الحالة: **awaiting_merge**
 - branch: `m8/r167-unified-memory`
 - المرحلة: P4 (أولوية عالية)؛ الاعتماديات: كل P3 (R-162..R-166)
 - المرجع ومعايير القبول التفصيلية: [`roadmap/P4_MEMORY_QUALITY_AR.md`](roadmaps/revival-scale/roadmap/P4_MEMORY_QUALITY_AR.md)
@@ -1831,8 +1831,8 @@
 - **ما تم (دفعة m8/r167-unified-memory)**: عقد الذاكرة الموحد `agos_kernel/agent_production/memory_store.py` — كتابة/استرجاع (get نقي وretrieve بلمسة وصول)/بحث/ترتيب/حذف/تصدير/استعادة — فوق نموذج بيانات واحد (MemoryEntry/MemoryQuery موسَّع بحقل `metadata_equals` الأخير لحماية الاستدعاءات الموضعية، و`limit=None` صريح غير المحدود). محوّلان للاستراتيجيتين القائمتين: `InProcessStore` (طيّار) و`FileBackedStore` (لقطة ملفية بنفس المحرك — الحفظ لقطة صريحة لا كتابة مع كل عملية، مطابق للبنية السابقة). إصلاح في المحرك المشترك: إعادة فهرسة عند استبدال معرّف موجود (كانت فهارس النوع/الوسوم القديمة تبقى فتطابقها فلاتر متقادمة)؛ نوى `_persist_strict`/`_load_strict` (استثناء واضح للعقد؛ الواجهتان القديمتان محفوظتان بسلوكهما). توصيل المسارات الحقيقية بالعقد بدل الوصول لخصوصيات `_memories`/`_index_by_tag`: `experience.py` بالكامل (recall مع بقاء فحص metadata.tenant_id، search، forget_tenant، _ensure_loaded، _store، _researcher_fallback، stats/public_stats) و`real_dispatcher` (انتقاء فشائل الخبرة لإعادة اختبار self_developer). استعادة محافظة: تحقق كامل من الحمولة قبل أي تغيير حالة؛ معرّف موجود يُتخطى ويُعرض (لا استبدال محتوى)؛ تجاوز السعة يُرفض ذرياً بلا تقليم صامت؛ الحمولة لا تُعدل؛ `max_entries` الوارد لا يغيّر سعة الهدف. تصدير نقي كامل الحقول بنسخ عميق للبيانات الوصفية المتداخلة.
 - **الأدلة**: أحمر-أولاً [207](../audit/M8/logs/raw/207_r167_red.log) (فشل جمع الوحدة الغائبة قبل التنفيذ)؛ اختبارات العقد 35 (بالمحولين معاً: عمليات موجبة وسالبة، parity مع المحرك بالاتجاهين، صيغة persist القديمة، عزل مستأجرين SEC-02 عبر استعادة snapshot متعدد المستأجرين، مسار خبرة حقيقي بمحوّل مُعدّ قابل للتتبع، reset لا يترك محوّلاً متقادماً)؛ طفرات 9/9 مكشوفة [208](../audit/M8/logs/raw/208_r167_mutations.log)؛ الجناحان 1670+7/4 على 3.14 [210](../audit/M8/logs/raw/210_r167_suite_314.log) و3.12 [211](../audit/M8/logs/raw/211_r167_suite_312.log) — الفشل الوحيد فحص خريطة نقاط الدخول، أثر موثق ما قبل الـcommit (الخريطة تُبنى من git HEAD عبر Snapshot؛ ينقلب أخضر في CI على الفرع المُلزم)؛ قياس [209](../audit/M8/logs/raw/209_r167_bench.log): كتابة/بحث 10k سجل ~85/~16ms للاستراتيجيتين (المحرك نفسه) وpersist/load منفصلان 165/81ms.
 - القرار: [D-089](DECISIONS.md) — العقد والمحوّلات ومصفوفة الاستراتيجيات (متى تكفي ذاكرة العملية/متى يلزم تخزين دائم/متى تستدعي جودة الاسترجاع دراسة vector index — خياران موثقان غير منفذين بلا ادعاء تفوق).
-- أدلة الحالة (R-154): branch=m8/r167-unified-memory | evidence=docs/audit/M8/logs/raw/207_r167_red.log, docs/audit/M8/logs/raw/208_r167_mutations.log, docs/audit/M8/logs/raw/210_r167_suite_314.log, docs/audit/M8/logs/raw/211_r167_suite_312.log, docs/audit/M8/logs/raw/209_r167_bench.log, docs/audit/M8/EVIDENCE.md
-- الباقي: فتح PR وانتظار CI والدمج ثم دفعة القبول.
+- أدلة الحالة (R-154): branch=m8/r167-unified-memory | pr=#202 | evidence=docs/audit/M8/logs/raw/207_r167_red.log, docs/audit/M8/logs/raw/208_r167_mutations.log, docs/audit/M8/logs/raw/210_r167_suite_314.log, docs/audit/M8/logs/raw/211_r167_suite_312.log, docs/audit/M8/logs/raw/209_r167_bench.log, docs/audit/M8/EVIDENCE.md
+- الباقي: انتظار CI والدمج (التزام التفويض الدائم §5.7) ثم دفعة القبول.
 
 #### R-168 — ثبات واستعادة الذاكرة
 - الحالة: **planned**
