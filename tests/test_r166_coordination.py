@@ -165,18 +165,21 @@ def test_failover_does_not_reassign_an_answered_subtask():
 
 def test_delegation_beyond_the_depth_limit_is_refused():
     co = C.GroupCoordinator(participants(5), max_delegation_depth=2)
+    co.distribute(subtasks(1))
     with pytest.raises(C.DelegationTooDeep, match="depth 3 exceeds"):
         co.delegate("p2", "p3", "s0", chain=["p0", "p1", "p2"])
 
 
 def test_delegation_cycle_is_refused():
     co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
     with pytest.raises(C.DelegationCycle, match="cycle"):
         co.delegate("p1", "p0", "s0", chain=["p0", "p1"])
 
 
 def test_delegation_to_an_unknown_participant_is_refused():
     co = C.GroupCoordinator(participants(2))
+    co.distribute(subtasks(1))
     with pytest.raises(C.CoordinationError, match="unknown participant"):
         co.delegate("p0", "ghost", "s0")
 
@@ -751,3 +754,53 @@ def test_current_attempt_result_is_accepted_after_failover_r166c():
     assert current is True
     rep = co.finalize()
     assert rep.ok is True
+
+
+# =====================================================================
+# R-166d — delegation handoff check (advisor-directed, D-088). The positive
+# path of delegate(): the legitimate recipient must be able to complete the
+# subtask, and the previous owner's result must be rejected after the
+# handoff. Written as a CHECK on HEAD first (red run saved in
+# docs/audit/M8/logs/raw/181_r166d_red.log).
+# =====================================================================
+
+def test_delegation_handoff_transfers_ownership_r166d():
+    """The documented positive path: p0 delegates s0 to p1 — p1 is now the
+    assignee; p1's result must be ACCEPTED and complete the subtask, and
+    p0's (previous owner) result must be REJECTED after the handoff."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    assert co._expected["s0"] == "p0"
+    # p0 hands the subtask off to p1 (the legitimate positive path)
+    delegation = co.delegate("p0", "p1", "s0")
+    assert delegation.participant_id == "p1"
+    # the recipient completes the subtask — must be accepted
+    from_recipient = co.submit_result(C.CoordinationMessage(
+        "r:s0:p1", "result", "s0", "p1", {"ok": True}, attempt=delegation.attempt))
+    assert from_recipient is True
+    rep = co.finalize()
+    assert rep.ok is True
+    assert rep.missing == []
+
+
+def test_previous_owner_result_rejected_after_delegation_r166d():
+    """After p0 delegates s0 to p1, a result from p0 (the previous owner)
+    must be REJECTED — ownership moved with the handoff."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    co.delegate("p0", "p1", "s0")
+    stale_owner = co.submit_result(C.CoordinationMessage(
+        "r:s0:p0", "result", "s0", "p0", {"ok": True}, attempt=0))
+    assert stale_owner is False
+    rep = co.finalize()
+    assert rep.ok is False
+    assert rep.missing == ["s0"]
+
+
+def test_only_the_assignee_may_delegate_its_subtask_r166d():
+    """A participant may only hand off a subtask it is the assignee of —
+    delegating someone else's subtask is an unauthorized transfer."""
+    co = C.GroupCoordinator(participants(3))
+    co.distribute(subtasks(1))
+    with pytest.raises(C.CoordinationError, match="not the assignee"):
+        co.delegate("p1", "p2", "s0")     # p1 does not own s0

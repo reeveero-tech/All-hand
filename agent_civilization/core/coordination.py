@@ -320,8 +320,16 @@ class GroupCoordinator:
 
         ``chain`` is the delegation chain so far, ending with the delegator.
         Depth beyond ``max_delegation_depth`` is refused; a cycle (any
-        participant appearing twice) is refused.
+        participant appearing twice) is refused. Only the CURRENT assignee
+        may hand off its subtask (an unauthorized transfer is refused), and
+        the handoff MOVES OWNERSHIP (D-088): the recipient becomes the
+        assignee — the previous owner can no longer complete the subtask,
+        and the recipient's stamped result completes it. The delegate
+        message carries the subtask's current attempt (a handoff is not a
+        re-execution; the attempt does not bump).
         """
+        if subtask_id not in self._expected:
+            raise CoordinationError(f"unknown subtask {subtask_id!r}")
         path = list(chain or [from_participant])
         if from_participant not in path:
             path.append(from_participant)
@@ -334,16 +342,27 @@ class GroupCoordinator:
                 f"{self.max_delegation_depth}")
         if to_participant not in self.participants:
             raise CoordinationError(f"unknown participant {to_participant!r}")
+        if self._expected[subtask_id] != from_participant:
+            raise CoordinationError(
+                f"{from_participant!r} is not the assignee of {subtask_id!r} — "
+                "only the assignee may delegate its subtask")
         if self._messages_sent + 1 > self.max_messages:
             raise MessageBudgetExceeded(
                 f"delegation of {subtask_id!r} would exceed the budget of {self.max_messages}")
         self._messages_sent += 1
+        # the handoff moves ownership (D-088): the recipient becomes the
+        # assignee; the previous owner can no longer complete the subtask
+        self._expected[subtask_id] = to_participant
+        self._assignments[subtask_id] = to_participant
+        self._load[from_participant] = max(0, self._load.get(from_participant, 1) - 1)
+        self._load[to_participant] = self._load.get(to_participant, 0) + 1
         return CoordinationMessage(
             message_id=f"delegate:{subtask_id}:{from_participant}->{to_participant}",
             kind="delegate",
             subtask_id=subtask_id,
             participant_id=to_participant,
             body=None,
+            attempt=self._attempt.get(subtask_id, 0),
         )
 
     # ---------------------------------------------------------- result intake
