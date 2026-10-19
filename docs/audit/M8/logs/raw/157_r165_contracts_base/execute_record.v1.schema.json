@@ -1,0 +1,76 @@
+{
+  "$id": "agos://contracts/execute_record/v1",
+  "additionalProperties": false,
+  "description": "A /civilization/execute record in the same memory store (another\nvariant of /api/tasks items). Status is \"completed\" when the plan ran,\nwhatever its stages' ok (no aggregate ok exists — gap G-160-3).",
+  "properties": {
+    "created_at": {
+      "title": "Created At",
+      "type": "number"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "id": {
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "message": {
+      "title": "Message",
+      "type": "string"
+    },
+    "plan": {
+      "additionalProperties": true,
+      "title": "Plan",
+      "type": "object"
+    },
+    "result": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Result"
+    },
+    "status": {
+      "enum": [
+        "running",
+        "completed",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "tenant_id": {
+      "title": "Tenant Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "message",
+    "plan",
+    "status",
+    "created_at",
+    "tenant_id"
+  ],
+  "title": "ExecuteRecord",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-direction": "response",
+  "x-flow": "GET /api/tasks (memory, execute variant) -> client"
+}
