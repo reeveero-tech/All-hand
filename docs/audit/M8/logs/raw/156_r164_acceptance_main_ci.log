@@ -1,0 +1,29 @@
+R-164 acceptance — PR #189 merged, CI on main verified (2026-10-19)
+
+- PR #189 "R-164: backpressure and limits (D-083) — review only, do not merge" merged on the owner's explicit
+  approval in this session (2026-10-19, "ادمج PR #189"), by the owner account (mergedBy=reeveero-tech)
+  at 2026-10-19T00:47:07Z, merge commit (no squash, no [publish]); gh pr merge --match-head-commit 3e9207b.
+- merge_sha=6f3831b9e04d29d3ff20c61219f1d4e00db48b7b (merge commit on main; parents: d143fbf = main, 3e9207b = PR head).
+- tested_sha=3e9207b5360f24ddd3f1ab3ce3996f69d9f73eae (PR head — second parent of the merge ✓).
+- ci_run=39182337299 (AGOS Kernel CI/CD on main, push, head sha 6f3831b9e04d29d3ff20c61219f1d4e00db48b7b).
+- ci_conclusion=success.
+- Jobs: quality=success, test=success, network=success, docker=success, build=success, audit=success, storage=success,
+  publish=skipped (D-011 — not counted as a release).
+- test job (3 steps: 3.11, 3.12, 3.12-specialists): "1494 passed, 7 skipped, 4 deselected" in all three steps
+  (matches the local suites docs/audit/M8/logs/raw/155_r164_suite_py314.log / _py311.log / _py312.log: 1494 passed,
+  7 skipped, 4 deselected); the 10 review-race tests (tests/test_r164_review_races.py) PASSED in the -v step.
+  (The "1056 passed …" / "3 failed, 1053 passed …" strings in that log are input fixtures of the R-158
+  pytest-summary parser tests, not results.)
+- storage job: tests/test_r164_live_backpressure.py::test_r164_live_count_and_exclusion_scan PASSED against live
+  PostgREST; R-163 live queue tests 2 passed; R-042 live storage 4 passed + "26/26 checks passed"; R-161 integration
+  checker storage PASS (connected=True, cleanup=ok).
+- network job: 4 passed (network marker).
+- audit job: "No known vulnerabilities found" / "found 0 vulnerabilities".
+- PR checks on the PR branch before merge (runs 39161537963 + governance 39161537930 on 3e9207b): all pass
+  (quality, test, network, docker, build, audit, storage, governance; publish skipped per D-011).
+- Review: three review threads (breaker stale success vs Retry-After, queued keyed LLM calls vs open breaker,
+  durable accept-rate under concurrency) fixed in 972b08c with concurrency tests, replied, resolved; a CI finding
+  (pool queue cap counted calls idle threads were about to pick up) fixed in 0f5e619 — EVIDENCE.md R-164 sections,
+  logs 154_* and 155_*.
+- Not claimed: production readiness. Untested: multi-instance limits (RISK-033), production-load calibration of the
+  new defaults (RISK-034), render.yaml / production settings (Q-026 open), deploy on Render. No deploy, no billing.
