@@ -1,0 +1,25 @@
+# R-166c acceptance — main CI at merge SHA — 2026-10-19
+merge commit:
+88251f64ebb09d5f2230545b719584f064631c2a
+3d907ec9b65f6e8e26d465d74b4f71762234fb57 96eeaf73115815070bcb713a9ee15b697548469a
+2026-10-19T12:17:22+03:00
+Merge pull request #198 from reeveero-tech/m8/r166c-review-fixes
+
+pr merge record (gh api):
+{"head":"96eeaf73115815070bcb713a9ee15b697548469a","merge_commit_sha":"88251f64ebb09d5f2230545b719584f064631c2a","merged_at":"2026-10-19T09:17:23Z","merged_by":"reeveero-tech","number":198,"state":"closed"}
+
+CI run on main (head 88251f6):
+{"conclusion":"success","event":"push","head_sha":"88251f64ebb09d5f2230545b719584f064631c2a","id":39228935451,"run_started_at":"2026-10-19T09:17:25Z","status":"completed","updated_at":"2026-10-19T09:30:29Z"}
+jobs:
+{"conclusion":"success","name":"quality"}
+{"conclusion":"success","name":"test"}
+{"conclusion":"success","name":"network"}
+{"conclusion":"success","name":"audit"}
+{"conclusion":"success","name":"docker"}
+{"conclusion":"success","name":"build"}
+{"conclusion":"success","name":"storage"}
+{"conclusion":"skipped","name":"publish"}
+test summary lines:
+2026-10-19T09:21:44.3141159Z ========== 1617 passed, 7 skipped, 4 deselected in 237.80s (0:03:57) ===========
+2026-10-19T09:25:41.4436488Z ========== 1617 passed, 7 skipped, 4 deselected in 221.65s (0:03:41) ===========
+2026-10-19T09:29:42.6269691Z ========== 1617 passed, 7 skipped, 4 deselected in 236.63s (0:03:56) ===========
