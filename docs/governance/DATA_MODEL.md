@@ -5,6 +5,9 @@
 
 ## الكيانات المرصودة من الاستخدام
 
+### تصدير الذاكرة (R-167، D-089 — ملفي لا قاعدة بيانات)
+مغلف التصدير/الاستعادة للعقد `agos-memory/v1`: `{"format": "agos-memory/v1", "max_entries": <سعة المصدر للقراءة فقط — لا تغيّر سعة الهدف>, "entries": {<memory_id>: {memory_id, content, memory_type(episodic|semantic|procedural|working), tags[], metadata{}, importance, created_at, last_accessed, access_count}}}` — متوافق عمداً مع صيغة ملف persist القديمة (`{id: to_dict()}` تُقبل في الاستعادة). استعادة محافظة: تحقق كامل قبل أي تغيير؛ تعارض يُتخطى ويُعرض؛ تجاوز سعة يُرفض ذرياً. التصدير يغطي السجلات فقط (حالة التعلم لها `LearningRuntime.export_knowledge`).
+
 ### Task (مهمة)
 - **in-memory** (`server.py`): `TASKS: Dict[task_id, dict]` بحد أقصى 500 مهمة (`MAX_TASKS_KEPT`)، الحقول: `id`, `specialization`, `prompt[:500]`, `status`, `created_at`, `result`.
 - **Supabase** (`storage/supabase_store.py`): جدول `tasks` — إدراج POST بـ `task_id, specialization, prompt[:500], status`؛ وتحديث PATCH بحقول اختيارية: `status, agent_name, result (كائن JSON — أُصلح في R-042؛ كان نصاً مرمزاً مرتين), elapsed_s, finished_at="now()"`.

@@ -1,0 +1,20 @@
+[M1-overwrite-reindex] RED — ============================== 2 failed in 0.45s ===============================
+[M2-metadata-equals] RED — ============================== 2 failed in 0.27s ===============================
+[M3-limit-none] GREEN — ============================== 2 passed in 0.34s ===============================
+[M4-capacity-check] RED — ============================== 2 failed in 0.20s ===============================
+[M5-validation] GREEN — ============================== 2 passed in 0.11s ===============================
+[M6-restore-overwrite] RED — ============================== 2 failed in 0.18s ===============================
+[M7-export-purity] RED — ============================== 2 failed in 0.19s ===============================
+[M8-get-touch] RED — ============================== 2 failed in 0.22s ===============================
+Traceback (most recent call last):
+  File "<stdin>", line 104, in <module>
+  File "<stdin>", line 25, in cycle
+  File "<stdin>", line 15, in mutate
+AssertionError: M9-corrupt-load: anchor not unique (0)
+[M3-limit-none] RED — ============================== 2 failed in 0.22s ===============================
+[M5-validation] RED — ============================== 2 failed in 0.19s ===============================
+[M9-corrupt-load] RED — ============================== 1 failed in 0.15s ===============================
+
+=== redo summary ===
+RED (caught): 3 — ['M3-limit-none', 'M5-validation', 'M9-corrupt-load']
+GREEN (SURVIVED — must fix): 0 — []

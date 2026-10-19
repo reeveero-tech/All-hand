@@ -20,7 +20,7 @@ All-hand/ (الجذر — 10 أدلة جذرية متتبعة، 1,546 ملفاً
 │   │                               يصرّفون إلى real_dispatcher؛ موصولة اختيارياً بـAGOS_AGENT_IMPL=specialists (D-037)
 │   ├── core/agents/             ← BaseAgent, CommunicationHub, real_dispatcher
 │   │   └── craft.py             ← builder/architect/designer/modifier/مولّد المواصفات/تحليل النص — حتمي ومتحقق داخلياً (R-102، D-045)
-│   ├── core/experience.py       ← الذاكرة والتعلم حول المعالج الحقيقي في المسار الحي (R-103، D-046) — يستخدم agos_kernel/agent_production
+│   ├── core/experience.py       ← الذاكرة والتعلم حول المعالج الحقيقي في المسار الحي (R-103، D-046) — كله عبر عقد الذاكرة الموحد (R-167، D-089: agos_kernel/agent_production/memory_store.py) لا خصوصيات المحرك
 │   ├── core/safety.py           ← سياسة الأدوات الحقيقية (R-100، D-044): إذن تنفيذ الكود + العزل، حارس العناوين، SQLite
 │   ├── core/pools.py            ← مجمّعات خيوط مسماة llm/web/net/local لكل استدعاء حاجب (R-132، D-055)
 │   ├── routing/auto_router.py   ← route() (الاسم الأصلي للدالة `route`؛ `civilization_routes.py` يستوردها كـalias تحت الاسم `auto_route`: `from agent_civilization.routing import route as auto_route`)؛ توجيه محلي بالفعل (R-106)

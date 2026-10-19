@@ -1,0 +1,289 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 35 items
+
+tests/test_r167_memory_contract.py EEEEEEEEEEEEEEEEEEEEEEEEFFFFFEEFFFF   [100%]
+
+==================================== ERRORS ====================================
+_____ ERROR at setup of test_write_get_retrieve_delete_roundtrip[process] ______
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_______ ERROR at setup of test_write_get_retrieve_delete_roundtrip[file] _______
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_ ERROR at setup of test_search_substring_content_and_metadata_prompt[process] _
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+__ ERROR at setup of test_search_substring_content_and_metadata_prompt[file] ___
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+___________ ERROR at setup of test_search_filters_and_limit[process] ___________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+____________ ERROR at setup of test_search_filters_and_limit[file] _____________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_ ERROR at setup of test_search_metadata_equals_and_positional_compat[process] _
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+__ ERROR at setup of test_search_metadata_equals_and_positional_compat[file] ___
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+__________ ERROR at setup of test_ordered_is_pure_and_orders[process] __________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+___________ ERROR at setup of test_ordered_is_pure_and_orders[file] ____________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+___________ ERROR at setup of test_export_lossless_and_pure[process] ___________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+____________ ERROR at setup of test_export_lossless_and_pure[file] _____________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+______________ ERROR at setup of test_restore_semantics[process] _______________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+________________ ERROR at setup of test_restore_semantics[file] ________________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_____ ERROR at setup of test_restore_capacity_rejected_atomically[process] _____
+tests/test_r167_memory_contract.py:75: in store_small
+    return _mk_store(request.param, tmp_path, capacity=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+______ ERROR at setup of test_restore_capacity_rejected_atomically[file] _______
+tests/test_r167_memory_contract.py:75: in store_small
+    return _mk_store(request.param, tmp_path, capacity=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+______ ERROR at setup of test_restore_invalid_payloads_rejected[process] _______
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+________ ERROR at setup of test_restore_invalid_payloads_rejected[file] ________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+____ ERROR at setup of test_restore_does_not_adopt_export_capacity[process] ____
+tests/test_r167_memory_contract.py:75: in store_small
+    return _mk_store(request.param, tmp_path, capacity=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_____ ERROR at setup of test_restore_does_not_adopt_export_capacity[file] ______
+tests/test_r167_memory_contract.py:75: in store_small
+    return _mk_store(request.param, tmp_path, capacity=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_____________ ERROR at setup of test_overwrite_reindexes[process] ______________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_______________ ERROR at setup of test_overwrite_reindexes[file] _______________
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_______ ERROR at setup of test_write_capacity_prune_documented[process] ________
+tests/test_r167_memory_contract.py:75: in store_small
+    return _mk_store(request.param, tmp_path, capacity=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_________ ERROR at setup of test_write_capacity_prune_documented[file] _________
+tests/test_r167_memory_contract.py:75: in store_small
+    return _mk_store(request.param, tmp_path, capacity=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+____ ERROR at setup of test_restore_accepts_legacy_persist_format[process] _____
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+______ ERROR at setup of test_restore_accepts_legacy_persist_format[file] ______
+tests/test_r167_memory_contract.py:70: in store
+    return _mk_store(request.param, tmp_path)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:59: in _mk_store
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+=================================== FAILURES ===================================
+_______________________ test_file_persist_load_roundtrip _______________________
+tests/test_r167_memory_contract.py:344: in test_file_persist_load_roundtrip
+    from agos_kernel.agent_production.memory_store import FileBackedStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+____________________ test_file_persist_missing_and_corrupt _____________________
+tests/test_r167_memory_contract.py:362: in test_file_persist_missing_and_corrupt
+    from agos_kernel.agent_production.memory_store import FileBackedStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_______________________ test_in_process_persist_is_false _______________________
+tests/test_r167_memory_contract.py:379: in test_in_process_persist_is_false
+    from agos_kernel.agent_production.memory_store import InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_______________________ test_store_for_selects_strategy ________________________
+tests/test_r167_memory_contract.py:390: in test_store_for_selects_strategy
+    from agos_kernel.agent_production.memory_store import FileBackedStore, InProcessStore, store_for
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+_______________________ test_parity_contract_and_engine ________________________
+tests/test_r167_memory_contract.py:419: in test_parity_contract_and_engine
+    asyncio.run(go())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:404: in go
+    from agos_kernel.agent_production.memory_store import InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+______________________ test_multitenant_snapshot_scoping _______________________
+tests/test_r167_memory_contract.py:489: in test_multitenant_snapshot_scoping
+    asyncio.run(go())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r167_memory_contract.py:460: in go
+    from agos_kernel.agent_production.memory_store import InProcessStore
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+__________________ test_run_with_experience_uses_the_contract __________________
+tests/test_r167_memory_contract.py:523: in test_run_with_experience_uses_the_contract
+    from agos_kernel.agent_production.memory_store import InProcessStore, store_for
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+___________________ test_reset_does_not_leave_a_stale_store ____________________
+tests/test_r167_memory_contract.py:557: in test_reset_does_not_leave_a_stale_store
+    from agos_kernel.agent_production.memory_store import store_for
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+___________ test_dispatcher_failed_experience_selection_via_contract ___________
+tests/test_r167_memory_contract.py:577: in test_dispatcher_failed_experience_selection_via_contract
+    from agos_kernel.agent_production.memory_store import store_for
+E   ModuleNotFoundError: No module named 'agos_kernel.agent_production.memory_store'
+=========================== short test summary info ============================
+FAILED tests/test_r167_memory_contract.py::test_file_persist_load_roundtrip
+FAILED tests/test_r167_memory_contract.py::test_file_persist_missing_and_corrupt
+FAILED tests/test_r167_memory_contract.py::test_in_process_persist_is_false
+FAILED tests/test_r167_memory_contract.py::test_store_for_selects_strategy - ...
+FAILED tests/test_r167_memory_contract.py::test_parity_contract_and_engine - ...
+FAILED tests/test_r167_memory_contract.py::test_multitenant_snapshot_scoping
+FAILED tests/test_r167_memory_contract.py::test_run_with_experience_uses_the_contract
+FAILED tests/test_r167_memory_contract.py::test_reset_does_not_leave_a_stale_store
+FAILED tests/test_r167_memory_contract.py::test_dispatcher_failed_experience_selection_via_contract
+ERROR tests/test_r167_memory_contract.py::test_write_get_retrieve_delete_roundtrip[process]
+ERROR tests/test_r167_memory_contract.py::test_write_get_retrieve_delete_roundtrip[file]
+ERROR tests/test_r167_memory_contract.py::test_search_substring_content_and_metadata_prompt[process]
+ERROR tests/test_r167_memory_contract.py::test_search_substring_content_and_metadata_prompt[file]
+ERROR tests/test_r167_memory_contract.py::test_search_filters_and_limit[process]
+ERROR tests/test_r167_memory_contract.py::test_search_filters_and_limit[file]
+ERROR tests/test_r167_memory_contract.py::test_search_metadata_equals_and_positional_compat[process]
+ERROR tests/test_r167_memory_contract.py::test_search_metadata_equals_and_positional_compat[file]
+ERROR tests/test_r167_memory_contract.py::test_ordered_is_pure_and_orders[process]
+ERROR tests/test_r167_memory_contract.py::test_ordered_is_pure_and_orders[file]
+ERROR tests/test_r167_memory_contract.py::test_export_lossless_and_pure[process]
+ERROR tests/test_r167_memory_contract.py::test_export_lossless_and_pure[file]
+ERROR tests/test_r167_memory_contract.py::test_restore_semantics[process] - M...
+ERROR tests/test_r167_memory_contract.py::test_restore_semantics[file] - Modu...
+ERROR tests/test_r167_memory_contract.py::test_restore_capacity_rejected_atomically[process]
+ERROR tests/test_r167_memory_contract.py::test_restore_capacity_rejected_atomically[file]
+ERROR tests/test_r167_memory_contract.py::test_restore_invalid_payloads_rejected[process]
+ERROR tests/test_r167_memory_contract.py::test_restore_invalid_payloads_rejected[file]
+ERROR tests/test_r167_memory_contract.py::test_restore_does_not_adopt_export_capacity[process]
+ERROR tests/test_r167_memory_contract.py::test_restore_does_not_adopt_export_capacity[file]
+ERROR tests/test_r167_memory_contract.py::test_overwrite_reindexes[process]
+ERROR tests/test_r167_memory_contract.py::test_overwrite_reindexes[file] - Mo...
+ERROR tests/test_r167_memory_contract.py::test_write_capacity_prune_documented[process]
+ERROR tests/test_r167_memory_contract.py::test_write_capacity_prune_documented[file]
+ERROR tests/test_r167_memory_contract.py::test_restore_accepts_legacy_persist_format[process]
+ERROR tests/test_r167_memory_contract.py::test_restore_accepts_legacy_persist_format[file]
+========================= 9 failed, 26 errors in 0.98s =========================

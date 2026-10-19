@@ -1,0 +1,29 @@
+=== R-167 baseline (2026-10-19T18:42Z) at 52e5bdb ===
+--- pytest (venv 3.14):
+rc=0
+===== 1636 passed, 7 skipped, 4 deselected, 1 warning in 237.78s (0:03:57) =====
+--- ruff:
+rc=0
+All checks passed!
+--- web build:
+rc=0
+✓ built in 120ms
+--- root build (vite/nitro):
+rc=0
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+--- tsc --noEmit (NOT the approved build path; recorded separately):
+rc=2
+src/routes/__root.tsx(110,3): error TS2322: Type '({ error, reset }: { error: Error; reset: () => void; }) => Element' is not assignable to type 'false | ErrorRouteComponent | null | undefined'.
+  Type '({ error, reset }: { error: Error; reset: () => void; }) => Element' is not assignable to type '((props: ErrorComponentProps) => any) & { preload?: (() => Promise<void> | undefined) | undefined; }'.
+    Type '({ error, reset }: { error: Error; reset: () => void; }) => Element' is not assignable to type '(props: ErrorComponentProps) => any'.
+      Types of parameters '__0' and 'props' are incompatible.
+        Type 'ErrorComponentProps' is not assignable to type '{ error: Error; reset: () => void; }'.
+          Types of property 'error' are incompatible.
+            Type 'unknown' is not assignable to type 'Error'.
+src/server.ts(32,23): error TS2554: Expected 1 arguments, but got 0.
+src/server.ts(55,27): error TS2554: Expected 1 arguments, but got 0.
+src/start.ts(13,25): error TS2554: Expected 1 arguments, but got 0.
+--- CI on main:
+run 39248958036 success at 52e5bdb
+--- open PRs:
+[]
