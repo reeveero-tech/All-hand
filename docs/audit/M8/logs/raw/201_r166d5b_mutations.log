@@ -1,0 +1,5 @@
+# R-166d round-5b: I1 redone isolated (inner comparison only) — 2026-10-19T11:12:47Z
+under I1-redo: CAUGHT (============ 2 failed, 1 passed, 74 deselected, 1 warning in 0.44s =============)
+  failed: ['test_stale_delegation_command_after_failover_round_trip_is_refused_r166d', 'test_unstamped_delegation_command_after_transition_is_refused_r166d']
+  advisor-specified behavior confirmed: stale+unstamped fail, current passes
+restored: ================= 3 passed, 74 deselected, 1 warning in 0.39s ==================

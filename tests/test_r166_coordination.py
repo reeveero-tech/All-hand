@@ -1050,12 +1050,13 @@ def test_stale_delegation_command_after_failover_round_trip_is_refused_r166d():
     back = co.failover("s0", first.participant_id, attempt=first.attempt)   # p0, gen 2
     assert back is not None and co._expected["s0"] == "p0"
     # a late command from p0's ORIGINAL assignment (gen 0) — must be refused
+    # with NO state change: snapshot the full state before the refusal
+    snapshot = (dict(co._expected), dict(co._generation), dict(co._chain),
+               dict(co._load), co._messages_sent)
     with pytest.raises(C.CoordinationError, match="stale"):
         co.delegate("p0", "p2", "s0", attempt=0)
-    assert co._expected["s0"] == "p0"          # no state change
-    assert co._generation["s0"] == 2
-    assert co._chain == {}                     # no delegation recorded
-    assert co._messages_sent == 3              # work + two failovers only
+    assert (dict(co._expected), dict(co._generation), dict(co._chain),
+            dict(co._load), co._messages_sent) == snapshot
 
 
 def test_unstamped_delegation_command_after_transition_is_refused_r166d():
@@ -1064,10 +1065,13 @@ def test_unstamped_delegation_command_after_transition_is_refused_r166d():
     co = C.GroupCoordinator(participants(4))
     co.distribute(subtasks(1))
     co.failover("s0", "p0")                    # gen 1
+    # snapshot the full state before the refusal
+    snapshot = (dict(co._expected), dict(co._generation), dict(co._chain),
+               dict(co._load), co._messages_sent)
     with pytest.raises(C.CoordinationError, match="stale"):
         co.delegate(co._expected["s0"], "p2", "s0")   # unstamped, gen > 0
-    assert co._expected["s0"] != "p2" or True
-    assert co._chain == {}
+    assert (dict(co._expected), dict(co._generation), dict(co._chain),
+            dict(co._load), co._messages_sent) == snapshot
 
 
 def test_current_delegation_command_produces_correct_handoff_r166d():
