@@ -6,6 +6,14 @@
       "title": "Allow Public Llm",
       "type": "boolean"
     },
+    "approve_stages": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Approve Stages",
+      "type": "array"
+    },
     "data": {
       "anyOf": [
         {},

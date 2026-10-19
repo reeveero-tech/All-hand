@@ -40,6 +40,19 @@
   "$id": "agos://contracts/execute_response/v1",
   "additionalProperties": false,
   "properties": {
+    "budget": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Budget"
+    },
     "elapsed_s": {
       "minimum": 0,
       "title": "Elapsed S",
@@ -49,6 +62,52 @@
       "default": null,
       "title": "Final"
     },
+    "ignored_approvals": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ignored Approvals"
+    },
+    "order": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Order"
+    },
+    "pending_approvals": {
+      "anyOf": [
+        {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pending Approvals"
+    },
     "primary": {
       "title": "Primary",
       "type": "string"
@@ -57,12 +116,46 @@
       "title": "Reason",
       "type": "string"
     },
+    "run_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{32}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Run Id"
+    },
     "stages": {
       "items": {
         "$ref": "#/$defs/Stage"
       },
       "title": "Stages",
       "type": "array"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "completed",
+            "failed",
+            "awaiting_approval",
+            "timed_out",
+            "budget_exhausted",
+            "cancelled",
+            "running"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Status"
     },
     "task_id": {
       "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",

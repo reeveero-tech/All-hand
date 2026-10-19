@@ -1,0 +1,10 @@
+# R-165 mutation check — each mutation reverts one behaviour in pipeline/dag.py; tests/test_r165_dag.py must fail. HEAD c630164
+== approval gate disabled: ========================= 2 failed, 63 passed in 2.94s =========================
+== resume re-executes succeeded stages: ========================= 3 failed, 62 passed in 2.99s =========================
+== budget not enforced: ========================= 1 failed, 64 passed in 2.98s =========================
+== old 800-char cut restored: ========================= 1 failed, 64 passed in 2.89s =========================
+== declared output_kind not checked: ========================= 1 failed, 64 passed in 2.89s =========================
+== cycles accepted: ========================= 3 failed, 62 passed in 2.99s =========================
+== artifacts not validated: ========================= 1 failed, 64 passed in 2.93s =========================
+== sensitive stages retried: ========================= 1 failed, 64 passed in 2.94s =========================
+restored: dag.py identical to HEAD

@@ -24,7 +24,7 @@ All-hand/ (الجذر — 10 أدلة جذرية متتبعة، 1,546 ملفاً
 │   ├── core/safety.py           ← سياسة الأدوات الحقيقية (R-100، D-044): إذن تنفيذ الكود + العزل، حارس العناوين، SQLite
 │   ├── core/pools.py            ← مجمّعات خيوط مسماة llm/web/net/local لكل استدعاء حاجب (R-132، D-055)
 │   ├── routing/auto_router.py   ← route() (الاسم الأصلي للدالة `route`؛ `civilization_routes.py` يستوردها كـalias تحت الاسم `auto_route`: `from agent_civilization.routing import route as auto_route`)؛ توجيه محلي بالفعل (R-106)
-│   ├── pipeline/orchestrator.py ← execute_plan()
+│   ├── pipeline/orchestrator.py ← execute_plan() → pipeline/dag.py (R-165: DAG، قطع بنيوية، موافقات، استئناف)
 │   ├── registry/oss_agents.py   ← سجل ~320 وكيل OSS (dataclass ثابت)
 │   ├── storage/supabase_store.py ← طبقة Supabase REST
 │   └── civilization_routes.py   ← 3 مسارات /civilization/* (تسجيل ديناميكي)
@@ -239,3 +239,34 @@ AGOS_AGENT_IMPL=specialists      → SpecialistBackedAgent ×1000
 - القاطع يصدر **إذناً لكل نداء مربوطاً بجيل**؛ النتيجة لا تغيّر الحالة إلا بإذن الجيل الحالي (وفي half-open بإذن المسبار). المزود بمفتاح يأخذ الإذن بعد مقعد التزامن؛ والتخزين يأخذه لكل طلب HTTP في `on_request_start`.
 - قبول المهام: حجز حصة المعدل متزامن قبل أول `await` مع إعادة الحجز عند عدم القبول.
 - سقف طابور المجمّع يُقاس بعدّاد النداءات الجارية لكل منفّذ (لا بطابور عمله الذي يضم نداءات ستلتقطها خيوط خاملة فوراً).
+
+## R-165 — خطط DAG واعتمادات المراحل (D-084)
+
+```
+POST /civilization/execute ─► auto_router.route() ─► dag.normalize_plan()  ── PlanError ─► 400
+          (approve_stages)                                  │ depends_on (افتراضي: السابقة)، دورة/مجهول/تكرار مرفوض
+                                                            ▼ order طوبولوجي مستقر + budget مقصوص لحد الخادم
+                                       dag.run_plan ─► Run (dag.RUNS: ذاكرة، لكل مستأجر)
+                                                            │
+             ┌──────────── حلقة الجدولة (≤ AGOS_PLAN_PARALLEL) ─────────────┐
+             │ جاهزة = كل اعتمادياتها succeeded                            │
+             │ حساسة بلا موافقة ─► awaiting_approval ; ما بعدها ─► blocked │
+             │ محاولة: فحص/حجز الميزانية (متزامن) ─► wait_for(agent, مهلة)  │
+             │   └► build_artifacts ─► stage_artifact v1 (فشل = invalid)   │
+             │ فشل ─► إعادة بتذبذب (غير الحساسة) ─► failed ; التابعة blocked │
+             │ المهلة الكلية ─► الجاري timed_out، الباقي skipped             │
+             └──────────────────────────────────────────────────────────────┘
+                                                            ▼
+                         report: stages + run_id/status/pending_approvals/budget/order
+GET  /civilization/runs/{id}          ─► dag.report (404 لمستأجر آخر)
+POST /civilization/runs/{id}/resume   ─► الناجح يبقى بقطعه؛ الباقي pending ؛ 409 إن كان جارياً
+```
+
+- **مدخلات المرحلة**:
+  - `inputs` = قطع الاعتماديات المباشرة كاملة.
+  - `artifact` = أحدث قطعة بنيوية بين الأسلاف (مفتاح R-114).
+  - `context` = نصوص آخر 3 أسلاف كاملة حتى `AGOS_STAGE_CONTEXT_CHARS`، بعلامة قص صريحة.
+- **المتصلون الداخليون** (`run.py`، السكربتات، إعادة الاختبار الذاتي) يمررون `approvals=None`: البوابة معطلة لهم، ولا يُخزَّن تشغيلهم.
+- **الرصد**: span ‏`workflow` واحد لكل مرحلة (R-159).
+- **المرحلة الحساسة**: سياسة تنفيذ الكود (R-100) وموافقة المزود العام (SEC-06) تبقيان خلفها.
+

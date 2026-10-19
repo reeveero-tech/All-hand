@@ -38,6 +38,7 @@ CONTRACT_SET_VERSION = 1
 TaskStatus = Literal["queued", "running", "completed", "failed"]
 _TASK_ID = r"^[0-9a-f]{12}$"                       # uuid4().hex[:12] (tasks, chat)
 _EXEC_ID = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"  # civilization/execute
+_RUN_ID = r"^[0-9a-f]{32}$"  # R-165 DAG run id (uuid4().hex)
 
 
 class _Strict(BaseModel):
@@ -140,6 +141,8 @@ class ExecuteRecord(_Strict):
     tenant_id: str
     result: Optional[Dict[str, Any]] = None
     finished_at: Optional[float] = None
+    #: R-165 (D-084): the DAG run behind this record (GET /civilization/runs/{run_id})
+    run_id: Optional[str] = Field(default=None, pattern=_RUN_ID)
 
 
 class TaskRow(_Strict):
@@ -220,6 +223,11 @@ class Stage(_Open):
     agent: Optional[str] = None
 
 
+#: R-165 (D-084): a DAG run's aggregate status
+RunStatus = Literal["completed", "failed", "awaiting_approval", "timed_out",
+                    "budget_exhausted", "cancelled", "running"]
+
+
 class ExecuteResponse(_Strict):
     task_id: str = Field(pattern=_EXEC_ID)
     primary: str
@@ -227,6 +235,49 @@ class ExecuteResponse(_Strict):
     stages: List[Stage]
     final: Any = None
     elapsed_s: float = Field(ge=0)
+    # R-165 (D-084) — additive, optional: the DAG run report
+    run_id: Optional[str] = Field(default=None, pattern=_RUN_ID)
+    status: Optional[RunStatus] = None
+    pending_approvals: Optional[List[Dict[str, Any]]] = None
+    budget: Optional[Dict[str, Any]] = None
+    order: Optional[List[str]] = None
+    ignored_approvals: Optional[List[str]] = None
+
+
+class StageArtifact(_Strict):
+    """R-165 (D-084): a typed, schema-validated stage output. Downstream
+    stages consume these (``work["inputs"]`` / ``work["artifact"]``) instead
+    of a truncated text summary. Exactly the field named by ``kind`` is set."""
+    kind: Literal["code", "sql", "analysis", "text"]
+    stage: str = Field(min_length=1)
+    code: Optional[str] = None
+    source_file: Optional[str] = None
+    sql: Optional[str] = None
+    analysis: Optional[Dict[str, Any]] = None
+    text: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _shape(self):
+        others = {"code", "sql", "analysis", "text"} - {self.kind}
+        for f in others:
+            if getattr(self, f) is not None:
+                raise ValueError(f"{self.kind} artifact must not carry {f!r}")
+        if self.source_file is not None and self.kind != "code":
+            raise ValueError("source_file is only valid on a code artifact")
+        val = getattr(self, self.kind)
+        if self.kind == "analysis":
+            if not isinstance(val, dict):
+                raise ValueError("analysis artifact needs an 'analysis' object")
+            n, samples, mean = val.get("n"), val.get("samples"), val.get("mean")
+            if not (isinstance(n, int) and not isinstance(n, bool) and n >= 0):
+                raise ValueError("analysis.n must be a non-negative integer")
+            if not isinstance(samples, list):
+                raise ValueError("analysis.samples must be a list")
+            if mean is not None and (isinstance(mean, bool) or not isinstance(mean, (int, float))):
+                raise ValueError("analysis.mean must be a number or null")
+        elif not (isinstance(val, str) and val.strip()):
+            raise ValueError(f"{self.kind} artifact needs a non-empty {self.kind!r}")
+        return self
 
 
 class ErrorDetail(_Strict):
@@ -446,6 +497,7 @@ CONTRACTS: Dict[str, tuple] = {
     "storage_task_update":  (1, TaskUpdate, "storage", "SupabaseStorage.update_task -> PostgREST"),
     "storage_event_insert": (1, EventInsert, "storage", "SupabaseStorage.insert_event -> PostgREST"),
     "storage_agent_stats":  (1, AgentStatsUpsert, "storage", "SupabaseStorage.upsert_agent_stats -> PostgREST"),
+    "stage_artifact":       (1, StageArtifact, "internal", "DAG stage output -> dependent stages (R-165)"),
 }
 
 #: request models are the server's own (single source of truth) — resolved lazily
@@ -454,6 +506,7 @@ REQUEST_MODELS = {
     "chat_request": ("server", "ChatRequest"),
     "external_agent_request": ("server", "ExternalAgentRequest"),
     "execute_request": ("agent_civilization.civilization_routes", "ExecuteRequest"),
+    "resume_request": ("agent_civilization.civilization_routes", "ResumeRequest"),
 }
 REQUEST_VERSION = 1
 

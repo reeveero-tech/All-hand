@@ -4,7 +4,9 @@ Pipeline Orchestrator — runs the auto-routed plan across specialist agents.
 
 Given a plan produced by `auto_router.route()`, the orchestrator:
   - Picks the least-loaded idle agent for each stage's specialization.
-  - Feeds each stage the original goal + the previous stage's output.
+  - Runs the plan as a DAG (R-165, ``pipeline/dag.py``): dependencies,
+    typed schema-validated artifacts, per-stage retry/timeout, a plan
+    deadline and budget, approvals before sensitive stages, resume.
   - Records real timings, agent identity, and outputs.
   - Returns a full execution report.
 
@@ -14,11 +16,7 @@ orchestrator is intentionally thin — it is the coordinator, not a simulator.
 
 from __future__ import annotations
 
-import time
-import uuid
-from typing import Any, Dict, List, Optional
-
-from agent_civilization.core import telemetry
+from typing import Any, Dict, Iterable, Optional
 
 
 def _load(agent) -> float:
@@ -77,110 +75,19 @@ def _artifact_of(res: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     return None
 
 
-async def execute_plan(plan: Dict[str, Any], civilization: Dict[str, list], data: Optional[Any] = None) -> Dict[str, Any]:
-    """Run the plan; return {"stages": [...], "final": str, "elapsed_s": float}."""
-    started = time.time()
-    context_snippets: List[str] = []
-    stage_results: List[Dict[str, Any]] = []
-    goal = plan.get("goal") or next(
-        (st.get("prompt") for st in plan["stages"] if st.get("name") == "execute"), "")
-    artifact: Optional[Dict[str, Any]] = None
-    plan_view = [{"name": st.get("name"), "specialization": st.get("specialization"),
-                  "reason": st.get("reason")} for st in plan["stages"]]
+async def execute_plan(plan: Dict[str, Any], civilization: Dict[str, list], data: Optional[Any] = None,
+                       *, approvals: Optional[Iterable[str]] = None, tenant_id: Optional[str] = None,
+                       task_id: Optional[str] = None) -> Dict[str, Any]:
+    """Run the plan as a DAG (R-165, D-084) and return the full report:
+    {"primary", "reason", "stages": [...], "final", "elapsed_s", "run_id",
+    "status", "pending_approvals", "budget", "order", "ignored_approvals"}.
 
-    n_stages = len(plan["stages"])
-    for idx, stage in enumerate(plan["stages"]):
-        # R-159: one `workflow` span per stage (name, index, specialization —
-        # never the prompt/context/output); the agent span is its child.
-        with telemetry.span("workflow", "stage", stage=stage.get("name"), stage_index=idx,
-                            stage_count=n_stages, specialization=stage.get("specialization")) as _sp:
-            try:
-                spec = stage["specialization"]
-                pool = civilization.get(spec)
-                if not pool:
-                    stage_results.append({
-                        **stage,
-                        "agent": None,
-                        "ok": False,
-                        "output": f"لا يوجد وكيل متاح لتخصص {spec}",
-                        "elapsed_s": 0.0,
-                    })
-                    continue
+    ``approvals=None`` = trusted internal caller (REPL, scripts, self-retest):
+    the stage-approval gate is off. HTTP callers pass the approved stage
+    names (possibly none) and their tenant; the run is then kept for
+    GET /civilization/runs/{run_id} and resume. Raises ``dag.PlanError`` on a
+    malformed plan (nothing runs)."""
+    from agent_civilization.pipeline import dag
 
-                agent = await _pick(pool)
-
-                # Feed the agent the current stage's prompt + prior context.
-                prompt = stage["prompt"]
-                if context_snippets:
-                    prompt = (
-                        prompt
-                        + "\n\n=== Previous stages summary ===\n"
-                        + "\n---\n".join(context_snippets[-3:])
-                    )
-
-                t0 = time.time()
-                try:
-                    # R-114: the stage also sees the user's goal, the plan it belongs
-                    # to, and the artifact (e.g. code) produced by an earlier stage.
-                    res = await agent.execute({
-                        "task_id": f"stage-{uuid.uuid4().hex[:8]}",
-                        "prompt": prompt,
-                        "goal": goal,
-                        "stage": stage["name"],
-                        "plan_stages": plan_view if stage["name"] == "plan" else None,
-                        "context": list(context_snippets[-3:]),
-                        "artifact": artifact,
-                        "data": data,
-                    })
-                    produced = _artifact_of(res)
-                    if produced:
-                        artifact = produced
-                    elapsed = time.time() - t0
-                    output_text = ""
-                    stage_ok = True
-                    if isinstance(res, dict):
-                        stage_ok = bool(res.get("ok"))
-                        r = res.get("result") if "result" in res else res
-                        if isinstance(r, dict):
-                            # R-116: a failed stage reports its error, not its partial tool_output
-                            output_text = ((r.get("error") or r.get("answer") or r.get("tool_output")) if not stage_ok
-                                           else (r.get("answer") or r.get("tool_output") or r.get("error"))) or ""
-                            if not isinstance(output_text, str):
-                                output_text = str(output_text)
-                    output_text = (output_text or "").strip()
-
-                    stage_results.append({
-                        **stage,
-                        "agent": agent.name,
-                        "ok": stage_ok,
-                        "output": output_text,
-                        "elapsed_s": round(elapsed, 3),
-                    })
-                    if output_text:
-                        context_snippets.append(f"[{stage['name']}@{agent.name}] {output_text[:800]}")
-                except Exception as e:  # noqa: BLE001
-                    stage_results.append({
-                        **stage,
-                        "agent": agent.name,
-                        "ok": False,
-                        "output": f"stage error: {e}",
-                        "elapsed_s": round(time.time() - t0, 3),
-                    })
-            finally:
-                if stage_results:
-                    last = stage_results[-1]
-                    _sp.set(outcome="ok" if last.get("ok") else ("skipped" if last.get("agent") is None else "fail"))
-
-    final = ""
-    for s in reversed(stage_results):
-        if s.get("ok") and s.get("output"):
-            final = s["output"]
-            break
-
-    return {
-        "primary": plan["primary"],
-        "reason": plan["reason"],
-        "stages": stage_results,
-        "final": final,
-        "elapsed_s": round(time.time() - started, 3),
-    }
+    return await dag.run_plan(plan, civilization, data, approvals=approvals,
+                              tenant_id=tenant_id, task_id=task_id)

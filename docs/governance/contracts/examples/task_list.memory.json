@@ -16,22 +16,31 @@
       "plan": {
         "primary": "analyst",
         "reason": "تحليل بيانات",
+        "goal": "sum 1 2 3",
         "stages": [
           {
             "name": "understand",
-            "specialization": "analyst"
+            "specialization": "analyst",
+            "prompt": "Analyze this user request and list: (a) explicit goal, (b) implicit constraints, (c) success criteria. Request:\nsum 1 2 3",
+            "reason": "فهم الطلب واستخراج المعايير"
           },
           {
             "name": "plan",
-            "specialization": "strategist"
+            "specialization": "strategist",
+            "prompt": "Produce a concrete step-by-step plan to accomplish this goal. Be practical, list files/tools/APIs needed. Goal:\nsum 1 2 3",
+            "reason": "خطة تنفيذ محكمة"
           },
           {
             "name": "execute",
-            "specialization": "analyst"
+            "specialization": "analyst",
+            "prompt": "sum 1 2 3",
+            "reason": "تحليل بيانات"
           },
           {
             "name": "validate",
-            "specialization": "validator"
+            "specialization": "validator",
+            "prompt": "Validate the schema and integrity of the produced analysis / data.",
+            "reason": "التحقق من البيانات"
           }
         ]
       },
@@ -47,45 +56,117 @@
             "specialization": "analyst",
             "prompt": "Analyze this user request and list: (a) explicit goal, (b) implicit constraints, (c) success criteria. Request:\nsum 1 2 3",
             "reason": "فهم الطلب واستخراج المعايير",
-            "agent": "analyst_0001",
+            "depends_on": [],
+            "max_attempts": 1,
+            "timeout_s": 300.0,
+            "output_kind": null,
+            "requires_approval": false,
+            "agent": "analyst_0000",
             "ok": true,
             "output": "sum=6 (n=3)",
-            "elapsed_s": 0.0
+            "elapsed_s": 0.001,
+            "status": "succeeded",
+            "attempts": 1,
+            "error": null,
+            "artifacts": [
+              "analysis",
+              "text"
+            ],
+            "sensitive": null
           },
           {
             "name": "plan",
             "specialization": "strategist",
             "prompt": "Produce a concrete step-by-step plan to accomplish this goal. Be practical, list files/tools/APIs needed. Goal:\nsum 1 2 3",
             "reason": "خطة تنفيذ محكمة",
+            "depends_on": [
+              "understand"
+            ],
+            "max_attempts": 1,
+            "timeout_s": 300.0,
+            "output_kind": null,
+            "requires_approval": false,
             "agent": "strategist_0800",
             "ok": true,
             "output": "understand(analyst) -> plan(strategist) -> execute(analyst) -> validate(validator)",
-            "elapsed_s": 0.0
+            "elapsed_s": 0.0,
+            "status": "succeeded",
+            "attempts": 1,
+            "error": null,
+            "artifacts": [
+              "text"
+            ],
+            "sensitive": null
           },
           {
             "name": "execute",
             "specialization": "analyst",
             "prompt": "sum 1 2 3",
             "reason": "تحليل بيانات",
-            "agent": "analyst_0002",
+            "depends_on": [
+              "plan"
+            ],
+            "max_attempts": 1,
+            "timeout_s": 300.0,
+            "output_kind": null,
+            "requires_approval": false,
+            "agent": "analyst_0001",
             "ok": true,
             "output": "sum=6 (n=3)",
-            "elapsed_s": 0.0
+            "elapsed_s": 0.0,
+            "status": "succeeded",
+            "attempts": 1,
+            "error": null,
+            "artifacts": [
+              "analysis",
+              "text"
+            ],
+            "sensitive": null
           },
           {
             "name": "validate",
             "specialization": "validator",
             "prompt": "Validate the schema and integrity of the produced analysis / data.",
             "reason": "التحقق من البيانات",
+            "depends_on": [
+              "execute"
+            ],
+            "max_attempts": 1,
+            "timeout_s": 300.0,
+            "output_kind": null,
+            "requires_approval": false,
             "agent": "validator_0950",
             "ok": true,
             "output": "analysis integrity: 4/4 checks passed",
-            "elapsed_s": 0.0
+            "elapsed_s": 0.0,
+            "status": "succeeded",
+            "attempts": 1,
+            "error": null,
+            "artifacts": [
+              "text"
+            ],
+            "sensitive": null
           }
         ],
         "final": "analysis integrity: 4/4 checks passed",
-        "elapsed_s": 0.001
-      }
+        "elapsed_s": 0.003,
+        "run_id": "5f0c2b9e8d7a4c6b9e1f2a3b4c5d6e7f",
+        "status": "completed",
+        "pending_approvals": [],
+        "budget": {
+          "max_stage_runs": 64,
+          "stage_runs_used": 4,
+          "deadline_s": 600.0
+        },
+        "order": [
+          "understand",
+          "plan",
+          "execute",
+          "validate"
+        ],
+        "ignored_approvals": []
+      },
+      "run_id": "5f0c2b9e8d7a4c6b9e1f2a3b4c5d6e7f"
     },
     {
       "id": "f214dbd11ff3",
