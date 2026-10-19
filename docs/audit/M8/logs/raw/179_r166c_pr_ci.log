@@ -1,0 +1,16 @@
+# R-166c PR CI — 2026-10-19 — branch m8/r166c-review-fixes, head 96eeaf7
+# workflows:
+{"conclusion":"success","head_sha":"96eeaf73115815070bcb713a9ee15b697548469a","id":39227042937,"name":"Governance Gate","status":"completed"}
+{"conclusion":"success","head_sha":"96eeaf73115815070bcb713a9ee15b697548469a","id":39227042010,"name":"AGOS Kernel CI/CD","status":"completed"}
+# AGOS Kernel CI/CD 39227042010 jobs:
+{"conclusion":"success","id":117975734962,"name":"quality"}
+{"conclusion":"success","id":117975735248,"name":"test"}
+{"conclusion":"success","id":117975857014,"name":"network"}
+{"conclusion":"success","id":117980774428,"name":"docker"}
+{"conclusion":"success","id":117980774467,"name":"audit"}
+{"conclusion":"success","id":117980774478,"name":"build"}
+{"conclusion":"success","id":117980774623,"name":"storage"}
+{"conclusion":"skipped","id":117980963537,"name":"publish"}
+2026-10-19T09:06:28.9229275Z ========== 1617 passed, 7 skipped, 4 deselected in 245.02s (0:04:05) ===========
+2026-10-19T09:10:26.7393594Z ========== 1617 passed, 7 skipped, 4 deselected in 223.58s (0:03:43) ===========
+2026-10-19T09:14:29.2910437Z ========== 1617 passed, 7 skipped, 4 deselected in 237.66s (0:03:57) ===========
