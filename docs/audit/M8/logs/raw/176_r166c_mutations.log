@@ -1,0 +1,6 @@
+# R-166c mutations (second review fixes) — 2026-10-19T08:44:01Z
+MUTATION D1 mixed-request ok bug reintroduced (pending approvals ignored in ok): CAUGHT (=================== 1 failed, 57 passed, 1 warning in 0.64s ====================)
+MUTATION D2 attempt fencing removed (any attempt accepted after reassignment): CAUGHT (=================== 2 failed, 56 passed, 1 warning in 0.64s ====================)
+MUTATION D3 unstamped-result rejection after reassignment removed: CAUGHT (=================== 1 failed, 57 passed, 1 warning in 0.63s ====================)
+
+# summary: 3 caught, 0 not caught

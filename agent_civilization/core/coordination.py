@@ -91,12 +91,19 @@ class Subtask:
 
 @dataclass(frozen=True)
 class CoordinationMessage:
-    """A message on the coordination layer (work or a result)."""
+    """A message on the coordination layer (work or a result).
+
+    ``attempt`` stamps the coordination attempt the message belongs to
+    (0 for the initial work, 1+ for failovers). Results stamped with a
+    superseded attempt — or unstamped results once a subtask has been
+    reassigned — are rejected as stale (D-087 fencing).
+    """
     message_id: str
     kind: str  # "work" | "result" | "delegate"
     subtask_id: str
     participant_id: str
     body: Any = None
+    attempt: Optional[int] = None
 
 
 @dataclass
@@ -191,6 +198,7 @@ class GroupCoordinator:
         self._started_at = 0.0
         self._load: Dict[str, int] = {}                # participant_id -> assigned subtasks
         self._failovers: Dict[str, int] = {}          # subtask_id -> attempts used
+        self._attempt: Dict[str, int] = {}           # subtask_id -> current attempt (D-087 fencing)
         self._duplicates: List[str] = []
         self._late: List[str] = []
         self._out_of_order: List[str] = []
@@ -230,6 +238,7 @@ class GroupCoordinator:
             cursor[st.specialty] = i + 1
             self._assignments[st.subtask_id] = pid
             self._expected[st.subtask_id] = pid
+            self._attempt[st.subtask_id] = 0
             self._load[pid] = self._load.get(pid, 0) + 1
             msg = CoordinationMessage(
                 message_id=f"work:{st.subtask_id}:{pid}",
@@ -237,6 +246,7 @@ class GroupCoordinator:
                 subtask_id=st.subtask_id,
                 participant_id=pid,
                 body=st.payload,
+                attempt=0,
             )
             messages.append(msg)
         if len(messages) > self.max_messages:
@@ -287,6 +297,7 @@ class GroupCoordinator:
                 f"failover of {subtask_id!r} would exceed the budget of {self.max_messages}")
         self._failovers[subtask_id] = used + 1
         self._expected[subtask_id] = pool[0]
+        self._attempt[subtask_id] = used + 1
         self._load[pool[0]] = self._load.get(pool[0], 0) + 1
         self._load[current] = max(0, self._load.get(current, 1) - 1)
         self._messages_sent += 1
@@ -296,6 +307,7 @@ class GroupCoordinator:
             subtask_id=subtask_id,
             participant_id=pool[0],
             body=None,
+            attempt=used + 1,
         )
 
     # ------------------------------------------------------------ delegation
@@ -338,11 +350,16 @@ class GroupCoordinator:
 
     def submit_result(self, message: CoordinationMessage) -> bool:
         """Record a result. Returns True when it is the first accepted answer
-        for its subtask from its ASSIGNED participant.
+        for its subtask from its ASSIGNED participant at the CURRENT attempt.
 
         Ownership: a result for a subtask from a participant that is not its
         current assignee (including the old participant after a failover) is
         classified as late — never counted as the subtask's answer.
+        Attempt fencing (D-087): once a subtask has been reassigned (failover),
+        a result is accepted only if it carries the CURRENT attempt stamp —
+        a stale answer from a superseded attempt is rejected even when its
+        participant has become the assignee again (round-trip failover), and
+        an unstamped result cannot be proven current after a reassignment.
         Duplicate message ids are recorded and ignored (no repeated side
         effects). Results for unknown subtasks are recorded as late.
         """
@@ -358,6 +375,18 @@ class GroupCoordinator:
             return False
         if self._expected[message.subtask_id] != message.participant_id:
             # not the assignee: a foreign or stale (post-failover) answer
+            self._late.append(message.message_id)
+            return False
+        current_attempt = self._attempt.get(message.subtask_id, 0)
+        reassigned = self._failovers.get(message.subtask_id, 0) > 0
+        if reassigned:
+            # the subtask was reassigned at least once: only a result stamped
+            # with the CURRENT attempt is provably not from a superseded try
+            if message.attempt != current_attempt:
+                self._late.append(message.message_id)
+                return False
+        elif message.attempt not in (None, 0):
+            # never reassigned: an out-of-range stamp cannot be current
             self._late.append(message.message_id)
             return False
         if message.subtask_id in self._results:
