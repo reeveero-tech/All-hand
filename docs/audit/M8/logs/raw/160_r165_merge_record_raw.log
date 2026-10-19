@@ -1,0 +1,41 @@
+# R-165 merge record — raw command outputs (this session, 2026-10-19)
+
+$ git show -s --format="%H%n%P" da1976e
+da1976e75a84583b788d2c22c5b362dd0842e7fc
+29b133bb12c38117dbff085faf214529dd0659f7 3bc7c81400640c715c1085f044b019471474b320
+
+$ gh pr view 191 --json mergedAt,mergedBy,mergeCommit,headRefOid,url
+{"headRefOid":"3bc7c81400640c715c1085f044b019471474b320","mergeCommit":"da1976e75a84583b788d2c22c5b362dd0842e7fc","mergedAt":"2026-10-19T04:14:46Z","mergedBy":"reeveero-tech","url":"https://github.com/reeveero-tech/All-hand/pull/191"}
+
+$ gh pr view 192 --json mergedAt,mergedBy,mergeCommit,url
+{"mergeCommit":"cc49945e84d2b88b800f8726923ce671139523e0","mergedAt":"2026-10-19T04:43:53Z","mergedBy":"reeveero-tech","url":"https://github.com/reeveero-tech/All-hand/pull/192"}
+
+$ gh run view 39198499777 --json databaseId,status,conclusion,headSha,displayTitle
+{"conclusion":"success","databaseId":39198499777,"displayTitle":"Merge pull request #191 from reeveero-tech/m8/r165-dag","headSha":"da1976e75a84583b788d2c22c5b362dd0842e7fc","status":"completed"}
+
+$ gh run view 39200941983 --json databaseId,status,conclusion,headSha,displayTitle
+{"conclusion":"success","databaseId":39200941983,"displayTitle":"Merge pull request #192 from reeveero-tech/m8/r165-acceptance","headSha":"cc49945e84d2b88b800f8726923ce671139523e0","status":"completed"}
+
+$ gh run view 39198499777 --json jobs (name+conclusion)
+{"conclusion":"success","name":"quality"}
+{"conclusion":"success","name":"test"}
+{"conclusion":"success","name":"network"}
+{"conclusion":"success","name":"storage"}
+{"conclusion":"success","name":"build"}
+{"conclusion":"success","name":"docker"}
+{"conclusion":"success","name":"audit"}
+{"conclusion":"skipped","name":"publish"}
+
+$ gh run view 39200941983 --json jobs (name+conclusion)
+{"conclusion":"success","name":"test"}
+{"conclusion":"success","name":"quality"}
+{"conclusion":"success","name":"network"}
+{"conclusion":"success","name":"build"}
+{"conclusion":"success","name":"docker"}
+{"conclusion":"success","name":"audit"}
+{"conclusion":"success","name":"storage"}
+{"conclusion":"skipped","name":"publish"}
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===== 1559 passed, 7 skipped, 4 deselected, 1 warning in 230.78s (0:03:50) =====
