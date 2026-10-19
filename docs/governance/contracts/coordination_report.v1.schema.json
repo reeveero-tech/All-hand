@@ -1,8 +1,15 @@
 {
   "$id": "agos://contracts/coordination_report/v1",
   "additionalProperties": false,
-  "description": "R-166 (D-085): the response of POST /civilization/coordinate. A\nfan-out/fan-in round over the real civilization agents — ok is True only\nwhen every subtask has a result (loss detection, never a hidden success).",
+  "description": "R-166 (D-085, amended D-086): the response of POST /civilization/coordinate.\nA fan-out/fan-in round over the real civilization agents — ok is True only\nwhen every subtask has a result AND no result reports failure (loss and\nfailure detection, never a hidden success). Sensitive specializations\nwithout an explicit approval are reported as pending_approvals and never\nexecuted.",
   "properties": {
+    "failed": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Failed",
+      "type": "array"
+    },
     "incomplete_reason": {
       "anyOf": [
         {
@@ -30,6 +37,13 @@
     "ok": {
       "title": "Ok",
       "type": "boolean"
+    },
+    "pending_approvals": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Pending Approvals",
+      "type": "array"
     },
     "results": {
       "additionalProperties": true,

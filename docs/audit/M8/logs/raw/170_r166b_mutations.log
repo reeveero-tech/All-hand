@@ -1,0 +1,11 @@
+# R-166b mutations (review fixes) on coordination.py + civilization_routes.py — 2026-10-19T07:26:25Z
+# each mutation reintroduces a reviewed gap; the R-166b tests must catch it
+MUTATION C1 failed-answer accounting removed (ok = no missing only): CAUGHT (=================== 2 failed, 51 passed, 1 warning in 0.61s ====================)
+MUTATION C2 participant ownership check removed: CAUGHT (=================== 2 failed, 51 passed, 1 warning in 0.60s ====================)
+MUTATION C3 budget enforcement neutralized in failover/delegate: CAUGHT (=================== 1 failed, 52 passed, 1 warning in 0.62s ====================)
+MUTATION C4 fairness spread back to global (per-specialty loop disabled): CAUGHT (=================== 1 failed, 52 passed, 1 warning in 0.61s ====================)
+MUTATION C5 sensitive-approval gate removed in the endpoint: CAUGHT (=================== 1 failed, 52 passed, 1 warning in 0.61s ====================)
+MUTATION C6 payload bug reintroduced (subtask id as specialization): CAUGHT (=================== 1 failed, 52 passed, 1 warning in 0.59s ====================)
+MUTATION C7 auto-failover re-execution reintroduced in run_coordination: CAUGHT (=================== 2 failed, 51 passed, 1 warning in 0.62s ====================)
+
+# summary: 7 caught, 0 not caught

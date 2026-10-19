@@ -49,16 +49,20 @@ class ResumeRequest(BaseModel):
 
 
 class CoordinateRequest(BaseModel):
-    """R-166 (D-085): POST /civilization/coordinate.
+    """R-166 (D-085, amended D-086): POST /civilization/coordinate.
 
     A fan-out/fan-in coordination round: the message becomes one subtask per
     requested specialization (default: the specializations of the auto-routed
     plan), distributed fairly across the real civilization agents, executed,
     gathered with loss detection, and reduced into a report with metrics.
+    Sensitive specializations (dag.SENSITIVE) are NOT executed without an
+    explicit approval in ``approve_stages`` — they are reported as
+    ``pending_approvals`` (the R-165 gate cannot be bypassed via this route).
     """
     message: str
     specializations: Optional[List[str]] = None
     participants_per_specialty: int = Field(1, ge=1, le=50)
+    approve_stages: List[str] = Field(default_factory=list, max_length=dag.MAX_STAGES)
     allow_public_llm: bool = Field(False, strict=True)
 
 
@@ -189,23 +193,30 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
 
     @app.post("/civilization/coordinate")
     async def coordinate(req: CoordinateRequest, api_key: Optional[str] = Security(api_key_header)):
-        """R-166 (D-085): fan-out/fan-in over the real civilization agents.
+        """R-166 (D-085, amended D-086): fan-out/fan-in over the real agents.
 
         The message becomes one subtask per requested specialization (default:
         the specializations of the auto-routed plan), assigned fairly across
         participants, executed by real agents, gathered with loss detection and
         reduced into a report with metrics. A subtask whose participant never
-        answers makes the round incomplete — never a hidden success.
+        answers — or answers with ok=False — makes the round incomplete, never
+        a hidden success. Sensitive specializations (dag.SENSITIVE) are not
+        executed without an explicit approval and are reported as pending.
         """
         principal = _principal(api_key)
         if not req.message.strip():
             raise HTTPException(400, "message is required")
         plan = auto_route(req.message)
         stages = plan.get("stages", []) if isinstance(plan, dict) else plan
-        specs = req.specializations or [st["specialization"] for st in stages]
+        specs = list(dict.fromkeys(req.specializations or [st["specialization"] for st in stages]))
         unknown = [s for s in specs if not civilization.get(s)]
         if unknown:
             raise HTTPException(400, f"unknown specializations: {', '.join(sorted(set(unknown)))}")
+        # D-086: the R-165 approval gate cannot be bypassed via this route —
+        # sensitive specializations without an explicit approval are reported
+        # as pending and never executed.
+        pending = [s for s in specs if s in dag.SENSITIVE and s not in req.approve_stages]
+        executable = [s for s in specs if s not in pending]
         task_id = str(uuid.uuid4())
         tasks_store[task_id] = {
             "id": task_id,
@@ -218,25 +229,22 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         prune_tasks()
 
         # participants: real agents, capped per specialty; ids are unique
-        # because agent names are unique inside a pool
+        # because agent names are unique inside a pool. Only EXECUTABLE
+        # specializations participate — pending (unapproved sensitive) ones
+        # never receive work.
         participants: List[coordination.Participant] = []
         agent_by_pid: Dict[str, Any] = {}
-        for spec in dict.fromkeys(specs):  # dedupe, keep order
+        for spec in executable:
             pool = civilization.get(spec, [])
             for agent in pool[: req.participants_per_specialty]:
                 pid = f"{spec}:{agent.name}"
                 participants.append(coordination.Participant(participant_id=pid, specialty=spec))
                 agent_by_pid[pid] = agent
-        if not participants:
-            rec = tasks_store[task_id]
-            rec.update(status="failed", finished_at=time.time(),
-                       result={"error": "no participants"})
-            raise HTTPException(400, "no participants available")
 
         subtasks = [
             coordination.Subtask(subtask_id=f"sub-{i}", specialty=spec,
                                  payload={"message": req.message, "specialization": spec})
-            for i, spec in enumerate(dict.fromkeys(specs))
+            for i, spec in enumerate(executable)
         ]
 
         from agent_civilization.core.llm import reset_public_llm_consent, set_public_llm_consent
@@ -247,7 +255,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             try:
                 res = await asyncio.wait_for(
                     agent.execute({"goal": req.message, "data": msg.body,
-                                   "specialization": msg.subtask_id}),
+                                   "specialization": msg.body["specialization"]}),
                     timeout=60.0)
                 body = res
             except asyncio.TimeoutError:
@@ -263,8 +271,16 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             )
 
         try:
-            report = await coordination.run_coordination(
-                subtasks, participants, execute)
+            if executable:
+                report = await coordination.run_coordination(
+                    subtasks, participants, execute)
+            else:
+                # everything requested is pending approval — nothing executes;
+                # the round is reported as pending, never as success or as an
+                # empty success
+                report = coordination.CoordinationReport(
+                    ok=False, incomplete_reason="awaiting approval",
+                    subtasks=0, participants=0)
         except coordination.CoordinationError as exc:
             rec = tasks_store[task_id]
             rec.update(status="failed", finished_at=time.time(),
@@ -280,12 +296,17 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             "ok": report.ok,
             "results": report.results,
             "missing": report.missing,
+            "failed": report.failed,
         }
+        metrics = report.metrics()
+        metrics["executed"] = len(report.results)
         return {
             "task_id": task_id,
             "ok": report.ok,
             "incomplete_reason": report.incomplete_reason,
             "results": report.results,
             "missing": report.missing,
-            "metrics": report.metrics(),
+            "failed": report.failed,
+            "pending_approvals": pending,
+            "metrics": metrics,
         }

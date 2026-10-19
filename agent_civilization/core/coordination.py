@@ -101,12 +101,19 @@ class CoordinationMessage:
 
 @dataclass
 class CoordinationReport:
-    """The final report of one coordination round."""
-    ok: bool                       # True only when every subtask has a result
+    """The final report of one coordination round.
+
+    ``ok`` is True only when every subtask has a result AND no result body
+    reports failure (a dict with ``ok`` falsy) — a failed participant answer
+    is never a hidden success, and a participant that never answers is a
+    missing subtask.
+    """
+    ok: bool                       # all subtasks answered AND none failed
     incomplete_reason: Optional[str] = None
     subtasks: int = 0
     results: Dict[str, Any] = field(default_factory=dict)   # subtask_id -> body
     missing: List[str] = field(default_factory=list)        # subtask ids with no result
+    failed: List[str] = field(default_factory=list)         # subtask ids whose answer reported failure
     duplicated_message_ids: List[str] = field(default_factory=list)
     late_message_ids: List[str] = field(default_factory=list)
     out_of_order_message_ids: List[str] = field(default_factory=list)
@@ -124,6 +131,7 @@ class CoordinationReport:
             "subtasks": self.subtasks,
             "results": len(self.results),
             "missing": len(self.missing),
+            "failed": len(self.failed),
             "duplicates": len(self.duplicated_message_ids),
             "late": len(self.late_message_ids),
             "out_of_order": len(self.out_of_order_message_ids),
@@ -239,16 +247,29 @@ class GroupCoordinator:
         return messages
 
     def fairness_spread(self) -> int:
-        """Max assigned minus min assigned across participants that received work."""
+        """The worst load spread per specialty, counting every participant of
+        each specialty that received work — including zero-load ones. A single
+        subtask over two participants of one specialty is a spread of 1."""
         if not self._load:
             return 0
-        loads = [v for v in self._load.values()]
-        return max(loads) - min(loads)
+        worst = 0
+        for spec, pids in self._by_specialty.items():
+            if not any(self._load.get(p) for p in pids):
+                continue  # this specialty received no work
+            loads = [self._load.get(p, 0) for p in pids]
+            worst = max(worst, max(loads) - min(loads))
+        return worst
 
     # ----------------------------------------------------------- failover
 
     def failover(self, subtask_id: str, from_participant: str) -> Optional[CoordinationMessage]:
-        """Reassign a failed subtask to another participant of the same specialty."""
+        """Reassign a failed subtask to another participant of the same specialty.
+
+        Bounded by ``max_failovers`` and by the message budget. NOTE (D-086):
+        failover is an explicit engine capability — it re-executes the subtask,
+        so the caller must only drive it for executors whose side effects are
+        safe to repeat; ``run_coordination`` does NOT apply it automatically.
+        """
         if subtask_id not in self._expected:
             raise CoordinationError(f"unknown subtask {subtask_id!r}")
         if subtask_id in self._results:
@@ -261,6 +282,9 @@ class GroupCoordinator:
         pool = [p for p in self._by_specialty.get(st_specialty, []) if p != current]
         if not pool:
             return None
+        if self._messages_sent + 1 > self.max_messages:
+            raise MessageBudgetExceeded(
+                f"failover of {subtask_id!r} would exceed the budget of {self.max_messages}")
         self._failovers[subtask_id] = used + 1
         self._expected[subtask_id] = pool[0]
         self._load[pool[0]] = self._load.get(pool[0], 0) + 1
@@ -298,6 +322,9 @@ class GroupCoordinator:
                 f"{self.max_delegation_depth}")
         if to_participant not in self.participants:
             raise CoordinationError(f"unknown participant {to_participant!r}")
+        if self._messages_sent + 1 > self.max_messages:
+            raise MessageBudgetExceeded(
+                f"delegation of {subtask_id!r} would exceed the budget of {self.max_messages}")
         self._messages_sent += 1
         return CoordinationMessage(
             message_id=f"delegate:{subtask_id}:{from_participant}->{to_participant}",
@@ -310,8 +337,12 @@ class GroupCoordinator:
     # ---------------------------------------------------------- result intake
 
     def submit_result(self, message: CoordinationMessage) -> bool:
-        """Record a result. Returns True when it is the first for its subtask.
+        """Record a result. Returns True when it is the first accepted answer
+        for its subtask from its ASSIGNED participant.
 
+        Ownership: a result for a subtask from a participant that is not its
+        current assignee (including the old participant after a failover) is
+        classified as late — never counted as the subtask's answer.
         Duplicate message ids are recorded and ignored (no repeated side
         effects). Results for unknown subtasks are recorded as late.
         """
@@ -325,9 +356,13 @@ class GroupCoordinator:
         if message.subtask_id not in self._expected:
             self._late.append(message.message_id)
             return False
+        if self._expected[message.subtask_id] != message.participant_id:
+            # not the assignee: a foreign or stale (post-failover) answer
+            self._late.append(message.message_id)
+            return False
         if message.subtask_id in self._results:
-            # a second, different message for a subtask that already has a
-            # result: classified, never re-executed
+            # a second, different message from the assignee for a subtask that
+            # already has a result: classified, never re-executed
             self._out_of_order.append(message.message_id)
             return False
         if self._finalized:
@@ -340,15 +375,24 @@ class GroupCoordinator:
     # --------------------------------------------------------------- finalize
 
     def finalize(self, reducer: Optional[Callable[[Dict[str, Any]], Any]] = None) -> CoordinationReport:
-        """Close the round: report missing subtasks and reduce the results."""
+        """Close the round: report missing subtasks, failed answers, and
+        reduce the results. ok requires BOTH no missing subtasks AND no failed
+        answers — a participant answering {ok: False} is never a hidden
+        success."""
         self._finalized = True
         missing = [sid for sid in self._expected if sid not in self._results]
+        failed = [
+            sid for sid, body in self._results.items()
+            if isinstance(body, dict) and body.get("ok") is False
+        ]
         report = CoordinationReport(
-            ok=not missing,
-            incomplete_reason=None if not missing else "missing results",
+            ok=not missing and not failed,
+            incomplete_reason=(None if not missing and not failed else
+                               ("missing results" if missing else "failed results")),
             subtasks=len(self._expected),
             results=dict(self._results),
             missing=missing,
+            failed=failed,
             duplicated_message_ids=list(self._duplicates),
             late_message_ids=list(self._late),
             out_of_order_message_ids=list(self._out_of_order),
@@ -418,8 +462,13 @@ async def run_coordination(
 
     ``execute`` receives each work message and returns the result message.
     This is the shape the endpoint uses over the real civilization agents;
-    tests use it with trivial executors. Failover is applied when ``execute``
-    raises, bounded by ``max_failovers``.
+    tests use it with trivial executors.
+
+    D-086: a failing ``execute`` leaves the subtask MISSING (reported) — the
+    round does NOT automatically re-execute an unconfirmed side effect on
+    another participant. Failover stays an explicit engine capability
+    (``GroupCoordinator.failover``) for callers whose executors are safe to
+    repeat; the endpoint does not use it automatically.
     """
     coordinator = GroupCoordinator(
         participants,
@@ -433,17 +482,7 @@ async def run_coordination(
         try:
             result = await execute(msg)
         except Exception:
-            for _ in range(coordinator.max_failovers):
-                retry = coordinator.failover(msg.subtask_id, msg.participant_id)
-                if retry is None:
-                    return
-                try:
-                    result = await execute(retry)
-                except Exception:
-                    continue
-                coordinator.submit_result(result)
-                return
-            return
+            return  # missing — reported by finalize, never a hidden success
         coordinator.submit_result(result)
 
     await asyncio.gather(*(run_one(m) for m in work))
