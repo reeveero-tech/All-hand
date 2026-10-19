@@ -960,3 +960,32 @@
 - سجل القبول `158` صُحح: حرف زائد في SHA الأب الأول، ووقت الدمج أُخذ من سجل الدمج نفسه لا من وقت دفع CI، وحُذف تفسير غير مثبت لعبارة «للمراجعة دون دمج» (تفويض الدمج المعتمد هو موافقة المالك الصريحة في الجلسة فقط؛ عبارة الوكيل السابق بقيت واقعة بلا تفسير)؛ والمخرجات الخام الفعلية أُرفقت في `160_r165_merge_record_raw.log` (مع ذيل الحزمة المحلية على main المدموج).
 - سُجل أيضاً: دمج دفعة القبول نفسها (PR ‏#192 بحساب المالك، `mergedAt`‏2026-10-19T04:43:53Z، SHA الدمج `cc49945`)، وCI main عند ذلك SHA أخضر (تشغيل 39200941983 نجاح بكل وظائفه، وpublish متخطى بحكم D-011).
 - ملاحظة على أشجار التحقق: البناءان المحليان (web والجذر) شُغّلا على شجرة فرع R-165؛ أخضرية بناء main مصدرها CI. لا تغيير في الكود ولا في السلوك — توثيق خالص.
+
+## R-166 — التنسيق الجماعي (`awaiting_merge`، دفعة m8/r166-coordination، D-085، 2026-10-19)
+
+- **المحرك** `agent_civilization/core/coordination.py` (جديد): fan-out/fan-in فوق مشاركين منطقيين — سجل لا خيط ولا عملية (حدود R-162 محفوظة).
+- **الحزمة**: 1602 passed, 7 skipped, 4 deselected محلياً على Python 3.14.3 (`164_r166_suite_py314.log`) و3.12.13 (`164_r166_suite_py312.log`) — 1602 = 1559 + 43 اختباراً في `tests/test_r166_coordination.py`؛ و3.11 تغطيها CI (خطوة test الأولى live-suite — `158_r165_acceptance_main_ci.log` سابقاً كشف النمط نفسه).
+- **الطفرات**: 8 طفرات في `coordination.py` كلها مكشوفة بالاختبارات (0 ناجية) — `162_r166_mutations.log`: كسر round-robin، وإسقاط كشف التكرار، وإخفاء الفقد (ادعاء ok زوراً)، وعدّ الأثر على التكرارات، وتعطيل failover، وإلغاء حد العمق، والسماح بالدورات، وإسقاط سقف الرسائل.
+- **البوابات**: ruff صفر؛ وweb ‏39/39؛ وبناء web والجذر ناجحان؛ والعقود جمعية بصفر كسر مع عقدين جديدين — `163_r166_gates.log`.
+- **خريطة نقاط الدخول**: `POST /civilization/coordinate` مسجلة في الخريطة (فحص R-156 أخضر بعد الالتزام).
+
+### خريطة معايير القبول
+| المعيار (P3/R-166) | الاختبار |
+|---|---|
+| توزيع عادل على الاختصاصات | `test_fair_distribution_spread_is_at_most_one`، `test_distribution_rounds_robin_across_participants` |
+| كشف فقد الرسائل | `test_missing_results_make_the_round_incomplete_never_hidden_success`، `test_loss_detection_at_scale` (100/1k/10k)، `test_run_coordination_reports_loss_when_every_attempt_fails` |
+| no hidden success | `test_coordinate_endpoint_reports_missing_never_hidden_success` (عقد الاستجابة) + طفرة M3 مكشوفة |
+| fairness | spread ≤ 1 مقيس في كل اختبارات التوزيع والمقاييس |
+| عدم تكرار side effects | `test_duplicate_message_is_ignored_and_side_effects_counted_once`، `test_a_second_distinct_result_for_the_same_subtask_is_not_reexecuted` + طفرتا M2/M4 |
+| duplicate/out-of-order/late | `test_result_for_an_unknown_subtask_is_recorded_as_late`، `test_result_after_finalize_is_late_and_not_reexecuted`، `test_simulated_layer_drops_and_duplicates`، `test_simulated_layer_reorders` |
+| gather/reduce | `test_reducer_combines_the_results`، `test_run_coordination_gathers_every_result` |
+| conflict/failover | `test_failover_*` (4)، `test_run_coordination_applies_failover_when_a_participant_fails` |
+| loop limits وdelegation depth | `test_delegation_beyond_the_depth_limit_is_refused`، `test_delegation_cycle_is_refused` |
+| رسائل idempotent ومحدودة | `test_message_budget_is_enforced` + كل اختبارات التكرار |
+| محاكاة message layer ثم endpoints واقعية | `SimulatedMessageLayer` في الاختبارات الوحدية + `test_coordinate_endpoint_*` (8) عبر TestClient فوق وكلاء الحضارة الحقيقيين |
+| تقرير مقاييس 100/1k/10k | `test_metrics_report_at_100_1k_10k_participants` (parametrized ×3) |
+
+### ليس إعلان جاهزية إنتاج
+- سجل التنسيق داخل الطلب (لا حالة بين الطلبات ولا مشاركة بين النسخ — نمط RISK-035 نفسه).
+- مقاييس 100/1k/10k قياس دفاتر المحرك (مشاركون منطقيون بلا موارد) — ليست ادعاء تشغيل 10k وكيل فعلي.
+- RISK-035 وRISK-033 وRISK-034 وQ-026 مفتوحة؛ لا نشر ولا فوترة ولا تغيير في `render.yaml`. R-167 لم تبدأ.
