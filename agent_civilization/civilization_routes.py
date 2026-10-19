@@ -268,6 +268,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
                 subtask_id=msg.subtask_id,
                 participant_id=msg.participant_id,
                 body=body,
+                attempt=msg.attempt,
             )
 
         try:
@@ -289,21 +290,32 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         finally:
             reset_public_llm_consent(token)
 
+        # D-087: the round is ok only when the engine round succeeded AND
+        # nothing is pending approval — a mixed request (executed + pending)
+        # is incomplete even when every executed subtask succeeded.
+        ok = report.ok and not pending
+        incomplete = report.incomplete_reason
+        if report.ok and pending:
+            incomplete = "awaiting approval"
+
         rec = tasks_store[task_id]
-        rec["status"] = "completed" if report.ok else "failed"
+        rec["status"] = "completed" if ok else "failed"
         rec["finished_at"] = time.time()
         rec["result"] = {
-            "ok": report.ok,
+            "ok": ok,
             "results": report.results,
             "missing": report.missing,
             "failed": report.failed,
+            "pending_approvals": pending,
         }
         metrics = report.metrics()
         metrics["executed"] = len(report.results)
+        metrics["ok"] = ok
+        metrics["pending_approvals"] = len(pending)
         return {
             "task_id": task_id,
-            "ok": report.ok,
-            "incomplete_reason": report.incomplete_reason,
+            "ok": ok,
+            "incomplete_reason": incomplete,
             "results": report.results,
             "missing": report.missing,
             "failed": report.failed,

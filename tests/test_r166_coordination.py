@@ -548,7 +548,7 @@ def test_run_coordination_does_not_reexecute_after_participant_failure_r166b():
     ps = participants(3)
     sts = subtasks(1)
     rep = asyncio.run(C.run_coordination(sts, ps, execute))
-    assert effects.count("p0") == 1          # executed once, not retried blindly
+    assert len(effects) == 1                 # exactly one effect overall, at one participant
     assert rep.ok is False
     assert rep.missing == ["s0"]
 
@@ -634,3 +634,120 @@ def test_coordinate_payload_carries_real_specialization_r166b(client):
         assert seen and seen[0].get("specialization") == "analyst"
     finally:
         server.CIVILIZATION["analyst"][0].execute = original
+
+
+# =====================================================================
+# R-166c — second review-fix tests (D-087). Written BEFORE the fixes and
+# failed on the merged R-166b code (red run saved in
+# docs/audit/M8/logs/raw/175_r166c_red.log).
+# =====================================================================
+
+def test_mixed_request_with_pending_approval_is_not_ok_r166c(client):
+    """A mixed request (executable + sensitive-without-approval) must NOT
+    report ok=True even when every EXECUTED subtask succeeds: pending
+    approvals make the whole round incomplete — in the response, the task
+    record, and the metrics."""
+    import server
+
+    executed = []
+
+    async def spying_execute(work):
+        executed.append(work)
+        return {"ok": True}
+
+    original = server.CIVILIZATION["analyst"][0].execute
+    server.CIVILIZATION["analyst"][0].execute = spying_execute
+    try:
+        r = client.post("/civilization/coordinate",
+                        json={"message": "analyze and run tests",
+                              "specializations": ["analyst", "test_runner"]})
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["pending_approvals"] == ["test_runner"]
+        assert executed            # the analyst DID execute
+        assert body["ok"] is False  # but the round is NOT ok while approvals pend
+        rec = server.TASKS[body["task_id"]]
+        assert rec["status"] == "failed"
+        assert body["metrics"]["ok"] is False
+    finally:
+        server.CIVILIZATION["analyst"][0].execute = original
+
+
+def test_every_sensitive_specialization_is_gated_r166c(client):
+    """All five dag.SENSITIVE specializations are gated by approve_stages —
+    none of them may execute without an explicit approval."""
+    import server
+
+    from agent_civilization.pipeline import dag
+
+    for spec in sorted(dag.SENSITIVE):
+        executed = []
+
+        async def spying_execute(work):
+            executed.append(work)
+            return {"ok": True}
+
+        pool = server.CIVILIZATION.get(spec) or server.CIVILIZATION.get("analyst")
+        assert pool, f"no pool for {spec}"
+        original = pool[0].execute
+        pool[0].execute = spying_execute
+        try:
+            r = client.post("/civilization/coordinate",
+                            json={"message": f"do work {spec}",
+                                  "specializations": [spec]})
+            assert r.status_code == 200, r.text
+            body = r.json()
+            assert body["pending_approvals"] == [spec], spec
+            assert executed == [], f"{spec} executed without approval"
+            assert body["ok"] is False
+        finally:
+            pool[0].execute = original
+
+
+def test_stale_result_after_round_trip_failover_is_rejected_r166c():
+    """Attempt fencing must survive a round trip: p0 -> failover p1 ->
+    failover p0. A result from p0's FIRST attempt (stamped with that
+    attempt) must be rejected even though p0 is the current assignee
+    again."""
+    co = C.GroupCoordinator(participants(3), max_failovers=2)
+    co.distribute(subtasks(1))
+    # fail over twice: p0 -> p1 -> p0
+    co.failover("s0", co._expected["s0"])          # now p1
+    co.failover("s0", co._expected["s0"])          # back to p0
+    assert co._expected["s0"] == "p0"
+    # a result from p0 stamped with its FIRST attempt (attempt=0)
+    stale = co.submit_result(C.CoordinationMessage("r:s0:stale", "result", "s0", "p0",
+                                                   {"ok": True}, attempt=0))
+    assert stale is False
+    rep = co.finalize()
+    assert rep.ok is False
+    assert rep.missing == ["s0"]
+
+
+def test_unstamped_result_after_any_failover_is_rejected_r166c():
+    """Once a subtask has been reassigned, a result that carries no attempt
+    stamp cannot be accepted for it (it cannot be proven current)."""
+    co = C.GroupCoordinator(participants(3), max_failovers=2)
+    co.distribute(subtasks(1))
+    co.failover("s0", co._expected["s0"])          # now p1
+    unstamped = co.submit_result(C.CoordinationMessage("r:s0:current", "result", "s0",
+                                                       co._expected["s0"], {"ok": True}))
+    assert unstamped is False
+    rep = co.finalize()
+    assert rep.ok is False
+    assert rep.missing == ["s0"]
+
+
+def test_current_attempt_result_is_accepted_after_failover_r166c():
+    """The positive side of fencing: a result stamped with the CURRENT
+    attempt from the current assignee is accepted."""
+    co = C.GroupCoordinator(participants(3), max_failovers=2)
+    co.distribute(subtasks(1))
+    retry = co.failover("s0", co._expected["s0"])   # now p1, attempt 1
+    assert retry is not None
+    current = co.submit_result(C.CoordinationMessage("r:s0:cur", "result", "s0",
+                                                     retry.participant_id, {"ok": True},
+                                                     attempt=retry.attempt))
+    assert current is True
+    rep = co.finalize()
+    assert rep.ok is True
