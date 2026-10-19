@@ -1,0 +1,17 @@
+# R-166d PR CI — 2026-10-19 — branch m8/r166d-delegation-handoff, head 70c5bf6
+# workflows (latest SHA):
+{"conclusion":"success","id":39243233205,"name":"Governance Gate","status":"completed"}
+{"conclusion":"success","id":39243233207,"name":"AGOS Kernel CI/CD","status":"completed"}
+# AGOS Kernel CI/CD 39243233207 jobs:
+{"conclusion":"success","name":"test"}
+{"conclusion":"success","name":"quality"}
+{"conclusion":"success","name":"network"}
+{"conclusion":"success","name":"build"}
+{"conclusion":"success","name":"docker"}
+{"conclusion":"success","name":"storage"}
+{"conclusion":"success","name":"audit"}
+{"conclusion":"skipped","name":"publish"}
+# test summary lines:
+2026-10-19T11:18:51.4132368Z ========== 1636 passed, 7 skipped, 4 deselected in 230.01s (0:03:50) ===========
+2026-10-19T11:22:35.0047467Z ========== 1636 passed, 7 skipped, 4 deselected in 213.25s (0:03:33) ===========
+2026-10-19T11:26:22.1203879Z ========== 1636 passed, 7 skipped, 4 deselected in 223.39s (0:03:43) ===========
