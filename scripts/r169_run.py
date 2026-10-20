@@ -197,7 +197,7 @@ def write_summary(path: Path) -> dict:
     meta, recs = load_run(path)
     scores = rescore(path)
     models = sorted({str(r.get("model")) for r in recs})
-    summary = {"meta": meta, "models_reported": models,
+    summary = {"meta": meta, "models_reported": models, "scored_with_scorer_sha256": scorer_sha(),
                "mean_latency_s": round(sum(r.get("latency_s", 0) for r in recs) / max(1, len(recs)), 2),
                "metrics": b.aggregate(scores)}
     out = path.with_suffix(".summary.json")

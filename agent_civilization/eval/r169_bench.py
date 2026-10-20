@@ -131,7 +131,8 @@ GROUNDED_V2_SYSTEM = (
     "premise is false instead of answering it.\n"
     "7. A tool's status or summary field can be wrong; check it against the detailed fields.\n"
     "8. Never claim to have run code or tests, and never report results of a run you did not see.\n"
-    "Answer briefly, in the language of the question."
+    "Answer briefly. Write the whole answer in the language of the question: Arabic if the question is "
+    "in Arabic, English if it is in English (never another language)."
 )
 GROUNDED_V2_NO_SOURCES_NOTE = (
     "No sources are supplied for this question: answer from well-established knowledge only when you are "
@@ -194,9 +195,11 @@ _AR_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567
 
 def normalize(text: str) -> str:
     """Lower-case, Arabic-Indic -> ASCII digits, drop thousands separators
-    (``36,202`` / ``36٬202`` / ``299 792 458``), unify the Arabic decimal mark."""
+    (``36,202`` / ``36٬202`` / ``299 792 458`` / LaTeX ``299\\,792``), unify the
+    Arabic decimal mark."""
     t = (text or "").translate(_AR_DIGITS)
     t = t.replace("٫", ".")
+    t = re.sub(r"(?<=\d)(\\[,;:! ]|\{,\})(?=\d)", "", t)   # LaTeX thin spaces: 299\,792\,458 (dev finding)
     for _ in range(3):
         t = re.sub(r"(?<=\d)[,٬\u00a0\u202f\u2009 ](?=\d{3}(?!\d))", "", t)
     return t.lower()
@@ -239,13 +242,44 @@ CITE_RE = re.compile(r"\[\s*([ST]\d+)(?:\s*[,،]\s*([ST]\d+))*\s*\]")
 NUM_RE = re.compile(r"(?<![\w.])\d+(?:\.\d+)*(?![\w])")
 
 
+_TASHKEEL = re.compile(r"[\u064B-\u0652\u0670\u0640]")   # harakat, dagger alif, tatweel
+
+
+def prep_markers(text: str) -> str:
+    """Marker matching ignores Arabic diacritics/tatweel and typographic
+    apostrophes (dev finding: «لا يُذكر» and «isn’t» were missed)."""
+    t = _TASHKEEL.sub("", text or "")
+    return t.replace("\u2019", "'").replace("\u2018", "'").replace("\u02bc", "'")
+
+
 def _rx(lang: str, en: re.Pattern, ar: re.Pattern, text: str) -> bool:
     # Replies can mix languages (e.g. an English token in an Arabic answer): check both.
-    return bool(en.search(text) or ar.search(text))
+    t = prep_markers(text)
+    return bool(en.search(t) or ar.search(t))
 
 
 def is_abstention(text: str, lang: str = "en") -> bool:
     return _rx(lang, ABSTAIN_EN, ABSTAIN_AR, text or "")
+
+
+_EN_FUNCTION_WORDS = re.compile(
+    r"\b(the|is|are|was|were|of|in|no|not|and|it|its|to|a|an|has|have|there|this|that|from|for|by|on|at|"
+    r"tests?|failed|people|metres|meters|staff|version|year|source|sources|insufficient_evidence)\b", re.I)
+_AR_LETTER = re.compile(r"[\u0621-\u064A]")
+_LATIN_LETTER = re.compile(r"[A-Za-z]")
+
+
+def language_match(text: str, lang: str) -> Optional[bool]:
+    """Secondary metric (dev finding: English questions answered in German,
+    Arabic questions answered in English). Code, citation ids, URLs and the
+    INSUFFICIENT_EVIDENCE token are ignored. None = nothing to judge."""
+    t = re.sub(r"```.*?```|`[^`]*`|\[[^\]]*\]|https?://\S+|INSUFFICIENT_EVIDENCE", " ", text or "", flags=re.S)
+    ar, la = len(_AR_LETTER.findall(t)), len(_LATIN_LETTER.findall(t))
+    if ar + la < 3:
+        return None
+    if lang == "ar":
+        return ar >= 0.5 * (ar + la)
+    return ar < 0.2 * (ar + la) and bool(_EN_FUNCTION_WORDS.search(t))
 
 
 def citations(text: str) -> List[str]:
@@ -304,6 +338,7 @@ def score_case(case: dict, reply: str, *, code: Optional[str] = None,
                          "split": case["split"], "polarity": case["polarity"], "expected_behavior": eb}
     abst = is_abstention(text, lang)
     s["abstained"] = abst
+    s["language_match"] = None if eb == "pass_tests" else language_match(text, lang)
     answers = ref.get("answer_any", [])
     correct = any(contains_value(text, a) for a in answers) if answers else None
     s["correct"] = correct
@@ -439,6 +474,8 @@ def aggregate(scores: List[dict]) -> Dict[str, Any]:
     out["stale_handling"] = _rate(stale, lambda r: r.get("pass"))
     conf = [r for r in ok_rows if r["expected_behavior"] == "flag_conflict"]
     out["conflict_surfaced"] = _rate(conf, lambda r: r.get("pass"))
+    lm = [r for r in ok_rows if r.get("language_match") is not None]
+    out["answer_language_match"] = _rate(lm, lambda r: r.get("language_match"))
     code = [r for r in ok_rows if r["expected_behavior"] == "pass_tests"]
     out["code_tests_pass"] = _rate(code, lambda r: r.get("pass"))
     out["failures"] = sorted([{"id": r["id"], "reasons": r.get("fail_reasons", []),
