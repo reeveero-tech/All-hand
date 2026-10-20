@@ -143,6 +143,25 @@ def test_normalization_handles_arabic_digits_and_separators():
     assert b.contains_value("36\u202f202", "36202")
     assert not b.contains_value("4120 metres", "412")
     assert not b.contains_value("version 2.4.10", "2.4.1")
+    assert b.contains_value(r"c = 299\,792\,458 m/s", "299792458")
+    # small integers as number words (en/ar), but never inside a larger word
+    assert b.contains_value("No - five tests failed.", "5")
+    assert b.contains_value("فشلت خمسة اختبارات", "5")
+    assert not b.contains_value("fifteen failed", "5") and not b.contains_value("15 failed", "5")
+
+
+def test_markers_ignore_diacritics_and_typographic_apostrophes():
+    assert b.is_abstention("من المعلومات المتوفرة، لا يُذكر اسم المهندس")
+    assert b.is_abstention("the information isn\u2019t available in the provided documents")
+    assert not b.is_abstention("It is 412 metres long.")
+
+
+def test_language_match_secondary_metric():
+    assert b.language_match("It is 412 metres long [S1].", "en") is True
+    assert b.language_match("Die Brücke ist 412 Meter lang.", "en") is False
+    assert b.language_match("يبلغ طوله 412 متراً 【S1】.", "ar") is True
+    assert b.language_match("INSUFFICIENT_EVIDENCE: The source does not say.", "ar") is False
+    assert b.language_match("412", "en") is None
 
 
 def test_grounded_answer_positive_and_negative():
@@ -164,6 +183,7 @@ def test_citation_validity_and_fabrication():
     assert b.score_case(c, f"{good} [{sup}]")["valid_citation"] is True
     assert b.score_case(c, f"{good} [{other}]")["valid_citation"] is False
     assert b.score_case(c, f"{good} [S9]")["fabricated_citations"] == ["S9"]
+    assert b.score_case(c, f"{good}【{sup}】")["valid_citation"] is True   # full-width brackets
 
 
 def test_abstention_detection_en_ar_and_hallucination():

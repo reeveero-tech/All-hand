@@ -181,12 +181,12 @@
     "cases": 30,
     "citation_coverage": {
       "ci95": [
-        0.32,
-        0.807
+        0.646,
+        0.985
       ],
-      "k": 7,
+      "k": 11,
       "n": 12,
-      "rate": 0.583
+      "rate": 0.917
     },
     "code_tests_pass": {
       "ci95": [
@@ -208,12 +208,12 @@
     },
     "fabricated_citation": {
       "ci95": [
-        0.016,
-        0.377
+        0.012,
+        0.298
       ],
       "k": 1,
-      "n": 11,
-      "rate": 0.091
+      "n": 15,
+      "rate": 0.067
     },
     "factual_accuracy": {
       "ci95": [
@@ -293,5 +293,5 @@
   "models_reported": [
     "keyless:gpt-oss-20b"
   ],
-  "scored_with_scorer_sha256": "7b32f44942d5bdbe4e9cfc2d0344aeb1331362c9deb3a2722f24a48d7275a920"
+  "scored_with_scorer_sha256": "4607a62980f5b105f7740e3aedbdde28e15e8b4a5897e11032d9c53a3d484d0b"
 }

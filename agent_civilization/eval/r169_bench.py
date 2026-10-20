@@ -206,11 +206,29 @@ def normalize(text: str) -> str:
     return t.lower()
 
 
+_EN_NUM_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+                 "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
+                 "nineteen", "twenty"]
+_AR_NUM_WORDS = {0: ["صفر"], 1: ["واحد", "واحدة"], 2: ["اثنان", "اثنين", "اثنتان", "اثنتين"],
+                 3: ["ثلاثة", "ثلاث"], 4: ["أربعة", "أربع"], 5: ["خمسة", "خمس"], 6: ["ستة", "ست"],
+                 7: ["سبعة", "سبع"], 8: ["ثمانية", "ثماني", "ثمان"], 9: ["تسعة", "تسع"], 10: ["عشرة", "عشر"]}
+
+
 def contains_value(text: str, value: str) -> bool:
     """Whole-token match of a reference value in normalized text (``412`` does
-    not match ``4120``; ``2.4.1`` does not match ``2.4.10``)."""
+    not match ``4120``; ``2.4.1`` does not match ``2.4.10``). Integers 0-20 also
+    match their English/Arabic number words (validation finding: «five tests
+    failed»)."""
+    norm = normalize(text)
     v = re.escape(normalize(value))
-    return re.search(rf"(?<![\d.]){v}(?!\.?\d)", normalize(text)) is not None
+    if re.search(rf"(?<![\d.]){v}(?!\.?\d)", norm) is not None:
+        return True
+    if value.isdigit() and int(value) <= 20:
+        n = int(value)
+        words = [_EN_NUM_WORDS[n]] + _AR_NUM_WORDS.get(n, [])
+        t = prep_markers(norm)
+        return any(re.search(rf"(?<![\w]){re.escape(w)}(?![\w])", t) for w in words)
+    return False
 
 
 ABSTAIN_EN = re.compile(
@@ -274,7 +292,8 @@ def language_match(text: str, lang: str) -> Optional[bool]:
     """Secondary metric (dev finding: English questions answered in German,
     Arabic questions answered in English). Code, citation ids, URLs and the
     INSUFFICIENT_EVIDENCE token are ignored. None = nothing to judge."""
-    t = re.sub(r"```.*?```|`[^`]*`|\[[^\]]*\]|https?://\S+|INSUFFICIENT_EVIDENCE", " ", text or "", flags=re.S)
+    t = re.sub(r"```.*?```|`[^`]*`|[\[【［][^\]】］]*[\]】］]|https?://\S+|INSUFFICIENT_EVIDENCE", " ", text or "",
+               flags=re.S)
     ar, la = len(_AR_LETTER.findall(t)), len(_LATIN_LETTER.findall(t))
     if ar + la < 3:
         return None
@@ -285,7 +304,8 @@ def language_match(text: str, lang: str) -> Optional[bool]:
 
 def citations(text: str) -> List[str]:
     out: List[str] = []
-    for m in re.finditer(r"\[([^\]]{1,40})\]", text or ""):
+    # ASCII and full-width brackets (validation finding: the model writes 【S1】)
+    for m in re.finditer(r"[\[【［]([^\]】］]{1,40})[\]】］]", text or ""):
         for tok in re.split(r"[,،;\s]+", m.group(1)):
             if re.fullmatch(r"[ST]\d+", tok.strip()):
                 out.append(tok.strip())
@@ -296,7 +316,7 @@ def unsupported_numbers(answer: str, case: dict) -> List[str]:
     """Numbers in the answer that appear neither in the question nor in any
     source (a deterministic proxy for fabricated quantities). Citation ids,
     list markers and single digits are ignored."""
-    ans = normalize(re.sub(r"\[[^\]]*\]", " ", answer or ""))
+    ans = normalize(re.sub(r"[\[【［][^\]】］]*[\]】］]", " ", answer or ""))
     ans = re.sub(r"(?m)^\s*\d+[.)]\s", " ", ans)
     allowed = normalize(case["question"] + " " + " ".join(s["text"] + " " + s.get("date", "")
                                                            for s in case["sources"]))

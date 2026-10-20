@@ -107,6 +107,10 @@ GROUPS: List[Dict] = [
     {"id": "evidence-data", "title": "Audit evidence data (json/jsonl/txt/csv)", "category": "integrity",
      "rules": [r"^docs/audit/.*\.(json|jsonl|txt|csv)$"],
      "rationale": "Recorded evidence, not executable: JSON/JSONL must parse, text must be UTF-8."},
+    {"id": "benchmark-data", "title": "Versioned benchmark datasets (benchmarks/)", "category": "integrity/schema",
+     "rules": [r"^benchmarks/.*\.(json|jsonl)$"],
+     "rationale": "R-169: JSON/JSONL must parse; tests/test_r169_benchmark.py regenerates the dataset byte-for-byte, "
+                  "verifies the manifest hashes, the case schema, split disjointness and the freeze."},
     {"id": "evidence-logs", "title": "Raw audit logs (docs/audit/**/*.log)", "category": "integrity",
      "rules": [r"^docs/audit/.*\.log$"],
      "rationale": "Raw logs are evidence records (never edited, R-152): UTF-8 readability only; content is the evidence."},
@@ -591,7 +595,7 @@ def build(args) -> Tuple[Dict, List[str]]:  # noqa: C901  (one linear pipeline)
                                                0 if npass == ntot else 1, {"passed": npass, "failed": ntot - npass}))
 
     # --- data files: json/jsonl/csv ----------------------------------------------------
-    for gid in ("governance-data", "evidence-data"):
+    for gid in ("governance-data", "evidence-data", "benchmark-data"):
         ok = bad_ = 0
         for path in [t for t in tracked if files[t]["group"] == gid]:
             fp = os.path.join(wt, path)
