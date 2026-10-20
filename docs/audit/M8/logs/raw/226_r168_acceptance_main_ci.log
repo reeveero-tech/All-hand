@@ -1,0 +1,32 @@
+=== R-168 acceptance record (2026-10-20T02:05Z) ===
+--- merge commit c0042ee:
+c0042eeb8a397263b36af4059cb8d63dce72b05d
+9dabdcb1d5fdb0b0b235e2324f1d1537294ebc41 badeaae37d36851bfeb01c1a20b2bccf9755856b
+Merge pull request #206 from reeveero-tech/m8/r168-batch3
+(second parent = tested PR head badeaae; first parent = previous main 9dabdcb — merge of PR #205)
+--- PR #206 state:
+closed merged_at 2026-10-20T01:46:25Z | merge_commit c0042ee
+--- CI on main at c0042ee (run 39355286104) jobs:
+quality success
+test success
+network success
+docker success
+storage success
+build success
+audit success
+publish skipped (D-011 — not counted as a publish)
+run conclusion: success | run URL: https://github.com/reeveero-tech/All-hand/actions/runs/39355286104
+--- local suite on main at c0042ee: 1705 passed, 7 skipped, 4 deselected in 247.01s (Python 3.14 local)
+--- CI test job 118408534223 (run 39355286104) — three steps, from the job's actual log:
+1705 passed, 7 skipped, 4 deselected in 248.45s (live test suite step, Python 3.11)
+1705 passed, 7 skipped, 4 deselected in 227.97s (Python 3.12 step)
+1705 passed, 7 skipped, 4 deselected in 241.27s (Python 3.12 + AGOS_AGENT_IMPL=specialists step)
+--- CI storage job 118412162223 — live tests (from the job's actual log):
+R-042 live storage: 26/26 checks passed + tests/test_r042_live_storage.py 4 passed in 1.11s
+R-163 live queue: 2 passed in 0.15s (roundtrip + live recovery semantics)
+R-164 live backpressure: 1 passed in 0.17s
+storage verification: PASS (class=local_integration connected=True cleanup=ok)
+--- CI network job 118408582284 — network-marker tests (from the job's actual log):
+4 passed, 1712 deselected in 4.30s (pytest -m network)
+--- CI audit job 118412162191 (from the job's actual log):
+pip-audit: "No known vulnerabilities found" / "found 0 vulnerabilities" (all scans)
