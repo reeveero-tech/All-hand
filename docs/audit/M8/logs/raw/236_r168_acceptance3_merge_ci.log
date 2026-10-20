@@ -1,0 +1,37 @@
+# 2026-10-20 — R-168 القبول الثالث (بعد الدفعة الخامسة D-094): CI على SHA الدمج 73d9d17 — مع قراءة سجل وظيفة test الفعلي
+
+أدلة الحالة: pr=#211 | tested_sha=7f3a5c2eab6cbcf49589a8fe1d001e029cae597e | merge_sha=73d9d174a55c6c28d96a70ba00910c405d52bc48 | ci_run=39372681442 | ci_conclusion=success | tests=1711 passed, 7 skipped, 4 deselected
+
+رأس PR المختبر (الفرع m8/r168-stale-write): 7f3a5c2 (البادئة) — CI أخضر عليه بكل الوظائف قبل الدمج (تحقق عبر check-runs).
+تشغيل CI على SHA الدمج: https://github.com/reeveero-tech/All-hand/actions/runs/39372681442
+
+=== check-runs على SHA الدمج 73d9d174a55c6c28d96a70ba00910c405d52bc48 ===
+publish -> completed skipped
+docker -> completed success
+audit -> completed success
+storage -> completed success
+build -> completed success
+network -> completed success
+test -> completed success
+quality -> completed success
+
+كل الوظائف ناجحة؛ publish متخطى بحكم D-011 (متوقع، لا يُحتسب نشراً ناجحاً).
+
+=== قراءة سجل وظيفة test الفعلي (المعرف 118463829679) — استخراج الأسطر الحاسمة ===
+(المصدر: سجل الوظيفة عبر رابط السجل الموقّع — قراءة فعلية، لا استدلال من نجاح الوظيفة)
+
+الخطوة 1 (Run tests — live test suite):
+  2026-10-20T05:06:21Z ========== 1711 passed, 7 skipped, 4 deselected in 254.92s (0:04:14) ===========
+الخطوة 2 (Run tests on Python 3.12):
+  2026-10-20T05:10:27Z ========== 1711 passed, 7 skipped, 4 deselected in 228.47s (0:03:48) ===========
+الخطوة 3 (Run tests on Python 3.12 with AGOS_AGENT_IMPL=specialists):
+  2026-10-20T05:14:32Z ========== 1711 passed, 7 skipped, 4 deselected in 240.47s (0:04:00) ==========
+
+العدد 1711 مطابق للجناح المحلي على SHA الدمج (1711+7/4 في 246.21ث، Python 3.14.3 — السجل 234) — نجاح CI هنا موثق بأعداد مقروءة من سجل الوظيفة نفسها لا بمجرد conclusion.
+
+الجناح المحلي على SHA الدمج 73d9d17 (شُغّل فعلياً على SHA الدمج نفسه — Python 3.14.3، بيئة 2 CPU):
+$ git checkout 73d9d17 && python3 -m pytest tests/ --no-header -q
+========== 1711 passed, 7 skipped, 4 deselected in 244.58s (0:04:04) ===========
+(شجرة SHA الدمج مطابقة تماماً لرأس الفرع المختبر — git diff بينهما فارغ)
+
+ملاحظة: 7 skipped = اختبارات الحية (R163_LIVE/R042_LIVE) تُنفذ في وظيفة storage (نجاح)؛ 4 deselected = علامة network تُنفذ في وظيفة network (نجاح).
