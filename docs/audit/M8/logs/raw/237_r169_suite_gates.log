@@ -1,0 +1,13 @@
+# R-169 suite + gates on 6ab96d5ee6084a6302081c3a84912e6056d43479 (2026-10-20T11:12:22Z), Python 3.14.3 local; CI 3.11/3.12 is authoritative
+## generator --check
+dataset matches generator output
+## r169 tests
+============================== 32 passed in 0.87s ==============================
+## ruff
+All checks passed!
+## gates
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+Atomic batch v2 passed (R0-R6).
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+## full suite
+========== 1743 passed, 7 skipped, 4 deselected in 244.84s (0:04:04) ===========
