@@ -50,7 +50,7 @@ def test_scale_write_persist_load_search(tmp_path, n):
         t_write = time.perf_counter() - t0
 
         t0 = time.perf_counter()
-        system._persist_strict()
+        await system._persist_strict()
         t_persist = time.perf_counter() - t0
         file_mb = os.path.getsize(path) / 1e6
 
@@ -61,7 +61,7 @@ def test_scale_write_persist_load_search(tmp_path, n):
             json.load(f)
         t_parse = time.perf_counter() - t0
         t0 = time.perf_counter()
-        assert fresh._load_strict() is True
+        assert await fresh._load_strict() is True
         t_load = time.perf_counter() - t0
         t_validate_commit = t_load - t_parse  # includes one redundant parse; an upper bound
 

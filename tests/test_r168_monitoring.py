@@ -93,7 +93,7 @@ def test_metrics_not_state(tmp_path):
         system = MemorySystem(persistence_file=path)
         await system.store(content="keep", memory_type=MemoryType.SEMANTIC,
                            memory_id="k1")
-        system._persist_strict()
+        await system._persist_strict()
         with open(path, "w", encoding="utf-8") as f:
             f.write("{corrupt")
         before_records = dict(system._memories)

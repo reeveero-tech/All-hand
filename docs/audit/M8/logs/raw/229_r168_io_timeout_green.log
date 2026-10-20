@@ -1,0 +1,13 @@
+# R-168 storage-timeout GREEN (2026-10-20, post-fix D-093) — verbatim pytest output
+# command: python3 -m pytest tests/test_r168_io_timeout.py -q
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/allhand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 5 items
+
+tests/test_r168_io_timeout.py .....                                      [100%]
+
+============================== 5 passed in 1.12s ===============================

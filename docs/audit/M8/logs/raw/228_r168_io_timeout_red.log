@@ -1,0 +1,59 @@
+# R-168 storage-timeout RED (2026-10-20, pre-fix) — verbatim pytest output
+# run on the unmodified tree (main state 7292d90 + untracked test file): the io_timeout
+# configuration surface does not exist yet — every test fails with TypeError.
+# command: python3 -m pytest tests/test_r168_io_timeout.py -q
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/allhand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 5 items
+
+tests/test_r168_io_timeout.py FFFFF                                      [100%]
+
+=================================== FAILURES ===================================
+_____________ test_persist_timeout_raises_and_keeps_last_snapshot ______________
+tests/test_r168_io_timeout.py:61: in test_persist_timeout_raises_and_keeps_last_snapshot
+    system = await _make_system(tmp_path, io_timeout=30.0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r168_io_timeout.py:43: in _make_system
+    system = MemorySystem(persistence_file=_path(tmp_path), io_timeout=io_timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: MemorySystem.__init__() got an unexpected keyword argument 'io_timeout'
+______________________ test_load_timeout_changes_nothing _______________________
+tests/test_r168_io_timeout.py:84: in test_load_timeout_changes_nothing
+    writer = await _make_system(tmp_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r168_io_timeout.py:43: in _make_system
+    system = MemorySystem(persistence_file=_path(tmp_path), io_timeout=io_timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: MemorySystem.__init__() got an unexpected keyword argument 'io_timeout'
+________________ test_default_is_no_timeout_backward_compatible ________________
+tests/test_r168_io_timeout.py:111: in test_default_is_no_timeout_backward_compatible
+    system = await _make_system(tmp_path)  # io_timeout=None
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r168_io_timeout.py:43: in _make_system
+    system = MemorySystem(persistence_file=_path(tmp_path), io_timeout=io_timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: MemorySystem.__init__() got an unexpected keyword argument 'io_timeout'
+____________________ test_generous_timeout_allows_normal_io ____________________
+tests/test_r168_io_timeout.py:124: in test_generous_timeout_allows_normal_io
+    system = MemorySystem(persistence_file=_path(tmp_path), io_timeout=5.0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: MemorySystem.__init__() got an unexpected keyword argument 'io_timeout'
+___________________ test_concurrent_persists_are_serialized ____________________
+tests/test_r168_io_timeout.py:136: in test_concurrent_persists_are_serialized
+    system = await _make_system(tmp_path, io_timeout=30.0)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r168_io_timeout.py:43: in _make_system
+    system = MemorySystem(persistence_file=_path(tmp_path), io_timeout=io_timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: MemorySystem.__init__() got an unexpected keyword argument 'io_timeout'
+=========================== short test summary info ============================
+FAILED tests/test_r168_io_timeout.py::test_persist_timeout_raises_and_keeps_last_snapshot
+FAILED tests/test_r168_io_timeout.py::test_load_timeout_changes_nothing - Typ...
+FAILED tests/test_r168_io_timeout.py::test_default_is_no_timeout_backward_compatible
+FAILED tests/test_r168_io_timeout.py::test_generous_timeout_allows_normal_io
+FAILED tests/test_r168_io_timeout.py::test_concurrent_persists_are_serialized
+============================== 5 failed in 0.14s ===============================

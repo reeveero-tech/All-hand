@@ -108,7 +108,11 @@ def test_real_process_restart_roundtrip(tmp_path):
 def test_restart_missing_file(tmp_path):
     """No file at all: load is False, engine stays empty (not an error)."""
     system = MemorySystem(persistence_file=str(tmp_path / "absent.json"))
-    assert system._load_strict() is False
+
+    async def check():
+        assert await system._load_strict() is False
+
+    asyncio.run(check())
     assert len(system._memories) == 0
 
 
@@ -125,13 +129,13 @@ def test_persist_unwritable_dir_fails_closed(tmp_path):
         system = MemorySystem(persistence_file=path)
         await system.store(content="first", memory_type=MemoryType.EPISODIC,
                            memory_id="m1")
-        system._persist_strict()
+        await system._persist_strict()
         raw_before = Path(path).read_text(encoding="utf-8")
 
         os.chmod(d, 0o555)  # read-only dir (CI and sandbox run non-root)
         try:
             with pytest.raises(OSError):
-                system._persist_strict()
+                await system._persist_strict()
             # the last good snapshot is intact and there is no .tmp litter
             assert Path(path).read_text(encoding="utf-8") == raw_before
             assert not os.path.exists(path + ".tmp")
@@ -154,7 +158,7 @@ def test_load_unreadable_file_fails_closed(tmp_path):
         os.chmod(path, 0o000)
         try:
             with pytest.raises(OSError):
-                system._load_strict()
+                await system._load_strict()
             assert system._memories == before  # nothing loaded, nothing lost
         finally:
             os.chmod(path, 0o644)
@@ -173,7 +177,7 @@ def test_persist_enospc_injected_fails_closed(tmp_path):
         system = MemorySystem(persistence_file=path)
         await system.store(content="snap", memory_type=MemoryType.EPISODIC,
                            memory_id="s1")
-        system._persist_strict()
+        await system._persist_strict()
         raw_before = Path(path).read_text(encoding="utf-8")
 
         real_open = builtins.open
@@ -186,7 +190,7 @@ def test_persist_enospc_injected_fails_closed(tmp_path):
         builtins.open = failing_open
         try:
             with pytest.raises(OSError):
-                system._persist_strict()
+                await system._persist_strict()
         finally:
             builtins.open = real_open
         assert Path(path).read_text(encoding="utf-8") == raw_before
@@ -207,7 +211,7 @@ def test_persist_os_replace_failure_keeps_snapshot(tmp_path):
         system = MemorySystem(persistence_file=path)
         await system.store(content="snap", memory_type=MemoryType.EPISODIC,
                            memory_id="s1")
-        system._persist_strict()
+        await system._persist_strict()
         raw_before = Path(path).read_text(encoding="utf-8")
 
         real_replace = os.replace
@@ -220,13 +224,13 @@ def test_persist_os_replace_failure_keeps_snapshot(tmp_path):
         os.replace = failing_replace
         try:
             with pytest.raises(OSError):
-                system._persist_strict()
+                await system._persist_strict()
         finally:
             os.replace = real_replace
         # the last good snapshot is intact
         assert Path(path).read_text(encoding="utf-8") == raw_before
         # recovery: the next successful persist cleans the leftover .tmp
-        system._persist_strict()
+        await system._persist_strict()
         assert not os.path.exists(path + ".tmp")
         assert len(json.loads(Path(path).read_text(encoding="utf-8"))) == 1
 
@@ -242,12 +246,12 @@ def test_leftover_tmp_ignored_and_cleaned(tmp_path):
         system = MemorySystem(persistence_file=path)
         await system.store(content="good", memory_type=MemoryType.EPISODIC,
                            memory_id="g1")
-        system._persist_strict()
+        await system._persist_strict()
         # simulate a crash mid-persist: a stale .tmp next to a good snapshot
         with open(path + ".tmp", "w", encoding="utf-8") as f:
             f.write('{"torn": ')
-        assert system._load_strict() is True  # the good snapshot still loads
-        system._persist_strict()  # a successful persist cleans up
+        assert await system._load_strict() is True  # the good snapshot still loads
+        await system._persist_strict()  # a successful persist cleans up
         assert not os.path.exists(path + ".tmp")
 
     asyncio.run(scenario())
@@ -314,7 +318,7 @@ def test_concurrent_persist_and_write_consistent_snapshot():
                                tags={"bulk"}, memory_id=f"b{i}")
 
         async def persist():
-            system._persist_strict()
+            await system._persist_strict()
 
         await asyncio.gather(
             *[store(i) for i in range(200)],
@@ -322,7 +326,7 @@ def test_concurrent_persist_and_write_consistent_snapshot():
         )
 
         fresh = MemorySystem(max_entries=5000, persistence_file=path)
-        assert fresh._load_strict() is True
+        assert await fresh._load_strict() is True
         await _assert_index_invariants(fresh)
         raw = json.loads(Path(path).read_text(encoding="utf-8"))
         assert set(raw) == set(fresh._memories)  # file == loaded state
@@ -334,15 +338,18 @@ def test_load_and_write_interleaved_union():
     """Load racing with writes on an engine that already holds state: the
     load is all-or-nothing (D-090), so the final state is the union.
 
-    NOTE on the threading used here: ``_load_strict`` has no internal
-    awaits, so on ONE event loop gather(load, writes) would run the load to
-    completion before any write — no true interleaving. This test therefore
-    runs the load via ``asyncio.to_thread`` to force real interleaving.
-    Thread-based sharing of one MemorySystem is OUTSIDE the supported model
-    (production is a single loop; the pool only wraps blocking IO) — this is
-    an explicit boundary probe of that unsupported mode, and its passing is
-    evidence only of the D-090 atomicity under this specific schedule, not
-    a guarantee of thread safety in general."""
+    NOTE on the threading used here (updated for D-093): ``_load_strict`` now
+    awaits internally (its file I/O runs in a worker thread), so on ONE
+    event loop gather(load, writes) already interleaves — but the load's
+    commit phase still runs serialized on that loop. This test goes further
+    and runs the load via ``asyncio.to_thread(asyncio.run(...))`` so the
+    load's own loop (including its commit phase) runs OFF the main loop,
+    forcing real concurrent mutation. Thread-based sharing of one
+    MemorySystem is OUTSIDE the supported model (production is a single
+    loop; the pool only wraps blocking IO) — this is an explicit boundary
+    probe of that unsupported mode, and its passing is evidence only of the
+    D-090 atomicity under this specific schedule, not a guarantee of
+    thread safety in general."""
     async def scenario():
         d = tempfile.mkdtemp()
         path = os.path.join(d, "mem.json")
@@ -350,7 +357,7 @@ def test_load_and_write_interleaved_union():
         file_sys = MemorySystem(max_entries=100, persistence_file=path)
         await file_sys.store(content="from file", memory_type=MemoryType.EPISODIC,
                              memory_id="f1")
-        file_sys._persist_strict()
+        await file_sys._persist_strict()
 
         system = MemorySystem(max_entries=100, persistence_file=path)
         await system.store(content="in memory", memory_type=MemoryType.SEMANTIC,
@@ -362,7 +369,10 @@ def test_load_and_write_interleaved_union():
                                    memory_type=MemoryType.WORKING,
                                    memory_id=f"w{i}")
 
-        await asyncio.gather(asyncio.to_thread(system._load_strict), write_more())
+        await asyncio.gather(
+            asyncio.to_thread(lambda: asyncio.run(system._load_strict())),
+            write_more(),
+        )
         assert set(system._memories) >= {"f1", "i1"}  # nothing lost
         await _assert_index_invariants(system)
 
