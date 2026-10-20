@@ -204,7 +204,7 @@ class MemorySystem:
             for tag in query.tags:
                 tag_set = self._index_by_tag.get(tag, set())
                 if tag_results is None:
-                    tag_results = tag_set
+                    tag_results = set(tag_set)
                 else:
                     tag_results &= tag_set
             if tag_results:
