@@ -1,0 +1,9 @@
+# 2026-10-20 — R-168 (D-094): الحزمة الكاملة بعد الإصلاح (Python 3.14.3، بيئة 2 CPU)
+
+$ python3 -m pytest tests/ --no-header -q
+========== 1711 passed, 7 skipped, 4 deselected in 246.21s (0:04:06) ===========
+
+1711 = 1710 (بعد D-093) + 1 (اختبار حارس الكتابة المتقادمة الجديد)
+
+$ ruff check --select F,E722 tests/ agos_kernel/
+All checks passed!
