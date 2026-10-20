@@ -468,6 +468,8 @@ def aggregate(scores: List[dict]) -> Dict[str, Any]:
     out: Dict[str, Any] = {"cases": len(scores),
                            "provider_errors": sum(1 for r in scores if r.get("provider_error"))}
     out["pass"] = _rate(ok_rows, lambda r: r.get("pass"))
+    answered = [r for r in ok_rows if not r.get("provider_error")]
+    out["pass_excluding_provider_errors"] = _rate(answered, lambda r: r.get("pass"))
     out["by_lang"] = {lang: _rate([r for r in ok_rows if r["lang"] == lang], lambda r: r.get("pass"))
                       for lang in ("ar", "en")}
     out["by_task_type"] = {t: _rate([r for r in ok_rows if r["task_type"] == t], lambda r: r.get("pass"))

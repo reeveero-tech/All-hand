@@ -162,12 +162,15 @@ async def run(config: str, split: str, final: bool, tag: str) -> Path:
             fh.write(json.dumps(meta, ensure_ascii=False) + "\n")
             for i, case in enumerate(cases):
                 rec = await _one(case, config)
-                if rec.get("error") and ("busy" in str(rec["error"]).lower() or "429" in str(rec["error"])
-                                         or "circuit" in str(rec["error"]).lower()):
-                    await asyncio.sleep(30)          # one patient retry for rate-limit/busy only
-                    rec2 = await _one(case, config)
-                    rec2["retried_after_error"] = str(rec["error"])[:200]
-                    rec = rec2
+                retried = []
+                for backoff in (30, 60):             # up to two patient retries on a provider error
+                    if not rec.get("error"):
+                        break
+                    retried.append(str(rec["error"])[:200])
+                    await asyncio.sleep(backoff)
+                    rec = await _one(case, config)
+                if retried:
+                    rec["retried_after_errors"] = retried   # kept in the raw record (auditable)
                 rec["score"] = score_record(case, rec)
                 fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 fh.flush()

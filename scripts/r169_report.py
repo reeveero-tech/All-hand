@@ -17,7 +17,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "docs" / "audit" / "M8" / "logs" / "raw" / "r169"
 METRICS = [
-    ("pass", "النجاح الإجمالي"),
+    ("pass", "النجاح الإجمالي (أخطاء المزود = فشل)"),
+    ("pass_excluding_provider_errors", "النجاح باستبعاد أخطاء المزود (ثانوي)"),
     ("factual_accuracy", "دقة الوقائع (حالات answer)"),
     ("appropriate_abstention", "الامتناع/رفض الافتراض المناسب"),
     ("hallucination_on_unanswerable", "هلوسة على غير القابل للإجابة (أقل أفضل)"),

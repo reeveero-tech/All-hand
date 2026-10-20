@@ -270,6 +270,15 @@
       "n": 30,
       "rate": 1.0
     },
+    "pass_excluding_provider_errors": {
+      "ci95": [
+        0.886,
+        1.0
+      ],
+      "k": 30,
+      "n": 30,
+      "rate": 1.0
+    },
     "provider_errors": 0,
     "stale_handling": {
       "ci95": [
@@ -293,5 +302,5 @@
   "models_reported": [
     "keyless:gpt-oss-20b"
   ],
-  "scored_with_scorer_sha256": "4607a62980f5b105f7740e3aedbdde28e15e8b4a5897e11032d9c53a3d484d0b"
+  "scored_with_scorer_sha256": "7a985518ef1db3bba4d3b1461d8d8f323ca5d3d1cc4fc9c531404b54ddfe5dfd"
 }
