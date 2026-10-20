@@ -8,6 +8,7 @@ measurements on this machine (not simulations), and the 100k step uses
 100k REAL engine records (not 100k logical placeholders).
 """
 import asyncio
+import json
 import os
 import resource
 import sys
@@ -54,9 +55,15 @@ def test_scale_write_persist_load_search(tmp_path, n):
         file_mb = os.path.getsize(path) / 1e6
 
         fresh = MemorySystem(max_entries=max(n, 1000), persistence_file=path)
+        # load decomposed: parse (json) vs validate+commit (the rest)
+        t0 = time.perf_counter()
+        with open(path, encoding="utf-8") as f:
+            json.load(f)
+        t_parse = time.perf_counter() - t0
         t0 = time.perf_counter()
         assert fresh._load_strict() is True
         t_load = time.perf_counter() - t0
+        t_validate_commit = t_load - t_parse  # includes one redundant parse; an upper bound
 
         t0 = time.perf_counter()
         hits = await fresh.search(MemoryQuery(tags={"t3"}, limit=None))
@@ -71,8 +78,12 @@ def test_scale_write_persist_load_search(tmp_path, n):
             live = {mid for mid in idx if mid in fresh._memories}
             assert idx == live  # no dead index entries at 100k either
 
+        # rss is the WHOLE-PROCESS high-water mark (cumulative across the
+        # earlier scales in this process) — labeled as such, not per-scale
         print(f"\n[n={n}] write={t_write:.3f}s persist={t_persist:.3f}s "
-              f"load={t_load:.3f}s search={t_search:.4f}s "
-              f"file={file_mb:.1f}MB rss={_rss_mb():.0f}MB")
+              f"load={t_load:.3f}s (parse={t_parse:.3f}s, "
+              f"validate+commit<={t_validate_commit:.3f}s) "
+              f"search={t_search:.4f}s file={file_mb:.1f}MB "
+              f"rss_hwm={_rss_mb():.0f}MB (process-wide, cumulative)")
 
     asyncio.run(scenario())

@@ -106,6 +106,11 @@ class MemorySystem:
         self._index_by_tag: Dict[str, Set[str]] = defaultdict(set)
         self._persistence_file = persistence_file
         self._max_entries = max_entries
+        # R-168: safe operation metrics — counts and timings only, never
+        # record content. Exposed via get_stats() so operators can see
+        # persist/load health without touching user data.
+        self._ops: Dict[str, int] = {"persist_ok": 0, "persist_fail": 0,
+                                     "load_ok": 0, "load_empty": 0, "load_fail": 0}
         
         logger.info(f"MemorySystem initialized (max_entries={max_entries})")
     
@@ -417,7 +422,21 @@ class MemorySystem:
             logger.error("Failed to persist memory: %s", type(e).__name__)
 
     def _persist_strict(self) -> None:
-        """The persist core: writes or raises (R-167 — inspectable failure)."""
+        """The persist core: writes or raises (R-167 — inspectable failure).
+
+        R-168: the ONLY place persist health is counted — every caller
+        (compat wrapper, contract adapter) goes through here.
+        """
+        if not self._persistence_file:
+            return
+        try:
+            self._persist_strict_inner()
+            self._ops["persist_ok"] += 1
+        except Exception:
+            self._ops["persist_fail"] += 1
+            raise
+
+    def _persist_strict_inner(self) -> None:
         if not self._persistence_file:
             return
         
@@ -442,7 +461,21 @@ class MemorySystem:
 
     def _load_strict(self) -> bool:
         """The load core: True if a file was loaded, False if there is no file;
-        RAISES on corruption BEFORE any state change (R-167 — no partial state)."""
+        RAISES on corruption BEFORE any state change (R-167 — no partial state).
+
+        R-168: the ONLY place load health is counted — every caller (compat
+        wrapper, contract adapter) goes through here. "No file" is a healthy
+        empty state (load_empty), not a failure.
+        """
+        try:
+            loaded = self._load_strict_inner()
+            self._ops["load_ok" if loaded else "load_empty"] += 1
+            return loaded
+        except Exception:
+            self._ops["load_fail"] += 1
+            raise
+
+    def _load_strict_inner(self) -> bool:
         if not self._persistence_file:
             return False
         if not os.path.exists(self._persistence_file):
@@ -496,6 +529,16 @@ class MemorySystem:
         
         # Commit phase: only now may the live state change.
         for memory_id, entry in candidates:
+            # R-168 batch-3 fix: re-index on replace — loading an id that
+            # already exists must REMOVE the old entry's type/tag index
+            # memberships before adding the new ones (mirrors store());
+            # before, the stale memberships survived the replace, so the old
+            # type/tag filters kept matching the replaced record.
+            if memory_id in self._memories:
+                old = self._memories[memory_id]
+                self._index_by_type[old.memory_type].discard(memory_id)
+                for tag in old.tags:
+                    self._index_by_tag[tag].discard(memory_id)
             self._memories[memory_id] = entry
             
             # Rebuild indexes
@@ -523,6 +566,7 @@ class MemorySystem:
                 )[:10]
             ],
             "max_entries": self._max_entries,
+            "ops": dict(self._ops),  # R-168: safe health metrics (counts only)
         }
 
 
