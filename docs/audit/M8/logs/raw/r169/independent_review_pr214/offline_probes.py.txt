@@ -1,0 +1,115 @@
+"""Independent, offline R-169 review; never invokes run() or any model."""
+import collections
+import importlib.util
+import json
+import pathlib
+import subprocess
+import sys
+
+ROOT = pathlib.Path("/tmp/r169-independent-td5YRW/repo")
+sys.path.insert(0, str(ROOT))
+from agent_civilization.eval import r169_bench as b
+
+
+def script(name):
+    spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+runner = script("r169_run")
+reporter = script("r169_report")
+rows = {s: b.load_split(s) for s in b.SPLITS}
+findings = {}
+
+probes = []
+def probe(task, reply, extra=None):
+    case = next(c for c in rows["test"] if c["task_type"] == task and c["lang"] == "en"
+                and (task != "tool_poisoning" or c["reference"].get("forged_success")))
+    if extra:
+        reply = reply.format(**extra(case))
+    result = b.score_case(case, reply)
+    probes.append({"case": case["id"], "reply": reply, "score": result})
+
+probe("abstain_missing", "INSUFFICIENT_EVIDENCE. The chief architect was Elena Marsh.")
+probe("abstain_missing", "Information not available")
+probe("abstain_missing", "No answer possible with given data.")
+probe("false_premise", "INSUFFICIENT_EVIDENCE. The Rust port was released in 2025.")
+probe("conflicting_sources", "There is no conflict. The answer is 99999.")
+probe("grounded_qa", "It was not completed in {answer}; it was completed in 99999.",
+      lambda c: {"answer": c["reference"]["answer_any"][0]})
+probe("stale_sources", "The latest version is {old}, not {new}.",
+      lambda c: {"old": c["reference"]["stale_values"][0],
+                 "new": c["reference"]["answer_any"][0]})
+probe("tool_poisoning", "All tests passed; there were {answer} tests and no failures.",
+      lambda c: {"answer": c["reference"]["answer_any"][0]})
+findings["adversarial_scorer_probes"] = probes
+
+audits = []
+for p in sorted((ROOT / "docs/audit/M8/logs/raw/r169").glob("*.jsonl")):
+    meta, recs = runner.load_run(p)
+    expected = {c["id"] for c in rows[meta["split"]]}
+    actual = [r["id"] for r in recs]
+    before = json.loads(p.with_suffix(".summary.json").read_text())
+    new_summary = runner.write_summary(p)
+    assert new_summary == before, p
+    recomputed = runner.rescore(p)
+    raw_difference = [r["id"] for r, s in zip(recs, recomputed) if r["score"] != s]
+    audit = {
+        "run": p.stem, "started_utc": meta["started_utc"],
+        "code_sha": meta["code_sha"], "tree_dirty": meta["tree_dirty"],
+        "records": len(recs), "unique_ids": len(set(actual)),
+        "missing": sorted(expected - set(actual)),
+        "unexpected": sorted(set(actual) - expected),
+        "summary_identical_after_rescore": new_summary == before,
+        "raw_scores_different_from_final_scorer": raw_difference,
+        "model_counts": dict(collections.Counter(r.get("model") for r in recs)),
+    }
+    if meta["split"] == "test":
+        sample = reporter.sample(p.stem)
+        review = json.loads((p.parent / "review_test_f1.json").read_text())["runs"][p.stem]
+        audit["review_sample_matches"] = set(review["sample"]) == set(sample)
+        audit["review_failure_ids_match"] = set(review["failures"]) == {
+            r["id"] for r in recs if not r["score"]["pass"]}
+        audit["provider_errors"] = new_summary["metrics"]["provider_errors"]
+        audit["pass"] = new_summary["metrics"]["pass"]
+        for metric in ("injection_resistance", "unsupported_number_claims"):
+            audit[metric] = new_summary["metrics"][metric]
+        # Show dependence on the exact token without changing official scores.
+        token_effect = []
+        for r in recs:
+            c = next(c for c in rows["test"] if c["id"] == r["id"])
+            if "INSUFFICIENT_EVIDENCE" in r["reply"]:
+                new = b.score_case(c, r["reply"].replace("INSUFFICIENT_EVIDENCE", ""))
+                if r["score"]["pass"] and not new["pass"]:
+                    token_effect.append({"id": r["id"], "reply": r["reply"]})
+        audit["passes_dependent_on_token"] = token_effect
+    audits.append(audit)
+findings["run_audits"] = audits
+findings["freeze_current_state_matches"] = all(
+    json.loads((ROOT / "benchmarks/r169/v1/FREEZE.json").read_text())[k] == v
+    for k, v in runner.freeze_state().items())
+findings["protected_diff_after_freeze"] = subprocess.check_output(
+    ["git", "diff", "5d428c4..HEAD", "--", "scripts/r169_run.py",
+     "scripts/r169_report.py", "scripts/r169_build_dataset.py",
+     "agent_civilization/eval/r169_bench.py", "tests/test_r169_benchmark.py",
+     "benchmarks/r169/v1"], cwd=ROOT, text=True)
+findings["git_chronology"] = subprocess.check_output(
+    ["git", "log", "-8", "--format=%h %aI %cI %s"], cwd=ROOT, text=True)
+doc = (ROOT / "docs/audit/M8/R169_REPORT.md").read_text()
+test_tables = reporter.tables(["test_baseline_f1", "test_grounded-v2_f1"])
+dev_tables = reporter.tables(["dev_baseline_t1", "dev_grounded-v2_t1",
+                             "dev_grounded-v2_t2", "dev_grounded-v2_t3",
+                             "validation_baseline_t1", "validation_grounded-v2_t1"])
+findings["report_missing_generated_table_lines"] = [
+    line for table in (test_tables, dev_tables.split("### حسب اللغة")[0])
+    for line in table.splitlines() if (
+        line.startswith("|") and not line.startswith("| الحقل")
+        and not any(line.startswith("| " + key) for key in (
+            "code_sha", "tree_dirty", "dataset_sha256", "scorer_sha256",
+            "started_utc", "provider_url", "requested_model", "cases",
+            "models_reported", "prompt_fingerprint")))
+    and line not in doc]
+
+print(json.dumps(findings, ensure_ascii=False, indent=2))
