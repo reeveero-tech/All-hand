@@ -1,0 +1,8 @@
+# R-169 review-fix commit — local suite and gates (run 2026-10-20)
+tested_commit=739fffe45a35d5c32afdd9cc51370c9133fcb511
+python3 scripts/check_no_delete.py origin/main HEAD -> No-delete gate passed: 0 tracked files deleted, moved or renamed.
+python3 scripts/check_atomic_batch.py origin/main HEAD -> Atomic batch v2 passed (R0-R6).
+python3 scripts/check_status_evidence.py . -> Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+python3 scripts/r169_build_dataset.py --check -> dataset matches generator output
+python3 -m pytest -q -p no:cacheprovider -x -> 1743 passed, 7 skipped, 4 deselected in 246.03s (0:04:06)
+note: this commit changes documentation and adds reviewer artefacts only; benchmark code, data, prompts and FREEZE are unchanged.
