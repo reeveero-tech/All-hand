@@ -1,12 +1,40 @@
-# R-168 defect 3 RED proof (post-hoc, 2026-10-20) — deterministic regression test run against PRE-FIX tree
-# methodology: the regression test (added in fix commit 768a30d, D-092) is run against the
-# pre-fix tree 4a9d35c (batch-3 original, before the fix). It fails there and passes on the
-# fixed tree (suite 225: 1705 passed) — proving it is a genuine red test for the third defect.
-# command: git worktree at 4a9d35c + tests/test_r168_load_atomicity.py from 768a30d; pytest -k replace_existing_id
-platform linux -- Python 3.14.3, pytest-9.1.1
+# R-168 defect 3 RED proof (post-hoc, 2026-10-20T02:35Z) — raw pytest output, single test (verbatim)
+# methodology: the deterministic regression test (added in fix commit 768a30d, D-092) run against the
+# PRE-FIX tree 4a9d35c (batch-3 original commit, before the fix). It fails there; the same test passes
+# on the fixed tree (suite 225: 1705 passed). This is a post-hoc red proof (captured after the fix),
+# NOT a chronological RED-first log — defects 1 and 2 have pre-fix red logs (213, 217).
+# command: git worktree at 4a9d35c + tests/test_r168_load_atomicity.py (from 768a30d);
+#          python3 -m pytest tests/test_r168_load_atomicity.py -k replace_existing_id -q
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /tmp/prefix43
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 11 items / 10 deselected / 1 selected
+
+tests/test_r168_load_atomicity.py F                                      [100%]
+
+=================================== FAILURES ===================================
+___________________ test_load_replace_existing_id_reindexes ____________________
+tests/test_r168_load_atomicity.py:255: in test_load_replace_existing_id_reindexes
+    asyncio.run(scenario())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r168_load_atomicity.py:239: in scenario
+    assert system._index_by_type[MemoryType.EPISODIC] == set()
+E   AssertionError: assert {'X'} == set()
+E     
 E     Extra items in the left set:
 E     'X'
-E     Use -v to see the full diff
+E     Use -v to get more diff
 =========================== short test summary info ============================
 FAILED tests/test_r168_load_atomicity.py::test_load_replace_existing_id_reindexes
-======================= 1 failed, 10 deselected in 0.43s =======================
+======================= 1 failed, 10 deselected in 0.22s =======================
