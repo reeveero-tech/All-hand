@@ -1,0 +1,23 @@
+# R-168 scale measurements — REAL 10/100/1k/10k/100k engine records (Python 3.14.3, 2 CPU sandbox)
+# command: python -m pytest tests/test_r168_scale.py -q -s
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/allhand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 5 items
+
+tests/test_r168_scale.py 
+[n=10] write=0.000s persist=0.000s load=0.000s search=0.0000s file=0.0MB rss=79MB
+.
+[n=100] write=0.001s persist=0.002s load=0.001s search=0.0000s file=0.0MB rss=80MB
+.
+[n=1000] write=0.006s persist=0.019s load=0.014s search=0.0002s file=0.3MB rss=82MB
+.
+[n=10000] write=0.055s persist=0.107s load=0.060s search=0.0017s file=3.0MB rss=106MB
+.
+[n=100000] write=0.487s persist=1.143s load=0.808s search=0.0301s file=29.9MB rss=361MB
+.
+
+============================== 5 passed in 2.97s ===============================
