@@ -71,9 +71,15 @@ def test_ops_counters_across_both_call_paths(tmp_path):
         finally:
             os.chmod(d, 0o755)
 
-        # metrics carry counts only — never record content or secrets
-        raw = json.dumps(system.get_stats())
-        assert "x" not in raw.replace('"', "") or "content" not in raw
+        # metrics carry counts only — a distinctive sentinel value stored as
+        # record content must never appear in the metrics object
+        await system.store(content="SENTINEL-SECRET-7f3a91",
+                           memory_type=MemoryType.EPISODIC, memory_id="s1")
+        ops = system.get_stats()["ops"]
+        raw_ops = json.dumps(ops)
+        assert "SENTINEL-SECRET-7f3a91" not in raw_ops
+        assert set(ops) == {"persist_ok", "persist_fail", "load_ok",
+                           "load_empty", "load_fail"}
 
     asyncio.run(scenario())
 
@@ -104,44 +110,68 @@ _LEVELS = [1, 10, 100]
 
 
 def test_concurrency_impact_measurement():
-    """Real asyncio measurement: interleaved store+search at increasing
-    concurrency. Reports throughput and mean per-op latency per level and
-    asserts the index invariants after each — a measurement that corrupts
-    state is a bug, not a benchmark. Single event loop = the production
-    model; thread-based sharing is out of model (documented)."""
+    """Real concurrency measurement: mixed workers (store/search/replace/
+    delete) under an actual concurrency LIMIT (semaphore), each op timed
+    individually. The event loop interleaves at await points only — that is
+    the production model; thread-based sharing is out of model (declared
+    limit, D-091/EVIDENCE). Reports per-level throughput and latency and
+    asserts index invariants after each level.
+    NOTE: ru_maxrss-style memory is NOT reported here — a process-wide
+    high-water mark across levels is not a per-level measurement (see the
+    scale suite for per-scale file/memory data)."""
     async def scenario():
         system = MemorySystem(max_entries=10_000)
         print()
         for level in _LEVELS:
-            n_ops = 500  # total stores per level
-            ids = [f"c{i}" for i in range(n_ops)]
+            sem = asyncio.Semaphore(level)
+            n_ops = 500
+            timings = []
+            completed = {"store": 0, "search": 0, "replace": 0, "delete": 0}
 
-            async def store(mid):
-                await system.store(content=f"op {mid}", memory_type=MemoryType.WORKING,
-                                   tags={"bench"}, memory_id=mid)
-
-            async def query():
-                await system.search(MemoryQuery(tags={"bench"}, limit=None))
-
-            async def batch():
-                tasks = [store(mid) for mid in ids]
-                tasks += [query() for _ in range(level)]
-                await asyncio.gather(*tasks)
+            async def one_op(i):
+                kind = i % 10
+                async with sem:
+                    t0 = time.perf_counter()
+                    if kind < 5:  # 50% stores
+                        await system.store(content=f"op {i}",
+                                           memory_type=MemoryType.WORKING,
+                                           tags={"bench"}, memory_id=f"op{i}")
+                        completed["store"] += 1
+                    elif kind < 8:  # 30% searches
+                        await system.search(MemoryQuery(tags={"bench"}, limit=None))
+                        completed["search"] += 1
+                    elif kind < 9:  # 10% same-id replacements (re-index path)
+                        await system.store(content=f"op {i} v2",
+                                           memory_type=MemoryType.EPISODIC,
+                                           tags={"bench", "v2"}, memory_id="shared")
+                        completed["replace"] += 1
+                    else:  # 10% deletes
+                        await system.forget(f"op{i}")
+                        completed["delete"] += 1
+                    timings.append(time.perf_counter() - t0)
 
             t0 = time.perf_counter()
-            await batch()
+            await asyncio.gather(*[one_op(i) for i in range(n_ops)])
             elapsed = time.perf_counter() - t0
 
-            # invariants after every level
+            # invariants after every level: no dead index entries, every
+            # live record in both indexes, capacity respected
             for mtype, idx in system._index_by_type.items():
                 live = {mid for mid in idx if mid in system._memories}
                 assert idx == live
-            assert len(system._memories) == n_ops  # nothing lost per level
+            for tag, idx in system._index_by_tag.items():
+                live = {mid for mid in idx if mid in system._memories}
+                assert idx == live
+            assert len(system._memories) <= 10_000
 
-            throughput = n_ops / elapsed
-            print(f"[concurrency={level:3d}] {n_ops} stores + {level} searches "
-                  f"in {elapsed:.3f}s — {throughput:.0f} stores/s, "
-                  f"{elapsed / n_ops * 1000:.2f}ms/store")
-            await asyncio.gather(*[system.forget(mid) for mid in ids])
+            timings.sort()
+            mean = sum(timings) / len(timings)
+            p95 = timings[int(0.95 * len(timings))]
+            print(f"[concurrency-limit={level:3d}] {n_ops} mixed ops in "
+                  f"{elapsed:.3f}s — {n_ops / elapsed:.0f} ops/s, "
+                  f"mean {mean * 1000:.2f}ms, p95 {p95 * 1000:.2f}ms "
+                  f"({completed['store']}st/{completed['search']}se/"
+                  f"{completed['replace']}re/{completed['delete']}de)")
+            await asyncio.gather(*[system.forget(m) for m in list(system._memories)])
 
     asyncio.run(scenario())

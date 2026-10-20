@@ -529,6 +529,16 @@ class MemorySystem:
         
         # Commit phase: only now may the live state change.
         for memory_id, entry in candidates:
+            # R-168 batch-3 fix: re-index on replace — loading an id that
+            # already exists must REMOVE the old entry's type/tag index
+            # memberships before adding the new ones (mirrors store());
+            # before, the stale memberships survived the replace, so the old
+            # type/tag filters kept matching the replaced record.
+            if memory_id in self._memories:
+                old = self._memories[memory_id]
+                self._index_by_type[old.memory_type].discard(memory_id)
+                for tag in old.tags:
+                    self._index_by_tag[tag].discard(memory_id)
             self._memories[memory_id] = entry
             
             # Rebuild indexes

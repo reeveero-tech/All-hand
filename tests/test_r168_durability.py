@@ -195,6 +195,45 @@ def test_persist_enospc_injected_fails_closed(tmp_path):
     asyncio.run(scenario())
 
 
+def test_persist_os_replace_failure_keeps_snapshot(tmp_path):
+    """Injected failure at the FINAL atomic step (os.replace): the previous
+    snapshot must remain intact. The .tmp may remain after this failure —
+    the documented recovery is: the next successful persist rewrites and
+    cleans it, and load never reads it."""
+    import agos_kernel.agent_production.memory_system as ms_mod
+
+    path = str(tmp_path / "mem.json")
+
+    async def scenario():
+        system = MemorySystem(persistence_file=path)
+        await system.store(content="snap", memory_type=MemoryType.EPISODIC,
+                           memory_id="s1")
+        system._persist_strict()
+        raw_before = Path(path).read_text(encoding="utf-8")
+
+        real_replace = os.replace
+
+        def failing_replace(a, b):
+            if str(b) == path:
+                raise OSError(5, "Input/output error")
+            return real_replace(a, b)
+
+        os.replace = failing_replace
+        try:
+            with pytest.raises(OSError):
+                system._persist_strict()
+        finally:
+            os.replace = real_replace
+        # the last good snapshot is intact
+        assert Path(path).read_text(encoding="utf-8") == raw_before
+        # recovery: the next successful persist cleans the leftover .tmp
+        system._persist_strict()
+        assert not os.path.exists(path + ".tmp")
+        assert len(json.loads(Path(path).read_text(encoding="utf-8"))) == 1
+
+    asyncio.run(scenario())
+
+
 def test_leftover_tmp_ignored_and_cleaned(tmp_path):
     """A .tmp leftover (crash mid-write) never affects load; the next
     successful persist replaces the snapshot and leaves no .tmp behind."""
@@ -292,9 +331,19 @@ def test_concurrent_persist_and_write_consistent_snapshot():
     asyncio.run(scenario())
 
 
-def test_concurrent_load_and_write_union():
+def test_load_and_write_interleaved_union():
     """Load racing with writes on an engine that already holds state: the
-    load is all-or-nothing (D-090), so the final state is the union."""
+    load is all-or-nothing (D-090), so the final state is the union.
+
+    NOTE on the threading used here: ``_load_strict`` has no internal
+    awaits, so on ONE event loop gather(load, writes) would run the load to
+    completion before any write — no true interleaving. This test therefore
+    runs the load via ``asyncio.to_thread`` to force real interleaving.
+    Thread-based sharing of one MemorySystem is OUTSIDE the supported model
+    (production is a single loop; the pool only wraps blocking IO) — this is
+    an explicit boundary probe of that unsupported mode, and its passing is
+    evidence only of the D-090 atomicity under this specific schedule, not
+    a guarantee of thread safety in general."""
     async def scenario():
         d = tempfile.mkdtemp()
         path = os.path.join(d, "mem.json")
@@ -363,14 +412,24 @@ def test_tenant_isolation_engine_level():
             metadata_equals={"tenant_id": "t2"}, limit=None))
         assert sorted(e.memory_id for e in t2) == ["b1", "b2"]
 
-        # multi-tenant snapshot restore: both tenants land, quarantined included
+        # multi-tenant snapshot restore through the REAL contract adapters
+        # (export -> restore), not direct engine-internal assignment
+        from agos_kernel.agent_production.memory_store import store_for
         snap = system._memories
         fresh = MemorySystem(max_entries=100)
-        for mid, e in snap.items():
-            fresh._memories[mid] = e
+        fresh_store = store_for(fresh)  # the real adapter pick (in-process)
+        payload = {"format": "agos-memory/v1", "max_entries": 100,
+                   "entries": {mid: {**e.to_dict(), "tags": list(e.tags)}
+                               for mid, e in snap.items()}}
+        result = await fresh_store.restore(payload)
+        assert result["restored"] == 5  # all five landed through the contract
         t1f = await fresh.search(MemoryQuery(
             metadata_equals={"tenant_id": "t1"}, limit=None))
         assert sorted(e.memory_id for e in t1f) == ["a1", "a2"]
+        # and the restored engine keeps the same tenant views as the source
+        q2 = await fresh.search(MemoryQuery(
+            metadata_equals={"tenant_id": "t2"}, limit=None))
+        assert sorted(e.memory_id for e in q2) == ["b1", "b2"]
 
         # forget_tenant (experience layer uses metadata_equals + delete):
         for e in await system.search(MemoryQuery(

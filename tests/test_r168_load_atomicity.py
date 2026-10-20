@@ -114,7 +114,7 @@ BAD_LAST_VARIANTS = {
     "invalid_timestamp": {**VALID_T1, "memory_id": "mem_bad",
                           "last_accessed": "not-a-date"},
     "missing_field": {k: v for k, v in VALID_T1.items()
-                      if k != "importance"},
+                      if k != "content"},  # content has NO dataclass default
     "bad_tags": {**VALID_T1, "memory_id": "mem_bad", "tags": "not-a-list"},
     "id_key_mismatch": {**VALID_T1},  # key mem_bad vs entry mem_tenant1_a
 }
@@ -205,6 +205,52 @@ def test_load_fails_atomically_corrupt_json(tmp_path):
         with pytest.raises(Exception):
             system._load_strict()
         assert _snapshot(system) == before
+
+    asyncio.run(scenario())
+
+
+def test_load_replace_existing_id_reindexes(tmp_path):
+    """Loading a valid file whose id ALREADY exists in the engine (with a
+    different type/tags) must REPLACE it and RE-INDEX: old memberships
+    removed, new ones added, other records untouched. RED-first on the
+    batch-1/2 code — the commit phase only ADDED memberships, so the stale
+    old type/tag kept matching the replaced record."""
+    async def scenario():
+        path = str(tmp_path / "mem.json")
+        system = MemorySystem(max_entries=100, persistence_file=path)
+        await system.store(content="x", memory_type=MemoryType.EPISODIC,
+                           tags={"old"}, memory_id="X")
+        await system.store(content="other", memory_type=MemoryType.SEMANTIC,
+                           tags={"keep"}, memory_id="Y")
+        # the file replaces X: now SEMANTIC with tag "new"
+        replacement = {
+            "memory_id": "X", "content": "x2", "memory_type": "semantic",
+            "tags": ["new"], "metadata": {}, "importance": 0.5,
+            "created_at": "2026-01-01T00:00:00",
+            "last_accessed": "2026-01-01T00:00:00", "access_count": 0,
+        }
+        _write_file(path, {"X": replacement})
+
+        assert system._load_strict() is True
+        # the record itself was replaced
+        assert system._memories["X"].memory_type == MemoryType.SEMANTIC
+        assert system._memories["X"].tags == {"new"}
+        # the OLD memberships are gone, the NEW ones present
+        assert system._index_by_type[MemoryType.EPISODIC] == set()
+        assert system._index_by_type[MemoryType.SEMANTIC] == {"X", "Y"}
+        assert system._index_by_tag.get("old", set()) == set()
+        assert system._index_by_tag["new"] == {"X"}
+        # the untouched record is intact
+        assert system._index_by_tag["keep"] == {"Y"}
+        # searches reflect the replacement, not the stale memberships
+        episodic = await system.search(MemoryQuery(
+            memory_type=MemoryType.EPISODIC, limit=None))
+        assert [e.memory_id for e in episodic] == []
+        semantic = await system.search(MemoryQuery(
+            memory_type=MemoryType.SEMANTIC, limit=None))
+        assert sorted(e.memory_id for e in semantic) == ["X", "Y"]
+        old_tag = await system.search(MemoryQuery(tags={"old"}, limit=None))
+        assert [e.memory_id for e in old_tag] == []
 
     asyncio.run(scenario())
 
