@@ -1,0 +1,20 @@
+# R-168 batch 3 monitoring+concurrency measurements (Python 3.14.3, 2 CPU sandbox)
+# command: python -m pytest tests/test_r168_monitoring.py -v -s
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/allhand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 3 items
+
+tests/test_r168_monitoring.py::test_ops_counters_across_both_call_paths PASSED
+tests/test_r168_monitoring.py::test_metrics_not_state PASSED
+tests/test_r168_monitoring.py::test_concurrency_impact_measurement 
+[concurrency=  1] 500 stores + 1 searches in 0.004s — 112134 stores/s, 0.01ms/store
+[concurrency= 10] 500 stores + 10 searches in 0.007s — 74262 stores/s, 0.01ms/store
+[concurrency=100] 500 stores + 100 searches in 0.032s — 15826 stores/s, 0.06ms/store
+PASSED
+
+============================== 3 passed in 0.17s ===============================

@@ -81,7 +81,9 @@ def _snapshot(system: MemorySystem) -> dict:
         },
         "index_by_type": {k: set(v) for k, v in system._index_by_type.items()},
         "index_by_tag": {k: set(v) for k, v in system._index_by_tag.items()},
-        "stats": system.get_stats(),
+        # R-168 batch 3: "ops" health counters are metrics, not memory state —
+        # a failed load legitimately increments load_fail; excluded here.
+        "stats": {k: v for k, v in system.get_stats().items() if k != "ops"},
     }
 
 
