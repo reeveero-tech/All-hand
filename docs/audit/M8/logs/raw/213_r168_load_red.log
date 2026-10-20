@@ -1,0 +1,1005 @@
+# R-168 load-atomicity RED run — UNMODIFIED tree (base ed43866, Python 3.14.3)
+# command: python -m pytest tests/test_r168_load_atomicity.py -v
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/allhand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 10 items
+
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[bad_tags] FAILED [ 10%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[id_key_mismatch] FAILED [ 20%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[invalid_memory_type] FAILED [ 30%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[invalid_timestamp] FAILED [ 40%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[missing_field] FAILED [ 50%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_first_record PASSED [ 60%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_middle_record FAILED [ 70%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_corrupt_json PASSED [ 80%]
+tests/test_r168_load_atomicity.py::test_load_success_rebuilds_state_and_indexes PASSED [ 90%]
+tests/test_r168_load_atomicity.py::test_store_level_load_reports_false_and_preserves_state FAILED [100%]
+
+=================================== FAILURES ===================================
+_____________ test_load_fails_atomically_bad_last_record[bad_tags] _____________
+tests/test_r168_load_atomicity.py:147: in test_load_fails_atomically_bad_last_record
+    asyncio.run(scenario())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r168_load_atomicity.py:140: in scenario
+    assert raised, f"variant {variant}: load unexpectedly succeeded"
+E   AssertionError: variant bad_tags: load unexpectedly succeeded
+E   assert False
+_________ test_load_fails_atomically_bad_last_record[id_key_mismatch] __________
+tests/test_r168_load_atomicity.py:147: in test_load_fails_atomically_bad_last_record
+    asyncio.run(scenario())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r168_load_atomicity.py:140: in scenario
+    assert raised, f"variant {variant}: load unexpectedly succeeded"
+E   AssertionError: variant id_key_mismatch: load unexpectedly succeeded
+E   assert False
+_______ test_load_fails_atomically_bad_last_record[invalid_memory_type] ________
+tests/test_r168_load_atomicity.py:147: in test_load_fails_atomically_bad_last_record
+    asyncio.run(scenario())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r168_load_atomicity.py:142: in scenario
+    assert _snapshot(system) == before, (
+E   AssertionError: variant invalid_memory_type: PARTIAL STATE CHANGE after failed load
+E   assert {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708846), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708849), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708860), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708861), 'access_count': 0}, 'mem_tenant1_a': {'memory_id': 'mem_tenant1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.6, 'created_at': datetime.datetime(2026, 1, 1, 0, 0), 'last_accessed': datetime.datetime(2026, 1, 2, 0, 0), 'access_count': 2}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}, 'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} == {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708846), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708849), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708860), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708861), 'access_count': 0}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}, 'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+E     
+E     Differing items:
+E     {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}} != {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}}
+E     {'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} != {'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+E     {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}} != {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}}
+E     {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...t1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, ...}}} != {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...y_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, ...}}}
+E     
+E     Full diff:
+E       {
+E           'records': {
+E               'mem_old_1': {
+E                   'memory_id': 'mem_old_1',
+E                   'content': 'old one',
+E                   'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+E                   'tags': {
+E                       'old',
+E                   },
+E                   'metadata': {
+E                       'tenant_id': 't1',
+E                   },
+E                   'importance': 0.5,
+E                   'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708846),
+E                   'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708849),
+E                   'access_count': 0,
+E               },
+E               'mem_old_2': {
+E                   'memory_id': 'mem_old_2',
+E                   'content': 'old two',
+E                   'memory_type': <MemoryType.PROCEDURAL: 'procedural'>,
+E                   'tags': {
+E                       'old',
+E                   },
+E                   'metadata': {
+E                       'tenant_id': 't2',
+E                   },
+E                   'importance': 0.5,
+E                   'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708860),
+E                   'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708861),
+E                   'access_count': 0,
+E               },
+E     +         'mem_tenant1_a': {
+E     +             'memory_id': 'mem_tenant1_a',
+E     +             'content': 'tenant one alpha',
+E     +             'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+E     +             'tags': {
+E     +                 'alpha',
+E     +                 't1',
+E     +             },
+E     +             'metadata': {
+E     +                 'tenant_id': 't1',
+E     +             },
+E     +             'importance': 0.6,
+E     +             'created_at': datetime.datetime(2026, 1, 1, 0, 0),
+E     +             'last_accessed': datetime.datetime(2026, 1, 2, 0, 0),
+E     +             'access_count': 2,
+E     +         },
+E           },
+E           'index_by_type': {
+E               <MemoryType.EPISODIC: 'episodic'>: {
+E                   'mem_old_1',
+E     +             'mem_tenant1_a',
+E               },
+E               <MemoryType.PROCEDURAL: 'procedural'>: {
+E                   'mem_old_2',
+E               },
+E           },
+E           'index_by_tag': {
+E               'old': {
+E                   'mem_old_1',
+E                   'mem_old_2',
+E               },
+E     +         'alpha': {
+E     +             'mem_tenant1_a',
+E     +         },
+E     +         't1': {
+E     +             'mem_tenant1_a',
+E     +         },
+E           },
+E           'stats': {
+E     -         'total_memories': 2,
+E     ?                           ^
+E     +         'total_memories': 3,
+E     ?                           ^
+E               'by_type': {
+E     -             'episodic': 1,
+E     ?                         ^
+E     +             'episodic': 2,
+E     ?                         ^
+E                   'procedural': 1,
+E               },
+E               'top_tags': [
+E                   {
+E                       'tag': 'old',
+E                       'count': 2,
+E                   },
+E     +             {
+E     +                 'tag': 'alpha',
+E     +                 'count': 1,
+E     +             },
+E     +             {
+E     +                 'tag': 't1',
+E     +                 'count': 1,
+E     +             },
+E               ],
+E               'max_entries': 100,
+E           },
+E       }
+________ test_load_fails_atomically_bad_last_record[invalid_timestamp] _________
+tests/test_r168_load_atomicity.py:147: in test_load_fails_atomically_bad_last_record
+    asyncio.run(scenario())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r168_load_atomicity.py:142: in scenario
+    assert _snapshot(system) == before, (
+E   AssertionError: variant invalid_timestamp: PARTIAL STATE CHANGE after failed load
+E   assert {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739751), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739754), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739764), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739765), 'access_count': 0}, 'mem_tenant1_a': {'memory_id': 'mem_tenant1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.6, 'created_at': datetime.datetime(2026, 1, 1, 0, 0), 'last_accessed': datetime.datetime(2026, 1, 2, 0, 0), 'access_count': 2}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}, 'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} == {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739751), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739754), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739764), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739765), 'access_count': 0}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}, 'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+E     
+E     Differing items:
+E     {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}} != {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}}
+E     {'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} != {'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+E     {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}} != {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}}
+E     {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...t1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, ...}}} != {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...y_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, ...}}}
+E     
+E     Full diff:
+E       {
+E           'records': {
+E               'mem_old_1': {
+E                   'memory_id': 'mem_old_1',
+E                   'content': 'old one',
+E                   'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+E                   'tags': {
+E                       'old',
+E                   },
+E                   'metadata': {
+E                       'tenant_id': 't1',
+E                   },
+E                   'importance': 0.5,
+E                   'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739751),
+E                   'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739754),
+E                   'access_count': 0,
+E               },
+E               'mem_old_2': {
+E                   'memory_id': 'mem_old_2',
+E                   'content': 'old two',
+E                   'memory_type': <MemoryType.PROCEDURAL: 'procedural'>,
+E                   'tags': {
+E                       'old',
+E                   },
+E                   'metadata': {
+E                       'tenant_id': 't2',
+E                   },
+E                   'importance': 0.5,
+E                   'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739764),
+E                   'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739765),
+E                   'access_count': 0,
+E               },
+E     +         'mem_tenant1_a': {
+E     +             'memory_id': 'mem_tenant1_a',
+E     +             'content': 'tenant one alpha',
+E     +             'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+E     +             'tags': {
+E     +                 'alpha',
+E     +                 't1',
+E     +             },
+E     +             'metadata': {
+E     +                 'tenant_id': 't1',
+E     +             },
+E     +             'importance': 0.6,
+E     +             'created_at': datetime.datetime(2026, 1, 1, 0, 0),
+E     +             'last_accessed': datetime.datetime(2026, 1, 2, 0, 0),
+E     +             'access_count': 2,
+E     +         },
+E           },
+E           'index_by_type': {
+E               <MemoryType.EPISODIC: 'episodic'>: {
+E                   'mem_old_1',
+E     +             'mem_tenant1_a',
+E               },
+E               <MemoryType.PROCEDURAL: 'procedural'>: {
+E                   'mem_old_2',
+E               },
+E           },
+E           'index_by_tag': {
+E               'old': {
+E                   'mem_old_1',
+E                   'mem_old_2',
+E               },
+E     +         'alpha': {
+E     +             'mem_tenant1_a',
+E     +         },
+E     +         't1': {
+E     +             'mem_tenant1_a',
+E     +         },
+E           },
+E           'stats': {
+E     -         'total_memories': 2,
+E     ?                           ^
+E     +         'total_memories': 3,
+E     ?                           ^
+E               'by_type': {
+E     -             'episodic': 1,
+E     ?                         ^
+E     +             'episodic': 2,
+E     ?                         ^
+E                   'procedural': 1,
+E               },
+E               'top_tags': [
+E                   {
+E                       'tag': 'old',
+E                       'count': 2,
+E                   },
+E     +             {
+E     +                 'tag': 'alpha',
+E     +                 'count': 1,
+E     +             },
+E     +             {
+E     +                 'tag': 't1',
+E     +                 'count': 1,
+E     +             },
+E               ],
+E               'max_entries': 100,
+E           },
+E       }
+__________ test_load_fails_atomically_bad_last_record[missing_field] ___________
+tests/test_r168_load_atomicity.py:147: in test_load_fails_atomically_bad_last_record
+    asyncio.run(scenario())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r168_load_atomicity.py:140: in scenario
+    assert raised, f"variant {variant}: load unexpectedly succeeded"
+E   AssertionError: variant missing_field: load unexpectedly succeeded
+E   assert False
+_________________ test_load_fails_atomically_bad_middle_record _________________
+tests/test_r168_load_atomicity.py:188: in test_load_fails_atomically_bad_middle_record
+    asyncio.run(scenario())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r168_load_atomicity.py:186: in scenario
+    assert _snapshot(system) == before
+E   AssertionError: assert {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806143), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806145), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806171), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806172), 'access_count': 0}, 'mem_tenant1_a': {'memory_id': 'mem_tenant1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.6, 'created_at': datetime.datetime(2026, 1, 1, 0, 0), 'last_accessed': datetime.datetime(2026, 1, 2, 0, 0), 'access_count': 2}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}, 'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} == {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806143), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806145), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806171), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806172), 'access_count': 0}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}, 'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+E     
+E     Differing items:
+E     {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}} != {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}}
+E     {'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} != {'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+E     {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}} != {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}}
+E     {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...t1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, ...}}} != {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...y_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, ...}}}
+E     
+E     Full diff:
+E       {
+E           'records': {
+E               'mem_old_1': {
+E                   'memory_id': 'mem_old_1',
+E                   'content': 'old one',
+E                   'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+E                   'tags': {
+E                       'old',
+E                   },
+E                   'metadata': {
+E                       'tenant_id': 't1',
+E                   },
+E                   'importance': 0.5,
+E                   'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806143),
+E                   'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806145),
+E                   'access_count': 0,
+E               },
+E               'mem_old_2': {
+E                   'memory_id': 'mem_old_2',
+E                   'content': 'old two',
+E                   'memory_type': <MemoryType.PROCEDURAL: 'procedural'>,
+E                   'tags': {
+E                       'old',
+E                   },
+E                   'metadata': {
+E                       'tenant_id': 't2',
+E                   },
+E                   'importance': 0.5,
+E                   'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806171),
+E                   'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806172),
+E                   'access_count': 0,
+E               },
+E     +         'mem_tenant1_a': {
+E     +             'memory_id': 'mem_tenant1_a',
+E     +             'content': 'tenant one alpha',
+E     +             'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+E     +             'tags': {
+E     +                 'alpha',
+E     +                 't1',
+E     +             },
+E     +             'metadata': {
+E     +                 'tenant_id': 't1',
+E     +             },
+E     +             'importance': 0.6,
+E     +             'created_at': datetime.datetime(2026, 1, 1, 0, 0),
+E     +             'last_accessed': datetime.datetime(2026, 1, 2, 0, 0),
+E     +             'access_count': 2,
+E     +         },
+E           },
+E           'index_by_type': {
+E               <MemoryType.EPISODIC: 'episodic'>: {
+E                   'mem_old_1',
+E     +             'mem_tenant1_a',
+E               },
+E               <MemoryType.PROCEDURAL: 'procedural'>: {
+E                   'mem_old_2',
+E               },
+E           },
+E           'index_by_tag': {
+E               'old': {
+E                   'mem_old_1',
+E                   'mem_old_2',
+E               },
+E     +         'alpha': {
+E     +             'mem_tenant1_a',
+E     +         },
+E     +         't1': {
+E     +             'mem_tenant1_a',
+E     +         },
+E           },
+E           'stats': {
+E     -         'total_memories': 2,
+E     ?                           ^
+E     +         'total_memories': 3,
+E     ?                           ^
+E               'by_type': {
+E     -             'episodic': 1,
+E     ?                         ^
+E     +             'episodic': 2,
+E     ?                         ^
+E                   'procedural': 1,
+E               },
+E               'top_tags': [
+E                   {
+E                       'tag': 'old',
+E                       'count': 2,
+E                   },
+E     +             {
+E     +                 'tag': 'alpha',
+E     +                 'count': 1,
+E     +             },
+E     +             {
+E     +                 'tag': 't1',
+E     +                 'count': 1,
+E     +             },
+E               ],
+E               'max_entries': 100,
+E           },
+E       }
+___________ test_store_level_load_reports_false_and_preserves_state ____________
+tests/test_r168_load_atomicity.py:247: in test_store_level_load_reports_false_and_preserves_state
+    asyncio.run(scenario())
+/usr/local/lib/python3.14/asyncio/runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.14/asyncio/base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_r168_load_atomicity.py:245: in scenario
+    assert _snapshot(system) == before
+E   AssertionError: assert {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841501), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841504), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841512), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841513), 'access_count': 0}, 'mem_tenant1_a': {'memory_id': 'mem_tenant1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.6, 'created_at': datetime.datetime(2026, 1, 1, 0, 0), 'last_accessed': datetime.datetime(2026, 1, 2, 0, 0), 'access_count': 2}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}, 'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} == {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841501), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841504), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841512), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841513), 'access_count': 0}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}, 'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+E     
+E     Differing items:
+E     {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}} != {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}}
+E     {'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} != {'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+E     {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}} != {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}}
+E     {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...t1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, ...}}} != {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...y_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, ...}}}
+E     
+E     Full diff:
+E       {
+E           'records': {
+E               'mem_old_1': {
+E                   'memory_id': 'mem_old_1',
+E                   'content': 'old one',
+E                   'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+E                   'tags': {
+E                       'old',
+E                   },
+E                   'metadata': {
+E                       'tenant_id': 't1',
+E                   },
+E                   'importance': 0.5,
+E                   'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841501),
+E                   'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841504),
+E                   'access_count': 0,
+E               },
+E               'mem_old_2': {
+E                   'memory_id': 'mem_old_2',
+E                   'content': 'old two',
+E                   'memory_type': <MemoryType.PROCEDURAL: 'procedural'>,
+E                   'tags': {
+E                       'old',
+E                   },
+E                   'metadata': {
+E                       'tenant_id': 't2',
+E                   },
+E                   'importance': 0.5,
+E                   'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841512),
+E                   'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841513),
+E                   'access_count': 0,
+E               },
+E     +         'mem_tenant1_a': {
+E     +             'memory_id': 'mem_tenant1_a',
+E     +             'content': 'tenant one alpha',
+E     +             'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+E     +             'tags': {
+E     +                 'alpha',
+E     +                 't1',
+E     +             },
+E     +             'metadata': {
+E     +                 'tenant_id': 't1',
+E     +             },
+E     +             'importance': 0.6,
+E     +             'created_at': datetime.datetime(2026, 1, 1, 0, 0),
+E     +             'last_accessed': datetime.datetime(2026, 1, 2, 0, 0),
+E     +             'access_count': 2,
+E     +         },
+E           },
+E           'index_by_type': {
+E               <MemoryType.EPISODIC: 'episodic'>: {
+E                   'mem_old_1',
+E     +             'mem_tenant1_a',
+E               },
+E               <MemoryType.PROCEDURAL: 'procedural'>: {
+E                   'mem_old_2',
+E               },
+E           },
+E           'index_by_tag': {
+E               'old': {
+E                   'mem_old_1',
+E                   'mem_old_2',
+E               },
+E     +         'alpha': {
+E     +             'mem_tenant1_a',
+E     +         },
+E     +         't1': {
+E     +             'mem_tenant1_a',
+E     +         },
+E           },
+E           'stats': {
+E     -         'total_memories': 2,
+E     ?                           ^
+E     +         'total_memories': 3,
+E     ?                           ^
+E               'by_type': {
+E     -             'episodic': 1,
+E     ?                         ^
+E     +             'episodic': 2,
+E     ?                         ^
+E                   'procedural': 1,
+E               },
+E               'top_tags': [
+E                   {
+E                       'tag': 'old',
+E                       'count': 2,
+E                   },
+E     +             {
+E     +                 'tag': 'alpha',
+E     +                 'count': 1,
+E     +             },
+E     +             {
+E     +                 'tag': 't1',
+E     +                 'count': 1,
+E     +             },
+E               ],
+E               'max_entries': 100,
+E           },
+E       }
+------------------------------ Captured log call -------------------------------
+ERROR    agos_kernel.agent_production.memory_store:memory_store.py:282 memory load failed: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[bad_tags] - AssertionError: variant bad_tags: load unexpectedly succeeded
+assert False
+FAILED tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[id_key_mismatch] - AssertionError: variant id_key_mismatch: load unexpectedly succeeded
+assert False
+FAILED tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[invalid_memory_type] - AssertionError: variant invalid_memory_type: PARTIAL STATE CHANGE after failed load
+assert {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708846), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708849), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708860), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708861), 'access_count': 0}, 'mem_tenant1_a': {'memory_id': 'mem_tenant1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.6, 'created_at': datetime.datetime(2026, 1, 1, 0, 0), 'last_accessed': datetime.datetime(2026, 1, 2, 0, 0), 'access_count': 2}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}, 'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} == {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708846), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708849), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708860), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708861), 'access_count': 0}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}, 'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+  
+  Differing items:
+  {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}} != {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}}
+  {'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} != {'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+  {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}} != {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}}
+  {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...t1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, ...}}} != {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...y_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, ...}}}
+  
+  Full diff:
+    {
+        'records': {
+            'mem_old_1': {
+                'memory_id': 'mem_old_1',
+                'content': 'old one',
+                'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+                'tags': {
+                    'old',
+                },
+                'metadata': {
+                    'tenant_id': 't1',
+                },
+                'importance': 0.5,
+                'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708846),
+                'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708849),
+                'access_count': 0,
+            },
+            'mem_old_2': {
+                'memory_id': 'mem_old_2',
+                'content': 'old two',
+                'memory_type': <MemoryType.PROCEDURAL: 'procedural'>,
+                'tags': {
+                    'old',
+                },
+                'metadata': {
+                    'tenant_id': 't2',
+                },
+                'importance': 0.5,
+                'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 708860),
+                'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 708861),
+                'access_count': 0,
+            },
+  +         'mem_tenant1_a': {
+  +             'memory_id': 'mem_tenant1_a',
+  +             'content': 'tenant one alpha',
+  +             'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+  +             'tags': {
+  +                 'alpha',
+  +                 't1',
+  +             },
+  +             'metadata': {
+  +                 'tenant_id': 't1',
+  +             },
+  +             'importance': 0.6,
+  +             'created_at': datetime.datetime(2026, 1, 1, 0, 0),
+  +             'last_accessed': datetime.datetime(2026, 1, 2, 0, 0),
+  +             'access_count': 2,
+  +         },
+        },
+        'index_by_type': {
+            <MemoryType.EPISODIC: 'episodic'>: {
+                'mem_old_1',
+  +             'mem_tenant1_a',
+            },
+            <MemoryType.PROCEDURAL: 'procedural'>: {
+                'mem_old_2',
+            },
+        },
+        'index_by_tag': {
+            'old': {
+                'mem_old_1',
+                'mem_old_2',
+            },
+  +         'alpha': {
+  +             'mem_tenant1_a',
+  +         },
+  +         't1': {
+  +             'mem_tenant1_a',
+  +         },
+        },
+        'stats': {
+  -         'total_memories': 2,
+  ?                           ^
+  +         'total_memories': 3,
+  ?                           ^
+            'by_type': {
+  -             'episodic': 1,
+  ?                         ^
+  +             'episodic': 2,
+  ?                         ^
+                'procedural': 1,
+            },
+            'top_tags': [
+                {
+                    'tag': 'old',
+                    'count': 2,
+                },
+  +             {
+  +                 'tag': 'alpha',
+  +                 'count': 1,
+  +             },
+  +             {
+  +                 'tag': 't1',
+  +                 'count': 1,
+  +             },
+            ],
+            'max_entries': 100,
+        },
+    }
+FAILED tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[invalid_timestamp] - AssertionError: variant invalid_timestamp: PARTIAL STATE CHANGE after failed load
+assert {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739751), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739754), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739764), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739765), 'access_count': 0}, 'mem_tenant1_a': {'memory_id': 'mem_tenant1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.6, 'created_at': datetime.datetime(2026, 1, 1, 0, 0), 'last_accessed': datetime.datetime(2026, 1, 2, 0, 0), 'access_count': 2}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}, 'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} == {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739751), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739754), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739764), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739765), 'access_count': 0}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}, 'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+  
+  Differing items:
+  {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}} != {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}}
+  {'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} != {'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+  {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}} != {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}}
+  {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...t1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, ...}}} != {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...y_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, ...}}}
+  
+  Full diff:
+    {
+        'records': {
+            'mem_old_1': {
+                'memory_id': 'mem_old_1',
+                'content': 'old one',
+                'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+                'tags': {
+                    'old',
+                },
+                'metadata': {
+                    'tenant_id': 't1',
+                },
+                'importance': 0.5,
+                'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739751),
+                'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739754),
+                'access_count': 0,
+            },
+            'mem_old_2': {
+                'memory_id': 'mem_old_2',
+                'content': 'old two',
+                'memory_type': <MemoryType.PROCEDURAL: 'procedural'>,
+                'tags': {
+                    'old',
+                },
+                'metadata': {
+                    'tenant_id': 't2',
+                },
+                'importance': 0.5,
+                'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 739764),
+                'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 739765),
+                'access_count': 0,
+            },
+  +         'mem_tenant1_a': {
+  +             'memory_id': 'mem_tenant1_a',
+  +             'content': 'tenant one alpha',
+  +             'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+  +             'tags': {
+  +                 'alpha',
+  +                 't1',
+  +             },
+  +             'metadata': {
+  +                 'tenant_id': 't1',
+  +             },
+  +             'importance': 0.6,
+  +             'created_at': datetime.datetime(2026, 1, 1, 0, 0),
+  +             'last_accessed': datetime.datetime(2026, 1, 2, 0, 0),
+  +             'access_count': 2,
+  +         },
+        },
+        'index_by_type': {
+            <MemoryType.EPISODIC: 'episodic'>: {
+                'mem_old_1',
+  +             'mem_tenant1_a',
+            },
+            <MemoryType.PROCEDURAL: 'procedural'>: {
+                'mem_old_2',
+            },
+        },
+        'index_by_tag': {
+            'old': {
+                'mem_old_1',
+                'mem_old_2',
+            },
+  +         'alpha': {
+  +             'mem_tenant1_a',
+  +         },
+  +         't1': {
+  +             'mem_tenant1_a',
+  +         },
+        },
+        'stats': {
+  -         'total_memories': 2,
+  ?                           ^
+  +         'total_memories': 3,
+  ?                           ^
+            'by_type': {
+  -             'episodic': 1,
+  ?                         ^
+  +             'episodic': 2,
+  ?                         ^
+                'procedural': 1,
+            },
+            'top_tags': [
+                {
+                    'tag': 'old',
+                    'count': 2,
+                },
+  +             {
+  +                 'tag': 'alpha',
+  +                 'count': 1,
+  +             },
+  +             {
+  +                 'tag': 't1',
+  +                 'count': 1,
+  +             },
+            ],
+            'max_entries': 100,
+        },
+    }
+FAILED tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[missing_field] - AssertionError: variant missing_field: load unexpectedly succeeded
+assert False
+FAILED tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_middle_record - AssertionError: assert {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806143), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806145), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806171), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806172), 'access_count': 0}, 'mem_tenant1_a': {'memory_id': 'mem_tenant1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.6, 'created_at': datetime.datetime(2026, 1, 1, 0, 0), 'last_accessed': datetime.datetime(2026, 1, 2, 0, 0), 'access_count': 2}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}, 'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} == {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806143), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806145), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806171), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806172), 'access_count': 0}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}, 'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+  
+  Differing items:
+  {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}} != {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}}
+  {'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} != {'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+  {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}} != {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}}
+  {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...t1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, ...}}} != {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...y_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, ...}}}
+  
+  Full diff:
+    {
+        'records': {
+            'mem_old_1': {
+                'memory_id': 'mem_old_1',
+                'content': 'old one',
+                'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+                'tags': {
+                    'old',
+                },
+                'metadata': {
+                    'tenant_id': 't1',
+                },
+                'importance': 0.5,
+                'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806143),
+                'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806145),
+                'access_count': 0,
+            },
+            'mem_old_2': {
+                'memory_id': 'mem_old_2',
+                'content': 'old two',
+                'memory_type': <MemoryType.PROCEDURAL: 'procedural'>,
+                'tags': {
+                    'old',
+                },
+                'metadata': {
+                    'tenant_id': 't2',
+                },
+                'importance': 0.5,
+                'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 806171),
+                'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 806172),
+                'access_count': 0,
+            },
+  +         'mem_tenant1_a': {
+  +             'memory_id': 'mem_tenant1_a',
+  +             'content': 'tenant one alpha',
+  +             'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+  +             'tags': {
+  +                 'alpha',
+  +                 't1',
+  +             },
+  +             'metadata': {
+  +                 'tenant_id': 't1',
+  +             },
+  +             'importance': 0.6,
+  +             'created_at': datetime.datetime(2026, 1, 1, 0, 0),
+  +             'last_accessed': datetime.datetime(2026, 1, 2, 0, 0),
+  +             'access_count': 2,
+  +         },
+        },
+        'index_by_type': {
+            <MemoryType.EPISODIC: 'episodic'>: {
+                'mem_old_1',
+  +             'mem_tenant1_a',
+            },
+            <MemoryType.PROCEDURAL: 'procedural'>: {
+                'mem_old_2',
+            },
+        },
+        'index_by_tag': {
+            'old': {
+                'mem_old_1',
+                'mem_old_2',
+            },
+  +         'alpha': {
+  +             'mem_tenant1_a',
+  +         },
+  +         't1': {
+  +             'mem_tenant1_a',
+  +         },
+        },
+        'stats': {
+  -         'total_memories': 2,
+  ?                           ^
+  +         'total_memories': 3,
+  ?                           ^
+            'by_type': {
+  -             'episodic': 1,
+  ?                         ^
+  +             'episodic': 2,
+  ?                         ^
+                'procedural': 1,
+            },
+            'top_tags': [
+                {
+                    'tag': 'old',
+                    'count': 2,
+                },
+  +             {
+  +                 'tag': 'alpha',
+  +                 'count': 1,
+  +             },
+  +             {
+  +                 'tag': 't1',
+  +                 'count': 1,
+  +             },
+            ],
+            'max_entries': 100,
+        },
+    }
+FAILED tests/test_r168_load_atomicity.py::test_store_level_load_reports_false_and_preserves_state - AssertionError: assert {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841501), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841504), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841512), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841513), 'access_count': 0}, 'mem_tenant1_a': {'memory_id': 'mem_tenant1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.6, 'created_at': datetime.datetime(2026, 1, 1, 0, 0), 'last_accessed': datetime.datetime(2026, 1, 2, 0, 0), 'access_count': 2}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}, 'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} == {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't1'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841501), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841504), 'access_count': 0}, 'mem_old_2': {'memory_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, 'metadata': {'tenant_id': 't2'}, 'importance': 0.5, 'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841512), 'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841513), 'access_count': 0}}, 'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}, 'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}, 'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+  
+  Differing items:
+  {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}, 'alpha': {'mem_tenant1_a'}, 't1': {'mem_tenant1_a'}}} != {'index_by_tag': {'old': {'mem_old_1', 'mem_old_2'}}}
+  {'stats': {'total_memories': 3, 'by_type': {'episodic': 2, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}, {'tag': 'alpha', 'count': 1}, {'tag': 't1', 'count': 1}], 'max_entries': 100}} != {'stats': {'total_memories': 2, 'by_type': {'episodic': 1, 'procedural': 1}, 'top_tags': [{'tag': 'old', 'count': 2}], 'max_entries': 100}}
+  {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1', 'mem_tenant1_a'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}} != {'index_by_type': {<MemoryType.EPISODIC: 'episodic'>: {'mem_old_1'}, <MemoryType.PROCEDURAL: 'procedural'>: {'mem_old_2'}}}
+  {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...t1_a', 'content': 'tenant one alpha', 'memory_type': <MemoryType.EPISODIC: 'episodic'>, 'tags': {'alpha', 't1'}, ...}}} != {'records': {'mem_old_1': {'memory_id': 'mem_old_1', 'content': 'old one', 'memory_type': <MemoryType.EPISODIC: 'episo...y_id': 'mem_old_2', 'content': 'old two', 'memory_type': <MemoryType.PROCEDURAL: 'procedural'>, 'tags': {'old'}, ...}}}
+  
+  Full diff:
+    {
+        'records': {
+            'mem_old_1': {
+                'memory_id': 'mem_old_1',
+                'content': 'old one',
+                'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+                'tags': {
+                    'old',
+                },
+                'metadata': {
+                    'tenant_id': 't1',
+                },
+                'importance': 0.5,
+                'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841501),
+                'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841504),
+                'access_count': 0,
+            },
+            'mem_old_2': {
+                'memory_id': 'mem_old_2',
+                'content': 'old two',
+                'memory_type': <MemoryType.PROCEDURAL: 'procedural'>,
+                'tags': {
+                    'old',
+                },
+                'metadata': {
+                    'tenant_id': 't2',
+                },
+                'importance': 0.5,
+                'created_at': datetime.datetime(2026, 10, 20, 0, 13, 58, 841512),
+                'last_accessed': datetime.datetime(2026, 10, 20, 0, 13, 58, 841513),
+                'access_count': 0,
+            },
+  +         'mem_tenant1_a': {
+  +             'memory_id': 'mem_tenant1_a',
+  +             'content': 'tenant one alpha',
+  +             'memory_type': <MemoryType.EPISODIC: 'episodic'>,
+  +             'tags': {
+  +                 'alpha',
+  +                 't1',
+  +             },
+  +             'metadata': {
+  +                 'tenant_id': 't1',
+  +             },
+  +             'importance': 0.6,
+  +             'created_at': datetime.datetime(2026, 1, 1, 0, 0),
+  +             'last_accessed': datetime.datetime(2026, 1, 2, 0, 0),
+  +             'access_count': 2,
+  +         },
+        },
+        'index_by_type': {
+            <MemoryType.EPISODIC: 'episodic'>: {
+                'mem_old_1',
+  +             'mem_tenant1_a',
+            },
+            <MemoryType.PROCEDURAL: 'procedural'>: {
+                'mem_old_2',
+            },
+        },
+        'index_by_tag': {
+            'old': {
+                'mem_old_1',
+                'mem_old_2',
+            },
+  +         'alpha': {
+  +             'mem_tenant1_a',
+  +         },
+  +         't1': {
+  +             'mem_tenant1_a',
+  +         },
+        },
+        'stats': {
+  -         'total_memories': 2,
+  ?                           ^
+  +         'total_memories': 3,
+  ?                           ^
+            'by_type': {
+  -             'episodic': 1,
+  ?                         ^
+  +             'episodic': 2,
+  ?                         ^
+                'procedural': 1,
+            },
+            'top_tags': [
+                {
+                    'tag': 'old',
+                    'count': 2,
+                },
+  +             {
+  +                 'tag': 'alpha',
+  +                 'count': 1,
+  +             },
+  +             {
+  +                 'tag': 't1',
+  +                 'count': 1,
+  +             },
+            ],
+            'max_entries': 100,
+        },
+    }
+========================= 7 failed, 3 passed in 0.36s ==========================

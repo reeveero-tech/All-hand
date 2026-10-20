@@ -450,8 +450,37 @@ class MemorySystem:
         with open(self._persistence_file, 'r', encoding='utf-8') as f:
             data = json.load(f)  # a corrupt file raises before any state is touched
         
-        for memory_id, entry_data in data.items():
-            entry_data['tags'] = set(entry_data.get('tags', []))
+        # R-168: two-phase load — EVERY record is parsed and validated into a
+        # candidate list BEFORE the live state is touched. Before this, the
+        # first valid record of a JSON-valid file was already inserted into
+        # ``_memories`` and both indexes when a LATER record turned out to be
+        # semantically invalid (bad memory_type, bad timestamp, missing field,
+        # bad tags), leaving partial state behind a failed load. The load
+        # must be all-or-nothing: a raise means the engine is exactly as it
+        # was. Loading over an existing state keeps the pre-fix merge semantics
+        # (no clear, no capacity enforcement — R-168 measures those, it does
+        # not change them here).
+        candidates: List[tuple] = []
+        for memory_id, raw_entry in data.items():
+            # work on a copy: the parsed payload is never mutated in place
+            entry_data = dict(raw_entry)
+            # R-168: the key must match the record's own memory_id — a
+            # mismatch cannot be produced by _persist_strict (it always writes
+            # {memory_id: to_dict()}), so such a file is corrupt and fails
+            # closed instead of silently re-keying the entry.
+            if entry_data.get("memory_id") != memory_id:
+                raise ValueError(
+                    f"persisted record key {memory_id!r} does not match "
+                    f"its memory_id {entry_data.get('memory_id')!r}"
+                )
+            # R-168: a string tags field is invalid — before, set() on a str
+            # silently turned it into a set of characters instead of failing.
+            if not isinstance(raw_entry.get('tags', []), (list, set, tuple)):
+                raise ValueError(
+                    f"persisted record {memory_id!r} has invalid tags "
+                    f"({type(raw_entry.get('tags')).__name__})"
+                )
+            entry_data['tags'] = set(entry_data['tags'])
             # R-103: restore types — before, memory_type stayed a str (the type
             # index then keyed by str, so type filters missed loaded entries) and
             # the datetimes stayed str (sorting by last_accessed.timestamp() raised).
@@ -463,6 +492,10 @@ class MemorySystem:
                 k: v for k, v in entry_data.items()
                 if k in MemoryEntry.__dataclass_fields__
             })
+            candidates.append((memory_id, entry))
+        
+        # Commit phase: only now may the live state change.
+        for memory_id, entry in candidates:
             self._memories[memory_id] = entry
             
             # Rebuild indexes

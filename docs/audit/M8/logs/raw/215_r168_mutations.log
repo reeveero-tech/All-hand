@@ -1,0 +1,12 @@
+# R-168 load-atomicity MUTATIONS — on the fixed tree; each mutation is isolated (reverted after each run).
+# A mutation is 'caught' when the suite fails; a passing suite means the guard is untested.
+=== MUTATION M1: key/memory_id match guard removed (if False) ===
+========================= 2 failed, 8 passed in 0.19s ==========================
+=== MUTATION M2: tags type guard removed (if False) ===
+========================= 1 failed, 9 passed in 0.18s ==========================
+=== MUTATION M3: type index rebuild dropped in commit phase ===
+========================= 1 failed, 9 passed in 0.17s ==========================
+=== MUTATION M4: commit moved back inside validation loop (pre-fix partial-state behavior) ===
+========================= 7 failed, 3 passed in 0.35s ==========================
+=== all mutations reverted; final verification ===
+============================== 10 passed in 0.13s ==============================
