@@ -70,7 +70,7 @@ async def seed(spec: dict, persist_path: str) -> None:
         )
         for _ in range(item.get("touches", 0)):
             await system.retrieve(item["memory_id"])
-    system._persist_strict()
+    await system._persist_strict()
 
 
 def main() -> int:
@@ -83,7 +83,7 @@ def main() -> int:
         return 0
     if cmd == "verify":
         system = MemorySystem(max_entries=100000, persistence_file=sys.argv[2])
-        loaded = system._load_strict()
+        loaded = asyncio.run(system._load_strict())
         print(json.dumps({"ok": True, "loaded": loaded, "state": canonical(system)},
                          ensure_ascii=False))
         return 0 if loaded else 2

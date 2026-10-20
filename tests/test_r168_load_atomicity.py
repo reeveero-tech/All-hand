@@ -136,7 +136,7 @@ def test_load_fails_atomically_bad_last_record(tmp_path, variant):
 
         raised = False
         try:
-            system._load_strict()
+            await system._load_strict()
         except Exception:
             raised = True
         assert raised, f"variant {variant}: load unexpectedly succeeded"
@@ -161,7 +161,7 @@ def test_load_fails_atomically_bad_first_record(tmp_path):
         before = _snapshot(system)
 
         with pytest.raises(Exception):
-            system._load_strict()
+            await system._load_strict()
         assert _snapshot(system) == before
 
     asyncio.run(scenario())
@@ -184,7 +184,7 @@ def test_load_fails_atomically_bad_middle_record(tmp_path):
         before = _snapshot(system)
 
         with pytest.raises(Exception):
-            system._load_strict()
+            await system._load_strict()
         assert _snapshot(system) == before
 
     asyncio.run(scenario())
@@ -203,7 +203,7 @@ def test_load_fails_atomically_corrupt_json(tmp_path):
         before = _snapshot(system)
 
         with pytest.raises(Exception):
-            system._load_strict()
+            await system._load_strict()
         assert _snapshot(system) == before
 
     asyncio.run(scenario())
@@ -231,7 +231,7 @@ def test_load_replace_existing_id_reindexes(tmp_path):
         }
         _write_file(path, {"X": replacement})
 
-        assert system._load_strict() is True
+        assert await system._load_strict() is True
         # the record itself was replaced
         assert system._memories["X"].memory_type == MemoryType.SEMANTIC
         assert system._memories["X"].tags == {"new"}
@@ -263,7 +263,7 @@ def test_load_success_rebuilds_state_and_indexes(tmp_path):
                            VALID_T2["memory_id"]: VALID_T2})
 
         system = MemorySystem(max_entries=100, persistence_file=path)
-        assert system._load_strict() is True
+        assert await system._load_strict() is True
         assert set(system._memories) == {VALID_T1["memory_id"],
                                          VALID_T2["memory_id"]}
         assert system._index_by_type[MemoryType.EPISODIC] == {"mem_tenant1_a"}

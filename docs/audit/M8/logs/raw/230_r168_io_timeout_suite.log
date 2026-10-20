@@ -1,0 +1,8 @@
+# R-168 full suite after D-093 (storage timeout) — 2026-10-20, Python 3.14.3 local (CI 3.11/3.12 is the authority)
+# command: python3 -m pytest -q
+tests/test_specialist_runtime.py ..........                              [ 96%]
+tests/test_specialists_package.py ....................................   [ 99%]
+tests/test_storage_payloads.py ......                                    [ 99%]
+tests/test_web_api_contract.py ..........                                [100%]
+
+========== 1710 passed, 7 skipped, 4 deselected in 245.07s (0:04:05) ===========

@@ -269,7 +269,7 @@ class FileBackedStore(MemorySystemStore):
 
     async def persist(self) -> bool:
         try:
-            self._system._persist_strict()
+            await self._system._persist_strict()
             return True
         except Exception as exc:  # noqa: BLE001 — logged, inspectable False
             logger.error("memory persist failed: %s", type(exc).__name__)
@@ -277,7 +277,7 @@ class FileBackedStore(MemorySystemStore):
 
     async def load(self) -> bool:
         try:
-            return self._system._load_strict()
+            return await self._system._load_strict()
         except Exception as exc:  # noqa: BLE001 — logged, inspectable False
             logger.error("memory load failed: %s", type(exc).__name__)
             return False

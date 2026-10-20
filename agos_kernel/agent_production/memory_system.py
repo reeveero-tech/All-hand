@@ -9,9 +9,11 @@ Features:
 - Experience retention
 """
 
+import asyncio
 import json
 import logging
 import os
+import threading
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -93,6 +95,7 @@ class MemorySystem:
         self,
         max_entries: int = 10000,
         persistence_file: Optional[str] = None,
+        io_timeout: Optional[float] = None,
     ):
         """
         Initialize memory system.
@@ -100,12 +103,25 @@ class MemorySystem:
         Args:
             max_entries: Maximum memory entries to store
             persistence_file: Optional file for persistence
+            io_timeout: Optional ceiling (seconds) for the storage-file I/O of
+                persist/load (D-093). None = no limit (the pre-D-093 behavior).
+                A timed-out operation raises asyncio.TimeoutError and is
+                counted as a failure; see _persist_strict/_load_strict.
         """
         self._memories: Dict[str, MemoryEntry] = {}
         self._index_by_type: Dict[MemoryType, Set[str]] = defaultdict(set)
         self._index_by_tag: Dict[str, Set[str]] = defaultdict(set)
         self._persistence_file = persistence_file
         self._max_entries = max_entries
+        self._io_timeout = io_timeout
+        # D-093: serializes persist operations (payload build + file write)
+        # so two persists cannot interleave writes to the same .tmp path.
+        self._persist_lock = asyncio.Lock()
+        # D-093: a threading lock INSIDE the write — a persist abandoned by
+        # timeout cannot have its (uncancellable) write thread interleave with
+        # a later persist's write on the same .tmp path; a later write simply
+        # waits for it (its own timeout applies to that wait too).
+        self._write_lock = threading.Lock()
         # R-168: safe operation metrics — counts and timings only, never
         # record content. Exposed via get_stats() so operators can see
         # persist/load health without touching user data.
@@ -416,83 +432,126 @@ class MemorySystem:
         contract (memory_store) calls the strict core and reports a bool.
         """
         try:
-            self._persist_strict()
+            await self._persist_strict()
         except Exception as e:
             # R-159: exception TYPE only — the text can echo stored contents
             logger.error("Failed to persist memory: %s", type(e).__name__)
 
-    def _persist_strict(self) -> None:
+    async def _persist_strict(self) -> None:
         """The persist core: writes or raises (R-167 — inspectable failure).
 
         R-168: the ONLY place persist health is counted — every caller
         (compat wrapper, contract adapter) goes through here.
+
+        D-093 (storage timeout): the payload build runs on the event loop (it
+        reads live engine state and must be serialized with other ops); only
+        the file I/O runs in a worker thread under ``io_timeout``. On timeout
+        the operation raises asyncio.TimeoutError and counts persist_fail —
+        FAIL-CLOSED: the last good snapshot survives (an in-flight atomic
+        write may still land afterwards — it is atomic and valid, never
+        partial). The .tmp path is protected by ``_write_lock`` so an
+        abandoned write can never interleave with a later one.
         """
         if not self._persistence_file:
             return
         try:
-            self._persist_strict_inner()
+            async with self._persist_lock:
+                data = self._build_snapshot_payload()
+                await asyncio.wait_for(
+                    asyncio.to_thread(self._write_snapshot_atomic, data),
+                    timeout=self._io_timeout,
+                )
             self._ops["persist_ok"] += 1
         except Exception:
             self._ops["persist_fail"] += 1
             raise
 
-    def _persist_strict_inner(self) -> None:
-        if not self._persistence_file:
-            return
-        
-        data = {
+    def _build_snapshot_payload(self) -> Dict[str, Dict[str, Any]]:
+        """The in-memory snapshot of the engine state (loop-serialized read)."""
+        return {
             memory_id: entry.to_dict()
             for memory_id, entry in self._memories.items()
         }
-        # R-103: atomic write — a crash mid-write no longer truncates the file
+
+    def _write_snapshot_atomic(self, data: Dict[str, Dict[str, Any]]) -> None:
+        """Write the payload to disk atomically (runs in a worker thread).
+
+        R-103: atomic write — a crash mid-write no longer truncates the file.
+        """
         tmp = f"{self._persistence_file}.tmp"
-        with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, default=str)
-        os.replace(tmp, self._persistence_file)
+        with self._write_lock:
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, default=str)
+            os.replace(tmp, self._persistence_file)
         logger.info(f"Memory persisted to {self._persistence_file}")
     
     async def load(self) -> None:
         """Load memory from disk (compat surface: errors are logged, not raised)."""
         try:
-            self._load_strict()
+            await self._load_strict()
         except Exception as e:
             # R-159: exception TYPE only
             logger.error("Failed to load memory: %s", type(e).__name__)
 
-    def _load_strict(self) -> bool:
+    async def _load_strict(self) -> bool:
         """The load core: True if a file was loaded, False if there is no file;
         RAISES on corruption BEFORE any state change (R-167 — no partial state).
 
         R-168: the ONLY place load health is counted — every caller (compat
         wrapper, contract adapter) goes through here. "No file" is a healthy
         empty state (load_empty), not a failure.
+
+        D-093 (storage timeout): only the file read+parse runs in a worker
+        thread under ``io_timeout``; validation runs on the loop; the commit
+        phase runs on the loop, synchronized with every other engine
+        operation. A timeout therefore fires BEFORE any state change — the
+        engine is exactly as it was (fail-closed, all-or-nothing).
         """
         try:
-            loaded = self._load_strict_inner()
+            loaded = await self._load_strict_inner()
             self._ops["load_ok" if loaded else "load_empty"] += 1
             return loaded
         except Exception:
             self._ops["load_fail"] += 1
             raise
 
-    def _load_strict_inner(self) -> bool:
+    async def _load_strict_inner(self) -> bool:
         if not self._persistence_file:
             return False
-        if not os.path.exists(self._persistence_file):
+        data = await asyncio.wait_for(
+            asyncio.to_thread(self._read_snapshot),
+            timeout=self._io_timeout,
+        )
+        if data is None:
             return False
+        candidates = self._validate_snapshot_candidates(data)
+        # Commit phase: only now may the live state change.
+        self._commit_snapshot_candidates(candidates)
+        return True
+
+    def _read_snapshot(self) -> Optional[Dict[str, Any]]:
+        """Read+parse the snapshot file (runs in a worker thread).
+
+        Returns None when there is no file (the healthy empty state). A
+        corrupt file raises here — before any state is touched.
+        """
+        if not os.path.exists(self._persistence_file):
+            return None
         with open(self._persistence_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)  # a corrupt file raises before any state is touched
-        
-        # R-168: two-phase load — EVERY record is parsed and validated into a
-        # candidate list BEFORE the live state is touched. Before this, the
-        # first valid record of a JSON-valid file was already inserted into
-        # ``_memories`` and both indexes when a LATER record turned out to be
-        # semantically invalid (bad memory_type, bad timestamp, missing field,
-        # bad tags), leaving partial state behind a failed load. The load
-        # must be all-or-nothing: a raise means the engine is exactly as it
-        # was. Loading over an existing state keeps the pre-fix merge semantics
-        # (no clear, no capacity enforcement — R-168 measures those, it does
-        # not change them here).
+            return json.load(f)
+
+    def _validate_snapshot_candidates(self, data: Dict[str, Any]) -> List[tuple]:
+        """Parse+validate EVERY record into a candidate list BEFORE the live
+        state is touched (R-168 two-phase load — pure function of the parsed
+        data; no engine state is read or written here).
+
+        Before this phase existed, the first valid record of a JSON-valid file
+        was already inserted into ``_memories`` and both indexes when a LATER
+        record turned out to be semantically invalid (bad memory_type, bad
+        timestamp, missing field, bad tags), leaving partial state behind a
+        failed load. The load must be all-or-nothing: a raise means the
+        engine is exactly as it was.
+        """
         candidates: List[tuple] = []
         for memory_id, raw_entry in data.items():
             # work on a copy: the parsed payload is never mutated in place
@@ -526,8 +585,16 @@ class MemorySystem:
                 if k in MemoryEntry.__dataclass_fields__
             })
             candidates.append((memory_id, entry))
-        
-        # Commit phase: only now may the live state change.
+        return candidates
+
+    def _commit_snapshot_candidates(self, candidates: List[tuple]) -> None:
+        """Commit phase: only now may the live state change (runs on the
+        event loop, serialized with every other engine operation — D-093).
+
+        Loading over an existing state keeps the pre-fix merge semantics (no
+        clear, no capacity enforcement — R-168 measures those, it does not
+        change them here).
+        """
         for memory_id, entry in candidates:
             # R-168 batch-3 fix: re-index on replace — loading an id that
             # already exists must REMOVE the old entry's type/tag index
@@ -547,7 +614,6 @@ class MemorySystem:
                 self._index_by_tag[tag].add(memory_id)
         
         logger.info(f"Memory loaded from {self._persistence_file}")
-        return True
     
     def get_stats(self) -> Dict[str, Any]:
         """Get memory statistics."""
