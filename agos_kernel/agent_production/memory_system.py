@@ -122,6 +122,7 @@ class MemorySystem:
         # a later persist's write on the same .tmp path; a later write simply
         # waits for it (its own timeout applies to that wait too).
         self._write_lock = threading.Lock()
+        self._persist_seq = 0  # D-094: monotonic persist sequence (stale-write guard)
         # R-168: safe operation metrics — counts and timings only, never
         # record content. Exposed via get_stats() so operators can see
         # persist/load health without touching user data.
@@ -447,18 +448,24 @@ class MemorySystem:
         reads live engine state and must be serialized with other ops); only
         the file I/O runs in a worker thread under ``io_timeout``. On timeout
         the operation raises asyncio.TimeoutError and counts persist_fail —
-        FAIL-CLOSED: the last good snapshot survives (an in-flight atomic
-        write may still land afterwards — it is atomic and valid, never
-        partial). The .tmp path is protected by ``_write_lock`` so an
-        abandoned write can never interleave with a later one.
+        FAIL-CLOSED: the last good snapshot survives.
+
+        D-094 (stale-write guard): every persist takes a monotonic sequence
+        number BEFORE its I/O starts; the write applies only if that number
+        is still the latest. A timed-out (abandoned) write thread that later
+        wins the write lock therefore CANNOT overwrite the result of a newer
+        persist that succeeded after it — it abandons instead. The lock alone
+        only excludes writers; the sequence number orders snapshots.
         """
         if not self._persistence_file:
             return
         try:
             async with self._persist_lock:
                 data = self._build_snapshot_payload()
+                self._persist_seq += 1
+                seq = self._persist_seq
                 await asyncio.wait_for(
-                    asyncio.to_thread(self._write_snapshot_atomic, data),
+                    asyncio.to_thread(self._write_snapshot_atomic, data, seq),
                     timeout=self._io_timeout,
                 )
             self._ops["persist_ok"] += 1
@@ -473,13 +480,23 @@ class MemorySystem:
             for memory_id, entry in self._memories.items()
         }
 
-    def _write_snapshot_atomic(self, data: Dict[str, Dict[str, Any]]) -> None:
+    def _write_snapshot_atomic(self, data: Dict[str, Dict[str, Any]], seq: int) -> None:
         """Write the payload to disk atomically (runs in a worker thread).
 
         R-103: atomic write — a crash mid-write no longer truncates the file.
+        D-094: ``seq`` is the persist's sequence number. The staleness check
+        runs INSIDE the write lock: while this thread holds the lock no newer
+        write can run, so if the latest issued persist is not this one the
+        snapshot is superseded and the write is abandoned (a newer persist's
+        write always follows this thread's release of the lock).
         """
         tmp = f"{self._persistence_file}.tmp"
         with self._write_lock:
+            if seq != self._persist_seq:
+                # Superseded by a newer persist (e.g. ours timed out and a
+                # newer one succeeded): writing would regress the file.
+                logger.info("Abandoned stale memory snapshot write (seq=%s)", seq)
+                return
             with open(tmp, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, default=str)
             os.replace(tmp, self._persistence_file)

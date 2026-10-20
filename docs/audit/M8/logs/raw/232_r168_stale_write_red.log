@@ -1,0 +1,15 @@
+# 2026-10-20 — R-168 (D-094): عيب رابع — كتابة متقادمة تمحو حفظاً أحدث — أحمر قبل الإصلاح
+
+السيناريو (حتمي بلا sleep على المسار الحرج): P1 يلتقط الحالة القديمة {A} ثم يتوقف خيط كتابته قبل قفل الكتابة؛ تنتهي مهلته (TimeoutError للمستدعي)؛ P2 يلتقط {A,B} ويكتب بنجاح؛ ثم يُطلق خيط P1 ويكتمل.
+
+الاختبار: tests/test_r168_io_timeout.py::test_timed_out_persist_cannot_overwrite_later_successful_persist
+
+$ python3 -m pytest tests/test_r168_io_timeout.py::test_timed_out_persist_cannot_overwrite_later_successful_persist -q
+E   AssertionError: assert {'A'} == {'A', 'B'}
+E     Extra items in the right set:
+E     'B'
+=========================== short test summary info ============================
+FAILED tests/test_r168_io_timeout.py::test_timed_out_persist_cannot_overwrite_later_successful_persist
+============================== 1 failed in 0.19s ===============================
+
+التفسير: قفل الكتابة (_write_lock) يستبعد الكتاب المتزامنين فقط ولا يرتب اللقطات — خيط P1 المهجور بعد المهلة يكتسب القفل لاحقاً ويمرر حمولته القديمة فوق نتيجة P2. JSON يبقى صالحاً لكن الحالة ترتد (تقادم بلا ترتيب).

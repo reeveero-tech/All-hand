@@ -65,7 +65,7 @@ async def test_persist_timeout_raises_and_keeps_last_snapshot(tmp_path):
 
     await system.store(content="second", memory_type=MemoryType.SEMANTIC, memory_id="m2")
 
-    def slow_write(data):
+    def slow_write(data, seq=None):  # seq: D-094 seam signature
         time.sleep(0.5)  # simulates hung/slow storage I/O
 
     system._write_snapshot_atomic = slow_write  # noqa: SLF001 — test seam
@@ -143,3 +143,76 @@ async def test_concurrent_persists_are_serialized(tmp_path):
     # The file is valid JSON and holds the full engine state.
     assert _ids_in_file(_path(tmp_path)) == {"a", "b"}
     assert system._ops["persist_ok"] == 2  # noqa: SLF001
+
+
+async def test_timed_out_persist_cannot_overwrite_later_successful_persist(tmp_path):
+    """D-094 (stale-write guard): an abandoned, timed-out persist must never
+    erase the result of a NEWER persist that succeeded after it.
+
+    Scenario (deterministic, no sleeps on the critical path):
+    1. P1 captures the old state, then its write thread parks BEFORE the
+       write lock; P1's io_timeout expires (caller sees TimeoutError).
+    2. P2 captures the newer state and writes it successfully.
+    3. P1's parked thread is released and runs to completion.
+
+    The file must hold P2's (newer) snapshot afterwards — P1's abandoned
+    write may not regress it. A threading.Lock alone only excludes writers;
+    it does not order snapshots.
+    """
+    import threading
+
+    system = await _make_system(tmp_path, io_timeout=0.05)
+    await system.store(content="A", memory_type=MemoryType.EPISODIC, memory_id="A")
+    await system.persist()
+    assert _ids_in_file(_path(tmp_path)) == {"A"}
+
+    real_write = system._write_snapshot_atomic  # noqa: SLF001 — test seam
+    parked = threading.Event()  # set once P1's thread is inside the seam
+    release = threading.Event()  # the test releases the parked thread
+    finished = threading.Event()  # set when the parked call fully returns
+    state = {"first": True}
+
+    def _invoke_real(data, seq):
+        # Works both pre-fix (signature: (data)) and post-fix ((data, seq)).
+        if seq is None:
+            return real_write(data)
+        return real_write(data, seq)
+
+    def stalling_write(data, seq=None):
+        if state["first"]:
+            state["first"] = False
+            parked.set()
+            assert release.wait(10.0), "test never released the parked write"
+            try:
+                return _invoke_real(data, seq)
+            finally:
+                finished.set()
+        return _invoke_real(data, seq)
+
+    system._write_snapshot_atomic = stalling_write  # noqa: SLF001 — test seam
+
+    # P1: captures {A} only, then parks before the lock; its timeout fires.
+    p1 = asyncio.create_task(system._persist_strict())
+    await asyncio.to_thread(parked.wait, 10.0)
+    with pytest.raises(asyncio.TimeoutError):
+        await p1
+    assert system._ops["persist_fail"] == 1  # noqa: SLF001
+
+    # P2: newer state {A, B}; the seam no longer stalls; it succeeds.
+    await system.store(content="B", memory_type=MemoryType.SEMANTIC, memory_id="B")
+    await system._persist_strict()
+    assert system._ops["persist_ok"] == 2  # noqa: SLF001 — initial + P2
+    assert _ids_in_file(_path(tmp_path)) == {"A", "B"}
+
+    # Release P1's parked thread and let it run to completion.
+    release.set()
+    assert await asyncio.to_thread(finished.wait, 10.0)
+    await asyncio.sleep(0)  # let any to_thread bookkeeping settle
+
+    # THE GUARANTEE: the newer successful snapshot survives P1's abandoned write.
+    assert _ids_in_file(_path(tmp_path)) == {"A", "B"}
+
+    # And a fresh engine restores the newer state, not the stale one.
+    fresh = MemorySystem(persistence_file=_path(tmp_path), io_timeout=5.0)
+    assert await fresh._load_strict() is True  # noqa: SLF001
+    assert set(fresh._memories.keys()) == {"A", "B"}  # noqa: SLF001
