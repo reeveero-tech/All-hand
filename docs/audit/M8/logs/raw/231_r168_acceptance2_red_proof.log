@@ -1,0 +1,44 @@
+# 2026-10-20 — R-168 القبول الثاني (بعد الدفعة الرابعة D-093): إعادة إثبات أحمر للعيب الثالث + أخضر على SHA الدمج + CI على SHA الدمج
+
+أدلة الحالة: pr=#209 | tested_sha=cbc95481ab889ed356bc8cbfcc96c66552660bbd | merge_sha=125f3ca1458f0043a9c88debf3f1d37f542c5a35 | ci_run=39365244423 | ci_conclusion=success | tests=1710 passed, 7 skipped, 4 deselected
+
+تشغيل CI: https://github.com/reeveero-tech/All-hand/actions/runs/39365244423 (على SHA الدمج 125f3ca نفسه)
+
+الأمر الأول أعيد تبعاً لمتطلب المراجعة المستقلة: أثبت أن D-090 ينفّذ (اختبار العيب الثالث من سجل 224 يجب أن يفشل على الشيفرة قبل إصلاح D-090، وينجح بعده).
+
+الطريقة: شجرة عمل git على أصل D-090 (ed43866 — الشجرة التي خُصم منها العيب أصلاً ووثّق الأحمر 7/10 عندها [213])، مع ملف اختبار السجل 224 الحالي، ثم نفس الاختبار على SHA الدمج الحالي 125f3ca.
+
+=== أحمر (على ed43866 — شيفرة ما قبل D-090/D-092/D-093، مع ملف اختبار الحالي) ===
+$ git worktree add /tmp/redproof ed43866 && cp tests/test_r168_durability.py <worktree>/tests/
+$ python3 -m pytest tests/test_r168_durability.py::test_restart_missing_file -q
+=========================== short test summary info ============================
+FAILED tests/test_r168_durability.py::test_restart_missing_file - TypeError: ...
+============================== 1 failed in 0.22s ===============================
+
+فشل بالنوع TypeError (السطح `_load_strict` غير موجود في الشيفرة القديمة — نفس علامة فشل الأحمر الأصلي [213]/[228]) — الاختبار يعتمد آلياً على إصلاحات D-090+ ولا يمر على الشيفرة القديمة، أي أنه اختبار انحدار حقيقي للعيب الثالث.
+
+=== أخضر (على SHA الدمج 125f3ca = دمج PR #209) ===
+$ git checkout 125f3ca
+$ python3 -m pytest tests/test_r168_durability.py::test_restart_missing_file -q
+============================== 1 passed in 0.11s ===============================
+
+=== الحزمة الكاملة محلياً على SHA الدمج 125f3ca (Python 3.14.3، بيئة 2 CPU) ===
+$ python3 -m pytest tests/ --no-header -q
+========== 1710 passed, 7 skipped, 4 deselected in 243.55s (0:04:03) ===========
+1710 = 1705 (حزمة القبول الأول #207) + 5 (اختبارات مهلة D-093 الجديدة)
+
+=== ruff ===
+$ ruff check --select F,E722 tests/ agos_kernel/
+All checks passed!
+
+=== CI GitHub Actions على SHA الدمج 125f3ca1458f0043a9c88debf3f1d37f542c5a35 (التحقق من check-runs عبر API بعد اكتمالها) ===
+publish -> completed skipped
+storage -> completed success
+build -> completed success
+audit -> completed success
+docker -> completed success
+network -> completed success
+test -> completed success
+quality -> completed success
+
+كل الفحوصات ناجحة؛ publish متخطى بحكم D-011 (متوقع، ولا يُحتسب نشراً ناجحاً). حُققت نفس الفحوصات على SHA دمج PR #208 (0fb8955) قبله (نفس النمط: كلها نجاح وpublish متخطى).
