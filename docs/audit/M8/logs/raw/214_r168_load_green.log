@@ -1,0 +1,36 @@
+# R-168 load-atomicity GREEN run — fixed tree (Python 3.14.3)
+# command: python -m pytest tests/test_r168_load_atomicity.py -v
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/allhand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 10 items
+
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[bad_tags] PASSED [ 10%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[id_key_mismatch] PASSED [ 20%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[invalid_memory_type] PASSED [ 30%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[invalid_timestamp] PASSED [ 40%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_last_record[missing_field] PASSED [ 50%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_first_record PASSED [ 60%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_bad_middle_record PASSED [ 70%]
+tests/test_r168_load_atomicity.py::test_load_fails_atomically_corrupt_json PASSED [ 80%]
+tests/test_r168_load_atomicity.py::test_load_success_rebuilds_state_and_indexes PASSED [ 90%]
+tests/test_r168_load_atomicity.py::test_store_level_load_reports_false_and_preserves_state PASSED [100%]
+
+============================== 10 passed in 0.34s ==============================
+
+# old related suite must stay green:
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/allhand
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 35 items
+
+tests/test_r167_memory_contract.py ...................................   [100%]
+
+============================== 35 passed in 0.17s ==============================
