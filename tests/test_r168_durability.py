@@ -200,7 +200,6 @@ def test_persist_os_replace_failure_keeps_snapshot(tmp_path):
     snapshot must remain intact. The .tmp may remain after this failure —
     the documented recovery is: the next successful persist rewrites and
     cleans it, and load never reads it."""
-    import agos_kernel.agent_production.memory_system as ms_mod
 
     path = str(tmp_path / "mem.json")
 
