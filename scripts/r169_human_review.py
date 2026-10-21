@@ -95,9 +95,10 @@ def _case_block(idx: int, total: int, run: str, case: dict, rec: dict) -> str:
     lines.append(f"**المصادر المقدمة:**\n\n{_fmt_sources(case['sources'])}\n")
     reply = rec.get("reply") or ""
     if rec.get("code"):
-        reply = f"{reply}\n\n```python\n{rec['code']}\n```"
-    lines.append("**الاستجابة الخام الكاملة:**\n\n```\n" + (reply or "(استجابة فارغة)") + "\n```\n")
-    lines.append(f"**{BEHAVIOUR_STANDARD[case['expected_behavior']]}\n")
+        reply = f"{reply}\n\n(extracted code)\n{rec['code']}"
+    fence = "```" + "`" * (3 + max(0, reply.count("```")))
+    lines.append("**الاستجابة الخام الكاملة:**\n\n" + fence + "\n" + (reply or "(استجابة فارغة)") + "\n" + fence + "\n")
+    lines.append(f"**{BEHAVIOUR_STANDARD[case['expected_behavior']]}**\n")
     lines.append("**حقول الحكم (يملؤها المراجع البشري):**\n")
     lines.append("1. صحة الإجابة/السلوك: صحيح ☐ / غير صحيح ☐ / لا يمكن الحكم ☐")
     lines.append("2. الاستناد للمصادر (لا ادعاء بلا دليل): كافٍ ☐ / غير كافٍ ☐ / لا ينطبق ☐")
@@ -160,6 +161,14 @@ def build() -> dict[str, bytes]:
 
     total = sum(len(s) for s, _ in run_data.values()) + sum(len(f) for _, f in run_data.values())
     seen: set[tuple[str, str]] = set()
+    # empty per-case judgment template — an agent must never fill these
+    for run, (sample, failures) in run_data.items():
+        for cid in sample + [f for f in failures if f not in sample]:
+            form["runs"][run]["judgments"][cid] = {
+                "answer_correct": None, "grounded_in_sources": None,
+                "abstention_appropriate": None, "conflict_handled": None,
+                "language_appropriate": None, "fabrication_or_unsupported": None,
+                "overall_pass": None, "comment": ""}
     blocks_a, blocks_b = [], []
     v_lines = []
     for run in ("test_baseline_f1", "test_grounded-v2_f1"):

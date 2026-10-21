@@ -44,7 +44,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-OUT_DIR = ROOT / "docs" / "audit" / "M8" / "logs" / "raw" / "r169"
+OUT_DIR = ROOT / "docs" / "audit" / "M8" / "logs" / "raw" / "r169" / "v2"
 FREEZE = ROOT / "benchmarks" / "r169" / "v2" / "FREEZE.json"
 SCORER = ROOT / "agent_civilization" / "eval" / "r169_bench_v2.py"
 MAX_TOKENS_TEXT = 1024   # data_worker.process_text default (LLMClient.complete)
@@ -121,7 +121,7 @@ async def _one(case: dict, config: str) -> dict:
             # honest provenance limit (v1 review finding 8): _code_generator does
             # not return the served model or the raw completion; we record the
             # placeholder rather than inferring the model from the shared client.
-            rec["model"] = "keyless (not returned by _code_generator; same shared client)"
+            rec["model"] = "unknown (dropped by _code_generator; the provider may have returned one)"
             rec["error"] = None if out.get("ok") else out.get("error")
         else:
             msgs = b.grounded_v2_messages(case)
@@ -214,6 +214,12 @@ async def run(config: str, split: str, final: bool, tag: str) -> Path:
                         break
                     retried.append(str(rec["error"])[:200])
                     await asyncio.sleep(backoff)
+                    # v2: the FULL attempt history is preserved (v1 replaced
+                    # earlier attempts); nothing is silently overwritten.
+                    rec.setdefault("attempt_history", []).append({
+                        "error": str(rec.get("error") or "")[:200],
+                        "reply": (rec.get("reply") or "")[:500],
+                        "model": rec.get("model")})
                     rec = await _one(case, config)
                 if retried:
                     rec["retried_after_errors"] = retried   # kept in the raw record (auditable)

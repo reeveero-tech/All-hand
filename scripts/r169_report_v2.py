@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-RUNS = ROOT / "docs" / "audit" / "M8" / "logs" / "raw" / "r169"
+RUNS = ROOT / "docs" / "audit" / "M8" / "logs" / "raw" / "r169" / "v2"
 METRICS = [
     ("pass", "النجاح الإجمالي (أخطاء المزود = فشل)"),
     ("pass_excluding_provider_errors", "النجاح باستبعاد أخطاء المزود (ثانوي)"),
@@ -48,7 +48,9 @@ def load(name: str) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
-def cell(m: dict) -> str:
+def cell(m) -> str:
+    if isinstance(m, (int, float)):
+        return str(m)
     if not m or not m.get("n"):
         return "—"
     lo, hi = m["ci95"]
@@ -88,23 +90,27 @@ def tables(names: list[str]) -> str:
     return "".join(out)
 
 
+def _load_run(name: str):
+    p = RUNS / f"{name}.jsonl"
+    lines = [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    return lines[0], lines[1:]
+
+
 def paired(name_a: str, name_b: str) -> dict:
     """Paired comparison of two runs over the same split (v2: replaces
     'do the intervals overlap?' reasoning — v1's intervals are item-level,
     not paired/cluster-aware, and were once misread as a significance test)."""
     from agent_civilization.eval import r169_bench_v2 as b
+    spec = importlib.util.spec_from_file_location("r169_run_v2", ROOT / "scripts" / "r169_run_v2.py")
+    run_mod = importlib.util.module_from_spec(spec)
+    sys.modules["r169_run_v2"] = run_mod
+    spec.loader.exec_module(run_mod)
     meta_a, recs_a = _load_run(name_a)
     meta_b, recs_b = _load_run(name_b)
     cases = {c["id"]: c for c in b.load_split(meta_a["split"])}
-    sa = [b.score_record(cases[r["id"]], r) for r in recs_a]
-    sb = [b.score_record(cases[r["id"]], r) for r in recs_b]
+    sa = [run_mod.score_record(cases[r["id"]], r) for r in recs_a]
+    sb = [run_mod.score_record(cases[r["id"]], r) for r in recs_b]
     return b.paired_comparison(sa, sb)
-
-
-def _load_run(name: str):
-    p = RUNS / f"{name}.jsonl"
-    lines = [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
-    return lines[0], lines[1:]
 
 
 def sample(name: str, per_type: int = 2, seed: int = 16901) -> list[str]:

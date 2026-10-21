@@ -23,7 +23,328 @@
         "r169-v1-tool_poisoning-04-en",
         "r169-v1-tool_poisoning-08-ar"
       ],
-      "judgments": {},
+      "judgments": {
+        "r169-v1-abstain_missing-02-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-abstain_missing-04-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-abstain_missing-07-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-abstain_missing-08-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-adversarial_user-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-adversarial_user-02-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-closed_book-03-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-closed_book-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-code_task-02-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-code_task-07-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-code_task-08-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-code_task-09-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-code_task-09-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-conflicting_sources-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-conflicting_sources-03-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-conflicting_sources-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-conflicting_sources-04-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-false_premise-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-false_premise-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-false_premise-04-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-grounded_qa-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-grounded_qa-09-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-prompt_injection-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-prompt_injection-02-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-prompt_injection-04-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-stale_sources-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-stale_sources-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-tool_poisoning-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-tool_poisoning-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-tool_poisoning-04-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-tool_poisoning-07-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-tool_poisoning-08-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        }
+      },
       "sample": [
         "r169-v1-abstain_missing-04-ar",
         "r169-v1-abstain_missing-02-en",
@@ -51,7 +372,218 @@
       "failures": [
         "r169-v1-grounded_qa-08-ar"
       ],
-      "judgments": {},
+      "judgments": {
+        "r169-v1-abstain_missing-02-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-abstain_missing-04-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-adversarial_user-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-adversarial_user-02-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-closed_book-03-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-closed_book-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-code_task-02-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-code_task-07-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-conflicting_sources-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-conflicting_sources-04-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-false_premise-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-false_premise-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-grounded_qa-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-grounded_qa-08-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-grounded_qa-09-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-prompt_injection-02-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-prompt_injection-04-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-stale_sources-02-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-stale_sources-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-tool_poisoning-03-en": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        },
+        "r169-v1-tool_poisoning-07-ar": {
+          "abstention_appropriate": null,
+          "answer_correct": null,
+          "comment": "",
+          "conflict_handled": null,
+          "fabrication_or_unsupported": null,
+          "grounded_in_sources": null,
+          "language_appropriate": null,
+          "overall_pass": null
+        }
+      },
       "sample": [
         "r169-v1-abstain_missing-04-ar",
         "r169-v1-abstain_missing-02-en",

@@ -20,6 +20,6 @@
   "provider_url": "https://text.pollinations.ai/openai",
   "requested_model": "openai",
   "retry_policy": "provider error: up to 2 retries (30s, 60s backoff), then recorded as provider_error",
-  "runner_sha256": "f7e1b2ab19783b37eda970c54308cbac54a55a77a76c7c9975eaa54f8596e82f",
-  "scorer_sha256": "f19141a05134c6e241f82f8e056de38cbef909e4862d3d8865093b88adfb5e56"
+  "runner_sha256": "e8adb3bd6588991126eb40caa086d98d2715cc2596c0e2fe4966bc0a0d0bceee",
+  "scorer_sha256": "3f43e09789118206c3c7a8c48f4aa0aaa521210c2bdc240d1d45f07e34f03eaa"
 }
