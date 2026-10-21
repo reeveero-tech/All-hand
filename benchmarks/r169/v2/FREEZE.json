@@ -21,5 +21,5 @@
   "requested_model": "openai",
   "retry_policy": "provider error: up to 2 retries (30s, 60s backoff), then recorded as provider_error",
   "runner_sha256": "39833f3578a54b058b67d8d7501faeac3c3448908ab1868240e2b9f4ad511ef8",
-  "scorer_sha256": "0780ae26d41bc48321160e288bd3305266c78be4f2944078d06d6b01f5d7644d"
+  "scorer_sha256": "101110105d858e288f62478ac6db5bbc01640f212b75b48bcccadc2da3bc6ceb"
 }

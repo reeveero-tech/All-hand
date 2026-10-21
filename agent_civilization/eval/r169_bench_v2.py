@@ -861,7 +861,6 @@ def cluster_bootstrap_diff(pass_a: Dict[str, bool], pass_b: Dict[str, bool],
     diffs.sort()
     lo = diffs[int(0.025 * len(diffs))]
     hi = diffs[int(0.975 * len(diffs)) - 1]
-    point = sum(1 for i in pass_a if pass_b[i]) / len(pass_a) if pass_a else None
     return {"seed": seed, "reps": reps, "ci95_diff": [round(lo, 3), round(hi, 3)],
             "note": "cluster (group-level) bootstrap; descriptive only"}
 

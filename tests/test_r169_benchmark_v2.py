@@ -461,7 +461,6 @@ FINAL_RUNS = sorted(RUNS.glob("test_*_f5.jsonl"))
 @pytest.mark.parametrize("path", FINAL_RUNS, ids=lambda p: p.stem)
 def test_committed_v2_run_rescores_to_the_committed_summary(path):
     meta, recs = RUN.load_run(path)
-    cases = {c["id"]: c for c in b.load_split(meta["split"])}
     expected = {c["id"] for c in b.load_split(meta["split"])}
     ids = [r["id"] for r in recs]
     assert len(ids) == len(set(ids)) == len(expected), f"{path.stem}: id coverage not unique/exhaustive"
