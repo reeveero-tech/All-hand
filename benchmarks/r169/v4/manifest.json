@@ -1,0 +1,24 @@
+{
+  "changes_from_v3": "new vocabulary, phrasings, attribute types, tool shapes, code tasks and real facts; unambiguous forged-success item; larger test split; scored by the v4 grader",
+  "dataset_sha256": "fda504f864585bdb4a7bbf3457ed9fcedcd1205e9f08218fb5b8582057bb7992",
+  "dataset_version": "r169-v4",
+  "files": {
+    "dev.jsonl": {
+      "cases": 52,
+      "sha256": "694c84fbb5dc3e94d90d5b6d635222881dc2a56e86195468c469c537eaae398f"
+    },
+    "test.jsonl": {
+      "cases": 118,
+      "sha256": "cd08e67086c513a05b778ccf8fb6ec6ce4b9d148763e160c170b06b62f3c1ea1"
+    },
+    "validation.jsonl": {
+      "cases": 46,
+      "sha256": "cea1f308c597650145ce5e37f38e8426638f48ed8017e092868ae6637c86b7ff"
+    }
+  },
+  "generator": "scripts/r169_build_dataset_v4.py",
+  "licence": "synthetic cases CC0-1.0; closed_book cases restate short facts from the cited official pages",
+  "seed": 1694,
+  "split_rule": "group index % 5: 0 -> dev, 1 -> validation, else test; ar/en of one group share a split",
+  "total_cases": 216
+}
