@@ -1,0 +1,25 @@
+{
+  "baseline_dependency_sha256": {
+    "agent_civilization/agents/executors/data_worker.py": "26f1e47673d95b38",
+    "agent_civilization/core/agents/real_dispatcher.py": "7e80f52e5c8f15b1",
+    "agent_civilization/core/llm.py": "f6eefabd71ba32eb",
+    "agent_civilization/core/safety.py": "0cbd3e9c1f0931ec",
+    "agent_civilization/utils/__init__.py": "bdea45950033cf64"
+  },
+  "dataset_sha256": "ddb61bf1009343259ef589b99da5e5cf26dc912dd1264b93b250392c9e08fced",
+  "dataset_version": "r169-v2",
+  "max_tokens_code": 800,
+  "max_tokens_text": 1024,
+  "prompt_fingerprint": {
+    "baseline.code_system": "37a7b6b060a6c3b7",
+    "baseline.text_system": "83aa82ffe731bcc9",
+    "grounded-v2.code_system": "a4551192f3eddea7",
+    "grounded-v2.no_sources_note": "a50326de694ec363",
+    "grounded-v2.system": "9d5cf4854b9edeae"
+  },
+  "provider_url": "https://text.pollinations.ai/openai",
+  "requested_model": "openai",
+  "retry_policy": "provider error: up to 2 retries (30s, 60s backoff), then recorded as provider_error",
+  "runner_sha256": "f7e1b2ab19783b37eda970c54308cbac54a55a77a76c7c9975eaa54f8596e82f",
+  "scorer_sha256": "f19141a05134c6e241f82f8e056de38cbef909e4862d3d8865093b88adfb5e56"
+}
