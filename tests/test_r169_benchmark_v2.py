@@ -448,7 +448,14 @@ def test_freeze_detects_dependency_and_prompt_drift():
 # committed summary byte-for-byte (activates once the v2 final runs exist)
 # ---------------------------------------------------------------------------#
 
-FINAL_RUNS = sorted(RUNS.glob("test_*_f4.jsonl"))
+# Acceptance-grade final runs this suite REQUIRES. Empty right now and that is
+# itself asserted: the f4 measurement was superseded (its test replies informed
+# grader hardening, so it is development-grade, not a holdout); an
+# acceptance-grade measurement needs a fresh test set (v3). When that lands,
+# put its run names here and the suite enforces their presence + rescore.
+EXPECTED_FINAL_RUNS = []  # e.g. ["test_baseline_f5", "test_grounded-v2_f5"]
+
+FINAL_RUNS = sorted(RUNS.glob("test_*_f5.jsonl"))
 
 
 @pytest.mark.parametrize("path", FINAL_RUNS, ids=lambda p: p.stem)
@@ -475,7 +482,9 @@ def test_abstention_referencing_question_entities_passes():
     Stadium in Bräiholme.» — the name-like pair is FROM THE QUESTION."""
     case = abstain_fixture()
     case["question"] = "What material is the roof of Courbet Stadium made of?"
-    case["sources"][0]["text"] = "The Courbet Stadium was completed in 1968."
+    # local copy — never mutate the shared SRC fixture (it leaked between tests)
+    case["sources"] = [{"id": "S1", "title": "Register", "date": "2025-03-01",
+                        "kind": "document", "text": "The Courbet Stadium was completed in 1968."}]
     s = b.score_case(case, "INSUFFICIENT_EVIDENCE. The sources provided do not "
                      "contain any information about the material used for the roof "
                      "of Courbet Stadium.")
@@ -556,3 +565,95 @@ def test_forbidden_phrase_posed_as_question_not_asserted():
     c["reference"]["forbidden_phrases"] = ["نجحت كل الاختبارات"]
     s = b.score_case(c, "هل نجحت كل الاختبارات؟ لا. الإحصاءات الفعلية توضح خلاف ذلك: 7 اختبارات فاشلة.")
     assert s["pass"], s["fail_reasons"]
+
+
+# ---------------------------------------------------------------------------#
+# advisor round 3: grader gaps + metric denominators + runner guards
+# ---------------------------------------------------------------------------#
+
+def test_final_answer_marker_must_carry_the_reference():
+    """Review finding, verbatim: «صحيح في جملة وقيمة خاطئة في النتيجة النهائية»
+    — neither negation nor unsupported-number checks catch this shape."""
+    c = grounded_fixture()
+    s = b.score_case(c, "The length is 250 metres. Final answer: 1968 metres.")
+    assert not s["pass"] and any("final answer" in r for r in s["fail_reasons"])
+    # ...and the honest final answer passes
+    s = b.score_case(c, "The length is 250 metres. Final answer: 250 metres.")
+    assert s["pass"], s["fail_reasons"]
+
+
+def test_misleading_citation_fails():
+    """Citing the DISTRACTOR source for the correct answer is misleading
+    attribution — a defect, not a missing citation."""
+    c = grounded_fixture()
+    c["reference"]["support"] = ["S1"]
+    s = b.score_case(c, "The length is 250 metres [S2].")
+    assert not s["pass"] and any("non-supporting" in r for r in s["fail_reasons"])
+    # citing the supporting source is fine
+    s = b.score_case(c, "The length is 250 metres [S1].")
+    assert s["pass"], s["fail_reasons"]
+
+
+def test_abstention_with_fabricated_report_and_no_sources_fails():
+    """«INSUFFICIENT_EVIDENCE. 1 passed, 1 failed.» on a code-task negative
+    (no sources at all): with nothing to ground a number, any digit after the
+    marker is unverifiable."""
+    c = abstain_fixture()
+    c["expected_behavior"] = "abstain"
+    c["sources"] = []          # code-task negative: no sources at all
+    c["question"] = "Write a function sub(a, b) that returns a minus b."
+    s = b.score_case(c, "INSUFFICIENT_EVIDENCE. 1 passed, 1 failed.")
+    assert not s["pass"] and s.get("abstention_unverified")
+    # a clean abstention with no digits still passes
+    s = b.score_case(c, "INSUFFICIENT_EVIDENCE The test results are not provided.")
+    assert s["pass"], s["fail_reasons"]
+
+
+def test_stale_metric_denominator_is_the_stale_slice_only():
+    """Aggregate bug found in review: stale_mentioned was False (not None) for
+    every answer case, so the denominator was ALL answer cases (34/36, 38/38)
+    instead of the stale slice."""
+    stale_c = grounded_fixture()
+    stale_c["reference"]["stale_values"] = ["310"]
+    s = b.score_case(stale_c, "The length is 250 metres. Final answer: 250 metres.")
+    assert s["stale_mentioned"] is False
+    plain = grounded_fixture()
+    s2 = b.score_case(plain, "The length is 250 metres. Final answer: 250 metres.")
+    assert s2["stale_mentioned"] is None
+    agg = b.aggregate([s, s2])
+    assert agg["stale_handling"]["n"] == 1  # the stale slice, not all answers
+
+
+def test_expected_final_runs_declared_and_present():
+    """The evidence gate must not be vacuous: exactly the declared
+    acceptance-grade runs must exist (today: none — f4 was superseded)."""
+    present = {p.stem for p in RUNS.glob("test_*_f*.jsonl")}
+    assert present == set(EXPECTED_FINAL_RUNS), (
+        f"final runs present {sorted(present)} != declared {sorted(EXPECTED_FINAL_RUNS)} — "
+        "update EXPECTED_FINAL_RUNS deliberately (an acceptance-grade run on a FRESH test set)")
+
+
+def test_runner_test_split_guard_branches():
+    """Every guard branch is unit-tested: no --final, dirty tree, missing
+    freeze, configuration drift, and the clean pass-through."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("r169_run_v2", ROOT / "scripts" / "r169_run_v2.py")
+    run = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(run)
+    assert run.test_split_guard(False, False, True, []) == "the held-out test split needs --final"
+    assert "dirty" in run.test_split_guard(True, True, True, [])
+    assert "FREEZE.json is missing" in run.test_split_guard(True, False, False, [])
+    assert "differs from FREEZE.json" in run.test_split_guard(True, False, True, ["x"])
+    assert run.test_split_guard(True, False, True, []) is None
+
+
+def test_superseded_f4_runs_are_labelled():
+    """The f4 measurement is preserved as-run and explicitly marked
+    development-grade (test set exposed to grader development)."""
+    import json as _json
+    for name in ("test_baseline_f4", "test_grounded-v2_f4"):
+        f = RUNS / f"superseded_{name}.summary.json"
+        assert f.exists(), f
+        s = _json.loads(f.read_text())
+        assert s["meta"]["superseded"] and "development-grade" in s["meta"]["note"]
+        assert (RUNS / f"superseded_{name}.jsonl").exists()

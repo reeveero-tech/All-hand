@@ -169,6 +169,21 @@ def score_record(case: dict, rec: dict) -> dict:
     return s
 
 
+def test_split_guard(final: bool, dirty: bool, freeze_exists: bool, drift) -> "str | None":
+    """The held-out test split is measurable only with an explicit --final on a
+    clean tree whose current configuration matches the freeze exactly. Any
+    violation returns a message (every branch is unit-tested)."""
+    if not final:
+        return "the held-out test split needs --final"
+    if dirty:
+        return "the tree is dirty — commit the frozen configuration first"
+    if not freeze_exists:
+        return "benchmarks/r169/v2/FREEZE.json is missing (run the freeze subcommand and commit it)"
+    if drift:
+        return "current configuration differs from FREEZE.json: " + "; ".join(drift)
+    return None
+
+
 async def run(config: str, split: str, final: bool, tag: str) -> Path:
     from agent_civilization.eval import r169_bench_v2 as b
     if os.environ.get("OPENROUTER_API_KEY"):
@@ -178,16 +193,10 @@ async def run(config: str, split: str, final: bool, tag: str) -> Path:
     sha = git("rev-parse", "HEAD")
     dirty = bool(git("status", "--porcelain", "--", ".", ":!docs/audit/M8/logs/raw/r169"))
     if split == "test":
-        if not final:
-            sys.exit("refusing: the held-out test split needs --final")
-        if dirty:
-            sys.exit("refusing: the tree is dirty — commit the frozen configuration first")
-        if not FREEZE.exists():
-            sys.exit("refusing: benchmarks/r169/v2/FREEZE.json is missing (run the freeze subcommand and commit it)")
-        frozen = json.loads(FREEZE.read_text())
-        drift = check_freeze(state, frozen)
-        if drift:
-            sys.exit(f"refusing: current configuration differs from FREEZE.json: {drift}")
+        frozen = json.loads(FREEZE.read_text()) if FREEZE.exists() else {}
+        err = test_split_guard(final, dirty, FREEZE.exists(), check_freeze(state, frozen))
+        if err:
+            sys.exit(f"refusing: {err}")
     cases = b.load_split(split)
     from agent_civilization.core import llm as llm_mod
     from agent_civilization.core.llm import set_public_llm_consent, reset_public_llm_consent
@@ -216,9 +225,11 @@ async def run(config: str, split: str, final: bool, tag: str) -> Path:
                     await asyncio.sleep(backoff)
                     # v2: the FULL attempt history is preserved (v1 replaced
                     # earlier attempts); nothing is silently overwritten.
+                    # v2: the FULL failed attempt is preserved — no
+                    # truncation; nothing is silently overwritten
                     rec.setdefault("attempt_history", []).append({
-                        "error": str(rec.get("error") or "")[:200],
-                        "reply": (rec.get("reply") or "")[:500],
+                        "error": str(rec.get("error") or ""),
+                        "reply": rec.get("reply") or "",
                         "model": rec.get("model")})
                     rec = await _one(case, config)
                 if retried:

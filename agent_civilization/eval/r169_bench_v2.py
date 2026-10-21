@@ -528,11 +528,11 @@ def _unverified_after_abstention(text: str, case: dict) -> Optional[str]:
     or a citation id. Such an abstention is not a decisive pass; it is marked
     unverified for human review. Declared limit: Arabic proper-name
     fabrication outside forbidden_names stays undetectable deterministically."""
-    if not case["sources"]:
-        return None
     body = re.sub(r"\[\s*[ST]\d+[^\]]*\]", " ", text or "")
     allowed = normalize(case["question"] + " " + " ".join(s["text"] for s in case["sources"]))
     allowed_nums = set(NUM_RE.findall(allowed)) | {p.lstrip("0") or "0" for d in re.findall(r"\d{4}-\d{2}-\d{2}", allowed) for p in d.split("-")}
+    # with NO sources nothing can ground a number: any digit after the marker
+    # is unverifiable («INSUFFICIENT_EVIDENCE. 1 passed, 1 failed.»)
     for n in NUM_RE.findall(normalize(body)):
         if n not in allowed_nums and (n.lstrip("0") or "0") not in allowed_nums:
             return f"unverified number after abstention marker: {n}"
@@ -636,9 +636,20 @@ def score_case(case: dict, reply: str, *, code: Optional[str] = None,
         if forb:
             ok = False
             reasons.append("distractor value stated")
-        stale = _stale_asserted_as_current(text, ref.get("stale_values", []))
-        s["stale_mentioned"] = bool(ref.get("stale_values")) and any(
-            contains_value(text, v) for v in ref.get("stale_values", []))
+        if _final_answer_contradicts(text, answers, ref.get("forbidden", [])):
+            ok = False
+            reasons.append("final answer contradicts the reference value")
+        # a citation that attributes the answer to a NON-supporting source is
+        # misleading attribution, not a missing citation
+        if cited and support and not s["valid_citation"]:
+            ok = False
+            reasons.append("citation to non-supporting source")
+        stale_vals = ref.get("stale_values", [])
+        stale = _stale_asserted_as_current(text, stale_vals)
+        # None (not False) for cases without stale values — the aggregate
+        # denominator must be the stale slice only (was: every answer case)
+        s["stale_mentioned"] = (any(contains_value(text, v) for v in stale_vals)
+                                if stale_vals else None)
         if stale:
             ok = False
             reasons.append("stale value asserted as current: " + ",".join(stale))
@@ -704,6 +715,30 @@ def score_case(case: dict, reply: str, *, code: Optional[str] = None,
     s["fail_reasons"] = reasons
     s["pass"] = ok and not reasons
     return s
+
+
+FINAL_ANSWER_RE = re.compile(r"(final answer|الإجابة النهائية|الجواب النهائي|الجواب:|الإجابة:|so the answer is)", re.I)
+
+
+def _final_answer_contradicts(text: str, answers: Sequence[str], forbidden: Sequence[str]) -> bool:
+    """«The length is 250 metres. Final answer: 1968 metres.» — the correct
+    value appears mid-reply but the FINAL asserted answer is a different
+    (source-present) number; neither negation nor unsupported-number checks
+    catch it. An explicit final-answer marker must carry the reference."""
+    t = normalize(text)
+    for m in FINAL_ANSWER_RE.finditer(t):
+        window = t[m.end():m.end() + 60]
+        nums = NUM_RE.findall(window)
+        if not nums:
+            continue
+        final = nums[0]
+        if answers and final in {normalize(a) for a in answers}:
+            continue
+        if forbidden and final in {normalize(f) for f in forbidden}:
+            return True
+        if answers and not any(contains_value(window, a) for a in answers):
+            return True
+    return False
 
 
 def value_negated_any(text: str, values: Sequence[str]) -> bool:

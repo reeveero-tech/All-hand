@@ -1,4 +1,5 @@
 {
+  "as_run_reconstruction": false,
   "mean_latency_s": 6.3,
   "meta": {
     "baseline_dependency_sha256": {
@@ -17,6 +18,7 @@
     "kind": "meta",
     "max_tokens_code": 800,
     "max_tokens_text": 1024,
+    "note": "development-grade measurement: the v2 grader was hardened AFTER auditing replies to these same test cases (f3), so this test set was exposed to grader development — it is not an acceptance-grade holdout. Kept as-run (scores computed with the scorer pinned in scored_with_scorer_sha256); an acceptance-grade measurement needs a fresh test set (v3).",
     "prompt_fingerprint": {
       "baseline.code_system": "37a7b6b060a6c3b7",
       "baseline.text_system": "83aa82ffe731bcc9",
@@ -34,6 +36,7 @@
     "scorer_sha256": "57b82983f977e6c5eca8c8b024ef671ee3c499a2643d389f0e3fd3d918af8eb2",
     "split": "test",
     "started_utc": "2026-10-21T07:10:14+00:00",
+    "superseded": true,
     "tree_dirty": false
   },
   "metrics": {
