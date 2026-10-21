@@ -1,5 +1,5 @@
 {
-  "mean_latency_s": 43.01,
+  "mean_latency_s": 6.3,
   "meta": {
     "baseline_dependency_sha256": {
       "agent_civilization/agents/executors/data_worker.py": "26f1e47673d95b38",
@@ -10,7 +10,7 @@
     },
     "benchmark_version": "r169-v2",
     "cases": 84,
-    "code_sha": "9d3a49d2fee81f0383e2ef5346e41c9283b862dc",
+    "code_sha": "96b0d6e401e55cc4c23ece11649296af4ebd5b8a",
     "config": "grounded-v2",
     "dataset_sha256": "ddb61bf1009343259ef589b99da5e5cf26dc912dd1264b93b250392c9e08fced",
     "dataset_version": "r169-v2",
@@ -28,12 +28,12 @@
     "python": "3.14.8",
     "requested_model": "openai",
     "retry_policy": "provider error: up to 2 retries (30s, 60s backoff), then recorded as provider_error",
-    "run_id": "test_grounded-v2_f3",
+    "run_id": "test_grounded-v2_f4",
     "runner_sha256": "e8adb3bd6588991126eb40caa086d98d2715cc2596c0e2fe4966bc0a0d0bceee",
     "sampling": "provider defaults (the live path sends no temperature/seed)",
-    "scorer_sha256": "3f43e09789118206c3c7a8c48f4aa0aaa521210c2bdc240d1d45f07e34f03eaa",
+    "scorer_sha256": "57b82983f977e6c5eca8c8b024ef671ee3c499a2643d389f0e3fd3d918af8eb2",
     "split": "test",
-    "started_utc": "2026-10-21T05:42:13+00:00",
+    "started_utc": "2026-10-21T07:10:14+00:00",
     "tree_dirty": false
   },
   "metrics": {
@@ -330,5 +330,5 @@
   "models_reported": [
     "keyless:gpt-oss-20b"
   ],
-  "scored_with_scorer_sha256": "19b194ce8aad5ce399f30f4139899ec70e354ccdb2f2de98751a23662d7c7675"
+  "scored_with_scorer_sha256": "57b82983f977e6c5eca8c8b024ef671ee3c499a2643d389f0e3fd3d918af8eb2"
 }
