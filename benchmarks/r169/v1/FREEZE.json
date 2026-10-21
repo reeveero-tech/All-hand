@@ -1,0 +1,15 @@
+{
+  "dataset_sha256": "c11c0e10576920e131b84028a41437e3b7b393502281e90a8536fd990fc88fc1",
+  "dataset_version": "r169-v1",
+  "frozen_utc": "2026-10-20",
+  "note": "Configuration frozen before the first and only held-out test measurement. Changes 0-7 in CHANGES.md precede this freeze; any later change to the dataset, prompts or scorer requires a new dataset version (tests/test_r169_benchmark.py enforces equality with the live configuration).",
+  "prompt_fingerprint": {
+    "baseline.code_system": "37a7b6b060a6c3b7",
+    "baseline.text_system": "83aa82ffe731bcc9",
+    "grounded-v2.code_system": "a4551192f3eddea7",
+    "grounded-v2.no_sources_note": "a50326de694ec363",
+    "grounded-v2.system": "87fec717cd6d971b"
+  },
+  "runner_policy": "test split: --final, clean tree, sequential, up to two retries per provider error",
+  "scorer_sha256": "7a985518ef1db3bba4d3b1461d8d8f323ca5d3d1cc4fc9c531404b54ddfe5dfd"
+}

@@ -1,0 +1,23 @@
+{
+  "dataset_sha256": "c11c0e10576920e131b84028a41437e3b7b393502281e90a8536fd990fc88fc1",
+  "dataset_version": "r169-v1",
+  "files": {
+    "dev.jsonl": {
+      "cases": 30,
+      "sha256": "360859aac3f5287961559d9dbe23b47f5ca53d5eb52875a1ec82284ee84e323f"
+    },
+    "test.jsonl": {
+      "cases": 84,
+      "sha256": "e09322f3b32f870d26ca4a6b0bcbe2428d8022c3a2b6749ad7d15954cc6e3f1a"
+    },
+    "validation.jsonl": {
+      "cases": 28,
+      "sha256": "01263a7d6b9df2677ecef81f43ab0f69dce383d5cbf1c54f040d5c14e0eb5bfa"
+    }
+  },
+  "generator": "scripts/r169_build_dataset.py",
+  "licence": "synthetic cases CC0-1.0; closed_book cases restate short facts from the cited official pages",
+  "seed": 169,
+  "split_rule": "group index % 5: 0 -> dev, 1 -> validation, else test; ar/en of one group share a split",
+  "total_cases": 142
+}

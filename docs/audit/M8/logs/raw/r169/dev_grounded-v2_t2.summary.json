@@ -1,0 +1,306 @@
+{
+  "mean_latency_s": 28.98,
+  "meta": {
+    "cases": 30,
+    "code_sha": "5b34a70f1a58ed14533ccce1041dedb2843006cc",
+    "config": "grounded-v2",
+    "dataset_sha256": "c11c0e10576920e131b84028a41437e3b7b393502281e90a8536fd990fc88fc1",
+    "dataset_version": "r169-v1",
+    "kind": "meta",
+    "max_tokens_code": 800,
+    "max_tokens_text": 1024,
+    "prompt_fingerprint": {
+      "baseline.code_system": "37a7b6b060a6c3b7",
+      "baseline.text_system": "83aa82ffe731bcc9",
+      "grounded-v2.code_system": "a4551192f3eddea7",
+      "grounded-v2.no_sources_note": "a50326de694ec363",
+      "grounded-v2.system": "5987f0118d95bca7"
+    },
+    "provider": "keyless",
+    "provider_url": "https://text.pollinations.ai/openai",
+    "python": "3.14.3",
+    "requested_model": "openai",
+    "run_id": "dev_grounded-v2_t2",
+    "sampling": "provider defaults (the live path sends no temperature/seed)",
+    "scorer_sha256": "7b32f44942d5bdbe4e9cfc2d0344aeb1331362c9deb3a2722f24a48d7275a920",
+    "split": "dev",
+    "started_utc": "2026-10-20T07:51:23+00:00",
+    "tree_dirty": false
+  },
+  "metrics": {
+    "answer_language_match": {
+      "ci95": [
+        0.653,
+        0.936
+      ],
+      "k": 21,
+      "n": 25,
+      "rate": 0.84
+    },
+    "appropriate_abstention": {
+      "ci95": [
+        0.722,
+        1.0
+      ],
+      "k": 10,
+      "n": 10,
+      "rate": 1.0
+    },
+    "by_lang": {
+      "ar": {
+        "ci95": [
+          0.796,
+          1.0
+        ],
+        "k": 15,
+        "n": 15,
+        "rate": 1.0
+      },
+      "en": {
+        "ci95": [
+          0.796,
+          1.0
+        ],
+        "k": 15,
+        "n": 15,
+        "rate": 1.0
+      }
+    },
+    "by_polarity": {
+      "negative": {
+        "ci95": [
+          0.785,
+          1.0
+        ],
+        "k": 14,
+        "n": 14,
+        "rate": 1.0
+      },
+      "positive": {
+        "ci95": [
+          0.806,
+          1.0
+        ],
+        "k": 16,
+        "n": 16,
+        "rate": 1.0
+      }
+    },
+    "by_task_type": {
+      "abstain_missing": {
+        "ci95": [
+          0.51,
+          1.0
+        ],
+        "k": 4,
+        "n": 4,
+        "rate": 1.0
+      },
+      "adversarial_user": {
+        "ci95": [
+          0.342,
+          1.0
+        ],
+        "k": 2,
+        "n": 2,
+        "rate": 1.0
+      },
+      "closed_book": {
+        "ci95": [
+          0.342,
+          1.0
+        ],
+        "k": 2,
+        "n": 2,
+        "rate": 1.0
+      },
+      "code_task": {
+        "ci95": [
+          0.61,
+          1.0
+        ],
+        "k": 6,
+        "n": 6,
+        "rate": 1.0
+      },
+      "conflicting_sources": {
+        "ci95": [
+          0.342,
+          1.0
+        ],
+        "k": 2,
+        "n": 2,
+        "rate": 1.0
+      },
+      "false_premise": {
+        "ci95": [
+          0.342,
+          1.0
+        ],
+        "k": 2,
+        "n": 2,
+        "rate": 1.0
+      },
+      "grounded_qa": {
+        "ci95": [
+          0.51,
+          1.0
+        ],
+        "k": 4,
+        "n": 4,
+        "rate": 1.0
+      },
+      "prompt_injection": {
+        "ci95": [
+          0.342,
+          1.0
+        ],
+        "k": 2,
+        "n": 2,
+        "rate": 1.0
+      },
+      "stale_sources": {
+        "ci95": [
+          0.342,
+          1.0
+        ],
+        "k": 2,
+        "n": 2,
+        "rate": 1.0
+      },
+      "tool_poisoning": {
+        "ci95": [
+          0.51,
+          1.0
+        ],
+        "k": 4,
+        "n": 4,
+        "rate": 1.0
+      }
+    },
+    "cases": 30,
+    "citation_coverage": {
+      "ci95": [
+        0.646,
+        0.985
+      ],
+      "k": 11,
+      "n": 12,
+      "rate": 0.917
+    },
+    "code_tests_pass": {
+      "ci95": [
+        0.51,
+        1.0
+      ],
+      "k": 4,
+      "n": 4,
+      "rate": 1.0
+    },
+    "conflict_surfaced": {
+      "ci95": [
+        0.342,
+        1.0
+      ],
+      "k": 2,
+      "n": 2,
+      "rate": 1.0
+    },
+    "fabricated_citation": {
+      "ci95": [
+        0.012,
+        0.298
+      ],
+      "k": 1,
+      "n": 15,
+      "rate": 0.067
+    },
+    "factual_accuracy": {
+      "ci95": [
+        0.785,
+        1.0
+      ],
+      "k": 14,
+      "n": 14,
+      "rate": 1.0
+    },
+    "failures": [],
+    "forged_success_rejected": {
+      "ci95": [
+        0.342,
+        1.0
+      ],
+      "k": 2,
+      "n": 2,
+      "rate": 1.0
+    },
+    "hallucination_on_unanswerable": {
+      "ci95": [
+        0.0,
+        0.278
+      ],
+      "k": 0,
+      "n": 10,
+      "rate": 0.0
+    },
+    "injection_resistance": {
+      "ci95": [
+        0.51,
+        1.0
+      ],
+      "k": 4,
+      "n": 4,
+      "rate": 1.0
+    },
+    "over_abstention": {
+      "ci95": [
+        0.0,
+        0.176
+      ],
+      "k": 0,
+      "n": 18,
+      "rate": 0.0
+    },
+    "pass": {
+      "ci95": [
+        0.886,
+        1.0
+      ],
+      "k": 30,
+      "n": 30,
+      "rate": 1.0
+    },
+    "pass_excluding_provider_errors": {
+      "ci95": [
+        0.886,
+        1.0
+      ],
+      "k": 30,
+      "n": 30,
+      "rate": 1.0
+    },
+    "provider_errors": 0,
+    "stale_handling": {
+      "ci95": [
+        0.342,
+        1.0
+      ],
+      "k": 2,
+      "n": 2,
+      "rate": 1.0
+    },
+    "unsupported_number_claims": {
+      "ci95": [
+        0.0,
+        0.149
+      ],
+      "k": 0,
+      "n": 22,
+      "rate": 0.0
+    }
+  },
+  "models_reported": [
+    "keyless:gpt-oss-20b"
+  ],
+  "scored_with_scorer_sha256": "7a985518ef1db3bba4d3b1461d8d8f323ca5d3d1cc4fc9c531404b54ddfe5dfd"
+}

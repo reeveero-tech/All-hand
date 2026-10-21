@@ -1,0 +1,24 @@
+{
+  "changes_from_v1": "new vocabulary/seed => new instances; forbidden_names on abstain-type cases; forbidden_phrases now consumed by the v2 scorer",
+  "dataset_sha256": "ddb61bf1009343259ef589b99da5e5cf26dc912dd1264b93b250392c9e08fced",
+  "dataset_version": "r169-v2",
+  "files": {
+    "dev.jsonl": {
+      "cases": 30,
+      "sha256": "785e67b5f8519e696b736e3a6298f21e89fa4d0e7fb9f170d1027994ce8afc4d"
+    },
+    "test.jsonl": {
+      "cases": 84,
+      "sha256": "9179082c8506cd49470668fc67fc38b53d40876d4a3e06bc3d21a9ebdad3d8e9"
+    },
+    "validation.jsonl": {
+      "cases": 28,
+      "sha256": "d6bf52af642075b458561c352c18eac4d568de083c2067836ef3ac58274f7ca0"
+    }
+  },
+  "generator": "scripts/r169_build_dataset_v2.py",
+  "licence": "synthetic cases CC0-1.0; closed_book cases restate short facts from the cited official pages",
+  "seed": 1692,
+  "split_rule": "group index % 5: 0 -> dev, 1 -> validation, else test; ar/en of one group share a split",
+  "total_cases": 142
+}

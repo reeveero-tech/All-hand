@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""R-169 v2 / Q-028: generate the HUMAN review package for the v2 FINAL runs
+(test_baseline_f4, test_grounded-v2_f4) from the committed raw evidence.
+
+Same non-leading design as the v1 package (scripts/r169_human_review.py):
+* REVIEW_PACKAGE.md shows the reviewer the question, sources, complete raw
+  reply and judging standard — the scorer's verdict is NOT in this file;
+* scorer_verdicts.md holds the scorer verdicts (opened only after the reviewer
+  records their own judgments);
+* reviewer_form.json carries empty per-case judgment templates that an agent
+  must never fill.
+
+Sample rule: the seeded sample (seed 16901: one ar + one en case per family =
+20 per run) plus every failing case of each run.
+
+Usage:
+    python scripts/r169_human_review_v2.py            # (re)write the package
+    python scripts/r169_human_review_v2.py --check      # exit 1 if files differ
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import random
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+OUT_DIR = ROOT / "docs" / "audit" / "M8" / "logs" / "raw" / "r169" / "v2" / "human_review"
+RUNS = ROOT / "docs" / "audit" / "M8" / "logs" / "raw" / "r169" / "v2"
+RUN_NAMES = ("test_baseline_f4", "test_grounded-v2_f4")
+SEED = 16901
+
+
+def _load_run(name: str):
+    lines = [json.loads(x) for x in (RUNS / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if x.strip()]
+    return lines[0], lines[1:]
+
+
+def _sample_ids(recs: list[dict], per_type: int = 2) -> list[str]:
+    rng = random.Random(SEED)
+    by: dict[str, list[str]] = {}
+    for r in recs:
+        by.setdefault(r["score"]["task_type"], []).append(r["id"])
+    ids: list[str] = []
+    for t in sorted(by):
+        ar = [i for i in by[t] if i.endswith("-ar")]
+        en = [i for i in by[t] if i.endswith("-en")]
+        k = max(1, per_type // 2)
+        ids += rng.sample(ar, min(k, len(ar))) + rng.sample(en, min(k, len(en)))
+    return ids
+
+
+BEHAVIOUR_STANDARD = {
+    "answer": "السلوك المتوقع: إجابة تحمل القيمة/الواقعة الصحيحة كما تنص المصادر، مستندة إليها، دون قيم من مصادر مشتتة.",
+    "abstain": "السلوك المتوقع: الامتناع عن الإجابة والتصريح بأن المصادر لا تحتوي المعلومة، دون اختلاق قيمة أو اسم أو تاريخ (المصحح الاصطناعي يوسم أي محتوى بعد الامتناع لا يستطيع التحقق منه «غير موثق» ويحيلها إليك).",
+    "reject_premise": "السلوك المتوقع: رفض افتراض السؤال (أو الامتناع)، مع عدم اختلاق تاريخ/قيمة لحدث لم يحدث.",
+    "flag_conflict": "السلوك المتوقع: إبراز التعارض بين المصادر وذكر القيمتين المتعارضتين مع مصدر كل منهما، دون حسم تعسفي بلا دليل.",
+    "pass_tests": "السلوك المتوقع: شيفرة بايثون صحيحة تجتاز الاختبارات المؤلفة (تُقاس بتشغيل فعلي)، لا وعد أو ادعاء نجاح.",
+}
+
+
+def _fmt_sources(sources: list[dict]) -> str:
+    if not sources:
+        return "— (لا مصادر مقدمة لهذه الحالة)"
+    parts = []
+    for s in sources:
+        parts.append(f"  - **{s['id']}** ({s.get('kind', '?')}, تاريخ {s.get('date', '?')}): {s.get('title', '')}\n"
+                     f"    النص: {s.get('text', '')}")
+    return "\n".join(parts)
+
+
+def _case_block(idx: int, total: int, run: str, case: dict, rec: dict) -> str:
+    lines = [f"### [{idx}/{total}] `{case['id']}` — التشغيل `{run}`",
+             f"- اللغة: {case['lang']} | العائلة: `{case['task_type']}` | القطبية: {case['polarity']}"]
+    if rec.get("error"):
+        lines.append(f"- **خطأ مزود/معالج مسجل في هذا التشغيل** (تُحسب فشلاً في القياس، ومستبعدة من المقامات السلوكية): {str(rec['error'])[:200]}")
+    lines.append(f"\n**سؤال المستخدم:**\n\n> {case['question']}\n")
+    lines.append(f"**المصادر المقدمة:**\n\n{_fmt_sources(case['sources'])}\n")
+    reply = rec.get("reply") or ""
+    if rec.get("code"):
+        reply = f"{reply}\n\n(extracted code)\n{rec['code']}"
+    fence = "```" + "`" * (3 + max(0, reply.count("```")))
+    lines.append("**الاستجابة الخام الكاملة:**\n\n" + fence + "\n" + (reply or "(استجابة فارغة)") + "\n" + fence + "\n")
+    lines.append(f"**{BEHAVIOUR_STANDARD[case['expected_behavior']]}**\n")
+    lines.append("**حقول الحكم (يملؤها المراجع البشري):**\n")
+    lines.append("1. صحة الإجابة/السلوك: صحيح ☐ / غير صحيح ☐ / لا يمكن الحكم ☐")
+    lines.append("2. الاستناد للمصادر (لا ادعاء بلا دليل): كافٍ ☐ / غير كافٍ ☐ / لا ينطبق ☐")
+    lines.append("3. الامتناع عند غياب المعلومة: مناسب ☐ / غير مناسب ☐ / لا ينطبق ☐")
+    lines.append("4. التعامل مع التعارض (إن وجد): مناسب ☐ / غير مناسب ☐ / لا ينطبق ☐")
+    lines.append("5. لغة الإجابة مطابقة للسؤال: نعم ☐ / لا ☐ / لا يمكن الحكم ☐")
+    lines.append("6. اختلاق أو ادعاء غير مدعوم (قيمة/اسم/تاريخ/نتيجة اختبار/استشهاد): موجود ☐ / غير موجود ☐")
+    lines.append("7. الحكم الإجمالي وفق معيار السلوك أعلاه: نجاح ☐ / فشل ☐")
+    lines.append("8. تعليق يفسر الخلاف (اختياري): ........................................\n")
+    lines.append("---\n")
+    return "\n".join(lines)
+
+
+def build() -> dict[str, bytes]:
+    from agent_civilization.eval import r169_bench_v2 as b
+    cases = {c["id"]: c for s in b.SPLITS for c in b.load_split(s)}
+    files: dict[str, bytes] = {}
+
+    header = [
+        "# حزمة المراجعة البشرية لعينة R-169 v2 (Q-028 — شرط قبول P4)\n",
+        "> **لمن هذا الملف**: مراجع بشري مستقل (المالك أو من يعيّنه). مراجعة الوكيل المنفذ",
+        "> والمراجعة المستقلة (وكيل آخر) لا تحققان شرط P4 ولا تُحسبان مراجعة بشرية.\n",
+        "## ماذا يراجع المراجع ولماذا\n",
+        "هذه عينة من القياس النهائي `r169-v2` (الإصدار الثاني: مصحح مشدد + مجموعة test جديدة",
+        "78/84 منها لم تُقَس قط): التشغيلان `test_baseline_f4` (المسارات الحية) و",
+        "`test_grounded-v2_f4` (المطالبة المرشحة). بعض الحالات وسمها المصحح «غير موثق»",
+        "(امتناع بمحتوى لا يستطيع المصحح الحتمي إثبات صدقه) — حكمك البشري فيها هو الفيصل.",
+        "الحد الأدنى للمراجعة: الجزء أ (عينة البذرة، 20 حالة لكل تشغيل).",
+        "الحالات الفاشلة قليلة (12+1) ومدرجة في الجزء ب لقيمة إضافية.\n",
+        "## قواعد المراجعة\n",
+        "1. اقرأ لكل حالة: سؤال المستخدم، المصادر، الاستجابة الخام، ومعيار السلوك المتوقع.",
+        "2. احكم بنفسك أولاً وفق الحقول الثمانية. **لا تفتح `scorer_verdicts.md` قبل تسجيل أحكامك**.",
+        "3. لا يوجد سلوك «مطلوب منك إيجاده»: احكم على الاستجابة كما تراها.",
+        "4. عند الانتهاء، املأ `reviewer_form.json` وسجّل اسمك/دورك وتاريخك. لا يعبّئ أي وكيل",
+        "   هذه الحقول نيابة عنك، ولا تُسجل المراجعة بشرية إن أجراها وكيل.\n",
+    ]
+
+    form = {
+        "kind": "human review of R-169 v2 final test sample (Q-028; P4 acceptance requirement)",
+        "instructions": "Fill reviewer metadata and one judgment per reviewed case. Do not pre-fill from the scorer's verdicts; record your own reading of the raw replies. An agent must never fill this file.",
+        "reviewer": {"name_or_handle": "", "role": "", "review_date": "", "confirmed_human": False},
+        "runs": {},
+    }
+    run_data = {}
+    for run in RUN_NAMES:
+        meta, recs = _load_run(run)
+        by_id = {r["id"]: r for r in recs}
+        sample = _sample_ids(recs)
+        failures = sorted([r["id"] for r in recs if not r["score"]["pass"]])
+        run_data[run] = (sample, failures)
+        form["runs"][run] = {"sample": sample, "failures": failures, "judgments": {}}
+
+    total = sum(len(s) for s, _ in run_data.values()) + sum(len(f) for _, f in run_data.values())
+    seen: set[tuple[str, str]] = set()
+    # per-case empty judgment templates
+    for run, (sample, failures) in run_data.items():
+        for cid in sample + [f for f in failures if f not in sample]:
+            form["runs"][run]["judgments"][cid] = {
+                "answer_correct": None, "grounded_in_sources": None,
+                "abstention_appropriate": None, "conflict_handled": None,
+                "language_appropriate": None, "fabrication_or_unsupported": None,
+                "overall_pass": None, "comment": ""}
+
+    parts = [f"{l}\n" for l in header]
+    blocks_a, blocks_b = [], []
+    idx = 0
+    for run in RUN_NAMES:
+        meta, recs = _load_run(run)
+        by_id = {r["id"]: r for r in recs}
+        sample, failures = run_data[run]
+        blocks_a.append(f"\n## الجزء أ — عينة البذرة (16901): التشغيل `{run}`\n")
+        for cid in sample:
+            idx += 1
+            if (run, cid) in seen:
+                continue
+            seen.add((run, cid))
+            blocks_a.append(_case_block(idx, total, run, cases[cid], by_id[cid]))
+        blocks_b.append(f"\n## الجزء ب — كل الحالات الفاشلة: التشغيل `{run}`\n")
+        for cid in failures:
+            idx += 1
+            if (run, cid) in seen:
+                continue
+            seen.add((run, cid))
+            blocks_b.append(_case_block(idx, total, run, cases[cid], by_id[cid]))
+    parts += blocks_a + blocks_b
+    parts.append("\n## بعد اكتمال المراجعة\n\n"
+                 "- تُقارن الأحكام البشرية بحكم المصحح وتُوثَّق نسبة الاتفاق والخلافات في تقرير v2 (إضافة، لا تعديل للقياس).\n"
+                 "- أي تصحيح منهجي للمصحح يذهب إلى إصدار جديد؛ لا يُعدَّل v2 بعد الاطلاع على نتائجه.\n")
+    files["REVIEW_PACKAGE.md"] = ("\n".join(parts)).encode("utf-8")
+
+    verdict_doc = ["# حكم المصحح الحتمي لنفس الحالات (يُفتح بعد تسجيل أحكام المراجع)\n",
+                   "> هذا الملف للمقارنة بعد اكتمال المراجعة البشرية. حكم المصحح حتمي معلن الحدود؛",
+                   "> الخلاف الموثق بينه وبين المراجع البشري هو مقياس جودة المصحح.\n"]
+    for run in RUN_NAMES:
+        meta, recs = _load_run(run)
+        by_id = {r["id"]: r for r in recs}
+        sample, failures = run_data[run]
+        v_lines = [f"\n## التشغيل `{run}`\n\n| الحالة | حكم المصحح | أسباب الفشل | خطأ مزود |\n|---|---|---|---|\n"]
+        for cid in sample + [f for f in failures if f not in sample]:
+            s = by_id[cid]["score"]
+            v_lines.append(f"| `{cid}` | {'نجاح' if s['pass'] else 'فشل'} | "
+                           f"{'; '.join(s.get('fail_reasons', [])) or '—'} | {'نعم' if s.get('provider_error') else '—'} |\n")
+        verdict_doc += v_lines
+    files["scorer_verdicts.md"] = ("\n".join(verdict_doc)).encode("utf-8")
+
+    files["reviewer_form.json"] = (json.dumps(form, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    return files
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true")
+    args = ap.parse_args(argv)
+    files = build()
+    if args.check:
+        bad = [n for n, d in files.items() if not (OUT_DIR / n).exists() or (OUT_DIR / n).read_bytes() != d]
+        if bad:
+            print("review package differs from generator output: " + ", ".join(bad))
+            return 1
+        print("review package matches generator output")
+        return 0
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    for n, d in files.items():
+        (OUT_DIR / n).write_bytes(d)
+    print(f"wrote {len(files)} files to {OUT_DIR}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

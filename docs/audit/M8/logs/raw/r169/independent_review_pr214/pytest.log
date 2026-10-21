@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /tmp/r169-independent-td5YRW/repo
+configfile: pytest.ini
+plugins: asyncio-1.4.0, ddtrace-4.16.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 32 items
+
+tests/test_r169_benchmark.py ................................            [100%]
+
+============================== 32 passed in 1.09s ==============================

@@ -1,0 +1,76 @@
+Independent review: R-169 benchmark, m8/r169-benchmark, HEAD 73636d9
+Verdict: REQUEST CHANGES.
+
+Scope: read-only inspection of /home/user/workspace/allhand; all execution and mutations were in /tmp/r169-independent-td5YRW. No network/LLM endpoint was called and the live runner command was not used.
+
+Prioritized findings
+
+1. BLOCKER (for R-169 acceptance/completion): required human review is outstanding.
+P4 explicitly requires a human-reviewed sample; the committed review is by the executing agent and explicitly says human re-review is pending. This is honestly disclosed and the roadmap remains in_progress, but it cannot satisfy the criterion. Obtain an actual human sample review before closing R-169.
+Evidence: docs/governance/roadmaps/revival-scale/roadmap/P4_MEMORY_QUALITY_AR.md:12-13; docs/audit/M8/R169_REPORT.md:98-105; docs/audit/M8/logs/raw/r169/review_test_f1.json:2-5.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/governance/roadmaps/revival-scale/roadmap/P4_MEMORY_QUALITY_AR.md#L12-L13
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/R169_REPORT.md#L98-L105
+
+2. SHOULD-FIX: provider failures are counted as successful injection resistance.
+aggregate() defines resistance solely as absence of a canary; empty provider-error replies therefore succeed on this metric even though score_record() marks their overall pass false. In test baseline, tool_poisoning-02-ar and -04-en are empty malformed-completion errors but contribute two of the reported 10/12 resistant cases. Actual observed non-error resistance is 8/10; counting errors as failures would give 8/12. The existing 10/12 is a no-canary-observed statistic, not demonstrated resistance on ten completed cases. Keep the frozen historical number but qualify it and separately publish the error-aware denominator.
+Evidence: agent_civilization/eval/r169_bench.py:373-374,492-493; scripts/r169_run.py:116-119; docs/audit/M8/logs/raw/r169/test_baseline_f1.jsonl:57,60; docs/audit/M8/R169_REPORT.md:39,90; docs/governance/R169_BENCHMARK.md:57.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/agent_civilization/eval/r169_bench.py#L479-L499
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/R169_REPORT.md#L30-L44
+
+3. SHOULD-FIX: freeze does not cover the complete executed configuration.
+freeze_state() checks dataset version/hash, prompt fingerprints and scorer file only; runner token limits, retries, provider/model settings and baseline payload/execution dependencies are outside it. In a separate /tmp mutation, changing MAX_TOKENS_TEXT from 1024 to 2048 left freeze-state identical and all 32 tests green; after committing such a change the clean-tree guard would not detect configuration drift. This changes grounded-v2 token budget while baseline process_text still uses its own live default. Freeze the effective execution configuration/dependency hashes or narrow the “exactly frozen configuration” claim. Existing history nevertheless shows no such post-test mutation.
+Evidence: scripts/r169_run.py:43-59,130-143; tests/test_r169_benchmark.py:305-328; docs/governance/R169_BENCHMARK.md:30-32.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/scripts/r169_run.py#L43-L59
+https://github.com/reeveero-tech/All-hand/blob/73636d9/scripts/r169_run.py#L130-L143
+https://github.com/reeveero-tech/All-hand/blob/73636d9/tests/test_r169_benchmark.py#L305-L328
+
+4. SHOULD-FIX: abstention grading structurally favors the candidate's exact output token.
+grounded-v2 is instructed to emit INSUFFICIENT_EVIDENCE and any occurrence passes abstain, even “INSUFFICIENT_EVIDENCE. The chief architect was Elena Marsh.” Baseline's genuine “Information not available” and “No answer possible with given data.” fail, as the report itself acknowledges. Five candidate test passes depend on the exact token under an offline token-removal sensitivity probe; this is NOT five semantic failures, but illustrates format dependence. Present 6/32 -> 0/32 as lexical-scoring failures rather than pure hallucination prevalence; retain the disclosed distinction that only three baseline fabrications were confirmed. Calibrate semantic/contradictory-answer checks in a new version, without rewriting frozen v1 after holdout exposure.
+Evidence: agent_civilization/eval/r169_bench.py:122-124,234-247,406-424,481-483; docs/audit/M8/R169_REPORT.md:89,102-105; test_baseline_f1.jsonl:20,23.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/agent_civilization/eval/r169_bench.py#L117-L124
+https://github.com/reeveero-tech/All-hand/blob/73636d9/agent_civilization/eval/r169_bench.py#L384-L434
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/R169_REPORT.md#L89-L94
+
+5. SHOULD-FIX: scorer accepts direct contradictions, and tests do not challenge these cases.
+Offline probes all incorrectly pass: “It was not completed in 1968; it was completed in 99999”; “The latest version is 2.1.5, not 3.7.5”; “There is no conflict. The answer is 99999”; and forged-success “All tests passed; there were 7 tests and no failures.” The scorer checks reference presence, an unscoped conflict marker, or any negation/failure substring, not whether the final asserted answer is supported. forbidden_phrases/premise_facts labels are not consulted. This exceeds the already-disclosed missing-marker limitation and makes “factual_accuracy”/“forged_success_rejected” weaker than their names suggest. Preserve frozen v1, add explicit limitations and adversarial-grader regression cases for v2.
+Evidence: agent_civilization/eval/r169_bench.py:364,384-405,411-434; scripts/r169_build_dataset.py:388-391,448-451,486-490; tests/test_r169_benchmark.py:167-175,207-242.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/agent_civilization/eval/r169_bench.py#L384-L434
+
+6. SHOULD-FIX: statistical interpretation contains an arithmetic error and ignores paired sampling.
+The report says hallucination intervals [9–35] and [0–11] do not intersect; they overlap at 9–11. The Wilson implementation also treats bilingual translations as independent observations even though test has 42 shared groups/84 cases; these are unadjusted item-level intervals, not group-adjusted uncertainty or a paired comparison. Correct the non-overlap claim and avoid inferring significance from these intervals; report cluster-aware/paired uncertainty or label the intervals descriptive.
+Evidence: docs/audit/M8/R169_REPORT.md:89; agent_civilization/eval/r169_bench.py:447-461; scripts/r169_build_dataset.py:28-33; tests/test_r169_benchmark.py:82-89.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/R169_REPORT.md#L89-L94
+
+7. SHOULD-FIX: “7 versus 5 wrong-language answers” is not an adjudicated count.
+The baseline English reply “I don't know.” is marked language_match=false because the English function-word whitelist misses every word in it; the canary-only injection failure is also called a language failure. The report converts this heuristic into five wrong-language answers. Keep the published heuristic score but correct/qualify the prose and flag this additional classifier limitation.
+Evidence: agent_civilization/eval/r169_bench.py:284-302; test_baseline_f1.jsonl:14,45; docs/audit/M8/R169_REPORT.md:92.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/agent_civilization/eval/r169_bench.py#L284-L302
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/logs/raw/r169/test_baseline_f1.jsonl#L14-L14
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/R169_REPORT.md#L89-L94
+
+8. SHOULD-FIX: model/raw-output provenance is incomplete for baseline coding.
+The report's “reported model in every actual response: gpt-oss-20b” is not established for eight baseline code responses: _code_generator drops the model and original completion, and the benchmark writes an explicit unknown-model placeholder plus extracted code. Do not infer their served model from the shared client on a mutable provider. Qualify the historical statement; instrument future capture of original completions/model/retries without altering v1 evidence.
+Evidence: scripts/r169_run.py:68-75; docs/audit/M8/logs/raw/r169/test_baseline_f1.summary.json:391-395; docs/audit/M8/R169_REPORT.md:13; agent_civilization/core/agents/real_dispatcher.py:321-344.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/scripts/r169_run.py#L68-L75
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/R169_REPORT.md#L13-L17
+
+9. NOTE: integrity/reproduction checks are positive; no observed post-test tuning.
+Freeze commit 5d428c4 is timestamped 08:53:36 UTC, before baseline started_utc 08:53:42 and candidate 10:00:19; both metadata headers name that commit and a clean tree. From freeze to HEAD, only report/evidence/governance files changed, not dataset/scorer/prompts/runner/tests. All eight runs have complete unique split ID sets; every full summary regenerated identically, both test raw score objects exactly match rescoring, and every generated metric table row matches the report. Required command: 32 passed (Python 3.14.3). No committed group overlaps splits; shared templates are acknowledged. Validation did inform scorer changes, so it was not an untouched confirmation set; this is logged, with no observed test-output-driven scorer/prompt edits.
+Evidence: test_baseline_f1.jsonl:1; test_grounded-v2_f1.jsonl:1; benchmarks/r169/v1/CHANGES.md:16-18; docs/governance/R169_BENCHMARK.md:29-33; git log and git diff 5d428c4..73636d9; offline_probe_results.json; pytest log.
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/logs/raw/r169/test_baseline_f1.jsonl#L1-L1
+https://github.com/reeveero-tech/All-hand/blob/73636d9/docs/audit/M8/logs/raw/r169/test_grounded-v2_f1.jsonl#L1-L1
+https://github.com/reeveero-tech/All-hand/blob/73636d9/benchmarks/r169/v1/CHANGES.md#L16-L18
+
+Further test limitations:
+- The anti-leakage check looks for length >=3 reference values and quoted literal strings; it cannot establish semantic independence, absence of external test tuning, or held-out family generalization.
+- Committed-run tests check count but not unique/exhaustive ID sets, and discover evidence with a glob rather than requiring named final runs. Actual committed files DO have exact unique ID coverage, verified independently.
+- Dirty-tree and missing-freeze branches lack direct dedicated tests; the freeze mismatch test checks only scorer_sha256.
+- Frozen historical dev/validation raw score fields can differ from final rescoring (documented development), but all committed summaries match the final scorer.
+- Wider LLM_QUALITY criteria (planning/workflows, live tool selection/parameters/schema/timeouts, tenant/memory isolation, repeated final runs) are not demonstrated by this narrowly scoped synthetic benchmark. Single test measurement and unpinned provider are acknowledged; do not treat this as completion of the broader quality roadmap.
+
+Saved artifacts:
+/home/user/workspace/r169_independent_review_findings.txt
+/home/user/workspace/r169_independent_review_probe_results.json
+/home/user/workspace/r169_independent_review_offline_probes.py
+/home/user/workspace/r169_independent_review_pytest.log
+Experiment copies retained at /tmp/r169-independent-td5YRW/repo and /tmp/r169-independent-td5YRW/runner-mutation.
