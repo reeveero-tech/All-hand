@@ -1,0 +1,29 @@
+{
+  "baseline_dependency_sha256": {
+    "agent_civilization/agents/executors/data_worker.py": "26f1e47673d95b38",
+    "agent_civilization/core/agents/real_dispatcher.py": "7e80f52e5c8f15b1",
+    "agent_civilization/core/llm.py": "f6eefabd71ba32eb",
+    "agent_civilization/core/safety.py": "0cbd3e9c1f0931ec",
+    "agent_civilization/utils/__init__.py": "bdea45950033cf64"
+  },
+  "blind_sheet_sha256": "a2c77be28984395f0e0bd8849203f1750b3de51b7871d0558129b9d8158acfff",
+  "builder_sha256": "df8f7cfc6777949981cdc56c5253df660e797796c2c67b2d30c532cbda229972",
+  "dataset_sha256": "fda504f864585bdb4a7bbf3457ed9fcedcd1205e9f08218fb5b8582057bb7992",
+  "dataset_version": "r169-v4",
+  "max_tokens_code": 800,
+  "max_tokens_text": 1024,
+  "preregistration_sha256": "eba1e0d4032e8d46f7814169bad35f390ffd08acaa90fb745dfccb05d65960e5",
+  "prompt_fingerprint": {
+    "baseline.code_system": "37a7b6b060a6c3b7",
+    "baseline.text_system": "83aa82ffe731bcc9",
+    "grounded-v2.code_system": "a4551192f3eddea7",
+    "grounded-v2.no_sources_note": "a50326de694ec363",
+    "grounded-v2.system": "9d5cf4854b9edeae"
+  },
+  "provider_url": "https://text.pollinations.ai/openai",
+  "report_sha256": "f3747d4b9d071cd05be907777ae6c4d2d28fc46cb87bbe71f188c87520eafcc3",
+  "requested_model": "openai",
+  "retry_policy": "provider error: up to 2 retries (30s, 60s backoff), then recorded as provider_error",
+  "runner_sha256": "da8bdc51bd8d5c0e8717e0d41ff063d4f3cbf4cb282b13abea19765179f8c29b",
+  "scorer_sha256": "5a44d3faeca9b33d54b3e647d8c42d18f2869c0daf629166acd8d25952e2e157"
+}

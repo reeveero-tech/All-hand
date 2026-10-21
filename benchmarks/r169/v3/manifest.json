@@ -1,0 +1,24 @@
+{
+  "changes_from_v2": "new vocabulary, phrasings, attribute types, tool shapes, code tasks and real facts; scorer and prompts reused unchanged (acceptance dataset for the frozen v2 config)",
+  "dataset_sha256": "8e2d4ad4ca3036506b729386edf1eee784bf5a3722eb493653fba5118eea022b",
+  "dataset_version": "r169-v3",
+  "files": {
+    "dev.jsonl": {
+      "cases": 30,
+      "sha256": "f734d8ffda3557c3924185b748dc7042e2d28dd9ab888e1841673cf8e0daf9f6"
+    },
+    "test.jsonl": {
+      "cases": 84,
+      "sha256": "618086ddd1f2a9e137abbddf8dc7b8cea9dd2a4d70b23f3f63416a996818f855"
+    },
+    "validation.jsonl": {
+      "cases": 28,
+      "sha256": "7a96b7d6fd853a1750103cc947d7764981e5ad80cc702823bb485808edf271c9"
+    }
+  },
+  "generator": "scripts/r169_build_dataset_v3.py",
+  "licence": "synthetic cases CC0-1.0; closed_book cases restate short facts from the cited official pages",
+  "seed": 1693,
+  "split_rule": "group index % 5: 0 -> dev, 1 -> validation, else test; ar/en of one group share a split",
+  "total_cases": 142
+}
