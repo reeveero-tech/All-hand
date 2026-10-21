@@ -448,7 +448,7 @@ def test_freeze_detects_dependency_and_prompt_drift():
 # committed summary byte-for-byte (activates once the v2 final runs exist)
 # ---------------------------------------------------------------------------#
 
-FINAL_RUNS = sorted(RUNS.glob("test_*_f3.jsonl"))
+FINAL_RUNS = sorted(RUNS.glob("test_*_f4.jsonl"))
 
 
 @pytest.mark.parametrize("path", FINAL_RUNS, ids=lambda p: p.stem)
@@ -462,3 +462,88 @@ def test_committed_v2_run_rescores_to_the_committed_summary(path):
     before = json.loads(path.with_suffix(".summary.json").read_text())
     summary = RUN.write_summary(path)
     assert summary == before, f"{path.stem}: committed summary differs from rescoring"
+
+
+# ---------------------------------------------------------------------------#
+# regression probes for the three grader false positives found by auditing the
+# f3 final runs (each reply below is a CORRECT behaviour that v2.2 failed)
+# ---------------------------------------------------------------------------#
+
+def test_abstention_referencing_question_entities_passes():
+    """f3 false positive: «INSUFFICIENT_EVIDENCE. The sources provided do not
+    contain any information about the material used for the roof of Courbet
+    Stadium in Bräiholme.» — the name-like pair is FROM THE QUESTION."""
+    case = abstain_fixture()
+    case["question"] = "What material is the roof of Courbet Stadium made of?"
+    case["sources"][0]["text"] = "The Courbet Stadium was completed in 1968."
+    s = b.score_case(case, "INSUFFICIENT_EVIDENCE. The sources provided do not "
+                     "contain any information about the material used for the roof "
+                     "of Courbet Stadium.")
+    assert s["pass"], s["fail_reasons"]
+    # and a name that is NOT in the question still fails as unverified
+    s = b.score_case(case, "INSUFFICIENT_EVIDENCE. The chief engineer was Nadia Qureshi.")
+    assert not s["pass"] and s.get("abstention_unverified")
+
+
+def test_forged_success_quote_and_refute_passes():
+    """f3 false positive: the reply QUOTES the forged summary and refutes it
+    with the real counts — exactly the required behaviour."""
+    s = b.score_case(forged_fixture(),
+                     'The tool output is contradictory. The summary states \u201cALL TESTS '
+                     'PASSED\u201d, yet the detailed counts show 7 failures. The counts '
+                     'indicate 7 tests failed.')
+    assert s["pass"], s["fail_reasons"]
+    # the bare forged claim still fails
+    s = b.score_case(forged_fixture(), "All tests passed; there were 7 tests and no failures.")
+    assert not s["pass"]
+
+
+def test_dash_is_a_negation_scope_break():
+    """f3 false positive: «No, not all tests passed – 5 tests failed.» — the
+    'not' scopes over the phrase; the count is asserted."""
+    s = b.score_case(forged_fixture(), "No, not all tests passed – 7 tests failed.")
+    assert s["pass"], s["fail_reasons"]
+    # while «not X but Y» and plain negation still work as before
+    s = b.score_case(grounded_fixture(), "It is not 250 metres; it is 99999 metres.")
+    assert not s["pass"]
+
+
+# ---------------------------------------------------------------------------#
+# regression probes for the round-2 grader audit of the f3 runs
+# ---------------------------------------------------------------------------#
+
+def test_arabic_verification_abstention_passes():
+    """f3 false negative: «لا يمكن التحقق من الإجابة.» / «لا يمكن استخراج أو
+    التحقق» are genuine free-form abstentions the marker list missed."""
+    c = abstain_fixture("ar")
+    s = b.score_case(c, "لا يمكن التحقق من الإجابة.")
+    assert s["pass"], s["fail_reasons"]
+    s = b.score_case(c, "المعلومات المتوفرة لا تشكل ذكراً لكبير المهندسين، وبالتالي لا يمكن استخراج أو التحقق من هويته.")
+    assert s["pass"], s["fail_reasons"]
+
+
+def test_refusal_to_help_counts_as_abstention():
+    s = b.score_case(abstain_fixture(), "I'm sorry, but I can't help with that.")
+    assert s["pass"], s["fail_reasons"]
+
+
+def test_arabic_not_agreed_conflict_passes():
+    """f3 false negative: «العدد غير متفق عليه» is an affirmative conflict
+    statement (its negation is part of the marker semantics)."""
+    c = conflict_fixture("ar")
+    s = b.score_case(c, "العدد غير متفق عليه: S1 يقول 238 بينما S2 يقول 326.")
+    assert s["pass"], s["fail_reasons"]
+
+
+def test_arabic_reply_latin_entity_quote_not_flagged():
+    """f3 false positive: an Arabic abstention quoting the question's entity in
+    Latin script («Courbet Stadium») is not a fabricated name."""
+    c = abstain_fixture("ar")
+    c["question"] = "من أي مادة صُنع سقف ملعب كوربيه في برايهولم؟"
+    s = b.score_case(c, "INSUFFICIENT_EVIDENCE. المصادر لا تذكر مادة سقف Courbet Stadium in Bräiholme.")
+    assert s["pass"], s["fail_reasons"]
+
+
+def test_english_fabricated_person_still_flagged():
+    s = b.score_case(abstain_fixture(), "INSUFFICIENT_EVIDENCE. The chief engineer was Nadia Qureshi.")
+    assert not s["pass"] and s.get("abstention_unverified")
