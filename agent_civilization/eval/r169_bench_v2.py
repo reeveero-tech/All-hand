@@ -505,6 +505,11 @@ def _forbidden_phrases_hit(text: str, phrases: Sequence[str]) -> List[str]:
                 continue
             if _refuted_after(norm, m.start(), m.end() - m.start()):
                 continue
+            # the phrase posed as a QUESTION and then answered («هل نجحت كل
+            # الاختبارات؟ لا.» / «did all tests pass? no — 7 failed») is not
+            # an assertion (verified f3 false positive)
+            if re.search(r"[؟?]", norm[m.end():m.end() + 40]):
+                continue
             hit = True
         if hit:
             out.append(ph)
