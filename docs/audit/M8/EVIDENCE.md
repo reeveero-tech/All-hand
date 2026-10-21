@@ -1280,3 +1280,10 @@
 - **الاختبارات**: `tests/test_r169_benchmark_v3.py` ‏300 ناجحة محلياً؛ CI على الرأس البعيد يُوثَّق في وصف الـPR.
 - **التالي**: تشغيلا test ‏`a1` (baseline ثم grounded-v2) عند الرأس المجمد المنشور نفسه، ثم التقرير وحزمة المراجعة البشرية v3.
 
+## R-169 v3 — القياس القبولي `a1` وتدقيق ما بعده (2026-10-21)
+
+- **الرأس المقيس**: `575d93aa314f892f549df5e71baa3622abb7371f` — منشور على `origin/m8/r169-v3` وCI أخضر كامل قبل التشغيل ([39582860392](https://github.com/reeveero-tech/All-hand/actions/runs/39582860392)، [39582860391](https://github.com/reeveero-tech/All-hand/actions/runs/39582860391)).
+- **الخام**: [`test_baseline_a1.jsonl`](logs/raw/r169/v3/test_baseline_a1.jsonl)، [`test_grounded-v2_a1.jsonl`](logs/raw/r169/v3/test_grounded-v2_a1.jsonl) + ملخصاهما؛ اختبار CI يعيد التصحيح ويطابق الملخصين بايتياً.
+- **التقرير**: [`R169_REPORT_V3.md`](R169_REPORT_V3.md)؛ تدقيق الوكيل (ليس بشرياً): [`POSTHOC_AUDIT_a1.md`](logs/raw/r169/v3/POSTHOC_AUDIT_a1.md)؛ حزمة المراجعة البشرية: [`v3/human_review/`](logs/raw/r169/v3/human_review/REVIEW_PACKAGE.md).
+- **الحالة**: R-169 ‏`blocked` على Q-028 بعد دمج #214/#215 من حساب المالك خارج الجلسة.
+

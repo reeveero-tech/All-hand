@@ -394,7 +394,7 @@ REPORT = _load("r169_report_v3", "scripts/r169_report_v3.py")
 
 # The pre-registered acceptance runs (PREREGISTRATION.md §3). Empty until they
 # exist; then set deliberately and the suite enforces presence + rescore.
-EXPECTED_FINAL_RUNS: list = []
+EXPECTED_FINAL_RUNS: list = ["test_baseline_a1", "test_grounded-v2_a1"]
 
 
 def test_expected_final_runs_declared_and_present():
