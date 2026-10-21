@@ -1,0 +1,44 @@
+=== R-186 evidence log (240) — do-not-merge gate ===
+Date: 2026-10-21T20:22Z
+Branch: m8/r186-merge-guard
+
+--- [1] Unit tests: hold-marker detection (14 tests) ---
+tests/test_r186_do_not_merge_gate.py::test_incident_title_en PASSED      [  7%]
+tests/test_r186_do_not_merge_gate.py::test_incident_body_ar PASSED       [ 14%]
+tests/test_r186_do_not_merge_gate.py::test_ar_marker_without_diacritics PASSED [ 21%]
+tests/test_r186_do_not_merge_gate.py::test_ar_marker_with_extra_diacritics PASSED [ 28%]
+tests/test_r186_do_not_merge_gate.py::test_ar_marker_with_tatweel_and_rtl_marks PASSED [ 35%]
+tests/test_r186_do_not_merge_gate.py::test_dnm_abbreviation_not_matched PASSED [ 42%]
+tests/test_r186_do_not_merge_gate.py::test_plain_merge_mention_not_matched PASSED [ 50%]
+tests/test_r186_do_not_merge_gate.py::test_do_not_merge_hyphenated PASSED [ 57%]
+tests/test_r186_do_not_merge_gate.py::test_case_insensitive PASSED       [ 64%]
+tests/test_r186_do_not_merge_gate.py::test_multiline_body PASSED         [ 71%]
+tests/test_r186_do_not_merge_gate.py::test_hold_merge_alias PASSED       [ 78%]
+tests/test_r186_do_not_merge_gate.py::test_empty_pr PASSED               [ 85%]
+tests/test_r186_do_not_merge_gate.py::test_marker_in_body_only PASSED    [ 92%]
+tests/test_r186_do_not_merge_gate.py::test_strip_marks_removes_diacritics PASSED [100%]
+============================== 14 passed in 0.15s ==============================
+
+--- [2] Full local suite on branch (R-169 v4 included) ---
+
+========== 2783 passed, 10 skipped, 4 deselected in 254.90s (0:04:14) ==========
+
+--- [3] Smoke: local mode with marker (expect rc=1) ---
+::error::PR carries an explicit hold marker — merging is refused until the marker is removed by the owner after acceptance (R-186). Markers are an owner instruction, not a PR-editable switch.
+  found in title: ...DO NOT MERGE...
+rc=1
+
+--- [4] Smoke: local mode clean (expect rc=0) ---
+No hold marker in PR title/body (R-186).
+rc=0
+
+--- [5] CI mode against already-merged PR #217 (expect rc=0, nothing to guard) ---
+PR is closed (merged=True) — nothing to guard.
+rc=0
+
+--- [6] CI mode against open PR (none open at log time) ---
+0
+
+--- [7] ruff (CI select set) ---
+All checks passed!
+rc=0

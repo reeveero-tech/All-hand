@@ -65,6 +65,18 @@ jobs:
 
           echo "Governance gate passed."
 
+      # R-186 (D-097, 2026-10-21 incident): PRs #215/#216/#217 were merged
+      # from the owner account while their titles/bodies said "DO NOT MERGE"
+      # / "لا يُدمج". This required check FAILS while the PR's live state
+      # carries an explicit hold marker, so the marker cannot be merged
+      # around (with enforce_admins on; see ROADMAP R-186).
+      - name: Do-not-merge hold check (R-186)
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/check_do_not_merge.py --repo-pr "$GITHUB_REPOSITORY" "${{ github.event.pull_request.number }}"
+
       # R-153 (D-065): stricter, unit-tested superset of the inline check
       # above (which stays unchanged). Wider "executable" set needs
       # docs/audit evidence; runtime Python / web source need tests.
