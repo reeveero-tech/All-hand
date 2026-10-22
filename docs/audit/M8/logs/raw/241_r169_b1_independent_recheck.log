@@ -1,0 +1,49 @@
+# 241 — R-169 v4 b1: independent recheck + Q-028 case index (agent self-check; NOT an independent or human review)
+# date: 2026-10-22T01:18:12Z  head: e53bcc31a7b81c6138fda867f2fb590e1149cf3a  python: Python 3.14.8
+
+## live state via public GitHub API (unauthenticated; connector token returned 401)
+main 209ba7d6c3df4f1f057fc17f0bc9f4087fe0a75b protected True
+PR219 open e53bcc31a7b81c6138fda867f2fb590e1149cf3a unstable
+governance job 119572605148 failure e53bcc31a7b81c6138fda867f2fb590e1149cf3a
+  step 1 Set up job success
+  step 2 Run actions/checkout@v7 success
+  step 3 No-delete check (R-152) success
+  step 4 Atomic batch check success
+  step 5 Do-not-merge hold check (R-186) failure
+  step 6 Atomic batch check v2 (R-153) success
+  step 7 Status evidence check (R-154) success
+  step 14 Post Run actions/checkout@v7 success
+  step 15 Complete job success
+branch protection endpoint (unauthenticated): HTTP 401 -> enforce_admins NOT re-verified now
+
+## R-186 reproduced locally on live PR #219 title/body
+::error::PR carries an explicit hold marker — merging is refused until the marker is removed by the owner after acceptance (R-186). Markers are an owner instruction, not a PR-editable switch.
+  found in title: ...(inconclusive) + Q-028 review package — لا يدمج حتى Q-028...
+rc=1
+
+## provenance: labels/raw/sheets present at 31452f4, unchanged to HEAD
+benchmarks/r169/v4/blind_labels/test_baseline_b1.labels.jsonl
+benchmarks/r169/v4/blind_labels/test_grounded-v2_b1.labels.jsonl
+docs/audit/M8/logs/raw/r169/v4/blind/test_baseline_b1.sheet.md
+docs/audit/M8/logs/raw/r169/v4/blind/test_grounded-v2_b1.sheet.md
+docs/audit/M8/logs/raw/r169/v4/test_baseline_b1.jsonl
+docs/audit/M8/logs/raw/r169/v4/test_grounded-v2_b1.jsonl
+summary files at 31452f4: 0
+diff 31452f4..HEAD on labels/raw/sheets: []
+diff 88f0f63..HEAD on frozen files: []
+
+## independent gate recomputation (score_case directly; report script not imported)
+test_baseline_b1 grader_pass 93 agree 108/117 lenient 0 uncertain 0
+test_grounded-v2_b1 grader_pass 113 agree 113/116 lenient 0 uncertain 2
+COMBINED 221/233 = 0.9485  lenient 0  uncertain 2/236 = 0.0085  sha_mismatch 0  -> gate FAIL (inconclusive)
+
+## report script (as registered)
+  ],
+  "uncertain_share": 0.0085,
+  "valid": false
+}
+
+## review package link audit
+BROKEN ../../../../R169_REPORT_V4_B1.md (REVIEW_PACKAGE.md left unchanged; corrected link given in REVIEWER_CASE_INDEX.md)
+OK ../blind/test_baseline_b1.sheet.md
+OK ../blind/test_grounded-v2_b1.sheet.md
