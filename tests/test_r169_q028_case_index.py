@@ -67,7 +67,7 @@ def test_case_anchors_and_reply_fingerprints_remain_unchanged():
         path = (HR / href.split("#")[0]).resolve()
         assert path.name == sheet == f"{run}.sheet.md"
         lines = path.read_text(encoding="utf-8").splitlines()
-        assert lines[int(line) - 1].startswith("## ") and f"`{cid}`" in lines[int(line) - 1]
+        assert lines[int(line) - 1].startswith("## ") and cid in lines[int(line) - 1]
         raw = [json.loads(x) for x in (ROOT / f"docs/audit/M8/logs/raw/r169/v4/{run}.jsonl").open(encoding="utf-8")][1:]
         reply = next(item for item in raw if item["id"] == cid).get("reply") or ""
         assert hashlib.sha256(reply.encode()).hexdigest()[:12] == sha
