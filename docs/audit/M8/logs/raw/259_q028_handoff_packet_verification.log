@@ -1,0 +1,47 @@
+# 259 — تحقق حزمة المرحلة أ قبل التسليم (D-099) — مخرجات أوامر حرفية
+# date_utc: 2026-10-22T14:40:42Z  main: f19ccd80ce130559455ad4c3830d8416b458f3ac  pr219_head: 8d1ef1ca43ef01f5533bccd6d37e4e857e6b7f29
+
+$ sha256sum (workspace packet, outside repo)
+33bd2b8fb121202c00b5b469c9733788368d0066a85705ece162f910c0b7a1ba  BLIND_REVIEW_CASES_PHASE_A.md
+feba4e3d830a83516d202349701cc97cb47d0b20532b975a6af469c10fe97544  BLIND_REVIEW_PROTOCOL.md
+15686639c5e5beaff036c7a4ed4157d52d25cb994bcd2c214be3ee764e8edfe3  REVIEWER_CASE_INDEX_PHASE_A.md
+5127d0af159eaf8fcad15cf0f26ed4af4192f85974d4ea636de2f54f3c87ab74  reviewer_blind_form.json
+2fb1ea0f3fd2da7a7a5eaa3a24be154786475693cfc37c94524a974f1da0fd10  phase_a_packet.zip
+
+$ zip members (python zipfile)
+BLIND_REVIEW_PROTOCOL.md 4163 feba4e3d830a83516d202349701cc97cb47d0b20532b975a6af469c10fe97544
+REVIEWER_CASE_INDEX_PHASE_A.md 2362 15686639c5e5beaff036c7a4ed4157d52d25cb994bcd2c214be3ee764e8edfe3
+BLIND_REVIEW_CASES_PHASE_A.md 25098 33bd2b8fb121202c00b5b469c9733788368d0066a85705ece162f910c0b7a1ba
+reviewer_blind_form.json 4970 5127d0af159eaf8fcad15cf0f26ed4af4192f85974d4ea636de2f54f3c87ab74
+
+$ byte-identity vs PR #219 branch docs/audit/M8/logs/raw/r169/v4/human_review/
+BLIND_REVIEW_CASES_PHASE_A.md IDENTICAL
+BLIND_REVIEW_PROTOCOL.md IDENTICAL
+REVIEWER_CASE_INDEX_PHASE_A.md IDENTICAL
+reviewer_blind_form.json IDENTICAL
+
+$ leak scan: original case ids (benchmarks/r169/v4/*.jsonl) and terms
+original ids loaded: 300
+BLIND_REVIEW_CASES_PHASE_A.md | original-id hits: 0 | term counts: {'مصحح': 1}
+BLIND_REVIEW_PROTOCOL.md | original-id hits: 0 | term counts: {'مصحح': 3, 'مجلس': 1, 'MAPPING': 2, 'reviewer_form.json': 2, 'R169_REPORT': 1}
+REVIEWER_CASE_INDEX_PHASE_A.md | original-id hits: 0 | term counts: {'مصحح': 1}
+reviewer_blind_form.json | original-id hits: 0 | term counts: {'scorer': 1, 'grader': 1, 'verdict': 1, 'label': 2, 'MAPPING': 1}
+-- every term occurrence with context (to confirm they are prohibitions, not data):
+BLIND_REVIEW_CASES_PHASE_A.md ::  أو اسم التشغيل أو فئة اختيار الحالة أو وسم الوكيل أو حكم المصحح. > راجع السؤال والمصادر والرد ومعيار ال
+BLIND_REVIEW_PROTOCOL.md :: مى كاملًا.  ## شروط المراجع  يجب أن يكون إنسانًا لم يطوّر المصحح v1–v4 أو يضبطه ولم يطّلع مسبقًا على مجم
+BLIND_REVIEW_PROTOCOL.md :: لرسمي وتقرير `R169_REPORT_V4_B1.md` والفهرس الأصلي ونتائج المصحح. 3. انقل أحكام المراجع إلى الحقول الرسم
+BLIND_REVIEW_PROTOCOL.md :: بات  - لا تغيّر الردود الخام أو ملفات الوسوم أو FREEZE أو المصحح أو عتبات القبول أو بصمات الردود. - الحز
+BLIND_REVIEW_PROTOCOL.md :: لمستودع أو PR #219 بوصفه نقطة البدء. لا ترسل `REVIEWER_CASE_MAPPING_PHASE_B.json` أو `REVIEWER_CASE_INDEX.m
+BLIND_REVIEW_PROTOCOL.md :: حلة أ فقط  بعد تثبيت النموذج الأولي: 1. افتح `REVIEWER_CASE_MAPPING_PHASE_B.json` لربط Cxx بهوية الحالة وال
+BLIND_REVIEW_PROTOCOL.md :: بمجرد انتهاء المرحلة أ. تظل الحوكمة ومعايير القبول حاكمة. - مجلس المراجعة الاصطناعي تمهيدي فقط ولا يستبد
+BLIND_REVIEW_PROTOCOL.md :: في المرحلة أ**. 2. افتح `reviewer_form.json` الرسمي وتقرير `R169_REPORT_V4_B1.md` والفهرس الأصلي ونتائج المصحح.
+BLIND_REVIEW_PROTOCOL.md :: APPING_PHASE_B.json` أو `REVIEWER_CASE_INDEX.md` الأصلي أو `reviewer_form.json` الرسمي أو تقرير القياس أو ملفات الوسوم
+BLIND_REVIEW_PROTOCOL.md :: ل الأصليين. **لا تسلّم خريطة الربط في المرحلة أ**. 2. افتح `reviewer_form.json` الرسمي وتقرير `R169_REPORT_V4_B1.md` و
+REVIEWER_CASE_INDEX_PHASE_A.md :: معرفات الحالة الأصلية أو التشغيل أو فئة الاختيار أو درجات المصحح. > [إجراء المرحلتين](BLIND_REVIEW_PROTO
+reviewer_blind_form.json :: agent or model. Do not browse the public repository or open scorer reports, the mapping file, original ind
+reviewer_blind_form.json :: "Q-028 Phase A — independent blind human judgments only; no grader or agent labels",   "instructions": "Hu
+reviewer_blind_form.json :: r": {     "confirmed_human": false,     "confirmed_no_prior_verdicts": false,     "name_or_handle": "",    
+reviewer_blind_form.json ::  independent blind human judgments only; no grader or agent labels",   "instructions": "Human-only. The c
+reviewer_blind_form.json :: ng file, original index, official form, raw outputs, or old labels before this Phase A form is frozen and
+cases: 27 | ar: 17 | en: 10
+style cues: json-quote replies: ['C01'] | source-cite replies: ['C25']

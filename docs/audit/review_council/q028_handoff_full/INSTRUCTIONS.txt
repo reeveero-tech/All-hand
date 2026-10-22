@@ -1,0 +1,34 @@
+You are one independent member of a multi-model review council. Other members from different model families are reviewing the same material separately. Do NOT try to reach consensus or guess what others will say. Give your own raw, independent assessment.
+
+MATERIAL (frozen, read-only): /home/user/workspace/council_q028/material/ — six files:
+- BLIND_REVIEW_PROTOCOL.md, REVIEWER_CASE_INDEX_PHASE_A.md, BLIND_REVIEW_CASES_PHASE_A.md, reviewer_blind_form.json = the "Phase A" packet that will be sent to ONE human reviewer, who must judge 27 language-model replies blind.
+- Q028_HANDOFF_INSTRUCTIONS.md = the coordinator's delivery procedure, the cover message to the reviewer, the reviewer criteria, and the independence / conflict-of-interest declarations.
+- REVIEWER_OUTREACH.md = how a qualified free reviewer might be found, a draft public call, and the current blocker.
+Verify the fingerprints with: cd /home/user/workspace/council_q028/material && sha256sum *  and compare with /home/user/workspace/council_q028/MATERIAL_FINGERPRINTS.txt. Report whether they match.
+
+STRICT RULES:
+1. Read ONLY files inside /home/user/workspace/council_q028/material/ and MATERIAL_FINGERPRINTS.txt. Do NOT open, list or search anything else in /home/user/workspace (including any git repository, other review folders, or other council members' output). Do NOT browse the web or look up the project.
+2. Do NOT write, create or modify any file anywhere. Return your report ONLY as your final message.
+3. Do NOT judge the 27 cases (no pass/fail/uncertain per case) and do NOT fill the form. Your role is procedural-integrity and blinding-neutrality auditor, not case grader.
+4. You may not change any gate, threshold, label or status, and nothing you say replaces the required human review.
+
+QUESTIONS TO ANSWER:
+Q1. Blinding / neutrality of the Phase A packet: is there anything in the four packet files that could reveal to the human reviewer (a) which system configuration produced a reply, (b) why a case was selected for review (e.g., disagreement or failure), (c) any prior automated or agent verdict, or (d) the original case identity? Cite exact case refs / lines. Distinguish real leaks from benign mentions (e.g., warnings telling the reviewer not to open something).
+Q2. Adequacy of the reviewer instructions and criteria (cover message §3): are pass/fail/uncertain definitions clear and consistent with the per-case rubrics? Any wording that could bias the reviewer toward pass or fail?
+Q3. Independence and conflict-of-interest conditions (§4): are they sufficient and verifiable? What is missing? Is anything over-strict or unworkable?
+Q4. Coordinator procedure (§2) and receipt record (§5): can it prove that Phase A judgments were frozen before Phase B materials were opened? Weak points?
+Q5. Outreach (REVIEWER_OUTREACH.md): risks of the draft public call to blinding or ethics; better free alternatives.
+Q6. Any internal inconsistency between the files (counts, file names, fingerprints, rules).
+
+REPORT FORMAT (write in Arabic; keep technical terms/IDs as is). Use exactly these sections:
+1. هوية المراجع (model id/family as you know it; state uncertainty if any)
+2. التحقق من البصمات (match / mismatch per file)
+3. الملاحظات (numbered, each tied to Q1–Q6)
+4. الأدلة (exact quotes / case refs / line numbers for each observation)
+5. المخاطر (with severity: high / medium / low)
+6. الفجوات (what you could not check and why)
+7. الافتراضات
+8. البدائل المقترحة (concrete fixes; note which would require changing the frozen packet — those must NOT be applied to the current packet without an owner decision)
+9. درجة الثقة (overall and per key finding)
+10. ما يحتاج قرارًا من المالك أو مراجعة بشرية
+Also state explicitly at the end: which files you actually read, and confirm you did not read anything outside material/ (or disclose if you did).
