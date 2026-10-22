@@ -1,0 +1,87 @@
+# 244 — PREP audit: CommunicationHub, pools, durable-queue recovery (agent self-audit; NOT an independent review)
+# date: 2026-10-22T02:06:12Z base: e085ca5352bc4c5375e0d558aed834ab6c44af33 python: Python 3.14.8
+# runtime files audited are identical to main e085ca5: []
+
+## line references
+42:        async with self._lock:
+52:        async with self._lock:
+67:        async with self._lock:
+74:            agent.deliver_message(message)
+75:            self._stats["messages_delivered"] += 1
+77:            return DeliveryResult(success=True, recipient=recipient)
+82:        async with self._lock:
+86:            async with self._lock:
+90:                    agent.deliver_message(message)
+96:        self._stats["messages_delivered"] += delivered
+98:        return DeliveryResult(success=True, recipient="broadcast")
+116:    async def subscribe(self, event: str, callback: Callable):
+120:        self._subscribers[event].add(callback)
+112:        if self.is_active:
+193:    def deliver_message(self, message: Message):
+194:        if self.is_active:
+70:        ex = _pools[name] = ThreadPoolExecutor(max_workers=size(name), thread_name_prefix=f"agos-{name}")
+122:    return await asyncio.wrap_future(cf)
+404:TASK_LEASE_S = max(1.0, float(os.environ.get("AGOS_TASK_LEASE_S", "60") or 60))
+405:TASK_REAP_S = max(0.1, float(os.environ.get("AGOS_TASK_REAP_S", "5") or 5))
+407:TASK_DISPATCH_BATCH = agent_registry.positive_int_env("AGOS_TASK_DISPATCH_BATCH", 50, 1, 1000)
+1139:                        await storage.renew_task_lease(tid, str(info.get("claim_token")), _lease_deadline())
+1143:            rows = await storage.list_expired_lease_tasks(TASK_DISPATCH_BATCH)
+1146:                if tid in _RUNNING_RUNS:
+1196:        await asyncio.sleep(TASK_REAP_S)
+async def _lifespan(_app):
+    """R-042: close the storage HTTP session on shutdown (was leaked — 'Unclosed client session').
+    R-078: classify the Supabase key at startup and warn loudly if it is a public one."""
+    log_key_status()
+    _start_registry_worker()  # R-162: a fresh worker after a previous shutdown
+    _start_queue_loops()  # R-163: durable dispatcher + reaper (storage configured)
+    yield
+    _stop_queue_loops()  # R-163: no lease renewal after shutdown
+    _stop_registry_worker()  # R-162: no lease outlives the worker
+    await experience.persist()  # R-103: no-op unless AGOS_MEMORY_FILE is set
+    await get_storage().close()
+
+## hub probe run 1
+H1 inactive recipient: DeliveryResult.success=True inbox_size=0 stats.delivered=1 -> reported delivered but dropped=True
+H2 broadcast, 0 active recipients: success=True counted_as_delivered=1 actually_queued=0
+H3 broadcast echo to sender: sender_inbox=1
+H4 subscriber callbacks invoked after register: 0
+H6 broadcast aliasing: same object in all inboxes=True; mutation by r0 visible to r2=True
+H5 N=1000: broadcast avg 2.0 ms, lock acquisitions per broadcast (by code reading: 1 + N) = 1001, queued refs after 10 broadcasts = 10000, mem_delta=0.0MB
+H5 N=10000: broadcast avg 20.0 ms, lock acquisitions per broadcast (by code reading: 1 + N) = 10001, queued refs after 10 broadcasts = 100000, mem_delta=0.0MB
+## hub probe run 2
+H1 inactive recipient: DeliveryResult.success=True inbox_size=0 stats.delivered=1 -> reported delivered but dropped=True
+H2 broadcast, 0 active recipients: success=True counted_as_delivered=1 actually_queued=0
+H3 broadcast echo to sender: sender_inbox=1
+H4 subscriber callbacks invoked after register: 0
+H6 broadcast aliasing: same object in all inboxes=True; mutation by r0 visible to r2=True
+H5 N=1000: broadcast avg 1.9 ms, lock acquisitions per broadcast (by code reading: 1 + N) = 1001, queued refs after 10 broadcasts = 10000, mem_delta=0.0MB
+H5 N=10000: broadcast avg 20.8 ms, lock acquisitions per broadcast (by code reading: 1 + N) = 10001, queued refs after 10 broadcasts = 100000, mem_delta=0.0MB
+## hub probe run 3
+H1 inactive recipient: DeliveryResult.success=True inbox_size=0 stats.delivered=1 -> reported delivered but dropped=True
+H2 broadcast, 0 active recipients: success=True counted_as_delivered=1 actually_queued=0
+H3 broadcast echo to sender: sender_inbox=1
+H4 subscriber callbacks invoked after register: 0
+H6 broadcast aliasing: same object in all inboxes=True; mutation by r0 visible to r2=True
+H5 N=1000: broadcast avg 1.9 ms, lock acquisitions per broadcast (by code reading: 1 + N) = 1001, queued refs after 10 broadcasts = 10000, mem_delta=0.0MB
+H5 N=10000: broadcast avg 20.1 ms, lock acquisitions per broadcast (by code reading: 1 + N) = 10001, queued refs after 10 broadcasts = 100000, mem_delta=0.0MB
+## pools probe run 1
+P1 pool=local size=2: 2 callers timed out at 50 ms, their threads kept running; next fast call waited 899 ms (thread occupancy outlives caller timeout)
+P2 in-flight counter after completion: waiting=0 inflight=0 (expected 0)
+P3 queued-then-cancelled call executed: False (contract: never runs); inflight=0
+P4 live executors at end of probe: ['local']; any module-level shutdown function: []
+## pools probe run 2
+P1 pool=local size=2: 2 callers timed out at 50 ms, their threads kept running; next fast call waited 900 ms (thread occupancy outlives caller timeout)
+P2 in-flight counter after completion: waiting=0 inflight=0 (expected 0)
+P3 queued-then-cancelled call executed: False (contract: never runs); inflight=0
+P4 live executors at end of probe: ['local']; any module-level shutdown function: []
+## pools probe run 3
+P1 pool=local size=2: 2 callers timed out at 50 ms, their threads kept running; next fast call waited 900 ms (thread occupancy outlives caller timeout)
+P2 in-flight counter after completion: waiting=0 inflight=0 (expected 0)
+P3 queued-then-cancelled call executed: False (contract: never runs); inflight=0
+P4 live executors at end of probe: ['local']; any module-level shutdown function: []
+
+## recovery: arithmetic from defaults (analysis, NOT measured)
+max recovery rate per instance = batch/reap = 10 tasks/s -> 1,000,000 expired leases need 27.8 h with one reaper (ignores per-row PATCH latency)
+renewal is sequential: interval between renewals of one lease = pass + 5s sleep; at 10 ms per renew it exceeds the 60s lease when running tasks per instance > 5500
+renewal is sequential: interval between renewals of one lease = pass + 5s sleep; at 50 ms per renew it exceeds the 60s lease when running tasks per instance > 1100
+renewal is sequential: interval between renewals of one lease = pass + 5s sleep; at 100 ms per renew it exceeds the 60s lease when running tasks per instance > 550
