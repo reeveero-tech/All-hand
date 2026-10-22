@@ -47,3 +47,8 @@ COMBINED 221/233 = 0.9485  lenient 0  uncertain 2/236 = 0.0085  sha_mismatch 0  
 BROKEN ../../../../R169_REPORT_V4_B1.md (REVIEW_PACKAGE.md left unchanged; corrected link given in REVIEWER_CASE_INDEX.md)
 OK ../blind/test_baseline_b1.sheet.md
 OK ../blind/test_grounded-v2_b1.sheet.md
+
+## full suite on 49d44b6 (local, Python 3.14.8)
+========== 2794 passed, 8 skipped, 4 deselected in 255.41s (0:04:15) ===========
+targeted: tests/test_r169_q028_case_index.py red-first 1 failed/4 passed (evidence log absent) -> green 5 passed
+NOT run: CI on pushed head (push blocked: GitHub credentials 401)
