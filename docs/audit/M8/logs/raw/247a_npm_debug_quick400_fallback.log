@@ -1,0 +1,70 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@10.8.2
+2 info using node@v20.20.2
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/home/user/workspace/allhand/web/.npmrc
+5 silly config load:file:/home/user/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm audit
+8 verbose argv "audit" "--omit" "dev" "--audit-level" "high" "--loglevel" "http" "--fetch-timeout" "4000" "--fetch-retries" "0"
+9 verbose logfile logs-max:10 dir:/home/user/.npm/_logs/2026-10-22T07_32_53_337Z-
+10 verbose logfile /home/user/.npm/_logs/2026-10-22T07_32_53_337Z-debug-0.log
+11 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+12 silly logfile done cleaning log files
+13 silly audit bulk request {
+13 silly audit   'js-tokens': [ '4.0.0' ],
+13 silly audit   'loose-envify': [ '1.4.0' ],
+13 silly audit   react: [ '18.3.1' ],
+13 silly audit   'react-dom': [ '18.3.1' ],
+13 silly audit   scheduler: [ '0.23.2' ]
+13 silly audit }
+14 silly audit bulk request failed undefined
+15 notice This endpoint is being retired. Use the bulk advisory endpoint instead. See the following docs for more info: https://api-docs.npmjs.com/#tag/Audit
+16 http fetch POST 400 https://registry.npmjs.org/-/npm/v1/security/audits/quick 258ms
+17 verbose audit error HttpErrorGeneral: 400 Bad Request - POST https://registry.npmjs.org/-/npm/v1/security/audits/quick - Bad Request
+17 verbose audit error     at /usr/local/lib/node_modules/npm/node_modules/npm-registry-fetch/lib/check-response.js:95:15
+17 verbose audit error     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+17 verbose audit error     at async [getReport] (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/audit-report.js:336:21)
+17 verbose audit error     at async AuditReport.run (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/audit-report.js:106:19)
+17 verbose audit error     at async Arborist.audit (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/index.js:254:24)
+17 verbose audit error     at async Audit.auditAdvisories (/usr/local/lib/node_modules/npm/lib/commands/audit.js:69:5)
+17 verbose audit error     at async Audit.exec (/usr/local/lib/node_modules/npm/lib/commands/audit.js:49:7)
+17 verbose audit error     at async Npm.exec (/usr/local/lib/node_modules/npm/lib/npm.js:207:9)
+17 verbose audit error     at async module.exports (/usr/local/lib/node_modules/npm/lib/cli/entry.js:74:5) {
+17 verbose audit error   headers: [Object: null prototype] {
+17 verbose audit error     date: [ 'Thu, 22 Oct 2026 07:32:57 GMT' ],
+17 verbose audit error     'transfer-encoding': [ 'chunked' ],
+17 verbose audit error     connection: [ 'keep-alive' ],
+17 verbose audit error     'cf-ray': [ 'a4e6cfa48cb3f697-IAD' ],
+17 verbose audit error     'cf-cache-status': [ 'DYNAMIC' ],
+17 verbose audit error     server: [ 'cloudflare' ],
+17 verbose audit error     'npm-notice': [
+17 verbose audit error       'This endpoint is being retired. Use the bulk advisory endpoint instead. See the following docs for more info: https://api-docs.npmjs.com/#tag/Audit'
+17 verbose audit error     ],
+17 verbose audit error     'set-cookie': [
+17 verbose audit error       '__cf_bm=NIzkbiY_mNtrZFrioWN5IcN8tkjTCQcAwktIu5psKPs-1792654377.8323135-1.0.1.1-LTKdLcdsG16qeYMYksXF8AZoD2upldXyryifxfaHT_aUZT7r7x_Ha7jMqltwZeqW237J8YahbF1qmLwYX0ExiTvzSrMmYBBNNKEOhZi7zFbu8hyJx9l6d_l8AA7WHRdL; HttpOnly; SameSite=None; Secure; Path=/; Domain=npmjs.org; Expires=Thu, 22 Oct 2026 08:02:57 GMT'
+17 verbose audit error     ],
+17 verbose audit error     'x-fetch-attempts': [ '1' ]
+17 verbose audit error   },
+17 verbose audit error   statusCode: 400,
+17 verbose audit error   code: 'E400',
+17 verbose audit error   method: 'POST',
+17 verbose audit error   uri: 'https://registry.npmjs.org/-/npm/v1/security/audits/quick',
+17 verbose audit error   body: {
+17 verbose audit error     statusCode: 400,
+17 verbose audit error     error: 'Bad Request',
+17 verbose audit error     message: 'Invalid package tree, run  npm install  to rebuild your package-lock.json'
+17 verbose audit error   },
+17 verbose audit error   pkgid: undefined
+17 verbose audit error }
+18 silly audit error [object Object]
+19 silly audit report null
+20 warn audit 400 Bad Request - POST https://registry.npmjs.org/-/npm/v1/security/audits/quick - Bad Request
+21 error audit endpoint returned an error
+22 verbose cwd /home/user/workspace/allhand/web
+23 verbose os Linux 6.1.155
+24 verbose node v20.20.2
+25 verbose npm  v10.8.2
+26 verbose exit 1
+27 verbose code 1
+28 error A complete log of this run can be found in: /home/user/.npm/_logs/2026-10-22T07_32_53_337Z-debug-0.log
