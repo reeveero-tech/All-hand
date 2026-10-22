@@ -651,7 +651,9 @@ BLIND = _load("r169_blind_sheet_v4", "scripts/r169_blind_sheet_v4.py")
 
 # The pre-registered acceptance runs (PREREGISTRATION.md §3). Empty until they
 # exist; then set deliberately and the suite enforces presence + rescore.
-EXPECTED_FINAL_RUNS: list = []
+# Declared 2026-10-22 after the b1 runs were executed at the frozen head
+# (88f0f63) and committed blind-first (labels published before scoring).
+EXPECTED_FINAL_RUNS: list = ["test_baseline_b1", "test_grounded-v2_b1"]
 
 
 def test_expected_final_runs_declared_and_present():
