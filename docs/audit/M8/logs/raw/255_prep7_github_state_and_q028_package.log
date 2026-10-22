@@ -1,0 +1,41 @@
+=== PREP AUDIT 7 — GitHub state + Q-028 Phase-A packet verification (2026-10-22) ===
+NOTE: sections marked [ملخص منسق] are post-hoc summaries by the agent; each claim's direct evidence is named inline. Read-only evidence gathered via unauthenticated public REST API (repo is public) after the gh token expired mid-session (401).
+
+--- [1] main / CI / open PRs ---
+[ملخص منسق] main head: 3df8e868fde33ae22415336537365e5284d02b81 (= reference head; last commit 2026-10-22 13:40:38 +0300 'D-097: strengthen review-council independence and human gate boundaries') — from GET /branches/main.
+[ملخص منسق] CI run 39764893318 on this head: all jobs green; test job steps (py3.11 default, py3.12, py3.12 AGOS_AGENT_IMPL=specialists) each report 2784 passed, 10 skipped, 4 deselected, 9 xfailed — same counts as the local py3.12 venv run (log 254). Count equality does not prove environment identity beyond Python version + lockfiles; stated as counts match, not environment proof.
+[ملخص منسق] Open PRs: exactly one — PR #219 (m8/r169-b1-results @ 8d1ef1ca43ef01f5533bccd6d37e4e857e6b7f29, base main, not draft, no labels) — from GET /pulls?state=open.
+[ملخص منسق] PR #219 checks on head 8d1ef1c: quality/test/network/build/docker/audit/storage=success; publish=skipped; governance=failure.
+
+--- [2] governance FAILURE cause — DIRECT step-level evidence (not inference) ---
+From GET /actions/runs/39766784288/jobs (the governance check-run for PR #219 head 8d1ef1c):
+  job: governance | status: completed | conclusion: failure
+    step: Set up job -> success
+    step: Run actions/checkout@v7 -> success
+    step: No-delete check (R-152) -> success
+    step: Atomic batch check -> success
+    step: Do-not-merge hold check (R-186) -> failure
+    step: Atomic batch check v2 (R-153) -> success
+    step: Status evidence check (R-154) -> success
+=> The ONLY failing step is the R-186 do-not-merge hold check, consistent with the live PR title carrying 'لا يُدمج حتى Q-028' and with scripts/check_do_not_merge.py (D-096). Proven at step level for this head's run.
+
+--- [3] Q-028 Phase-A blind packet integrity (branch m8/r169-b1-results @ 8d1ef1c) ---
+Exported files: BLIND_REVIEW_PROTOCOL.md, REVIEWER_CASE_INDEX_PHASE_A.md, BLIND_REVIEW_CASES_PHASE_A.md, reviewer_blind_form.json
+[ملخص منسق] Coverage: mapping (REVIEWER_CASE_MAPPING_PHASE_B.json) blind_case_ref set == {C01..C27} exactly; blank blind form lists all 27 refs with empty judgments; blind packet contains 27 case sections (## Case C01..C27).
+[ملخص منسق] Duplication note: 26 distinct case_ids across 27 refs — 'r169-v4-abstain_missing-08-ar' appears as C10 (run test_grounded-v2_b1, reply sha 9effba649484) and C11 (run test_baseline_b1, reply sha be5be9b276d5): same case from two runs, two different replies, judged independently — by design.
+[ملخص منسق] Leak scan (independent, corrected tool — scans all four files for: original case ids r169-v4-*, run names test_baseline_b1/test_grounded-v2_b1, grader fields grader_fail_reason/agent_label, the 94.85% figure, selection-category names, 'family:'): NONE found. The only 12-hex strings in reviewer_blind_form.json are the full frozen_evaluated_commit SHA (legitimate metadata). The branch's own tests (test_r169_q028_case_index.py) assert the same leak-freedom properties and PASSED in my run (696 passed, log 254).
+[ملخص منسق] Fidelity: the branch test test_alias_order_is_stable_and_mapping_fingerprints_match_original_replies verifies ALL 27 mapping entries' reply_sha256 prefixes against the frozen b1 jsonl replies and blind labels — passed in my run. Independent spot-check (mine): blind packet C11 reply text == test_baseline_b1.jsonl reply for r169-v4-abstain_missing-08-ar, byte-identical: 'لم يتم العثور على معلومات عن المدير الحالي للمسرح نورثام في أمبرلي في البيانات المتوفرة.'
+[ملخص منسق] Form-check tool: scripts/check_q028_form.py — its behavior (committed form incomplete/unfilled with 27 cases; fully answered forms complete regardless of content; partial/edited forms rejected; never computes verdicts) is verified by the branch's test_r169_q028_form_check.py which PASSED in my run. My manual run of the tool against the blank BLIND form from a branch worktree reported complete:false, answered:0, exit 1 — the case-set 'missing' messages there reflect that the tool compares against the official form structure; this demonstrates the tool runs and rejects unfilled forms, and the authoritative verification of its contract is the passing test suite. No review form was filled.
+
+--- [4] Standalone Phase-A packet frozen by coordinator (outside repo, per protocol) ---
+Source branch SHA: 8d1ef1ca43ef01f5533bccd6d37e4e857e6b7f29 | Frozen: 2026-10-22T11:30Z
+SHA-256 fingerprints:
+33bd2b8fb121202c00b5b469c9733788368d0066a85705ece162f910c0b7a1ba  BLIND_REVIEW_CASES_PHASE_A.md
+feba4e3d830a83516d202349701cc97cb47d0b20532b975a6af469c10fe97544  BLIND_REVIEW_PROTOCOL.md
+15686639c5e5beaff036c7a4ed4157d52d25cb994bcd2c214be3ee764e8edfe3  REVIEWER_CASE_INDEX_PHASE_A.md
+5127d0af159eaf8fcad15cf0f26ed4af4192f85974d4ea636de2f54f3c87ab74  reviewer_blind_form.json
+Packet contains ONLY the four Phase-A files (no Phase-B mapping, no results, no repo link). Held by the coordinator; delivery to a reviewer is an owner action.
+
+--- [5] Incidents (honest record) ---
+[ملخص منسق] Credential expiry: mid-session (after local checks, before push) gh API + git push/fetch via git-agent-proxy began returning 401 'Bad credentials'. Read-only verification continued via unauthenticated public REST (repo public). The batch is a LOCAL COMMIT ONLY (9903e29) — no push, no PR, no merge, no CI on it. Full-suite evidence in this log concerns main 3df8e86; local governance gate checks (no-delete/atomic/status-evidence) concern the local commit.
+[ملخص منسق] Local reset mishap (reflog-verified): two accidental 'git reset --hard HEAD~1' commands (chained after failed commits during an auth probe) moved local main backward (3df8e86 -> 1b66141 -> e26cf0f); restored immediately with 'git reset --hard origin/main' (3df8e86). Remote untouched; no work lost. Commit author identity was taken from repo history, NOT verified against the connected account — to be verified before push.
