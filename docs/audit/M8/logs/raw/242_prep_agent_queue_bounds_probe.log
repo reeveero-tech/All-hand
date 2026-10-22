@@ -1,0 +1,32 @@
+# 242 — PREP audit: BaseAgent queue/memory bounds (agent self-audit; not an independent review)
+# date: 2026-10-22T01:20:07Z base: 209ba7d6c3df4f1f057fc17f0bc9f4087fe0a75b python: Python 3.14.8
+# file under audit: agent_civilization/core/agents/base_agent.py (identical to main 209ba7d)
+
+85:                 capacity: int = 100, **kwargs):
+88:        self.capacity = capacity
+91:        self.workqueue: asyncio.Queue = asyncio.Queue()
+92:        self._inbox: asyncio.Queue = asyncio.Queue()
+112:        if self.is_active:
+186:            self.memory.setdefault("messages", []).append(message.to_dict())
+189:        if not self.is_active:
+191:        self.workqueue.put_nowait(work_item)
+194:        if self.is_active:
+195:            self._inbox.put_nowait(message)
+228:        if self.is_active:
+
+## probe x3 (determinism of counts; memory deltas vary slightly)
+abstract methods stubbed: [] capacity= 100 workqueue.maxsize= 0 inbox.maxsize= 0
+add_work x100000: qsize=100000 (capacity 100) accepted_without_backpressure=True mem_delta=40.8MB
+non-task messages x20000 -> memory['messages'] len=20000 mem_delta=11.9MB (no cap)
+add_work while inactive: silently dropped = True (no return value / no error)
+
+abstract methods stubbed: [] capacity= 100 workqueue.maxsize= 0 inbox.maxsize= 0
+add_work x100000: qsize=100000 (capacity 100) accepted_without_backpressure=True mem_delta=40.8MB
+non-task messages x20000 -> memory['messages'] len=20000 mem_delta=11.9MB (no cap)
+add_work while inactive: silently dropped = True (no return value / no error)
+
+abstract methods stubbed: [] capacity= 100 workqueue.maxsize= 0 inbox.maxsize= 0
+add_work x100000: qsize=100000 (capacity 100) accepted_without_backpressure=True mem_delta=40.8MB
+non-task messages x20000 -> memory['messages'] len=20000 mem_delta=11.9MB (no cap)
+add_work while inactive: silently dropped = True (no return value / no error)
+
