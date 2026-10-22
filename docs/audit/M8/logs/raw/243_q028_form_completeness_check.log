@@ -13,3 +13,7 @@ form history:
 f28cea6 reeveero-tech 2026-10-22 00:39:56 +0000 R-169 v4: b1 report (inconclusive) + Q-028 review package + governance updates
 form diff f28cea6..HEAD: []
 labels/report diff e53bcc3..HEAD: []
+
+## full suite on a2ff667 (local, Python 3.14.8)
+========== 2804 passed, 8 skipped, 4 deselected in 256.23s (0:04:16) ===========
+## live state re-verified with auth 2026-10-22T02:13:25Z: main e085ca5352bc4c5375e0d558aed834ab6c44af33 (PR #220 merged); main CI run 39708939781 completed success (publish skipped); protection: enforce_admins=true, required=[quality,test,build,docker,governance,audit], strict=true, force_push=false, deletions=false
