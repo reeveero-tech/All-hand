@@ -1,0 +1,22 @@
+# 251 — D-097 سياسة مجلس المراجعة: دليل البوابات (أوامر حقيقية على الالتزام المرشح)
+# 2026-10-22T09:55:07Z base origin/main 1b661411622b8b6b6b0018a6d5a4b71ac5991a33 ; candidate 26b1dea53a5964b35e935c817dee30f9a5b816f0 (قبل إضافة هذا السجل)
+$ git diff --name-status origin/main...HEAD
+A	docs/audit/M8/logs/raw/251_d097_review_council_policy.log
+M	docs/governance/CHANGELOG.md
+M	docs/governance/DECISIONS.md
+M	docs/governance/HANDOFF_PROMPT.md
+M	docs/governance/OPEN_QUESTIONS.md
+M	docs/governance/PROJECT_STATE.md
+A	docs/governance/REVIEW_COUNCIL.md
+M	docs/governance/ROADMAP.md
+$ python scripts/check_no_delete.py origin/main
+no-delete check: origin/main...HEAD status counts (no-renames): {'A': 2, 'M': 6}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python scripts/check_atomic_batch.py origin/main
+atomic-batch v2: 8 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+rc=0
