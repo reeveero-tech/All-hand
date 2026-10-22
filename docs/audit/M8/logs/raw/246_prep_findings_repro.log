@@ -1,0 +1,48 @@
+# 246 — PREP findings as strict-xfail reproductions (agent work; NOT an independent review)
+# date: 2026-10-22T03:55:24Z base: d52e189b4fdf26bc7e97fa160601f1e33ff9d4ba (+ uncommitted batch) python: Python 3.14.8
+# runtime diff vs main e085ca5 (must be empty): []
+
+## 1. with markers (expected: 1 passed, 9 xfailed)
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_h1_delivery_to_inactive_agent_is_not_reported_as_success - PREP H1: delivery to an inactive agent is reported as success while the message is dropped
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_h2_broadcast_counts_only_real_deliveries - PREP H2: broadcast counts silently dropped messages as delivered
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_h3_broadcast_does_not_echo_to_sender - PREP H3: broadcast echoes the message back to its sender
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_h4_subscribers_are_notified_on_registration - PREP H4: subscribe() stores callbacks that nothing ever invokes
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_h6_broadcast_recipients_do_not_share_mutable_state - PREP H6: broadcast shares ONE mutable Message object across all inboxes
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_p1_caller_timeout_frees_the_pool_thread - PREP P1: a caller timeout does not free the pool thread (it stays busy until fn returns)
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_p4_pools_are_closed_on_server_shutdown - PREP P4: no pool shutdown exists and the server lifespan does not close the pools
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_c2_lease_renewal_result_is_checked - PREP C2: the result of renew_task_lease is discarded (a lost lease does not stop the run)
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_c4_inconsistent_lease_and_reap_configuration_is_flagged - PREP C4: REAP >= LEASE (every lease expires before renewal) is accepted without warning
+========================= 1 passed, 9 xfailed in 1.26s =========================
+
+## 2. --runxfail: each failure must be the defect assertion
+tests/test_prep_hub_pools_recovery_findings.py:59: AssertionError: assert (True is False)
+tests/test_prep_hub_pools_recovery_findings.py:69: assert 2 == 1
+tests/test_prep_hub_pools_recovery_findings.py:79: assert (1 == 1 and 1 == 0)
+tests/test_prep_hub_pools_recovery_findings.py:91: AssertionError: a registered subscriber was never called
+tests/test_prep_hub_pools_recovery_findings.py:102: AssertionError: assert 'mutated_by' not in {'action': 'note', 'mutated_by': 'r0'}
+tests/test_prep_hub_pools_recovery_findings.py:135: AssertionError: next call could not get the thread the timed-out caller abandoned
+tests/test_prep_hub_pools_recovery_findings.py:140: assert False
+tests/test_prep_hub_pools_recovery_findings.py:162: AssertionError: renew_task_lease is awaited as a bare statement; its result is ignored
+tests/test_prep_hub_pools_recovery_findings.py:173: AssertionError: no warning/error about AGOS_TASK_REAP_S >= AGOS_TASK_LEASE_S
+========================= 9 failed, 1 passed in 1.23s ==========================
+
+## 3. sensitivity: throwaway fixes in /tmp/sens (outside the repo), --runxfail
+======================= 9 passed, 1 deselected in 0.66s ========================
+same, WITH markers (strict XPASS must fail the run):
+================== 8 failed, 1 passed, 1 deselected in 0.69s ===================
+P1 sensitivity: NOT checked (needs a cancellable fn)
+
+## 4. probe reproducibility (3 runs; timing fields stripped)
+hub distinct outputs: 1
+pool distinct outputs: 1
+python3.12 hub probe:
+H1 inactive recipient: DeliveryResult.success=True inbox_size=0 stats.delivered=1 -> reported delivered but dropped=True
+H2 broadcast, 0 active recipients: success=True counted_as_delivered=1 actually_queued=0
+H3 broadcast echo to sender: sender_inbox=1
+H4 subscriber callbacks invoked after register: 0
+H6 broadcast aliasing: same object in all inboxes=True; mutation by r0 visible to r2=True
+H5 N=1000: broadcast avg 3.5 ms, lock acquisitions per broadcast (by code reading: 1 + N) = 1001, queued refs after 10 broadcasts = 10000, mem_delta=0.0MB
+
+## 5. full suite on this branch (local)
+==== 2784 passed, 10 skipped, 4 deselected, 9 xfailed in 253.56s (0:04:13) =====
+XPASS/FAILED/ERROR lines: 0
