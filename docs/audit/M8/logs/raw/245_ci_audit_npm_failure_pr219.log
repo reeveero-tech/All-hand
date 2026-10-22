@@ -1,0 +1,52 @@
+# 245 — CI audit failure on PR #219 head 467d8eb: raw evidence + comparison (agent investigation; NOT an independent review)
+# collected: 2026-10-22T03:50:30Z with authenticated read (gh api .../actions/jobs/<id>/logs); no re-run triggered
+
+## job 119603682432 — FAILED  PR #219 head 467d8eb run 39710311490
+2026-10-22T02:27:56.1993535Z ##[group]Runner Image Provisioner
+2026-10-22T02:27:56.1995994Z Version: 20261015.610
+2026-10-22T02:27:56.2013237Z Version: 20261018.168.1
+2026-10-22T02:28:23.5274355Z node: v22.23.3
+2026-10-22T02:28:27.0032478Z added 63 packages in 3s
+2026-10-22T02:33:27.4999266Z npm notice This endpoint is being retired. Use the bulk advisory endpoint instead. See the following docs for more info: https://api-docs.npmjs.com/#tag/Audit
+2026-10-22T02:33:27.5016936Z npm warn audit 400 Bad Request - POST https://registry.npmjs.org/-/npm/v1/security/audits/quick - Bad Request
+2026-10-22T02:33:27.5019094Z   statusCode: 400,
+2026-10-22T02:33:27.5020732Z   message: 'Invalid package tree, run  npm install  to rebuild your package-lock.json'
+2026-10-22T02:33:27.5028601Z npm error audit endpoint returned an error
+2026-10-22T02:33:27.5038255Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-10-22T02_28_27_082Z-debug-0.log
+2026-10-22T02:33:27.5127656Z ##[error]Process completed with exit code 1.
+
+## job 119603311790 — SUCCESS PR #221 head d52e189 run 39710220042
+2026-10-22T02:26:40.0897404Z ##[group]Runner Image Provisioner
+2026-10-22T02:26:40.0898979Z Version: 20261015.610
+2026-10-22T02:26:40.0908571Z Version: 20261018.168.1
+2026-10-22T02:26:59.3402139Z node: v22.23.3
+2026-10-22T02:27:02.2690437Z added 63 packages in 3s
+2026-10-22T02:27:02.5930370Z found 0 vulnerabilities
+2026-10-22T02:29:19.5992695Z found 0 vulnerabilities
+2026-10-22T02:29:20.2931744Z found 0 vulnerabilities
+2026-10-22T02:29:20.6954093Z found 0 vulnerabilities
+
+## job 119598834714 — SUCCESS main e085ca5 run 39708939781
+2026-10-22T02:11:39.2077349Z ##[group]Runner Image Provisioner
+2026-10-22T02:11:39.2078610Z Version: 20261012.601
+2026-10-22T02:11:39.2085116Z Version: 20261012.163.1
+2026-10-22T02:11:58.7477390Z node: v22.23.3
+2026-10-22T02:12:01.1533122Z added 63 packages in 2s
+2026-10-22T02:12:01.4527823Z found 0 vulnerabilities
+2026-10-22T02:12:01.7701984Z found 0 vulnerabilities
+2026-10-22T02:12:02.3422972Z found 0 vulnerabilities
+2026-10-22T02:12:02.6785493Z found 0 vulnerabilities
+
+## tool versions (all three jobs): node v22.23.3, npm 10.9.9 (from job logs)
+
+## inputs identical
+web/package-lock.json sha256: main=d902c89b596a06f1 467d8eb=d902c89b596a06f1 d52e189=d902c89b596a06f1
+diff origin/main..467d8eb under web/ package.json package-lock.json: []
+
+## local reproduction (same lockfile; local npm 10.8.2, CI npm 10.9.9)
+02:39Z and 02:46Z: npm warn audit 503 Service Unavailable - POST .../security/audits/quick  (rc=1)
+03:47Z: found 0 vulnerabilities (rc=0) x2; bulk advisory endpoint HTTP 200
+
+## official npm status (https://status.npmjs.org/incidents/xfp75s9j3bp8, read 2026-10-22T03:50:30Z)
+Degraded Package Install and Publishing — Investigating 02:33 UTC; Update 02:37 UTC; Identified 03:07 UTC (not resolved at read time)
+Affected components: www.npmjs.com website; Package installation; Package publishing  (audit endpoint NOT named)
