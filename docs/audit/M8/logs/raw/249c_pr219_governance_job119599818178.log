@@ -1,0 +1,457 @@
+governance	UNKNOWN STEP	﻿2026-10-22T02:14:51.7300342Z Current runner version: '2.338.0'
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7319251Z ##[group]Runner Image Provisioner
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7320140Z Hosted Compute Agent
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7320512Z Version: 20261015.610
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7320978Z Commit: 267fdb4e8bbec4ab5ea31367f3a00d5c480c7656
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7321438Z Build Date: 2026-10-14T17:06:54Z
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7321859Z Worker ID: {2f37b2f7-f58e-4a41-b64e-76658234ef18}
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7322326Z Region: centralus
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7322681Z Cloud: Azure
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7323126Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7324205Z ##[group]Operating System
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7324587Z Ubuntu
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7324965Z 26.04.1
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7325296Z LTS
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7325647Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7326035Z ##[group]Runner Image
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7326404Z Image: ubuntu-26.04
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7326786Z Version: 20261018.168.1
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7327630Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261018.168/images/ubuntu/Ubuntu2604-Readme.md
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7328552Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261018.168
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7329134Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7330157Z ##[group]GITHUB_TOKEN Permissions
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7331475Z Contents: read
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7331914Z Metadata: read
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7332263Z Packages: read
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7332605Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7334026Z Secret source: Actions
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7334604Z Cache mode: write
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7335225Z Prepare workflow directory
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7579974Z Prepare all required actions
+governance	UNKNOWN STEP	2026-10-22T02:14:51.7631768Z Getting action download info
+governance	UNKNOWN STEP	2026-10-22T02:14:51.9902596Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+governance	UNKNOWN STEP	2026-10-22T02:14:52.1502539Z Complete job name: governance
+governance	UNKNOWN STEP	2026-10-22T02:14:52.1999208Z ##[group]Run actions/checkout@v7
+governance	UNKNOWN STEP	2026-10-22T02:14:52.1999654Z with:
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2000045Z   fetch-depth: 0
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2000337Z   repository: reeveero-tech/All-hand
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2002394Z   token: ***
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2002651Z   ssh-strict: true
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2002914Z   ssh-user: git
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2003177Z   persist-credentials: true
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2003462Z   clean: true
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2003731Z   sparse-checkout-cone-mode: true
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2004120Z   fetch-tags: false
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2004410Z   show-progress: true
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2004671Z   lfs: false
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2004917Z   submodules: false
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2005182Z   set-safe-directory: true
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2005480Z   allow-unsafe-pr-checkout: false
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2005872Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2732398Z Syncing repository: reeveero-tech/All-hand
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2733891Z ##[group]Getting Git version info
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2734558Z Working directory is '/home/runner/work/All-hand/All-hand'
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2735122Z [command]/usr/bin/git version
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2735446Z git version 2.55.0
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2766904Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2772469Z Temporarily overriding HOME='/home/runner/work/_temp/27dd04c5-3f5d-4fe7-b279-1bec698c2102' before making global git config changes
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2773670Z Adding repository directory to the temporary git global config as a safe directory
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2774642Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2818645Z Deleting the contents of '/home/runner/work/All-hand/All-hand'
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2821647Z ##[group]Determining repository object format
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2823263Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2823881Z ##[group]Initializing the repository
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2827464Z [command]/usr/bin/git init /home/runner/work/All-hand/All-hand
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2944744Z hint: Using 'master' as the name for the initial branch. This default branch name
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2945937Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2947375Z hint: to use in all of your new repositories, which will suppress this warning,
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2948141Z hint: call:
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2948491Z hint:
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2948932Z hint: 	git config --global init.defaultBranch <name>
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2949470Z hint:
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2950207Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2951240Z hint: 'development'. The just-created branch can be renamed via this command:
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2951766Z hint:
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2952123Z hint: 	git branch -m <name>
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2952502Z hint:
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2952970Z hint: Disable this message with "git config set advice.defaultBranchName false"
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2953784Z Initialized empty Git repository in /home/runner/work/All-hand/All-hand/.git/
+governance	UNKNOWN STEP	2026-10-22T02:14:52.2957298Z [command]/usr/bin/git remote add origin https://github.com/reeveero-tech/All-hand
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3015139Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3015937Z ##[group]Disabling automatic garbage collection
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3022236Z [command]/usr/bin/git config --local gc.auto 0
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3062007Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3063079Z ##[group]Setting up auth
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3063564Z Removing SSH command configuration
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3070608Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3108022Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3492599Z Removing HTTP extra header
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3497916Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3528557Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3767804Z Removing includeIf entries pointing to credentials config files
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3772251Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+governance	UNKNOWN STEP	2026-10-22T02:14:52.3805291Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+governance	UNKNOWN STEP	2026-10-22T02:14:52.4040827Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+governance	UNKNOWN STEP	2026-10-22T02:14:52.4076213Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git.path /home/runner/work/_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config
+governance	UNKNOWN STEP	2026-10-22T02:14:52.4105356Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config
+governance	UNKNOWN STEP	2026-10-22T02:14:52.4137054Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config
+governance	UNKNOWN STEP	2026-10-22T02:14:52.4164859Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config
+governance	UNKNOWN STEP	2026-10-22T02:14:52.4191424Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:52.4192066Z ##[group]Fetching the repository
+governance	UNKNOWN STEP	2026-10-22T02:14:52.4196851Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +37694f8e86feebb61e255287df1277b9a5656a2f:refs/remotes/pull/219/merge
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5849409Z From https://github.com/reeveero-tech/All-hand
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5851313Z  * [new branch]      ai-agent-civilization-framework          -> origin/ai-agent-civilization-framework
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5853253Z  * [new branch]      archive/agos-kernel-v1                   -> origin/archive/agos-kernel-v1
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5854801Z  * [new branch]      feature/kernel-v1.0-exec-2-3-4           -> origin/feature/kernel-v1.0-exec-2-3-4
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5856553Z  * [new branch]      feature/kernel-v1.0-finalization         -> origin/feature/kernel-v1.0-finalization
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5858470Z  * [new branch]      m0/baseline-audit-roadmap-bootstrap      -> origin/m0/baseline-audit-roadmap-bootstrap
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5860343Z  * [new branch]      m1/fix-utc-import-server                 -> origin/m1/fix-utc-import-server
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5862023Z  * [new branch]      m1/r002-redirect-ci-gate                 -> origin/m1/r002-redirect-ci-gate
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5863626Z  * [new branch]      m1/r004-security-baseline                -> origin/m1/r004-security-baseline
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5865205Z  * [new branch]      m2/r010-root-dirs-resolution             -> origin/m2/r010-root-dirs-resolution
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5866935Z  * [new branch]      m2/r011-specialists-disposition          -> origin/m2/r011-specialists-disposition
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5868814Z  * [new branch]      m2/r012-agos-kernel-vs-agos-kernel       -> origin/m2/r012-agos-kernel-vs-agos-kernel
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5871031Z  * [new branch]      m2/r013-root-src-tanstack-disposition    -> origin/m2/r013-root-src-tanstack-disposition
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5873005Z  * [new branch]      m3/r020-governance-ci-gate               -> origin/m3/r020-governance-ci-gate
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5874954Z  * [new branch]      m3/r021-civilization-route-tests         -> origin/m3/r021-civilization-route-tests
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5876861Z  * [new branch]      m3/r022-supabase-schema-docs             -> origin/m3/r022-supabase-schema-docs
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5878884Z  * [new branch]      m3/r023-handoff-and-full-roadmap         -> origin/m3/r023-handoff-and-full-roadmap
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5880868Z  * [new branch]      m3/r031-arch-delete-docs-dirs            -> origin/m3/r031-arch-delete-docs-dirs
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5882521Z  * [new branch]      m3/r031-batch2-py-dirs                   -> origin/m3/r031-batch2-py-dirs
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5884026Z  * [new branch]      m3/r031-batch3-final                     -> origin/m3/r031-batch3-final
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5885462Z  * [new branch]      m3/r031-correction                       -> origin/m3/r031-correction
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5886938Z  * [new branch]      m3/r031-state-refresh                    -> origin/m3/r031-state-refresh
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5888703Z  * [new branch]      m3/r031b-cloud-and-scripts               -> origin/m3/r031b-cloud-and-scripts
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5890648Z  * [new branch]      m3/r031c-dangling-symlinks               -> origin/m3/r031c-dangling-symlinks
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5892466Z  * [new branch]      m3/r033-agos-kernel-archive              -> origin/m3/r033-agos-kernel-archive
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5894226Z  * [new branch]      m4/r040-docker-verify                    -> origin/m4/r040-docker-verify
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5895923Z  * [new branch]      m4/r040b-docs-correction                 -> origin/m4/r040b-docs-correction
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5897594Z  * [new branch]      m4/r041-deploy-config                    -> origin/m4/r041-deploy-config
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5899317Z  * [new branch]      m5/r032a-specialists-repair              -> origin/m5/r032a-specialists-repair
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5901424Z  * [new branch]      m5/r032b-fix-class-exports               -> origin/m5/r032b-fix-class-exports
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5903229Z  * [new branch]      m5/r032c-fix-star-import                 -> origin/m5/r032c-fix-star-import
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5905101Z  * [new branch]      m5/r051-real-execution-audit             -> origin/m5/r051-real-execution-audit
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5906970Z  * [new branch]      m5/r052-routing-pipeline-tests           -> origin/m5/r052-routing-pipeline-tests
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5908640Z  * [new branch]      m6/q022-close                            -> origin/m6/q022-close
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5910790Z  * [new branch]      m6/r043-web-api-integration              -> origin/m6/r043-web-api-integration
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5912556Z  * [new branch]      m6/r044-operations                       -> origin/m6/r044-operations
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5914229Z  * [new branch]      m6/r045-security                         -> origin/m6/r045-security
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5915726Z  * [new branch]      m6/r053-scale                            -> origin/m6/r053-scale
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5917331Z  * [new branch]      m6/r054-memory-learning                  -> origin/m6/r054-memory-learning
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5918926Z  * [new branch]      m6/r055-e2e                              -> origin/m6/r055-e2e
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5920854Z  * [new branch]      m6/r056-docs-reconcile                   -> origin/m6/r056-docs-reconcile
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5922571Z  * [new branch]      m6/r060-deps-cycle                       -> origin/m6/r060-deps-cycle
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5924133Z  * [new branch]      m6/r061-risks-cycle                      -> origin/m6/r061-risks-cycle
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5925720Z  * [new branch]      m6/r062-roadmap-review                   -> origin/m6/r062-roadmap-review
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5927409Z  * [new branch]      m6/r064-audit-fixes                      -> origin/m6/r064-audit-fixes
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5928943Z  * [new branch]      m6/r065-audit-fixes-2                    -> origin/m6/r065-audit-fixes-2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5930649Z  * [new branch]      m6/r066-audit-fixes-3                    -> origin/m6/r066-audit-fixes-3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5932312Z  * [new branch]      m6/r067-deps-security-cycle2             -> origin/m6/r067-deps-security-cycle2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5934162Z  * [new branch]      m6/r068-measurements-risks-cycle2        -> origin/m6/r068-measurements-risks-cycle2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5936142Z  * [new branch]      m6/r069-roadmap-review-cycle2            -> origin/m6/r069-roadmap-review-cycle2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5937868Z  * [new branch]      m6/r070-root-eslint-config               -> origin/m6/r070-root-eslint-config
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5939535Z  * [new branch]      m6/r071-web-vite-upgrade                 -> origin/m6/r071-web-vite-upgrade
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5941382Z  * [new branch]      m6/r072-network-test-isolation           -> origin/m6/r072-network-test-isolation
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5943175Z  * [new branch]      m6/r073-deps-security-cycle3             -> origin/m6/r073-deps-security-cycle3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5945059Z  * [new branch]      m6/r074-measurements-risks-cycle3        -> origin/m6/r074-measurements-risks-cycle3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5946902Z  * [new branch]      m6/r075-roadmap-review-cycle3            -> origin/m6/r075-roadmap-review-cycle3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5948834Z  * [new branch]      m6/r076-root-node22                      -> origin/m6/r076-root-node22
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5950791Z  * [new branch]      m6/r077-root-npm-audit-ci                -> origin/m6/r077-root-npm-audit-ci
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5952970Z  * [new branch]      m6/r078-supabase-key-kind                -> origin/m6/r078-supabase-key-kind
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5954688Z  * [new branch]      m6/r079-deps-security-cycle4             -> origin/m6/r079-deps-security-cycle4
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5956486Z  * [new branch]      m6/r080-measurements-risks-cycle4        -> origin/m6/r080-measurements-risks-cycle4
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5958417Z  * [new branch]      m6/r081-roadmap-review-cycle4            -> origin/m6/r081-roadmap-review-cycle4
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5960395Z  * [new branch]      m6/r082-storage-failure-visibility       -> origin/m6/r082-storage-failure-visibility
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5962163Z  * [new branch]      m6/r083-metrics-middleware               -> origin/m6/r083-metrics-middleware
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5963838Z  * [new branch]      m6/r084-deps-security-cycle5             -> origin/m6/r084-deps-security-cycle5
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5965655Z  * [new branch]      m6/r085-measurements-risks-cycle5        -> origin/m6/r085-measurements-risks-cycle5
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5967912Z  * [new branch]      m6/r086-roadmap-review-cycle5            -> origin/m6/r086-roadmap-review-cycle5
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5970345Z  * [new branch]      m6/r087-actions-node24                   -> origin/m6/r087-actions-node24
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5972009Z  * [new branch]      m6/r088-ubuntu-2604-readiness            -> origin/m6/r088-ubuntu-2604-readiness
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5973610Z  * [new branch]      m6/r089-web-node22                       -> origin/m6/r089-web-node22
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5975100Z  * [new branch]      m6/r090-ci-python312                     -> origin/m6/r090-ci-python312
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5976726Z  * [new branch]      m6/r091-deps-security-cycle6             -> origin/m6/r091-deps-security-cycle6
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5978522Z  * [new branch]      m6/r092-measurements-risks-cycle6        -> origin/m6/r092-measurements-risks-cycle6
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5980454Z  * [new branch]      m6/r093-roadmap-review-cycle6            -> origin/m6/r093-roadmap-review-cycle6
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5982049Z  * [new branch]      m6/r094-cycle7-deps                      -> origin/m6/r094-cycle7-deps
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5983523Z  * [new branch]      m6/r097-fix-evidence                     -> origin/m6/r097-fix-evidence
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5985046Z  * [new branch]      m6/r098-fix-r097-evidence                -> origin/m6/r098-fix-r097-evidence
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5986619Z  * [new branch]      m6/r099-final-claims-fix                 -> origin/m6/r099-final-claims-fix
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5988169Z  * [new branch]      m6/r100-runtime-safety                   -> origin/m6/r100-runtime-safety
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5989655Z  * [new branch]      m6/r101-web-api-key                      -> origin/m6/r101-web-api-key
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5991256Z  * [new branch]      m6/r102-honest-handlers                  -> origin/m6/r102-honest-handlers
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5992886Z  * [new branch]      m6/r103-memory-learning                  -> origin/m6/r103-memory-learning
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5994455Z  * [new branch]      m6/r104-connect-data-worker              -> origin/m6/r104-connect-data-worker
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5996018Z  * [new branch]      m6/r104b-r107b-fix-gaps                  -> origin/m6/r104b-r107b-fix-gaps
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5997495Z  * [new branch]      m6/r105-closeout-docs                    -> origin/m6/r105-closeout-docs
+governance	UNKNOWN STEP	2026-10-22T02:14:53.5999001Z  * [new branch]      m6/r105-specialists-dedup                -> origin/m6/r105-specialists-dedup
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6000586Z  * [new branch]      m6/r106-chat-routing                     -> origin/m6/r106-chat-routing
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6002044Z  * [new branch]      m6/r107-researcher-retry                 -> origin/m6/r107-researcher-retry
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6003685Z  * [new branch]      m6/r108-sustained-load                   -> origin/m6/r108-sustained-load
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6005075Z  * [new branch]      m6/r109-live-hour                        -> origin/m6/r109-live-hour
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6006445Z  * [new branch]      m6/r110-validator-fix                    -> origin/m6/r110-validator-fix
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6007840Z  * [new branch]      m6/r111-test-runner                      -> origin/m6/r111-test-runner
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6009282Z  * [new branch]      m6/r112-evidence-integrity               -> origin/m6/r112-evidence-integrity
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6010917Z  * [new branch]      m6/r112b-closeout-fix                    -> origin/m6/r112b-closeout-fix
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6012320Z  * [new branch]      m6/r112c-evidence-fix                    -> origin/m6/r112c-evidence-fix
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6013698Z  * [new branch]      m6/r113-live-hour-2                      -> origin/m6/r113-live-hour-2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6015044Z  * [new branch]      m6/r114-real-fixes                       -> origin/m6/r114-real-fixes
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6016324Z  * [new branch]      m6/wrapup                                -> origin/m6/wrapup
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6017579Z  * [new branch]      m7/deep-inspection                       -> origin/m7/deep-inspection
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6018882Z  * [new branch]      m7/q016-answer                           -> origin/m7/q016-answer
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6020410Z  * [new branch]      m7/r024-protection                       -> origin/m7/r024-protection
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6021829Z  * [new branch]      m7/r032-specialists-optin                -> origin/m7/r032-specialists-optin
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6023383Z  * [new branch]      m7/r042-live-storage-postgrest           -> origin/m7/r042-live-storage-postgrest
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6024908Z  * [new branch]      m7/r042b-hosted-supabase                 -> origin/m7/r042b-hosted-supabase
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6026378Z  * [new branch]      m7/r055a-validator-strict                -> origin/m7/r055a-validator-strict
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6027817Z  * [new branch]      m7/r063-reconcile-docs                   -> origin/m7/r063-reconcile-docs
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6029321Z  * [new branch]      m7/r119-architecture-reconcile           -> origin/m7/r119-architecture-reconcile
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6030858Z  * [new branch]      m7/r120-live-hour-3                      -> origin/m7/r120-live-hour-3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6032264Z  * [new branch]      m7/r121-memory-and-coverage              -> origin/m7/r121-memory-and-coverage
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6033730Z  * [new branch]      m7/r123-r126-memory-depth                -> origin/m7/r123-r126-memory-depth
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6035100Z  * [new branch]      m7/r127-cycle9-deps                      -> origin/m7/r127-cycle9-deps
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6036485Z  * [new branch]      m7/r131-keyless-http-load                -> origin/m7/r131-keyless-http-load
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6037872Z  * [new branch]      m7/r132-thread-pool                      -> origin/m7/r132-thread-pool
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6039205Z  * [new branch]      m7/r133-cycle10-deps                     -> origin/m7/r133-cycle10-deps
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6040799Z  * [new branch]      m7/r136-docs-reconcile                   -> origin/m7/r136-docs-reconcile
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6042222Z  * [new branch]      m7/r137-sec01-redirect-ssrf              -> origin/m7/r137-sec01-redirect-ssrf
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6043734Z  * [new branch]      m7/r138-sec02-tenant-isolation           -> origin/m7/r138-sec02-tenant-isolation
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6045367Z  * [new branch]      m7/r139-sec03-production-fail-closed     -> origin/m7/r139-sec03-production-fail-closed
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6047075Z  * [new branch]      m7/r140-bug01-external-without-agent     -> origin/m7/r140-bug01-external-without-agent
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6048810Z  * [new branch]      m7/r141-bug02-chat-status-consistency    -> origin/m7/r141-bug02-chat-status-consistency
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6050543Z  * [new branch]      m7/r142-bug03-readiness-503              -> origin/m7/r142-bug03-readiness-503
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6052159Z  * [new branch]      m7/r143-bug04-task-by-id-from-storage    -> origin/m7/r143-bug04-task-by-id-from-storage
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6053826Z  * [new branch]      m7/r144-sec04-sse-broadcast-bounds       -> origin/m7/r144-sec04-sse-broadcast-bounds
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6055426Z  * [new branch]      m7/r145-sec06-public-llm-opt-in          -> origin/m7/r145-sec06-public-llm-opt-in
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6056924Z  * [new branch]      m7/r145b-sec06-review-gaps               -> origin/m7/r145b-sec06-review-gaps
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6058468Z  * [new branch]      m7/r145c-sec06-visual-consent-fixes      -> origin/m7/r145c-sec06-visual-consent-fixes
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6060166Z  * [new branch]      m7/r145d-sec06-test-stability            -> origin/m7/r145d-sec06-test-stability
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6061734Z  * [new branch]      m7/r145e-sec06-evidence-precision        -> origin/m7/r145e-sec06-evidence-precision
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6063379Z  * [new branch]      m7/r145f-sec06-evidence-precision-2      -> origin/m7/r145f-sec06-evidence-precision-2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6064943Z  * [new branch]      m7/r146-sec05-dns-rebinding              -> origin/m7/r146-sec05-dns-rebinding
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6066373Z  * [new branch]      m7/r146b-sec05-review-fixes              -> origin/m7/r146b-sec05-review-fixes
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6068106Z  * [new branch]      m7/r147-bug05-correct-startup-agent-count -> origin/m7/r147-bug05-correct-startup-agent-count
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6069875Z  * [new branch]      m7/r148-build-python-lockfile            -> origin/m7/r148-build-python-lockfile
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6071348Z  * [new branch]      m7/r149-acceptance-record                -> origin/m7/r149-acceptance-record
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6072928Z  * [new branch]      m7/r149-security-qa-regression-matrix    -> origin/m7/r149-security-qa-regression-matrix
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6074525Z  * [new branch]      m7/r150-acceptance-evidence              -> origin/m7/r150-acceptance-evidence
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6075990Z  * [new branch]      m7/r150-acceptance-record                -> origin/m7/r150-acceptance-record
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6077493Z  * [new branch]      m7/r150-branch-protection-audit          -> origin/m7/r150-branch-protection-audit
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6078898Z  * [new branch]      m8/acceptance-2                          -> origin/m8/acceptance-2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6080211Z  * [new branch]      m8/acceptance-3                          -> origin/m8/acceptance-3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6081416Z  * [new branch]      m8/doc-cleanup                           -> origin/m8/doc-cleanup
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6082867Z  * [new branch]      m8/prep-p6-agent-queue-bounds-audit      -> origin/m8/prep-p6-agent-queue-bounds-audit
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6084543Z  * [new branch]      m8/prep-p6-hub-pools-recovery-audit      -> origin/m8/prep-p6-hub-pools-recovery-audit
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6086174Z  * [new branch]      m8/r151-revival-plan-integration         -> origin/m8/r151-revival-plan-integration
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6087627Z  * [new branch]      m8/r152-no-delete-gate                   -> origin/m8/r152-no-delete-gate
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6089062Z  * [new branch]      m8/r153-atomic-batch-v2                  -> origin/m8/r153-atomic-batch-v2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6090520Z  * [new branch]      m8/r154-status-definitions               -> origin/m8/r154-status-definitions
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6091905Z  * [new branch]      m8/r155-file-inventory                   -> origin/m8/r155-file-inventory
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6093248Z  * [new branch]      m8/r156-entrypoint-map                   -> origin/m8/r156-entrypoint-map
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6094607Z  * [new branch]      m8/r157-contracts-parity                 -> origin/m8/r157-contracts-parity
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6095952Z  * [new branch]      m8/r158-test-baseline                    -> origin/m8/r158-test-baseline
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6097262Z  * [new branch]      m8/r159-observability                    -> origin/m8/r159-observability
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6098538Z  * [new branch]      m8/r160-contracts                        -> origin/m8/r160-contracts
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6099894Z  * [new branch]      m8/r161-live-integration                 -> origin/m8/r161-live-integration
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6101340Z  * [new branch]      m8/r161b-dns-pinning-env-gate            -> origin/m8/r161b-dns-pinning-env-gate
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6102943Z  * [new branch]      m8/r161c-live-run-evidence-update-task   -> origin/m8/r161c-live-run-evidence-update-task
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6104645Z  * [new branch]      m8/r161d-storage-connected-definition    -> origin/m8/r161d-storage-connected-definition
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6106275Z  * [new branch]      m8/r161f-live-run-llm-probe-budget       -> origin/m8/r161f-live-run-llm-probe-budget
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6107711Z  * [new branch]      m8/r161g-acceptance                      -> origin/m8/r161g-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6109032Z  * [new branch]      m8/r161h-owner-acceptance                -> origin/m8/r161h-owner-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6110391Z  * [new branch]      m8/r162-acceptance                       -> origin/m8/r162-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6111659Z  * [new branch]      m8/r162-agent-registry                   -> origin/m8/r162-agent-registry
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6112952Z  * [new branch]      m8/r163-acceptance                       -> origin/m8/r163-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6114332Z  * [new branch]      m8/r163-durable-queue                    -> origin/m8/r163-durable-queue
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6115579Z  * [new branch]      m8/r163-hardening                        -> origin/m8/r163-hardening
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6116858Z  * [new branch]      m8/r163-hardening-record                 -> origin/m8/r163-hardening-record
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6118150Z  * [new branch]      m8/r164-acceptance                       -> origin/m8/r164-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6119415Z  * [new branch]      m8/r164-backpressure                     -> origin/m8/r164-backpressure
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6120765Z  * [new branch]      m8/r165-acceptance                       -> origin/m8/r165-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6121969Z  * [new branch]      m8/r165-dag                              -> origin/m8/r165-dag
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6123324Z  * [new branch]      m8/r165f-acceptance-evidence-fix         -> origin/m8/r165f-acceptance-evidence-fix
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6124731Z  * [new branch]      m8/r166-acceptance                       -> origin/m8/r166-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6126003Z  * [new branch]      m8/r166-coordination                     -> origin/m8/r166-coordination
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6127261Z  * [new branch]      m8/r166b-acceptance                      -> origin/m8/r166b-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6128530Z  * [new branch]      m8/r166b-review-fixes                    -> origin/m8/r166b-review-fixes
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6129869Z  * [new branch]      m8/r166c-acceptance                      -> origin/m8/r166c-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6131132Z  * [new branch]      m8/r166c-review-fixes                    -> origin/m8/r166c-review-fixes
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6132391Z  * [new branch]      m8/r166d-acceptance                      -> origin/m8/r166d-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6133807Z  * [new branch]      m8/r166d-delegation-handoff              -> origin/m8/r166d-delegation-handoff
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6135115Z  * [new branch]      m8/r167-acceptance                       -> origin/m8/r167-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6136365Z  * [new branch]      m8/r167-unified-memory                   -> origin/m8/r167-unified-memory
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6137620Z  * [new branch]      m8/r168-acceptance                       -> origin/m8/r168-acceptance
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6138792Z  * [new branch]      m8/r168-batch3                           -> origin/m8/r168-batch3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6140025Z  * [new branch]      m8/r168-durability                       -> origin/m8/r168-durability
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6141240Z  * [new branch]      m8/r168-io-timeout                       -> origin/m8/r168-io-timeout
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6142502Z  * [new branch]      m8/r168-load-atomicity                   -> origin/m8/r168-load-atomicity
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6143760Z  * [new branch]      m8/r168-stale-write                      -> origin/m8/r168-stale-write
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6204720Z  * [new branch]      m8/r168-timeouts-open                    -> origin/m8/r168-timeouts-open
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6206832Z  * [new branch]      m8/r169-b1-results                       -> origin/m8/r169-b1-results
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6208561Z  * [new branch]      m8/r169-benchmark                        -> origin/m8/r169-benchmark
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6210355Z  * [new branch]      m8/r169-v2                               -> origin/m8/r169-v2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6211945Z  * [new branch]      m8/r169-v3                               -> origin/m8/r169-v3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6213589Z  * [new branch]      m8/r169-v4                               -> origin/m8/r169-v4
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6215592Z  * [new branch]      m8/r185-r082-probe-and-ops-drift         -> origin/m8/r185-r082-probe-and-ops-drift
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6217743Z  * [new branch]      m8/r186-merge-guard                      -> origin/m8/r186-merge-guard
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6219435Z  * [new branch]      main                                     -> origin/main
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6220692Z  * [new branch]      master                                   -> origin/master
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6221944Z  * [new tag]         pre-R031-docs-batch1                     -> pre-R031-docs-batch1
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6223100Z  * [new tag]         pre-R031-docs-batch2                     -> pre-R031-docs-batch2
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6224254Z  * [new tag]         pre-R031-docs-batch3                     -> pre-R031-docs-batch3
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6225435Z  * [new tag]         pre-R031b-cloud-scripts                  -> pre-R031b-cloud-scripts
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6226702Z  * [new tag]         pre-R033-agos-kernel-removal             -> pre-R033-agos-kernel-removal
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6227920Z  * [new ref]         37694f8e86feebb61e255287df1277b9a5656a2f -> pull/219/merge
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6230515Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6231470Z ##[group]Determining the checkout info
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6232489Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6233093Z [command]/usr/bin/git sparse-checkout disable
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6234907Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6236925Z ##[group]Checking out the ref
+governance	UNKNOWN STEP	2026-10-22T02:14:53.6237819Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/219/merge
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7264957Z Note: switching to 'refs/remotes/pull/219/merge'.
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7265610Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7266091Z You are in 'detached HEAD' state. You can look around, make experimental
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7267251Z changes and commit them, and you can discard any commits you make in this
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7268370Z state without impacting any branches by switching back to a branch.
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7269011Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7269455Z If you want to create a new branch to retain commits you create, you may
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7270980Z do so (now or later) by using -c with the switch command. Example:
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7271580Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7271853Z   git switch -c <new-branch-name>
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7272503Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7272767Z Or undo this operation with:
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7273165Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7273412Z   git switch -
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7273718Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7274214Z Turn off this advice by setting config variable advice.detachedHead to false
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7274917Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7275679Z HEAD is now at 37694f8 Merge 467d8eba4cdeb57eacf01571b29414729de611ca into e085ca5352bc4c5375e0d558aed834ab6c44af33
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7288538Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7335536Z [command]/usr/bin/git log -1 --format=%H
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7357514Z 37694f8e86feebb61e255287df1277b9a5656a2f
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7549232Z ##[group]Run python3 scripts/check_no_delete.py origin/main HEAD
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7550520Z python3 scripts/check_no_delete.py origin/main HEAD
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7703591Z shell: /usr/bin/bash -e {0}
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7704229Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7951691Z no-delete check: origin/main...HEAD status counts (no-renames): {'A': 17, 'M': 4}
+governance	UNKNOWN STEP	2026-10-22T02:14:53.7953604Z No-delete gate passed: 0 tracked files deleted, moved or renamed.
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8039336Z ##[group]Run set -uo pipefail
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8040162Z set -uo pipefail
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8040891Z CHANGED=$(git diff --name-only origin/main...HEAD)
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8041743Z echo "changed files:"; echo "$CHANGED"
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8042444Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8043244Z # Always required whenever ANYTHING changes in the PR (docs-only included):
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8044433Z # the work item must be visible in ROADMAP/PROJECT_STATE/CHANGELOG.
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8045820Z MANDATORY=(docs/governance/ROADMAP.md docs/governance/PROJECT_STATE.md docs/governance/CHANGELOG.md)
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8046976Z MISSING=()
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8047562Z for f in "${MANDATORY[@]}"; do
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8048370Z   if ! grep -qxF "$f" <<< "$CHANGED"; then MISSING+=("$f"); fi
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8049174Z done
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8049911Z if [ ${#MISSING[@]} -gt 0 ]; then
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8051251Z   echo "::error::Atomic batch rule violated: these mandatory docs must be updated in the same PR: ${MISSING[*]}"
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8052406Z   exit 1
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8052934Z fi
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8053440Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8054057Z # Conditional rules keyed on the kind of change:
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8055102Z CODE_RE='^(server\.py|run\.py|agent_civilization/|agos_kernel/|src/|web/|tests/)'
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8056139Z if grep -Eq "$CODE_RE" <<< "$CHANGED"; then
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8056945Z   grep -qxE 'docs/audit/.+' <<< "$CHANGED" \
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8057910Z     || { echo "::error::Code changed without evidence in docs/audit/"; exit 1; }
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8058804Z fi
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8059669Z if grep -Eq '^server\.py|agent_civilization/civilization_routes\.py' <<< "$CHANGED"; then
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8060915Z   grep -qxF 'docs/governance/API.md' <<< "$CHANGED" \
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8061921Z     || { echo "::error::API changed without docs/governance/API.md"; exit 1; }
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8062809Z fi
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8063483Z if grep -Eq 'agent_civilization/storage/' <<< "$CHANGED"; then
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8064481Z   grep -qxF 'docs/governance/DATA_MODEL.md' <<< "$CHANGED" \
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8065601Z     || { echo "::error::Storage changed without docs/governance/DATA_MODEL.md"; exit 1; }
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8066550Z fi
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8067185Z if grep -Eq '^\.github/workflows/' <<< "$CHANGED"; then
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8068117Z   grep -qxF 'docs/governance/QUALITY.md' <<< "$CHANGED" \
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8069156Z     || { echo "::error::CI changed without docs/governance/QUALITY.md"; exit 1; }
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8070157Z fi
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8070640Z 
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8071163Z echo "Governance gate passed."
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8122308Z shell: /usr/bin/bash -e {0}
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8122887Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8217592Z changed files:
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8218423Z benchmarks/r169/v4/blind_labels/test_baseline_b1.labels.jsonl
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8219928Z benchmarks/r169/v4/blind_labels/test_grounded-v2_b1.labels.jsonl
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8221066Z docs/audit/M8/R169_REPORT_V4_B1.md
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8221812Z docs/audit/M8/logs/raw/241_r169_b1_independent_recheck.log
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8222701Z docs/audit/M8/logs/raw/243_q028_form_completeness_check.log
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8223623Z docs/audit/M8/logs/raw/r169/v4/blind/test_baseline_b1.sheet.md
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8224578Z docs/audit/M8/logs/raw/r169/v4/blind/test_grounded-v2_b1.sheet.md
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8225563Z docs/audit/M8/logs/raw/r169/v4/human_review/REVIEWER_CASE_INDEX.md
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8226506Z docs/audit/M8/logs/raw/r169/v4/human_review/REVIEW_PACKAGE.md
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8227641Z docs/audit/M8/logs/raw/r169/v4/human_review/reviewer_form.json
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8228526Z docs/audit/M8/logs/raw/r169/v4/test_baseline_b1.jsonl
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8229508Z docs/audit/M8/logs/raw/r169/v4/test_baseline_b1.summary.json
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8230977Z docs/audit/M8/logs/raw/r169/v4/test_grounded-v2_b1.jsonl
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8232050Z docs/audit/M8/logs/raw/r169/v4/test_grounded-v2_b1.summary.json
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8232852Z docs/governance/CHANGELOG.md
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8233494Z docs/governance/PROJECT_STATE.md
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8234106Z docs/governance/ROADMAP.md
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8234680Z scripts/check_q028_form.py
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8235257Z tests/test_r169_benchmark_v4.py
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8235865Z tests/test_r169_q028_case_index.py
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8236488Z tests/test_r169_q028_form_check.py
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8306610Z Governance gate passed.
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8378700Z ##[group]Run python3 scripts/check_do_not_merge.py --repo-pr "$GITHUB_REPOSITORY" "219"
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8380102Z python3 scripts/check_do_not_merge.py --repo-pr "$GITHUB_REPOSITORY" "219"
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8431146Z shell: /usr/bin/bash -e {0}
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8431714Z env:
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8436339Z   GH_TOKEN: ***
+governance	UNKNOWN STEP	2026-10-22T02:14:53.8436841Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7847425Z ##[error]PR carries an explicit hold marker — merging is refused until the marker is removed by the owner after acceptance (R-186). Markers are an owner instruction, not a PR-editable switch.
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7853170Z   found in title: ...(inconclusive) + Q-028 review package — لا يدمج حتى Q-028...
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7853591Z   found in title: ...(inconclusive) + Q-028 review package — لا يدمج حتى Q-028...
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7853974Z   found in body: ...> **لا يدمج (DO NOT MERGE)** — R-169 تبقى `blocked` على Q-028 (مر...
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7854418Z   found in body: ...> **لا يدمج (DO NOT MERGE)** — R-169 تبقى `blocked`...
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7854732Z   found in body: ...> **لا يدمج (DO NOT MERGE)** — R-169 تبقى `blocked`...
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7900318Z ##[error]Process completed with exit code 1.
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7940267Z ##[group]Run python3 scripts/check_atomic_batch.py origin/main HEAD
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7940599Z python3 scripts/check_atomic_batch.py origin/main HEAD
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7991887Z shell: /usr/bin/bash -e {0}
+governance	UNKNOWN STEP	2026-10-22T02:14:54.7992071Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:54.8227856Z atomic-batch v2: 21 changed file(s) in origin/main...HEAD
+governance	UNKNOWN STEP	2026-10-22T02:14:54.8228346Z Atomic batch v2 passed (R0-R6).
+governance	UNKNOWN STEP	2026-10-22T02:14:54.8291522Z ##[group]Run python3 scripts/check_status_evidence.py .
+governance	UNKNOWN STEP	2026-10-22T02:14:54.8291833Z python3 scripts/check_status_evidence.py .
+governance	UNKNOWN STEP	2026-10-22T02:14:54.8342106Z shell: /usr/bin/bash -e {0}
+governance	UNKNOWN STEP	2026-10-22T02:14:54.8342297Z ##[endgroup]
+governance	UNKNOWN STEP	2026-10-22T02:14:54.9627184Z Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+governance	UNKNOWN STEP	2026-10-22T02:14:54.9761973Z Post job cleanup.
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0353386Z [command]/usr/bin/git version
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0393195Z git version 2.55.0
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0416343Z Temporarily overriding HOME='/home/runner/work/_temp/701cab33-e612-4913-a39f-8c4291ac3e92' before making global git config changes
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0417127Z Adding repository directory to the temporary git global config as a safe directory
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0421133Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0452257Z Removing SSH command configuration
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0460365Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0491432Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0736139Z Removing HTTP extra header
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0741219Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+governance	UNKNOWN STEP	2026-10-22T02:14:55.0774864Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1052434Z Removing includeIf entries pointing to credentials config files
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1059078Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1086169Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1086743Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1087309Z includeif.gitdir:/github/workspace/.git.path
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1087803Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1093910Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1116481Z /home/runner/work/_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1125878Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-2a207992\-2367\-4918\-924a\-82ca8352a0d8\.config
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1158864Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1188063Z /home/runner/work/_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1196200Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-2a207992\-2367\-4918\-924a\-82ca8352a0d8\.config
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1227101Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1248632Z /github/runner_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1255616Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-2a207992\-2367\-4918\-924a\-82ca8352a0d8\.config
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1287761Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1309737Z /github/runner_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1315401Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-2a207992\-2367\-4918\-924a\-82ca8352a0d8\.config
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1347550Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1580163Z Removing credentials config '/home/runner/work/_temp/git-credentials-2a207992-2367-4918-924a-82ca8352a0d8.config'
+governance	UNKNOWN STEP	2026-10-22T02:14:55.1713891Z Cleaning up orphan processes
