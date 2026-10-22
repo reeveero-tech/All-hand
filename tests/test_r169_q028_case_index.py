@@ -1,4 +1,4 @@
-"""Q-028 blind-first reviewer materials — integrity, neutrality, and fingerprints."""
+"""Q-028 blind-first reviewer packet — alias integrity and reply fingerprints."""
 import hashlib
 import json
 import re
@@ -7,22 +7,27 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HR = ROOT / "docs/audit/M8/logs/raw/r169/v4/human_review"
 INDEX = HR / "REVIEWER_CASE_INDEX_PHASE_A.md"
+CASE_BUNDLE = HR / "BLIND_REVIEW_CASES_PHASE_A.md"
 FORM = HR / "reviewer_form.json"
 BLIND_FORM = HR / "reviewer_blind_form.json"
+MAPPING = HR / "REVIEWER_CASE_MAPPING_PHASE_B.json"
 PACKAGE = HR / "REVIEW_PACKAGE.md"
-ROW = re.compile(r"^\| (\d+) \| `([^\x60]+)` \| (\S+) \| \[`([^:]+):(\d+)`\]\(([^)]+)\) \| `([0-9a-f]{12})` \|$")
+INDEX_ROW = re.compile(r"^\| (\d+) \| `(C\d{2})` \| \[`Case (C\d{2})`]\(BLIND_REVIEW_CASES_PHASE_A\.md#case-(c\d{2})\) \|$")
 
 
-def _rows():
-    return [m.groups() for m in map(ROW.match, INDEX.read_text(encoding="utf-8").splitlines()) if m]
+def _index_rows():
+    return [m.groups() for m in map(INDEX_ROW.match, INDEX.read_text(encoding="utf-8").splitlines()) if m]
 
 
-def _form_pairs():
-    form = json.loads(FORM.read_text(encoding="utf-8"))
+def _forms():
+    return json.loads(FORM.read_text(encoding="utf-8")), json.loads(BLIND_FORM.read_text(encoding="utf-8")), json.loads(MAPPING.read_text(encoding="utf-8"))
+
+
+def _form_pairs(form):
     pairs = []
     for section in ("adjudication_of_disagreements", "adjudication_of_uncertain", "label_verification_sample"):
         pairs.extend((cid, value["run"]) for cid, value in form[section].items())
-    return form, pairs
+    return pairs
 
 
 def _fnv(value):
@@ -32,67 +37,80 @@ def _fnv(value):
     return h
 
 
-def test_phase_a_index_covers_exact_form_cases_without_verdicts_or_categories():
-    form, pairs = _form_pairs()
-    rows = _rows()
+def test_phase_a_index_and_bundle_use_neutral_aliases_only():
+    rows = _index_rows()
     assert len(rows) == 27
-    assert {(r[1], r[2]) for r in rows} == set(pairs)
-    assert len({(r[1], r[2]) for r in rows}) == 27
-    phase_a_index = INDEX.read_text(encoding="utf-8")
-    assert "خلاف صارم" not in phase_a_index
-    assert "عينة تحقق" not in phase_a_index
-    assert "94.85%" not in phase_a_index
-    assert "grader_fail_reason" not in phase_a_index
-    assert "| القسم |" not in phase_a_index
+    assert [r[1] for r in rows] == [f"C{i:02d}" for i in range(1, 28)]
+    assert all(r[1] == r[2] and r[2].lower() == r[3] for r in rows)
+    idx = INDEX.read_text(encoding="utf-8")
+    bundle = CASE_BUNDLE.read_text(encoding="utf-8")
+    combined = idx + "\n" + bundle
+    assert "94.85%" not in combined
+    assert "grader_fail_reason" not in combined and "agent_label" not in combined
+    assert "test_baseline_b1" not in combined and "test_grounded-v2_b1" not in combined
+    assert "خلاف صارم" not in combined and "عينة تحقق" not in combined
+    assert "family:" not in bundle
+    assert not re.search(r"r169-v4-[a-z_]+-\d{2}-(?:en|ar)", bundle)
 
 
-def test_phase_a_form_has_same_cases_without_agent_or_grader_verdict_fields():
-    _, pairs = _form_pairs()
-    blind = json.loads(BLIND_FORM.read_text(encoding="utf-8"))
-    refs = [item["case_ref"] for item in blind["cases"]]
-    assert len(refs) == 27 and len(set(refs)) == 27
-    assert set(refs) == {run + "::" + cid for cid, run in pairs}
-    forbidden = {"agent_label", "grader_fail_reason", "gate_result", "grader_verdict", "selection_category"}
-    for case in blind["cases"]:
-        assert not (forbidden & set(case))
-        assert case["independent_judgment"] is None
-        assert case["rationale"] == "" and case["confidence"] is None
-    assert blind["reviewer"]["confirmed_human"] is False
-    assert blind["reviewer"]["confirmed_no_prior_verdicts"] is False
-    assert [item["case_ref"] for item in blind["cases"]] == sorted(refs, key=lambda value: (_fnv(value), value))
+def test_phase_a_form_has_only_aliases_and_empty_judgments():
+    official, blind, mapping = _forms()
+    refs = [case["case_ref"] for case in blind["cases"]]
+    assert refs == [f"C{i:02d}" for i in range(1, 28)]
+    assert all(set(case).issubset({"case_ref","anchor","independent_judgment","rationale","confidence"}) for case in blind["cases"])
+    assert all(case["independent_judgment"] is None and case["rationale"] == "" and case["confidence"] is None for case in blind["cases"])
+    assert blind["reviewer"]["confirmed_human"] is False and blind["reviewer"]["confirmed_no_prior_verdicts"] is False
+    assert official["reviewer"]["confirmed_human"] is False and official["reviewer"]["name_or_handle"] == ""
+    for section in ("adjudication_of_disagreements","adjudication_of_uncertain","label_verification_sample"):
+        assert all(v["overall_pass"] is None for v in official[section].values())
 
 
-def test_case_anchors_and_reply_fingerprints_remain_unchanged():
-    for _, cid, run, sheet, line, href, sha in _rows():
-        path = (HR / href.split("#")[0]).resolve()
-        assert path.name == sheet == f"{run}.sheet.md"
-        lines = path.read_text(encoding="utf-8").splitlines()
-        assert lines[int(line) - 1].startswith("## ") and cid in lines[int(line) - 1]
-        raw = [json.loads(x) for x in (ROOT / f"docs/audit/M8/logs/raw/r169/v4/{run}.jsonl").open(encoding="utf-8")][1:]
-        reply = next(item for item in raw if item["id"] == cid).get("reply") or ""
-        assert hashlib.sha256(reply.encode()).hexdigest()[:12] == sha
-        labels = [json.loads(x) for x in (ROOT / f"benchmarks/r169/v4/blind_labels/{run}.labels.jsonl").open(encoding="utf-8")]
-        label = next(item for item in labels if item.get("id") == cid)
-        assert label["reply_sha256"].startswith(sha)
+def test_phase_b_mapping_covers_exactly_the_27_source_cases_and_is_not_in_phase_a():
+    official, blind, mapping = _forms()
+    pairs = _form_pairs(official)
+    mapped = mapping["cases"]
+    assert len(mapped) == 27
+    assert len({item["blind_case_ref"] for item in mapped}) == 27
+    assert {(item["case_id"],item["run"]) for item in mapped} == set(pairs)
+    assert [item["blind_case_ref"] for item in mapped] == [f"C{i:02d}" for i in range(1, 28)]
+    assert mapping["do_not_distribute_before_phase_a_freeze"] is True
+    package_phase_a = PACKAGE.read_text(encoding="utf-8").split("## المرحلة ب")[0]
+    assert "REVIEWER_CASE_MAPPING_PHASE_B.json" not in package_phase_a
 
 
-def test_all_phase_a_relative_links_resolve():
-    for href in re.findall(r"\]\(([^)#]+)(?:#[^)]*)?\)", INDEX.read_text(encoding="utf-8")):
-        assert (HR / href).resolve().exists(), href
-    for href in re.findall(r"\]\(([^)#]+)(?:#[^)]*)?\)", PACKAGE.read_text(encoding="utf-8")):
-        assert (HR / href).resolve().exists(), href
+def test_alias_order_is_stable_and_mapping_fingerprints_match_original_replies():
+    _, _, mapping = _forms()
+    pairs = [item["run"] + "::" + item["case_id"] for item in mapping["cases"]]
+    assert pairs == sorted(pairs, key=lambda value: (_fnv(value), value))
+    bundle = CASE_BUNDLE.read_text(encoding="utf-8")
+    for item in mapping["cases"]:
+        assert f"## Case {item['blind_case_ref']}" in bundle
+        assert item["case_id"] not in bundle
+        raw_path = ROOT / f"docs/audit/M8/logs/raw/r169/v4/{item['run']}.jsonl"
+        raw = [json.loads(x) for x in raw_path.read_text(encoding="utf-8").splitlines()][1:]
+        reply = next(row for row in raw if row["id"] == item["case_id"]).get("reply") or ""
+        assert hashlib.sha256(reply.encode()).hexdigest()[:12] == item["reply_sha256_prefix"]
+        labels_path = ROOT / f"benchmarks/r169/v4/blind_labels/{item['run']}.labels.jsonl"
+        labels = [json.loads(x) for x in labels_path.read_text(encoding="utf-8").splitlines()]
+        label = next(row for row in labels if row.get("id") == item["case_id"])
+        assert label["reply_sha256"].startswith(item["reply_sha256_prefix"])
 
 
-def test_phase_a_package_does_not_disclose_aggregate_result():
+def test_all_phase_a_relative_links_resolve_and_official_form_remains_empty():
+    for rel in re.findall(r"\]\(([^)#]+)(?:#[^)]*)?\)", INDEX.read_text(encoding="utf-8")):
+        assert (HR / rel).resolve().exists(), rel
+    for rel in re.findall(r"\]\(([^)#]+)(?:#[^)]*)?\)", PACKAGE.read_text(encoding="utf-8")):
+        assert (HR / rel).resolve().exists(), rel
+    official, _, _ = _forms()
+    assert official["reviewer"]["confirmed_human"] is False
+    for section in ("adjudication_of_disagreements","adjudication_of_uncertain","label_verification_sample"):
+        assert all(v["overall_pass"] is None for v in official[section].values())
+
+
+def test_package_does_not_disclose_results_before_phase_a_is_frozen():
     package = PACKAGE.read_text(encoding="utf-8")
     phase_a = package.split("## المرحلة ب")[0]
     assert "94.85%" not in phase_a
     assert "R169_REPORT_V4_B1.md" not in phase_a
-    assert "12 خلاف" not in phase_a
-
-
-def test_official_reviewer_form_remains_unfilled_by_agent():
-    form, _ = _form_pairs()
-    assert form["reviewer"]["confirmed_human"] is False and form["reviewer"]["name_or_handle"] == ""
-    for section in ("adjudication_of_disagreements", "adjudication_of_uncertain", "label_verification_sample"):
-        assert all(value["overall_pass"] is None for value in form[section].values())
+    assert "REVIEWER_CASE_MAPPING_PHASE_B.json" not in phase_a
+    assert "REVIEWER_CASE_INDEX.md" not in phase_a
