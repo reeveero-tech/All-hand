@@ -1,0 +1,74 @@
+# 250 — أدلة خطة H1 (أوامر بحث حقيقية ومخرجاتها؛ لا تغيير شيفرة)
+# collected: 2026-10-22T08:47:26Z, base 517b3822da9c243425df6cbd5ae3aeabf80f7dbb
+
+$ grep -rn "send_message(\|.send_to(\|deliver_message(" --include=*.py agent_civilization agos_kernel server.py | grep -v "def \|/tests/"
+agent_civilization/core/agents/communication_hub.py:74:            agent.deliver_message(message)
+agent_civilization/core/agents/communication_hub.py:90:                    agent.deliver_message(message)
+agent_civilization/core/agents/communication_hub.py:102:        await self.send_message(message)
+agent_civilization/core/agents/base_agent.py:182:            await self.send_to(message.sender, {"action": "status", "status": self.get_status()}, reply_to=message.message_id)
+agent_civilization/core/agents/base_agent.py:200:        await self.communication_hub.send_message(msg)
+agent_civilization/agents/executors/data_worker.py:89:            await self.communication_hub.send_message(result_msg)
+agent_civilization/agents/executors/data_worker.py:119:            await self.communication_hub.send_message(response)
+agent_civilization/agents/specialists/_templates/db_manager_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/db_manager_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/reviewer_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/reviewer_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/network_client_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/network_client_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/modifier_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/modifier_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/monitor_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/monitor_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/builder_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/builder_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/code_generator_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/code_generator_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/strategist_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/strategist_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/analyst_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/analyst_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/designer_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/designer_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/architect_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/architect_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/data_processor_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/data_processor_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/researcher_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/researcher_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/validator_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/validator_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/communicator_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/communicator_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/api_integrator_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/api_integrator_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/self_developer_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/self_developer_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/educator_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/educator_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/surgeon_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/surgeon_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/specialists/_templates/test_runner_base.py:40:            await self.communication_hub.send_message(r)
+agent_civilization/agents/specialists/_templates/test_runner_base.py:51:            await self.communication_hub.send_message(s)
+agent_civilization/agents/infrastructure/resource_manager.py:45:                await self.communication_hub.send_message(response)
+agent_civilization/agents/infrastructure/resource_manager.py:58:                await self.communication_hub.send_message(response)
+agent_civilization/agents/infrastructure/task_dispatcher.py:64:                    await self.communication_hub.send_message(task_msg)
+agent_civilization/agents/infrastructure/orchestrator_agent.py:56:                await self.communication_hub.send_message(msg)
+agent_civilization/agents/infrastructure/orchestrator_agent.py:64:                await self.communication_hub.send_message(msg)
+
+$ grep -rn "DeliveryResult" --include=*.py . | grep -v "^./tests/\|communication_hub.py"
+./agent_civilization/communication/__init__.py:12:    DeliveryResult,
+./agent_civilization/communication/__init__.py:15:__all__ = ["CommunicationHub", "DeliveryResult"]
+(exit 0 — لا مستدعٍ خارج المركز)
+
+$ grep -rn "CommunicationHub(" --include=*.py . | grep -v "^./tests/\|^./docs/"
+./agent_civilization/agents/real/specialist_runtime.py:150:    hub = CommunicationHub()
+
+$ sed -n 193,195p agent_civilization/core/agents/base_agent.py
+    def deliver_message(self, message: Message):
+        if self.is_active:
+            self._inbox.put_nowait(message)
+
+$ pytest tests/test_prep_hub_pools_recovery_findings.py -rx -q (H1/H2 lines)
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_h1_delivery_to_inactive_agent_is_not_reported_as_success - PREP H1: delivery to an inactive agent is reported as success while the message is dropped
+XFAIL tests/test_prep_hub_pools_recovery_findings.py::test_h2_broadcast_counts_only_real_deliveries - PREP H2: broadcast counts silently dropped messages as delivered
+========================= 1 passed, 9 xfailed in 1.29s =========================

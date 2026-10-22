@@ -1,0 +1,372 @@
+audit	UNKNOWN STEP	﻿2026-10-22T04:55:40.3095814Z Current runner version: '2.338.0'
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3119932Z ##[group]Runner Image Provisioner
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3120993Z Hosted Compute Agent
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3121671Z Version: 20261012.601
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3122381Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3123130Z Build Date: 2026-10-12T17:48:21Z
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3123941Z Worker ID: {fd8688ea-28a4-4af9-91e9-155e5d729819}
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3124676Z Region: westcentralus
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3125289Z Cloud: Azure
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3125904Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3127564Z ##[group]Operating System
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3128294Z Ubuntu
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3128939Z 26.04.1
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3129464Z LTS
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3130118Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3131088Z ##[group]Runner Image
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3131827Z Image: ubuntu-26.04
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3132433Z Version: 20261012.163.1
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3133823Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261012.163/images/ubuntu/Ubuntu2604-Readme.md
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3135338Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261012.163
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3136504Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3137738Z ##[group]GITHUB_TOKEN Permissions
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3139855Z Contents: read
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3140787Z Metadata: read
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3141389Z Packages: read
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3142048Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3144116Z Secret source: Actions
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3145198Z Cache mode: write
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3145896Z Prepare workflow directory
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3518609Z Prepare all required actions
+audit	UNKNOWN STEP	2026-10-22T04:55:40.3566023Z Getting action download info
+audit	UNKNOWN STEP	2026-10-22T04:55:40.6235328Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+audit	UNKNOWN STEP	2026-10-22T04:55:40.7527712Z Download action repository 'actions/setup-python@v7' (SHA:6d4fd22b20465ccc0f7354476588e8df7c9ca0e0)
+audit	UNKNOWN STEP	2026-10-22T04:55:41.2663200Z Download action repository 'actions/setup-node@v7' (SHA:949feb2413d6458794dcd2491c4babbbce0c15c1)
+audit	UNKNOWN STEP	2026-10-22T04:55:41.9111815Z Complete job name: audit
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0075673Z ##[group]Run actions/checkout@v7
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0077112Z with:
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0078039Z   repository: reeveero-tech/All-hand
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0087027Z   token: ***
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0087958Z   ssh-strict: true
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0088892Z   ssh-user: git
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0089835Z   persist-credentials: true
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0090967Z   clean: true
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0091916Z   sparse-checkout-cone-mode: true
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0093044Z   fetch-depth: 1
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0093954Z   fetch-tags: false
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0094893Z   show-progress: true
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0095855Z   lfs: false
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0096748Z   submodules: false
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0097700Z   set-safe-directory: true
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0098754Z   allow-unsafe-pr-checkout: false
+audit	UNKNOWN STEP	2026-10-22T04:55:42.0100061Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1192129Z Syncing repository: reeveero-tech/All-hand
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1196320Z ##[group]Getting Git version info
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1198481Z Working directory is '/home/runner/work/All-hand/All-hand'
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1201761Z [command]/usr/bin/git version
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1203356Z git version 2.55.0
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1208235Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1217493Z Temporarily overriding HOME='/home/runner/work/_temp/c8c90f9e-c2b4-4b7c-b357-23c892f846b5' before making global git config changes
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1223347Z Adding repository directory to the temporary git global config as a safe directory
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1227083Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1270367Z Deleting the contents of '/home/runner/work/All-hand/All-hand'
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1274077Z ##[group]Determining repository object format
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1276765Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1278939Z ##[group]Initializing the repository
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1281607Z [command]/usr/bin/git init /home/runner/work/All-hand/All-hand
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1400111Z hint: Using 'master' as the name for the initial branch. This default branch name
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1404054Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1406982Z hint: to use in all of your new repositories, which will suppress this warning,
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1409414Z hint: call:
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1410934Z hint:
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1412757Z hint: 	git config --global init.defaultBranch <name>
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1416136Z hint:
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1418459Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1422573Z hint: 'development'. The just-created branch can be renamed via this command:
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1429515Z hint:
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1431266Z hint: 	git branch -m <name>
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1432938Z hint:
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1435071Z hint: Disable this message with "git config set advice.defaultBranchName false"
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1438686Z Initialized empty Git repository in /home/runner/work/All-hand/All-hand/.git/
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1444858Z [command]/usr/bin/git remote add origin https://github.com/reeveero-tech/All-hand
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1467947Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1470626Z ##[group]Disabling automatic garbage collection
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1472794Z [command]/usr/bin/git config --local gc.auto 0
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1510861Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1513894Z ##[group]Setting up auth
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1515530Z Removing SSH command configuration
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1517951Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1561756Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1996573Z Removing HTTP extra header
+audit	UNKNOWN STEP	2026-10-22T04:55:42.1999380Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2060161Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2364687Z Removing includeIf entries pointing to credentials config files
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2369432Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2406978Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2700020Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2742772Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git.path /home/runner/work/_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2779449Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2834211Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2864506Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2896717Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2898443Z ##[group]Fetching the repository
+audit	UNKNOWN STEP	2026-10-22T04:55:42.2903318Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +37694f8e86feebb61e255287df1277b9a5656a2f:refs/remotes/pull/219/merge
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5437457Z From https://github.com/reeveero-tech/All-hand
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5438513Z  * [new ref]         37694f8e86feebb61e255287df1277b9a5656a2f -> pull/219/merge
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5443168Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5443921Z ##[group]Determining the checkout info
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5445052Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5451298Z [command]/usr/bin/git sparse-checkout disable
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5505535Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5539454Z ##[group]Checking out the ref
+audit	UNKNOWN STEP	2026-10-22T04:55:43.5544325Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/219/merge
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7305823Z Note: switching to 'refs/remotes/pull/219/merge'.
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7306366Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7306773Z You are in 'detached HEAD' state. You can look around, make experimental
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7307424Z changes and commit them, and you can discard any commits you make in this
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7307992Z state without impacting any branches by switching back to a branch.
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7308361Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7308644Z If you want to create a new branch to retain commits you create, you may
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7309164Z do so (now or later) by using -c with the switch command. Example:
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7309448Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7309603Z   git switch -c <new-branch-name>
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7309802Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7309944Z Or undo this operation with:
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7310140Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7310264Z   git switch -
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7310777Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7311039Z Turn off this advice by setting config variable advice.detachedHead to false
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7311382Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7311766Z HEAD is now at 37694f8 Merge 467d8eba4cdeb57eacf01571b29414729de611ca into e085ca5352bc4c5375e0d558aed834ab6c44af33
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7325891Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7382295Z [command]/usr/bin/git log -1 --format=%H
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7411527Z 37694f8e86feebb61e255287df1277b9a5656a2f
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7718631Z ##[group]Run actions/setup-python@v7
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7718993Z with:
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7719272Z   python-version: 3.11
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7719561Z   check-latest: false
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7722390Z   token: ***
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7722794Z   mirror: https://raw.githubusercontent.com/actions/python-versions/main
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7723270Z   update-environment: true
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7723617Z   allow-prereleases: false
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7723915Z   freethreaded: false
+audit	UNKNOWN STEP	2026-10-22T04:55:43.7724190Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:43.8889342Z ##[group]Installed versions
+audit	UNKNOWN STEP	2026-10-22T04:55:43.8974145Z Successfully set up CPython (3.11.17)
+audit	UNKNOWN STEP	2026-10-22T04:55:43.8974924Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9147967Z ##[group]Run pip install --require-hashes -r requirements-audit.lock
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9148641Z pip install --require-hashes -r requirements-audit.lock
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9355230Z shell: /usr/bin/bash -e {0}
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9355650Z env:
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9356034Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9356580Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9357088Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9357543Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9357992Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9358433Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+audit	UNKNOWN STEP	2026-10-22T04:55:43.9358854Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:55:46.6752527Z Collecting boolean-py==5.0 (from -r requirements-audit.lock (line 7))
+audit	UNKNOWN STEP	2026-10-22T04:55:46.7650831Z   Downloading boolean_py-5.0-py3-none-any.whl (26 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:46.8072756Z Collecting cachecontrol==0.14.4 (from cachecontrol[filecache]==0.14.4->-r requirements-audit.lock (line 11))
+audit	UNKNOWN STEP	2026-10-22T04:55:46.8266481Z   Downloading cachecontrol-0.14.4-py3-none-any.whl (22 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:46.8653460Z Collecting certifi==2026.7.22 (from -r requirements-audit.lock (line 17))
+audit	UNKNOWN STEP	2026-10-22T04:55:46.8855148Z   Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.0741393Z Collecting charset-normalizer==3.5.2 (from -r requirements-audit.lock (line 21))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.0954833Z   Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (269 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.1530792Z Collecting cyclonedx-python-lib==11.12.0 (from -r requirements-audit.lock (line 195))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.1722530Z   Downloading cyclonedx_python_lib-11.12.0-py3-none-any.whl (529 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.1924098Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 529.5/529.5 kB 17.6 MB/s  0:00:00
+audit	UNKNOWN STEP	2026-10-22T04:55:47.2183097Z Collecting defusedxml==0.7.1 (from -r requirements-audit.lock (line 199))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.2388819Z   Downloading defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.2735487Z Collecting filelock==4.2.0 (from -r requirements-audit.lock (line 203))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.2961813Z   Downloading filelock-4.2.0-py3-none-any.whl (135 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.3239651Z Collecting idna==3.20 (from -r requirements-audit.lock (line 207))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.3462860Z   Downloading idna-3.20-py3-none-any.whl (69 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.3751232Z Collecting license-expression==30.4.4 (from -r requirements-audit.lock (line 211))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.3946556Z   Downloading license_expression-30.4.4-py3-none-any.whl (120 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.4250674Z Collecting markdown-it-py==4.2.0 (from -r requirements-audit.lock (line 215))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.4444777Z   Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.4722852Z Collecting mdurl==0.1.2 (from -r requirements-audit.lock (line 219))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.4918166Z   Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.5721919Z Collecting msgpack==1.2.3 (from -r requirements-audit.lock (line 223))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.5922570Z   Downloading msgpack-1.2.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (477 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.6256024Z Collecting packageurl-python==0.17.6 (from -r requirements-audit.lock (line 316))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.6451684Z   Downloading packageurl_python-0.17.6-py3-none-any.whl (36 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.6744218Z Collecting packaging==26.3 (from -r requirements-audit.lock (line 320))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.6935174Z   Downloading packaging-26.3-py3-none-any.whl (129 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.7212882Z Collecting pip-api==0.0.35 (from -r requirements-audit.lock (line 326))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.7407063Z   Downloading pip_api-0.0.35-py3-none-any.whl (123 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.7721435Z Collecting pip-audit==2.10.1 (from -r requirements-audit.lock (line 330))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.7916188Z   Downloading pip_audit-2.10.1-py3-none-any.whl (62 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.8194237Z Collecting pip-requirements-parser==32.0.1 (from -r requirements-audit.lock (line 334))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.8388436Z   Downloading pip_requirements_parser-32.0.1-py3-none-any.whl (35 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.8723303Z Collecting platformdirs==4.13.3 (from -r requirements-audit.lock (line 338))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.8917745Z   Downloading platformdirs-4.13.3-py3-none-any.whl (32 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.9229226Z Collecting py-serializable==2.1.0 (from -r requirements-audit.lock (line 342))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.9443369Z   Downloading py_serializable-2.1.0-py3-none-any.whl (23 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:47.9764359Z Collecting pygments==2.21.0 (from -r requirements-audit.lock (line 346))
+audit	UNKNOWN STEP	2026-10-22T04:55:47.9960673Z   Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.0196079Z      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 48.9 MB/s  0:00:00
+audit	UNKNOWN STEP	2026-10-22T04:55:48.0560757Z Collecting pyparsing==3.3.3 (from -r requirements-audit.lock (line 350))
+audit	UNKNOWN STEP	2026-10-22T04:55:48.0756586Z   Downloading pyparsing-3.3.3-py3-none-any.whl (126 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.1086378Z Collecting requests==2.34.2 (from -r requirements-audit.lock (line 354))
+audit	UNKNOWN STEP	2026-10-22T04:55:48.1280014Z   Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.1676609Z Collecting rich==15.0.0 (from -r requirements-audit.lock (line 360))
+audit	UNKNOWN STEP	2026-10-22T04:55:48.1875680Z   Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.2165720Z Collecting sortedcontainers==2.4.0 (from -r requirements-audit.lock (line 364))
+audit	UNKNOWN STEP	2026-10-22T04:55:48.2360962Z   Downloading sortedcontainers-2.4.0-py2.py3-none-any.whl (29 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.2740952Z Collecting tomli==2.5.0 (from -r requirements-audit.lock (line 368))
+audit	UNKNOWN STEP	2026-10-22T04:55:48.2932803Z   Downloading tomli-2.5.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (276 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.3198713Z Collecting tomli-w==1.2.0 (from -r requirements-audit.lock (line 435))
+audit	UNKNOWN STEP	2026-10-22T04:55:48.3394791Z   Downloading tomli_w-1.2.0-py3-none-any.whl (6.7 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.3679646Z Collecting typing-extensions==4.16.0 (from -r requirements-audit.lock (line 439))
+audit	UNKNOWN STEP	2026-10-22T04:55:48.3876357Z   Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.4197989Z Collecting urllib3==2.8.0 (from -r requirements-audit.lock (line 443))
+audit	UNKNOWN STEP	2026-10-22T04:55:48.4389932Z   Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.4433956Z Requirement already satisfied: pip==26.2.1 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from -r requirements-audit.lock (line 449)) (26.2.1)
+audit	UNKNOWN STEP	2026-10-22T04:55:48.6398682Z Installing collected packages: sortedcontainers, boolean-py, urllib3, typing-extensions, tomli-w, tomli, pyparsing, pygments, platformdirs, pip-api, packaging, packageurl-python, msgpack, mdurl, license-expression, idna, filelock, defusedxml, charset-normalizer, certifi, requests, py-serializable, pip-requirements-parser, markdown-it-py, rich, cyclonedx-python-lib, cachecontrol, pip-audit
+audit	UNKNOWN STEP	2026-10-22T04:55:50.4239199Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:50.4257087Z Successfully installed boolean-py-5.0 cachecontrol-0.14.4 certifi-2026.7.22 charset-normalizer-3.5.2 cyclonedx-python-lib-11.12.0 defusedxml-0.7.1 filelock-4.2.0 idna-3.20 license-expression-30.4.4 markdown-it-py-4.2.0 mdurl-0.1.2 msgpack-1.2.3 packageurl-python-0.17.6 packaging-26.3 pip-api-0.0.35 pip-audit-2.10.1 pip-requirements-parser-32.0.1 platformdirs-4.13.3 py-serializable-2.1.0 pygments-2.21.0 pyparsing-3.3.3 requests-2.34.2 rich-15.0.0 sortedcontainers-2.4.0 tomli-2.5.0 tomli-w-1.2.0 typing-extensions-4.16.0 urllib3-2.8.0
+audit	UNKNOWN STEP	2026-10-22T04:55:50.4265159Z 
+audit	UNKNOWN STEP	2026-10-22T04:55:50.4265591Z [notice] A new release of pip is available: 26.2.1 -> 26.2.2
+audit	UNKNOWN STEP	2026-10-22T04:55:50.4266182Z [notice] To update, run: pip install --upgrade pip
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5005036Z ##[group]Run set -o pipefail
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5005364Z set -o pipefail
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5005759Z pip-audit -r requirements.lock 2>&1 | tee "$GITHUB_WORKSPACE/pip_audit.log"
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5006321Z # R-148: audits the locked resolved set (all transitives), not just the
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5006861Z # direct requirements. pip-audit exits 1 if vulnerabilities found — blocking.
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5078336Z shell: /usr/bin/bash -e {0}
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5078624Z env:
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5078899Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5079348Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5079778Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5080157Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5080694Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5081120Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+audit	UNKNOWN STEP	2026-10-22T04:55:50.5081455Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:02.6544193Z No known vulnerabilities found
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7103968Z ##[group]Run actions/setup-node@v7
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7104264Z with:
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7104490Z   node-version: 22
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7104711Z   check-latest: false
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7107353Z   token: ***
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7107585Z   package-manager-cache: true
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7107838Z env:
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7108117Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7108547Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7109014Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7109407Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7109789Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7110172Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+audit	UNKNOWN STEP	2026-10-22T04:56:02.7110743Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:02.8475745Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:03.8811617Z ##[group]Environment details
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7265477Z node: v22.23.3
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7265879Z npm: 10.9.9
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7266195Z yarn: 1.22.22
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7266968Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7407051Z ##[group]Run npm ci --engine-strict --no-audit --no-fund
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7407488Z npm ci --engine-strict --no-audit --no-fund
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7407847Z npm audit --omit=dev --audit-level=high
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7408274Z # Blocking on critical/high in production deps (react/react-dom).
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7408769Z # Dev deps are covered by the full audit below (blocking since R-071).
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7534339Z shell: /usr/bin/bash -e {0}
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7534608Z env:
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7534887Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7535340Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7535779Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7536163Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7536549Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7536997Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+audit	UNKNOWN STEP	2026-10-22T04:56:05.7537347Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:09.5060841Z 
+audit	UNKNOWN STEP	2026-10-22T04:56:09.5070205Z added 63 packages in 4s
+audit	UNKNOWN STEP	2026-10-22T04:56:09.9785353Z found 0 vulnerabilities
+audit	UNKNOWN STEP	2026-10-22T04:56:09.9924569Z ##[group]Run set -o pipefail
+audit	UNKNOWN STEP	2026-10-22T04:56:09.9925078Z set -o pipefail
+audit	UNKNOWN STEP	2026-10-22T04:56:09.9925711Z npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log"
+audit	UNKNOWN STEP	2026-10-22T04:56:09.9926603Z # R-071: vite 5 -> 8 closed the two dev-only advisories (esbuild/vite) that
+audit	UNKNOWN STEP	2026-10-22T04:56:09.9927475Z # made this step informational since R-045; it now blocks on high/critical
+audit	UNKNOWN STEP	2026-10-22T04:56:09.9928245Z # in dev deps too. See docs/governance/SECURITY.md R-071.
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0019218Z shell: /usr/bin/bash -e {0}
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0019510Z env:
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0019791Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0020250Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0020850Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0021247Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0021658Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0022051Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+audit	UNKNOWN STEP	2026-10-22T04:56:10.0022405Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4565712Z found 0 vulnerabilities
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4724412Z ##[group]Run actions/setup-node@v7
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4724695Z with:
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4724903Z   node-version: 22
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4725127Z   check-latest: false
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4727570Z   token: ***
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4727809Z   package-manager-cache: true
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4728072Z env:
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4728354Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4728790Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4729435Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4729820Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4730199Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4730797Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+audit	UNKNOWN STEP	2026-10-22T04:56:10.4731116Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:10.6090997Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.6337461Z ##[group]Environment details
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8255717Z node: v22.23.3
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8256337Z npm: 10.9.9
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8256728Z yarn: 1.22.22
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8257622Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8411018Z ##[group]Run set -o pipefail
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8411477Z set -o pipefail
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8411939Z npm audit --omit=dev --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_root_prod.log"
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8484068Z shell: /usr/bin/bash -e {0}
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8484354Z env:
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8484646Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8485118Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8485550Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8485936Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8486322Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8486699Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+audit	UNKNOWN STEP	2026-10-22T04:56:10.8487023Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3472031Z found 0 vulnerabilities
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3642040Z ##[group]Run set -o pipefail
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3642361Z set -o pipefail
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3642770Z npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_root_full.log"
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3713735Z shell: /usr/bin/bash -e {0}
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3714000Z env:
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3714302Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3714754Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3715174Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3715550Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3715927Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3716302Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+audit	UNKNOWN STEP	2026-10-22T04:56:11.3716624Z ##[endgroup]
+audit	UNKNOWN STEP	2026-10-22T04:56:11.8618736Z found 0 vulnerabilities
+audit	UNKNOWN STEP	2026-10-22T04:56:11.8818783Z Post job cleanup.
+audit	UNKNOWN STEP	2026-10-22T04:56:12.0092212Z Post job cleanup.
+audit	UNKNOWN STEP	2026-10-22T04:56:12.1545688Z Post job cleanup.
+audit	UNKNOWN STEP	2026-10-22T04:56:12.2962109Z Post job cleanup.
+audit	UNKNOWN STEP	2026-10-22T04:56:12.3905867Z [command]/usr/bin/git version
+audit	UNKNOWN STEP	2026-10-22T04:56:12.3959978Z git version 2.55.0
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4001674Z Temporarily overriding HOME='/home/runner/work/_temp/c31f2676-db8a-4ad9-98aa-b629d1cfbb83' before making global git config changes
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4003201Z Adding repository directory to the temporary git global config as a safe directory
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4006730Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/All-hand/All-hand
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4047600Z Removing SSH command configuration
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4055277Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4099520Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4458202Z Removing HTTP extra header
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4459333Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4516945Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4893092Z Removing includeIf entries pointing to credentials config files
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4924533Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4941542Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4952239Z includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4967328Z includeif.gitdir:/github/workspace/.git.path
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4986273Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4987974Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4989021Z /home/runner/work/_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config
+audit	UNKNOWN STEP	2026-10-22T04:56:12.4991005Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-c59fe87b\-8358\-4536\-bebc\-66c3035adfcb\.config
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5044734Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5077977Z /home/runner/work/_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5090045Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/All-hand/All-hand/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-c59fe87b\-8358\-4536\-bebc\-66c3035adfcb\.config
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5133889Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5161711Z /github/runner_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5169242Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-c59fe87b\-8358\-4536\-bebc\-66c3035adfcb\.config
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5210094Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5237466Z /github/runner_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5245951Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-c59fe87b\-8358\-4536\-bebc\-66c3035adfcb\.config
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5284677Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5589689Z Removing credentials config '/home/runner/work/_temp/git-credentials-c59fe87b-8358-4536-bebc-66c3035adfcb.config'
+audit	UNKNOWN STEP	2026-10-22T04:56:12.5753249Z Cleaning up orphan processes
