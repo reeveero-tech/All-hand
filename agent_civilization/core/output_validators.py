@@ -112,6 +112,8 @@ def validate_json(result: Mapping[str, Any],
 def validate_citations(result: Mapping[str, Any]) -> List[str]:
     """إجابة تحمل محتوى واقعيًا يجب أن تستشهد مصادر غير فارغة.
 
+    حد معلن: هذا فحص وجود (presence) لا إثبات صحة (substantiation) —
+    التحقق من أن الاستشهادات نفسها حقيقية يحتاج مسارًا آخر (R-170 لاحقًا).
     يعيد قائمة أسباب الرفض (فارغة = اجتياز).
     """
     key, value = _first_present(result, CITATION_KEYS)
@@ -134,24 +136,42 @@ def _is_abstention(answer: str) -> bool:
 
 
 def validate_tool_output(result: Mapping[str, Any]) -> List[str]:
-    """نجاح مهمة أداة يتطلب مخرجات أداة فعلية غير فارغة."""
-    if result.get("tool_output") in (None, "", [], {}):
+    """نجاح مهمة أداة يتطلب مخرجات أداة فعلية غير فارغة.
+
+    مخرجات تحمل علامات فشل صريحة (``exit_code`` رقمي ≠ 0، أو ``ok: False``
+    داخلها) ليست دليل نجاح — الرفض مذلل بالسبب.
+    """
+    tool_output = result.get("tool_output")
+    if tool_output in (None, "", [], {}):
         return ["tool_output: empty — success claim has no tool evidence"]
+    if isinstance(tool_output, Mapping):
+        exit_code = tool_output.get("exit_code")
+        if isinstance(exit_code, int) and not isinstance(exit_code, bool) and exit_code != 0:
+            return [f"tool_output: failure evidence (exit_code={exit_code})"]
+        if tool_output.get("ok") is False:
+            return ["tool_output: failure evidence (ok=false inside tool_output)"]
     return []
 
 
 def validate_checks(result: Mapping[str, Any]) -> List[str]:
-    """نجاح يتطلب قائمة فحوصات صريحة ناجحة (اسم + نتيجة ناجحة)."""
+    """نجاح يتطلب قائمة فحوصات صريحة ناجحة — **كل** عنصر يجب أن يكون ناجحًا.
+
+    العنصر الناجح المقبول: قاموس يحمل ``ok: True`` صراحة. الاسم المجرد
+    (سلسلة نصية) لا يُحتسب فحصًا ناجحًا — النتيجة يجب أن تكون موثقة لا
+    مجرد ادعاء اسم فحص (R-170: النموذج لا يقيّم نفسه).
+    """
     key, value = _first_present(result, CHECKS_KEYS)
     if not key:
         return ["checks: no explicit checks list"]
     items = value if isinstance(value, (list, tuple)) else []
-    passed = [c for c in items
-              if (isinstance(c, str) and c.strip())
-              or (isinstance(c, Mapping) and c.get("ok") is True)]
-    if not passed:
-        return ["checks: checks list present but nothing passed"]
-    return []
+    if not items:
+        return ["checks: checks list present but empty"]
+    failed: List[str] = []
+    for idx, c in enumerate(items):
+        if isinstance(c, Mapping) and c.get("ok") is True:
+            continue
+        failed.append(f"checks: item #{idx} is not a documented passing check (ok=true)")
+    return failed
 
 
 def has_machine_evidence(result: Mapping[str, Any]) -> bool:
@@ -177,14 +197,22 @@ def is_forged_success(outcome: Mapping[str, Any]) -> bool:
     return _claims_success(_answer_text(result))
 
 
+#: المتطلبات المعروفة لبوابة التحقق — أي مفتاح غير معروف يُرفض صراحة
+#: (لا يُتجاهل بصمت: متطلب غير مفهوم = تحقق غير منفذ).
+KNOWN_REQUIREMENTS: frozenset = frozenset(
+    {"json", "citations", "tool_output", "checks"})
+
+
 def verify_success(outcome: Mapping[str, Any],
                    requirements: Optional[Mapping[str, Any]] = None) -> Verdict:
     """بوابة R-170: لا ``ok=True`` دون التحقق المطلوب.
 
     * ``ok=False`` (فشل صادق): لا ادعاء نجاح — الحكم ``ok=True`` للبوابة مع
       تسجيل الفحص.
-    * ``ok=True``: تُطبق متطلبات المهمة (``requirements``) كلها؛ أي رفض
-      يعني ادعاء نجاح غير معتمد (يُعاد كفشل مع السبب).
+    * ``ok=True`` مع نتيجة داخلية ``result.ok=False``: تناقض — رفض صريح.
+    * ``ok=True``: تُطبق متطلبات المهمة (``requirements``) كلها؛ أي متطلب
+      غير معروف يُرفض صراحة (لا تجاهل صامت)؛ أي رفض يعني ادعاء نجاح غير
+      معتمد (يُعاد كفشل مع السبب).
     * ``ok=True`` بلا متطلبات وبلا أي دليل آلي: يُقبل مع ``unverified=True``
       (توافق خلفي موثق — لا كسر للسلوك القائم في هذه الدفعة)، إلا إذا كان
       نص الإجابة يدّعي النجاح صراحة — عندها يُرفض كنجاح مزوّر.
@@ -192,7 +220,17 @@ def verify_success(outcome: Mapping[str, Any],
     if not bool(outcome.get("ok")):
         return Verdict(ok=True, checks_run=("no-success-claim",))
     result = _result_of(outcome)
+    # تناقض الطبقتين: نجاح خارجي مع فشل داخلي موثق = ادعاء غير معتمد.
+    if isinstance(result, Mapping) and result.get("ok") is False:
+        return Verdict(ok=False, reasons=("contradiction: outer ok=true with "
+                                         "inner result ok=false",),
+                       checks_run=("inner-consistency",))
     reqs = dict(requirements or {})
+    unknown = sorted(set(reqs) - KNOWN_REQUIREMENTS)
+    if unknown:
+        return Verdict(ok=False, reasons=tuple(
+            f"unknown requirement (not verified): {k}" for k in unknown),
+            checks_run=("requirements",))
     checks_run: List[str] = []
     reasons: List[str] = []
     if reqs.get("json"):
@@ -226,6 +264,10 @@ def false_success_rate(outcomes: List[Mapping[str, Any]]) -> float:
     """نسبة النجاح المزوّر في مجموعة مخرجات (0.0–1.0) — مقياس R-170.
 
     كل مخرج يحمل ``ok=True`` بلا دليل آلي مع ادعاء نجاح نصي يُحتسب مزوّرًا.
+
+    حد معلن: هذا قياس «الكشف الحتمي بالعلامات» (heuristic) وليس حقيقة
+    أرضية مستقلة — يُستخدم للمقارنة قبل/بعد على المجموعة نفسها، ولا يعادل
+    قياس الرفض المستقل في R-169.
     """
     if not outcomes:
         return 0.0
@@ -243,5 +285,5 @@ __all__ = [
     "Verdict", "validate_json", "validate_citations", "validate_tool_output",
     "validate_checks", "verify_success", "is_forged_success", "has_machine_evidence",
     "false_success_rate", "verification_from_work", "SUCCESS_CLAIM_MARKERS",
-    "CITATION_KEYS", "CHECKS_KEYS",
+    "CITATION_KEYS", "CHECKS_KEYS", "KNOWN_REQUIREMENTS",
 ]
