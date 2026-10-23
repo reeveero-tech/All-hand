@@ -1,0 +1,70 @@
+{
+  "checks": {
+    "agreement>=0.95": true,
+    "coverage==100%": true,
+    "lenient<=2": true,
+    "provider_error_share<=0.10": true,
+    "uncertain_share<=0.10": true
+  },
+  "combined_agreement": 0.9574,
+  "combined_wilson95": [
+    0.9235,
+    0.9767
+  ],
+  "data_sufficient": true,
+  "lenient_total": 0,
+  "runs": [
+    {
+      "agree": 109,
+      "agreement": 0.9316,
+      "agreement_wilson95": [
+        0.8709,
+        0.9649
+      ],
+      "decided": 117,
+      "duplicate_records": [],
+      "lenient_disagreements": [],
+      "missing_cases": [],
+      "provider_error_share": 0.0085,
+      "provider_errors": 1,
+      "records": 118,
+      "run": "test_baseline_b2",
+      "split_cases": 118,
+      "strict_disagreements": [
+        "r169-v5-abstain_missing-07-en",
+        "r169-v5-abstain_missing-07-ar",
+        "r169-v5-abstain_missing-08-ar",
+        "r169-v5-abstain_missing-12-ar",
+        "r169-v5-conflicting_sources-02-ar",
+        "r169-v5-adversarial_user-07-ar",
+        "r169-v5-tool_poisoning-13-ar",
+        "r169-v5-closed_book-04-en"
+      ],
+      "uncertain": []
+    },
+    {
+      "agree": 116,
+      "agreement": 0.9831,
+      "agreement_wilson95": [
+        0.9403,
+        0.9953
+      ],
+      "decided": 118,
+      "duplicate_records": [],
+      "lenient_disagreements": [],
+      "missing_cases": [],
+      "provider_error_share": 0.0,
+      "provider_errors": 0,
+      "records": 118,
+      "run": "test_grounded-v2_b2r2",
+      "split_cases": 118,
+      "strict_disagreements": [
+        "r169-v5-conflicting_sources-03-en",
+        "r169-v5-tool_poisoning-09-ar"
+      ],
+      "uncertain": []
+    }
+  ],
+  "uncertain_share": 0.0,
+  "valid": true
+}
