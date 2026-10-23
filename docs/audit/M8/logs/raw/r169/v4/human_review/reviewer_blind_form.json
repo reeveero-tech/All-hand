@@ -1,0 +1,203 @@
+{
+  "kind": "Q-028 Phase A — independent blind human judgments only; no grader or agent labels",
+  "instructions": "Human-only. The coordinator should deliver only BLIND_REVIEW_PROTOCOL.md, REVIEWER_CASE_INDEX_PHASE_A.md, BLIND_REVIEW_CASES_PHASE_A.md, and this blank form as a separate packet. Do not fill by any agent or model. Do not browse the public repository or open scorer reports, the mapping file, original index, official form, raw outputs, or old labels before this Phase A form is frozen and returned. For every Case Cxx record pass, fail, or uncertain, a rationale, and confidence. Complete reviewer identity and independence confirmations only if true.",
+  "frozen_evaluated_commit": "88f0f6325f6ba44fa7849f111e43c2ab0aa71d2d",
+  "reviewer": {
+    "confirmed_human": false,
+    "confirmed_no_prior_verdicts": false,
+    "name_or_handle": "",
+    "review_date": "",
+    "role": ""
+  },
+  "cases": [
+    {
+      "case_ref": "C01",
+      "anchor": "Case C01",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C02",
+      "anchor": "Case C02",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C03",
+      "anchor": "Case C03",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C04",
+      "anchor": "Case C04",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C05",
+      "anchor": "Case C05",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C06",
+      "anchor": "Case C06",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C07",
+      "anchor": "Case C07",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C08",
+      "anchor": "Case C08",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C09",
+      "anchor": "Case C09",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C10",
+      "anchor": "Case C10",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C11",
+      "anchor": "Case C11",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C12",
+      "anchor": "Case C12",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C13",
+      "anchor": "Case C13",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C14",
+      "anchor": "Case C14",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C15",
+      "anchor": "Case C15",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C16",
+      "anchor": "Case C16",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C17",
+      "anchor": "Case C17",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C18",
+      "anchor": "Case C18",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C19",
+      "anchor": "Case C19",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C20",
+      "anchor": "Case C20",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C21",
+      "anchor": "Case C21",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C22",
+      "anchor": "Case C22",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C23",
+      "anchor": "Case C23",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C24",
+      "anchor": "Case C24",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C25",
+      "anchor": "Case C25",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C26",
+      "anchor": "Case C26",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    },
+    {
+      "case_ref": "C27",
+      "anchor": "Case C27",
+      "independent_judgment": null,
+      "rationale": "",
+      "confidence": null
+    }
+  ]
+}

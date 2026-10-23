@@ -1,0 +1,223 @@
+{
+  "kind": "Q-028 coordinator-only case mapping (Phase B only; never include in Phase A packet)",
+  "source_commit": "88f0f6325f6ba44fa7849f111e43c2ab0aa71d2d",
+  "do_not_distribute_before_phase_a_freeze": true,
+  "cases": [
+    {
+      "blind_case_ref": "C01",
+      "case_id": "r169-v4-abstain_missing-02-en",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 19,
+      "reply_sha256_prefix": "3079422aec5e"
+    },
+    {
+      "blind_case_ref": "C02",
+      "case_id": "r169-v4-abstain_missing-12-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 32,
+      "reply_sha256_prefix": "19b40e5ada0f"
+    },
+    {
+      "blind_case_ref": "C03",
+      "case_id": "r169-v4-tool_poisoning-13-ar",
+      "run": "test_grounded-v2_b1",
+      "source_sheet": "test_grounded-v2_b1.sheet.md",
+      "source_heading_number": 92,
+      "reply_sha256_prefix": "0947cb19ad91"
+    },
+    {
+      "blind_case_ref": "C04",
+      "case_id": "r169-v4-code_task-14-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 112,
+      "reply_sha256_prefix": "8798d38f7891"
+    },
+    {
+      "blind_case_ref": "C05",
+      "case_id": "r169-v4-abstain_missing-07-en",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 25,
+      "reply_sha256_prefix": "3529d818ef25"
+    },
+    {
+      "blind_case_ref": "C06",
+      "case_id": "r169-v4-abstain_missing-07-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 26,
+      "reply_sha256_prefix": "6cdc5059e371"
+    },
+    {
+      "blind_case_ref": "C07",
+      "case_id": "r169-v4-abstain_missing-12-en",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 31,
+      "reply_sha256_prefix": "ec5a61797056"
+    },
+    {
+      "blind_case_ref": "C08",
+      "case_id": "r169-v4-closed_book-03-ar",
+      "run": "test_grounded-v2_b1",
+      "source_sheet": "test_grounded-v2_b1.sheet.md",
+      "source_heading_number": 116,
+      "reply_sha256_prefix": "8a6b10089bed"
+    },
+    {
+      "blind_case_ref": "C09",
+      "case_id": "r169-v4-closed_book-02-en",
+      "run": "test_grounded-v2_b1",
+      "source_sheet": "test_grounded-v2_b1.sheet.md",
+      "source_heading_number": 113,
+      "reply_sha256_prefix": "84589d2b8ab6"
+    },
+    {
+      "blind_case_ref": "C10",
+      "case_id": "r169-v4-abstain_missing-08-ar",
+      "run": "test_grounded-v2_b1",
+      "source_sheet": "test_grounded-v2_b1.sheet.md",
+      "source_heading_number": 28,
+      "reply_sha256_prefix": "9effba649484"
+    },
+    {
+      "blind_case_ref": "C11",
+      "case_id": "r169-v4-abstain_missing-08-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 28,
+      "reply_sha256_prefix": "be5be9b276d5"
+    },
+    {
+      "blind_case_ref": "C12",
+      "case_id": "r169-v4-abstain_missing-03-ar",
+      "run": "test_grounded-v2_b1",
+      "source_sheet": "test_grounded-v2_b1.sheet.md",
+      "source_heading_number": 22,
+      "reply_sha256_prefix": "1d1828447240"
+    },
+    {
+      "blind_case_ref": "C13",
+      "case_id": "r169-v4-abstain_missing-08-en",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 27,
+      "reply_sha256_prefix": "060357db96b2"
+    },
+    {
+      "blind_case_ref": "C14",
+      "case_id": "r169-v4-tool_poisoning-03-en",
+      "run": "test_grounded-v2_b1",
+      "source_sheet": "test_grounded-v2_b1.sheet.md",
+      "source_heading_number": 79,
+      "reply_sha256_prefix": "e8929783a2d9"
+    },
+    {
+      "blind_case_ref": "C15",
+      "case_id": "r169-v4-stale_sources-03-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 56,
+      "reply_sha256_prefix": "012f15e9255b"
+    },
+    {
+      "blind_case_ref": "C16",
+      "case_id": "r169-v4-tool_poisoning-03-ar",
+      "run": "test_grounded-v2_b1",
+      "source_sheet": "test_grounded-v2_b1.sheet.md",
+      "source_heading_number": 80,
+      "reply_sha256_prefix": "f7b677ce9e2c"
+    },
+    {
+      "blind_case_ref": "C17",
+      "case_id": "r169-v4-conflicting_sources-07-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 52,
+      "reply_sha256_prefix": "1334633131b9"
+    },
+    {
+      "blind_case_ref": "C18",
+      "case_id": "r169-v4-abstain_missing-09-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 30,
+      "reply_sha256_prefix": "e8efa63a77cb"
+    },
+    {
+      "blind_case_ref": "C19",
+      "case_id": "r169-v4-abstain_missing-09-en",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 29,
+      "reply_sha256_prefix": "22d17da71bbb"
+    },
+    {
+      "blind_case_ref": "C20",
+      "case_id": "r169-v4-abstain_missing-04-en",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 23,
+      "reply_sha256_prefix": "af600be7046b"
+    },
+    {
+      "blind_case_ref": "C21",
+      "case_id": "r169-v4-abstain_missing-04-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 24,
+      "reply_sha256_prefix": "92c88788c135"
+    },
+    {
+      "blind_case_ref": "C22",
+      "case_id": "r169-v4-code_task-12-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 108,
+      "reply_sha256_prefix": "ac26dcd4eada"
+    },
+    {
+      "blind_case_ref": "C23",
+      "case_id": "r169-v4-conflicting_sources-04-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 50,
+      "reply_sha256_prefix": "c65980a74ef8"
+    },
+    {
+      "blind_case_ref": "C24",
+      "case_id": "r169-v4-conflicting_sources-03-en",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 47,
+      "reply_sha256_prefix": "f873941140be"
+    },
+    {
+      "blind_case_ref": "C25",
+      "case_id": "r169-v4-conflicting_sources-03-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 48,
+      "reply_sha256_prefix": "000acdac21e5"
+    },
+    {
+      "blind_case_ref": "C26",
+      "case_id": "r169-v4-abstain_missing-03-en",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 21,
+      "reply_sha256_prefix": "1aaecc886b5c"
+    },
+    {
+      "blind_case_ref": "C27",
+      "case_id": "r169-v4-abstain_missing-02-ar",
+      "run": "test_baseline_b1",
+      "source_sheet": "test_baseline_b1.sheet.md",
+      "source_heading_number": 20,
+      "reply_sha256_prefix": "492e0ad26794"
+    }
+  ]
+}

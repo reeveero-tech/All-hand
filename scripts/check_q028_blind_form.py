@@ -13,7 +13,12 @@ Phase B), this tool:
 What the reviewer answered is the reviewer's decision; this tool does not judge it.
 
 Usage:
-  python3 scripts/check_q028_blind_form.py FILLED_FORM [--blank BLANK_FORM]
+  python3 scripts/check_q028_blind_form.py FILLED_FORM [--blank BLANK_FORM] [--council]
+
+``--council`` (D-100): checks a form returned by an AI council member. In this
+mode ``reviewer.confirmed_human`` MUST be exactly ``false`` (a model may never
+claim to be human) and ``reviewer.role`` must declare an AI council member;
+``confirmed_no_prior_verdicts`` must still be true. All other checks are equal.
 Exit code 0 = complete, 1 = incomplete/ill-formed, 2 = usage/parse error.
 """
 from __future__ import annotations
@@ -35,14 +40,26 @@ def _filled(v) -> bool:
     return isinstance(v, str) and bool(v.strip())
 
 
-def check(filled: dict, blank: dict | None = None) -> dict:
+COUNCIL_ROLE_MARK = "ai council member"
+
+
+def check(filled: dict, blank: dict | None = None, council: bool = False) -> dict:
     problems: list = []
     if not isinstance(filled, dict):
         return {"complete": False, "cases": 0, "answered": 0, "problems": ["form is not a JSON object"]}
     rev = filled.get("reviewer") if isinstance(filled.get("reviewer"), dict) else {}
-    for k in CONFIRMATIONS:
-        if rev.get(k) is not True:
-            problems.append(f"reviewer.{k} must be true (set only if it is actually true)")
+    if council:
+        if rev.get("confirmed_human") is not False:
+            problems.append("reviewer.confirmed_human must be false for an AI council member (D-100)")
+        if rev.get("confirmed_no_prior_verdicts") is not True:
+            problems.append("reviewer.confirmed_no_prior_verdicts must be true (set only if it is actually true)")
+        role = rev.get("role")
+        if not (isinstance(role, str) and COUNCIL_ROLE_MARK in role.lower()):
+            problems.append(f"reviewer.role must declare '{COUNCIL_ROLE_MARK}' (D-100)")
+    else:
+        for k in CONFIRMATIONS:
+            if rev.get(k) is not True:
+                problems.append(f"reviewer.{k} must be true (set only if it is actually true)")
     for k in META:
         if not _filled(rev.get(k)):
             problems.append(f"reviewer.{k} is empty")
@@ -87,15 +104,19 @@ def check(filled: dict, blank: dict | None = None) -> dict:
 def main(argv: list) -> int:
     args = list(argv[1:])
     blank_path = None
+    council = False
+    if "--council" in args:
+        council = True
+        args.remove("--council")
     if "--blank" in args:
         i = args.index("--blank")
         if i + 1 >= len(args):
-            print("usage: check_q028_blind_form.py FILLED_FORM [--blank BLANK_FORM]", file=sys.stderr)
+            print("usage: check_q028_blind_form.py FILLED_FORM [--blank BLANK_FORM] [--council]", file=sys.stderr)
             return 2
         blank_path = Path(args[i + 1])
         del args[i : i + 2]
     if len(args) != 1:
-        print("usage: check_q028_blind_form.py FILLED_FORM [--blank BLANK_FORM]", file=sys.stderr)
+        print("usage: check_q028_blind_form.py FILLED_FORM [--blank BLANK_FORM] [--council]", file=sys.stderr)
         return 2
     path = Path(args[0])
     raw = path.read_bytes()
@@ -105,7 +126,8 @@ def main(argv: list) -> int:
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         print(json.dumps({"complete": False, "problems": [f"parse error: {exc}"]}, ensure_ascii=False))
         return 2
-    result = check(filled, blank)
+    result = check(filled, blank, council=council)
+    result["mode"] = "council (D-100, AI — not human)" if council else "human"
     result["sha256"] = hashlib.sha256(raw).hexdigest()
     print(json.dumps(result, ensure_ascii=False, indent=1))
     return 0 if result["complete"] else 1
