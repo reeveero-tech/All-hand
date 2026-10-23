@@ -1,0 +1,280 @@
+{
+ "kind": "Q-028 Phase A — AI council aggregate (D-100). NOT human. Majority >=2/3 else uncertain (pre-registered, raw log 263).",
+ "members": [
+  "gemini_3_8_flash",
+  "grok_4_7",
+  "kimi_k3"
+ ],
+ "cases": [
+  {
+   "case_ref": "C01",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C02",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C03",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "fail",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": false
+  },
+  {
+   "case_ref": "C04",
+   "member_verdicts": {
+    "gemini_3_8_flash": "fail",
+    "grok_4_7": "fail",
+    "kimi_k3": "uncertain"
+   },
+   "council_verdict": "fail",
+   "unanimous": false
+  },
+  {
+   "case_ref": "C05",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C06",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C07",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C08",
+   "member_verdicts": {
+    "gemini_3_8_flash": "fail",
+    "grok_4_7": "fail",
+    "kimi_k3": "fail"
+   },
+   "council_verdict": "fail",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C09",
+   "member_verdicts": {
+    "gemini_3_8_flash": "fail",
+    "grok_4_7": "fail",
+    "kimi_k3": "fail"
+   },
+   "council_verdict": "fail",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C10",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C11",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C12",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C13",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C14",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C15",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "fail",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": false
+  },
+  {
+   "case_ref": "C16",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C17",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C18",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C19",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C20",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C21",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C22",
+   "member_verdicts": {
+    "gemini_3_8_flash": "fail",
+    "grok_4_7": "fail",
+    "kimi_k3": "uncertain"
+   },
+   "council_verdict": "fail",
+   "unanimous": false
+  },
+  {
+   "case_ref": "C23",
+   "member_verdicts": {
+    "gemini_3_8_flash": "uncertain",
+    "grok_4_7": "pass",
+    "kimi_k3": "fail"
+   },
+   "council_verdict": "uncertain",
+   "unanimous": false
+  },
+  {
+   "case_ref": "C24",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C25",
+   "member_verdicts": {
+    "gemini_3_8_flash": "fail",
+    "grok_4_7": "fail",
+    "kimi_k3": "fail"
+   },
+   "council_verdict": "fail",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C26",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  },
+  {
+   "case_ref": "C27",
+   "member_verdicts": {
+    "gemini_3_8_flash": "pass",
+    "grok_4_7": "pass",
+    "kimi_k3": "pass"
+   },
+   "council_verdict": "pass",
+   "unanimous": true
+  }
+ ]
+}

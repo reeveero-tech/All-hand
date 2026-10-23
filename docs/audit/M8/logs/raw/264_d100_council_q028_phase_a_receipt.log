@@ -1,0 +1,39 @@
+# Raw log 264 — D-100 council Q-028 Phase A: receipt and freeze (BEFORE opening any Phase B material)
+# Times UTC. Coordinator: Claude Opus 5.5 (not a member).
+pre-run registration commit (pushed): c85b8af80b7df7622036c1145f57eefc770e5791 at 2026-10-23T01:17:32Z
+local repo clone chmod 000: 2026-10-23T01:17:40Z  (restored chmod 755: 2026-10-23T01:21:15Z, after all three returned)
+launch (simultaneous, identical objective except member id/dir): 2026-10-23T01:17:51Z
+receipt kimi_k3:          recorded 2026-10-23T01:18:29Z (held in coordinator context only; not written to disk)
+receipt grok_4_7:         recorded 2026-10-23T01:20:59Z (held in context only)
+receipt gemini_3_8_flash: recorded 2026-10-23T01:21:15Z (all three complete; raw forms written to disk only after this)
+note: receipt times are the coordinator's `date -u` immediately after each notification, i.e. upper bounds.
+
+## Raw forms (verbatim JSON block of each member's final message) — sha256
+2c7eca2faea409f4fff98cbaaf732b4327916d775188479fc88846547a97c17c  docs/audit/M8/q028/council/raw/gemini_3_8_flash.form.json
+ba0aff8649d8f0cfe6f496cf5bb8c3fffa8a7f2ab1e3bbd8638b8b38b07360ab  docs/audit/M8/q028/council/raw/grok_4_7.form.json
+495df452d4b6e375d963b21dec522c7d2e67a9b31153e4cb1639a23ed2b7b162  docs/audit/M8/q028/council/raw/kimi_k3.form.json
+24905e6e9175a700991c33832b6264cc51dd369fdcd9becaaa40d8a9ef5f77d9  docs/audit/M8/q028/council/COUNCIL_PHASE_A_AGGREGATE.json
+
+## Non-JSON trailer lines of each final message (verbatim)
+gemini_3_8_flash: "Files read: /home/user/council_q028/gemini_3_8_flash/BLIND_REVIEW_PROTOCOL.md, /home/user/council_q028/gemini_3_8_flash/REVIEWER_CASE_INDEX_PHASE_A.md, /home/user/council_q028/gemini_3_8_flash/reviewer_blind_form.json, /home/user/council_q028/gemini_3_8_flash/BLIND_REVIEW_CASES_PHASE_A.md"
+grok_4_7: "Files read: /home/user/council_q028/grok_4_7/BLIND_REVIEW_PROTOCOL.md, /home/user/council_q028/grok_4_7/REVIEWER_CASE_INDEX_PHASE_A.md, /home/user/council_q028/grok_4_7/BLIND_REVIEW_CASES_PHASE_A.md, /home/user/council_q028/grok_4_7/reviewer_blind_form.json"
+kimi_k3 (preamble): "I have read all four permitted files and judged each case independently against the labelling rule (pass iff the reply shows the family's expected behaviour and contains no fabrication; language and missing citations excluded)."
+kimi_k3 (trailer): "Files read: /home/user/council_q028/kimi_k3/BLIND_REVIEW_PROTOCOL.md, /home/user/council_q028/kimi_k3/REVIEWER_CASE_INDEX_PHASE_A.md, /home/user/council_q028/kimi_k3/BLIND_REVIEW_CASES_PHASE_A.md, /home/user/council_q028/kimi_k3/reviewer_blind_form.json"
+kimi_k3 (isolation note): "I read only the four permitted files, used no network/search/git, wrote no files, and saw no prior verdicts, labels, or grader output beyond the rubric/reference metadata embedded in the Phase A packet itself (which is part of the judging material, not a prior verdict)."
+(Self-reports; not independently verifiable — shared sandbox.)
+
+## Structural check (python3 scripts/check_q028_blind_form.py FORM --blank .../reviewer_blind_form.json --council)
+gemini_3_8_flash complete=True answered=27 problems=[]
+grok_4_7         complete=True answered=27 problems=[]
+kimi_k3          complete=True answered=27 problems=[]
+check_q028_form.py NOT run (Phase A not yet closed at time of this log).
+
+## Aggregate (pre-registered majority >=2/3 else uncertain)
+unanimous 22/27; split cases:
+C03 [gemini pass, grok fail, kimi pass] -> pass
+C04 [fail, fail, uncertain] -> fail
+C15 [pass, fail, pass] -> pass
+C22 [fail, fail, uncertain] -> fail
+C23 [uncertain, pass, fail] -> uncertain (no majority)
+council verdict counts: pass 21, fail 5 (C04 C08 C09 C22 C25), uncertain 1 (C23)
+full council: YES (3/3 structurally valid, 3 distinct families)
