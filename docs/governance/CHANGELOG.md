@@ -1,3 +1,10 @@
+## 2026-10-23 — لاحق 20: إغلاق دفعة R-170/1 — CI أخضر على SHA الدمج 7a81b1a
+
+- PR #233 مدموجة بmerge commit `7a81b1a`؛ CI على SHA الدمج نفسه ناجح (run [40009680328](https://github.com/reeveero-tech/All-hand/actions/runs/40009680328): test/quality/network/audit/storage/docker/build ناجحة، publish=skipped بحكم D-011؛ ‏2874 passed / 8 skipped / 4 deselected / 9 xfailed — منها 17 اختبار R-170 الجديدة).
+- صُحح حقل أدلة R-170 (R-154): إزالة مرجع PR المدموج من سطر in_progress (قاعدة 8) مع توثيق الدمج في بند R-170 نفسه؛ الدفعة التالية: ربط البوابة بمسارات الإكمال في الخادم.
+
+---
+
 ## 2026-10-23 — لاحق 19: R-170 دفعة 1 — مدققات مخرجات قابلة لإعادة الاستخدام (أحمر أولًا)
 
 - شرط دخول R-170 مستوفى (R-169 `done` — #232)؛ بدء العمل فعليًا: ``agent_civilization/core/output_validators.py`` — ``verify_success`` (بوابة «لا ``ok=True`` دون التحقق المطلوب»؛ المتطلبات من ``work["verification"]``)، ``is_forged_success``/``false_success_rate`` (كشف وقياس النجاح المزوّر حتميًا — يستهدف التراجع الموثق 75% من R-169)، ومدققو JSON/استشهادات/مخرجات أداة/فحوصات؛ الامتناع الصادق مقبول؛ توافق خلفي موثق (``unverified`` بلا رفض).
