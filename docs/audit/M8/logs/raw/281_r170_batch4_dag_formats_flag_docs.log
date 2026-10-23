@@ -1,0 +1,184 @@
+# 281 — R-170 دفعة 4: مسار DAG وصيغ النتائج الأخرى + توثيق علم AGOS_OUTPUT_VALIDATORS + أثر تحديث zod
+# التاريخ: 2026-10-24 (Asia/Riyadh) — الفرع m8/r170-batch4-dag-formats-flag-docs — القاعدة main c7d5084
+# كل المخرجات أدناه حرفية من أوامر محلية (python 3.12، pytest)؛ لا تعديل لأي قياس/عتبة/وسم مسجل.
+
+## 1. الاكتشاف (السبب الجذري قبل أي تعديل)
+- pipeline/dag.py::_work_for يبني work المرحلة بلا مفتاح verification ⇒ مرحلة خطة لا تستطيع إعلان متطلبات تحقق؛
+  البوابة (دفعة 3) تعمل في agent.execute لكنها ترى requirements=None فتطبق كشف النجاح المزوّر الاستدلالي فقط.
+- normalize_plan يمرر **st كما هو ولا يتحقق من verification ⇒ قيمة مشوهة لا تُكتشف إلا بعد تشغيل الوكيل.
+- output_validators.apply_output_verification يمرر result الخام إلى verify_success؛ HandlerResult (pydantic) ليس
+  Mapping ⇒ _result_of يعيد المغلف {"ok":True,"result":<model>} فتُفحص حقول المغلف لا النموذج:
+  (أ) نجاح مزوّر داخل HandlerResult يمر unverified؛ (ب) دليل أداة سليم داخله يُرفض خطأً بمتطلب tool_output؛
+  (ج) تناقض HandlerResult.ok=False لا يُكتشف.
+
+## 2. اختبارات حمراء أولًا — tests/test_r170_dag_and_formats.py (36 حالة؛ قبل أي تعديل في الشيفرة)
+$ python3 -m pytest tests/test_r170_dag_and_formats.py -q -p no:cacheprovider   (exit=1)
+E   AssertionError: assert 'succeeded' == 'failed'
+E     - failed
+E   AssertionError: assert 'succeeded' == 'failed'
+E     - failed
+E   AssertionError: assert 'succeeded' == 'failed'
+E     - failed
+FAILED tests/test_r170_dag_and_formats.py::test_dag_stage_verification_reaches_the_gate[real]
+FAILED tests/test_r170_dag_and_formats.py::test_dag_stage_verification_reaches_the_gate[specialists]
+FAILED tests/test_r170_dag_and_formats.py::test_dag_stage_verification_accepts_real_evidence[real]
+FAILED tests/test_r170_dag_and_formats.py::test_dag_stage_verification_accepts_real_evidence[specialists]
+FAILED tests/test_r170_dag_and_formats.py::test_dag_gated_failure_is_retried_then_succeeds[real]
+FAILED tests/test_r170_dag_and_formats.py::test_dag_gated_failure_is_retried_then_succeeds[specialists]
+FAILED tests/test_r170_dag_and_formats.py::test_dag_dependents_of_a_gated_stage_do_not_run[real]
+FAILED tests/test_r170_dag_and_formats.py::test_dag_dependents_of_a_gated_stage_do_not_run[specialists]
+FAILED tests/test_r170_dag_and_formats.py::test_normalize_plan_rejects_malformed_stage_verification[tool_output]
+FAILED tests/test_r170_dag_and_formats.py::test_normalize_plan_rejects_malformed_stage_verification[bad1]
+FAILED tests/test_r170_dag_and_formats.py::test_normalize_plan_rejects_malformed_stage_verification[1]
+FAILED tests/test_r170_dag_and_formats.py::test_normalize_plan_rejects_malformed_stage_verification[True]
+FAILED tests/test_r170_dag_and_formats.py::test_normalize_plan_accepts_object_and_null_verification
+FAILED tests/test_r170_dag_and_formats.py::test_dag_unknown_stage_requirement_is_rejected_not_ignored
+FAILED tests/test_r170_dag_and_formats.py::test_handler_result_forged_success_is_rejected
+FAILED tests/test_r170_dag_and_formats.py::test_handler_result_with_real_evidence_is_accepted
+FAILED tests/test_r170_dag_and_formats.py::test_handler_result_inner_contradiction_is_rejected
+======================== 17 failed, 19 passed in 0.50s =========================
+
+## 2.1 أسباب الفشل (سلوكية — لا أخطاء استيراد/جمع)
+tests/test_r170_dag_and_formats.py ....FFFFFFFF.FFFFFFFFF..............  [100%]
+tests/test_r170_dag_and_formats.py:137: in test_dag_stage_verification_reaches_the_gate
+E   AssertionError: stage verification must reach work
+E   assert [None] == [{'tool_output': True}]
+tests/test_r170_dag_and_formats.py:137: in test_dag_stage_verification_reaches_the_gate
+E   AssertionError: stage verification must reach work
+E   assert [None] == [{'tool_output': True}]
+tests/test_r170_dag_and_formats.py:156: in test_dag_stage_verification_accepts_real_evidence
+E   AssertionError: assert [None] == [{'tool_output': True}]
+tests/test_r170_dag_and_formats.py:156: in test_dag_stage_verification_accepts_real_evidence
+E   AssertionError: assert [None] == [{'tool_output': True}]
+tests/test_r170_dag_and_formats.py:176: in test_dag_gated_failure_is_retried_then_succeeds
+E   AssertionError: assert ('succeeded' == 'succeeded'
+tests/test_r170_dag_and_formats.py:176: in test_dag_gated_failure_is_retried_then_succeeds
+E   AssertionError: assert ('succeeded' == 'succeeded'
+tests/test_r170_dag_and_formats.py:195: in test_dag_dependents_of_a_gated_stage_do_not_run
+E   AssertionError: assert 'succeeded' == 'failed'
+tests/test_r170_dag_and_formats.py:195: in test_dag_dependents_of_a_gated_stage_do_not_run
+E   AssertionError: assert 'succeeded' == 'failed'
+tests/test_r170_dag_and_formats.py:212: in test_normalize_plan_rejects_malformed_stage_verification
+E   Failed: DID NOT RAISE PlanError
+tests/test_r170_dag_and_formats.py:212: in test_normalize_plan_rejects_malformed_stage_verification
+E   Failed: DID NOT RAISE PlanError
+tests/test_r170_dag_and_formats.py:212: in test_normalize_plan_rejects_malformed_stage_verification
+E   Failed: DID NOT RAISE PlanError
+tests/test_r170_dag_and_formats.py:212: in test_normalize_plan_rejects_malformed_stage_verification
+E   Failed: DID NOT RAISE PlanError
+tests/test_r170_dag_and_formats.py:222: in test_normalize_plan_accepts_object_and_null_verification
+E   AssertionError: assert {'json': ['rows']} is not {'json': ['rows']}
+tests/test_r170_dag_and_formats.py:234: in test_dag_unknown_stage_requirement_is_rejected_not_ignored
+E   AssertionError: assert 'succeeded' == 'failed'
+tests/test_r170_dag_and_formats.py:252: in test_handler_result_forged_success_is_rejected
+E   assert True is False
+tests/test_r170_dag_and_formats.py:264: in test_handler_result_with_real_evidence_is_accepted
+E   assert False is True
+tests/test_r170_dag_and_formats.py:273: in test_handler_result_inner_contradiction_is_rejected
+E   assert True is False
+
+## 2.2 التصنيف الصريح
+- RED (17 فشلًا سلوكيًا): تمرير متطلبات المرحلة (8 = 4 اختبارات × وكتان)، رفض verification المشوهة في الخطة (4)،
+  قبول الكائن/None ونسخه (1)، متطلب مرحلة غير معروف (1)، HandlerResult (3).
+- CHAR (19 نجحت قبل التعديل — توصيف لسلوك صحيح قائم، لا تُحتسب «حمراء»): مرحلة مزوّرة بلا متطلبات تفشل والعلم مفعل
+  (2)، العلم معطل يحفظ النجاح التاريخي في DAG (2)، شكل work بلا verification (1)، HandlerResult والعلم معطل (1)،
+  نتائج غير قاموسية في specialists عبر execute (4+3)، نتيجة بلا ok (2)، حمولة JSON نصية (4).
+- ملاحظة صادقة: اختبار التابعين توقع أولًا الحالة "skipped" وكانت فعليًا "blocked" (حالة الإيقاف الموثقة في R-165)؛
+  صُحح توقع الاختبار لا الشيفرة — أي أن ذلك الاختبار كان أحمر لسببين قبل التعديل، وأحد السببين خطأ توقع في الاختبار.
+
+## 3. أصغر إصلاح صحيح
+- dag.normalize_plan: verification اختيارية؛ إن وُجدت ولم تكن dict ⇒ PlanError("stage …: verification must be an object")؛
+  تُنسخ إلى المرحلة المطبَّعة (لا مشاركة مرجع مع المدخل). المفاتيح نفسها تحكم عليها البوابة (غير المعروف يُرفض هناك).
+- dag._work_for: يضيف work["verification"] = نسخة متطلبات المرحلة فقط إن أُعلنت (الغياب = لا مفتاح؛ شكل work القائم محفوظ).
+- output_validators.apply_output_verification: يفحص _result_as_dict(result) (حقول HandlerResult) بدل المغلف.
+- لا تغيير في real_agents.py/specialist_runtime.py/مسار HTTP؛ ExecuteRequest لا يقبل verification من العميل.
+
+## 4. أخضر بعد الإصلاح
+$ python3 -m pytest tests/test_r170_dag_and_formats.py -q -p no:cacheprovider
+============================== 36 passed in 0.37s ==============================
+
+## 5. الحزمة الكاملة (محليًا، قبل الالتزام)
+$ python3 -m pytest tests/ -q -p no:cacheprovider   (العلم غير مضبوط)
+===== 2932 passed, 8 skipped, 4 deselected, 9 xfailed in 261.01s (0:04:21) =====
+off_exit=0
+$ AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/ -q -p no:cacheprovider   (العلم مفعل لكل الحزمة)
+===== 2932 passed, 8 skipped, 4 deselected, 9 xfailed in 260.97s (0:04:20) =====
+on_exit=0
+- التفسير المحدود: نجاح الحزمة بالعلم مفعلًا يعني أن لا اختبار قائمًا يعتمد على نجاح ترفضه البوابة؛ لا يعني أن
+  الإنتاج سيعمل بلا إنذارات كاذبة (المعالجات الحقيقية لا تعمل في الاختبارات — شبكة/LLM مستبدلة).
+- التخطيات الثمانية كما في الدفعة 3: 4 test_r042_live_storage + 2 test_r163_live_queue + 1 test_r164_live_backpressure
+  (تعمل في job storage) + 1 test_r169_benchmark_v2 [NOTSET] (بارامترية فارغة). 4 deselected = علامة network.
+
+## 6. توثيق العلم
+- docs/governance/OPERATIONS.md: صف في جدول المتغيرات + قسم «بوابة التحقق من المخرجات» (القيم، جدول الأحكام، شكل
+  الرفض، صيغ النتائج، إعلان المتطلبات بمفاتيحها الأربعة، حد الموجّه، التفعيل المرحلي، التراجع، الحدود المعلنة).
+- .env.example: سطر معلّق فقط (# AGOS_OUTPUT_VALIDATORS=1) — لم يُفعَّل العلم في render.yaml ولا Dockerfile ولا أي بيئة.
+
+## 7. أثر تحديث zod (من الدفعة 3: إزالة الإعلان المباشر، root zod 3.25.76 → 4.6.7) ونتائج audit النهائية
+### npm ls zod (root)
+tanstack_start_ts@ /home/user/workspace/repo
++-- @hookform/resolvers@5.9.1
+| `-- zod@4.6.7
++-- @tanstack/react-start@1.169.2
+| `-- @tanstack/start-plugin-core@1.171.53
+|   `-- zod@4.6.7 deduped
+`-- @tanstack/router-plugin@1.168.46
+  +-- @tanstack/router-generator@1.167.44
+  | `-- zod@4.6.7 deduped
+  `-- zod@4.6.7 deduped
+
+### web npm ls zod
+agos-civilization-web@3.0.0 /home/user/workspace/repo/web
+`-- (empty)
+
+### grep zod imports
+rg_exit=1
+### peer
+5.9.1 {"@sinclair/typebox":">=0.25.24","@standard-schema/spec":"^1.0.0","@typeschema/main":">=0.13.7","@vinejs/vine":"^2.0.0 || ^3.0.0 || ^4.0.0","ajv":"^8.12.0","ajv-errors":"^3.0.0","ajv-formats":"^2.1.1","arktype":"^2.0.0","ata-validator":"^1.2.0","class-transformer":">=0.4.0","class-validator":">=0.12.0","computed-types":"^1.0.0","effect":"^3.10.3","fluentvalidation-ts":"^3.0.0","fp-ts":"^2.7.0","io-ts":"^2.0.0","joi":"^17.0.0 || ^18.0.0","nope-validator":">=0.12.0","react-hook-form":"^7.55.0","superstruct":">=0.12.0","typanion":"^3.3.2","valibot":">=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc","vest":">=6.0.0","yup":"^1.0.0","zod":"^3.25.0 || ^4.0.0"} {"@sinclair/typebox":{"optional":true},"@standard-schema/spec":{"optional":true},"@typeschema/main":{"optional":true},"@vinejs/vine":{"optional":true},"ajv":{"optional":true},"ajv-errors":{"optional":true},"ajv-formats":{"optional":true},"arktype":{"optional":true},"ata-validator":{"optional":true},"class-transformer":{"optional":true},"class-validator":{"optional":true},"computed-types":{"optional":true},"effect":{"optional":true},"fluentvalidation-ts":{"optional":true},"fp-ts":{"optional":true},"io-ts":{"optional":true},"joi":{"optional":true},"nope-validator":{"optional":true},"superstruct":{"optional":true},"typanion":{"optional":true},"valibot":{"optional":true},"vest":{"optional":true},"yup":{"optional":true},"zod":{"optional":true}}
+zod 4.6.7
+### audit prod high
+found 0 vulnerabilities
+exit=0
+### audit full
+found 0 vulnerabilities
+exit=0
+### web audit
+found 0 vulnerabilities
+exit=0
+### npm ls invalid/missing (root)
+grep_exit=1 (1 = none)
+### tanstack zod ranges
+@tanstack/start-plugin-core 1.171.53 ^4.5.4 undefined
+@tanstack/router-generator 1.167.44 ^4.5.4 undefined
+@tanstack/router-plugin 1.168.46 ^4.5.4 undefined
+### root build
+ℹ Generated .output/nitro.json
+
+[nitro] ✔ You can preview this build using npx vite preview
+[nitro] ✔ You can deploy this build using npx nitro deploy --prebuilt
+build_exit=0
+### web test
+# fail 0
+- ملاحظة: "## web test" أعلاه شغّل npx vitest عرضًا (8 حالات)؛ أمر الاختبار المعرّف في web/package.json هو
+  `node --test tests/*.test.mjs`:
+$ (cd web && npm test)  →  # tests 39 / # pass 39 / # fail 0
+- Python: $ pip install --require-hashes -r requirements-audit.lock && pip-audit -r requirements.lock
+  →  No known vulnerabilities found (exit=0)
+- CI على main c7d5084 (run 40032598349): job audit = success (مع test/quality/network/storage/docker/build).
+- الخلاصة: لا مصدر يستورد zod (rg exit=1)؛ zod 4.6.7 يحقق نطاق النظير الاختياري لـ@hookform/resolvers 5.9.1
+  (^3.25.0 || ^4.0.0) ونطاقات @tanstack (^4.5.4)؛ لا تبعيات invalid/missing في npm ls؛ web/ بلا zod؛ البناء ناجح؛
+  npm audit (prod/full، root وweb) = 0 ثغرات؛ pip-audit = 0.
+- حد: لا يوجد في الشيفرة استخدام لـzod يمكن اختبار سلوكه مع v4 — الأثر الوظيفي «لا شيء» مستنتج من غياب الاستيراد.
+
+## 8. فحص عدم الحذف/النقل/إعادة التسمية (قبل الالتزام، diff العمل مقابل main)
+ .env.example                                 |  5 +++
+ agent_civilization/core/output_validators.py |  7 +++-
+ agent_civilization/pipeline/dag.py           | 17 ++++++++-
+ docs/governance/OPERATIONS.md                | 55 +++++++++++++++++++++++++++-
+ 4 files changed, 81 insertions(+), 3 deletions(-)
+ M .env.example
+ M agent_civilization/core/output_validators.py
+ M agent_civilization/pipeline/dag.py
+ M docs/governance/OPERATIONS.md
+?? docs/audit/M8/logs/raw/281_r170_batch4_dag_formats_flag_docs.log
+?? tests/test_r170_dag_and_formats.py
