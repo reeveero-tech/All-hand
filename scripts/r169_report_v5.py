@@ -25,6 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 RUNS = ROOT / "docs" / "audit" / "M8" / "logs" / "raw" / "r169" / "v5"
+LABELS = ROOT / "benchmarks" / "r169" / "v5" / "blind_labels"
 METRICS = [
     ("pass", "النجاح الإجمالي (أخطاء المزود = فشل)"),
     ("pass_excluding_provider_errors", "النجاح باستبعاد أخطاء المزود (ثانوي)"),
@@ -160,7 +161,7 @@ def _run_mod():
 
 
 def _labels(name: str) -> dict:
-    p = ROOT / "benchmarks" / "r169" / "v5" / "blind_labels" / f"{name}.labels.jsonl"
+    p = LABELS / f"{name}.labels.jsonl"
     rows = [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
     return {r["id"]: r for r in rows if r.get("kind") != "meta"}
 
@@ -184,6 +185,9 @@ def agreement(name: str) -> dict:
     cases = {c["id"]: c for c in b.load_split(meta["split"])}
     labels = _labels(name)
     rows = {"agree": 0, "lenient": [], "strict": [], "uncertain": [], "provider_error": 0}
+    rec_ids = [r["id"] for r in recs]
+    missing = sorted(set(cases) - set(rec_ids))
+    duplicates = sorted({i for i in rec_ids if rec_ids.count(i) > 1})
     for r in recs:
         lab = labels[r["id"]]["label"]
         if r.get("error") or lab == "provider_error":
@@ -200,17 +204,26 @@ def agreement(name: str) -> dict:
         else:
             rows["strict"].append(r["id"])        # grader FAIL, label PASS
     decided = rows["agree"] + len(rows["lenient"]) + len(rows["strict"])
+    n_cases = len(cases)
     return {"run": name, "decided": decided, "agree": rows["agree"],
+            "records": len(recs), "split_cases": n_cases,
+            "missing_cases": missing, "duplicate_records": duplicates,
+            "provider_error_share": round(rows["provider_error"] / n_cases, 4) if n_cases else None,
             "agreement": round(rows["agree"] / decided, 4) if decided else None,
             "agreement_wilson95": _wilson(rows["agree"], decided),
             "lenient_disagreements": rows["lenient"], "strict_disagreements": rows["strict"],
             "uncertain": rows["uncertain"], "provider_errors": rows["provider_error"]}
 
 
-# pre-registered (PREREGISTRATION.md §4) — changing these after the freeze breaks report_sha256
+# pre-registered (PREREGISTRATION.md §3/§3.1) — changing these after the freeze breaks report_sha256
 GATE_MIN_AGREEMENT = 0.95
 GATE_MAX_LENIENT = 2
 GATE_MAX_UNCERTAIN_SHARE = 0.10
+# DATA SUFFICIENCY (Q-030, pre-registered BEFORE the freeze): the gate is computable
+# only if each run is fully covering — every split case has exactly one record —
+# and provider errors (after the retry policy) stay under 10% of the split per run.
+GATE_MAX_PROVIDER_ERROR_SHARE = 0.10
+GATE_REQUIRE_FULL_COVERAGE = True
 
 
 def gate(name_a: str, name_b: str) -> dict:
@@ -220,12 +233,27 @@ def gate(name_a: str, name_b: str) -> dict:
     lenient = len(aa["lenient_disagreements"]) + len(ab["lenient_disagreements"])
     total = decided + len(aa["uncertain"]) + len(ab["uncertain"])
     unc_share = (len(aa["uncertain"]) + len(ab["uncertain"])) / total if total else 0.0
+    # DATA SUFFICIENCY (pre-registered §3.1): a run that lost records or was flooded
+    # with provider errors must NOT produce a valid gate regardless of the agreement
+    # numbers computed on the survivors — the measurement is then declared
+    # inconclusive for insufficient data, with the gaps published as they are.
+    def _coverage_ok(a):
+        return not a["missing_cases"] and not a["duplicate_records"]
+
+    def _pe_ok(a):
+        return (a["provider_error_share"] is None) or (a["provider_error_share"] <= GATE_MAX_PROVIDER_ERROR_SHARE)
+
+    coverage_ok = _coverage_ok(aa) and _coverage_ok(ab) if GATE_REQUIRE_FULL_COVERAGE else True
+    pe_ok = _pe_ok(aa) and _pe_ok(ab)
     checks = {"agreement>=%.2f" % GATE_MIN_AGREEMENT: decided > 0 and agree / decided >= GATE_MIN_AGREEMENT,
               "lenient<=%d" % GATE_MAX_LENIENT: lenient <= GATE_MAX_LENIENT,
-              "uncertain_share<=%.2f" % GATE_MAX_UNCERTAIN_SHARE: unc_share <= GATE_MAX_UNCERTAIN_SHARE}
+              "uncertain_share<=%.2f" % GATE_MAX_UNCERTAIN_SHARE: unc_share <= GATE_MAX_UNCERTAIN_SHARE,
+              "coverage==100%": coverage_ok,
+              "provider_error_share<=%.2f" % GATE_MAX_PROVIDER_ERROR_SHARE: pe_ok}
     return {"runs": [aa, ab], "combined_agreement": round(agree / decided, 4) if decided else None,
             "combined_wilson95": _wilson(agree, decided), "lenient_total": lenient,
-            "uncertain_share": round(unc_share, 4), "checks": checks, "valid": all(checks.values())}
+            "uncertain_share": round(unc_share, 4),
+            "data_sufficient": coverage_ok and pe_ok, "checks": checks, "valid": all(checks.values())}
 
 
 def labelled_paired(name_a: str, name_b: str, uncertain_as: bool = False) -> dict:

@@ -362,3 +362,127 @@ def test_dev_verdict_changes_are_documented():
                 assert key in allowed, f"undocumented verdict change: {key} {v4['fail_reasons']} -> {v5['fail_reasons']}"
                 # the allowlist records the direction and class of each change
                 assert allowed[key]["v5"] == ("pass" if v5["pass"] else "fail"), key
+
+
+# ---------------------------------------------------------------------------#
+# pipeline + DATA SUFFICIENCY (Q-030 — pre-registered BEFORE the freeze)
+# ---------------------------------------------------------------------------#
+
+def _load(name, path):
+    spec = importlib.util.spec_from_file_location(name, ROOT / path)
+    m = importlib.util.module_from_spec(spec)
+    sys.modules[name] = m
+    spec.loader.exec_module(m)
+    return m
+
+
+RUN = _load("r169_run_v5", "scripts/r169_run_v5.py")
+REPORT = _load("r169_report_v5", "scripts/r169_report_v5.py")
+BLIND = _load("r169_blind_sheet_v5", "scripts/r169_blind_sheet_v5.py")
+
+
+def _synthetic_test_run(tmp_path, monkeypatch, name, cases, n_records=None, provider_errors=0):
+    """A deterministic synthetic BLIND test run (+labels+summary) in a tmp dir.
+    Every record replies 'x' (the grader fails it) and is labelled 'fail', so the
+    three gate checks pass trivially — isolating the DATA SUFFICIENCY rule."""
+    run_path = tmp_path / f"{name}.jsonl"
+    meta = {"kind": "meta", "run_id": name, "benchmark_version": "r169-v5", "config": "baseline",
+            "split": "test", "cases": len(cases)}
+    lines = [json.dumps(meta, ensure_ascii=False)]
+    recs = cases[:n_records]
+    for i, c in enumerate(recs):
+        err = "HTTP 502" if i < provider_errors else None
+        lines.append(json.dumps({"id": c["id"], "config": "baseline", "reply": "" if err else "x",
+                                 "model": "stub", "error": err, "latency_s": 0.1,
+                                 "score": {"pass": False, "fail_reasons": ["stub"]}},
+                                ensure_ascii=False))
+    run_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    lab = tmp_path / f"{name}.labels.jsonl"
+    lab_rows = [json.dumps({"kind": "meta", "run_id": name}, ensure_ascii=False)]
+    for c in recs:
+        lab_rows.append(json.dumps({"id": c["id"], "label": "provider_error" if c["id"] in
+                                   {x["id"] for x in recs[:provider_errors]} else "fail",
+                                   "why": "stub"}, ensure_ascii=False))
+    lab.write_text("\n".join(lab_rows) + "\n", encoding="utf-8")
+    (tmp_path / f"{name}.summary.json").write_text(json.dumps({"stub": True}), encoding="utf-8")
+    monkeypatch.setattr(REPORT, "RUNS", tmp_path)
+    monkeypatch.setattr(REPORT, "LABELS", tmp_path)
+    return name
+
+
+TEST_CASES = b.load_split("test")
+
+
+def _gate_for(tmp_path, monkeypatch, a_kw, b_kw):
+    n1 = _synthetic_test_run(tmp_path, monkeypatch, "syn_a", TEST_CASES, **a_kw)
+    n2 = _synthetic_test_run(tmp_path, monkeypatch, "syn_b", TEST_CASES, **b_kw)
+    return REPORT.gate(n1, n2)
+
+
+def test_data_sufficiency_rule_missing_records_invalidate_the_gate(tmp_path, monkeypatch):
+    """RED-FIRST (Q-030): a run that LOST records (crash, partial write) must not
+    produce a valid gate even at 100% agreement on the survivors."""
+    g = _gate_for(tmp_path, monkeypatch, dict(n_records=100), dict())
+    assert g["data_sufficient"] is False, g
+    assert g["valid"] is False, g
+    assert g["runs"][0]["missing_cases"], "the missing cases must be reported"
+
+
+def test_data_sufficiency_rule_provider_error_share_invalidate_the_gate(tmp_path, monkeypatch):
+    """RED-FIRST (Q-030): >10% provider errors in a run invalidate the gate even
+    when the three classical checks pass on the survivors (16.9% here)."""
+    g = _gate_for(tmp_path, monkeypatch, dict(provider_errors=20), dict())
+    assert g["data_sufficient"] is False, g
+    assert g["valid"] is False, g
+    assert g["runs"][0]["provider_error_share"] > 0.10
+
+
+def test_data_sufficiency_rule_full_coverage_computes_the_gate(tmp_path, monkeypatch):
+    g = _gate_for(tmp_path, monkeypatch, dict(provider_errors=5), dict())
+    assert g["data_sufficient"] is True, g
+    assert g["valid"] is True, g
+    assert g["runs"][0]["provider_error_share"] <= 0.10
+
+
+def test_data_sufficiency_constants_are_preregistered():
+    assert REPORT.GATE_MIN_AGREEMENT == 0.95
+    assert REPORT.GATE_MAX_LENIENT == 2
+    assert REPORT.GATE_MAX_UNCERTAIN_SHARE == 0.10
+    assert REPORT.GATE_MAX_PROVIDER_ERROR_SHARE == 0.10
+    assert REPORT.GATE_REQUIRE_FULL_COVERAGE is True
+
+
+def test_v5_runner_guards():
+    g = RUN.test_split_guard
+    assert g(False, False, True, []) == "the held-out test split needs --final"
+    assert "FREEZE.json is missing" in g(True, False, False, [])
+    assert "differs from FREEZE.json" in g(True, False, True, ["x"])
+    assert g(True, False, True, [], published=True, prereg_exists=True) is None
+    sg = RUN.score_guard
+    assert "not committed" in sg("r", False, False, True, True)
+    assert "do not cover" in sg("r", True, True, True, False)
+    assert "push the labels" in sg("r", True, True, False, True)
+    assert sg("r", True, True, True, True) is None
+
+
+def test_report_refuses_unscored_blind_run_v5(tmp_path, monkeypatch):
+    monkeypatch.setattr(REPORT, "RUNS", tmp_path)
+    with pytest.raises(SystemExit):
+        REPORT._require_scored("test_x_b2", {"split": "test"})
+    REPORT._require_scored("dev_x_d1", {"split": "dev"})
+
+
+def test_blind_sheet_refuses_scored_records_v5(tmp_path, monkeypatch):
+    run = tmp_path / "test_x_b2.jsonl"
+    case = b.load_split("test")[0]
+    run.write_text(json.dumps({"kind": "meta", "split": "test", "config": "baseline", "code_sha": "x"}) + "\n"
+                   + json.dumps({"id": case["id"], "reply": "x", "score": {"pass": True}}) + "\n", encoding="utf-8")
+    monkeypatch.setattr(BLIND, "RUNS", tmp_path)
+    with pytest.raises(SystemExit):
+        BLIND.render("test_x_b2")
+
+
+def test_runner_provider_error_is_a_failure():
+    case = b.load_split("dev")[0]
+    rec = {"id": case["id"], "config": "baseline", "reply": "", "model": "k", "error": "HTTP 502", "latency_s": 1.0}
+    assert not RUN.score_record(case, rec)["pass"]
