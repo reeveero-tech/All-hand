@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
@@ -276,9 +277,91 @@ def false_success_rate(outcomes: List[Mapping[str, Any]]) -> float:
 
 
 def verification_from_work(work: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
-    """استخراج متطلبات التحقق من حمولة المهمة (``work["verification"]``)."""
+    """استخراج متطلبات التحقق من حمولة المهمة (``work["verification"]``).
+
+    حد معلن: تعيد ``None`` للمتطلبات المشوهة (ليست كائنًا) — مسار
+    الإكمال لا يستخدمها بل يمرر القيمة الخام إلى ``apply_output_verification``
+    التي ترفض المشوه صراحة (دفعة 3).
+    """
     v = work.get("verification") if isinstance(work, Mapping) else None
     return dict(v) if isinstance(v, Mapping) else None
+
+
+# ------------------------------------------------ completion-path gate (R-170/3)
+
+def output_gate_enabled() -> bool:
+    """علم تفعيل بوابة الإكمال: ``AGOS_OUTPUT_VALIDATORS=1`` (الافتراضي معطل).
+
+    توافق خلفي موثق: المعطل = السلوك الحالي كما هو دون أي تغيير.
+    """
+    return os.getenv("AGOS_OUTPUT_VALIDATORS", "") == "1"
+
+
+def _result_as_dict(result: Any) -> Optional[Dict[str, Any]]:
+    """نسخة قابلة للتسجيل من النتيجة (بلا تعديل الأصل) — ``None`` إن تعذر."""
+    if isinstance(result, dict):
+        return dict(result)
+    if hasattr(result, "model_dump"):  # HandlerResult (pydantic, open)
+        return dict(result.model_dump())
+    return None
+
+
+def _record_verdict(result: Any, verdict: Verdict) -> Any:
+    d = _result_as_dict(result)
+    if d is None:
+        return result  # شكل غير قابل للتسجيل — لا يُغير البوابة شكله عند القبول
+    d["verification"] = verdict.as_dict()
+    return d
+
+
+def _record_rejection(result: Any, verdict: Verdict) -> Dict[str, Any]:
+    d = _result_as_dict(result)
+    if d is None:
+        d = {"answer": result}
+    prior_error = d.get("error")
+    d["ok"] = False
+    d["error"] = "output_verification_failed"
+    v = verdict.as_dict()
+    v["original_ok"] = True  # الادعاء الأصلي محفوظ — لا تطميس
+    if prior_error:
+        v["original_error"] = prior_error
+    d["verification"] = v
+    return d
+
+
+def apply_output_verification(requirements: Any, ok: bool, result: Any) -> tuple:
+    """بوابة R-170 على مسار الإكمال — تُستدعى قبل اعتماد النجاح وأي أثر جانبي.
+
+    * العلم معطل: السلوك الحالي كما هو (توافق خلفي).
+    * ``ok=False`` (فشل صادق): لا يُمس — لا ترقية ولا تطميس (البوابة لا تفحص
+      إلا ادعاءات النجاح).
+    * متطلبات مشوهة (ليست كائنًا): رفض صريح — لا تحويل صامت إلى «لا متطلبات».
+    * تعطل البوابة وهي مفعلة: فشل تحقق واضح — لا نجاح غير مفحوص أبدًا.
+    * الرفض: ``ok=False`` خارجيًا وداخليًا معًا، رمز ثابت
+      ``output_verification_failed``، الحكم والأسباب والادعاء الأصلي مسجلة في
+      ``result["verification"]``.
+
+    ``requirements`` هي القيمة الخام المُلتقطة من ``work["verification"]``
+    **قبل** استدعاء المعالج (حتى لا يغيرها أثناء التنفيذ).
+    """
+    if not output_gate_enabled():
+        return ok, result
+    if requirements is not None and not isinstance(requirements, Mapping):
+        return False, _record_rejection(result, Verdict(
+            ok=False,
+            reasons=("verification: malformed requirements (not an object)",),
+            checks_run=("requirements",)))
+    if not ok:
+        return ok, result  # فشل صادق — البوابة لا تلمسه
+    try:
+        verdict = verify_success({"ok": True, "result": result}, requirements)
+    except Exception as exc:  # noqa: BLE001 — البوابة لا تُمرر نجاحًا غير مفحوص
+        verdict = Verdict(ok=False,
+                           reasons=(f"verification gate error: {type(exc).__name__}",),
+                           checks_run=("gate",))
+    if verdict.ok:
+        return True, _record_verdict(result, verdict)
+    return False, _record_rejection(result, verdict)
 
 
 __all__ = [
@@ -286,4 +369,5 @@ __all__ = [
     "validate_checks", "verify_success", "is_forged_success", "has_machine_evidence",
     "false_success_rate", "verification_from_work", "SUCCESS_CLAIM_MARKERS",
     "CITATION_KEYS", "CHECKS_KEYS", "KNOWN_REQUIREMENTS",
+    "output_gate_enabled", "apply_output_verification",
 ]

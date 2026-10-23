@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 from agent_civilization.agents.real.runtime_contract import failure_result
 from agent_civilization.core import experience as _experience
 from agent_civilization.core import telemetry as _telemetry
+from agent_civilization.core.output_validators import apply_output_verification
 from agent_civilization.core.agents.real_dispatcher import (
     coverage as _coverage,
     dispatch as _dispatch,
@@ -94,6 +95,9 @@ class RealSpecialistAgent:
         self.status = "working"
         try:
             work = work or {}
+            # R-170 (batch 3): capture verification requirements BEFORE the
+            # handler runs — it must not be able to change them mid-flight.
+            _verification = work.get("verification") if isinstance(work, dict) else None
 
             async def call():
                 r = await _dispatch(self.specialization, work)
@@ -102,6 +106,9 @@ class RealSpecialistAgent:
             # R-103: memory + learning around the real handler (D-046)
             result, exp = await _experience.run_with_experience(self.specialization, self.name, work, call)
             ok = bool(result.get("ok"))
+            # R-170 (batch 3): completion gate (opt-in AGOS_OUTPUT_VALIDATORS=1)
+            # applied BEFORE adopting success or its side effects (stats below).
+            ok, result = apply_output_verification(_verification, ok, result)
             if ok:
                 self.stats["tasks_completed"] += 1
             else:
