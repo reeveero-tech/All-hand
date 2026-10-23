@@ -343,9 +343,11 @@ CONFLICT_EN = re.compile(r"conflict|contradict|discrepan|disagree|\bdiffer|incon
                          r"|a (higher|lower) (figure|number|count|value)", re.I)
 CONFLICT_AR = re.compile(r"تعارض|متعارض|تناقض|متناقض|تضارب|متضارب|اختلاف|تختلف|يختلف|مختلف|لا تتفق|تباين|غير متفق|غير متطابق"
                          r"|في حين"
-                         # v5 G10 — «توجد خلاف في الأرقام» / «بينما» (C23): the b1
-                         # council adjudication recorded both as unsurfaced-conflict
-                         # gaps; «بينما» contrasts the two values in Arabic replies.
+                         # v5 G10 — «توجد خلاف في الأرقام» is a council-confirmed
+                         # false reject (C17); «بينما» coverage follows the recorded
+                         # G10 description in SYNTHESIS §5 — the council left C23
+                         # («بينما») UNDECIDED, so this is a declared development
+                         # decision, not an adjudicated verdict.
                          r"|خلاف|بينما")
 # an old value is acceptably mentioned only as outdated/superseded
 OUTDATED_EN = re.compile(r"\b(outdated|superseded|deprecated|no longer|older|previous|old|legacy|replaced|replaces"
@@ -383,7 +385,7 @@ def is_abstention(text: str, lang: str = "en") -> bool:
 # clause («بينما أصبح الإصدار {old} متقدماً») is not asserted as current, as
 # long as no currency word sits right next to the value («الإصدار الحالي هو
 # {old} بينما…» IS an assertion of currency and must still fail).
-_STALE_CURRENCY_AR = re.compile(r"الحالي|الحالية|الأحدث|الأخير|الجديد|الجديدة|الحديثة|الأنشط")
+_STALE_CURRENCY_AR = re.compile(r"الحالي|الحالية|الأحدث|الأخير|الجديد|الجديدة|الحديثة|الأنشط|المستقر|المستقرة")
 _STALE_CONTRAST_AR = re.compile(r"بينما|في حين|بيد أن|لكن|إلا أن|على النقيض|في المقابل|بدلا? ?من|في الوقت ذاته")
 
 

@@ -1,6 +1,12 @@
-# Raw log 266 — v5 grader RED-FIRST proof (before any fix was applied to r169_bench_v5.py)
-# Method: agent_civilization/eval/r169_bench_v5.py replaced by an exact copy of the frozen
-# r169_bench_v4.py, then the v5 test file run. Every RED-FIRST fixture must FAIL.
+# Raw log 266 — v5 grader RED re-verification (post-hoc, against the pre-fix state)
+# Framing (honest): this is a LATER re-run, not the original development-time red run.
+# The original red run (during development, before any fix) showed the 9 council-adjudicated
+# red-first fixtures failing against the v4-identical copy. After the test file gained its
+# counterexample tests, the pre-fix state was REBUILT (r169_bench_v5.py replaced by an exact
+# copy of the frozen r169_bench_v4.py) and the full file re-run: 11 failures below — the
+# 9 red-first fixtures + 2 counterexamples that the pre-fix grader also gets wrong.
+# Both runs are red-state evidence; this file documents the reproducible re-verification.
+# Pre-fix copy identity: sha256 of agent_civilization/eval/r169_bench_v4.py (frozen).
 # Times UTC. Builder: this batch (branch m8/r169-v5-grader, stacked on 621aa22).
 date: 2026-10-23T02:56:56Z
 pre_fix_copy: sha256 5a44d3faeca9b33d (identical to v4)

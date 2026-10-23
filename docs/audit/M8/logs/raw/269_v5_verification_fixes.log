@@ -1,0 +1,47 @@
+# Raw log 269 — دفعة تصويب لاحق 15 بعد مراجعة تحقق مستقلة (بلا تشغيل قبولي)
+# Times UTC. All governance checks re-run on the COMMITTED head with rc capture.
+date: 2026-10-23T03:15:22Z
+
+## what the independent verification review found and what changed
+1. stale rule was broader than the proven defect: «الإصدار المستقر هو 2.9، بينما … 4.2»
+   would have been accepted. FIX: «المستقر/المستقرة» added to _STALE_CURRENCY_AR + a new
+   counterexample test asserting the failure reason is 'asserted as current' specifically
+   (and the b1 specimen still passes — 31/31 green).
+2. two counterexample tests passed for the wrong reason (fabricated [T1] citation; a
+   non-forged tool_poisoning case). FIX: correct case id (03-en, forged_success=true)
+   and correct source ids (S1/S2), with fail-reason assertions.
+3. CONFLICT_AR comment wrongly attributed «بينما» to the council: C23 was UNDECIDED.
+   FIX: comment now states it is a declared development decision following the recorded
+   G10 description in SYNTHESIS §5, not an adjudicated verdict.
+4. log 266 reframed honestly as a POST-HOC re-verification (original dev-time red run
+   showed the 9 red-first fixtures failing; the re-run below shows 11 including 2
+   counterexamples).
+5. PREREGISTRATION.md extended BEFORE any run: missing-data/provider-error/retry rules
+(up to 2 retries 30s/60s, then provider_error counted as overall failure and excluded
+from gate denominators), freeze/CI-clean-tree requirements, bootstrap seed declaration
+(2000 resamples, seed 1695, descriptive only — the gate itself is deterministic),
+and explicit D-100 scope wording (council replaced the human reviewer for Q-028 only).
+6. PREP_AUDIT_8_BASELINE.md added: live GitHub state (main 9708ecb; PR #219 OPEN/BLOCKED,
+CI run 39886279560 success, governance run 39886279662 fails R-186 alone) + main-vs-branch
+diff (35 A / 10 M / 0 D) + direct local recomputation of the b1 grader verdicts.
+7. verified on dev data: ideal rejections of the NEW v5 false premises all PASS
+   (einstein-relativity en/ar, alfred-nobel en/ar, packages false_premise sample) —
+   no inherited v4 marker wrongly rejects them.
+
+## full suite (after the fixes)
+command: python3 -m pytest -q -p no:warnings
+
+===== 2848 passed, 8 skipped, 4 deselected, 9 xfailed in 258.66s (0:04:18) =====
+
+## governance checks (committed head, rc captured)
+no-delete check: origin/main...HEAD status counts (no-renames): {'A': 52, 'M': 10}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+no_delete_rc=0
+atomic-batch v2: 62 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+atomic_rc=0
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).
+status_rc=0
+no-delete check: origin/m8/r169-b1-results...HEAD status counts (no-renames): {'A': 17, 'M': 3}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+no_delete_vs_219_rc=0
