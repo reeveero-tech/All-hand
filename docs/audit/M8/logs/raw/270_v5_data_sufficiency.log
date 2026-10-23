@@ -1,0 +1,34 @@
+# Raw log 270 — شرط كفاية البيانات لقياس v5: أحمر أولًا ثم التنفيذ (قبل التجميد)
+# Times UTC. RED phase ran against the UNMODIFIED r169_report_v5.py (v4-derived, no sufficiency logic).
+date: 2026-10-23T03:51:55Z
+
+## RED phase (before implementing the rule) — command:
+# python3 -m pytest tests/test_r169_benchmark_v5.py -q -k 'sufficiency or refuses or blind_sheet or runner_guards or provider_error_is'
+# 4 failed (the data-sufficiency tests), 4 passed (inherited pipeline guards), 31 deselected:
+#   FAILED test_data_sufficiency_rule_missing_records_invalidate_the_gate
+#   FAILED test_data_sufficiency_rule_provider_error_share_invalidate_the_gate
+#   FAILED test_data_sufficiency_rule_full_coverage_computes_the_gate
+#   FAILED test_data_sufficiency_constants_are_preregistered
+#   AttributeError: module 'r169_report_v5' has no attribute 'GATE_MAX_PROVIDER_ERROR_SHARE'
+# => the v4-derived gate happily returns valid=true for a 100%-agreement run that lost
+#    18 records or was flooded with 20 provider errors (16.9%) — the defect to fix.
+
+## GREEN phase (after the implementation)
+command: python3 -m pytest tests/test_r169_benchmark_v5.py -q -p no:warnings
+
+============================== 39 passed in 0.66s ==============================
+
+## full suite
+command: python3 -m pytest -q -p no:warnings
+===== 2856 passed, 8 skipped, 4 deselected, 9 xfailed in 258.64s (0:04:18) =====
+
+## implementation summary
+- scripts/r169_report_v5.py: GATE_MAX_PROVIDER_ERROR_SHARE=0.10, GATE_REQUIRE_FULL_COVERAGE=True;
+  agreement() reports records/split_cases/missing_cases/duplicate_records/provider_error_share;
+  gate() adds checks coverage==100% and provider_error_share<=0.10 plus data_sufficient; valid=false on breach.
+- PREREGISTRATION.md §3.1 (pre-registered BEFORE freeze): full per-run coverage + <=10% provider errors;
+  breach => 'inconclusive — insufficient data' regardless of agreement; no in-place completion of a broken run.
+- synthetic deterministic test runs (monkeypatched tmp dirs, no network, no repo pollution):
+  full-coverage run with 5 provider errors (4.2%) => data_sufficient=true, valid=true;
+  run missing 18 records => data_sufficient=false, valid=false;
+  run with 20 provider errors (16.9%) => data_sufficient=false, valid=false.

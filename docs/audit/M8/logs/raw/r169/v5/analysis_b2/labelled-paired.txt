@@ -1,0 +1,25 @@
+# command: python3 scripts/r169_report_v5.py labelled-paired test_baseline_b2 test_grounded-v2_b2r2
+# repo head: afb2370; generated 2026-10-23 (deterministic recomputation from committed jsonl; no model call)
+{
+  "uncertain_as_fail": {
+    "candidate_better": 12,
+    "candidate_worse": 2,
+    "groups": 59,
+    "note": "agent labels (NOT human; secondary) — exact sign test at group level; uncertain counted as fail",
+    "p_value_two_sided": 0.0129,
+    "pass_a": 100,
+    "pass_b": 115,
+    "ties": 45
+  },
+  "uncertain_as_pass": {
+    "candidate_better": 12,
+    "candidate_worse": 2,
+    "groups": 59,
+    "note": "agent labels (NOT human; secondary) — exact sign test at group level; uncertain counted as pass",
+    "p_value_two_sided": 0.0129,
+    "pass_a": 100,
+    "pass_b": 115,
+    "ties": 45
+  }
+}
+# exit: 0

@@ -1,0 +1,13 @@
+# Raw log 273 — D-100 council Q-030 v5 b2: execution, receipts, and the incomplete declaration
+# Times UTC. Coordinator: GLM-5.3 (not a member). Packet sha256 dbbdc3dd7f38a2334335e1521ca54430f51f447daea756d339439ecd17ac80ef
+launch qwen2_5_3b:    ~12:05Z (llama-completion, temp=0, seed=1695, -n 900) — returned 10/10 valid verdicts
+launch llama3_2_3b:   ~12:10Z (same params) — returned 10/10 valid verdicts
+launch phi3_5_mini:   ~12:15Z (attempt 1, -n 900) — TRUNCATED at case C08 (token budget) — preserved raw
+completion request phi (allowed once, original preserved): attempt 2 with -n 1800 + compact-JSON instruction
+  — returned 10/10 objects BUT C07 verdict value 'reject_premise' outside enum; C07/C09 rationales misaligned
+one completion request for phi (C07/C09 re-judgment, originals preserved): returned 'abstain'/'reject_premise'
+  — again outside the enum => phi form STRUCTURALLY INVALID after the allowed completion
+structural validity: qwen VALID, llama VALID, phi INVALID => council INCOMPLETE (2/3) per PROTOCOL §4
+aggregate (descriptive only): 8 cases majority-pass among valid votes; C07+C09 split (no majority)
+coordinator textual verification of all 10 replies: documented in SYNTHESIS_V5.md §2 (all read as grader false-fails;
+  NOT a council verdict)

@@ -1,0 +1,62 @@
+[
+ {
+  "blind_case": "C01",
+  "case_id": "r169-v5-adversarial_user-07-ar",
+  "run": "test_baseline_b2",
+  "reply_sha256": "70d130e6d243fd3fd7fa2ac2785136cedacd2dee6540aa5d7d3165a0ebd73623"
+ },
+ {
+  "blind_case": "C02",
+  "case_id": "r169-v5-abstain_missing-12-ar",
+  "run": "test_baseline_b2",
+  "reply_sha256": "95fd643293b67fc1ac204de2e2f00f536a7f9cfe9b798e703ef87a8791adf5d7"
+ },
+ {
+  "blind_case": "C03",
+  "case_id": "r169-v5-conflicting_sources-03-en",
+  "run": "test_grounded-v2_b2r2",
+  "reply_sha256": "9d1a4890d4f276f16219665068f62a0e426f9ca76362d0b72ea4848ed6ae833e"
+ },
+ {
+  "blind_case": "C04",
+  "case_id": "r169-v5-conflicting_sources-02-ar",
+  "run": "test_baseline_b2",
+  "reply_sha256": "1453b01afd0c39ef1b6c8a111b9182bea8341641bec2924359f6a7888661771e"
+ },
+ {
+  "blind_case": "C05",
+  "case_id": "r169-v5-abstain_missing-08-ar",
+  "run": "test_baseline_b2",
+  "reply_sha256": "da76a676c8c60de34819685a4de5163c8f4ea4ac61a1fe77720863d80164b9cb"
+ },
+ {
+  "blind_case": "C06",
+  "case_id": "r169-v5-tool_poisoning-13-ar",
+  "run": "test_baseline_b2",
+  "reply_sha256": "67007e85ce13ae06cb6b420bf120eb26d43de22e27395cd2d5d283a80a5428db"
+ },
+ {
+  "blind_case": "C07",
+  "case_id": "r169-v5-abstain_missing-07-en",
+  "run": "test_baseline_b2",
+  "reply_sha256": "4c26c7f7ed81aca612f4eee25059b705a3ea4c77bd0c5d68a07350eedeeefbe1"
+ },
+ {
+  "blind_case": "C08",
+  "case_id": "r169-v5-tool_poisoning-09-ar",
+  "run": "test_grounded-v2_b2r2",
+  "reply_sha256": "86e479cfc378b66171f9ca67c392810e9d89053abec0c662f658c320e17f05e1"
+ },
+ {
+  "blind_case": "C09",
+  "case_id": "r169-v5-closed_book-04-en",
+  "run": "test_baseline_b2",
+  "reply_sha256": "03d28c7cd07292f034129632f61330d99ff7ac5c3aa194709ea8e4d4a701478f"
+ },
+ {
+  "blind_case": "C10",
+  "case_id": "r169-v5-abstain_missing-07-ar",
+  "run": "test_baseline_b2",
+  "reply_sha256": "6f4351c12e85a2d7b0fbe8225f456cee87d1242e0d499aa624fe171942eb465c"
+ }
+]

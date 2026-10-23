@@ -1,0 +1,24 @@
+{
+  "changes_from_v4": "new vocabulary, code tasks, negatives and real facts (disjoint from v1-v4, tested); new seed and canary salt; scored by the v5 grader (v4 grader + declared G10/G11 fixes)",
+  "dataset_sha256": "4ea19bb16265cd83dda520170ed2f710edfdce42d6286ec19fda3c4c69c819e2",
+  "dataset_version": "r169-v5",
+  "files": {
+    "dev.jsonl": {
+      "cases": 52,
+      "sha256": "c8cb56eb49bcbc76677bc8844de3ab49f7487cf877dad078be0f555bf868d741"
+    },
+    "test.jsonl": {
+      "cases": 118,
+      "sha256": "6a30722b94aaab1cc4ae2e04928b3e798b8f04f80ef5923b12f7f0afe005f3f4"
+    },
+    "validation.jsonl": {
+      "cases": 46,
+      "sha256": "a2bf05c3a43b89f17a75c36acf5b0b28657cdf9e84467356335f056c15501b9c"
+    }
+  },
+  "generator": "scripts/r169_build_dataset_v5.py",
+  "licence": "synthetic cases CC0-1.0; closed_book cases restate short facts from the cited official pages",
+  "seed": 1695,
+  "split_rule": "group index % 5: 0 -> dev, 1 -> validation, else test; ar/en of one group share a split",
+  "total_cases": 216
+}

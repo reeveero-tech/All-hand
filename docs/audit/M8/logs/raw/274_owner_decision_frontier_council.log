@@ -1,0 +1,7 @@
+# Raw log 274 — owner decision: frontier council (as in b1) supersedes the incomplete local 3B attempt
+date_utc: 2026-10-23T13:15:34Z
+owner_decision (verbatim from the in-session question): «مجلس أمامي (كما في b1)»
+packet URL verified live + fingerprint match: dbbdc3dd7f38a2334335e1521ca54430f51f447daea756d339439ecd17ac80ef
+protocol addendum committed: COUNCIL_V5_PROTOCOL.md §7 (explicit amendment; local attempt documented as incomplete, not used for aggregation)
+proposed frontier members (b1 precedent, exclusions: GLM coordinator family, OpenAI evaluated family, internal advisor):
+  Gemini (Google) / Grok (xAI) / Kimi (Moonshot AI) — or any 3 frontier families meeting the exclusions

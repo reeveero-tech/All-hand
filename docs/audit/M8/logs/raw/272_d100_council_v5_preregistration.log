@@ -1,0 +1,16 @@
+# Raw log 272 — D-100 council Q-030 v5 b2: pre-run registration (BEFORE launching any member)
+# Times UTC. Coordinator: GLM-5.3 (Perplexity Computer orchestrator — not a member).
+date_utc: 2026-10-23T11:56:38Z
+branch: m8/r169-v5-grader @ 6d090ec (to be pushed before member launch)
+packet: docs/audit/M8/q030/council/BLIND_REVIEW_CASES_V5.md
+packet_sha256: dbbdc3dd7f38a2334335e1521ca54430f51f447daea756d339439ecd17ac80ef
+protocol: docs/audit/M8/q030/council/COUNCIL_V5_PROTOCOL.md (pre-registered aggregation + phase B interpretation)
+members (sequential, local CPU, llama.cpp v0.7.0-master, temp=0, seed=1695):
+  6c1a2b41161032677be168d354123594c0e6e67d2b9227c84f296ad037c728ff  llama3.2-3b-q4_k_m.gguf
+  e4165e3a71af97f1b4820da61079826d8752a2088e313af0c7d346796c38eff5  phi3.5-mini-q4_k_m.gguf
+  626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d  qwen2.5-3b-q4_k_m.gguf
+excluded: GLM-5.3 (coordinator family), OpenAI/gpt-oss-20b (evaluated model family),
+  internal advisor (saw full transcript incl. labels/verdicts/gate — not blind),
+  pollinations keyless (only serves the evaluated model's family).
+capability disclosure: members are 3B-class local open-weight models, NOT frontier
+  (b1 council used frontier agents); majority rule + evidence-weighted synthesis mitigate.

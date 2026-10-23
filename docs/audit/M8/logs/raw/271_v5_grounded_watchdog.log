@@ -1,0 +1,7 @@
+# Watchdog log — grounded-v2 acceptance run (Q-030 b2)
+date: 2026-10-23T10:01:07Z
+test_grounded-v2_b2 hung at record 4 (no file growth since 09:59 UTC, zero CPU;
+a boundless network/lock wait — llm.py _keyless_post has a timeout but the process never returned).
+Killed per the pre-registered data-sufficiency rule: a broken run is never completed in-place;
+the redo is a full new run with a NEW tag (b2r2, b2r3, ...), attempts documented here and kept
+in the raw dir as evidence. The partial test_grounded-v2_b2.jsonl (4 records) is kept untracked.
