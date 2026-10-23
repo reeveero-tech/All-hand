@@ -28,10 +28,8 @@ re-scored). Prompts are unchanged (fingerprint identical to v4).
 """
 
 import difflib
-import hashlib
 import importlib.util
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
