@@ -74,3 +74,15 @@ CI success is not evidence of live integration (CI uses local containers / mocks
 
 == 8. Safety ==
 No PR merged, no label/marker removed, no PR title/body edited, no file deleted/moved/renamed, no secret created.
+
+== 9. Addendum — CI failure on 1c21415 (first push of this batch) and fix ==
+AGOS Kernel CI/CD run 39980595440 on 1c21415: conclusion=failure, job "test" failed (other jobs not individually reported by the page).
+Governance Gate run 39980595641 on 1c21415: failure, R-186 hold marker only (same as before).
+Local reproduction: tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned FAILED —
+  4 new tracked files docs/audit/M8/prep/pr219_v2/{check_A,check_B,pr231_check_A,pr231_check_B}.out matched no file group.
+Fix (no file deleted/renamed): scripts/build_test_baseline.py group "evidence-data" rule extended from
+  (json|jsonl|txt|csv) to (json|jsonl|txt|csv|out) — .out is plain UTF-8 text checked by the existing "else" branch;
+  test example added in tests/test_r158_test_baseline.py. Precedent: 22e01eb added the benchmark-data group the same way.
+Local full suite on the fixed tree: first run 155 failed only because pytest-asyncio was absent in the sandbox (python 3.14);
+  after installing it, all 155 previously failing tests pass (389 passed in their files); tests/test_r158_test_baseline.py 41 passed.
+  This local run is not CI evidence; CI on the new head is the record.

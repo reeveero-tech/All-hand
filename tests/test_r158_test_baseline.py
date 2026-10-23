@@ -117,6 +117,7 @@ def test_schema_subset_check():
     ("docs/governance/roadmaps/revival-scale/templates/test_evidence_template.csv", "governance-data"),
     ("docs/audit/M6/scripts/r105_ast_compare.py", "evidence-scripts"),
     ("docs/audit/M8/logs/raw/087_r158_base_ci_run_573793c.json", "evidence-data"),
+    ("docs/audit/M8/prep/pr219_v2/check_A.out", "evidence-data"),
     ("docs/audit/M8/logs/raw/069_r156_pytest.log", "evidence-logs"),
     ("docs/audit/M7/logs/raw/247_vis_chat_desktop_1280px.png", "binary-assets"),
     ("README.md", "docs"),
