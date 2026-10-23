@@ -1,0 +1,27 @@
+# Raw log 267 — v5 grader GREEN run + dev regression diff (fixes applied)
+# Times UTC. All 30 v5 tests pass; the v4 suite (680 tests) stays green (frozen v4 untouched).
+date: 2026-10-23T02:56:56Z
+command: python3 -m pytest tests/test_r169_benchmark_v5.py -q
+
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/all-hand
+configfile: pytest.ini
+plugins: ddtrace-4.16.0, anyio-4.15.1
+collected 30 items
+
+tests/test_r169_benchmark_v5.py ..............................           [100%]
+
+=============================== warnings summary ===============================
+../../.local/lib/python3.14/site-packages/_pytest/config/__init__.py:1464
+  /home/user/.local/lib/python3.14/site-packages/_pytest/config/__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 30 passed, 1 warning in 0.37s =========================
+
+## dev verdict diff (104 real dev replies, runs d1) — v4 vs v5
+# only ONE verdict change, inspected by hand and allowlisted:
+#   dev_grounded-v2_d1 r169-v4-false_premise-05-en: v4 pass -> v5 fail
+#   (reply 'INSUFFICIENT_EVIDENCE' on a false premise: abstention, not premise rejection — G11 class)

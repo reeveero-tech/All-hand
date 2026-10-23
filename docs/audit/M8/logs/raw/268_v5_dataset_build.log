@@ -1,0 +1,19 @@
+# Raw log 268 — v5 dataset build + disjointness checks
+# Times UTC.
+date: 2026-10-23T02:56:56Z
+command: python3 scripts/r169_build_dataset_v5.py && python3 scripts/r169_build_dataset_v5.py --check
+
+wrote 216 cases, dataset_sha256=4ea19bb16265cd83dda520170ed2f710edfdce42d6286ec19fda3c4c69c819e2
+dataset matches generator output
+
+## disjointness checks
+question overlap v1 vs v5: 0
+question overlap v2 vs v5: 0
+question overlap v3 vs v5: 0
+question overlap v4 vs v5: 0
+v2: pkgs=0 towns=0 names=0 forbidden=0 code=0 closed_book=0
+v3: pkgs=0 towns=0 names=0 forbidden=0 code=0 closed_book=0
+v4: pkgs=0 towns=0 names=0 forbidden=0 code=0 closed_book=0
+dev 52
+validation 46
+test 118

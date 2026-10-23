@@ -1,0 +1,9 @@
+{
+  "dev_grounded-v2_d1|r169-v4-false_premise-05-en": {
+    "class": "G11 — abstention accepted as premise rejection (b1 C09)",
+    "v4": "pass",
+    "v5": "fail",
+    "reply": "INSUFFICIENT_EVIDENCE",
+    "note": "false premise: orblint never shipped a Windows installer; abstaining does not reject the premise"
+  }
+}
