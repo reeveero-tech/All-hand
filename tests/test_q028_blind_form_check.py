@@ -105,3 +105,54 @@ def test_checker_is_phase_a_safe():
     out = json.dumps(chk.check(copy.deepcopy(f)), ensure_ascii=False)
     for word in ("pass_count", "fail_count", "agreement", "distribution"):
         assert word not in out
+
+
+# --- D-100: AI council mode ---------------------------------------------------
+# Defect before the fix: the only mode required reviewer.confirmed_human == true,
+# so an honest AI council form (confirmed_human == false) could only pass by
+# lying. The council mode must require confirmed_human to be exactly false.
+
+def _council_complete() -> dict:
+    f = _complete()
+    f["reviewer"].update(confirmed_human=False, name_or_handle="synthetic-member",
+                         role="AI council member (D-100) — SYNTHETIC")
+    return f
+
+
+def test_human_mode_rejects_honest_council_form():
+    r = chk.check(_council_complete(), _blank())
+    assert r["complete"] is False
+    assert any("confirmed_human must be true" in p for p in r["problems"])
+
+
+def test_council_mode_accepts_honest_council_form():
+    r = chk.check(_council_complete(), _blank(), council=True)
+    assert r["complete"] is True and r["answered"] == 27
+
+
+def test_council_mode_rejects_model_claiming_to_be_human():
+    f = _council_complete()
+    f["reviewer"]["confirmed_human"] = True
+    r = chk.check(f, _blank(), council=True)
+    assert r["complete"] is False
+    assert any("must be false" in p for p in r["problems"])
+
+
+def test_council_mode_requires_role_declaration_and_no_prior_verdicts():
+    f = _council_complete()
+    f["reviewer"]["role"] = "reviewer"
+    f["reviewer"]["confirmed_no_prior_verdicts"] = False
+    probs = chk.check(f, _blank(), council=True)["problems"]
+    assert any("ai council member" in p for p in probs)
+    assert any("confirmed_no_prior_verdicts" in p for p in probs)
+
+
+def test_council_mode_cli_reports_mode(tmp_path):
+    p = tmp_path / "f.json"
+    p.write_text(json.dumps(_council_complete()), encoding="utf-8")
+    b = tmp_path / "b.json"
+    b.write_text(json.dumps(_blank()), encoding="utf-8")
+    out = subprocess.run([sys.executable, str(SCRIPT), str(p), "--blank", str(b), "--council"],
+                         capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    assert "not human" in json.loads(out.stdout)["mode"]

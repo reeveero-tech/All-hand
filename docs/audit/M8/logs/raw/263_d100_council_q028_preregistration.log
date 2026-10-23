@@ -1,0 +1,31 @@
+# Raw log 263 — D-100 council adjudication for Q-028: pre-run registration
+# Written BEFORE any council member was launched. Times UTC.
+date_utc: 2026-10-23T01:08:27Z (council copies prepared + fingerprints verified)
+branch: m8/r169-b1-results (PR #219), parent b6640c4
+owner_decision (verbatim): «اخي لايوجد ولن يوجد ولن أسمح بمراجعة أحد لمشروعي اطلاقا ،  المجلس هو المراجع انتهى .»
+coordinator: Claude Opus 5.5 (Anthropic) — not a member
+evaluated_model (from raw test_baseline_b1.jsonl / test_grounded-v2_b1.summary.json): gpt-oss-20b (OpenAI) — family excluded
+members: gemini_3_8_flash (Google), grok_4_7 (xAI), kimi_k3 (Moonshot AI)
+aggregation (pre-registered): per case majority >=2/3 else "uncertain"; full council requires 3 structurally valid forms
+phase_B_interpretation: pre-registered in docs/audit/M8/q028/council/COUNCIL_ADJUDICATION_PROTOCOL.md §6 (b1 stays inconclusive; no relabel, no re-score)
+
+## Per-member read-only copies (/home/user/council_q028/<member>/, chmod 444) — sha256sum output
+33bd2b8fb121202c00b5b469c9733788368d0066a85705ece162f910c0b7a1ba  gemini_3_8_flash/BLIND_REVIEW_CASES_PHASE_A.md
+feba4e3d830a83516d202349701cc97cb47d0b20532b975a6af469c10fe97544  gemini_3_8_flash/BLIND_REVIEW_PROTOCOL.md
+15686639c5e5beaff036c7a4ed4157d52d25cb994bcd2c214be3ee764e8edfe3  gemini_3_8_flash/REVIEWER_CASE_INDEX_PHASE_A.md
+5127d0af159eaf8fcad15cf0f26ed4af4192f85974d4ea636de2f54f3c87ab74  gemini_3_8_flash/reviewer_blind_form.json
+33bd2b8fb121202c00b5b469c9733788368d0066a85705ece162f910c0b7a1ba  grok_4_7/BLIND_REVIEW_CASES_PHASE_A.md
+feba4e3d830a83516d202349701cc97cb47d0b20532b975a6af469c10fe97544  grok_4_7/BLIND_REVIEW_PROTOCOL.md
+15686639c5e5beaff036c7a4ed4157d52d25cb994bcd2c214be3ee764e8edfe3  grok_4_7/REVIEWER_CASE_INDEX_PHASE_A.md
+5127d0af159eaf8fcad15cf0f26ed4af4192f85974d4ea636de2f54f3c87ab74  grok_4_7/reviewer_blind_form.json
+33bd2b8fb121202c00b5b469c9733788368d0066a85705ece162f910c0b7a1ba  kimi_k3/BLIND_REVIEW_CASES_PHASE_A.md
+feba4e3d830a83516d202349701cc97cb47d0b20532b975a6af469c10fe97544  kimi_k3/BLIND_REVIEW_PROTOCOL.md
+15686639c5e5beaff036c7a4ed4157d52d25cb994bcd2c214be3ee764e8edfe3  kimi_k3/REVIEWER_CASE_INDEX_PHASE_A.md
+5127d0af159eaf8fcad15cf0f26ed4af4192f85974d4ea636de2f54f3c87ab74  kimi_k3/reviewer_blind_form.json
+(identical to the in-repo Phase A files at docs/audit/M8/logs/raw/r169/v4/human_review/)
+
+## Checker change (same commit)
+scripts/check_q028_blind_form.py: new --council mode (confirmed_human must be exactly false; role must declare "AI council member").
+tests/test_q028_blind_form_check.py before fix (old script, new tests): 4 failed, 7 passed
+tests/test_q028_blind_form_check.py after fix: 11 passed
+full_suite_after_fix: 2817 passed, 8 skipped, 4 deselected, 9 xfailed (local python3.14.8; first run 155 failed because pytest-asyncio was not installed locally — environment only, installed and re-ran)
