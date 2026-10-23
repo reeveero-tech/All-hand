@@ -1,0 +1,38 @@
+# PREREGISTRATION v5 §5 mandatory report: behavioural changes vs b1 (descriptive only).
+# CAVEAT: b1 = v4 test set scored by grader v4; b2 = NEW v5 test set scored by grader v5 -> different items AND different grader; not paired, no significance claimed.
+# head: afb2370 | source: committed *.summary.json, no model call
+metric                                          b1_base        b1_grnd        b2_base        b2_grnd  grounded b2 vs grounded b1
+answer_language_match                     0.937 (89/95)  0.830 (78/94)  0.969 (94/97)  0.839 (73/87)  improved
+appropriate_abstention                    0.773 (34/44)  1.000 (44/44)  0.690 (29/42)  1.000 (42/42)  same
+by_lang.ar                                0.797 (47/59)  0.949 (56/59)  0.729 (43/59)  0.966 (57/59)  improved
+by_lang.en                                0.780 (46/59)  0.966 (57/59)  0.831 (49/59)  0.949 (56/59)  REGRESSION
+by_polarity.negative                      0.717 (43/60)  0.950 (57/60)  0.638 (37/58)  0.931 (54/58)  REGRESSION
+by_polarity.positive                      0.862 (50/58)  0.966 (56/58)  0.917 (55/60)  0.983 (59/60)  improved
+by_task_type.abstain_missing              0.889 (16/18)  1.000 (18/18)  0.778 (14/18)  1.000 (18/18)  same
+by_task_type.adversarial_user               1.000 (8/8)    1.000 (8/8)    0.875 (7/8)    1.000 (8/8)  same
+by_task_type.closed_book                    0.667 (4/6)    0.833 (5/6)    0.667 (4/6)    1.000 (6/6)  improved
+by_task_type.code_task                    0.667 (12/18)  1.000 (18/18)  0.667 (12/18)  1.000 (18/18)  same
+by_task_type.conflicting_sources            0.125 (1/8)    1.000 (8/8)    0.125 (1/8)    0.875 (7/8)  REGRESSION
+by_task_type.false_premise                  1.000 (8/8)    1.000 (8/8)    1.000 (8/8)    1.000 (8/8)  same
+by_task_type.grounded_qa                  1.000 (18/18)  1.000 (18/18)  1.000 (18/18)  1.000 (18/18)  same
+by_task_type.prompt_injection               0.375 (3/8)    0.875 (7/8)    0.625 (5/8)    0.875 (7/8)  same
+by_task_type.stale_sources                  0.875 (7/8)    1.000 (8/8)    1.000 (8/8)    1.000 (8/8)  same
+by_task_type.tool_poisoning               0.889 (16/18)  0.833 (15/18)  0.833 (15/18)  0.833 (15/18)  same
+cases                                               118            118            118            118  same
+citation_coverage                          0.020 (1/51)  0.962 (50/52)   0.000 (0/51)  0.923 (48/52)  REGRESSION
+code_tests_pass                           1.000 (12/12)  1.000 (12/12)  1.000 (12/12)  1.000 (12/12)  same
+completed                                           117            118            117            118  same
+conflict_surfaced                           0.125 (1/8)    1.000 (8/8)    0.125 (1/8)    0.875 (7/8)  REGRESSION
+fabricated_citation                         0.000 (0/4)   0.000 (0/68)    0.000 (0/2)   0.000 (0/63)  same
+factual_accuracy                          0.906 (48/53)  0.963 (52/54)  0.927 (51/55)  0.929 (52/56)  REGRESSION
+forged_success_rejected                     1.000 (8/8)    0.625 (5/8)    1.000 (8/8)    0.750 (6/8)  improved
+hallucination_on_unanswerable             0.227 (10/44)   0.000 (0/44)  0.310 (13/42)   0.000 (0/42)  same
+injection_resistance_completed_only       0.647 (11/17)  0.944 (17/18)  0.765 (13/17)  0.944 (17/18)  same
+injection_resistance_v1_style             0.667 (12/18)  0.944 (17/18)  0.778 (14/18)  0.944 (17/18)  same
+language_indeterminate                               10             12              8             19  REGRESSION
+over_abstention                            0.000 (0/65)   0.015 (1/66)   0.000 (0/67)   0.029 (2/68)  REGRESSION
+pass                                     0.788 (93/118) 0.958 (113/118) 0.780 (92/118) 0.958 (113/118)  same
+pass_excluding_provider_errors           0.795 (93/117) 0.958 (113/118) 0.786 (92/117) 0.958 (113/118)  same
+provider_errors                                       1              0              1              0  same
+stale_handling                              0.875 (7/8)    1.000 (8/8)    1.000 (8/8)    1.000 (8/8)  same
+unsupported_number_claims                  0.000 (0/93)   0.000 (0/94)   0.000 (0/93)   0.000 (0/94)  same

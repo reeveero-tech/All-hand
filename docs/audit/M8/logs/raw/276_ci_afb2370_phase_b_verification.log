@@ -1,0 +1,76 @@
+276 — CI verification on afb2370 + Phase B evidence review + R-169 §5 artefact gap closure
+date: 2026-10-23 (Asia/Riyadh session; times UTC where shown by GitHub)
+branch: m8/r169-v5-grader (PR #231, stacked on PR #219 head 621aa22) ; head under review: afb2370
+author: agent session (no model call to any measured provider in this log; all numbers recomputed from committed files)
+
+== 1. CI on afb2370 (PR #231 head) — actual results as read from GitHub ==
+AGOS Kernel CI/CD   run 39976458306  conclusion=success
+  jobs: test=success quality=success network=success audit=success docker=success build=success storage=success publish=skipped (by design: publish runs only on main push)
+  test step (3 python versions): "2856 passed, 8 skipped, 4 deselected, 9 xfailed" (identical on all three)
+Governance Gate     run 39976458311  conclusion=failure
+  only failing check: R-186 hold-marker check ("PR carries an explicit hold marker ... (R-186)") — marker present in PR #231 title/body by design.
+  no-delete / atomic-batch / status-evidence checks: not the cause of failure.
+previous head 7009124: CI 39974326837 success ; Governance 39974326864 failure (R-186 only).
+
+== 2. Other relevant heads (read, not re-run) ==
+main 9708ecb            : CI push run 39802461522 success
+PR #219 head 621aa22    : CI 39886279560 success ; Governance 39886279662 failure (R-186 only)
+frozen head 08f69f2     : CI 39922885290 success ; Governance 39922885473 failure — error text read from the run page:
+                          "PR carries an explicit hold marker — merging is refused until the marker is removed by the owner after acceptance (R-186)."
+branch protection main  : required checks quality,test,build,docker,governance,audit ; enforce_admins=true ; required reviews 0
+=> Kernel CI is green on the frozen head and on the current head. The required "governance" check is red on every R-169 head
+   solely because of the owner hold marker. "All required checks green" is therefore NOT yet true on any R-169 head; it can only
+   become true after the owner removes the marker AND the Governance Gate is re-run (see §4).
+
+== 3. Governance-gate trigger fact (affects the merge procedure) ==
+.github/workflows governance gate: on: pull_request: branches:[main] with default activity types (opened, synchronize, reopened).
+Editing a PR title/body ("edited") does NOT re-trigger it. After the owner removes the marker the failed run must be re-run
+(Re-run jobs) or a new commit pushed; otherwise the red check stays.
+Marker regexes (scripts/check_do_not_merge.py) scan the WHOLE title+body, including historical annexes:
+  do[\s-]*not[\s-]*merge | hold[\s-]*merge | لا\s*يُ?دُ?مُ?ج | لا\s*يَدْمُ?ج | لا\s*يدمج
+  ("ممنوع الدمج" is not matched.)
+
+== 4. R-169 PREREGISTRATION v5 §5 analyses — evidence gap found and closed ==
+Finding: CHANGELOG/PROJECT_STATE (لاحق 15 خاتمة) state the §5 analyses were executed (sign p=0.0023, McNemar p=0.0001,
+sensitivity, b1 comparison with regressions) and cite log 273. Log 273 is 13 lines about the local council and contains none
+of these; no committed artefact held the §5 outputs. The claim was unsupported by a committed file (not false — see below).
+Action: deterministic recomputation from committed jsonl/summary files (no model call, no grader change, no relabel):
+  python3 scripts/r169_report_v5.py {gate,paired,labelled-paired,tables} test_baseline_b2 test_grounded-v2_b2r2  -> exit 0 each
+  outputs committed under docs/audit/M8/logs/raw/r169/v5/analysis_b2/{gate,paired,labelled-paired,tables}.txt
+  b1 comparison (descriptive; different item set AND different grader) -> analysis_b2/b1_comparison.txt
+Results (reproduce the previously stated numbers exactly):
+  gate: combined agreement 0.9574 (Wilson95 0.9235–0.9767), lenient 0, uncertain 0, coverage 100%, provider_error_share 0.0085/0.0
+        per run: baseline 109/117 = 0.9316 ; grounded-v2_b2r2 116/118 = 0.9831 (gate is defined on the combined figure, §3 row 1)
+  primary group sign test: better 15 / worse 2 / ties 42 of 59 groups, p(two-sided)=0.0023
+  McNemar (secondary, case-level, not adjusted for ar/en dependence): 25 vs 4, p=0.0001
+  sensitivity on agent labels (uncertain as fail / as pass): p=0.0129 both (uncertain=0, so identical) -> conclusion not fragile
+  cluster bootstrap of rate diff: [0.085, 0.28]
+Deviation found: PREREGISTRATION (log 269 item 5) declares bootstrap seed 1695; code (agent_civilization/eval/r169_bench_v5.py
+  cluster_bootstrap_diff default) uses seed 1692. Recomputed with seed 1695 via in-memory override (code not modified): [0.085, 0.28]
+  — identical. Bootstrap is descriptive only; no effect on gate or primary test. Recorded, not "fixed" retroactively.
+
+== 5. Correction note on log 271 (log 271 itself NOT rewritten) ==
+Log 271 says the hung grounded-v2_b2 partial file had "4 records kept untracked". The tracked file
+docs/audit/M8/logs/raw/r169/v5/test_grounded-v2_b2.jsonl contains 1 meta line + 6 records and was committed in 80d2c76.
+The statement in 271 is inaccurate on both points. It does not affect the measurement: b2r2 was a new full run with a new tag per
+the pre-registered rerun rule, and code_sha differs between baseline (08f69f2) and b2r2 (80d2c76) only by data/log files.
+
+== 6. Phase B — skipped / deselected / xfail inventory (current head afb2370, CI test job) ==
+8 skipped:
+  4  R-042 live storage tests (need R042_LIVE)            -> run & pass in CI "storage" job vs local Postgres17+PostgREST (26/26 checks)
+  2  R-163 live queue tests (R163_LIVE)                     -> run & pass in "storage" job
+  1  R-164 live backpressure test (R163_LIVE)               -> run & pass in "storage" job
+     classification of those 7: local_integration (service containers in CI), NOT live_integration
+  1  tests/test_r169_benchmark_v2.py::test_committed_v2_run_rescores_to_the_committed_summary[NOTSET] — empty parametrization; tests nothing
+4 deselected: marker "network" (pytest.ini -m "not network") -> executed in the "network" job (success)
+9 xfailed (known open defects, tests/test_prep_hub_pools_recovery_findings.py): H1 H2 H3 H4 H6 C2 C4 P1 P4
+  planned for R-176/R-179/R-181 (docs: H1_FIX_PLAN.md, PREP_AUDIT_HUB_POOLS_RECOVERY.md). Not fixed; not hidden.
+
+== 7. Phase B — live integration evidence ==
+Only accepted live run: live-integration.yml run 39105410408 on main ecbbf45 (2026-10-18): storage/llm/external PASS live_integration;
+MCP NOT_RUN (owner decisions D-078/D-080). Staging secrets were deleted afterwards. main is ~162 commits ahead of ecbbf45 —
+no live re-verification since; R-162..R-168 additions are not live-tested. Re-running needs the owner to re-enter staging secrets.
+CI success is not evidence of live integration (CI uses local containers / mocks).
+
+== 8. Safety ==
+No PR merged, no label/marker removed, no PR title/body edited, no file deleted/moved/renamed, no secret created.

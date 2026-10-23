@@ -1,0 +1,30 @@
+# command: python3 scripts/r169_report_v5.py paired test_baseline_b2 test_grounded-v2_b2r2
+# repo head: afb2370; generated 2026-10-23 (deterministic recomputation from committed jsonl; no model call)
+{
+  "bootstrap": {
+    "ci95_diff": [
+      0.085,
+      0.28
+    ],
+    "note": "cluster (group-level) bootstrap; descriptive only",
+    "reps": 2000,
+    "seed": 1692
+  },
+  "group_sign_test": {
+    "candidate_better": 15,
+    "candidate_worse": 2,
+    "groups": 59,
+    "note": "exact sign test at group level (primary, pre-registered)",
+    "p_value_two_sided": 0.0023,
+    "ties": 42
+  },
+  "mcnemar": {
+    "baseline_fail_candidate_pass": 25,
+    "baseline_pass_candidate_fail": 4,
+    "n_discordant": 29,
+    "note": "case-level; NOT adjusted for the ar/en dependence within a group — secondary/descriptive (v4 pre-registration §5)",
+    "p_value": 0.0001
+  },
+  "n_common": 118
+}
+# exit: 0
