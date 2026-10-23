@@ -1,3 +1,11 @@
+## 2026-10-24 — لاحق 23: دفعة R-170/4 — مسار DAG وصيغ النتائج وتوثيق علم البوابة وأثر zod
+
+- ``pipeline/dag.py``: ``normalize_plan`` يتحقق من ``stage["verification"]`` (كائن أو None، غيره ``PlanError``) وينسخه؛ ``_work_for`` يمرر نسخته إلى ``work`` المرحلة فتصل متطلبات المرحلة إلى بوابة الإكمال (قبلها لم تصل أبدًا).
+- ``core/output_validators.py``: ``apply_output_verification`` يفحص حقول ``HandlerResult`` (pydantic) لا المغلف.
+- ``tests/test_r170_dag_and_formats.py`` (36): أحمر سلوكي ``17 failed, 19 passed`` قبل الإصلاح (19 توصيف مصنف صراحة) ثم 36 أخضر؛ الحزمة الكاملة 2932 passed / 8 skipped / 4 deselected / 9 xfailed بالعلم معطلًا ومفعلًا.
+- توثيق ``AGOS_OUTPUT_VALIDATORS`` في ``OPERATIONS.md`` (القيم، الأحكام، شكل الرفض، المتطلبات، التفعيل المرحلي، التراجع، الحدود) وسطر معلّق في ``.env.example``؛ لا تفعيل في ``render.yaml``/``Dockerfile``.
+- أثر zod 4.6.7: لا استيراد في المصادر، نطاقات @hookform/resolvers و@tanstack متوافقة، البناء ناجح، web 39/39، npm audit (root/web، prod/full) = 0 وpip-audit = 0. السجل الخام [`281`](../audit/M8/logs/raw/281_r170_batch4_dag_formats_flag_docs.log).
+
 ## 2026-10-24 — لاحق 22: دفعة R-170/3 — ربط بوابة التحقق بمسار الإكمال (أحمر سلوكي أولًا)
 
 - ``apply_output_verification`` في ``agent_civilization/core/output_validators.py`` مربوطة بمغلف ``_execute`` لكلا الوكتين (``real_agents.py`` و``specialist_runtime.py``) خلف علم ``AGOS_OUTPUT_VALIDATORS=1`` (الافتراضي معطل — السلوك الحالي محفوظ): المتطلبات تُلتقط قبل المعالج، والبوابة تعمل قبل اعتماد النجاح ورفع العدادات.

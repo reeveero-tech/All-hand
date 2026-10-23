@@ -182,3 +182,10 @@ $ (cd web && npm test)  →  # tests 39 / # pass 39 / # fail 0
  M docs/governance/OPERATIONS.md
 ?? docs/audit/M8/logs/raw/281_r170_batch4_dag_formats_flag_docs.log
 ?? tests/test_r170_dag_and_formats.py
+
+## 9. حادثة إجرائية في الالتزام (موثقة لا مخفية)
+- الالتزام 52048eb حوى الملفين الجديدين فقط: خطوة git stash/stash pop محلية (لمقارنة ruff قبل/بعد) أعادت التعديلات
+  غير مُدرجة، فدُفع الفرع بلا الإصلاح. CI على 52048eb: governance فشل (atomic batch: ROADMAP/PROJECT_STATE/CHANGELOG
+  غير محدثة — run 40040561703) وtest فشل (الاختبارات الجديدة بلا الإصلاح — run 40040561741). هذا فشل حقيقي متوقع
+  لحالة الفرع آنذاك، يثبت أيضًا من CI أن الاختبارات الجديدة حمراء بلا الإصلاح.
+- التصحيح: التزام لاحق يضيف الملفات السبعة المعدلة؛ لا إعادة كتابة تاريخ ولا دفع قسري.

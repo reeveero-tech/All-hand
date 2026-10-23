@@ -182,6 +182,14 @@ def normalize_plan(plan: Any) -> Dict[str, Any]:
         kind = st.get("output_kind")
         if kind is not None and kind not in ARTIFACT_KINDS:
             raise PlanError(f"stage {name!r}: output_kind must be one of {ARTIFACT_KINDS}")
+        # R-170 (batch 4): a stage may declare output-verification
+        # requirements (core/output_validators.KNOWN_REQUIREMENTS). Checked
+        # here so a malformed value fails the plan early and explicitly; the
+        # requirement keys themselves are judged by the completion gate
+        # (unknown keys are rejected there, never silently ignored).
+        verification = st.get("verification")
+        if verification is not None and not isinstance(verification, dict):
+            raise PlanError(f"stage {name!r}: verification must be an object")
         explicit = st.get("requires_approval", False)
         if not isinstance(explicit, bool):
             raise PlanError(f"stage {name!r}: requires_approval must be a boolean")
@@ -197,6 +205,7 @@ def normalize_plan(plan: Any) -> Dict[str, Any]:
             "output_kind": kind,
             "requires_approval": needs,
             "sensitive": sensitive or ("declared" if explicit else None),
+            **({"verification": dict(verification)} if verification is not None else {}),
         })
     for st in out:
         for d in st["depends_on"]:
@@ -355,7 +364,7 @@ def _work_for(run: Run, name: str, goal: str, plan_view: List[Dict[str, Any]]) -
     prompt = st.get("prompt") or ""
     if context:
         prompt = prompt + _CONTEXT_MARK + _context_block(context)
-    return {
+    work = {
         "task_id": f"stage-{uuid.uuid4().hex[:8]}",
         "prompt": prompt,
         "goal": goal,
@@ -366,6 +375,12 @@ def _work_for(run: Run, name: str, goal: str, plan_view: List[Dict[str, Any]]) -
         "inputs": inputs,
         "data": run.data,
     }
+    # R-170 (batch 4): the stage's declared verification requirements reach
+    # the completion gate in agent.execute (a copy: the handler cannot alter
+    # the plan). Absent -> key absent (existing work shape unchanged).
+    if st.get("verification") is not None:
+        work["verification"] = dict(st["verification"])
+    return work
 
 
 def _output_of(res: Any) -> Tuple[bool, str]:

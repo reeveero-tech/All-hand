@@ -354,7 +354,12 @@ def apply_output_verification(requirements: Any, ok: bool, result: Any) -> tuple
     if not ok:
         return ok, result  # فشل صادق — البوابة لا تلمسه
     try:
-        verdict = verify_success({"ok": True, "result": result}, requirements)
+        # R-170 (batch 4): a pydantic HandlerResult is judged by its FIELDS
+        # (a model is not a Mapping, so the envelope would be checked instead
+        # — forged success passed and real evidence was missed).
+        inner = _result_as_dict(result)
+        verdict = verify_success({"ok": True, "result": inner if inner is not None else result},
+                                 requirements)
     except Exception as exc:  # noqa: BLE001 — البوابة لا تُمرر نجاحًا غير مفحوص
         verdict = Verdict(ok=False,
                            reasons=(f"verification gate error: {type(exc).__name__}",),

@@ -1,6 +1,6 @@
 # التشغيل والنشر (OPERATIONS)
 
-> **آخر تحديث**: 2026-10-19 — **R-165 (D-084)**: تسعة متغيرات لخطط DAG (`AGOS_PLAN_TIMEOUT_S`، `AGOS_STAGE_TIMEOUT_S`، `AGOS_STAGE_MAX_ATTEMPTS`، `AGOS_PLAN_MAX_STAGE_RUNS`، `AGOS_PLAN_PARALLEL`، `AGOS_STAGE_RETRY_BASE_S`/`_CAP_S`، `AGOS_STAGE_CONTEXT_CHARS`، `AGOS_PLAN_RUNS_KEPT`)، وكلها اختيارية بقيم افتراضية آمنة. قبلها 2026-10-18 — **R-163 (D-082)**: متغيرات الطابور الدائم `AGOS_TASK_QUEUE`/`AGOS_TASK_LEASE_S`/`AGOS_TASK_REAP_S`/`AGOS_TASK_MAX_ATTEMPTS`/`AGOS_TASK_DISPATCH_BATCH`/`AGOS_TASK_DISPATCH_IDLE_S` (القسم «الطابور الدائم»). قبلها 2026-10-16 — R-144 (SEC-04): حدود بث SSE `AGOS_SSE_*` ومراقبتها (القسم «حدود بث SSE»). قبلها 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
+> **آخر تحديث**: 2026-10-24 — **R-170 (دفعة 4)**: علم بوابة التحقق من المخرجات `AGOS_OUTPUT_VALIDATORS` (الافتراضي معطل؛ `1` فقط يفعّل) وإرشادات تفعيله المرحلي والتراجع عنه — القسم «بوابة التحقق من المخرجات». قبلها 2026-10-19 — **R-165 (D-084)**: تسعة متغيرات لخطط DAG (`AGOS_PLAN_TIMEOUT_S`، `AGOS_STAGE_TIMEOUT_S`، `AGOS_STAGE_MAX_ATTEMPTS`، `AGOS_PLAN_MAX_STAGE_RUNS`، `AGOS_PLAN_PARALLEL`، `AGOS_STAGE_RETRY_BASE_S`/`_CAP_S`، `AGOS_STAGE_CONTEXT_CHARS`، `AGOS_PLAN_RUNS_KEPT`)، وكلها اختيارية بقيم افتراضية آمنة. قبلها 2026-10-18 — **R-163 (D-082)**: متغيرات الطابور الدائم `AGOS_TASK_QUEUE`/`AGOS_TASK_LEASE_S`/`AGOS_TASK_REAP_S`/`AGOS_TASK_MAX_ATTEMPTS`/`AGOS_TASK_DISPATCH_BATCH`/`AGOS_TASK_DISPATCH_IDLE_S` (القسم «الطابور الدائم»). قبلها 2026-10-16 — R-144 (SEC-04): حدود بث SSE `AGOS_SSE_*` ومراقبتها (القسم «حدود بث SSE»). قبلها 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
 
 ## البناء والتشغيل المحلي
 
@@ -106,6 +106,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_WEB_WAIT_S` (R-132) | core/agents/real_dispatcher.py | 20 ث أقصى انتظار (طابور + نداء) لاحتياطي ويب educator وترجمة communicator |
 | `AGOS_LLM_KEYLESS_URL` / `AGOS_LLM_KEYLESS_MODEL` (R-116) | core/llm.py | `https://text.pollinations.ai/openai` / `openai` |
 | `AGOS_AGENT_IMPL` | agents/real/real_agents.py | غير مضبوط = `real` (الافتراضي)؛ `specialists` يبني الحضارة من أصناف `specialists/` (D-037). (R-104: `process_text()` — دالة وحدة لا صنف — مُفوَّضة إليها من `_data_processor` لمدخل نصي فقط؛ بلا `OPENROUTER_API_KEY` يُنشر فشل LLM صراحةً) |
+| `AGOS_OUTPUT_VALIDATORS` (R-170، دفعة 3–4) | core/output_validators.py | غير مضبوط = البوابة معطلة (السلوك التاريخي حرفيًا). `1` **فقط** يفعّلها (لا `true` ولا `yes`؛ أي قيمة أخرى = معطلة، لا خطأ إقلاع). يُقرأ عند كل مهمة. التفاصيل والتفعيل المرحلي في القسم «بوابة التحقق من المخرجات» |
 | `AGOS_TASK_QUEUE` (R-163، D-082) | server.py | غير مضبوط = متطاير (السلوك التاريخي). `1` يفعّل الطابور الدائم — يتطلب `SUPABASE_URL`+مفتاح خدمة مُعدّين وإلا تُتجاهل القيمة ويبقى المتطاير. التراجع: إزالة المتغير (المهام قيد الجري تُنهى عبر الحد المتبقي في القسم) |
 | `AGOS_TASK_LEASE_S` (R-163) | server.py | 60 ث عمر عقد المطالبة (≥1) |
 | `AGOS_TASK_REAP_S` (R-163) | server.py | 5 ث فاصل دورة المُحصّل (≥0.2) |
@@ -336,3 +337,55 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 - **سياسة تنفيذ الكود (R-100) باقية**: الموافقة لا تتجاوز `AGOS_ALLOW_CODE_EXEC`/`AGOS_API_KEY`؛ المرحلة الموافَق عليها قد تُرفض بالسياسة.
 - **السجل في ذاكرة العملية**: إعادة التشغيل تفقد التشغيلات المنتظرة (resume ← 404)، ولا يُشارك بين النسخ (RISK-035).
 - لا تغيير في `render.yaml`، ولا سر جديد، ولا ترحيل قاعدة بيانات.
+
+## بوابة التحقق من المخرجات (R-170، الدفعات 3–4)
+**القاعدة**: لا يُعتمد `ok=True` من وكيل دون التحقق المطلوب — ادعاء النموذج النجاح ليس دليلًا. البوابة `apply_output_verification` (`agent_civilization/core/output_validators.py`) مربوطة بمغلف `_execute` للوكتين (`real_agents.py` و`specialist_runtime.py`) وتعمل **قبل** اعتماد النجاح ورفع العدادات (`tasks_completed`/`tasks_failed`). مسار DAG يمر بها تلقائيًا لأن كل مرحلة تُنفذ عبر `agent.execute`.
+
+### العلم
+| القيمة | السلوك |
+|---|---|
+| غير مضبوط (الافتراضي) أو أي قيمة غير `1` | معطلة: النتيجة تعود كما هي حرفيًا، بلا مفتاح `verification` (توافق خلفي مثبت باختبار) |
+| `AGOS_OUTPUT_VALIDATORS=1` | مفعلة لكل مهمة في العملية |
+
+- يُقرأ عند كل مهمة (`os.getenv` داخل `output_gate_enabled()`)، لكن متغيرات البيئة على Render/Docker لا تتغير إلا بإعادة النشر/التشغيل.
+- **غير مفعّل في `render.yaml` ولا `Dockerfile` ولا `.env.example`** (سطر معلّق فقط). تفعيله في الإنتاج قرار مشغّل — لم يُتخذ في هذه الدفعة.
+
+### ماذا تفعل البوابة وهي مفعلة
+| حالة النتيجة | الحكم |
+|---|---|
+| `ok=False` (فشل صادق) | لا تُمس — لا ترقية ولا إضافة حقول |
+| `ok=True` بلا متطلبات وبلا دليل آلي ونص الإجابة يدّعي النجاح («completed successfully»، «تم بنجاح»…) | **رفض** (نجاح مزوّر) |
+| `ok=True` خارجيًا مع `result.ok=False` داخليًا | **رفض** (تناقض) |
+| `ok=True` بلا متطلبات ولا ادعاء نصي | قبول مع `verification.unverified=true` (مسجل، لا يُعد تحققًا) |
+| `ok=True` مع متطلبات | كل متطلب يجب أن يمر؛ متطلب غير معروف = **رفض** (لا تجاهل صامت) |
+| متطلبات ليست كائنًا | **رفض** صريح (وفي خطة DAG: `PlanError` قبل التشغيل) |
+| تعطل البوابة نفسها | **رفض** (`verification gate error: <النوع>`) — لا نجاح غير مفحوص |
+
+**شكل الرفض**: `ok=False` في المغلف وفي `result` معًا، `result.error = "output_verification_failed"`، و`result.verification = {ok:false, reasons:[…], checks_run:[…], unverified:false, original_ok:true, original_error?}` — الادعاء الأصلي محفوظ لا مطموس. في DAG تصبح المرحلة `failed` بالخطأ نفسه، وتخضع لإعادة المحاولة المحلية (`max_attempts`)، وتابعوها `blocked` فلا ينتشر نجاح غير موثق.
+
+**صيغ النتائج** (دفعة 4): قاموس، أو `HandlerResult` (pydantic — يُفحص بحقوله منذ الدفعة 4؛ قبلها كان يُفحص المغلف خطأً)، أو نتيجة غير قاموسية في specialists (تُلف `{ok, answer: r}`). نتيجة بلا مفتاح `ok` = فشل صادق.
+
+### إعلان المتطلبات
+- مهمة مباشرة: `work["verification"] = {...}`؛ مرحلة خطة DAG (دفعة 4): `stage["verification"] = {...}` تُنسخ إلى `work` المرحلة (غيابها = لا مفتاح في `work`).
+- المفاتيح المعروفة (`KNOWN_REQUIREMENTS`):
+
+| المفتاح | يتطلب |
+|---|---|
+| `tool_output: true` | `tool_output` غير فارغ، وبلا `exit_code` رقمي ≠ 0 ولا `ok:false` داخله |
+| `json: true` أو `json: ["k1", …]` | `tool_output` (أو `payload`) كائن JSON (قاموس أو نص JSON) يحوي المفاتيح المطلوبة |
+| `citations: true` | كتلة استشهادات غير فارغة (`citations`/`sources`/`references`) — إلا الامتناع الصريح |
+| `checks: true` | قائمة `checks` غير فارغة وكل عنصر قاموس بـ`ok: true` صراحة |
+
+- **حد قائم**: الخطط التي يبنيها الموجّه (`routing.route`) عبر `POST /civilization/execute` لا تعلن متطلبات اليوم، فتفعيل العلم هناك يطبق كشف النجاح المزوّر والتناقض فقط. واجهة HTTP لا تقبل `verification` من العميل في هذا المسار.
+
+### التفعيل المرحلي الموصى به
+1. **محلي/CI**: `AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/test_r170_*.py -q` ثم الحزمة الكاملة بالعلم مفعلًا لرصد أي مسار يعتمد على نجاح بلا دليل.
+2. **بيئة غير إنتاجية** (`AGOS_ENV=development`/`test`): تفعيل، ومراقبة نسبة `output_verification_failed` في نتائج المهام و`tasks_failed` لكل وكيل مقابل خط أساس بالعلم معطلًا على الحمل نفسه. ارتفاع الرفض على مهام سليمة = ادعاءات نصية في إجابات صادقة (إنذار كاذب من علامات `SUCCESS_CLAIM_MARKERS`) — يُراجع قبل الإنتاج.
+3. **إنتاج**: بقرار مشغّل صريح فقط — ضبط المتغير في لوحة Render (أو `render.yaml` بطلب دمج موثق) وإعادة النشر.
+4. **التراجع**: إزالة المتغير (أو أي قيمة غير `1`) وإعادة التشغيل؛ لا حالة دائمة ولا ترحيل بيانات. المهام المرفوضة سابقًا تبقى مسجلة كما هي.
+
+### حدود معلنة (لا تُقرأ كضمانات)
+- `citations` فحص **وجود** لا صحة؛ كشف النجاح المزوّر بلا متطلبات **استدلالي** (علامات نصية)؛ `checks` التي يكتبها النموذج نفسه ليست تحققًا مستقلًا.
+- البوابة لا تعالج تراجع مقاييس R-169 بذاتها (مطابقة اللغة 83.9%، رفض النجاح المزوّر 75%) — لم يُعَد قياسها بالعلم مفعلًا.
+- لا سر جديد، ولا تغيير في `render.yaml`، ولا ترحيل قاعدة بيانات.
+
