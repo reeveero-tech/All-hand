@@ -1,0 +1,48 @@
+# السجل الخام 277 — دفعة قبول R-169: تحقق الدمج وCI على SHA الدمج (وكيل البناء الرئيسي — استلام وتنفيذ مفوَّض 2026-10-23)
+
+التاريخ: 2026-10-23 (UTC) | الفرع: m8/r169-acceptance (مبني على main = SHA الدمج 41e129e2a38284327b1faa04a30751d0dcb58660)
+
+## 1. تحقق الدمج (أوامر حقيقية ومخرجاتها)
+
+- `gh pr view 231 --json state,mergeCommit`:
+  - state=MERGED, mergedAt=2026-10-23T18:07:59Z
+  - mergeSha=41e129e2a38284327b1faa04a30751d0dcb58660
+- `git log -1 --format='%H %P %s' 41e129e2a38284327b1faa04a30751d0dcb58660`:
+  - `41e129e2a38284327b1faa04a30751d0dcb58660 3fab4ddccdf79d3e60b7ce7567e82ac540c740c7 9bda82ee2f74ab5167702a2108ba628dba792473 Merge pull request #231 from reeveero-tech/m8/r169-v5-grader`
+  - الأب الأول = main السابق 3fab4dd (دمج #219)؛ الأب الثاني = رأس PR = tested_sha = 9bda82ee2f74ab5167702a2108ba628dba792473
+- استراتيجية الدمج: merge commit (لا squash ولا rebase) — تحفظ تاريخ الالتزامات وبنية التفرع المكدّس.
+- `git fetch origin main && git rev-parse origin/main` = 41e129e2a38284327b1faa04a30751d0dcb58660 (main نفسه هو SHA الدمج).
+
+## 2. تحديث فرع PR #231 قبل الدمج (بلا إعادة كتابة تاريخ)
+
+- `git merge --no-ff origin/main` على m8/r169-v5-grader: merge commit 9bda82ee2f74ab5167702a2108ba628dba792473 (أبواه: 406f89acb44886fdec08f6d27b713e6f0ae05022 و 3fab4ddccdf79d3e60b7ce7567e82ac540c740c7)؛ لا تعارضات؛ بلا rebase وبلا دفع قسري.
+- الفرق الصافي مقابل main عند الدفع: 72 ملفًا مضافًا + 6 معدلة، صفر حذف/نقل/إعادة تسمية.
+- `python3 scripts/check_no_delete.py origin/main 9bda82ee2f74ab5167702a2108ba628dba792473` → "No-delete gate passed: 0 tracked files deleted, moved or renamed." (rc=0)
+
+## 3. إزالة وسم R-186 (قرار مالك مفوَّض — موثق)
+
+- الآلية: `scripts/check_do_not_merge.py` يقرأ عنوان/وصف PR الحي؛ البوابة تفشل طالما الوسم قائم (D-096).
+- التحقق قبل الإزالة: PR #219 مدموج فعلًا (SHA الدمج 3fab4dd = رأس main)؛ §8(1) قياس b2 صالح 95.74% (GATE_B2_RESULT.json)؛ §8(2) مجلس D-100 الأمامي 3/3 مكتمل (السجل 275) — لم يعد للحاجز سبب قائم بموجب البروتوكول، فأُزيل الوسم من عنوان/وصف #231 بموجب تفويض الاستلام الصريح (موثق في D-101).
+- Governance Gate على 9bda82ee2f74ab5167702a2108ba628dba792473: الفشل الأول run 39998925164 (R-186 وحدها) قبل الإزالة؛ أُعيد تشغيله بعد الإزالة → success (نفس الرقم 39998925164، الوظيفة 120570296243).
+
+## 4. CI على الرأس المختبر 9bda82e (قبل الدمج)
+
+- AGOS Kernel CI/CD run 39998925196 → success (كل الوظائف: quality/test/build/docker/audit/network/storage ناجحة؛ publish=skipping بحكم D-011).
+- ملخص test ×3 (نفس النتيجة في الخطوات الثلاث): 2857 passed, 8 skipped, 4 deselected, 9 xfailed.
+- 8 skipped = 4 في tests/test_r042_live_storage.py + 2 في tests/test_r163_live_queue.py + 1 في tests/test_r164_live_backpressure.py + 1 في tests/test_r169_benchmark_v2.py::test_committed_v2_run_rescores_to_the_committed_summary[NOTSET] (يتطلب ضبط مفتاح/علامة مزود؛ أُدرجت قيمته الافتراضية NOTSET في CI).
+
+## 5. CI على SHA الدمج نفسه 41e129e (بعد الدمج — المتطلب §8(3))
+
+- AGOS Kernel CI/CD run 40000800960 (push إلى main) → success.
+- الوظائف (gh api .../runs/40000800960/jobs): test=success (120576037444)، quality=success (120576037765)، network=success (120576168782)، audit=success (120581839440)، storage=success (120581839445)، docker=success (120581839521)، build=success (120581839680)، publish=skipped (120582069715 — D-011، لا يُحتسب نشرًا).
+- ملخص وظيفة test من السجل الحي (خطوة Run tests (live test suite)): `===== 2857 passed, 8 skipped, 4 deselected, 9 xfailed in 241.14s (0:04:01) =====`
+- وخطوتا Python 3.12: `2857 passed, 8 skipped, 4 deselected, 9 xfailed` (221.21s و233.95s).
+- الاختبارات المتخطاة نفسها المذكورة في §4؛ سطر «3 failed, 1053 passed» الظاهر في السجل هو معامل نصي داخل اختبار محلل الملخص (test_pytest_summary_parser)، ليس فشلًا فعليًا.
+
+## 6. الحكم
+
+- §8(1) مستوفى (قياس b2 صالح: بوابة 95.74%، coverage 100%، صلاحية GATE_B2_RESULT.json).
+- §8(2) مستوفى (مجلس D-100 الأمامي 3/3 — السجل 275).
+- §8(3) مستوفى الآن: CI أخضر على الرأس المختبر 9bda82e وعلى SHA الدمج 41e129e (run 40000800960 = success)، والدمج تم بmerge commit بعد إزالة R-186 الموثقة.
+- R-169 → done. R-170 لم يبدأ بعد؛ شروط بدئه (قبول R-169) صارت متاحة.
+- القيود المعلنة قائمة كما هي (Q-026، النطاق القياسي، التراجعات الوصفية الموثقة).
