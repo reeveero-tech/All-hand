@@ -1,0 +1,47 @@
+# 260 — مجلس كامل (3 عائلات) على حزمة تسليم Q-028 — D-099 / REVIEW_COUNCIL §12 — مخرجات حرفية
+# date_utc: 2026-10-22T14:51:31Z  main: f19ccd80ce130559455ad4c3830d8416b458f3ac  pr219_head: 8d1ef1ca43ef01f5533bccd6d37e4e857e6b7f29
+# freeze: 2026-10-22T14:41:04Z  launch(simultaneous): 2026-10-22T14:41:37Z
+
+$ cat MATERIAL_FINGERPRINTS.txt
+33bd2b8fb121202c00b5b469c9733788368d0066a85705ece162f910c0b7a1ba  BLIND_REVIEW_CASES_PHASE_A.md
+feba4e3d830a83516d202349701cc97cb47d0b20532b975a6af469c10fe97544  BLIND_REVIEW_PROTOCOL.md
+f0bc485ab2e9425c422155009f3e2c444641cd49b2e4f98618f363acd28633cb  Q028_HANDOFF_INSTRUCTIONS.md
+15686639c5e5beaff036c7a4ed4157d52d25cb994bcd2c214be3ee764e8edfe3  REVIEWER_CASE_INDEX_PHASE_A.md
+ef678d53caa97cdad03baa5753937205077fe0c9173d87cb538f07963cc414f6  REVIEWER_OUTREACH.md
+5127d0af159eaf8fcad15cf0f26ed4af4192f85974d4ea636de2f54f3c87ab74  reviewer_blind_form.json
+
+$ sha256sum (council evidence dir)
+67dda7ae886bc914a42103baf6f37c2dbf9aac30a75bba71fae6d78bddc57731  INSTRUCTIONS.txt
+4b9319d27a5fb49c76384fbdf170c0eb90adfca27bcb52485518ffa37c824089  REVIEW_CARD.md
+325f1e01c5d955a4da459068c0fd41b8fcf884fe41d9ed32ea1e62255a8bc3ad  raw_report_A.md
+0227820acc4c174c8349dcb25af9ad869879ff944d8e94f52a8e54615b0a68da  raw_report_B.md
+9b5ed09325c21b4d281b95e8fc0c77b46cdb5189e4f0c1c287978c27082efb1e  raw_report_C.md
+0b891b835695bfbd2c8fa6984b6f107c861fb9ba8290ff3769dc03459c8bb8ba  RECEIPT_LOG.md
+494b85804f1458fb067a232cbda2da0273f410853e994b02f3df7d0628ce1811  SYNTHESIS.md
+f0bc485ab2e9425c422155009f3e2c444641cd49b2e4f98618f363acd28633cb  reviewed_versions/Q028_HANDOFF_INSTRUCTIONS.reviewed.md
+ef678d53caa97cdad03baa5753937205077fe0c9173d87cb538f07963cc414f6  reviewed_versions/REVIEWER_OUTREACH.reviewed.md
+
+$ ls -la material/ (read-only at review time)
+-r--r--r--  1 user user 25098 Oct 22 14:41 BLIND_REVIEW_CASES_PHASE_A.md
+-r--r--r--  1 user user  4163 Oct 22 14:41 BLIND_REVIEW_PROTOCOL.md
+-r--r--r--  1 user user 10744 Oct 22 14:41 Q028_HANDOFF_INSTRUCTIONS.md
+-r--r--r--  1 user user  2362 Oct 22 14:41 REVIEWER_CASE_INDEX_PHASE_A.md
+-r--r--r--  1 user user  5071 Oct 22 14:41 REVIEWER_OUTREACH.md
+-r--r--r--  1 user user  4970 Oct 22 14:41 reviewer_blind_form.json
+
+$ find council_q028 -newer INSTRUCTIONS.txt -type f   # after all 3 returned; only coordinator-written files
+./RECEIPT_LOG.md
+./SYNTHESIS.md
+./raw_report_A.md
+./raw_report_B.md
+./raw_report_C.md
+
+$ member tool-call paths outside material/ + MATERIAL_FINGERPRINTS.txt (rg over each member session log)
+member A: outside-paths=0  tool-output files mentioning raw_report=0
+member B: outside-paths=0  tool-output files mentioning raw_report=0
+member C: outside-paths=0  tool-output files mentioning raw_report=0
+
+# raw reports extracted byte-for-byte from member session logs (final assistant message): A lines 129-345, B 217-423, C 141-263
+# B self-identified as 'Anthropic Claude 3.5 Sonnet' though launched as gemini_3_8_flash — self-ID unreliable; launch id recorded; actual model not technically provable
+# deviation: A and C reports written to shared disk before B returned (see RECEIPT_LOG.md)
+# council has no authority: no case verdicts, no form filling, no gate/threshold/label/status change, Q-028 stays open

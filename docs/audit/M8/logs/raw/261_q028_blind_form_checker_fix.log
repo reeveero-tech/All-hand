@@ -1,0 +1,47 @@
+# 261 — عيب أداة الفحص في تعليمات تسليم Q-028 وإصلاحه — قبل/بعد — مخرجات حرفية (مع حجب)
+# date_utc: 2026-10-22T14:51:48Z  main: f19ccd80ce130559455ad4c3830d8416b458f3ac  pr219_head: 8d1ef1ca43ef01f5533bccd6d37e4e857e6b7f29
+# العيب: Q028_HANDOFF_INSTRUCTIONS.md (sha f0bc485a…) §2 خطوة 5 توجّه بتشغيل scripts/check_q028_form.py على النموذج المعاد عند الاستلام وقبل المرحلة ب.
+# اكتُشف: مجلس q028_handoff_full (العضو A أشار إلى غموض التوقيت)؛ تحقق المنسق أن العيب أشد.
+# fixture: synthetic_complete_blind.json = reviewer_blind_form.json الفارغ + قيم اصطناعية (uncertain/low/'SYNTHETIC TEST FIXTURE') — ليس مراجعة
+
+## BEFORE: $ python3 scripts/check_q028_form.py synthetic_complete_blind.json   (script + its reference form extracted via git show from #219 into /tmp; branch not checked out)
+{
+ "complete": false,
+ "cases": 27,
+ "answered": 0,
+ "problems": [
+  "adjudication_of_disagreements: case set changed (missing [<REDACTED: original case ids>], extra [])",
+  "adjudication_of_uncertain: case set changed (missing [<REDACTED: original case ids>], extra [])",
+  "label_verification_sample: case set changed (missing [<REDACTED: original case ids>], extra [])"
+ ]
+}
+exit=1
+# REDACTION NOTE: the real output listed 26 distinct original case ids (pattern r169-v4-<category>-NN-<lang>) grouped under the 3 official selection sections. (26 not 27: one id appears in two sections.) Ids redacted here; section names kept because they are public constants in check_q028_form.py source; per-section counts are not reproduced.
+
+## AFTER: $ python3 scripts/check_q028_blind_form.py synthetic_complete_blind.json --blank reviewer_blind_form.json
+{
+ "complete": true,
+ "cases": 27,
+ "answered": 27,
+ "problems": [],
+ "sha256": "0391da50a0065ab8b5589c52c3ea2c268f7f09929402e2519d391ed309a35492"
+}
+exit=0
+
+## AFTER (blank form must be incomplete): first lines
+{
+ "complete": false,
+ "cases": 27,
+ "answered": 0,
+ "problems": [
+  "reviewer.confirmed_human must be true (set only if it is actually true)",
+...
+
+## $ pytest tests/test_q028_blind_form_check.py
+
+============================== 6 passed in 0.52s ===============================
+
+## انحراف/إفصاح المنسق (Claude Opus 5.5)
+# بتشغيل خطوة BEFORE رأى المنسق قائمة المعرفات الأصلية للحالات المختارة وتوزيعها على أقسام الاختيار الرسمية (دون ربطها بـCxx، فخريطة الربط لم تُفتح).
+# لا يوجد مراجع ولا نموذج مستلم، فترتيب «تجميد أ قبل فتح ب» لم يُنتهك. لكن المنسق لم يعد جاهلًا ببنية المرحلة ب؛ يُسجل ذلك ويُعد مانعًا لأن يكون هذا المنسق مراجعًا (هو نموذج أصلًا فغير مؤهل).
+# نسخة reviewer_form.json المستخرجة إلى /tmp حُذفت بعد التشغيل (ملف غير متعقب).
