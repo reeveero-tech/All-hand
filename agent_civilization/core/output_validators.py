@@ -356,6 +356,38 @@ def verification_from_work(work: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
 
 # ------------------------------------------------ completion-path gate (R-170/3)
 
+#: R-170 (batch 7): the ONE per-specialization requirements policy, applied
+#: whenever work does not declare its own ``verification`` (``/api/tasks``,
+#: the hub path, a DAG stage without requirements) and read by the router
+#: (``routing.auto_router.STAGE_VERIFICATION``). Only TOOL handlers whose
+#: every successful return carries machine evidence are listed (measured in
+#: core/agents/real_dispatcher.py; researcher/network_client also verified
+#: live — tests/test_r170_live_tool_evidence.py). Text-only specializations
+#: have no machine evidence, so none is required (accepted ``unverified``).
+DEFAULT_REQUIREMENTS: Dict[str, Dict[str, Any]] = {
+    "test_runner": {"tool_output": True},
+    "network_client": {"tool_output": True},
+    "validator": {"tool_output": True},
+    "researcher": {"tool_output": True, "citations": True},
+}
+
+
+def requirements_for(specialization: str, work: Any) -> Optional[Dict[str, Any]]:
+    """Requirements for one execution, captured BEFORE the handler runs.
+
+    * work declares ``verification`` (not None) -> that value (a shallow copy
+      when it is a dict; a malformed value is passed through so the gate
+      rejects it explicitly). ``{}`` = explicit "no requirements" (internal
+      callers only — HTTP clients cannot set it).
+    * otherwise -> a copy of ``DEFAULT_REQUIREMENTS[specialization]`` or None.
+    """
+    declared = work.get("verification") if isinstance(work, Mapping) else None
+    if declared is not None:
+        return dict(declared) if isinstance(declared, Mapping) else declared
+    default = DEFAULT_REQUIREMENTS.get(specialization)
+    return dict(default) if default is not None else None
+
+
 def output_gate_enabled() -> bool:
     """علم تفعيل بوابة الإكمال: ``AGOS_OUTPUT_VALIDATORS=1`` (الافتراضي معطل).
 

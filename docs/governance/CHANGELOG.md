@@ -1,3 +1,10 @@
+## 2026-10-24 — لاحق 28: إغلاق دفعة R-170/6 ودفعة 7 — تدقيق مسارات إعلان النجاح
+
+- PR #239 دُمج بـmerge commit (`ddaa66f6171d409270bdfa3beaaa36fb5f2a315d`، الأبوان `f254126` و`5d8aa2a`). CI على رأس الفرع ناجح (run 40072975559): 2989 passed، ووظيفة network شغّلت الاختبارات الحية العشرة على GitHub runner ونجحت.
+- ``core/output_validators.py``: ``DEFAULT_REQUIREMENTS`` و``requirements_for``. ``routing/auto_router.py`` يقرأ منها. ``real_agents``/``specialist_runtime`` يطبقانها حين لا يعلن العمل متطلبات (``/api/tasks``).
+- ``agents/specialists/_templates/*_base.py`` (20 ملفًا، تعديل لا حذف): ``_execute_work`` يمر بالبوابة، ويعدّ ``tasks_failed`` حين تفشل النتيجة.
+- ``tests/test_r170_path_audit.py`` (129): أحمر ``50 failed, 79 passed`` ثم 129 أخضر. الحزمة 3118 passed / 8 skipped / 14 deselected / 9 xfailed بالعلم معطلًا ومفعلًا. السجل الخام [`284`](../audit/M8/logs/raw/284_r170_batch7_path_audit.log).
+
 ## 2026-10-24 — لاحق 27: دفعة R-170/6 — citations داخل tool_output وصلاحية الدليل واختبار حي
 
 - ``core/output_validators.py``: ``validate_citations`` يبحث في المستوى الأعلى ثم ``tool_output.sources``/``source``، ويحكم على كل عنصر (http/https URL بمضيف)؛ ``citations_valid``؛ ``has_machine_evidence`` يعدّ الاستشهادات الصالحة فقط.

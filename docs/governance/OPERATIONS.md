@@ -367,6 +367,8 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 
 ### إعلان المتطلبات
 - مهمة مباشرة: `work["verification"] = {...}`؛ مرحلة خطة DAG (دفعة 4): `stage["verification"] = {...}` تُنسخ إلى `work` المرحلة (غيابها = لا مفتاح في `work`).
+- **السياسة الافتراضية** (دفعة 7): حين لا يعلن العمل `verification` (مثل `POST /api/tasks`، ومسار المحور القديم، ومرحلة DAG بلا متطلبات) تُطبق `core/output_validators.DEFAULT_REQUIREMENTS` حسب التخصص — المصدر الوحيد للسياسة، والموجّه يقرأ منه (`STAGE_VERIFICATION`). `verification: {}` الصريح = بلا متطلبات (للمستدعين الداخليين؛ HTTP لا يقبله). المتطلبات تُنسخ قبل تشغيل المعالج.
+- **مسارات الإكمال المدققة** (دفعة 7): `agent.execute` للوكتين (20 تخصصًا)، `server._run_task`/`_finish_durable` (الحالة من `outcome.ok` المُبوّب)، DAG، ومسار المحور `_execute_work` في قوالب المتخصصين (صار يمر بالبوابة ويعدّ الفشل `tasks_failed` — كان يعدّه `tasks_completed`).
 - المفاتيح المعروفة (`KNOWN_REQUIREMENTS`):
 
 | المفتاح | يتطلب |

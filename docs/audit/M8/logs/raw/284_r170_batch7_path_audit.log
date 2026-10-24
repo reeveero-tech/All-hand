@@ -1,0 +1,57 @@
+# 284 — R-170 دفعة 7: تدقيق مسارات إعلان النجاح + سياسة متطلبات افتراضية واحدة + مسار المحور
+# التاريخ: 2026-10-24 (Asia/Riyadh) — الفرع m8/r170-batch7-path-audit — القاعدة main ddaa66f (دمج PR #239)
+# المخرجات حرفية من أوامر محلية؛ لا تعديل لأي قياس/عتبة/وسم مسجل.
+
+## 1. الاكتشاف (بحث في الشيفرة عن كل مسار يعلن نجاحًا)
+- server._run_task / _finish_durable / reaper: الحالة completed/failed مشتقة من outcome["ok"] الذي يعيده agent.execute
+  (مُبوّب منذ الدفعة 3). الإنهاء القسري/dead_letter يكتب ok=False دائمًا. ⇒ لا تجاوز للبوابة.
+- فجوة 1: POST /api/tasks يرسل work = {"prompt", "data"} بلا verification ⇒ مهمة test_runner/validator/network_client/
+  researcher «تنجح» بلا مخرج أداة (كشف استدلالي فقط) — المتطلبات كانت تُعلن في خطط الموجّه فقط.
+- فجوة 2: _execute_work في القوالب العشرين (_templates/*_base.py، مسار المحور القديم): بلا بوابة، ويزيد tasks_completed
+  لكل نتيجة حتى ok=False. خامل في الإنتاج (rg: لا add_work/start في شيفرة الإنتاج) لكنه مسار معلن.
+- civilization_routes (coordination) وDAG يستدعيان agent.execute ⇒ مُبوّبان.
+
+## 2. أحمر أولًا — tests/test_r170_path_audit.py (129 حالة)
+- التشغيل الأحمر الأول: "52 failed, 77 passed" — منها فشلان في اختبارين CHAR عبر HTTP سببهما خطأ في الاختبار نفسه
+  (r149._patch_handler_dispatch يتطلب معالجًا غير متزامن ومُرر lambda متزامن ⇒ TypeError: 'TypeError' == ...).
+  صُحح الاختبار (استخدام _patch غير المتزامن) دون أي تغيير في الشيفرة، وأُعيد التشغيل الأحمر:
+$ timeout 600 python3 -m pytest tests/test_r170_path_audit.py -q -p no:cacheprovider   (exit=1، قبل أي تعديل في الشيفرة)
+======================== 50 failed, 79 passed in 2.99s =========================
+      1 FAILED tests/test_r170_path_audit.py::test_default_policy_is_single_source_for_router
+      1 FAILED tests/test_r170_path_audit.py::test_http_task_tool_spec_without_evidence_ends_failed
+     20 FAILED tests/test_r170_path_audit.py::test_hub_path_failed_result_counts_as_failed
+     20 FAILED tests/test_r170_path_audit.py::test_hub_path_forged_success_rejected_when_gate_on
+      8 FAILED tests/test_r170_path_audit.py::test_tool_specs_require_evidence_by_default
+- RED (50، كلها سلوكية عدا 1 بنيوي): 8 تخصصات الأدوات بلا متطلب افتراضي (4×2 وكتة)، 1 HTTP test_runner بلا دليل
+  ⇒ completed، 20 مسار المحور يعدّ الفشل مكتملًا (والعلم معطل)، 20 مسار المحور بلا بوابة، 1 بنيوي (DEFAULT_REQUIREMENTS
+  غير موجود — AttributeError).
+- CHAR (79): 1 عدد التخصصات = 20، 40 نجاح مزوّر يُرفض في كل تخصص × وكتة (توسيع مسح الدفعة 3)، 32 تخصصًا نصيًا ⇒
+  unverified، 2 إلغاء صريح {}، 3 HTTP (مزوّر ⇒ failed، دليل سليم ⇒ completed، العلم معطل ⇒ completed)، 1 محور صادق.
+
+## 3. الإصلاح
+- output_validators.DEFAULT_REQUIREMENTS (test_runner/network_client/validator → tool_output؛ researcher → tool_output +
+  citations) وrequirements_for(spec, work): المعلن (نسخة) وإلا الافتراضي (نسخة) وإلا None؛ {} الصريح = بلا متطلبات.
+- auto_router.STAGE_VERIFICATION = DEFAULT_REQUIREMENTS (مصدر واحد؛ الموجّه ينسخ لكل مرحلة).
+- real_agents/specialist_runtime._execute: _verification = requirements_for(self.specialization, work).
+- القوالب العشرون: المتطلبات تُلتقط قبل المعالج، النتيجة تمر بـapply_output_verification، والعدّ حسب الحكم.
+- ruff: استيراد fixtures من test_r149 أعطى F811؛ استُبدل بإسناد على مستوى الوحدة.
+
+## 4. أخضر
+$ timeout 300 python3 -m pytest tests/test_r170_path_audit.py -q -p no:cacheprovider
+============================= 129 passed =============================
+$ python3 -m pytest tests/ -q -p no:cacheprovider
+==== 3118 passed, 8 skipped, 14 deselected, 9 xfailed in 264.79s (0:04:24) =====
+$ AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/ -q -p no:cacheprovider
+==== 3118 passed, 8 skipped, 14 deselected, 9 xfailed in 263.77s (0:04:23) =====
+- 2989 + 129 = 3118. لم يتكرر فشل test_r162 التذبذبي في هذين التشغيلين.
+
+## 5. الحدود
+- api_integrator وdb_manager وcode_generator (تنفيذ فعلي لأدوات) بلا متطلب افتراضي: لم يُقس أن كل نجاح لها يحمل دليلًا
+  آليًا ثابت الشكل — يُقبل نجاحها unverified. مرشح لدفعة لاحقة بقياس قبل الإعلان.
+- مسار المحور خامل في الإنتاج؛ إصلاحه وقائي ومثبت بالاختبار فقط.
+- التفعيل في الإنتاج (العلم) لم يحدث.
+
+## 6. عدم الحذف (قبل الالتزام)
+ 25 files changed, 305 insertions(+), 30 deletions(-)
+     25  M
+      2 ??

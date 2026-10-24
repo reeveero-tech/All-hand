@@ -97,7 +97,10 @@ class RealSpecialistAgent:
             work = work or {}
             # R-170 (batch 3): capture verification requirements BEFORE the
             # handler runs — it must not be able to change them mid-flight.
-            _verification = work.get("verification") if isinstance(work, dict) else None
+            # R-170 (batch 7): a copy; the per-specialization default policy
+            # applies when the work declares none (e.g. /api/tasks).
+            from agent_civilization.core.output_validators import requirements_for
+            _verification = requirements_for(self.specialization, work)
 
             async def call():
                 r = await _dispatch(self.specialization, work)
