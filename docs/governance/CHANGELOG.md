@@ -7,6 +7,12 @@
 - اختبارات: ``test_r170_api_integrator_gate.py`` (24)، ``test_r170_citation_evidence_levels.py`` (16)، ``test_r170_freeze_drift_ledger.py`` (12)، تحديث ``test_r170_code_and_schema.py`` و``test_r170_router_requirements.py`` و``test_r170_path_audit.py`` و``test_r162_agent_registry.py`` و``test_r169_benchmark_v3/v4.py``.
 - ``benchmarks/r169/FREEZE_DRIFT.json``: انحراف موثق لـreal_dispatcher؛ حارس المشغلات لم يُرخَ.
 
+## 2026-10-24 — لاحق 31: R-169 b4 — تسجيل مسبق ومشغّل قياس مستقل
+
+- إثبات التخزين المؤقت لدى المزود: طلب مكرر أُجيب بـ`X-Cache: HIT`؛ seed جديد ⇒ توليد جديد؛ نفس seed ⇒ `HIT`.
+- ``scripts/r169_run_b4.py``: يعيد استخدام ``r169_run_v5._one`` كما هو، ويضيف ``seed`` لكل طلب بلف ``llm._keyless_post`` وقت التشغيل، ويسجل ``X-Cache``. يرفض عند انحراف التجميد أو شجرة متسخة أو رأس غير منشور أو غياب التسجيل المسبق. ``tests/test_r169_b4_runner.py`` (10).
+- التسجيل المسبق ``docs/audit/M8/logs/raw/r169/v5/b4/PREREGISTRATION_B4.md`` مُلتزم قبل أي تشغيل.
+
 ## 2026-10-24 — لاحق 30: إغلاق دفعة R-170/8، ودفعة 9 — code وjson.schema، وR-169 b3
 
 - PR #241 دُمج بـmerge commit (`2c5c964d8c9a51a7af749796182f62e88f1f037e`، الأبوان `0de790c` و`486bc21`). CI على رأس الفرع ناجح (run 40075287938؛ 3162 passed).
