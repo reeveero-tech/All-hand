@@ -1,0 +1,373 @@
+{
+ "reviewer": {
+  "name_or_id": "",
+  "date_utc": "",
+  "confirmed_human": false,
+  "confirmed_no_ai_tools": false,
+  "confirmed_no_repository_access": false,
+  "confirmed_no_prior_verdicts": false,
+  "reads_arabic_and_english": false
+ },
+ "cases": [
+  {
+   "id": "H01",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H02",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H03",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H04",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H05",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H06",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H07",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H08",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H09",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H10",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H11",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H12",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H13",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H14",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H15",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H16",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H17",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H18",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H19",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H20",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H21",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H22",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H23",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H24",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H25",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H26",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H27",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H28",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H29",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H30",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H31",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H32",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H33",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H34",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H35",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H36",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H37",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H38",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H39",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H40",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H41",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H42",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H43",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H44",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H45",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H46",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H47",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H48",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H49",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H50",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H51",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H52",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H53",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H54",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H55",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H56",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H57",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H58",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H59",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  },
+  {
+   "id": "H60",
+   "verdict": "",
+   "confidence": "",
+   "note": ""
+  }
+ ]
+}
