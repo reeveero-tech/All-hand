@@ -281,6 +281,21 @@ def _python_from_llm(content: str):
     return "", last
 
 
+#: R-170 (batch 10): code text returned in tool_output, bounded. Above the
+#: bound the text is OMITTED (with its size and sha256), never cut mid-way: a
+#: truncated program does not compile, so a slice would turn a valid result
+#: into an unverifiable one (the former ``src[:8000]``).
+CODE_OUTPUT_MAX_CHARS = 64_000
+
+
+def _code_payload(src: str) -> Dict[str, Any]:
+    import hashlib
+    meta = {"code_chars": len(src), "code_sha256": hashlib.sha256(src.encode("utf-8")).hexdigest()}
+    if len(src) > CODE_OUTPUT_MAX_CHARS:
+        return {**meta, "code_omitted": f"code longer than {CODE_OUTPUT_MAX_CHARS} chars; not returned"}
+    return {**meta, "code": src}
+
+
 async def _code_generator(work: Dict[str, Any]) -> Dict[str, Any]:
     """Generate verified Python (R-102, D-045), or say plainly why not.
 
@@ -307,7 +322,10 @@ async def _code_generator(work: Dict[str, Any]) -> Dict[str, Any]:
         return {"ok": True,
                 "answer": f"validated supplied code (not generated): {len(funcs)} funcs, {len(classes)} classes",
                 "tool_output": {"generated": False, "parsed": True, "functions": funcs,
-                                "classes": classes, "lines": code.count("\n") + 1}}
+                                "classes": classes, "lines": code.count("\n") + 1,
+                                # R-170 (batch 10): the validated text itself, so the
+                                # completion gate can re-check it (it was absent).
+                                **_code_payload(code)}}
     text = _extract_text(work)
     if not text.strip():
         return {"ok": False, "error": "no code, spec or description provided"}
@@ -338,7 +356,7 @@ async def _code_generator(work: Dict[str, Any]) -> Dict[str, Any]:
     tree = ast.parse(src)
     return {"ok": True,
             "answer": f"generated {src.count(chr(10)) + 1} line(s) with the LLM; ast.parse OK (not executed)",
-            "tool_output": {"generated": True, "method": "llm", "code": src[:8000],
+            "tool_output": {"generated": True, "method": "llm", **_code_payload(src),
                             "functions": [n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)],
                             "classes": [n.name for n in ast.walk(tree) if isinstance(n, ast.ClassDef)],
                             "verified": "ast.parse"}}

@@ -315,6 +315,50 @@ def _threads():
     return len(os.listdir("/proc/self/task")) if os.path.isdir("/proc/self/task") else threading.active_count()
 
 
+def _native_threads():
+    """{tid: comm} of every native thread of this process (Linux), else {}."""
+    out = {}
+    if os.path.isdir("/proc/self/task"):
+        for tid in os.listdir("/proc/self/task"):
+            try:
+                with open(f"/proc/self/task/{tid}/comm") as fh:
+                    out[tid] = fh.read().strip()
+            except OSError:
+                pass
+    return out
+
+
+#: R-170 (batch 10) flake analysis: the old check compared the PROCESS-WIDE
+#: native thread count before/after (once 9 vs 8 under the full suite). That
+#: count includes threads that other tests' leftovers (executor workers, event
+#: loop threads) or native libraries start on their own schedule, so it can
+#: change without the code under test creating anything. The claim under test
+#: is "no thread per agent": (a) no thread is STARTED BY THIS (main) THREAD —
+#: the code under test runs synchronously here — and (b) the native count does
+#: not grow beyond a small constant (one per agent would be +10,000).
+NATIVE_THREAD_SLACK = 2
+
+
+class _StartSpy:
+    def __init__(self):
+        self.from_main = []
+
+    def __enter__(self):
+        self._orig = threading.Thread.start
+        spy = self
+
+        def start(th, *a, **k):
+            if threading.current_thread() is threading.main_thread():
+                spy.from_main.append(th.name)
+            return spy._orig(th, *a, **k)
+        threading.Thread.start = start
+        return self
+
+    def __exit__(self, *exc):
+        threading.Thread.start = self._orig
+        return False
+
+
 def test_ten_thousand_logical_agents_without_a_thread_or_process_each():
     """10,000 identities from the real civilization builder (20 x 500), one
     lease each on 10 workers, then half the workers stop: every task comes
@@ -322,7 +366,9 @@ def test_ten_thousand_logical_agents_without_a_thread_or_process_each():
     per agent; memory and time are bounded and measured."""
     from agent_civilization.agents.real import create_civilization
 
-    threads0, children0 = _threads(), len(multiprocessing.active_children())
+    children0 = len(multiprocessing.active_children())
+    native0 = _native_threads()
+    spy = _StartSpy().__enter__()
     tracemalloc.start()
     t0, c0 = time.perf_counter(), time.process_time()
     civ = create_civilization(500, impl="real")
@@ -347,7 +393,19 @@ def test_ten_thousand_logical_agents_without_a_thread_or_process_each():
     assert {reg._load[a] for a in reg._agents} == {1}          # one task per identity
     with pytest.raises(Saturated):
         reg.acquire("extra", "analyst_0000")
-    assert _threads() == threads0 and len(multiprocessing.active_children()) == children0
+    spy.__exit__(None, None, None)
+    native1 = _native_threads()
+    new_threads = {t: n for t, n in native1.items() if t not in native0}
+    diag = os.environ.get("R162_THREAD_DIAG")      # analysis aid: always recorded when set
+    if diag:
+        import json as _json
+        with open(diag, "a") as fh:
+            fh.write(_json.dumps({"before": len(native0), "after": len(native1), "new": new_threads,
+                                  "gone": {t: n for t, n in native0.items() if t not in native1},
+                                  "py": [t.name for t in threading.enumerate()]}) + "\n")
+    assert spy.from_main == [], spy.from_main          # nothing started by the code under test
+    assert len(native1) - len(native0) <= NATIVE_THREAD_SLACK, (len(native0), len(native1), new_threads)
+    assert len(multiprocessing.active_children()) == children0
 
     orphaned = []
     for i in range(5):
@@ -539,3 +597,13 @@ def test_executors_without_a_name_get_a_positional_identity():
     reg = AgentRegistry()
     n = AR.register_civilization(reg, {"analyst": [Nameless(), Nameless()], "builder": [Nameless()]}, version="t")
     assert n == 3 and reg.agent("analyst#1").specialization == "analyst" and reg.agent("builder#0")
+
+
+def test_thread_start_spy_detects_a_thread_started_by_the_main_thread():
+    """The flake-proof check is not vacuous: a thread started here is seen."""
+    with _StartSpy() as spy:
+        t = threading.Thread(target=lambda: None, name="r162-spy-probe")
+        t.start()
+        t.join()
+    assert spy.from_main == ["r162-spy-probe"]
+    assert threading.Thread.start.__qualname__ == "Thread.start"     # original restored

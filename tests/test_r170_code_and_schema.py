@@ -78,23 +78,107 @@ def test_real_code_generator_spec_path_passes_code_requirement(monkeypatch):
     assert "code" in out["result"]["verification"]["checks_run"]
 
 
-def test_real_code_generator_supplied_code_path_has_no_code_to_verify(monkeypatch):
-    """RED (حد معلن): مسار «تحقق من شيفرة مُدخلة» لا يعيد نص الشيفرة ⇒ ``code``
-    يرفضه — لذلك لا يُعلن ``code`` افتراضيًا لـcode_generator."""
-    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "1")
+def _gen_agent():
     from agent_civilization.agents.real.real_agents import create_civilization
-    agent = create_civilization(1, impl="real")["code_generator"][0]
-    out = asyncio.run(agent.execute({"prompt": "check this: def f(x): return x",
-                                     "data": {"code": "def f(x):\n    return x\n"},
-                                     "verification": {"code": True}}))
+    return create_civilization(1, impl="real")["code_generator"][0]
+
+
+def test_real_code_generator_supplied_code_path_now_returns_code_and_passes(monkeypatch):
+    """RED → GREEN (batch 10): the supplied-code path used to return metadata
+    only (no code text) ⇒ ``code`` rejected it. It now returns the text, its
+    size and sha256; the gate compiles it under the DEFAULT requirement."""
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "1")
+    src = "def f(x):\n    return x\n"
+    out = asyncio.run(_gen_agent().execute({"prompt": "check this", "data": {"code": src}}))
+    assert out["ok"] is True, out
+    to = out["result"]["tool_output"]
+    assert to["code"] == src and to["code_chars"] == len(src) and len(to["code_sha256"]) == 64
+    assert "code" in out["result"]["verification"]["checks_run"]
+
+
+def test_real_code_generator_spec_path_passes_under_default(monkeypatch):
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "1")
+    out = asyncio.run(_gen_agent().execute({"prompt": "write mean", "data": {
+        "function": "mean", "params": ["xs"], "returns": "sum(xs) / len(xs)"}}))
+    assert out["ok"] is True and "code" in out["result"]["verification"]["checks_run"]
+
+
+def test_real_code_generator_invalid_supplied_code_fails_honestly(monkeypatch):
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "1")
+    out = asyncio.run(_gen_agent().execute({"prompt": "check", "data": {"code": "def f(:\n  pass\n"}}))
     assert out["ok"] is False
-    assert any("code:" in r for r in out["result"]["verification"]["reasons"])
 
 
-def test_char_code_generator_has_no_default_code_requirement():
-    """CHAR: لا متطلب افتراضي لـcode_generator (يبقى بعد التغيير)."""
+class _FakeLLM:
+    available = True
+
+    def __init__(self, contents):
+        self.contents = list(contents)
+
+    async def complete(self, system, prompt, max_tokens=1024, max_wait_s=None):
+        return {"ok": True, "content": self.contents.pop(0)}
+
+
+def _with_llm(monkeypatch, contents):
+    import agent_civilization.core.llm as llm
+    fake = _FakeLLM(contents)
+    monkeypatch.setattr(llm, "get_llm", lambda: fake)
+    return fake
+
+
+def test_llm_path_valid_code_passes_full_text(monkeypatch):
+    from agent_civilization.core.agents import real_dispatcher as rd
+    _with_llm(monkeypatch, ["```python\ndef add(a, b):\n    return a + b\n```"])
+    out = asyncio.run(rd._code_generator({"prompt": "write add"}))
+    assert out["ok"] is True and "def add" in out["tool_output"]["code"]
+    from agent_civilization.core.output_validators import verify_success
+    assert verify_success({"ok": True, "result": out}, {"code": True}).ok
+
+
+def test_llm_path_invalid_output_twice_is_discarded(monkeypatch):
+    from agent_civilization.core.agents import real_dispatcher as rd
+    _with_llm(monkeypatch, ["```python\ndef broken(:\n```", "not code at all ((("])
+    out = asyncio.run(rd._code_generator({"prompt": "write something"}))
+    assert out["ok"] is False and "not valid Python" in out["error"]
+
+
+def test_llm_path_long_code_is_not_cut_mid_way(monkeypatch):
+    """The former ``src[:8000]`` could cut a valid program into one that does
+    not compile. Above the bound the text is omitted (size + sha256), and the
+    gate says it could not verify — it never compiles a fragment."""
+    from agent_civilization.core.agents import real_dispatcher as rd
+    from agent_civilization.core.output_validators import verify_success
+    long_src = "".join(f"def f{i}():\n    return {i}\n" for i in range(1500))
+    assert 8000 < len(long_src) <= rd.CODE_OUTPUT_MAX_CHARS
+    _with_llm(monkeypatch, ["```python\n" + long_src + "```"])
+    out = asyncio.run(rd._code_generator({"prompt": "many functions"}))
+    assert out["tool_output"]["code"].strip() == long_src.strip()     # whole, not 8000
+    assert verify_success({"ok": True, "result": out}, {"code": True}).ok
+    huge = "x = 1\n" * (rd.CODE_OUTPUT_MAX_CHARS // 6 + 10)
+    to = rd._code_payload(huge)
+    assert "code" not in to and to["code_chars"] == len(huge) and "code_omitted" in to
+    v = verify_success({"ok": True, "result": {"ok": True, "tool_output": to}}, {"code": True})
+    assert not v.ok and any("not verifiable" in r for r in v.reasons)
+
+
+def test_gate_compiles_but_never_executes_code(tmp_path):
+    from agent_civilization.core.output_validators import verify_success
+    marker = tmp_path / "executed"
+    src = f"open({str(marker)!r}, 'w').write('x')\n"
+    v = verify_success({"ok": True, "result": {"ok": True, "tool_output": {"code": src}}}, {"code": True})
+    assert v.ok and not marker.exists()
+
+
+def test_forged_code_result_that_does_not_compile_is_rejected():
+    from agent_civilization.core.output_validators import verify_success
+    forged = {"ok": True, "answer": "generated and verified", "tool_output": {"code": "def f(:", "verified": "ast.parse"}}
+    assert not verify_success({"ok": True, "result": forged}, {"code": True}).ok
+
+
+def test_code_generator_default_requirement_is_code():
+    """CHAR → batch 10: was absent (supplied-code path had no text)."""
     from agent_civilization.core.output_validators import DEFAULT_REQUIREMENTS
-    assert "code_generator" not in DEFAULT_REQUIREMENTS
+    assert DEFAULT_REQUIREMENTS["code_generator"] == {"code": True}
 
 
 # ----------------------------------------------------------------- schema

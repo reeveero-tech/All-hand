@@ -1,0 +1,589 @@
+{
+ "stem": "test_live_r2",
+ "honest_rejected_by_existence": {
+  "k": 0,
+  "n": 26,
+  "wilson95": [
+   0.0,
+   0.1287
+  ]
+ },
+ "honest_with_any_unverifiable": {
+  "k": 8,
+  "n": 26,
+  "wilson95": [
+   0.165,
+   0.4999
+  ]
+ },
+ "F3_detected_by_existence": {
+  "k": 26,
+  "n": 26,
+  "wilson95": [
+   0.8713,
+   1.0
+  ]
+ },
+ "rows": [
+  {
+   "id": "rs-8d70b300b1",
+   "variant": "honest",
+   "statuses": [
+    "unverifiable",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-8d70b300b1",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-f75d967605",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "unverifiable",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-f75d967605",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-19f05a5e7a",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-19f05a5e7a",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-765d5a390f",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "unverifiable",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-765d5a390f",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-e63a4ba139",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-e63a4ba139",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-3362ae89f3",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-3362ae89f3",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-17b5d91632",
+   "variant": "honest",
+   "statuses": [
+    "unverifiable",
+    "exists",
+    "unverifiable",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-17b5d91632",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-9983f0dfa8",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-9983f0dfa8",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-3920798c7c",
+   "variant": "honest",
+   "statuses": [
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-3920798c7c",
+   "variant": "F3",
+   "statuses": [
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-1db72ccd8a",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "unverifiable",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-1db72ccd8a",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-45d32383c3",
+   "variant": "honest",
+   "statuses": [
+    "unverifiable",
+    "unverifiable",
+    "exists",
+    "unverifiable",
+    "unverifiable"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-45d32383c3",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-968ef12912",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "unverifiable",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-968ef12912",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-d15ccf1b41",
+   "variant": "honest",
+   "statuses": [
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-d15ccf1b41",
+   "variant": "F3",
+   "statuses": [
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-e8cf7fd011",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "unverifiable",
+    "unverifiable",
+    "unverifiable"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-e8cf7fd011",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-e61fb9bb95",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-e61fb9bb95",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-13ae20fe42",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-13ae20fe42",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-1fb13a738d",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-1fb13a738d",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-e0945542ec",
+   "variant": "honest",
+   "statuses": [
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-e0945542ec",
+   "variant": "F3",
+   "statuses": [
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-fbabeff003",
+   "variant": "honest",
+   "statuses": [
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-fbabeff003",
+   "variant": "F3",
+   "statuses": [
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-a369346756",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-a369346756",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-d4697657de",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-d4697657de",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-feca95e3f1",
+   "variant": "honest",
+   "statuses": [
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-feca95e3f1",
+   "variant": "F3",
+   "statuses": [
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-df7fbe940b",
+   "variant": "honest",
+   "statuses": [
+    "exists",
+    "exists",
+    "exists",
+    "exists",
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-df7fbe940b",
+   "variant": "F3",
+   "statuses": [
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-eaf3b88e51",
+   "variant": "honest",
+   "statuses": [
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-eaf3b88e51",
+   "variant": "F3",
+   "statuses": [
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-23ea8d8daf",
+   "variant": "honest",
+   "statuses": [
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-23ea8d8daf",
+   "variant": "F3",
+   "statuses": [
+    "missing"
+   ],
+   "rejected": true
+  },
+  {
+   "id": "rs-3ad3031f55",
+   "variant": "honest",
+   "statuses": [
+    "exists"
+   ],
+   "rejected": false
+  },
+  {
+   "id": "rs-3ad3031f55",
+   "variant": "F3",
+   "statuses": [
+    "missing"
+   ],
+   "rejected": true
+  }
+ ]
+}

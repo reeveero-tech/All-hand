@@ -31,9 +31,10 @@ from agent_civilization.routing.auto_router import route
 TOOL = {"tool_output": True}
 # الدفعة 6: الباحث يعلن citations أيضًا (المدقق يبحث داخل tool_output منذها)
 RESEARCH = {"tool_output": True, "citations": True}
-EXPECTED = {"test_runner": TOOL, "network_client": TOOL, "validator": TOOL, "researcher": RESEARCH}
+EXPECTED = {"test_runner": TOOL, "network_client": TOOL, "validator": TOOL, "researcher": RESEARCH,
+            "api_integrator": TOOL, "code_generator": {"code": True}}  # batch 10
 # التخصصات المدعومة بأداة (مقيسة من real_dispatcher) — مستقلة عن الشيفرة المختبرة
-TOOL_SPECS = {"test_runner", "network_client", "validator", "researcher"}
+TOOL_SPECS = {"test_runner", "network_client", "validator", "researcher", "api_integrator", "code_generator"}  # batch 10
 
 PROMPTS = {
     "code": "write a python function to compute fibonacci numbers",
@@ -145,12 +146,33 @@ def _evidence_free(specialization, work):
             "tool_output": None}
 
 
+def _code_ok_else_evidence_free(specialization, work):
+    """Batch 10: code_generator has a default ``code`` requirement; a realistic
+    code stage returns the code text (all real paths now do)."""
+    if specialization == "code_generator":
+        return {"ok": True, "answer": "generated", "error": None,
+                "tool_output": {"generated": True, "code": "def f():\n    return 1\n"}}
+    return _evidence_free(specialization, work)
+
+
+def test_router_plan_code_stage_without_code_fails_when_gate_on(monkeypatch):
+    """RED (batch 10): the execute stage (code_generator) "succeeds" with no
+    code text ⇒ failed (output_verification_failed); downstream is blocked."""
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "1")
+    _patch_dispatch(monkeypatch, _evidence_free)
+    rep = asyncio.run(dag.run_plan(route(PROMPTS["code"]), _civ()))
+    by = {s["name"]: s for s in rep["stages"]}
+    assert by["execute"]["status"] == dag.FAILED
+    assert by["execute"]["error"] == "output_verification_failed"
+    assert rep["status"] in ("failed", "blocked")
+
+
 def test_router_plan_tool_stage_without_evidence_fails_when_gate_on(monkeypatch):
     """RED: خطة كود من الموجّه، والعلم مفعل، ومرحلة ``test`` «تنجح» بلا مخرج
     أداة ⇒ ``failed`` (output_verification_failed). قبل الدفعة 5 كانت تنجح
     لأن الخطة لا تعلن شيئًا. المراحل النصية تنجح ``unverified`` كما هي."""
     monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "1")
-    _patch_dispatch(monkeypatch, _evidence_free)
+    _patch_dispatch(monkeypatch, _code_ok_else_evidence_free)
     rep = asyncio.run(dag.run_plan(route(PROMPTS["code"]), _civ()))
     by = {s["name"]: s for s in rep["stages"]}
     assert by["test"]["status"] == dag.FAILED
@@ -181,13 +203,14 @@ def test_router_plan_with_tool_evidence_succeeds_and_records_check(monkeypatch):
             return {"ok": True, "answer": "exit=0; 1 test(s) passed, 0 failed",
                     "tool_output": {"stdout": "PASS t\n", "tests_passed": 1,
                                     "tests_failed": 0, "sandbox": True}}
-        return _evidence_free(spec, work)
+        return _code_ok_else_evidence_free(spec, work)
 
     _patch_dispatch(monkeypatch, handler)
     rep = asyncio.run(dag.run_plan(route(PROMPTS["code"]), _civ()))
     assert rep["status"] == "completed"
     assert seen["test"] == TOOL
-    assert all(seen[n] is None for n in ("understand", "plan", "execute", "review"))
+    assert seen["execute"] == {"code": True}          # batch 10: code_generator default
+    assert all(seen[n] is None for n in ("understand", "plan", "review"))
 
 
 # ================================== real handlers satisfy their requirement

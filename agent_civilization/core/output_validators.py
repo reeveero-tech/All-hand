@@ -183,6 +183,8 @@ def validate_code(result: Mapping[str, Any]) -> List[str]:
     tool_output = result.get("tool_output")
     code = tool_output.get("code") if isinstance(tool_output, Mapping) else None
     if not isinstance(code, str) or not code.strip():
+        if isinstance(tool_output, Mapping) and tool_output.get("code_omitted"):
+            return [f"code: not verifiable — {tool_output['code_omitted']}"]
         return ["code: no code text in tool_output to compile"]
     try:
         compile(code, "<r170-gate>", "exec")
@@ -292,6 +294,14 @@ FAILURE_COUNT_KEYS: Tuple[str, ...] = (
     "error_count", "errors_count")
 FAILURE_STATUS_VALUES = frozenset({"failed", "failure", "fail", "error", "errored"})
 TOOL_OUTPUT_MAX_DEPTH = 4
+#: R-170 (batch 10): containers that hold EXTERNAL data a tool fetched or
+#: received (an API body, a document, rows), not the tool's report about its
+#: own run. A GitLab pipeline list with ``status: "failed"`` inside
+#: ``tool_output.sample`` is data the API returned, not a failure of the
+#: api_integrator call — descending into it was a false-rejection risk found
+#: by the batch-10 gate-risk evaluation design.
+PAYLOAD_KEYS = frozenset({"sample", "data", "payload", "body", "response", "content",
+                          "raw", "records", "rows", "items", "documents", "json"})
 
 
 def _is_count(v: Any) -> bool:
@@ -347,6 +357,8 @@ def tool_output_failure(tool_output: Any) -> Optional[str]:
             if isinstance(status, str) and status.strip().lower() in FAILURE_STATUS_VALUES:
                 return f"failure evidence ({path}status={status!r})"
             for k, v in node.items():
+                if isinstance(k, str) and k.lower() in PAYLOAD_KEYS:
+                    continue            # external data, not a self-report
                 if isinstance(v, (Mapping, list, tuple)):
                     found = walk(v, f"{path}{k}.", depth + 1)
                     if found:
@@ -483,8 +495,23 @@ def verify_success(outcome: Mapping[str, Any],
         reasons += validate_code(result)
         checks_run.append("code")
     if reqs.get("citations"):
-        reasons += validate_citations(result)
+        fmt = validate_citations(result)
+        reasons += fmt
         checks_run.append("citations")
+        opts = reqs["citations"]
+        # R-170 (batch 10): opt-in evidence levels beyond format (existence,
+        # quote presence) — see core/citation_evidence. Never by default.
+        if isinstance(opts, Mapping) and (opts.get("exists") or opts.get("quote")) and not fmt:
+            from agent_civilization.core import citation_evidence as ce
+            ev = ce.check_sources(result, exists=bool(opts.get("exists") or opts.get("quote")),
+                                  quote=bool(opts.get("quote")), fetcher=ce.default_fetcher)
+            reasons += ev["reasons"]
+            checks_run.append("citations.exists")
+            if opts.get("quote"):
+                checks_run.append("citations.quote")
+            n_unv = sum(1 for r in ev["sources"] if r.get("status") == "unverifiable")
+            if n_unv:
+                checks_run.append(f"citations.unverifiable={n_unv}")
     if reqs.get("tool_output"):
         reasons += validate_tool_output(result)
         checks_run.append("tool_output")
@@ -546,6 +573,13 @@ DEFAULT_REQUIREMENTS: Dict[str, Dict[str, Any]] = {
     "network_client": {"tool_output": True},
     "validator": {"tool_output": True},
     "researcher": {"tool_output": True, "citations": True},
+    # R-170 (batch 10): every successful api_integrator return carries
+    # ``tool_output`` (status, content_type, sample); without it a stripped
+    # success ("GET ... -> HTTP 200" with no evidence) was accepted unverified.
+    "api_integrator": {"tool_output": True},
+    # R-170 (batch 10): all three successful code_generator paths (spec, LLM,
+    # supplied) now return ``tool_output.code``; the gate compiles it (never runs it).
+    "code_generator": {"code": True},
 }
 
 

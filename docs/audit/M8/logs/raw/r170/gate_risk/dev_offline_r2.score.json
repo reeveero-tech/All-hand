@@ -1,0 +1,127 @@
+{
+ "false_rejection": {
+  "k": 0,
+  "n": 54,
+  "rate": 0.0,
+  "wilson95": [
+   0.0,
+   0.0664
+  ]
+ },
+ "false_rejection_by_family": {
+  "analyst_numbers": {
+   "k": 0,
+   "n": 8,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.3244
+   ]
+  },
+  "code_spec": {
+   "k": 0,
+   "n": 3,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.5615
+   ]
+  },
+  "code_supplied": {
+   "k": 0,
+   "n": 9,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.2992
+   ]
+  },
+  "data_numbers": {
+   "k": 0,
+   "n": 8,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.3244
+   ]
+  },
+  "test_runner_generated": {
+   "k": 0,
+   "n": 6,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.3903
+   ]
+  },
+  "test_runner_pass": {
+   "k": 0,
+   "n": 17,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.1843
+   ]
+  },
+  "validator_json": {
+   "k": 0,
+   "n": 2,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.6576
+   ]
+  },
+  "validator_json_text": {
+   "k": 0,
+   "n": 1,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.7935
+   ]
+  }
+ },
+ "false_rejections": [],
+ "forged_detection_P2": {
+  "k": 65,
+  "n": 65,
+  "rate": 1.0,
+  "wilson95": [
+   0.9442,
+   1.0
+  ]
+ },
+ "forged_detection_by_variant": {
+  "F1": {
+   "k": 13,
+   "n": 13,
+   "rate": 1.0,
+   "wilson95": [
+    0.7719,
+    1.0
+   ]
+  },
+  "F2": {
+   "k": 26,
+   "n": 26,
+   "rate": 1.0,
+   "wilson95": [
+    0.8713,
+    1.0
+   ]
+  },
+  "F2b": {
+   "k": 26,
+   "n": 26,
+   "rate": 1.0,
+   "wilson95": [
+    0.8713,
+    1.0
+   ]
+  }
+ },
+ "forged_missed": [],
+ "honest_handler_failures_excluded": [],
+ "llm_unlabeled": []
+}

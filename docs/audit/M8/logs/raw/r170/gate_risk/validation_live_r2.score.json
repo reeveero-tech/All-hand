@@ -1,0 +1,144 @@
+{
+ "false_rejection": {
+  "k": 0,
+  "n": 19,
+  "rate": 0.0,
+  "wilson95": [
+   0.0,
+   0.1682
+  ]
+ },
+ "false_rejection_by_family": {
+  "api_live": {
+   "k": 0,
+   "n": 4,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.4899
+   ]
+  },
+  "network_live": {
+   "k": 0,
+   "n": 5,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.4345
+   ]
+  },
+  "research_live": {
+   "k": 0,
+   "n": 10,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.2775
+   ]
+  }
+ },
+ "false_rejections": [],
+ "forged_detection_P2": {
+  "k": 39,
+  "n": 39,
+  "rate": 1.0,
+  "wilson95": [
+   0.9103,
+   1.0
+  ]
+ },
+ "forged_detection_by_variant": {
+  "F2": {
+   "k": 19,
+   "n": 19,
+   "rate": 1.0,
+   "wilson95": [
+    0.8318,
+    1.0
+   ]
+  },
+  "F2b": {
+   "k": 19,
+   "n": 19,
+   "rate": 1.0,
+   "wilson95": [
+    0.8318,
+    1.0
+   ]
+  },
+  "F3": {
+   "k": 0,
+   "n": 10,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.2775
+   ]
+  },
+  "F5": {
+   "k": 1,
+   "n": 1,
+   "rate": 1.0,
+   "wilson95": [
+    0.2065,
+    1.0
+   ]
+  }
+ },
+ "forged_missed": [
+  {
+   "id": "rs-da153dc6e7",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-0cf43c38ee",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-c0fe03dbba",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-8de711f306",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-302b0f3249",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-859b352f98",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-5853120fd3",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-9246e32c02",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-e493565283",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-6ffa93fdfe",
+   "variant": "F3",
+   "family": "research_live"
+  }
+ ],
+ "honest_handler_failures_excluded": [
+  "api-a44b20d39f"
+ ],
+ "llm_unlabeled": []
+}

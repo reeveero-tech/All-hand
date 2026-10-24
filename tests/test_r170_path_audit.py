@@ -43,7 +43,7 @@ postgrest = r149.postgrest
 published = r149.published
 clean_tasks = r149.clean_tasks
 
-TOOL_SPECS = {"test_runner", "network_client", "validator", "researcher"}
+TOOL_SPECS = {"test_runner", "network_client", "validator", "researcher", "api_integrator", "code_generator"}  # batch 10
 IMPLS = ["real", "specialists"]
 
 

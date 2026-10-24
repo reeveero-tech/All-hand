@@ -708,10 +708,22 @@ def test_freeze_pins_preregistration_builder_and_analysis():
 
 
 def test_committed_freeze_matches_current_configuration():
+    """The current configuration equals the freeze, EXCEPT drift documented
+    exactly in benchmarks/r169/FREEZE_DRIFT.json (R-170 batch 10). The runner's
+    guard is not relaxed: on any drift it still refuses held-out runs."""
     f = V4 / "FREEZE.json"
     if not f.exists():
         pytest.skip("v4 not frozen yet")
-    assert RUN.check_freeze(RUN.freeze_state(), json.loads(f.read_text())) == []
+    frozen, state = json.loads(f.read_text()), RUN.freeze_state()
+    drift = RUN.check_freeze(state, frozen)
+    ledger = json.loads((ROOT / "benchmarks" / "r169" / "FREEZE_DRIFT.json").read_text())["entries"]
+    allowed = {(e["key"], e["file"]): (e["frozen"], e["current"]) for e in ledger if "v4" in e["benchmarks"]}
+    for key in drift:
+        assert key == "baseline_dependency_sha256", key            # only file hashes may drift
+        moved = {p: (frozen[key].get(p), h) for p, h in state[key].items() if frozen[key].get(p) != h}
+        assert moved and all(allowed.get((key, p)) == fh for p, fh in moved.items()), moved
+    if drift:
+        assert "differs from FREEZE.json" in RUN.test_split_guard(True, False, True, drift)
 
 
 def test_runner_test_split_guard_branches():
