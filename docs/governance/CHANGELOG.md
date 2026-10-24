@@ -1,3 +1,9 @@
+## 2026-10-24 — لاحق 25: دفعة R-170/5 — متطلبات التحقق في خطط الموجّه
+
+- ``routing/auto_router.py``: ``STAGE_VERIFICATION`` (test_runner/network_client/validator/researcher → ``{"tool_output": true}``)؛ ``Stage.verification`` يُملأ بنسخة حسب التخصص، ويُحذف من ``to_dict`` حين يغيب (المراحل النصية بلا تغيير).
+- ``tests/test_r170_router_requirements.py`` (24): أحمر ``15 failed, 9 passed`` (1 بنيوي، 9 توصيف) ثم 24 أخضر؛ الحزمة الكاملة 2956 passed / 8 skipped / 4 deselected / 9 xfailed بالعلم معطلًا ومفعلًا.
+- ``OPERATIONS.md``: «حد قائم» عن خطط الموجّه استُبدل بوصف السياسة وحدّها (``citations`` للباحث). السجل الخام [`282`](../audit/M8/logs/raw/282_r170_batch5_router_requirements.log).
+
 ## 2026-10-24 — لاحق 24: إغلاق دفعة R-170/4 وبدء الدفعة 5
 
 - PR #237 دُمج بmerge commit (`2607d782a585d4153dcfaef29e833de21093d49f`، الأبوان `c7d5084` و`d6047c7`)، وCI على SHA الدمج نفسه ناجح (run 40043066644؛ ‏2932 passed / 8 skipped / 4 deselected / 9 xfailed؛ كل الوظائف success عدا publish skipped). Governance Gate نجح على رأس الفرع (run 40041660497).
