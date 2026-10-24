@@ -1,3 +1,8 @@
+## 2026-10-24 — لاحق 26: إغلاق دفعة R-170/5 وبدء الدفعة 6
+
+- PR #238 دُمج بـmerge commit (`f254126f2a5a5d9b5eb6874b88c457807a34732c`، الأبوان `2607d78` و`f7d2c73`). نجح CI على SHA الدمج نفسه (run 40069094471؛ ‏2956 passed / 8 skipped / 4 deselected / 9 xfailed). Governance Gate نجح على رأس الفرع (run 40068166824).
+- الدفعة 6 بدأت: فحص ``citations`` يعترف بالمصادر داخل ``tool_output.sources`` حتى يعلن الباحث ``citations`` دون رفض نجاح صادق.
+
 ## 2026-10-24 — لاحق 25: دفعة R-170/5 — متطلبات التحقق في خطط الموجّه
 
 - ``routing/auto_router.py``: ``STAGE_VERIFICATION`` (test_runner/network_client/validator/researcher → ``{"tool_output": true}``)؛ ``Stage.verification`` يُملأ بنسخة حسب التخصص، ويُحذف من ``to_dict`` حين يغيب (المراحل النصية بلا تغيير).
