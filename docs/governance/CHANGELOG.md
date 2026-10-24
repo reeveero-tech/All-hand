@@ -1,3 +1,9 @@
+## 2026-10-24 — لاحق 33: دفعة R-170/11 — إكمال تقييم البوابة، R-169 b4s، تحضير R-171
+
+- تقييم مخاطر البوابة: عائلات النموذج + وسوم عمياء (``benchmarks/r170/gate_risk/labels/llm.labels.jsonl``)؛ test الكلي 0/152 و214/214؛ نجاح أجوف مكتشف للتخصصات النصية الحتمية.
+- R-169 b4s: ``docs/audit/M8/logs/raw/r169/v5/b4/`` (ردود خام، أوراق عمياء، وسوم، ملخصات، ``RESULT_B4.md``)؛ ``test_r169_b4_runner.py`` يقبل انحراف التجميد الموثق فقط.
+- تحضير: ``docs/audit/M8/prep/PREP_AUDIT_R171_TOOL_INVENTORY.md``/``.json``، ``docs/audit/M8/prep/PLAN_SCALE_STRESS_TESTS.md``.
+
 ## 2026-10-24 — لاحق 32: دفعة R-170/10 — مخاطر البوابة، مستويات الأدلة، code_generator، api_integrator
 
 - تقييم مسجل مسبقًا (``scripts/r170_gate_risk_eval.py``، ``benchmarks/r170/gate_risk/cases.jsonl``): test غير النموذج — رفض كاذب 0/147، كشف 214/214؛ عائلتا النموذج معلقتان.
@@ -6,6 +12,12 @@
 - ``output_validators``: ``PAYLOAD_KEYS``؛ ``DEFAULT_REQUIREMENTS`` + api_integrator + code_generator.
 - اختبارات: ``test_r170_api_integrator_gate.py`` (24)، ``test_r170_citation_evidence_levels.py`` (16)، ``test_r170_freeze_drift_ledger.py`` (12)، تحديث ``test_r170_code_and_schema.py`` و``test_r170_router_requirements.py`` و``test_r170_path_audit.py`` و``test_r162_agent_registry.py`` و``test_r169_benchmark_v3/v4.py``.
 - ``benchmarks/r169/FREEZE_DRIFT.json``: انحراف موثق لـreal_dispatcher؛ حارس المشغلات لم يُرخَ.
+
+## 2026-10-24 — لاحق 31: R-169 b4 — تسجيل مسبق ومشغّل قياس مستقل
+
+- إثبات التخزين المؤقت لدى المزود: طلب مكرر أُجيب بـ`X-Cache: HIT`؛ seed جديد ⇒ توليد جديد؛ نفس seed ⇒ `HIT`.
+- ``scripts/r169_run_b4.py``: يعيد استخدام ``r169_run_v5._one`` كما هو، ويضيف ``seed`` لكل طلب بلف ``llm._keyless_post`` وقت التشغيل، ويسجل ``X-Cache``. يرفض عند انحراف التجميد أو شجرة متسخة أو رأس غير منشور أو غياب التسجيل المسبق. ``tests/test_r169_b4_runner.py`` (10).
+- التسجيل المسبق ``docs/audit/M8/logs/raw/r169/v5/b4/PREREGISTRATION_B4.md`` مُلتزم قبل أي تشغيل.
 
 ## 2026-10-24 — لاحق 30: إغلاق دفعة R-170/8، ودفعة 9 — code وjson.schema، وR-169 b3
 
