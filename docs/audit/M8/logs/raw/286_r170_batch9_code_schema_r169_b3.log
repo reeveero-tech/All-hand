@@ -37,7 +37,7 @@ $ AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/ -q -p no:cacheprovider
 ==== 3185 passed, 8 skipped, 14 deselected, 9 xfailed in 263.40s (0:04:23) =====
 - 3162 + 23 = 3185.
 
-## 5. R-169 b3 (PR #242 — فرع m8/r169-b3-remeasure، تسجيل مسبق 22063a6 قبل التشغيل)
+## 5. R-169 b3 (ضمن PR #243؛ PR #242 أُغلق لقاعدة D-065 — فرع m8/r169-b3-remeasure، تسجيل مسبق 22063a6 قبل التشغيل)
 test_grounded-v2_b3: records=118 reply_sha256 equal to test_grounded-v2_b2r2 blind-label sha = 118/118; errors=0
 test_baseline_b3: records=118 reply_sha256 equal to test_baseline_b2 blind-label sha = 118/118; errors=1
 file sha256:
