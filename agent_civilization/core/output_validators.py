@@ -110,22 +110,89 @@ def validate_json(result: Mapping[str, Any],
     return reasons
 
 
-def validate_citations(result: Mapping[str, Any]) -> List[str]:
-    """إجابة تحمل محتوى واقعيًا يجب أن تستشهد مصادر غير فارغة.
+#: R-170 (batch 6): keys under which an item carries its URL.
+CITATION_URL_KEYS: Tuple[str, ...] = ("url", "href", "link")
+_URL_SCHEMES = ("http", "https")
 
-    حد معلن: هذا فحص وجود (presence) لا إثبات صحة (substantiation) —
-    التحقق من أن الاستشهادات نفسها حقيقية يحتاج مسارًا آخر (R-170 لاحقًا).
-    يعيد قائمة أسباب الرفض (فارغة = اجتياز).
-    """
+
+def _valid_citation_url(value: Any) -> bool:
+    """http(s) URL with a host and no whitespace (format only, not existence)."""
+    if not isinstance(value, str) or not value or any(ch.isspace() for ch in value):
+        return False
+    from urllib.parse import urlsplit
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return False
+    return parts.scheme.lower() in _URL_SCHEMES and bool(parts.hostname)
+
+
+def _citation_item_ok(item: Any) -> bool:
+    if isinstance(item, str):
+        return _valid_citation_url(item)
+    if isinstance(item, Mapping):
+        return any(_valid_citation_url(item.get(k)) for k in CITATION_URL_KEYS)
+    return False
+
+
+def _judge_citation_block(where: str, block: Any) -> List[str]:
+    """A block is valid iff it has >= 1 item and EVERY item is a valid source."""
+    items = list(block) if isinstance(block, (list, tuple)) else [block]
+    if not items:
+        return [f"citations: empty citation block in {where}"]
+    bad = [i for i, it in enumerate(items) if not _citation_item_ok(it)]
+    if bad:
+        return [f"citations: {len(bad)}/{len(items)} item(s) in {where} are not valid "
+                f"http(s) sources (first bad: #{bad[0]})"]
+    return []
+
+
+def _citation_blocks(result: Mapping[str, Any]) -> List[Tuple[str, Any]]:
+    """Declared citation blocks, top level first, then inside ``tool_output``
+    (researcher: ``sources`` from web search, ``source`` from instant answer)."""
     key, value = _first_present(result, CITATION_KEYS)
     if key:
-        return []
+        return [(key, value)]
+    tool_output = result.get("tool_output")
+    if isinstance(tool_output, Mapping):
+        tkey, tvalue = _first_present(tool_output, CITATION_KEYS + ("source",))
+        if tkey:
+            return [(f"tool_output.{tkey}", tvalue)]
+    return []
+
+
+def citations_valid(result: Mapping[str, Any]) -> bool:
+    """True iff the result declares a citation block and it is valid."""
+    blocks = _citation_blocks(result)
+    return bool(blocks) and all(_judge_citation_block(w, b) == [] for w, b in blocks)
+
+
+def validate_citations(result: Mapping[str, Any]) -> List[str]:
+    """إجابة تحمل محتوى واقعيًا يجب أن تستشهد بمصادر صالحة.
+
+    R-170 (دفعة 6): يُبحث في المستوى الأعلى ثم داخل ``tool_output`` (حيث يضع
+    الباحث مصادره)؛ والكتلة تُحكم بصيغتها: عنصر واحد على الأقل، وكل عنصر URL
+    بمخطط http/https ومضيف (نصًا أو في ``url``/``href``/``link``). عنصر غير
+    صالح يرفض الكتلة. كتلة المستوى الأعلى غير الصالحة لا تُنقذ بمصادر الأداة.
+
+    حد معلن: فحص **صيغة** لا إثبات — لا يُتحقق من أن المصدر موجود فعلًا أو
+    يدعم الادعاء. يعيد قائمة أسباب الرفض (فارغة = اجتياز).
+    """
+    blocks = _citation_blocks(result)
+    if blocks:
+        reasons: List[str] = []
+        for where, block in blocks:
+            reasons += _judge_citation_block(where, block)
+        return reasons
     answer = _answer_text(result)
     if not answer:
         return ["citations: no answer and no citations"]
     # إجابة بلا كتلة استشهادات: ترفض ما لم تكن امتناعًا صريحًا (بلا ادعاء معرفة).
     if _is_abstention(answer):
         return []
+    if isinstance(result.get("tool_output"), Mapping):
+        return ["citations: factual answer without any citations "
+                "(none at top level nor in tool_output)"]
     return ["citations: factual answer without any citations"]
 
 
@@ -180,7 +247,7 @@ def has_machine_evidence(result: Mapping[str, Any]) -> bool:
     return bool(
         validate_tool_output(result) == []
         or validate_checks(result) == []
-        or _first_present(result, CITATION_KEYS)[0]
+        or citations_valid(result)  # R-170 (batch 6): valid sources only
     )
 
 

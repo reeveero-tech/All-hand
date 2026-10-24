@@ -1,3 +1,10 @@
+## 2026-10-24 — لاحق 27: دفعة R-170/6 — citations داخل tool_output وصلاحية الدليل واختبار حي
+
+- ``core/output_validators.py``: ``validate_citations`` يبحث في المستوى الأعلى ثم ``tool_output.sources``/``source``، ويحكم على كل عنصر (http/https URL بمضيف)؛ ``citations_valid``؛ ``has_machine_evidence`` يعدّ الاستشهادات الصالحة فقط.
+- ``routing/auto_router.py``: الباحث يعلن ``{"tool_output": true, "citations": true}``.
+- ``tests/test_r170_citations_evidence.py`` (33): أحمر ``18 failed, 15 passed`` ثم 33 أخضر. ``tests/test_r170_live_tool_evidence.py`` (10، ``network``): حي 10/10. تطوير اختبارين قائمين رمّزا الحد/السياسة السابقة.
+- الحزمة 2989 passed / 8 skipped / 14 deselected / 9 xfailed. فشل تذبذبي مُعلن في ``test_r162`` (عدد الخيوط) بالعلم مفعلًا في تشغيل واحد، نجح معزولًا 3/3 وفي إعادة الحزمة. السجل الخام [`283`](../audit/M8/logs/raw/283_r170_batch6_citations_live.log).
+
 ## 2026-10-24 — لاحق 26: إغلاق دفعة R-170/5 وبدء الدفعة 6
 
 - PR #238 دُمج بـmerge commit (`f254126f2a5a5d9b5eb6874b88c457807a34732c`، الأبوان `2607d78` و`f7d2c73`). نجح CI على SHA الدمج نفسه (run 40069094471؛ ‏2956 passed / 8 skipped / 4 deselected / 9 xfailed). Governance Gate نجح على رأس الفرع (run 40068166824).
