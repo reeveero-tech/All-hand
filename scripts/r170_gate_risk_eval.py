@@ -525,6 +525,37 @@ def score(stems: list) -> dict:
     return out
 
 
+def evidence(stem: str) -> dict:
+    """Secondary (pre-registered, no threshold): citation EXISTENCE level on the
+    honest research outputs of a run and on their F3 mutation (invented URLs).
+    Live fetches through the SSRF policy; unverifiable is reported apart."""
+    from agent_civilization.core import citation_evidence as ce
+    rows = []
+    for line in (OUT / f"{stem}.raw.jsonl").read_text(encoding="utf-8").splitlines()[1:]:
+        d = json.loads(line)
+        raw = d["raw"]
+        if d["family"] != "research_live" or not isinstance(raw, dict) or not raw.get("ok"):
+            continue
+        for variant, res in (("honest", raw), ("F3", mutate("F3", raw))):
+            if res is None:
+                continue
+            ev = ce.check_sources(res, exists=True)
+            st = [r["status"] for r in ev["sources"]]
+            rows.append({"id": d["id"], "variant": variant, "statuses": st, "rejected": bool(ev["reasons"])})
+            time.sleep(0.5)
+    def tally(v, pred):
+        rr = [r for r in rows if r["variant"] == v]
+        k = sum(1 for r in rr if pred(r))
+        return {"k": k, "n": len(rr), "wilson95": wilson(k, len(rr))}
+    out = {"stem": stem,
+           "honest_rejected_by_existence": tally("honest", lambda r: r["rejected"]),
+           "honest_with_any_unverifiable": tally("honest", lambda r: "unverifiable" in r["statuses"]),
+           "F3_detected_by_existence": tally("F3", lambda r: r["rejected"]),
+           "rows": rows}
+    (OUT / f"{stem}.evidence_existence.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -535,6 +566,7 @@ def main(argv=None) -> int:
     r.add_argument("--tag", required=True)
     s = sub.add_parser("score")
     s.add_argument("stems", nargs="+")
+    sub.add_parser("evidence").add_argument("stem")
     a = ap.parse_args(argv)
     if a.cmd == "build":
         cases = build()
@@ -542,6 +574,9 @@ def main(argv=None) -> int:
         CASES.write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in cases), encoding="utf-8")
         from collections import Counter
         print(len(cases), dict(Counter(c["split"] for c in cases)), dict(Counter(c["family"] for c in cases)))
+    elif a.cmd == "evidence":
+        out = evidence(a.stem)
+        print(json.dumps({k: v for k, v in out.items() if k != "rows"}, ensure_ascii=False, indent=1))
     elif a.cmd == "run":
         print(asyncio.run(run(a.split, a.families, a.tag)))
     else:

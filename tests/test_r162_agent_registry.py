@@ -396,14 +396,13 @@ def test_ten_thousand_logical_agents_without_a_thread_or_process_each():
     spy.__exit__(None, None, None)
     native1 = _native_threads()
     new_threads = {t: n for t, n in native1.items() if t not in native0}
-    if new_threads or len(native1) != len(native0):
-        diag = os.environ.get("R162_THREAD_DIAG")
-        if diag:
-            import json as _json
-            with open(diag, "a") as fh:
-                fh.write(_json.dumps({"before": len(native0), "after": len(native1), "new": new_threads,
-                                      "gone": {t: n for t, n in native0.items() if t not in native1},
-                                      "py": [t.name for t in threading.enumerate()]}) + "\n")
+    diag = os.environ.get("R162_THREAD_DIAG")      # analysis aid: always recorded when set
+    if diag:
+        import json as _json
+        with open(diag, "a") as fh:
+            fh.write(_json.dumps({"before": len(native0), "after": len(native1), "new": new_threads,
+                                  "gone": {t: n for t, n in native0.items() if t not in native1},
+                                  "py": [t.name for t in threading.enumerate()]}) + "\n")
     assert spy.from_main == [], spy.from_main          # nothing started by the code under test
     assert len(native1) - len(native0) <= NATIVE_THREAD_SLACK, (len(native0), len(native1), new_threads)
     assert len(multiprocessing.active_children()) == children0
