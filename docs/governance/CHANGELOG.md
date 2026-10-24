@@ -1,3 +1,10 @@
+## 2026-10-24 — لاحق 30: إغلاق دفعة R-170/8، ودفعة 9 — code وjson.schema، وR-169 b3
+
+- PR #241 دُمج بـmerge commit (`2c5c964d8c9a51a7af749796182f62e88f1f037e`، الأبوان `0de790c` و`486bc21`). CI على رأس الفرع ناجح (run 40075287938؛ 3162 passed).
+- ``core/output_validators.py``: ``validate_schema``، و``validate_code``، والمتطلب ``code``، و``json: {"schema": …}``.
+- ``tests/test_r170_code_and_schema.py`` (23): أحمر ``20 failed, 3 passed`` ثم 23 أخضر. الحزمة 3185 passed بالعلم معطلًا ومفعلًا.
+- R-169 b3 (PR #242): تسجيل مسبق قبل التشغيل؛ 236/236 ردًا مطابقة بايتًا لـb2؛ التراجعان قائمان. R-170 يبقى `in_progress`. السجل الخام [`286`](../audit/M8/logs/raw/286_r170_batch9_code_schema_r169_b3.log).
+
 ## 2026-10-24 — لاحق 29: إغلاق دفعة R-170/7 ودفعة 8 — مخرج أداة يناقض النجاح
 
 - PR #240 دُمج بـmerge commit (`0de790c61cc6d03f02d6489bbe8b0401f4d2c34b`، الأبوان `ddaa66f` و`3c73792`). CI على رأس الفرع ناجح (run 40074191795؛ 3118 passed)، وCI على SHA دمج #239 ‏`ddaa66f` ناجح أيضًا (run 40074091618؛ 2989 passed).

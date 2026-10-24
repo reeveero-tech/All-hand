@@ -110,6 +110,89 @@ def validate_json(result: Mapping[str, Any],
     return reasons
 
 
+#: R-170 (batch 9): the JSON Schema subset the gate verifies. Any other
+#: keyword is rejected as "not verified" — never silently ignored.
+SCHEMA_KEYWORDS = frozenset({"type", "required", "properties", "items", "enum",
+                             "additionalProperties", "title", "description"})
+_SCHEMA_TYPES = {
+    "object": lambda v: isinstance(v, Mapping),
+    "array": lambda v: isinstance(v, list),
+    "string": lambda v: isinstance(v, str),
+    "number": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+    "integer": lambda v: isinstance(v, int) and not isinstance(v, bool),
+    "boolean": lambda v: isinstance(v, bool),
+    "null": lambda v: v is None,
+}
+SCHEMA_MAX_DEPTH = 16
+
+
+def validate_schema(data: Any, schema: Any, path: str = "$", depth: int = 0) -> List[str]:
+    """Reasons ``data`` violates ``schema`` (the SCHEMA_KEYWORDS subset)."""
+    if depth > SCHEMA_MAX_DEPTH:
+        return [f"json.schema: {path}: nesting deeper than {SCHEMA_MAX_DEPTH} (not verified)"]
+    if not isinstance(schema, Mapping):
+        return [f"json.schema: {path}: schema is not an object (not verified)"]
+    unsupported = sorted(set(schema) - SCHEMA_KEYWORDS)
+    if unsupported:
+        return [f"json.schema: {path}: unsupported keyword(s) {', '.join(unsupported)} (not verified)"]
+    reasons: List[str] = []
+    if "type" in schema:
+        types = schema["type"] if isinstance(schema["type"], list) else [schema["type"]]
+        if any(t not in _SCHEMA_TYPES for t in types):
+            return [f"json.schema: {path}: unknown type {schema['type']!r} (not verified)"]
+        if not any(_SCHEMA_TYPES[t](data) for t in types):
+            return [f"json.schema: {path}: expected type {'/'.join(types)}, got {type(data).__name__}"]
+    if "enum" in schema and data not in list(schema["enum"]):
+        reasons.append(f"json.schema: {path}: value not in enum")
+    if isinstance(data, Mapping):
+        for key in schema.get("required", []) or []:
+            if key not in data:
+                reasons.append(f"json.schema: {path}: required key missing: {key}")
+        props = schema.get("properties", {}) or {}
+        for key, sub in props.items():
+            if key in data:
+                reasons += validate_schema(data[key], sub, f"{path}.{key}", depth + 1)
+        if schema.get("additionalProperties") is False:
+            for key in data:
+                if key not in props:
+                    reasons.append(f"json.schema: {path}: additional property not allowed: {key}")
+    if isinstance(data, list) and "items" in schema:
+        for i, item in enumerate(data):
+            reasons += validate_schema(item, schema["items"], f"{path}[{i}]", depth + 1)
+    return reasons
+
+
+def _json_payload(result: Mapping[str, Any]) -> Tuple[Any, Optional[str]]:
+    raw = result.get("tool_output", result.get("payload"))
+    if raw is None or raw == "":
+        return None, "json: no payload to validate"
+    if isinstance(raw, (Mapping, list)):
+        return raw, None
+    try:
+        return json.loads(raw), None
+    except (TypeError, ValueError):
+        return None, "json: payload is not valid JSON"
+
+
+def validate_code(result: Mapping[str, Any]) -> List[str]:
+    """``tool_output.code`` must be non-empty Python that COMPILES.
+
+    ``compile(..., "exec")`` only — the code is never executed. The gate
+    re-checks independently of the handler's own "verified" claim.
+    """
+    tool_output = result.get("tool_output")
+    code = tool_output.get("code") if isinstance(tool_output, Mapping) else None
+    if not isinstance(code, str) or not code.strip():
+        return ["code: no code text in tool_output to compile"]
+    try:
+        compile(code, "<r170-gate>", "exec")
+    except SyntaxError as e:
+        return [f"code: does not compile (SyntaxError line {e.lineno}: {e.msg})"]
+    except (ValueError, TypeError) as e:
+        return [f"code: does not compile ({type(e).__name__})"]
+    return []
+
+
 #: R-170 (batch 6): keys under which an item carries its URL.
 CITATION_URL_KEYS: Tuple[str, ...] = ("url", "href", "link")
 _URL_SCHEMES = ("http", "https")
@@ -341,7 +424,7 @@ def is_forged_success(outcome: Mapping[str, Any]) -> bool:
 #: المتطلبات المعروفة لبوابة التحقق — أي مفتاح غير معروف يُرفض صراحة
 #: (لا يُتجاهل بصمت: متطلب غير مفهوم = تحقق غير منفذ).
 KNOWN_REQUIREMENTS: frozenset = frozenset(
-    {"json", "citations", "tool_output", "checks"})
+    {"json", "citations", "tool_output", "checks", "code"})
 
 
 def verify_success(outcome: Mapping[str, Any],
@@ -383,9 +466,22 @@ def verify_success(outcome: Mapping[str, Any],
     checks_run: List[str] = []
     reasons: List[str] = []
     if reqs.get("json"):
-        keys = tuple(reqs["json"]) if isinstance(reqs["json"], (list, tuple)) else ()
-        reasons += validate_json(result, keys)
+        spec = reqs["json"]
+        if isinstance(spec, Mapping):
+            # R-170 (batch 9): {"schema": {...}} — any other key is not verified.
+            extra = sorted(set(spec) - {"schema"})
+            if extra or "schema" not in spec:
+                reasons.append(f"json: unsupported requirement form {sorted(spec)} (not verified)")
+            else:
+                data, err = _json_payload(result)
+                reasons += [err] if err else validate_schema(data, spec["schema"])
+        else:
+            keys = tuple(spec) if isinstance(spec, (list, tuple)) else ()
+            reasons += validate_json(result, keys)
         checks_run.append("json")
+    if reqs.get("code"):
+        reasons += validate_code(result)
+        checks_run.append("code")
     if reqs.get("citations"):
         reasons += validate_citations(result)
         checks_run.append("citations")
