@@ -1,0 +1,83 @@
+# 286 — R-170 دفعة 9: متطلبا code وjson.schema + إعادة قياس R-169 b3 (وصفي) + قرار حالة R-170
+# التاريخ: 2026-10-24 (Asia/Riyadh) — الفرع m8/r170-batch9-code-schema — القاعدة main 2c5c964 (دمج PR #241)
+
+## 1. الاكتشاف
+- معيار القبول P4 لـR-170 يذكر «JSON/schema» و«code compile/tests». الموجود قبل الدفعة: json (صلاحية JSON + مفاتيح)،
+  ولا متطلب ترجمة شيفرة على مستوى البوابة.
+- فجوة إضافية مكتشفة: {"json": {"schema": …}} كان يُقبل كـjson: true (القاموس truthy) ⇒ مخطط معلن لم يُفحص قط ومع ذلك
+  نجاح. ثبّتها اختبار test_schema_valid_payload_passes الذي نجح في التشغيل الأحمر (وُسم RED خطأً في docstring؛ هو
+  CHAR فعليًا لهذا السبب) — بينما حالات المخالفة السبع فشلت (قُبلت مخالفات المخطط).
+
+## 2. أحمر أولًا — tests/test_r170_code_and_schema.py (23)
+$ python3 -m pytest tests/test_r170_code_and_schema.py -q -p no:cacheprovider   (exit=1، قبل التعديل)
+========================= 20 failed, 3 passed in 0.61s =========================
+      1 FAILED tests/test_r170_code_and_schema.py::test_code_is_a_known_requirement
+      1 FAILED tests/test_r170_code_and_schema.py::test_code_is_compiled_not_executed
+      1 FAILED tests/test_r170_code_and_schema.py::test_code_that_compiles_passes
+      6 FAILED tests/test_r170_code_and_schema.py::test_code_that_does_not_compile_or_is_missing_rejected
+      1 FAILED tests/test_r170_code_and_schema.py::test_dag_stage_can_declare_code_and_schema
+      1 FAILED tests/test_r170_code_and_schema.py::test_real_code_generator_spec_path_passes_code_requirement
+      1 FAILED tests/test_r170_code_and_schema.py::test_real_code_generator_supplied_code_path_has_no_code_to_verify
+      1 FAILED tests/test_r170_code_and_schema.py::test_schema_unsupported_keyword_rejected_not_ignored
+      7 FAILED tests/test_r170_code_and_schema.py::test_schema_violations_rejected
+- الثلاثة الناجحة: test_schema_valid_payload_passes (انظر §1)، test_char_json_true_and_key_list_unchanged،
+  test_char_code_generator_has_no_default_code_requirement.
+
+## 3. الإصلاح (core/output_validators.py فقط)
+- validate_schema (مجموعة فرعية معلنة SCHEMA_KEYWORDS، عمق ≤ 16، كلمة غير مدعومة = رفض «not verified»).
+- json بصيغة قاموس: {"schema": …} فقط؛ غير ذلك رفض «not verified».
+- validate_code + متطلب code في KNOWN_REQUIREMENTS: compile() بلا تنفيذ (اختبار يثبت عدم حدوث أثر جانبي).
+- لا تغيير في real_dispatcher.py (ملف مجمّد في FREEZE.json لـR-169).
+
+## 4. أخضر والحزمة
+============================== 23 passed in 0.54s ==============================
+$ python3 -m pytest tests/ -q -p no:cacheprovider
+==== 3185 passed, 8 skipped, 14 deselected, 9 xfailed in 262.13s (0:04:22) =====
+$ AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/ -q -p no:cacheprovider
+==== 3185 passed, 8 skipped, 14 deselected, 9 xfailed in 263.40s (0:04:23) =====
+- 3162 + 23 = 3185.
+
+## 5. R-169 b3 (ضمن PR #243؛ PR #242 أُغلق لقاعدة D-065 — فرع m8/r169-b3-remeasure، تسجيل مسبق 22063a6 قبل التشغيل)
+test_grounded-v2_b3: records=118 reply_sha256 equal to test_grounded-v2_b2r2 blind-label sha = 118/118; errors=0
+test_baseline_b3: records=118 reply_sha256 equal to test_baseline_b2 blind-label sha = 118/118; errors=1
+file sha256:
+6dc2725d73b761f237089826355ab375bca34011767dd2b188276b06d9d627ad  docs/audit/M8/logs/raw/r169/v5/test_grounded-v2_b3.jsonl
+b8fe2b6ff1744f05f55516c2b17a2219a2932f892ed748ad34ae73d2fac2dfdd  docs/audit/M8/logs/raw/r169/v5/test_baseline_b3.jsonl
+
+- الخلاصة: 236/236 ردًا مطابقة بايتًا لـb2 (المرجح: تخزين مؤقت لدى المزود لأن المسار لا يرسل seed/temperature).
+  ليس عينة مستقلة. التراجعان قائمان بلا تغيير: مطابقة اللغة 83.9% مقابل 96.9%؛ رفض النجاح المزوّر النموذجي 6/8 مقابل 8/8.
+  لا وسوم جديدة ولا score (الحاجز أُبقي). التفاصيل: docs/audit/M8/logs/raw/r169/v5/b3/RESULT_B3.md.
+
+## 6. قرار حالة R-170 مقابل معيار القبول (P4_MEMORY_QUALITY_AR.md)
+| المعيار | الدليل | الحكم |
+|---|---|---|
+| validators: JSON/schema | json + json.schema (دفعة 9) | مستوفى (مجموعة فرعية معلنة) |
+| code compile/tests | code (compile) دفعة 9؛ tests عبر tool_output لـtest_runner + عدادات الفشل (دفعة 8) | مستوفى جزئيًا: لا متطلب افتراضي لـcode_generator |
+| citations | دفعة 6 (صيغة لا إثبات) | مستوفى بحد معلن |
+| factual evidence checks | citations صيغة فقط؛ لا تحقق من أن المصدر يدعم الادعاء | **غير مستوفى** |
+| stage completeness | DAG (دفعة 4) + الموجّه (دفعة 5) | مستوفى |
+| tool result validation | دفعات 1، 7، 8 | مستوفى |
+| لا success=true دون تحقق المطلوب | كل المسارات مُبوّبة (دفعة 7) — **لكن فقط حين AGOS_OUTPUT_VALIDATORS=1**؛ الافتراضي معطل ولم يُفعّل في أي بيئة | **غير مستوفى تشغيليًا** |
+| حالات إيجابية وسلبية | نعم في كل دفعة | مستوفى |
+| false-success measurement | مستوى البوابة: 0/8 ← 8/8 (دفعة 8) | مستوفى على fixtures اصطناعية |
+| امتناع مناسب | الامتناع الصريح مقبول؛ R-169 abstention قيس في b2 | مستوفى |
+| عدم تراجع benchmark دون موافقة/تفسير | تراجعا R-169 سابقان لـR-170 ومفسّران (مطالبة grounded-v2)، وb3 يؤكد أن R-170 لم يغيّر مدخلات النموذج | مفسّر؛ المعالجة لم تتم |
+- **القرار: R-170 يبقى `in_progress`.** الإغلاق يتطلب: (أ) قرار تفعيل العلم افتراضيًا بعد قياس الرفض الكاذب على عينة
+  واقعية، (ب) فحص أدلة واقعية يتجاوز الصيغة أو إعلان حدّه بموافقة، (ج) متطلب افتراضي لـcode_generator بعد توحيد شكل
+  دليله (يمس ملفًا مجمّدًا ⇒ يحتاج تجميد R-169 جديد).
+
+## 7. عدم الحذف (قبل الالتزام)
+ M agent_civilization/core/output_validators.py
+ M docs/governance/OPERATIONS.md
+?? docs/audit/M8/logs/raw/286_r170_batch9_code_schema_r169_b3.log
+?? tests/test_r170_code_and_schema.py
+
+## 8. فشل CI على a18099c وإصلاحه (لا إخفاء)
+- run 40076480248 (رأس a18099c)، وظيفة test: التشغيل الأول للحزمة "3185 passed"، والتشغيل الثاني
+  "1 failed, 3184 passed": FAILED tests/test_r154_status_evidence.py::test_rule4_acceptance_log_must_contain_values[run]
+  (assert False — لم يظهر خرق «does not contain»).
+- محليًا: 53 passed (×3). السبب المرجح (آلية مثبتة بالشيفرة، والـSHA الفعلية في CI غير متاحة): fixture يستخدم
+  run_id="4242"، ورقم من 4 خانات يظهر داخل SHA عشوائية من 40 خانة سداسية باحتمال ≈ 0.1% لكل تشغيل ⇒ بعد «حجب» ci_run
+  يبقى الرقم موجودًا في السجل فلا يُطلق الخرق المتوقع.
+- الإصلاح في الاختبار فقط (الفاحص لم يُمس، والقاعدة لم تُضعف): run_id من 16 خانة (احتمال ≈ 1e-18).
+  $ python3 -m pytest tests/test_r154_status_evidence.py -q   → 53 passed (3 مرات متتالية)
