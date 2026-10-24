@@ -86,7 +86,11 @@ def repo(tmp_path: Path) -> Repo:
     _git(p, "add", "-A")
     _git(p, "commit", "-q", "-m", "later commit (next batch)")
     r = Repo(p)
-    r.tested, r.merge, r.run_id = tested, merge, "4242"
+    # R-170 batch 9: was "4242" — a 4-digit id occurs inside a random 40-hex
+    # commit SHA ~0.1% of the time, so redacting ci_run left it "present" and
+    # test_rule4_acceptance_log_must_contain_values[run] failed in CI (run
+    # 40076480248). 16 digits: chance of occurring in two SHAs ~ 1e-18.
+    r.tested, r.merge, r.run_id = tested, merge, "4242424242424242"
     _w(p, "docs/audit/acc.log", f"PR #7 MERGED merge={merge} head={tested}\nrun {r.run_id} conclusion=success\n")
     _w(p, "docs/audit/pytest.log", f"===== {TESTS} in 1.0s =====\n")
     _w(p, "docs/governance/DECISIONS.md", "## D-900: owner accepts R-151\n")

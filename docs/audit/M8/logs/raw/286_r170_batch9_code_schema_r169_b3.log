@@ -71,3 +71,13 @@ b8fe2b6ff1744f05f55516c2b17a2219a2932f892ed748ad34ae73d2fac2dfdd  docs/audit/M8/
  M docs/governance/OPERATIONS.md
 ?? docs/audit/M8/logs/raw/286_r170_batch9_code_schema_r169_b3.log
 ?? tests/test_r170_code_and_schema.py
+
+## 8. فشل CI على a18099c وإصلاحه (لا إخفاء)
+- run 40076480248 (رأس a18099c)، وظيفة test: التشغيل الأول للحزمة "3185 passed"، والتشغيل الثاني
+  "1 failed, 3184 passed": FAILED tests/test_r154_status_evidence.py::test_rule4_acceptance_log_must_contain_values[run]
+  (assert False — لم يظهر خرق «does not contain»).
+- محليًا: 53 passed (×3). السبب المرجح (آلية مثبتة بالشيفرة، والـSHA الفعلية في CI غير متاحة): fixture يستخدم
+  run_id="4242"، ورقم من 4 خانات يظهر داخل SHA عشوائية من 40 خانة سداسية باحتمال ≈ 0.1% لكل تشغيل ⇒ بعد «حجب» ci_run
+  يبقى الرقم موجودًا في السجل فلا يُطلق الخرق المتوقع.
+- الإصلاح في الاختبار فقط (الفاحص لم يُمس، والقاعدة لم تُضعف): run_id من 16 خانة (احتمال ≈ 1e-18).
+  $ python3 -m pytest tests/test_r154_status_evidence.py -q   → 53 passed (3 مرات متتالية)
