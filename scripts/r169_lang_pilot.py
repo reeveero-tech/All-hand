@@ -21,6 +21,7 @@ import argparse
 import asyncio
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -49,11 +50,11 @@ def v3_system(v2_system: str) -> str:
     return v2_system[:start] + RULE9_V3 + v2_system[end:]
 
 
-def run_id(split: str, config: str, lang: str | None) -> str:
-    return f"{split}_{config}" + (f"_{lang}" if lang else "")
+def run_id(split: str, config: str, lang: str | None, tag: str = "") -> str:
+    return f"{split}_{config}" + (f"_{lang}" if lang else "") + (f"_{tag}" if tag else "")
 
 
-async def run(split: str, config: str, lang: str | None) -> Path:
+async def run(split: str, config: str, lang: str | None, tag: str = "") -> Path:
     from agent_civilization.core import llm as _llm
     from agent_civilization.eval import r169_bench_v5 as b
     if split == "test":
@@ -61,7 +62,10 @@ async def run(split: str, config: str, lang: str | None) -> Path:
     if not PREREG.exists() or subprocess.run(["git", "ls-files", "--error-unmatch", str(PREREG)], cwd=ROOT,
                                              capture_output=True).returncode:
         raise SystemExit("refusing: pre-registration not committed")
-    rid = run_id(split, config, lang)
+    rid = run_id(split, config, lang, tag)
+    if os.environ.get("OPENROUTER_API_KEY"):
+        raise SystemExit("refusing: a paid key is set; this pilot uses the free keyless provider only")
+    os.environ["AGOS_LLM_KEYLESS"] = "1"
     path = OUT / f"{rid}.jsonl"
     if path.exists():
         raise SystemExit(f"refusing to overwrite {path}")
@@ -69,6 +73,7 @@ async def run(split: str, config: str, lang: str | None) -> Path:
         b.GROUNDED_V2_SYSTEM = v3_system(b.GROUNDED_V2_SYSTEM)  # runtime only — file untouched
     _llm._keyless_post = b4.make_seeded_post("lang-pilot|" + rid)
     cases = [c for c in b.load_split(split) if lang is None or c["lang"] == lang]
+    consent = _llm.set_public_llm_consent(True)  # synthetic benchmark fixtures only (as b4)
     sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     with path.open("w", encoding="utf-8") as f:
         f.write(json.dumps({"kind": "meta", "split": split, "config": config, "lang": lang, "cases": len(cases),
@@ -92,6 +97,7 @@ async def run(split: str, config: str, lang: str | None) -> Path:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n"); f.flush()
             hits = sum(1 for x in rec["calls"] if (x.get("x_cache") or "").upper() == "HIT")
             print(f"[{i}/{len(cases)}] {c['id']} calls={len(rec['calls'])} hits={hits} err={'y' if rec.get('error') else 'n'}", flush=True)
+    _llm.reset_public_llm_consent(consent)
     return path
 
 
@@ -105,7 +111,7 @@ def _scores(rid: str):
 
 
 def score() -> dict:
-    a, c = _scores("validation_grounded-v2"), _scores("validation_grounded-v3-lang")
+    a, c = _scores("validation_grounded-v2_r1"), _scores("validation_grounded-v3-lang_r1")
     ids = sorted(set(a) & set(c))
     def paired(key, sub=lambda k: True):
         both = [k for k in ids if sub(k) and a[k].get(key) is not None and c[k].get(key) is not None]
@@ -129,10 +135,11 @@ def main(argv=None) -> int:
     r.add_argument("--split", required=True, choices=["dev", "validation", "test"])
     r.add_argument("--config", required=True, choices=["grounded-v2", "grounded-v3-lang"])
     r.add_argument("--lang", choices=["ar", "en"])
+    r.add_argument("--tag", default="")
     sub.add_parser("score")
     a = ap.parse_args(argv)
     if a.cmd == "run":
-        print(asyncio.run(run(a.split, a.config, a.lang)))
+        print(asyncio.run(run(a.split, a.config, a.lang, a.tag)))
     else:
         print(json.dumps(score(), indent=1))
     return 0
