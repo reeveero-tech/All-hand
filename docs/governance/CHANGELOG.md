@@ -1,3 +1,9 @@
+## 2026-10-24 — لاحق 33: دفعة R-170/11 — إكمال تقييم البوابة، R-169 b4s، تحضير R-171
+
+- تقييم مخاطر البوابة: عائلات النموذج + وسوم عمياء (``benchmarks/r170/gate_risk/labels/llm.labels.jsonl``)؛ test الكلي 0/152 و214/214؛ نجاح أجوف مكتشف للتخصصات النصية الحتمية.
+- R-169 b4s: ``docs/audit/M8/logs/raw/r169/v5/b4/`` (ردود خام، أوراق عمياء، وسوم، ملخصات، ``RESULT_B4.md``)؛ ``test_r169_b4_runner.py`` يقبل انحراف التجميد الموثق فقط.
+- تحضير: ``docs/audit/M8/prep/PREP_AUDIT_R171_TOOL_INVENTORY.md``/``.json``، ``docs/audit/M8/prep/PLAN_SCALE_STRESS_TESTS.md``.
+
 ## 2026-10-24 — لاحق 32: دفعة R-170/10 — مخاطر البوابة، مستويات الأدلة، code_generator، api_integrator
 
 - تقييم مسجل مسبقًا (``scripts/r170_gate_risk_eval.py``، ``benchmarks/r170/gate_risk/cases.jsonl``): test غير النموذج — رفض كاذب 0/147، كشف 214/214؛ عائلتا النموذج معلقتان.
