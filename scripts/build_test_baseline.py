@@ -104,9 +104,9 @@ GROUPS: List[Dict] = [
     {"id": "evidence-scripts", "title": "Historical audit scripts (docs/audit/*)", "category": "compile",
      "rules": [r"^docs/audit/.*\.py$"],
      "rationale": "One-off evidence scripts of past batches: compile only — they target past live environments."},
-    {"id": "evidence-data", "title": "Audit evidence data (json/jsonl/txt/csv/out)", "category": "integrity",
-     "rules": [r"^docs/audit/.*\.(json|jsonl|txt|csv|out)$"],
-     "rationale": "Recorded evidence, not executable: JSON/JSONL must parse, text must be UTF-8."},
+    {"id": "evidence-data", "title": "Audit evidence data (json/jsonl/txt/csv/out/zip)", "category": "integrity",
+     "rules": [r"^docs/audit/.*\.(json|jsonl|txt|csv|out|zip)$"],
+     "rationale": "Recorded evidence, not executable: JSON/JSONL must parse, text must be UTF-8, zip must be intact."},
     {"id": "benchmark-data", "title": "Versioned benchmark datasets (benchmarks/)", "category": "integrity/schema",
      "rules": [r"^benchmarks/.*\.(json|jsonl)$"],
      "rationale": "R-169: JSON/JSONL must parse; tests/test_r169_benchmark.py regenerates the dataset byte-for-byte, "
@@ -611,6 +611,11 @@ def build(args) -> Tuple[Dict, List[str]]:  # noqa: C901  (one linear pipeline)
                     widths = {len(r) for r in rows if r}
                     if len(widths) > 1:
                         raise ValueError(f"ragged CSV widths {sorted(widths)}")
+                elif path.endswith(".zip"):  # R-170 b12: review packets — archive must be intact
+                    import zipfile
+                    with zipfile.ZipFile(fp) as zf:
+                        if zf.testzip() is not None:
+                            raise ValueError("corrupt zip member")
                 else:
                     open(fp, encoding="utf-8").read()
                 mark(path, "parse", True)
