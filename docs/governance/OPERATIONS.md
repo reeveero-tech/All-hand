@@ -373,7 +373,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 
 | المفتاح | يتطلب |
 |---|---|
-| `tool_output: true` | `tool_output` غير فارغ، وبلا `exit_code` رقمي ≠ 0 ولا `ok:false` داخله |
+| `tool_output: true` | `tool_output` غير فارغ لا يناقض النجاح: بلا `exit_code` رقمي ≠ 0 ولا `ok:false`، ومنذ الدفعة 8 بلا عدّاد فشل > 0 (`failed`/`failures`/`tests_failed`/…) ولا `passed + skipped < total` ولا `status` فشلي نصي، حتى عمق 4 (نص JSON يُحلَّل). **وبلا متطلبات أيضًا**: `ok=true` مع مخرج أداة يعلن فشله = تناقض مرفوض |
 | `json: true` أو `json: ["k1", …]` | `tool_output` (أو `payload`) كائن JSON (قاموس أو نص JSON) يحوي المفاتيح المطلوبة |
 | `citations: true` | كتلة استشهادات **صالحة الصيغة** (دفعة 6): في المستوى الأعلى (`citations`/`sources`/`references`) وإلا داخل `tool_output` (`sources`/`source` — حيث يضعها الباحث). عنصر واحد على الأقل، و**كل** عنصر URL بمخطط http/https ومضيف (نصًا أو في `url`/`href`/`link`)؛ عنصر غير صالح يرفض الكتلة، وكتلة المستوى الأعلى غير الصالحة لا تُنقذ بمصادر الأداة. الامتناع الصريح مقبول |
 | `checks: true` | قائمة `checks` غير فارغة وكل عنصر قاموس بـ`ok: true` صراحة |
