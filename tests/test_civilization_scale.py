@@ -54,6 +54,12 @@ def test_agents_execute_real_dispatch():
         # R-116: educator needs material (>=2 sentences) offline — "demo" is a
         # bare word, which the educator now refuses to "explain" by echoing it.
         "educator": {"prompt": "Recursion is when a function calls itself. Every recursion needs a base case."},
+        # R-170 (batch 12): the four deterministic text handlers need a task they can
+        # actually do; "demo" is now refused honestly (task_not_completed, no hollow ok).
+        "strategist": {"prompt": "Turn these into a roadmap, in this order: write docs; fix the bug; add tests"},
+        "architect": {"prompt": "Design an architecture with a REST API and a database."},
+        "designer": {"prompt": "Create a colour palette based on #1e88e5."},
+        "reviewer": {"prompt": "Review this code:", "data": "def avg(xs):\n    return sum(xs) / len(xs)\n"},
     }
     civ = create_civilization(2)  # حضارة صغيرة للاختبار
 

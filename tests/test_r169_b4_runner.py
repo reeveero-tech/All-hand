@@ -82,12 +82,11 @@ def test_prereg_committed_and_frozen_files_untouched():
     frozen, state = json.loads(v5.FREEZE.read_text()), v5.freeze_state()
     drift = v5.check_freeze(state, frozen)
     if drift:
-        ledger = json.loads((b4.ROOT / "benchmarks" / "r169" / "FREEZE_DRIFT.json").read_text())["entries"]
-        allowed = {(e["key"], e["file"]): (e["frozen"], e["current"]) for e in ledger if "v5" in e["benchmarks"]}
+        from r169_freeze_ledger import documented  # batch 12: chain of reviewed links
         assert drift == ["baseline_dependency_sha256"]
         key = drift[0]
         moved = {p: (frozen[key].get(p), h) for p, h in state[key].items() if frozen[key].get(p) != h}
-        assert moved and all(allowed.get((key, p)) == fh for p, fh in moved.items()), moved
+        assert moved and all(documented("v5", key, p, *fh) for p, fh in moved.items()), moved
         assert "drift" in b4.guard(False, drift, True, True)
 
 

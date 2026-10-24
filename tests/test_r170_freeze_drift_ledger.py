@@ -17,14 +17,14 @@ LEDGER = json.loads((ROOT / "benchmarks" / "r169" / "FREEZE_DRIFT.json").read_te
 
 
 def _undocumented(version, state, frozen):
-    allowed = {(e["key"], e["file"]): (e["frozen"], e["current"]) for e in LEDGER if version in e["benchmarks"]}
+    from r169_freeze_ledger import documented  # batch 12: chain of reviewed links
     bad = []
     for key in importlib.import_module(f"r169_run_{version}").check_freeze(state, frozen):
         if key != "baseline_dependency_sha256":
             bad.append(key)
             continue
         for p, h in state[key].items():
-            if frozen[key].get(p) != h and allowed.get((key, p)) != (frozen[key].get(p), h):
+            if frozen[key].get(p) != h and not documented(version, key, p, frozen[key].get(p), h):
                 bad.append((key, p))
     return bad
 
