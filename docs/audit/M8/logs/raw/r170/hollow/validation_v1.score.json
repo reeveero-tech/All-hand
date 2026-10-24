@@ -1,0 +1,481 @@
+{
+ "stem": "validation_v1",
+ "gate_off": {
+  "H1_hollow_detected": {
+   "k": 27,
+   "n": 27,
+   "rate": 1.0,
+   "wilson95": [
+    0.8754,
+    1.0
+   ]
+  },
+  "H2_false_rejection": {
+   "k": 0,
+   "n": 27,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.1246
+   ]
+  },
+  "H3_accepted_correct": {
+   "k": 27,
+   "n": 27,
+   "rate": 1.0,
+   "wilson95": [
+    0.8754,
+    1.0
+   ]
+  },
+  "by_spec": {
+   "strategist": {
+    "H1": {
+     "k": 11,
+     "n": 11,
+     "rate": 1.0,
+     "wilson95": [
+      0.7412,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 6,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.3903
+     ]
+    }
+   },
+   "architect": {
+    "H1": {
+     "k": 4,
+     "n": 4,
+     "rate": 1.0,
+     "wilson95": [
+      0.5101,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 8,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.3244
+     ]
+    }
+   },
+   "designer": {
+    "H1": {
+     "k": 6,
+     "n": 6,
+     "rate": 1.0,
+     "wilson95": [
+      0.6097,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 4,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.4899
+     ]
+    }
+   },
+   "reviewer": {
+    "H1": {
+     "k": 6,
+     "n": 6,
+     "rate": 1.0,
+     "wilson95": [
+      0.6097,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 9,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.2992
+     ]
+    }
+   }
+  },
+  "by_lang": {
+   "ar": {
+    "H1": {
+     "k": 13,
+     "n": 13,
+     "rate": 1.0,
+     "wilson95": [
+      0.7719,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 11,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.2588
+     ]
+    }
+   },
+   "en": {
+    "H1": {
+     "k": 14,
+     "n": 14,
+     "rate": 1.0,
+     "wilson95": [
+      0.7847,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 16,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.1936
+     ]
+    }
+   }
+  },
+  "by_family": {
+   "architect_completable": {
+    "k": 8,
+    "n": 8,
+    "rate": 1.0,
+    "wilson95": [
+     0.6756,
+     1.0
+    ]
+   },
+   "architect_not_completable": {
+    "k": 4,
+    "n": 4,
+    "rate": 1.0,
+    "wilson95": [
+     0.5101,
+     1.0
+    ]
+   },
+   "designer_completable": {
+    "k": 4,
+    "n": 4,
+    "rate": 1.0,
+    "wilson95": [
+     0.5101,
+     1.0
+    ]
+   },
+   "designer_not_completable": {
+    "k": 6,
+    "n": 6,
+    "rate": 1.0,
+    "wilson95": [
+     0.6097,
+     1.0
+    ]
+   },
+   "reviewer_completable": {
+    "k": 9,
+    "n": 9,
+    "rate": 1.0,
+    "wilson95": [
+     0.7008,
+     1.0
+    ]
+   },
+   "reviewer_not_completable": {
+    "k": 6,
+    "n": 6,
+    "rate": 1.0,
+    "wilson95": [
+     0.6097,
+     1.0
+    ]
+   },
+   "strategist_completable": {
+    "k": 6,
+    "n": 6,
+    "rate": 1.0,
+    "wilson95": [
+     0.6097,
+     1.0
+    ]
+   },
+   "strategist_not_completable": {
+    "k": 11,
+    "n": 11,
+    "rate": 1.0,
+    "wilson95": [
+     0.7412,
+     1.0
+    ]
+   }
+  },
+  "false_rejections": [],
+  "hollow_accepted": [],
+  "accepted_incorrect": []
+ },
+ "gate_on": {
+  "H1_hollow_detected": {
+   "k": 29,
+   "n": 29,
+   "rate": 1.0,
+   "wilson95": [
+    0.883,
+    1.0
+   ]
+  },
+  "H2_false_rejection": {
+   "k": 0,
+   "n": 30,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.1135
+   ]
+  },
+  "H3_accepted_correct": {
+   "k": 30,
+   "n": 30,
+   "rate": 1.0,
+   "wilson95": [
+    0.8865,
+    1.0
+   ]
+  },
+  "by_spec": {
+   "strategist": {
+    "H1": {
+     "k": 12,
+     "n": 12,
+     "rate": 1.0,
+     "wilson95": [
+      0.7575,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 6,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.3903
+     ]
+    }
+   },
+   "architect": {
+    "H1": {
+     "k": 5,
+     "n": 5,
+     "rate": 1.0,
+     "wilson95": [
+      0.5655,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 10,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.2775
+     ]
+    }
+   },
+   "designer": {
+    "H1": {
+     "k": 6,
+     "n": 6,
+     "rate": 1.0,
+     "wilson95": [
+      0.6097,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 4,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.4899
+     ]
+    }
+   },
+   "reviewer": {
+    "H1": {
+     "k": 6,
+     "n": 6,
+     "rate": 1.0,
+     "wilson95": [
+      0.6097,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 10,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.2775
+     ]
+    }
+   }
+  },
+  "by_lang": {
+   "ar": {
+    "H1": {
+     "k": 14,
+     "n": 14,
+     "rate": 1.0,
+     "wilson95": [
+      0.7847,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 12,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.2425
+     ]
+    }
+   },
+   "en": {
+    "H1": {
+     "k": 15,
+     "n": 15,
+     "rate": 1.0,
+     "wilson95": [
+      0.7961,
+      1.0
+     ]
+    },
+    "H2": {
+     "k": 0,
+     "n": 18,
+     "rate": 0.0,
+     "wilson95": [
+      0.0,
+      0.1759
+     ]
+    }
+   }
+  },
+  "by_family": {
+   "architect_completable": {
+    "k": 8,
+    "n": 8,
+    "rate": 1.0,
+    "wilson95": [
+     0.6756,
+     1.0
+    ]
+   },
+   "architect_not_completable": {
+    "k": 4,
+    "n": 4,
+    "rate": 1.0,
+    "wilson95": [
+     0.5101,
+     1.0
+    ]
+   },
+   "designer_completable": {
+    "k": 4,
+    "n": 4,
+    "rate": 1.0,
+    "wilson95": [
+     0.5101,
+     1.0
+    ]
+   },
+   "designer_not_completable": {
+    "k": 6,
+    "n": 6,
+    "rate": 1.0,
+    "wilson95": [
+     0.6097,
+     1.0
+    ]
+   },
+   "prose_correct": {
+    "k": 3,
+    "n": 3,
+    "rate": 1.0,
+    "wilson95": [
+     0.4385,
+     1.0
+    ]
+   },
+   "prose_hollow": {
+    "k": 2,
+    "n": 2,
+    "rate": 1.0,
+    "wilson95": [
+     0.3424,
+     1.0
+    ]
+   },
+   "reviewer_completable": {
+    "k": 9,
+    "n": 9,
+    "rate": 1.0,
+    "wilson95": [
+     0.7008,
+     1.0
+    ]
+   },
+   "reviewer_not_completable": {
+    "k": 6,
+    "n": 6,
+    "rate": 1.0,
+    "wilson95": [
+     0.6097,
+     1.0
+    ]
+   },
+   "strategist_completable": {
+    "k": 6,
+    "n": 6,
+    "rate": 1.0,
+    "wilson95": [
+     0.6097,
+     1.0
+    ]
+   },
+   "strategist_not_completable": {
+    "k": 11,
+    "n": 11,
+    "rate": 1.0,
+    "wilson95": [
+     0.7412,
+     1.0
+    ]
+   }
+  },
+  "false_rejections": [],
+  "hollow_accepted": [],
+  "accepted_incorrect": []
+ }
+}
