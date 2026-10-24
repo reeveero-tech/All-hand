@@ -74,9 +74,21 @@ def test_guard_passes_when_clean():
 
 
 def test_prereg_committed_and_frozen_files_untouched():
+    """No v5 drift EXCEPT drift documented exactly in benchmarks/r169/FREEZE_DRIFT.json
+    (R-170 batch 10, after b4s ran on its own pre-change commit). On any drift the b4
+    guard still refuses a new run."""
     assert b4.PREREG.exists()
     v5 = b4.v5
-    assert v5.check_freeze(v5.freeze_state(), json.loads(v5.FREEZE.read_text())) == []
+    frozen, state = json.loads(v5.FREEZE.read_text()), v5.freeze_state()
+    drift = v5.check_freeze(state, frozen)
+    if drift:
+        ledger = json.loads((b4.ROOT / "benchmarks" / "r169" / "FREEZE_DRIFT.json").read_text())["entries"]
+        allowed = {(e["key"], e["file"]): (e["frozen"], e["current"]) for e in ledger if "v5" in e["benchmarks"]}
+        assert drift == ["baseline_dependency_sha256"]
+        key = drift[0]
+        moved = {p: (frozen[key].get(p), h) for p, h in state[key].items() if frozen[key].get(p) != h}
+        assert moved and all(allowed.get((key, p)) == fh for p, fh in moved.items()), moved
+        assert "drift" in b4.guard(False, drift, True, True)
 
 
 def test_score_refuses_without_committed_labels(tmp_path, monkeypatch):
