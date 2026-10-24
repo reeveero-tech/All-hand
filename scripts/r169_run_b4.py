@@ -47,6 +47,7 @@ OUT_DIR = v5.OUT_DIR / "b4"
 PREREG = OUT_DIR / "PREREGISTRATION_B4.md"
 LABELS_DIR = OUT_DIR / "labels"
 SPLIT = "test"
+SEED_MODULUS = 100_000
 
 _case = contextvars.ContextVar("r169_b4_case", default=None)
 CALLS: list = []           # per-request provenance of the CURRENT case
@@ -54,7 +55,9 @@ CALLS: list = []           # per-request provenance of the CURRENT case
 
 def seed_for(run_tag: str, case_id: str, call_index: int) -> int:
     h = hashlib.sha256(f"r169-b4|{run_tag}|{case_id}|{call_index}".encode()).hexdigest()
-    return int(h[:8], 16)
+    # amendment A1 (before any valid run): large seeds drew HTTP 400 from the
+    # provider in the aborted first attempt; keep seeds < 100000.
+    return int(h[:8], 16) % SEED_MODULUS
 
 
 def make_seeded_post(run_tag: str):
@@ -131,14 +134,16 @@ async def run(config: str, tag: str) -> Path:
                 CALLS.clear()
                 try:
                     rec = await v5._one(case, config)
-                    for backoff in (30, 60):          # v5 retry policy, verbatim
+                    history = []                      # amendment A1: kept across retries
+                    for backoff in (30, 60):          # v5 retry policy (30 s, 60 s)
                         if not rec.get("error"):
                             break
-                        rec.setdefault("attempt_history", []).append({
-                            "error": str(rec.get("error") or ""), "reply": rec.get("reply") or "",
-                            "model": rec.get("model"), "calls": list(CALLS)})
+                        history.append({"error": str(rec.get("error") or ""), "reply": rec.get("reply") or "",
+                                        "model": rec.get("model")})
                         await asyncio.sleep(backoff)
                         rec = await v5._one(case, config)
+                    if history:
+                        rec["attempt_history"] = history
                     rec["calls"] = list(CALLS)
                 finally:
                     _case.reset(ctx)

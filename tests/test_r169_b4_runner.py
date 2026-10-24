@@ -16,7 +16,7 @@ import r169_run_b4 as b4  # noqa: E402
 def test_seed_is_deterministic_and_distinct():
     assert b4.seed_for("b4", "c1", 0) == b4.seed_for("b4", "c1", 0)
     seeds = {b4.seed_for("b4", c, i) for c in ("c1", "c2") for i in (0, 1)}
-    assert len(seeds) == 4 and all(0 <= s < 2 ** 32 for s in seeds)
+    assert len(seeds) == 4 and all(0 <= s < b4.SEED_MODULUS for s in seeds)
     assert b4.seed_for("b4", "c1", 0) != b4.seed_for("b5", "c1", 0)
 
 
