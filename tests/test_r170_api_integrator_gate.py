@@ -13,7 +13,6 @@ import json
 import pytest
 
 from agent_civilization.core import safety
-from agent_civilization.core.agents import real_dispatcher as rd
 from agent_civilization.core.output_validators import (
     DEFAULT_REQUIREMENTS, requirements_for, tool_output_failure, verify_success)
 

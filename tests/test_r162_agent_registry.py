@@ -366,7 +366,7 @@ def test_ten_thousand_logical_agents_without_a_thread_or_process_each():
     per agent; memory and time are bounded and measured."""
     from agent_civilization.agents.real import create_civilization
 
-    threads0, children0 = _threads(), len(multiprocessing.active_children())
+    children0 = len(multiprocessing.active_children())
     native0 = _native_threads()
     spy = _StartSpy().__enter__()
     tracemalloc.start()
