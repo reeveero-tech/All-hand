@@ -1,0 +1,15 @@
+{
+ "purpose": "Documented, reviewed drift of R-169 frozen configuration after R-169 closed (done). A freeze guards reproducibility of the frozen runs; it does not forbid evolving the product forever. Every entry: which file moved, frozen vs current short sha256, why, and the consequence. The runners' check_freeze is NOT relaxed: v2-v5 runners refuse any new held-out run on drift. Tests accept drift only when it matches this ledger exactly; any further change needs a new entry.",
+ "entries": [
+  {
+   "benchmarks": ["v2", "v3", "v4", "v5"],
+   "key": "baseline_dependency_sha256",
+   "file": "agent_civilization/core/agents/real_dispatcher.py",
+   "frozen": "7e80f52e5c8f15b1",
+   "current": "d66160484b478b2f",
+   "change": "R-170 batch 10: code_generator returns tool_output.code on the supplied-code path (was metadata only) and no longer cuts LLM code at 8000 chars (bounded at 64000, omitted above with size+sha256).",
+   "consequence": "All R-169 results (v1-v5, b1-b3, and b4s which runs on its own pre-change commit) stay attributable to the frozen code; new held-out runs of v2-v5 are refused by check_freeze. The v5 code_generator path used by the code tasks now returns the full code text (its answer and ok are unchanged).",
+   "recorded": "2026-10-24"
+  }
+ ]
+}

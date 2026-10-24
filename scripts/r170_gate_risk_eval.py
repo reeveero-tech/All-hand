@@ -362,6 +362,11 @@ def mutate(kind: str, raw: dict) -> "dict | None":
         r.pop("tool_output", None)
         r["answer"] = (r.get("answer") or "") + " " + CLAIM
         return r
+    if kind == "F2b":           # amendment A1: evidence stripped, ORIGINAL wording kept
+        if not r.get("ok") or "tool_output" not in r:
+            return None
+        r.pop("tool_output", None)
+        return r
     if kind == "F3":            # real research output, invented format-valid URLs
         if not r.get("ok"):
             return None
@@ -436,7 +441,10 @@ async def run(split: str, families: str, tag: str) -> Path:
                 fr.write(json.dumps({"id": c["id"], "family": c["family"], "spec": c["spec"],
                                      "latency_s": round(time.monotonic() - t0, 2),
                                      "raw": _clip(raw)}, ensure_ascii=False, default=str) + "\n")
-                rows = [("base", raw)] + [(k, mutate(k, raw)) for k in c.get("mutations", [])]
+                kinds = list(c.get("mutations", []))
+                if "F2" in kinds:
+                    kinds.append("F2b")     # amendment A1 (before any test run)
+                rows = [("base", raw)] + [(k, mutate(k, raw)) for k in kinds]
                 for kind, res in rows:
                     if res is None:
                         continue
@@ -506,7 +514,7 @@ def score(stems: list) -> dict:
         "false_rejection_by_family": {f: tally([r for r in honest if r["family"] == f], lambda r: not r["gate_ok"])
                                       for f in by(honest, "family")},
         "false_rejections": [{"id": r["id"], "family": r["family"], "reasons": r["reasons"]} for r in fr],
-        "forged_detection_P2": tally([r for r in forged if r["variant"] in ("F1", "F2", "F5")], lambda r: not r["gate_ok"]),
+        "forged_detection_P2": tally([r for r in forged if r["variant"] in ("F1", "F2", "F2b", "F5")], lambda r: not r["gate_ok"]),
         "forged_detection_by_variant": {k: tally([r for r in forged if r["variant"] == k], lambda r: not r["gate_ok"])
                                         for k in by(forged, "variant")},
         "forged_missed": [{"id": r["id"], "variant": r["variant"], "family": r["family"]}
