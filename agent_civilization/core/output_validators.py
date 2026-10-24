@@ -203,21 +203,94 @@ def _is_abstention(answer: str) -> bool:
     return any(m in lowered for m in markers)
 
 
-def validate_tool_output(result: Mapping[str, Any]) -> List[str]:
-    """نجاح مهمة أداة يتطلب مخرجات أداة فعلية غير فارغة.
+#: R-170 (batch 8): numeric failure counters a tool reports about itself.
+FAILURE_COUNT_KEYS: Tuple[str, ...] = (
+    "failed", "failures", "failed_count", "n_failed", "tests_failed",
+    "error_count", "errors_count")
+FAILURE_STATUS_VALUES = frozenset({"failed", "failure", "fail", "error", "errored"})
+TOOL_OUTPUT_MAX_DEPTH = 4
 
-    مخرجات تحمل علامات فشل صريحة (``exit_code`` رقمي ≠ 0، أو ``ok: False``
-    داخلها) ليست دليل نجاح — الرفض مذلل بالسبب.
+
+def _is_count(v: Any) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _as_structure(tool_output: Any) -> Any:
+    """A JSON object/array given as text is inspected as the structure it encodes."""
+    if isinstance(tool_output, str):
+        text = tool_output.strip()
+        if text[:1] in ("{", "["):
+            try:
+                return json.loads(text)
+            except ValueError:
+                return tool_output
+    return tool_output
+
+
+def tool_output_failure(tool_output: Any) -> Optional[str]:
+    """The failure a tool output reports about ITSELF, or None.
+
+    Top level (unchanged since batch 1): numeric ``exit_code`` != 0, ``ok: false``.
+    R-170 (batch 8), at any mapping up to depth 4 (JSON text is parsed): a
+    numeric failure counter > 0 (FAILURE_COUNT_KEYS), ``passed + skipped <
+    total`` (all numeric), or a textual ``status`` in FAILURE_STATUS_VALUES.
+    A forged "ALL CHECKS PASSED" summary does not hide ``failed: 7``.
+    Booleans are not counts; a numeric ``status`` (HTTP) is not interpreted.
+    """
+    data = _as_structure(tool_output)
+    if isinstance(data, Mapping):
+        exit_code = data.get("exit_code")
+        if _is_count(exit_code) and exit_code != 0:
+            return f"failure evidence (exit_code={exit_code})"
+        if data.get("ok") is False:
+            return "failure evidence (ok=false inside tool_output)"
+
+    def walk(node: Any, path: str, depth: int) -> Optional[str]:
+        if depth > TOOL_OUTPUT_MAX_DEPTH:
+            return None
+        if isinstance(node, Mapping):
+            for key in FAILURE_COUNT_KEYS:
+                v = node.get(key)
+                if _is_count(v) and v > 0:
+                    return f"failure evidence ({path}{key}={v})"
+            total, passed = node.get("total"), node.get("passed")
+            if _is_count(total) and _is_count(passed):
+                skipped = node.get("skipped", 0)
+                skipped = skipped if _is_count(skipped) else 0
+                if passed + skipped < total:
+                    return (f"failure evidence ({path}passed={passed}"
+                            f"{f'+skipped={skipped}' if skipped else ''} < total={total})")
+            status = node.get("status")
+            if isinstance(status, str) and status.strip().lower() in FAILURE_STATUS_VALUES:
+                return f"failure evidence ({path}status={status!r})"
+            for k, v in node.items():
+                if isinstance(v, (Mapping, list, tuple)):
+                    found = walk(v, f"{path}{k}.", depth + 1)
+                    if found:
+                        return found
+        elif isinstance(node, (list, tuple)):
+            for i, v in enumerate(node):
+                found = walk(v, f"{path}[{i}].", depth + 1)
+                if found:
+                    return found
+        return None
+
+    return walk(data, "", 1)
+
+
+def validate_tool_output(result: Mapping[str, Any]) -> List[str]:
+    """نجاح مهمة أداة يتطلب مخرجات أداة فعلية غير فارغة لا تناقض النجاح.
+
+    مخرجات تحمل علامات فشل صريحة (``exit_code`` رقمي ≠ 0، ``ok: False``، ومنذ
+    الدفعة 8: عدّاد فشل > 0 أو ``passed < total`` أو ``status`` فشلي — حتى عمق 4)
+    ليست دليل نجاح — الرفض مذلل بالسبب.
     """
     tool_output = result.get("tool_output")
     if tool_output in (None, "", [], {}):
         return ["tool_output: empty — success claim has no tool evidence"]
-    if isinstance(tool_output, Mapping):
-        exit_code = tool_output.get("exit_code")
-        if isinstance(exit_code, int) and not isinstance(exit_code, bool) and exit_code != 0:
-            return [f"tool_output: failure evidence (exit_code={exit_code})"]
-        if tool_output.get("ok") is False:
-            return ["tool_output: failure evidence (ok=false inside tool_output)"]
+    failure = tool_output_failure(tool_output)
+    if failure:
+        return [f"tool_output: {failure}"]
     return []
 
 
@@ -293,6 +366,14 @@ def verify_success(outcome: Mapping[str, Any],
         return Verdict(ok=False, reasons=("contradiction: outer ok=true with "
                                          "inner result ok=false",),
                        checks_run=("inner-consistency",))
+    # R-170 (batch 8): the tool itself reports failure while ok=true is a
+    # contradiction too — rejected with or without declared requirements.
+    if isinstance(result, Mapping) and result.get("tool_output") not in (None, "", [], {}):
+        failure = tool_output_failure(result["tool_output"])
+        if failure:
+            return Verdict(ok=False, reasons=(f"contradiction: outer ok=true while tool_output "
+                                              f"reports {failure}",),
+                           checks_run=("tool-consistency",))
     reqs = dict(requirements or {})
     unknown = sorted(set(reqs) - KNOWN_REQUIREMENTS)
     if unknown:

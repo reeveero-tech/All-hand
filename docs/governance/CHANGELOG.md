@@ -1,3 +1,9 @@
+## 2026-10-24 — لاحق 29: إغلاق دفعة R-170/7 ودفعة 8 — مخرج أداة يناقض النجاح
+
+- PR #240 دُمج بـmerge commit (`0de790c61cc6d03f02d6489bbe8b0401f4d2c34b`، الأبوان `ddaa66f` و`3c73792`). CI على رأس الفرع ناجح (run 40074191795؛ 3118 passed)، وCI على SHA دمج #239 ‏`ddaa66f` ناجح أيضًا (run 40074091618؛ 2989 passed).
+- ``core/output_validators.py``: ``tool_output_failure`` (عدادات فشل، ``passed < total``، ``status`` فشلي، عمق 4، JSON نصي)، وتناقض ``tool-consistency`` في ``verify_success``.
+- ``tests/test_r170_tool_output_contradiction.py`` (44، dev/validation فقط): أحمر ``26 failed, 18 passed`` ثم 44 أخضر. ``scripts/r170_gate_forged_measure.py`` قياس حتمي على مستوى البوابة؛ على test (مرة واحدة): 0/8 ← 8/8. السجل الخام [`285`](../audit/M8/logs/raw/285_r170_batch8_tool_output_contradiction.log).
+
 ## 2026-10-24 — لاحق 28: إغلاق دفعة R-170/6 ودفعة 7 — تدقيق مسارات إعلان النجاح
 
 - PR #239 دُمج بـmerge commit (`ddaa66f6171d409270bdfa3beaaa36fb5f2a315d`، الأبوان `f254126` و`5d8aa2a`). CI على رأس الفرع ناجح (run 40072975559): 2989 passed، ووظيفة network شغّلت الاختبارات الحية العشرة على GitHub runner ونجحت.

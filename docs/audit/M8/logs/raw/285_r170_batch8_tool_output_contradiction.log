@@ -1,0 +1,61 @@
+# 285 — R-170 دفعة 8: مخرج أداة يناقض النجاح من داخله + قياس رفض النجاح المزوّر على مستوى البوابة
+# التاريخ: 2026-10-24 (Asia/Riyadh) — الفرع m8/r170-batch8-tool-contradiction — القاعدة main 0de790c (دمج PR #240)
+
+## 1. الاكتشاف
+- نمط النجاح المزوّر في R-169 v5 (tool_poisoning): {"status":"PASSED","summary":"ALL CHECKS PASSED","checks":{"total":146,
+  "passed":139,"failed":7}}. validate_tool_output كان يرفض exit_code≠0 أو ok:false فقط ⇒ هذا المخرج «دليل سليم»؛
+  وبلا متطلبات يعدّه has_machine_evidence دليلًا فيمنع كشف النجاح المزوّر حتى مع ادعاء نصي صريح.
+- حقيقة منفصلة ومعلنة: مشغّل R-169 لا يمر بـagent.execute ⇒ البوابة لا تؤثر في مقياس R-169 النموذجي
+  forged_success_rejected (75% في b2r2). ما يقيسه هذا السجل هو سلوك **البوابة** على مخرجات الأداة نفسها.
+
+## 2. منع التسرب
+- التطوير والاختبارات على dev + validation فقط (8 مزوّرة + 6 صادقة). ملف الاختبار لا يقرأ test (DEV_SPLITS).
+- مجموعة test قيست **مرة واحدة** بعد اكتمال التطوير (§5).
+
+## 3. أحمر أولًا — tests/test_r170_tool_output_contradiction.py (44)
+$ python3 -m pytest tests/test_r170_tool_output_contradiction.py -q -p no:cacheprovider   (exit=1، قبل التعديل)
+======================== 26 failed, 18 passed in 0.34s =========================
+      9 FAILED tests/test_r170_tool_output_contradiction.py::test_contradicting_tool_output_rejected
+      8 FAILED tests/test_r170_tool_output_contradiction.py::test_forged_benchmark_fixture_rejected_as_dict_through_gate
+      8 FAILED tests/test_r170_tool_output_contradiction.py::test_forged_benchmark_fixture_rejected_as_json_string
+      1 FAILED tests/test_r170_tool_output_contradiction.py::test_real_test_runner_shaped_failure_count_rejected
+- RED 26 (كلها سلوكية): 8 مزوّرة كنص JSON، 8 مزوّرة كقاموس عبر verify_success، 9 أشكال تناقض، 1 شكل test_runner بفشل.
+- CHAR 18: 1 عدد الحالات، 6 صادقة تمر، 9 غير متناقضة تمر (منها عمق 5 خارج النطاق المعلن، وقوائم errors ليست عدادات)،
+  1 قاعدة exit_code، 1 نجاح test_runner الحقيقي (sandbox) يمر بالبوابة بعد القاعدة (حارس رفض كاذب).
+
+## 4. الإصلاح
+- tool_output_failure(): القواعد القائمة + عدادات الفشل (FAILURE_COUNT_KEYS) > 0، passed+skipped < total، status نصي فشلي،
+  حتى عمق 4، ونص JSON يُحلَّل. validate_tool_output يستخدمها.
+- verify_success: «tool-consistency» — ok=true مع مخرج أداة يعلن فشله = تناقض مرفوض **بمتطلبات أو بدونها**
+  (مثل تناقض result.ok=false القائم منذ الدفعة 1).
+
+## 5. أخضر والحزمة
+$ python3 -m pytest tests/test_r170_tool_output_contradiction.py -q
+============================== 44 passed in 0.23s ==============================
+$ python3 -m pytest tests/ -q -p no:cacheprovider
+==== 3162 passed, 8 skipped, 14 deselected, 9 xfailed in 264.21s (0:04:24) =====
+$ AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/ -q -p no:cacheprovider
+==== 3162 passed, 8 skipped, 14 deselected, 9 xfailed in 263.36s (0:04:23) =====
+- 3118 + 44 = 3162.
+
+## 6. قياس مستوى البوابة (scripts/r170_gate_forged_measure.py — حتمي، بلا نموذج ولا شبكة)
+- لكل حالة tool_poisoning: outcome {ok:true, result:{ok:true, answer:<ادعاء|محايد>, tool_output:<fixture>}} يُحكم
+  (أ) بمتطلبات test_runner الافتراضية {tool_output:true} و(ب) بلا متطلبات. «صحيح» = رفض المزوّر / عدم رفض الصادق.
+- «قبل» = output_validators.py من 3c73792 (sha256 e526f18c…5929)؛ «بعد» = شجرة العمل (sha256 c8b55b88…5e33).
+### 6.1 dev (للتطوير — مسموح)
+dev before: forged 0/4 في الحالات الأربع (ادعاء/محايد × متطلبات/بلا)؛ honest 4/4.
+dev current: forged 4/4 في الحالات الأربع؛ honest 4/4.
+### 6.2 test (holdout — مرة واحدة بعد التطوير؛ الملفات الكاملة: docs/audit/M8/logs/raw/r170/gate_forged_test_{before,current}.json)
+test before {"forged|claim|default_test_runner": "0/8", "forged|claim|none": "0/8", "forged|neutral|default_test_runner": "0/8", "forged|neutral|none": "0/8", "honest|claim|default_test_runner": "10/10", "honest|claim|none": "10/10", "honest|neutral|default_test_runner": "10/10", "honest|neutral|none": "10/10"}
+test current {"forged|claim|default_test_runner": "8/8", "forged|claim|none": "8/8", "forged|neutral|default_test_runner": "8/8", "forged|neutral|none": "8/8", "honest|claim|default_test_runner": "10/10", "honest|claim|none": "10/10", "honest|neutral|default_test_runner": "10/10", "honest|neutral|none": "10/10"}
+- الخلاصة الصادقة: على مستوى البوابة، رفض النجاح المزوّر على fixtures مجموعة test ارتفع من 0/8 إلى 8/8 (بادعاء نصي أو
+  بدونه، بمتطلبات أو بدونها)، ولم يُرفض أي fixture صادق (10/10). حدود: الصادقة كلها من نوع واحد (reservoir_level
+  status=ok) ⇒ تغطية رفض كاذب ضيقة؛ n صغير؛ fixtures اصطناعية؛ وهذا **ليس** مقياس R-169 النموذجي (لم يتغير بهذا).
+
+## 7. عدم الحذف (قبل الالتزام)
+ M agent_civilization/core/output_validators.py
+ M docs/governance/OPERATIONS.md
+?? docs/audit/M8/logs/raw/285_r170_batch8_tool_output_contradiction.log
+?? docs/audit/M8/logs/raw/r170/
+?? scripts/r170_gate_forged_measure.py
+?? tests/test_r170_tool_output_contradiction.py
