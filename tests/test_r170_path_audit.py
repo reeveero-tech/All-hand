@@ -53,7 +53,9 @@ def _all_specs():
 
 
 ALL_SPECS = _all_specs()
-TEXT_SPECS = [s for s in ALL_SPECS if s not in TOOL_SPECS]
+# batch 12: the four deterministic text handlers now need evidence of task fit
+TASK_FIT_SPECS = {"strategist", "architect", "designer", "reviewer"}
+TEXT_SPECS = [s for s in ALL_SPECS if s not in TOOL_SPECS | TASK_FIT_SPECS]
 
 
 def _forged(spec, work):
@@ -114,11 +116,42 @@ def test_tool_specs_require_evidence_by_default(spec, impl, monkeypatch, gate_on
 @pytest.mark.parametrize("impl", IMPLS)
 @pytest.mark.parametrize("spec", TEXT_SPECS)
 def test_char_text_specs_without_evidence_are_unverified_not_rejected(spec, impl, monkeypatch, gate_on):
-    """CHAR: التخصصات النصية (16) بلا متطلبات افتراضية ⇒ قبول ``unverified``
-    (لا دليل آلي لها — رفضها يكون رفضًا كاذبًا)."""
+    """CHAR: التخصصات النصية الباقية (10 منذ الدفعة 12) بلا متطلبات افتراضية ⇒
+    قبول ``unverified`` (لا دليل آلي لها — رفضها يكون رفضًا كاذبًا)."""
     _patch(monkeypatch, _evidence_free)
     out = asyncio.run(_agent(impl, spec).execute({"prompt": "x"}))
     assert out["ok"] is True and out["result"]["verification"]["unverified"] is True
+
+
+@pytest.mark.parametrize("impl", IMPLS)
+@pytest.mark.parametrize("spec", sorted(TASK_FIT_SPECS))
+def test_task_fit_specs_reject_evidence_free_success(spec, impl, monkeypatch, gate_on):
+    """RED (batch 12): «x» answered by "<spec> output" is a hollow success ⇒
+    rejected by the default task_fit requirement (was accepted unverified)."""
+    _patch(monkeypatch, _evidence_free)
+    a = _agent(impl, spec)
+    out = asyncio.run(a.execute({"prompt": "x"}))
+    assert out["ok"] is False and out["result"]["error"] == "output_verification_failed"
+    assert any(r.startswith("task_fit:") for r in out["result"]["verification"]["reasons"])
+    assert a.stats["tasks_failed"] == 1
+
+
+@pytest.mark.parametrize("impl", IMPLS)
+@pytest.mark.parametrize("spec,prompt,answer", [
+    ("strategist", "Give me a 3-step plan to launch a mobile app.",
+     "1. Validate the idea with twenty target users and define the MVP.\n2. Build and beta-test the MVP with a "
+     "small group.\n3. Publish to the stores and run a launch campaign while tracking retention."),
+    ("architect", "اشرح طبقات التخزين المؤقت باختصار.",
+     "طبقات التخزين المؤقت تحفظ نسخًا من البيانات قرب القارئ: ذاكرة المتصفح وشبكة توزيع المحتوى وذاكرة التطبيق "
+     "وذاكرة قاعدة البيانات، وكل طبقة تحتاج قاعدة انتهاء واضحة."),
+])
+def test_task_fit_accepts_complete_prose_from_another_implementation(spec, prompt, answer, impl, monkeypatch, gate_on):
+    """RED (batch 12): a correct prose answer is not rejected for its form —
+    the check is recorded as structural (task_fit.prose-structural)."""
+    _patch(monkeypatch, lambda sp, w: {"ok": True, "answer": answer, "tool_output": None})
+    out = asyncio.run(_agent(impl, spec).execute({"prompt": prompt}))
+    assert out["ok"] is True, out["result"]
+    assert "task_fit.prose-structural" in out["result"]["verification"]["checks_run"]
 
 
 @pytest.mark.parametrize("impl", IMPLS)
@@ -134,7 +167,9 @@ def test_default_policy_is_single_source_for_router():
     from agent_civilization.core import output_validators as ov
     from agent_civilization.routing import auto_router
     assert ov.DEFAULT_REQUIREMENTS == auto_router.STAGE_VERIFICATION
-    assert set(ov.DEFAULT_REQUIREMENTS) == TOOL_SPECS
+    assert set(ov.DEFAULT_REQUIREMENTS) == TOOL_SPECS | TASK_FIT_SPECS
+    assert ov.requirements_for("architect", {"prompt": "x"}) == {
+        "task_fit": {"spec": "architect", "request": "x", "data": None, "plan_stages": 0}}  # bound before the handler
     assert ov.requirements_for("test_runner", {"prompt": "x"}) == {"tool_output": True}
     assert ov.requirements_for("analyst", {"prompt": "x"}) is None
     assert ov.requirements_for("test_runner", {"verification": {"json": True}}) == {"json": True}

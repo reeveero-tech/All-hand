@@ -93,9 +93,11 @@ def test_architect_arabic_and_unmatched_items():
 
 
 def test_architect_says_when_it_assumed_a_baseline():
+    # R-170 (batch 12): an assumed baseline is not a design of the request —
+    # an honest failure that keeps the labelled partial output (was ok=True).
     r = run("architect", {"prompt": "demo"})
-    assert r["ok"] and r["tool_output"]["assumed_baseline"] is True
-    assert "assumed" in r["answer"]
+    assert r["ok"] is False and r["partial_tool_output"]["assumed_baseline"] is True
+    assert "assumed" in r["error"] and "assumed" in r["partial_answer"]
 
 
 # --------------------------------------------------------------- designer

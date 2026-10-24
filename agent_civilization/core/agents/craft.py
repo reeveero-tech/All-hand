@@ -336,9 +336,13 @@ def _luminance(hex_color: str) -> float:
     return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
 
 
-def contrast_ratio(a: str, b: str) -> float:
+def _contrast_raw(a: str, b: str) -> float:
     la, lb = sorted((_luminance(a), _luminance(b)), reverse=True)
-    return round((la + 0.05) / (lb + 0.05), 2)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def contrast_ratio(a: str, b: str) -> float:
+    return round(_contrast_raw(a, b), 2)
 
 
 def _hue_from_hex(hex_color: str) -> Tuple[float, float]:
@@ -351,7 +355,9 @@ def _fit(fg_h: float, fg_s: float, start_l: float, bg: str, target: float, step:
     """Move lightness from ``start_l`` by ``step`` until contrast with ``bg`` >= target."""
     lightness = start_l
     color = _hex(fg_h, fg_s, lightness)
-    while contrast_ratio(color, bg) < target and 0.0 <= lightness <= 1.0:
+    # R-170 (batch 12): compare the UNROUNDED ratio — 2.996 rounded to 3.0 used
+    # to pass a 3:1 WCAG target (found by task_fit's independent recomputation).
+    while _contrast_raw(color, bg) < target and 0.0 <= lightness <= 1.0:
         lightness += step
         color = _hex(fg_h, fg_s, lightness)
     return color, contrast_ratio(color, bg)
@@ -367,7 +373,9 @@ def design_palette(text: str, data: Any) -> Dict[str, Any]:
         source = f"hex #{m.group(1).lower()}"
     else:
         hit = next(((w, v) for w, v in _NAMED_HUES.items()
-                    if re.search(rf"(?<!\w){re.escape(w)}(?!\w)", low)), None)
+                    # R-170 (batch 12): Arabic colour words usually carry the
+                    # definite article (الأزرق، البحر) — before, they were missed.
+                    if re.search(rf"(?<!\w)(?:ال)?{re.escape(w)}(?!\w)", low)), None)
         if hit:
             (hue, sat), source = hit[1], f"colour word '{hit[0]}'"
         else:

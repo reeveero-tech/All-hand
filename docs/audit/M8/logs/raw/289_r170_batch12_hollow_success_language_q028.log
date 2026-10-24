@@ -1,0 +1,38 @@
+# 289 — R-170 batch 12: hollow success (task_fit), R-169 language analysis, Q-028 human packet
+date: 2026-10-24  branch: m8/r170-batch12-hollow-success  base: main 086bd9b
+owner decision (2026-10-24): gate stays OFF by default; no deploy; continue fixes; Q-028 = separate independent HUMAN review.
+
+## hollow success — pre-registered (docs/audit/M8/logs/raw/r170/hollow/PREREGISTRATION.md, committed 82a9198 before any rule; amendment A1 before any run)
+corpus benchmarks/r170/hollow/cases.jsonl sha256 4a3a623fc7a88be1f3d65bcb63d37b5d0e35e271f4323b9708b72ec5e8f1988b (244; dev 103, validation 59, test 82)
+code evaluated on test: b437fcd (tree identical at f646060, docs-only commit between); test run ONCE.
+dev iterations d1..d4 (all kept). d1 found two real handler bugs (designer accepted 2.996:1 as 3:1 by rounding; Arabic colour words with ال missed).
+dev_d4 gate_off: H1 37/37 [0.9059, 1.0] | H2 0/53 [0.0, 0.0676] | H3 53/53 [0.9324, 1.0]
+dev_d4 gate_on: H1 41/41 [0.9143, 1.0] | H2 0/62 [0.0, 0.0583] | H3 62/62 [0.9417, 1.0]
+validation_v1 gate_off: H1 27/27 [0.8754, 1.0] | H2 0/27 [0.0, 0.1246] | H3 27/27 [0.8754, 1.0]
+validation_v1 gate_on: H1 29/29 [0.883, 1.0] | H2 0/30 [0.0, 0.1135] | H3 30/30 [0.8865, 1.0]
+test_t1 gate_off: H1 30/30 [0.8865, 1.0] | H2 0/46 [0.0, 0.0771] | H3 46/46 [0.9229, 1.0]
+test_t1 gate_on: H1 34/34 [0.8985, 1.0] | H2 1/48 [0.0037, 0.109] | H3 47/47 [0.9244, 1.0]
+test_t1 gate_off by_spec: {"strategist": {"H1": "18/18 [0.8241, 1.0]", "H2": "0/11 [0.0, 0.2588]"}, "architect": {"H1": "2/2 [0.3424, 1.0]", "H2": "0/10 [0.0, 0.2775]"}, "designer": {"H1": "4/4 [0.5101, 1.0]", "H2": "0/12 [0.0, 0.2425]"}, "reviewer": {"H1": "6/6 [0.6097, 1.0]", "H2": "0/13 [0.0, 0.2281]"}}
+test_t1 gate_off by_lang: {"ar": {"H1": "16/16 [0.8064, 1.0]", "H2": "0/28 [0.0, 0.1206]"}, "en": {"H1": "14/14 [0.7847, 1.0]", "H2": "0/18 [0.0, 0.1759]"}}
+test_t1 gate_off false_rejections: []
+test_t1 gate_off hollow_accepted: []
+test_t1 gate_on by_spec: {"strategist": {"H1": "20/20 [0.8389, 1.0]", "H2": "1/12 [0.0149, 0.3539]"}, "architect": {"H1": "3/3 [0.4385, 1.0]", "H2": "0/10 [0.0, 0.2775]"}, "designer": {"H1": "5/5 [0.5655, 1.0]", "H2": "0/13 [0.0, 0.2281]"}, "reviewer": {"H1": "6/6 [0.6097, 1.0]", "H2": "0/13 [0.0, 0.2281]"}}
+test_t1 gate_on by_lang: {"ar": {"H1": "19/19 [0.8318, 1.0]", "H2": "1/29 [0.0061, 0.1718]"}, "en": {"H1": "15/15 [0.7961, 1.0]", "H2": "0/19 [0.0, 0.1682]"}}
+test_t1 gate_on false_rejections: [{"id": "pr-st-3", "why": ["task_fit: task not supported: no objectives listed in the request to order (cannot generate a plan, KPIs, risks or ideas)", "task_fit: too short to be the requested deliverable (14 words < 15)"]}]
+test_t1 gate_on hollow_accepted: []
+gate-risk non-regression dev (offline+live, b12): false rejection 0/98 [0.0, 0.0377]; P2 155/155 [0.9758, 1.0]
+gate-risk non-regression validation (offline+live, b12): false rejection 0/54 [0.0, 0.0664]; P2 75/75 [0.9513, 1.0]
+criteria (prereg §4): H1 >=90% & lower>=75%: MET both modes; H2 <=1/48: MET (off 0/46, on 1/48); H3 >=90%: MET; non-regression: MET.
+false rejection pr-st-3 (prose_correct, Arabic 5 KPI list, 14 words < 15 min words): real rule defect for terse lists; NOT fixed on test; needs new cases.
+limits: task_fit is structural & deterministic (form, traceability, counts, recomputed WCAG, build order, finding lines) — not semantic correctness. Truth labels are the agent's (Q-028 packet part C).
+
+## R-169 language regression (scripts/r169_language_analysis.py -> docs/audit/M8/logs/raw/r169/v5/b4/LANGUAGE_ANALYSIS.json)
+paired McNemar on frozen v5 grader: b2 and b4s each 12 baseline-only vs 0 grounded-only matches, exact p=0.00049 -> regression significant (CI overlap NOT used as evidence of absence).
+all grounded mismatches are Arabic questions; b4s 12/14 = INSUFFICIENT_EVIDENCE then an English explanation; baseline mismatches 3-4 fully English replies.
+attribution: model/prompt behaviour on the grounded path; the output gate is not on this path (gate off in all R-169 runs) -> not a gate effect.
+language pilot (prereg docs/audit/M8/logs/raw/r169/v5/lang_pilot/PREREGISTRATION.md): first run aborted with 0 provider calls (missing free-provider consent) — recorded §7; dev r1 running; validation not run yet; test split forbidden; no claim.
+
+## Q-028 human packet (docs/audit/M8/q028/R170_REVIEW_PACKAGE.md): 60 blind cases, zip sha256 c299caeaba6c257569ab90cc44f0703394ba88e121a53eed78c752d983806469; NOT sent; no reviewer; no human review happened.
+
+## R-169 freeze: ledger link d66160484b478b2f -> d3f8d2eceabf4ce6 (real_dispatcher); tests follow the documented chain (scripts/r169_freeze_ledger.py); runners' check_freeze unchanged.
+## tests: flag off 3310 passed, 8 skipped, 17 deselected, 9 xfailed.

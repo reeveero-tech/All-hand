@@ -31,10 +31,14 @@ from agent_civilization.routing.auto_router import route
 TOOL = {"tool_output": True}
 # الدفعة 6: الباحث يعلن citations أيضًا (المدقق يبحث داخل tool_output منذها)
 RESEARCH = {"tool_output": True, "citations": True}
+FIT = {"task_fit": True}  # batch 12: bound to the request at execution (core/task_fit.bind)
 EXPECTED = {"test_runner": TOOL, "network_client": TOOL, "validator": TOOL, "researcher": RESEARCH,
-            "api_integrator": TOOL, "code_generator": {"code": True}}  # batch 10
+            "api_integrator": TOOL, "code_generator": {"code": True},  # batch 10
+            "strategist": FIT, "architect": FIT, "designer": FIT, "reviewer": FIT}  # batch 12
 # التخصصات المدعومة بأداة (مقيسة من real_dispatcher) — مستقلة عن الشيفرة المختبرة
 TOOL_SPECS = {"test_runner", "network_client", "validator", "researcher", "api_integrator", "code_generator"}  # batch 10
+# batch 12: the deterministic text handlers whose hollow successes were measured (log 288)
+TASK_FIT_SPECS = {"strategist", "architect", "designer", "reviewer"}
 
 PROMPTS = {
     "code": "write a python function to compute fibonacci numbers",
@@ -67,7 +71,7 @@ def test_policy_table_exists_and_uses_known_requirements_only():
     """RED: سياسة صريحة قابلة للتدقيق، ومفاتيحها كلها ضمن KNOWN_REQUIREMENTS
     (متطلب غير معروف تُرفضه البوابة — يجب ألا يولده الموجّه)."""
     policy = auto_router.STAGE_VERIFICATION
-    assert set(policy) == TOOL_SPECS
+    assert set(policy) == TOOL_SPECS | TASK_FIT_SPECS
     for spec, req in policy.items():
         assert req == EXPECTED[spec], spec
         assert set(req) <= set(KNOWN_REQUIREMENTS), spec
@@ -101,7 +105,9 @@ def test_char_text_only_stages_declare_nothing(key):
     """CHAR (ويبقى بعد التغيير): المراحل النصية بلا مفتاح ``verification``
     إطلاقًا — شكل المرحلة القائم محفوظ، ولا متطلب بلا دليل آلي ممكن."""
     for st in route(PROMPTS[key])["stages"]:
-        if st["specialization"] not in TOOL_SPECS:
+        if st["specialization"] in TASK_FIT_SPECS:  # batch 12
+            assert st.get("verification") == FIT, (key, st["name"])
+        elif st["specialization"] not in TOOL_SPECS:
             assert "verification" not in st, (key, st["name"])
 
 
@@ -146,12 +152,24 @@ def _evidence_free(specialization, work):
             "tool_output": None}
 
 
+def _fit_prose(specialization, work):
+    """Batch 12: a structurally complete prose answer (English, >= 15 words,
+    a cited code element for a review) — what task_fit accepts from another
+    implementation. Form only, not correctness (documented)."""
+    return {"ok": True, "error": None, "tool_output": None,
+            "answer": (f"The {specialization} stage reviewed `f` at line 1 and produced the requested "
+                       "deliverable for this request, with each step stated explicitly and in order.")}
+
+
 def _code_ok_else_evidence_free(specialization, work):
     """Batch 10: code_generator has a default ``code`` requirement; a realistic
-    code stage returns the code text (all real paths now do)."""
+    code stage returns the code text (all real paths now do). Batch 12: the
+    task-fit stages (plan/review) return a complete answer."""
     if specialization == "code_generator":
         return {"ok": True, "answer": "generated", "error": None,
                 "tool_output": {"generated": True, "code": "def f():\n    return 1\n"}}
+    if specialization in TASK_FIT_SPECS:
+        return _fit_prose(specialization, work)
     return _evidence_free(specialization, work)
 
 
@@ -159,7 +177,8 @@ def test_router_plan_code_stage_without_code_fails_when_gate_on(monkeypatch):
     """RED (batch 10): the execute stage (code_generator) "succeeds" with no
     code text ⇒ failed (output_verification_failed); downstream is blocked."""
     monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "1")
-    _patch_dispatch(monkeypatch, _evidence_free)
+    # batch 12: the plan stage must itself be complete, or execute is only blocked
+    _patch_dispatch(monkeypatch, lambda sp, w: _fit_prose(sp, w) if sp in TASK_FIT_SPECS else _evidence_free(sp, w))
     rep = asyncio.run(dag.run_plan(route(PROMPTS["code"]), _civ()))
     by = {s["name"]: s for s in rep["stages"]}
     assert by["execute"]["status"] == dag.FAILED
@@ -210,7 +229,8 @@ def test_router_plan_with_tool_evidence_succeeds_and_records_check(monkeypatch):
     assert rep["status"] == "completed"
     assert seen["test"] == TOOL
     assert seen["execute"] == {"code": True}          # batch 10: code_generator default
-    assert all(seen[n] is None for n in ("understand", "plan", "review"))
+    assert seen["understand"] is None                  # analyst: no default requirement
+    assert seen["plan"] == FIT and seen["review"] == FIT  # batch 12: task_fit (bound at execution)
 
 
 # ================================== real handlers satisfy their requirement

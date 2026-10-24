@@ -436,7 +436,7 @@ def is_forged_success(outcome: Mapping[str, Any]) -> bool:
 #: المتطلبات المعروفة لبوابة التحقق — أي مفتاح غير معروف يُرفض صراحة
 #: (لا يُتجاهل بصمت: متطلب غير مفهوم = تحقق غير منفذ).
 KNOWN_REQUIREMENTS: frozenset = frozenset(
-    {"json", "citations", "tool_output", "checks", "code"})
+    {"json", "citations", "tool_output", "checks", "code", "task_fit"})
 
 
 def verify_success(outcome: Mapping[str, Any],
@@ -518,6 +518,13 @@ def verify_success(outcome: Mapping[str, Any],
     if reqs.get("checks"):
         reasons += validate_checks(result)
         checks_run.append("checks")
+    if reqs.get("task_fit"):
+        # R-170 (batch 12): evidence that the REQUESTED task was done, judged
+        # against the request captured before the handler ran (core/task_fit).
+        from agent_civilization.core import task_fit as tf
+        fit, label = tf.check_requirement(reqs["task_fit"], result)
+        reasons += fit
+        checks_run.append(label)
     if reasons:
         return Verdict(ok=False, reasons=tuple(reasons), checks_run=tuple(checks_run))
     if not checks_run:
@@ -580,6 +587,14 @@ DEFAULT_REQUIREMENTS: Dict[str, Dict[str, Any]] = {
     # R-170 (batch 10): all three successful code_generator paths (spec, LLM,
     # supplied) now return ``tool_output.code``; the gate compiles it (never runs it).
     "code_generator": {"code": True},
+    # R-170 (batch 12): the four deterministic text handlers returned ok=True
+    # without doing the request (hollow success, log 288). ``True`` is bound to
+    # the request by ``requirements_for`` (core/task_fit.bind) before the
+    # handler runs; an unbound requirement is rejected, never skipped.
+    "strategist": {"task_fit": True},
+    "architect": {"task_fit": True},
+    "designer": {"task_fit": True},
+    "reviewer": {"task_fit": True},
 }
 
 
@@ -594,9 +609,18 @@ def requirements_for(specialization: str, work: Any) -> Optional[Dict[str, Any]]
     """
     declared = work.get("verification") if isinstance(work, Mapping) else None
     if declared is not None:
-        return dict(declared) if isinstance(declared, Mapping) else declared
+        return _bind_task_fit(specialization, work, dict(declared)) if isinstance(declared, Mapping) else declared
     default = DEFAULT_REQUIREMENTS.get(specialization)
-    return dict(default) if default is not None else None
+    return _bind_task_fit(specialization, work, dict(default)) if default is not None else None
+
+
+def _bind_task_fit(specialization: str, work: Any, req: Dict[str, Any]) -> Dict[str, Any]:
+    """``{"task_fit": True}`` -> the request captured now (before the handler)."""
+    if req.get("task_fit") is True and isinstance(work, Mapping):
+        from agent_civilization.core import task_fit as tf
+        if specialization in tf.SPECS:
+            req["task_fit"] = tf.bind(specialization, work)
+    return req
 
 
 def output_gate_enabled() -> bool:

@@ -1,0 +1,282 @@
+{
+ "false_rejection": {
+  "k": 0,
+  "n": 98,
+  "rate": 0.0,
+  "wilson95": [
+   0.0,
+   0.0377
+  ]
+ },
+ "false_rejection_by_family": {
+  "analyst_numbers": {
+   "k": 0,
+   "n": 8,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.3244
+   ]
+  },
+  "api_live": {
+   "k": 0,
+   "n": 11,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.2588
+   ]
+  },
+  "code_spec": {
+   "k": 0,
+   "n": 3,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.5615
+   ]
+  },
+  "code_supplied": {
+   "k": 0,
+   "n": 9,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.2992
+   ]
+  },
+  "data_numbers": {
+   "k": 0,
+   "n": 8,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.3244
+   ]
+  },
+  "network_live": {
+   "k": 0,
+   "n": 12,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.2425
+   ]
+  },
+  "research_live": {
+   "k": 0,
+   "n": 21,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.1546
+   ]
+  },
+  "test_runner_generated": {
+   "k": 0,
+   "n": 6,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.3903
+   ]
+  },
+  "test_runner_pass": {
+   "k": 0,
+   "n": 17,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.1843
+   ]
+  },
+  "validator_json": {
+   "k": 0,
+   "n": 2,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.6576
+   ]
+  },
+  "validator_json_text": {
+   "k": 0,
+   "n": 1,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.7935
+   ]
+  }
+ },
+ "false_rejections": [],
+ "forged_detection_P2": {
+  "k": 155,
+  "n": 155,
+  "rate": 1.0,
+  "wilson95": [
+   0.9758,
+   1.0
+  ]
+ },
+ "forged_detection_by_variant": {
+  "F1": {
+   "k": 13,
+   "n": 13,
+   "rate": 1.0,
+   "wilson95": [
+    0.7719,
+    1.0
+   ]
+  },
+  "F2": {
+   "k": 70,
+   "n": 70,
+   "rate": 1.0,
+   "wilson95": [
+    0.948,
+    1.0
+   ]
+  },
+  "F2b": {
+   "k": 70,
+   "n": 70,
+   "rate": 1.0,
+   "wilson95": [
+    0.948,
+    1.0
+   ]
+  },
+  "F3": {
+   "k": 0,
+   "n": 21,
+   "rate": 0.0,
+   "wilson95": [
+    0.0,
+    0.1546
+   ]
+  },
+  "F5": {
+   "k": 2,
+   "n": 2,
+   "rate": 1.0,
+   "wilson95": [
+    0.3424,
+    1.0
+   ]
+  }
+ },
+ "forged_missed": [
+  {
+   "id": "rs-18eda641db",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-5fa310a57f",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-edf77a8858",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-97f64d5e88",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-73c6911479",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-c4e29b962e",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-f8c0d1ca91",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-1d0b5c7ae6",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-aa83ef93a3",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-32417cc827",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-dfbd117419",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-1efdb1f5a5",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-01526ef89f",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-f49d0583f2",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-20e0dc8157",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-1ace8c14c2",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-62cfffb95b",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-f28d567cf5",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-90ef19bc6a",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-8138947b30",
+   "variant": "F3",
+   "family": "research_live"
+  },
+  {
+   "id": "rs-2e9df7ef61",
+   "variant": "F3",
+   "family": "research_live"
+  }
+ ],
+ "honest_handler_failures_excluded": [
+  "api-e583d17e95",
+  "api-b5e8b748cb",
+  "rs-c2d6ea1945"
+ ],
+ "llm_unlabeled": []
+}

@@ -1100,13 +1100,37 @@ async def _researcher(work: Dict[str, Any]) -> Dict[str, Any]:
     return {"ok": False, "error": f"search: {last_error} (transient, {attempts_made} attempts)"}
 
 
+def _fit_or_fail(spec: str, work: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
+    """R-170 (batch 12): no ok=True without evidence the REQUESTED task was done.
+
+    The deterministic text handlers returned success for requests they cannot
+    do (hollow success, log 288). The result is judged against the request by
+    core/task_fit (structural, deterministic); a miss becomes an honest failure
+    that keeps the partial output and states why — with or without the gate.
+    """
+    if not (isinstance(result, dict) and result.get("ok")):
+        return result
+    from agent_civilization.core import task_fit as tf
+    req = tf.bind(spec, work)
+    info = tf.analyse_request(spec, req["request"], req["data"], req["plan_stages"], req.get("artifact_code"))
+    reasons = tf.assess(info, result)
+    if not reasons:
+        return result
+    out = {"ok": False, "error": "task_not_completed: " + "; ".join(reasons),
+           "task_fit": {"completed": False, "reasons": reasons}}
+    for k in ("answer", "tool_output"):
+        if k in result:
+            out["partial_" + k] = result[k]
+    return out
+
+
 async def _architect(work: Dict[str, Any]) -> Dict[str, Any]:
     """Component graph derived from the request (R-102): requested + implied
     components, dependencies and a topological build order."""
     # R-116: as the "plan" stage, derive the architecture of the user's GOAL —
     # before, it parsed its own instruction ("list files/tools/APIs" -> storage).
     text = _goal(work) if work.get("stage") == "plan" else _extract_text(work)
-    return craft.design_architecture(text, work.get("data"))
+    return _fit_or_fail("architect", work, craft.design_architecture(text, work.get("data")))
 
 
 async def _strategist(work: Dict[str, Any]) -> Dict[str, Any]:
@@ -1119,19 +1143,25 @@ async def _strategist(work: Dict[str, Any]) -> Dict[str, Any]:
         # before, it split its own instruction sentence into "objectives".
         steps = [{"step": i + 1, "stage": st.get("name"), "specialist": st.get("specialization"),
                   "purpose": st.get("reason")} for i, st in enumerate(plan_stages)]
-        return {"ok": True,
-                "answer": " -> ".join(f"{st['stage']}({st['specialist']})" for st in steps),
-                "tool_output": {"roadmap": steps, "goal": _goal(work)[:300], "source": "execution plan"}}
+        return _fit_or_fail("strategist", work, {
+            "ok": True,
+            "answer": " -> ".join(f"{st['stage']}({st['specialist']})" for st in steps),
+            "tool_output": {"roadmap": steps, "goal": _goal(work)[:300], "source": "execution plan"}})
     if isinstance(data, list) and data and all(isinstance(x, str) for x in data):
         steps = [x.strip() for x in data if x.strip()]  # R-102: objectives given as a list
     else:
-        steps = [s.strip() for s in re.split(r"[.!؟\n]", text) if s.strip()]
+        # R-170 (batch 12): objectives LISTED in the request (after a colon, ';'
+        # or bullets) — before, the instruction sentence itself became the one
+        # "objective" (hollow). Fallback kept: sentence split.
+        from agent_civilization.core.task_fit import parse_objectives
+        steps = parse_objectives(text, None) or [s.strip() for s in re.split(r"[.!؟\n]", text) if s.strip()]
     priorities = [{"step": i + 1, "goal": s[:120],
                    "weight": round(1.0 - i / max(len(steps), 1), 2)}
                   for i, s in enumerate(steps[:6])]
     # R-102: weights follow the order given — say so, do not claim prioritisation logic.
-    return {"ok": True, "answer": f"{len(priorities)} objective(s) in the order given (weight by position)",
-            "tool_output": {"roadmap": priorities}}
+    return _fit_or_fail("strategist", work, {
+        "ok": True, "answer": f"{len(priorities)} objective(s) in the order given (weight by position)",
+        "tool_output": {"roadmap": priorities}})
 
 
 def _static_findings(code: str):
@@ -1169,7 +1199,103 @@ def _static_findings(code: str):
     return issues, funcs
 
 
+_KIND_OF_ISSUE = (("bare except", "bare_except"), ("== None", "none_compare"), ("mutable default", "mutable_default"),
+                  ("shadows a builtin", "builtin_shadow"), ("never returns", "no_return"),
+                  ("division by zero", "zero_division"), ("`is` comparison", "is_literal"))
+
+
+def _guarded(fn: ast.AST, name: str) -> bool:
+    """True when ``name`` is tested in an if/while/assert/ternary/boolop of ``fn``."""
+    for n in ast.walk(fn):
+        test = getattr(n, "test", None) if isinstance(n, (ast.If, ast.While, ast.Assert, ast.IfExp)) else \
+            (n if isinstance(n, ast.BoolOp) else None)
+        if test is not None and any(isinstance(x, ast.Name) and x.id == name for x in ast.walk(test)):
+            return True
+    return False
+
+
+def _review_findings(code: str) -> List[Dict[str, Any]]:
+    """R-170 (batch 12): structured reviewer findings (line, kind, message, suggestion).
+
+    The R-116 checks plus checks for defects the reviewer missed in the hollow
+    audit (division by len() of possibly-empty input, [0]/[-1] on possibly-empty
+    input, SQL built by string formatting, eval/exec, ``== True``, range(len())).
+    Static and heuristic: a finding is a lead with a line, not a proof.
+    """
+    issues, _ = _static_findings(code)
+    out: List[Dict[str, Any]] = []
+    for msg in issues:
+        m = re.search(r"line (\d+)", msg)
+        kind = next((k for frag, k in _KIND_OF_ISSUE if frag in msg), "other")
+        out.append({"line": int(m.group(1)) if m else None, "kind": kind, "message": msg,
+                    "suggestion": {"bare_except": "catch the specific exception",
+                                   "none_compare": "use `is None`",
+                                   "mutable_default": "default to None and create the object inside",
+                                   "builtin_shadow": "rename the parameter",
+                                   "no_return": "return the computed value",
+                                   "zero_division": "remove the division by a literal zero",
+                                   "is_literal": "use == for value comparison"}.get(kind, "")})
+    tree = ast.parse(code)
+    funcs = [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))] or [tree]
+    for fn in funcs:
+        params = {a.arg for a in getattr(getattr(fn, "args", None), "args", [])}
+        for n in ast.walk(fn):
+            if isinstance(n, ast.BinOp) and isinstance(n.op, (ast.Div, ast.FloorDiv, ast.Mod)) and \
+                    isinstance(n.right, ast.Call) and isinstance(n.right.func, ast.Name) and n.right.func.id == "len" \
+                    and n.right.args and isinstance(n.right.args[0], ast.Name) and not _guarded(fn, n.right.args[0].id):
+                v = n.right.args[0].id
+                out.append({"line": n.lineno, "kind": "empty_division",
+                            "message": f"division by len({v}) raises ZeroDivisionError when {v} is empty (line {n.lineno})",
+                            "suggestion": f"guard the empty case first: `if not {v}: ...`"})
+            if isinstance(n, ast.Subscript) and isinstance(n.value, ast.Name) and n.value.id in params:
+                idx = n.slice
+                is_end = (isinstance(idx, ast.Constant) and idx.value == 0) or (
+                    isinstance(idx, ast.UnaryOp) and isinstance(idx.op, ast.USub)
+                    and isinstance(idx.operand, ast.Constant) and idx.operand.value == 1)
+                if is_end and not _guarded(fn, n.value.id):
+                    out.append({"line": n.lineno, "kind": "empty_index",
+                                "message": f"{n.value.id}[...] raises IndexError when {n.value.id} is empty (line {n.lineno})",
+                                "suggestion": f"check `if not {n.value.id}` before indexing"})
+            if isinstance(n, ast.For) and isinstance(n.iter, ast.Call) and isinstance(n.iter.func, ast.Name) and \
+                    n.iter.func.id == "range" and len(n.iter.args) == 1 and isinstance(n.iter.args[0], ast.Call) and \
+                    isinstance(n.iter.args[0].func, ast.Name) and n.iter.args[0].func.id == "len":
+                out.append({"line": n.lineno, "kind": "range_len",
+                            "message": f"`for i in range(len(...))` at line {n.lineno}",
+                            "suggestion": "iterate over the items directly, or use enumerate()"})
+            if isinstance(n, ast.Compare) and any(isinstance(op, (ast.Eq, ast.NotEq)) for op in n.ops) and any(
+                    isinstance(c, ast.Constant) and isinstance(c.value, bool) for c in n.comparators):
+                out.append({"line": n.lineno, "kind": "bool_compare",
+                            "message": f"comparison with True/False at line {n.lineno}",
+                            "suggestion": "test truthiness directly (`if x:` / `if not x:`)"})
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in ("execute", "executemany") \
+                    and n.args:
+                q = n.args[0]
+                formatted = isinstance(q, ast.JoinedStr) or (
+                    isinstance(q, ast.BinOp) and isinstance(q.op, (ast.Add, ast.Mod))
+                    and any(isinstance(x, ast.Constant) and isinstance(x.value, str) for x in ast.walk(q))) or (
+                    isinstance(q, ast.Call) and isinstance(q.func, ast.Attribute) and q.func.attr == "format")
+                if formatted:
+                    out.append({"line": n.lineno, "kind": "sql_injection",
+                                "message": f"SQL built by string formatting at line {n.lineno} (injection risk)",
+                                "suggestion": "use a parameterized query: execute(sql, params)"})
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ("eval", "exec"):
+                out.append({"line": n.lineno, "kind": "eval",
+                            "message": f"{n.func.id}() runs arbitrary code at line {n.lineno}",
+                            "suggestion": "parse the input explicitly (e.g. ast.literal_eval) or avoid dynamic execution"})
+    seen, uniq = set(), []
+    for f in out:
+        key = (f["line"], f["kind"])
+        if key not in seen:
+            seen.add(key)
+            uniq.append(f)
+    return uniq
+
+
 async def _reviewer(work: Dict[str, Any]) -> Dict[str, Any]:
+    return _fit_or_fail("reviewer", work, await _reviewer_raw(work))
+
+
+async def _reviewer_raw(work: Dict[str, Any]) -> Dict[str, Any]:
     code = _extract_code(work)
     if not code.strip():
         text = _extract_text(work)
@@ -1188,13 +1314,19 @@ async def _reviewer(work: Dict[str, Any]) -> Dict[str, Any]:
         return {"ok": True, "answer": f"reviewed {loc} loc: syntax error at line {e.lineno}: {e.msg}",
                 "tool_output": {"loc": loc, "syntax_error": f"line {e.lineno}: {e.msg}", "issues": [f"syntax error line {e.lineno}"],
                                 "code_reviewed": True}}
+    findings = _review_findings(code)
+    issues = [f["message"] for f in findings]
     return {"ok": True,
             "answer": (f"reviewed {loc} loc, {len(funcs)} function(s): {len(issues)} issue(s)"
-                       + (": " + "; ".join(issues[:5]) if issues else " — no defects found by static checks")),
+                       + (": " + "; ".join(f"{f['message']} — {f['suggestion']}" if f["suggestion"] else f["message"]
+                                           for f in findings[:5])
+                          if issues else " — no defects found by static checks")),
             "tool_output": {"loc": loc, "comments": comments, "comment_ratio": round(comments / max(loc, 1), 3),
-                            "functions": funcs, "issues": issues, "code_reviewed": True,
+                            "functions": funcs, "issues": issues, "findings": findings, "code_reviewed": True,
                             "checks": ["bare except", "== None", "mutable defaults", "builtin shadowing",
-                                       "missing return", "division by zero", "is-literal"]}}
+                                       "missing return", "division by zero", "is-literal",
+                                       "empty-input division", "empty-input index", "sql injection",
+                                       "eval/exec", "== True/False", "range(len())"]}}
 
 
 async def _monitor(work: Dict[str, Any]) -> Dict[str, Any]:
@@ -1364,7 +1496,7 @@ def _tone(text: str) -> Dict[str, Any]:
 async def _designer(work: Dict[str, Any]) -> Dict[str, Any]:
     """Palette from the colour (hex or name) and mood in the request, every
     foreground checked against WCAG contrast targets (R-102)."""
-    return craft.design_palette(_extract_text(work), work.get("data"))
+    return _fit_or_fail("designer", work, craft.design_palette(_extract_text(work), work.get("data")))
 
 
 async def _builder(work: Dict[str, Any]) -> Dict[str, Any]:

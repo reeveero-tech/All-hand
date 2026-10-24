@@ -435,12 +435,12 @@ def test_committed_freeze_matches_current_configuration():
         pytest.skip("v3 not frozen yet")
     frozen, state = json.loads(f.read_text()), RUN.freeze_state()
     drift = RUN.check_freeze(state, frozen)
-    ledger = json.loads((ROOT / "benchmarks" / "r169" / "FREEZE_DRIFT.json").read_text())["entries"]
-    allowed = {(e["key"], e["file"]): (e["frozen"], e["current"]) for e in ledger if "v3" in e["benchmarks"]}
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from r169_freeze_ledger import documented  # batch 12: chain of reviewed links
     for key in drift:
         assert key == "baseline_dependency_sha256", key            # only file hashes may drift
         moved = {p: (frozen[key].get(p), h) for p, h in state[key].items() if frozen[key].get(p) != h}
-        assert moved and all(allowed.get((key, p)) == fh for p, fh in moved.items()), moved
+        assert moved and all(documented("v3", key, p, *fh) for p, fh in moved.items()), moved
     if drift:
         assert "differs from FREEZE.json" in RUN.test_split_guard(True, False, True, drift)
 
