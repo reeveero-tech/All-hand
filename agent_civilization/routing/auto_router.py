@@ -28,14 +28,9 @@ from typing import Any, Dict, List, Optional, Tuple
 #: researcher also declares ``citations`` (validate_citations looks inside
 #: ``tool_output`` too); an instant answer without a source URL is rejected.
 #: Requirements only act when AGOS_OUTPUT_VALIDATORS=1 (see OPERATIONS.md).
-STAGE_VERIFICATION: Dict[str, Dict[str, Any]] = {
-    "test_runner": {"tool_output": True},
-    "network_client": {"tool_output": True},
-    "validator": {"tool_output": True},
-    # R-170 (batch 6): citations are now found in tool_output.sources/source
-    # and judged by format, so the researcher declares them too.
-    "researcher": {"tool_output": True, "citations": True},
-}
+# R-170 (batch 7): single source of truth — the core default policy (the
+# router copies it per stage in _verification_for, never shares it).
+from agent_civilization.core.output_validators import DEFAULT_REQUIREMENTS as STAGE_VERIFICATION  # noqa: E402
 
 
 def _verification_for(specialization: str) -> Optional[Dict[str, Any]]:

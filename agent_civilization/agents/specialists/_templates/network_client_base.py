@@ -31,9 +31,21 @@ class NetworkClientAgentBaseAgent(BaseAgent):
         try:
             tid = work.get("task_id", "unknown")
             logger.info(f"Agent {self.name} processing {tid}")
+            # R-170 (batch 7): requirements captured before the handler runs;
+            # the result passes the completion gate (AGOS_OUTPUT_VALIDATORS)
+            # and is counted by its verdict — a failed result was counted as
+            # tasks_completed before.
+            from agent_civilization.core.output_validators import (
+                apply_output_verification, requirements_for)
+            requirements = requirements_for(self.specialization, work)
             result = await self._process_task(work)
+            ok = bool(isinstance(result, dict) and result.get("ok"))
+            ok, result = apply_output_verification(requirements, ok, result)
             self.stats["tasks"] += 1
-            self.performance_metrics["tasks_completed"] += 1
+            if ok:
+                self.performance_metrics["tasks_completed"] += 1
+            else:
+                self.performance_metrics["tasks_failed"] += 1
             r = Message(sender=self.name, recipient=work.get("original_sender","dispatcher"),
                        content={"action": "task_complete", "task_id": tid, "result": result,
                                "agent_id": self.agent_id, "spec": self.specialization})
