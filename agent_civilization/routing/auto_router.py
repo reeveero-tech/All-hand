@@ -14,8 +14,32 @@ No manual specialization selection is exposed to the user.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, asdict
-from typing import Dict, List, Tuple
+from dataclasses import dataclass, asdict, field
+from typing import Any, Dict, List, Optional, Tuple
+
+
+#: R-170 (batch 5): output-verification requirements the router declares per
+#: stage, by specialization (core/output_validators.KNOWN_REQUIREMENTS). Only
+#: TOOL handlers whose every successful return carries a non-empty
+#: ``tool_output`` (measured in core/agents/real_dispatcher.py: _test_runner,
+#: _network_client, _validator, _researcher) declare ``tool_output``. Text-only
+#: (LLM) stages declare nothing: no machine evidence exists for them, so a
+#: requirement would only produce false rejections. ``citations`` is NOT
+#: declared for the researcher: the validator looks for citations at the top
+#: level of the result, while _researcher returns them in
+#: ``tool_output.sources`` — declaring it would reject honest successes.
+#: Requirements only act when AGOS_OUTPUT_VALIDATORS=1 (see OPERATIONS.md).
+STAGE_VERIFICATION: Dict[str, Dict[str, Any]] = {
+    "test_runner": {"tool_output": True},
+    "network_client": {"tool_output": True},
+    "validator": {"tool_output": True},
+    "researcher": {"tool_output": True},
+}
+
+
+def _verification_for(specialization: str) -> Optional[Dict[str, Any]]:
+    req = STAGE_VERIFICATION.get(specialization)
+    return dict(req) if req is not None else None  # a copy per stage
 
 
 @dataclass
@@ -24,9 +48,19 @@ class Stage:
     specialization: str
     prompt: str
     reason: str
+    # R-170 (batch 5): declared from STAGE_VERIFICATION unless given; absent
+    # (None) -> the key is omitted from to_dict (existing stage shape kept).
+    verification: Optional[Dict[str, Any]] = field(default=None)
+
+    def __post_init__(self) -> None:
+        if self.verification is None:
+            self.verification = _verification_for(self.specialization)
 
     def to_dict(self) -> Dict:
-        return asdict(self)
+        d = asdict(self)
+        if d.get("verification") is None:
+            d.pop("verification", None)
+        return d
 
 
 # Arabic + English intent keywords → specializations

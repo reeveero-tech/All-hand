@@ -1,0 +1,81 @@
+# 282 — R-170 دفعة 5: إعلان متطلبات التحقق في خطط الموجّه (أحمر أولًا)
+# التاريخ: 2026-10-24 (Asia/Riyadh) — الفرع m8/r170-batch5-router-requirements — القاعدة main 2607d78
+# المخرجات حرفية من أوامر محلية؛ لا تعديل لأي قياس/عتبة/وسم مسجل.
+
+## 1. الاكتشاف
+- routing/auto_router.route يبني خططًا (understand/plan/execute + مرحلة تحقق) بلا أي مفتاح verification ⇒ على
+  POST /civilization/execute لا تطبق البوابة إلا كشف النجاح المزوّر الاستدلالي والتناقض (حد معلن في الدفعة 4).
+- قياس معالجات الأدوات في core/agents/real_dispatcher.py (المسار نفسه في الوكتين: قوالب specialists تستدعي dispatch):
+  _test_runner: كل نجاح {"ok": rc==0, "tool_output": {stdout, stderr, elapsed_s, sandbox, tests_passed, ...}} بلا exit_code.
+  _network_client: كل نجاح يحمل tool_output (dns/http).
+  _validator: كل نجاح يحمل tool_output (type/keys أو checks أو chars).
+  _researcher: كل نجاح يحمل tool_output (method + sources أو abstract).
+  المراحل النصية (analyst/strategist/reviewer/...): LLM — لا دليل آلي.
+- citations لا تصلح للباحث: validate_citations يبحث في المستوى الأعلى (citations/sources/references)، و_researcher يضع
+  المصادر في tool_output.sources ⇒ إعلانها يرفض نجاحًا صادقًا. لم يُعدَّل المدقق في هذه الدفعة (حد موثق).
+
+## 2. أحمر أولًا — tests/test_r170_router_requirements.py (24 حالة، قبل أي تعديل في الشيفرة)
+$ python3 -m pytest tests/test_r170_router_requirements.py -q -p no:cacheprovider   (exit=1)
+FAILED tests/test_r170_router_requirements.py::test_policy_table_exists_and_uses_known_requirements_only
+FAILED tests/test_r170_router_requirements.py::test_tool_backed_verify_stages_declare_tool_output[code-test-test_runner]
+FAILED tests/test_r170_router_requirements.py::test_tool_backed_verify_stages_declare_tool_output[analysis-validate-validator]
+FAILED tests/test_r170_router_requirements.py::test_tool_backed_verify_stages_declare_tool_output[api-probe-network_client]
+FAILED tests/test_r170_router_requirements.py::test_tool_backed_verify_stages_declare_tool_output[strategy-ground-researcher]
+FAILED tests/test_r170_router_requirements.py::test_tool_backed_verify_stages_declare_tool_output[architecture-ground-researcher]
+FAILED tests/test_r170_router_requirements.py::test_tool_backed_verify_stages_declare_tool_output[review_test-test-test_runner]
+FAILED tests/test_r170_router_requirements.py::test_tool_backed_execute_stage_declares_tool_output[tests-test_runner]
+FAILED tests/test_r170_router_requirements.py::test_tool_backed_execute_stage_declares_tool_output[validate-validator]
+FAILED tests/test_r170_router_requirements.py::test_declared_requirements_are_independent_copies
+FAILED tests/test_r170_router_requirements.py::test_router_plans_pass_dag_normalization_with_requirements
+FAILED tests/test_r170_router_requirements.py::test_router_plan_tool_stage_without_evidence_fails_when_gate_on
+FAILED tests/test_r170_router_requirements.py::test_router_plan_with_tool_evidence_succeeds_and_records_check
+FAILED tests/test_r170_router_requirements.py::test_real_validator_success_satisfies_router_requirement
+FAILED tests/test_r170_router_requirements.py::test_real_test_runner_success_satisfies_router_requirement
+========================= 15 failed, 9 passed in 0.44s =========================
+
+## 2.1 أسباب الفشل
+      1 E   AssertionError: ('code', 'test')
+      1 E   AssertionError: assert 'succeeded' == 'failed'
+      2 E   AssertionError: assert 'tool_output' in ['no-requirements']
+      8 E   AssertionError: assert None == {'tool_output': True}
+      1 E   AttributeError: module 'agent_civilization.routing.auto_router' has no attribute 'STAGE_VERIFICATION'
+      1 E   KeyError: 'verification'
+      2 E   assert None == {'tool_output': True}
+
+## 2.2 التصنيف الصريح
+- RED (15): 14 فشلًا سلوكيًا (مراحل بلا verification، خطة DAG تنجح بلا دليل، الفحص غير مسجل للمعالجين الحقيقيين
+  _validator و_test_runner — نجحا فعلًا لكن checks_run=['no-requirements']) + 1 بنيوي: جدول السياسة
+  STAGE_VERIFICATION غير موجود (AttributeError) — مُعلن كبنيوي لا سلوكي.
+- CHAR (9): 8 «المراحل النصية بلا مفتاح verification» (لكل موجه) + 1 «العلم معطل = لا أثر» — نجحت قبل التعديل وبعده.
+- تصحيح صادق للاختبار قبل التشغيل الأحمر النهائي: الموجه "build a market strategy roadmap…" يذهب إلى builder لا
+  strategist (كلمة build)؛ استُبدل بـ"propose a market strategy and roadmap…" وأضيفت حالة architect. لم تُمس الشيفرة.
+
+## 3. الإصلاح
+- auto_router.STAGE_VERIFICATION = {test_runner, network_client, validator, researcher} → {"tool_output": True}.
+- Stage.verification اختياري يُملأ في __post_init__ بنسخة من السياسة حسب التخصص؛ to_dict يحذف المفتاح حين None
+  (شكل المراحل النصية القائم محفوظ حرفيًا). asdict ينسخ القاموس ⇒ كل خطة/مرحلة نسخة مستقلة.
+- لا تغيير في output_validators ولا dag ولا الوكلاء ولا HTTP. الأثر فقط عند AGOS_OUTPUT_VALIDATORS=1.
+
+## 4. أخضر
+============================== 24 passed in 0.32s ==============================
+
+## 5. الحزمة الكاملة
+$ python3 -m pytest tests/ -q -p no:cacheprovider
+===== 2956 passed, 8 skipped, 4 deselected, 9 xfailed in 261.01s (0:04:21) =====
+off_exit=0
+$ AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/ -q -p no:cacheprovider
+===== 2956 passed, 8 skipped, 4 deselected, 9 xfailed in 258.09s (0:04:18) =====
+on_exit=0
+- 2932 (دفعة 4) + 24 = 2956. التخطيات الثمانية كما هي (4 live_storage + 2 live_queue + 1 live_backpressure + 1 NOTSET).
+- حد التفسير: الحزمة لا تشغّل network_client/researcher الحقيقيين (شبكة)؛ قبولهما تحت المتطلب مستنتج من قياس شيفرة
+  المعالج (كل return ناجح يحمل tool_output) لا من تشغيل حي. _validator و_test_runner شُغّلا حقيقيًا (sandbox محلي).
+- لم يُعَد قياس R-169 (يحتاج استدعاءات LLM — لم تُنفذ دون تفويض).
+
+## 6. عدم الحذف (قبل الالتزام)
+ agent_civilization/routing/auto_router.py | 40 ++++++++++++++++++++++++++++---
+ docs/governance/OPERATIONS.md             |  3 ++-
+ 2 files changed, 39 insertions(+), 4 deletions(-)
+ M agent_civilization/routing/auto_router.py
+ M docs/governance/OPERATIONS.md
+?? docs/audit/M8/logs/raw/282_r170_batch5_router_requirements.log
+?? tests/test_r170_router_requirements.py

@@ -376,7 +376,8 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `citations: true` | كتلة استشهادات غير فارغة (`citations`/`sources`/`references`) — إلا الامتناع الصريح |
 | `checks: true` | قائمة `checks` غير فارغة وكل عنصر قاموس بـ`ok: true` صراحة |
 
-- **حد قائم**: الخطط التي يبنيها الموجّه (`routing.route`) عبر `POST /civilization/execute` لا تعلن متطلبات اليوم، فتفعيل العلم هناك يطبق كشف النجاح المزوّر والتناقض فقط. واجهة HTTP لا تقبل `verification` من العميل في هذا المسار.
+- **خطط الموجّه** (دفعة 5): `routing.auto_router.STAGE_VERIFICATION` يعلن `{"tool_output": true}` لكل مرحلة تخصصها معالج أداة يُرجع نجاحه `tool_output` دائمًا — `test_runner` و`network_client` و`validator` و`researcher` (مراحل `test`/`probe`/`validate`/`ground`، ومرحلة `execute` حين يكون التخصص الأساسي أحدها). المراحل النصية (`understand`/`plan`/`review` والتنفيذ النصي) لا تعلن شيئًا وتُقبل `unverified` — لا دليل آلي لها. تظهر المتطلبات في `POST /civilization/plan`. واجهة HTTP لا تقبل `verification` من العميل.
+- **حد**: `citations` لا تُعلن للباحث لأن المدقق يبحث عن الاستشهادات في المستوى الأعلى للنتيجة بينما يضعها `_researcher` في `tool_output.sources`؛ إعلانها يرفض نجاحًا صادقًا. فحص `tool_output` يثبت وجود مخرج أداة غير فاشل، لا صحة محتواه.
 
 ### التفعيل المرحلي الموصى به
 1. **محلي/CI**: `AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/test_r170_*.py -q` ثم الحزمة الكاملة بالعلم مفعلًا لرصد أي مسار يعتمد على نجاح بلا دليل.
