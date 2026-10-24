@@ -198,6 +198,10 @@ def test_outer_ok_with_inner_failure_rejected():
 
 
 def test_citations_presence_check_documented_limit():
-    """حد معلن: فحص الاستشهادات وجودي ("invented" تمر) — الإثبات مسار لاحق موثق."""
+    """كان حدًا معلنًا (دفعات 1–5): فحص الاستشهادات وجودي و"invented" تمر.
+    أُغلق في الدفعة 6: الصيغة تُفحص (http/https URL لكل عنصر) فـ"invented"
+    تُرفض. الحد المتبقي: لا إثبات أن المصدر الحقيقي يدعم الادعاء."""
     result = {"ok": True, "answer": "x", "citations": ["invented"]}
-    assert validate_citations(result) == []  # presence only — documented limit
+    assert validate_citations(result) != []  # format checked since batch 6
+    ok = {"ok": True, "answer": "x", "citations": ["https://invented.example/page"]}
+    assert validate_citations(ok) == []  # well-formed but unverified URL passes — documented limit

@@ -1,0 +1,107 @@
+# 283 — R-170 دفعة 6: الاستشهادات داخل tool_output وصلاحية الدليل + اختبار حي لـresearcher/network_client
+# التاريخ: 2026-10-24 (Asia/Riyadh) — الفرع m8/r170-batch6-citations-in-tool-output — القاعدة main f254126
+# المخرجات حرفية من أوامر محلية؛ لا تعديل لأي قياس/عتبة/وسم مسجل.
+
+## 1. الاكتشاف
+- validate_citations يبحث في المستوى الأعلى فقط؛ _researcher يضع مصادره في tool_output.sources (بحث ويب: title/url/snippet)
+  أو tool_output.source (إجابة فورية: AbstractURL، قد يكون فارغًا) ⇒ نجاح الباحث الصادق يُرفض بمتطلب citations.
+- الفحص وجودي: ["invented"]، [{}]، "javascript:..." تمر؛ وhas_machine_evidence يعدها دليلًا آليًا ⇒ نجاح مزوّر
+  بادعاء نصي واستشهادات مخترعة يفلت من الكشف.
+
+## 2. أحمر أولًا — tests/test_r170_citations_evidence.py (33 حالة، قبل أي تعديل في الشيفرة)
+$ python3 -m pytest tests/test_r170_citations_evidence.py -q -p no:cacheprovider   (exit=1)
+FAILED tests/test_r170_citations_evidence.py::test_web_search_sources_in_tool_output_are_accepted
+FAILED tests/test_r170_citations_evidence.py::test_instant_answer_source_url_is_accepted
+FAILED tests/test_r170_citations_evidence.py::test_router_researcher_success_passes_gate_with_citations
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block0]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block1]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block2]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block3]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block4]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block5]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block6]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block7]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[block8]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_citations_are_rejected[see the docs]
+FAILED tests/test_r170_citations_evidence.py::test_invalid_top_level_block_is_not_rescued_by_tool_output
+FAILED tests/test_r170_citations_evidence.py::test_invalid_citations_do_not_count_as_machine_evidence
+FAILED tests/test_r170_citations_evidence.py::test_forged_success_with_invented_citations_is_detected
+FAILED tests/test_r170_citations_evidence.py::test_router_policy_researcher_requires_citations_and_tool_output
+FAILED tests/test_r170_citations_evidence.py::test_verify_success_reports_citation_reason_for_instant_answer_without_source
+======================== 18 failed, 15 passed in 0.31s =========================
+- التصنيف: RED 18 (كلها سلوكية — AssertionError؛ لا أخطاء استيراد). CHAR 15: 6 استشهادات صالحة في المستوى الأعلى،
+  4 مصادر أداة غير صالحة (كانت مرفوضة لأن tool_output لم يُفحص — حارس انحدار؛ صُحح وسمها في docstring من RED إلى
+  CHAR بعد التشغيل الأحمر، لا تغيير في التأكيدات)، 2 إجابة فورية بلا مصدر، 1 مصادر فارغة، 1 امتناع، 1 ادعاء مع استشهاد صالح.
+
+## 3. الإصلاح
+- output_validators: _citation_blocks (المستوى الأعلى أولًا ثم tool_output: CITATION_KEYS + source)؛ _judge_citation_block
+  (≥1 عنصر، وكل عنصر http/https URL بمضيف بلا مسافات — نصًا أو في url/href/link)؛ citations_valid؛
+  has_machine_evidence يعدّ الاستشهادات الصالحة فقط؛ سبب رفض يسمي tool_output حين بُحث فيه.
+- auto_router.STAGE_VERIFICATION["researcher"] = {"tool_output": True, "citations": True}.
+- اختبارات قائمة طُوّرت (لا حذف) لأنها كانت ترمّز الحد/السياسة السابقة:
+  tests/test_r170_output_validators.py::test_citations_presence_check_documented_limit — كان يؤكد قبول ["invented"]
+  (حد معلن)؛ الآن يؤكد رفضه، وقبول URL صحيح الشكل غير متحقق منه (الحد المتبقي: لا إثبات وجود/دعم).
+  tests/test_r170_router_requirements.py — توقع الباحث صار {"tool_output","citations"} (جدول EXPECTED).
+  قبل التطوير: "5 failed, 127 passed" على tests/test_r170_*.py (الخمسة هي هذه التوقعات القديمة بالضبط).
+
+## 4. أخضر
+============================== 33 passed in 0.20s ==============================
+$ python3 -m pytest tests/test_r170_*.py -q   → 132 passed (قبل إضافة ملف الاختبار الحي)
+
+## 5. اختبار حي (إنترنت حقيقي من بيئة التنفيذ) — tests/test_r170_live_tool_evidence.py (علامة network، 10 حالات)
+$ timeout 600 python3 -m pytest tests/test_r170_live_tool_evidence.py -m network -v -p no:cacheprovider
+test_live_researcher_passes_router_requirements[Python programming language-instant-answer-real] PASSED [ 10%]
+test_live_researcher_passes_router_requirements[Python programming language-instant-answer-specialists] PASSED [ 20%]
+test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-real] PASSED [ 30%]
+test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-specialists] PASSED [ 40%]
+test_live_network_client_passes_router_requirements[real] PASSED [ 50%]
+test_live_network_client_passes_router_requirements[specialists] PASSED [ 60%]
+test_live_network_client_dns_only_passes PASSED [ 70%]
+test_live_researcher_rejected_when_citations_required_but_json_demanded PASSED [ 80%]
+test_live_dag_single_stage_router_policy_researcher PASSED [ 90%]
+test_live_router_ground_stage_declares_what_live_researcher_satisfies PASSED [100%]
+============================== 10 passed in 1.96s ==============================
+
+### 5.1 مخرجات حية فعلية (agent.execute، impl=real، AGOS_OUTPUT_VALIDATORS=1، متطلبات STAGE_VERIFICATION)
+utc 2026-10-24T07:02:47
+{"spec": "researcher", "prompt": "Python programming language", "ok": true, "method": "instant-answer", "source": "https://en.wikipedia.org/wiki/Python_(programming_language)", "urls": [], "status": null, "latency_ms": null, "verification": {"ok": true, "reasons": [], "checks_run": ["citations", "tool_output"], "unverified": false}}
+{"spec": "researcher", "prompt": "best practices for REST API pagination", "ok": true, "method": "web-search", "source": null, "urls": ["https://stackoverflow.com/questions/13872273/api-pagination-best-practices", "https://restfulapi.net/api-pagination-sorting-filtering/", "https://apidog.com/blog/pagination-in-rest-apis/", "https://dev.to/impranavkale/mastering-api-pagination-methods-scenarios-and-best-practices-5973", "https://apidog.com/blog/api-pagination-guide/"], "status": null, "latency_ms": null, "verification": {"ok": true, "reasons": [], "checks_run": ["citations", "tool_output"], "unverified": false}}
+{"spec": "network_client", "prompt": "HEAD https://example.com/", "ok": true, "method": "HEAD", "source": null, "urls": [], "status": 200, "latency_ms": 66.56, "verification": {"ok": true, "reasons": [], "checks_run": ["tool_output"], "unverified": false}}
+- المغطى حيًا: researcher بمساريه (instant-answer بمصدر Wikipedia، web-search بخمسة مصادر)، للوكتين (real/specialists)؛
+  network_client HEAD (200) للوكتين وDNS فقط؛ وجه سلبي حي (نتيجة حية حقيقية ترفض لمتطلب json غير مستوفى)؛ مرحلة DAG حية.
+- غير المغطى حيًا: api_integrator تحت البوابة (لا يعلن الموجّه متطلبًا له)؛ مسار researcher حين يحجب DuckDuckGo
+  (202/تحدي بوت) — في هذه الجلسة أعاد curl 202 لكن urllib عبر safe_urlopen نجح؛ وظيفة CI network ليست فحصًا مطلوبًا.
+
+## 6. الحزمة الكاملة
+$ python3 -m pytest tests/ -q -p no:cacheprovider   (العلم غير مضبوط؛ قبل إضافة ملف الاختبار الحي)
+off_exit=0
+$ AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/ -q -p no:cacheprovider   (التشغيل الأول)
+= 1 failed, 2988 passed, 8 skipped, 4 deselected, 9 xfailed in 290.91s (0:04:50) =
+on_exit=1
+E   assert (9 == 8)
+E    +  where 9 = _threads()
+FAILED tests/test_r162_agent_registry.py::test_ten_thousand_logical_agents_without_a_thread_or_process_each
+- فشل غير محسوم السبب ومُعلن: test_r162_agent_registry::test_ten_thousand_logical_agents_without_a_thread_or_process_each
+  يقارن عدد خيوط العملية كلها قبل/بعد (/proc/self/task). أُعيد معزولًا بالعلم مفعلًا 3 مرات: 26 passed كل مرة؛ ثم
+  أُعيدت الحزمة كاملة بالعلم مفعلًا (أدناه) فنجح. التفسير المرجح (غير مثبت): خيط خلفي من اختبار سابق يبدأ/ينتهي أثناء
+  القياس — حساسية ترتيب، لا علاقة مثبتة بالبوابة. لم يُعدَّل الاختبار؛ يُتابع كخطر تذبذب (flaky) لا يُخفى.
+$ AGOS_OUTPUT_VALIDATORS=1 python3 -m pytest tests/ -q -p no:cacheprovider   (التشغيل الثاني، بعد إضافة ملف الاختبار الحي)
+==== 2989 passed, 8 skipped, 14 deselected, 9 xfailed in 262.42s (0:04:22) =====
+on_exit=0
+- 2956 + 33 = 2989. deselected 4 → 14 (+10 حالات network الجديدة).
+
+## 7. عدم الحذف (قبل الالتزام)
+ agent_civilization/core/output_validators.py | 83 +++++++++++++++++++++++++---
+ agent_civilization/routing/auto_router.py    | 11 ++--
+ docs/governance/OPERATIONS.md                |  6 +-
+ tests/test_r170_output_validators.py         |  8 ++-
+ tests/test_r170_router_requirements.py       | 10 +++-
+ 5 files changed, 97 insertions(+), 21 deletions(-)
+ M agent_civilization/core/output_validators.py
+ M agent_civilization/routing/auto_router.py
+ M docs/governance/OPERATIONS.md
+ M tests/test_r170_output_validators.py
+ M tests/test_r170_router_requirements.py
+?? docs/audit/M8/logs/raw/283_r170_batch6_citations_live.log
+?? tests/test_r170_citations_evidence.py
+?? tests/test_r170_live_tool_evidence.py

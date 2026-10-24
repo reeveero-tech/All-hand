@@ -24,16 +24,17 @@ from typing import Any, Dict, List, Optional, Tuple
 #: ``tool_output`` (measured in core/agents/real_dispatcher.py: _test_runner,
 #: _network_client, _validator, _researcher) declare ``tool_output``. Text-only
 #: (LLM) stages declare nothing: no machine evidence exists for them, so a
-#: requirement would only produce false rejections. ``citations`` is NOT
-#: declared for the researcher: the validator looks for citations at the top
-#: level of the result, while _researcher returns them in
-#: ``tool_output.sources`` — declaring it would reject honest successes.
+#: requirement would only produce false rejections. Since batch 6 the
+#: researcher also declares ``citations`` (validate_citations looks inside
+#: ``tool_output`` too); an instant answer without a source URL is rejected.
 #: Requirements only act when AGOS_OUTPUT_VALIDATORS=1 (see OPERATIONS.md).
 STAGE_VERIFICATION: Dict[str, Dict[str, Any]] = {
     "test_runner": {"tool_output": True},
     "network_client": {"tool_output": True},
     "validator": {"tool_output": True},
-    "researcher": {"tool_output": True},
+    # R-170 (batch 6): citations are now found in tool_output.sources/source
+    # and judged by format, so the researcher declares them too.
+    "researcher": {"tool_output": True, "citations": True},
 }
 
 

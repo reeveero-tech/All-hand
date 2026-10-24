@@ -29,6 +29,9 @@ from agent_civilization.routing import auto_router
 from agent_civilization.routing.auto_router import route
 
 TOOL = {"tool_output": True}
+# الدفعة 6: الباحث يعلن citations أيضًا (المدقق يبحث داخل tool_output منذها)
+RESEARCH = {"tool_output": True, "citations": True}
+EXPECTED = {"test_runner": TOOL, "network_client": TOOL, "validator": TOOL, "researcher": RESEARCH}
 # التخصصات المدعومة بأداة (مقيسة من real_dispatcher) — مستقلة عن الشيفرة المختبرة
 TOOL_SPECS = {"test_runner", "network_client", "validator", "researcher"}
 
@@ -65,7 +68,7 @@ def test_policy_table_exists_and_uses_known_requirements_only():
     policy = auto_router.STAGE_VERIFICATION
     assert set(policy) == TOOL_SPECS
     for spec, req in policy.items():
-        assert req == TOOL, spec
+        assert req == EXPECTED[spec], spec
         assert set(req) <= set(KNOWN_REQUIREMENTS), spec
 
 
@@ -81,7 +84,7 @@ def test_tool_backed_verify_stages_declare_tool_output(key, stage, spec):
     """RED: مراحل التحقق المدعومة بأداة تعلن ``tool_output``."""
     st = _by_name(route(PROMPTS[key]))[stage]
     assert st["specialization"] == spec
-    assert st.get("verification") == TOOL
+    assert st.get("verification") == EXPECTED[spec]
 
 
 @pytest.mark.parametrize("key,spec", [("tests", "test_runner"), ("validate", "validator")])
@@ -118,8 +121,9 @@ def test_router_plans_pass_dag_normalization_with_requirements():
         declared = {s["name"]: s.get("verification") for s in n["stages"]}
         tool_stages = [s["name"] for s in n["stages"] if s["specialization"] in TOOL_SPECS]
         assert tool_stages, key
+        spec_of = {s["name"]: s["specialization"] for s in n["stages"]}
         for name in tool_stages:
-            assert declared[name] == TOOL, (key, name)
+            assert declared[name] == EXPECTED[spec_of[name]], (key, name)
 
 
 # ======================================================= through the DAG
