@@ -1,0 +1,1482 @@
+{
+ "generated_by": "scripts/r169_run_ledger.py (offline; no provider calls; no scoring)",
+ "runs_total": 35,
+ "status_counts": {
+  "duplicate_not_independent": 5,
+  "incomplete_stopped": 6,
+  "no_provider_call": 1,
+  "provider_error_heavy": 1,
+  "superseded": 1,
+  "valid": 21
+ },
+ "provider_called_runs": 34,
+ "never_called_runs": 1,
+ "runs": [
+  {
+   "run": "dev_baseline_t1.jsonl",
+   "version": "v1",
+   "split": "dev",
+   "split_role": "development",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-20T07:11:10+00:00",
+   "code_sha": "b1f7b31fb266168af997b638ff3bd89e38a867f3",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 30,
+   "unique_ids": 30,
+   "expected": 30,
+   "provider": "called",
+   "replied": 29,
+   "provider_errors": 1,
+   "not_called": 0,
+   "error_classes": {
+    "malformed": 1
+   },
+   "provider_error_rate": 0.0333,
+   "provider_error_rate_ci95": [
+    0.0059,
+    0.1667
+   ],
+   "median_latency_s": 31.34,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "dev_baseline_t1.summary.json"
+   },
+   "file_sha256": "065f560ec732473e09ce48a457985b2f86d6f005fe1a17ea9867984c92e4eb2e"
+  },
+  {
+   "run": "dev_grounded-v2_t1.jsonl",
+   "version": "v1",
+   "split": "dev",
+   "split_role": "development",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-20T07:30:06+00:00",
+   "code_sha": "b1f7b31fb266168af997b638ff3bd89e38a867f3",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": true,
+   "dataset_sha_matches_manifest": true,
+   "records": 30,
+   "unique_ids": 30,
+   "expected": 30,
+   "provider": "called",
+   "replied": 30,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    -0.0,
+    0.1135
+   ],
+   "median_latency_s": 32.53,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [
+    "tree_dirty=True at run time (development only)"
+   ],
+   "stored_summary": {
+    "file": "dev_grounded-v2_t1.summary.json"
+   },
+   "file_sha256": "70420ae3bf8e35213dbd976e9c08ce2122cd8a06674ae58aa45ebf82467897d8"
+  },
+  {
+   "run": "dev_grounded-v2_t2.jsonl",
+   "version": "v1",
+   "split": "dev",
+   "split_role": "development",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-20T07:51:23+00:00",
+   "code_sha": "5b34a70f1a58ed14533ccce1041dedb2843006cc",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 30,
+   "unique_ids": 30,
+   "expected": 30,
+   "provider": "called",
+   "replied": 30,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    -0.0,
+    0.1135
+   ],
+   "median_latency_s": 31.24,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "dev_grounded-v2_t1.jsonl",
+    "identical": 4,
+    "compared": 30
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "dev_grounded-v2_t2.summary.json"
+   },
+   "file_sha256": "87ef112552d5aa9602e6b3b1144bbccc110b277390f9ff9138e1584cc106c2da"
+  },
+  {
+   "run": "validation_baseline_t1.jsonl",
+   "version": "v1",
+   "split": "validation",
+   "split_role": "validation",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-20T08:05:53+00:00",
+   "code_sha": "5b34a70f1a58ed14533ccce1041dedb2843006cc",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": true,
+   "dataset_sha_matches_manifest": true,
+   "records": 28,
+   "unique_ids": 28,
+   "expected": 28,
+   "provider": "called",
+   "replied": 27,
+   "provider_errors": 1,
+   "not_called": 0,
+   "error_classes": {
+    "malformed": 1
+   },
+   "provider_error_rate": 0.0357,
+   "provider_error_rate_ci95": [
+    0.0063,
+    0.1771
+   ],
+   "median_latency_s": 31.95,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [
+    "tree_dirty=True at run time (development only)"
+   ],
+   "stored_summary": {
+    "file": "validation_baseline_t1.summary.json"
+   },
+   "file_sha256": "50ac948d29f8b8f612d3ced0b4fa704972216594981b2652641d12b9097781d2"
+  },
+  {
+   "run": "validation_grounded-v2_t1.jsonl",
+   "version": "v1",
+   "split": "validation",
+   "split_role": "validation",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-20T08:21:07+00:00",
+   "code_sha": "f69fdf6ec72721609c848a015045c335e03d8f47",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": true,
+   "dataset_sha_matches_manifest": true,
+   "records": 28,
+   "unique_ids": 28,
+   "expected": 28,
+   "provider": "called",
+   "replied": 26,
+   "provider_errors": 2,
+   "not_called": 0,
+   "error_classes": {
+    "rate_limit": 1,
+    "timeout": 1
+   },
+   "provider_error_rate": 0.0714,
+   "provider_error_rate_ci95": [
+    0.0198,
+    0.2265
+   ],
+   "median_latency_s": 41.93,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [
+    "tree_dirty=True at run time (development only)"
+   ],
+   "stored_summary": {
+    "file": "validation_grounded-v2_t1.summary.json"
+   },
+   "file_sha256": "814a83c359ba12e36c2b34821fb7b3f5169625fa2952d9cb1b2196c60ca012fa"
+  },
+  {
+   "run": "dev_grounded-v2_t3.jsonl",
+   "version": "v1",
+   "split": "dev",
+   "split_role": "development",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-20T08:28:56+00:00",
+   "code_sha": "22e01ebdc159d0d89d1fc512be4267ad638719ac",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 30,
+   "unique_ids": 30,
+   "expected": 30,
+   "provider": "called",
+   "replied": 26,
+   "provider_errors": 4,
+   "not_called": 0,
+   "error_classes": {
+    "timeout": 4
+   },
+   "provider_error_rate": 0.1333,
+   "provider_error_rate_ci95": [
+    0.0531,
+    0.2968
+   ],
+   "median_latency_s": 30.01,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "dev_grounded-v2_t1.jsonl",
+    "identical": 4,
+    "compared": 26
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "provider_error_heavy",
+   "valid_for_analysis": false,
+   "reasons": [
+    "provider errors 4/30 > 10%"
+   ],
+   "stored_summary": {
+    "file": "dev_grounded-v2_t3.summary.json"
+   },
+   "file_sha256": "bd6afec1a6bb78363c1550365080cac68517856ea8534e2b17b51d043723e1fd"
+  },
+  {
+   "run": "test_baseline_f1.jsonl",
+   "version": "v1",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-20T08:53:42+00:00",
+   "code_sha": "5d428c4128b02761ca5bc61a20432938f02d5efc",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 84,
+   "unique_ids": 84,
+   "expected": 84,
+   "provider": "called",
+   "replied": 81,
+   "provider_errors": 3,
+   "not_called": 0,
+   "error_classes": {
+    "other_provider_error": 1,
+    "malformed": 2
+   },
+   "provider_error_rate": 0.0357,
+   "provider_error_rate_ci95": [
+    0.0122,
+    0.0998
+   ],
+   "median_latency_s": 33.04,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "test_baseline_f1.summary.json"
+   },
+   "file_sha256": "cc59a6ec1df129df0b88f7cae4dcfc1a274870ac664cef5430cff94e6d7e833b"
+  },
+  {
+   "run": "test_grounded-v2_f1.jsonl",
+   "version": "v1",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-20T10:00:19+00:00",
+   "code_sha": "5d428c4128b02761ca5bc61a20432938f02d5efc",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 84,
+   "unique_ids": 84,
+   "expected": 84,
+   "provider": "called",
+   "replied": 84,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0437
+   ],
+   "median_latency_s": 33.67,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "test_grounded-v2_f1.summary.json"
+   },
+   "file_sha256": "94d6242ad554fe0f1a3b5b96198fa32a7a8b9abacd2d66bca4f544772d810ce5"
+  },
+  {
+   "run": "v2/dev_baseline_d1.jsonl",
+   "version": "v2",
+   "split": "dev",
+   "split_role": "development",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T04:01:32+00:00",
+   "code_sha": "a44bc83dbf088177f840306c262eeb612c263653",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 30,
+   "unique_ids": 30,
+   "expected": 30,
+   "provider": "called",
+   "replied": 30,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    -0.0,
+    0.1135
+   ],
+   "median_latency_s": 32.65,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v2/dev_baseline_d1.summary.json"
+   },
+   "file_sha256": "c7909eda544f6714bcee859915787a8db290a54e1a30dab9125958dc90bb7e7d"
+  },
+  {
+   "run": "v2/superseded_test_baseline_f2_partial.jsonl",
+   "version": "v2",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T04:26:09+00:00",
+   "code_sha": "cf65f8900ac73189be2f8da758066f6881920b8d",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 21,
+   "unique_ids": 21,
+   "expected": 84,
+   "provider": "called",
+   "replied": 21,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.1546
+   ],
+   "median_latency_s": 65.74,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": true,
+   "status": "incomplete_stopped",
+   "valid_for_analysis": false,
+   "reasons": [
+    "incomplete 21/84",
+    "marked superseded (pre-audit scorer)"
+   ],
+   "stored_summary": null,
+   "file_sha256": "82a6a030d7cd27dfcb0cee543cb2b48724a252b6614f736dcba7cc42bb1048b5"
+  },
+  {
+   "run": "v2/superseded_test_baseline_f3.jsonl",
+   "version": "v2",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T04:44:46+00:00",
+   "code_sha": "9d3a49d2fee81f0383e2ef5346e41c9283b862dc",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 84,
+   "unique_ids": 84,
+   "expected": 84,
+   "provider": "called",
+   "replied": 81,
+   "provider_errors": 3,
+   "not_called": 0,
+   "error_classes": {
+    "malformed": 3
+   },
+   "provider_error_rate": 0.0357,
+   "provider_error_rate_ci95": [
+    0.0122,
+    0.0998
+   ],
+   "median_latency_s": 27.69,
+   "identical_to_earlier": {
+    "run": "v2/superseded_test_baseline_f2_partial.jsonl",
+    "identical": 21,
+    "compared": 21
+   },
+   "max_reply_identity_vs_earlier": {
+    "run": "v2/superseded_test_baseline_f2_partial.jsonl",
+    "identical": 21,
+    "compared": 21
+   },
+   "records_with_retries": 0,
+   "superseded": true,
+   "status": "duplicate_not_independent",
+   "valid_for_analysis": false,
+   "reasons": [
+    "replies byte-identical to earlier run v2/superseded_test_baseline_f2_partial.jsonl — not an independent sample",
+    "marked superseded (pre-audit scorer)"
+   ],
+   "stored_summary": {
+    "file": "v2/superseded_test_baseline_f3.summary.json"
+   },
+   "file_sha256": "9adf99dffff0780bcde9b867c19a839241fe864fb1f130475fadcc55620a1bc4"
+  },
+  {
+   "run": "v2/superseded_test_grounded-v2_f3.jsonl",
+   "version": "v2",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T05:42:13+00:00",
+   "code_sha": "9d3a49d2fee81f0383e2ef5346e41c9283b862dc",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 84,
+   "unique_ids": 84,
+   "expected": 84,
+   "provider": "called",
+   "replied": 84,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0437
+   ],
+   "median_latency_s": 33.64,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": true,
+   "status": "superseded",
+   "valid_for_analysis": false,
+   "reasons": [
+    "marked superseded (pre-audit scorer)"
+   ],
+   "stored_summary": {
+    "file": "v2/superseded_test_grounded-v2_f3.summary.json"
+   },
+   "file_sha256": "571f6170527b681af335ec3300ff0dad3d9c6af17cfa3e71261778645a03a09f"
+  },
+  {
+   "run": "v2/superseded_test_baseline_f4.jsonl",
+   "version": "v2",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T06:54:18+00:00",
+   "code_sha": "96b0d6e401e55cc4c23ece11649296af4ebd5b8a",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 84,
+   "unique_ids": 84,
+   "expected": 84,
+   "provider": "called",
+   "replied": 81,
+   "provider_errors": 3,
+   "not_called": 0,
+   "error_classes": {
+    "malformed": 3
+   },
+   "provider_error_rate": 0.0357,
+   "provider_error_rate_ci95": [
+    0.0122,
+    0.0998
+   ],
+   "median_latency_s": 6.35,
+   "identical_to_earlier": {
+    "run": "v2/superseded_test_baseline_f2_partial.jsonl",
+    "identical": 21,
+    "compared": 21
+   },
+   "max_reply_identity_vs_earlier": {
+    "run": "v2/superseded_test_baseline_f3.jsonl",
+    "identical": 81,
+    "compared": 81
+   },
+   "records_with_retries": 0,
+   "superseded": true,
+   "status": "duplicate_not_independent",
+   "valid_for_analysis": false,
+   "reasons": [
+    "replies byte-identical to earlier run v2/superseded_test_baseline_f2_partial.jsonl — not an independent sample",
+    "marked superseded (pre-audit scorer)"
+   ],
+   "stored_summary": {
+    "file": "v2/superseded_test_baseline_f4.summary.json"
+   },
+   "file_sha256": "215554ec6154ebf4a5b9b705776a52dbe6211cac8da4cc9ee17c5a8d838be5f8"
+  },
+  {
+   "run": "v2/superseded_test_grounded-v2_f4.jsonl",
+   "version": "v2",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T07:10:14+00:00",
+   "code_sha": "96b0d6e401e55cc4c23ece11649296af4ebd5b8a",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 84,
+   "unique_ids": 84,
+   "expected": 84,
+   "provider": "called",
+   "replied": 84,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0437
+   ],
+   "median_latency_s": 6.36,
+   "identical_to_earlier": {
+    "run": "v2/superseded_test_grounded-v2_f3.jsonl",
+    "identical": 84,
+    "compared": 84
+   },
+   "max_reply_identity_vs_earlier": {
+    "run": "v2/superseded_test_grounded-v2_f3.jsonl",
+    "identical": 84,
+    "compared": 84
+   },
+   "records_with_retries": 0,
+   "superseded": true,
+   "status": "duplicate_not_independent",
+   "valid_for_analysis": false,
+   "reasons": [
+    "replies byte-identical to earlier run v2/superseded_test_grounded-v2_f3.jsonl — not an independent sample",
+    "marked superseded (pre-audit scorer)"
+   ],
+   "stored_summary": {
+    "file": "v2/superseded_test_grounded-v2_f4.summary.json"
+   },
+   "file_sha256": "77353fda61549aa9a95446d9472d9b85f6ade88639f9767351465379a0c2d82f"
+  },
+  {
+   "run": "v3/dev_baseline_d1.jsonl",
+   "version": "v3",
+   "split": "dev",
+   "split_role": "development",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T08:49:36+00:00",
+   "code_sha": "5c6afd2fc64bd0af693e439c4dba39e71b3b8184",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": true,
+   "dataset_sha_matches_manifest": true,
+   "records": 30,
+   "unique_ids": 30,
+   "expected": 30,
+   "provider": "called",
+   "replied": 30,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    -0.0,
+    0.1135
+   ],
+   "median_latency_s": 36.44,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [
+    "tree_dirty=True at run time (development only)"
+   ],
+   "stored_summary": {
+    "file": "v3/dev_baseline_d1.summary.json"
+   },
+   "file_sha256": "72831702caac4232505a9f24a6b6cce66b813ef9c2c798c6f4c73b22a46f01e9"
+  },
+  {
+   "run": "v3/dev_grounded-v2_d1.jsonl",
+   "version": "v3",
+   "split": "dev",
+   "split_role": "development",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T09:11:43+00:00",
+   "code_sha": "5c6afd2fc64bd0af693e439c4dba39e71b3b8184",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": true,
+   "dataset_sha_matches_manifest": true,
+   "records": 30,
+   "unique_ids": 30,
+   "expected": 30,
+   "provider": "called",
+   "replied": 30,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    -0.0,
+    0.1135
+   ],
+   "median_latency_s": 32.41,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [
+    "tree_dirty=True at run time (development only)"
+   ],
+   "stored_summary": {
+    "file": "v3/dev_grounded-v2_d1.summary.json"
+   },
+   "file_sha256": "b72f8dc378e7e343534acec867e2a5c6a2587b3deb274a5fc8da4749b70263a3"
+  },
+  {
+   "run": "v3/test_baseline_a1.jsonl",
+   "version": "v3",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T10:27:54+00:00",
+   "code_sha": "575d93aa314f892f549df5e71baa3622abb7371f",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 84,
+   "unique_ids": 84,
+   "expected": 84,
+   "provider": "called",
+   "replied": 84,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0437
+   ],
+   "median_latency_s": 32.94,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v3/test_baseline_a1.summary.json"
+   },
+   "file_sha256": "906869f5099ca528710639eef21381fef12001c294342e739172b5f16032516c"
+  },
+  {
+   "run": "v3/test_grounded-v2_a1.jsonl",
+   "version": "v3",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T11:26:20+00:00",
+   "code_sha": "575d93aa314f892f549df5e71baa3622abb7371f",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 84,
+   "unique_ids": 84,
+   "expected": 84,
+   "provider": "called",
+   "replied": 83,
+   "provider_errors": 1,
+   "not_called": 0,
+   "error_classes": {
+    "malformed": 1
+   },
+   "provider_error_rate": 0.0119,
+   "provider_error_rate_ci95": [
+    0.0021,
+    0.0644
+   ],
+   "median_latency_s": 32.43,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v3/test_grounded-v2_a1.summary.json"
+   },
+   "file_sha256": "2f714b6ec885ffe4044756676a17e83494629e67eb8cf85c0b0d93f9fb84df19"
+  },
+  {
+   "run": "v4/dev_baseline_d1.jsonl",
+   "version": "v4",
+   "split": "dev",
+   "split_role": "development",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T13:44:09+00:00",
+   "code_sha": "a01c57cfd0d9291e1953aa4b53617a19100fe5e5",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": true,
+   "dataset_sha_matches_manifest": true,
+   "records": 52,
+   "unique_ids": 52,
+   "expected": 52,
+   "provider": "called",
+   "replied": 52,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0688
+   ],
+   "median_latency_s": 32.02,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [
+    "tree_dirty=True at run time (development only)"
+   ],
+   "stored_summary": {
+    "file": "v4/dev_baseline_d1.summary.json"
+   },
+   "file_sha256": "5a6604eb17dc8aac83e72df3fdf44bd594ae88c2a52c70bbf2abd1b415d57c4c"
+  },
+  {
+   "run": "v4/dev_grounded-v2_d1.jsonl",
+   "version": "v4",
+   "split": "dev",
+   "split_role": "development",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T14:15:44+00:00",
+   "code_sha": "a01c57cfd0d9291e1953aa4b53617a19100fe5e5",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": true,
+   "dataset_sha_matches_manifest": true,
+   "records": 52,
+   "unique_ids": 52,
+   "expected": 52,
+   "provider": "called",
+   "replied": 52,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0688
+   ],
+   "median_latency_s": 32.03,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [
+    "tree_dirty=True at run time (development only)"
+   ],
+   "stored_summary": {
+    "file": "v4/dev_grounded-v2_d1.summary.json"
+   },
+   "file_sha256": "a478e8198dd6c7c03f39ad0be95187e9fc3bafded2d6a642c23db924e4427e1a"
+  },
+  {
+   "run": "v4/test_baseline_b1.jsonl",
+   "version": "v4",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T20:20:22+00:00",
+   "code_sha": "88f0f6325f6ba44fa7849f111e43c2ab0aa71d2d",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 118,
+   "unique_ids": 118,
+   "expected": 118,
+   "provider": "called",
+   "replied": 117,
+   "provider_errors": 1,
+   "not_called": 0,
+   "error_classes": {
+    "malformed": 1
+   },
+   "provider_error_rate": 0.0085,
+   "provider_error_rate_ci95": [
+    0.0015,
+    0.0464
+   ],
+   "median_latency_s": 6.44,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v4/test_baseline_b1.summary.json"
+   },
+   "file_sha256": "45b1ff9e8bb74ce2f021ff6e11d4df214b2b6f2381554c26a929a43966967edb"
+  },
+  {
+   "run": "v4/test_grounded-v2_b1.jsonl",
+   "version": "v4",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-21T20:41:32+00:00",
+   "code_sha": "88f0f6325f6ba44fa7849f111e43c2ab0aa71d2d",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 118,
+   "unique_ids": 118,
+   "expected": 118,
+   "provider": "called",
+   "replied": 118,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0315
+   ],
+   "median_latency_s": 6.41,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v4/test_grounded-v2_b1.summary.json"
+   },
+   "file_sha256": "17efa18d75bec351019d8b4747d31fc23381e22da86b75646bdafa0c3f47d8bf"
+  },
+  {
+   "run": "v5/test_baseline_b2.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-23T08:25:01+00:00",
+   "code_sha": "08f69f2fd4b94e0182143f448789b796477a5ea3",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 118,
+   "unique_ids": 118,
+   "expected": 118,
+   "provider": "called",
+   "replied": 117,
+   "provider_errors": 1,
+   "not_called": 0,
+   "error_classes": {
+    "malformed": 1
+   },
+   "provider_error_rate": 0.0085,
+   "provider_error_rate_ci95": [
+    0.0015,
+    0.0464
+   ],
+   "median_latency_s": 33.87,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v5/test_baseline_b2.summary.json"
+   },
+   "file_sha256": "69c5027e75fe6e818d0cdfb3bbb75cb4b87d2477dc300cffdc07947b8d4cdd02"
+  },
+  {
+   "run": "v5/test_grounded-v2_b2.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-23T09:57:51+00:00",
+   "code_sha": "08f69f2fd4b94e0182143f448789b796477a5ea3",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 6,
+   "unique_ids": 6,
+   "expected": 118,
+   "provider": "called",
+   "replied": 6,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.3903
+   ],
+   "median_latency_s": 31.51,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "incomplete_stopped",
+   "valid_for_analysis": false,
+   "reasons": [
+    "incomplete 6/118"
+   ],
+   "stored_summary": null,
+   "file_sha256": "5eb0ec14a370bae30eb3273609c9198f0c1cd767675dd31ce804bf757093f886"
+  },
+  {
+   "run": "v5/test_grounded-v2_b2r2.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-23T10:01:17+00:00",
+   "code_sha": "80d2c76cacc787ff850fee83dca2c6b6a0faa6fb",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 118,
+   "unique_ids": 118,
+   "expected": 118,
+   "provider": "called",
+   "replied": 118,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0315
+   ],
+   "median_latency_s": 31.86,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/test_grounded-v2_b2.jsonl",
+    "identical": 6,
+    "compared": 6
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v5/test_grounded-v2_b2r2.summary.json"
+   },
+   "file_sha256": "ff60f4ebea24388be4cb6353cf98136a6c968148d05631283b48fad0c05d200b"
+  },
+  {
+   "run": "v5/test_grounded-v2_b3.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-24T07:28:17+00:00",
+   "code_sha": "22063a64b318e74b9aba652de3683046bf49e7ce",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 118,
+   "unique_ids": 118,
+   "expected": 118,
+   "provider": "called",
+   "replied": 118,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0315
+   ],
+   "median_latency_s": 6.36,
+   "identical_to_earlier": {
+    "run": "v5/test_grounded-v2_b2r2.jsonl",
+    "identical": 118,
+    "compared": 118
+   },
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/test_grounded-v2_b2r2.jsonl",
+    "identical": 118,
+    "compared": 118
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "duplicate_not_independent",
+   "valid_for_analysis": false,
+   "reasons": [
+    "replies byte-identical to earlier run v5/test_grounded-v2_b2r2.jsonl — not an independent sample",
+    "documented: v5/b3/RESULT_B3.md: 118/118 replies byte-identical to b2r2 (provider cache)"
+   ],
+   "stored_summary": null,
+   "file_sha256": "6dc2725d73b761f237089826355ab375bca34011767dd2b188276b06d9d627ad"
+  },
+  {
+   "run": "v5/test_baseline_b3.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-24T07:40:44+00:00",
+   "code_sha": "22063a64b318e74b9aba652de3683046bf49e7ce",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 118,
+   "unique_ids": 118,
+   "expected": 118,
+   "provider": "called",
+   "replied": 117,
+   "provider_errors": 1,
+   "not_called": 0,
+   "error_classes": {
+    "malformed": 1
+   },
+   "provider_error_rate": 0.0085,
+   "provider_error_rate_ci95": [
+    0.0015,
+    0.0464
+   ],
+   "median_latency_s": 6.39,
+   "identical_to_earlier": {
+    "run": "v5/test_baseline_b2.jsonl",
+    "identical": 117,
+    "compared": 117
+   },
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/test_baseline_b2.jsonl",
+    "identical": 117,
+    "compared": 117
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "duplicate_not_independent",
+   "valid_for_analysis": false,
+   "reasons": [
+    "replies byte-identical to earlier run v5/test_baseline_b2.jsonl — not an independent sample",
+    "documented: v5/b3/RESULT_B3.md: 118/118 replies byte-identical to b2 (provider cache)"
+   ],
+   "stored_summary": null,
+   "file_sha256": "b8fe2b6ff1744f05f55516c2b17a2219a2932f892ed748ad34ae73d2fac2dfdd"
+  },
+  {
+   "run": "v5/b4/test_grounded-v2_b4.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-24T09:09:47+00:00",
+   "code_sha": "0dbe7b72ee926fc4dbe2a804071599fa1d6d3c2f",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 3,
+   "unique_ids": 3,
+   "expected": 118,
+   "provider": "called",
+   "replied": 1,
+   "provider_errors": 2,
+   "not_called": 0,
+   "error_classes": {
+    "other_provider_error": 2
+   },
+   "provider_error_rate": 0.6667,
+   "provider_error_rate_ci95": [
+    0.2077,
+    0.9385
+   ],
+   "median_latency_s": 1.35,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/test_grounded-v2_b2.jsonl",
+    "identical": 0,
+    "compared": 1
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "incomplete_stopped",
+   "valid_for_analysis": false,
+   "reasons": [
+    "incomplete 3/118",
+    "provider errors 2/3 > 10%"
+   ],
+   "stored_summary": null,
+   "file_sha256": "3fef4e4d65d8a5760eab1b73f6c602da670b13fd0c4512a8c5e841bca034f3c4"
+  },
+  {
+   "run": "v5/b4/test_baseline_b4.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-24T09:15:42+00:00",
+   "code_sha": "0dbe7b72ee926fc4dbe2a804071599fa1d6d3c2f",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 2,
+   "unique_ids": 2,
+   "expected": 118,
+   "provider": "called",
+   "replied": 1,
+   "provider_errors": 1,
+   "not_called": 0,
+   "error_classes": {
+    "other_provider_error": 1
+   },
+   "provider_error_rate": 0.5,
+   "provider_error_rate_ci95": [
+    0.0945,
+    0.9055
+   ],
+   "median_latency_s": 56.89,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/test_baseline_b2.jsonl",
+    "identical": 1,
+    "compared": 1
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "incomplete_stopped",
+   "valid_for_analysis": false,
+   "reasons": [
+    "incomplete 2/118",
+    "provider errors 1/2 > 10%"
+   ],
+   "stored_summary": null,
+   "file_sha256": "0f9d631d009519bf510cf9a37417d42bc413085dee6ae1cc3cccdba3d8021b11"
+  },
+  {
+   "run": "v5/b4/test_grounded-v2_b4s.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-24T09:23:20+00:00",
+   "code_sha": "fc6cbd7155ece6fddcd1160c667bec76cec3a470",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 118,
+   "unique_ids": 118,
+   "expected": 118,
+   "provider": "called",
+   "replied": 118,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0315
+   ],
+   "median_latency_s": 66.52,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/test_grounded-v2_b2r2.jsonl",
+    "identical": 7,
+    "compared": 118
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v5/b4/test_grounded-v2_b4s.summary.json"
+   },
+   "file_sha256": "e2e3d26d85bd5a561c2255c9773bb1572fadb8e288c2a49d7bc2428233ec497c"
+  },
+  {
+   "run": "v5/b4/test_baseline_b4s.jsonl",
+   "version": "v5",
+   "split": "test",
+   "split_role": "held-out test",
+   "config": "baseline",
+   "lang_filter": null,
+   "started_utc": "2026-10-24T11:34:11+00:00",
+   "code_sha": "fc6cbd7155ece6fddcd1160c667bec76cec3a470",
+   "provider_url": "https://text.pollinations.ai/openai",
+   "tree_dirty": false,
+   "dataset_sha_matches_manifest": true,
+   "records": 118,
+   "unique_ids": 118,
+   "expected": 118,
+   "provider": "called",
+   "replied": 118,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0315
+   ],
+   "median_latency_s": 65.38,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/test_baseline_b2.jsonl",
+    "identical": 12,
+    "compared": 117
+   },
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": {
+    "file": "v5/b4/test_baseline_b4s.summary.json"
+   },
+   "file_sha256": "7cf4b417f648379d971fe80d712a0368e407dc3ffdce39e13bed494b660ba7b6"
+  },
+  {
+   "run": "v5/lang_pilot/dev_grounded-v3-lang_ar.jsonl",
+   "version": "v5",
+   "split": "dev",
+   "split_role": "development",
+   "config": "grounded-v3-lang",
+   "lang_filter": "ar",
+   "started_utc": "2026-10-24T17:53:22.431546+00:00",
+   "code_sha": "990eb527d83c192b8898c74a4f676d7852d93e44",
+   "provider_url": null,
+   "tree_dirty": null,
+   "dataset_sha_matches_manifest": null,
+   "records": 6,
+   "unique_ids": 6,
+   "expected": 26,
+   "provider": "never_called",
+   "replied": 0,
+   "provider_errors": 0,
+   "not_called": 6,
+   "error_classes": {
+    "config_no_provider": 6
+   },
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.3903
+   ],
+   "median_latency_s": 0.0,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 6,
+   "superseded": false,
+   "status": "no_provider_call",
+   "valid_for_analysis": false,
+   "reasons": [
+    "provider never called (configuration error on every record)",
+    "incomplete 6/26",
+    "documented: lang_pilot/PREREGISTRATION.md §7: no keyless consent -> no provider call"
+   ],
+   "stored_summary": null,
+   "file_sha256": "a7e85988d21be58e6d98992272e602aed1a66ba95d708a5e525547bee4b7ac06"
+  },
+  {
+   "run": "v5/lang_pilot/dev_grounded-v3-lang_ar_r1.jsonl",
+   "version": "v5",
+   "split": "dev",
+   "split_role": "development",
+   "config": "grounded-v3-lang",
+   "lang_filter": "ar",
+   "started_utc": "2026-10-24T18:14:45.611097+00:00",
+   "code_sha": "7dda3b884e3df5ed0e12c2319d408da839992a9d",
+   "provider_url": null,
+   "tree_dirty": null,
+   "dataset_sha_matches_manifest": null,
+   "records": 26,
+   "unique_ids": 26,
+   "expected": 26,
+   "provider": "called",
+   "replied": 26,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.1287
+   ],
+   "median_latency_s": 65.69,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": null,
+   "file_sha256": "1484d3e430e3fb808699439bd3c75e2ac82c6dcffabebb37b52e6b25ce6e7b2f"
+  },
+  {
+   "run": "v5/lang_pilot/validation_grounded-v2_r1.jsonl",
+   "version": "v5",
+   "split": "validation",
+   "split_role": "validation",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-24T18:41:13.295402+00:00",
+   "code_sha": "0acf7761aec3a19bf5c11af9c8227a6ec84dfcca",
+   "provider_url": null,
+   "tree_dirty": null,
+   "dataset_sha_matches_manifest": null,
+   "records": 33,
+   "unique_ids": 33,
+   "expected": 46,
+   "provider": "called",
+   "replied": 33,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.1043
+   ],
+   "median_latency_s": 65.09,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 6,
+   "superseded": false,
+   "status": "incomplete_stopped",
+   "valid_for_analysis": false,
+   "reasons": [
+    "incomplete 33/46",
+    "documented: lang_pilot/PREREGISTRATION.md §8: stalled 32/46, kept unscored"
+   ],
+   "stored_summary": null,
+   "file_sha256": "285af5df678c541882028ee947a8df4065ea55fc885360b6840a04532a8c7285"
+  },
+  {
+   "run": "v5/lang_pilot/validation_grounded-v2_r2.jsonl",
+   "version": "v5",
+   "split": "validation",
+   "split_role": "validation",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-24T18:42:21.991325+00:00",
+   "code_sha": "0acf7761aec3a19bf5c11af9c8227a6ec84dfcca",
+   "provider_url": null,
+   "tree_dirty": null,
+   "dataset_sha_matches_manifest": null,
+   "records": 11,
+   "unique_ids": 11,
+   "expected": 46,
+   "provider": "called",
+   "replied": 11,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.2588
+   ],
+   "median_latency_s": 62.59,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/lang_pilot/validation_grounded-v2_r1.jsonl",
+    "identical": 1,
+    "compared": 11
+   },
+   "records_with_retries": 3,
+   "superseded": false,
+   "status": "incomplete_stopped",
+   "valid_for_analysis": false,
+   "reasons": [
+    "incomplete 11/46",
+    "documented: lang_pilot/PREREGISTRATION.md §8: parallel duplicate 11/46, stopped, kept unscored"
+   ],
+   "stored_summary": null,
+   "file_sha256": "52fe6719ab64b833dc3814fd35a355136f3b5ae1069bfa18f7ae615b02f1af14"
+  }
+ ]
+}

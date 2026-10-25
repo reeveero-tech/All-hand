@@ -115,8 +115,14 @@ def _scores(rid: str):
     return {json.loads(x)["id"]: v5.score_record(cases[json.loads(x)["id"]], json.loads(x)) for x in lines[1:] if x.strip()}
 
 
-def score(tag: str = "r1") -> dict:
+# PREREGISTRATION §8: the stopped validation runs r1/r2 are kept as-is and NEVER scored.
+UNSCORABLE_VALIDATION_TAGS = frozenset({"r1", "r2"})
+
+
+def score(tag: str = "r3") -> dict:
     """Paired comparison on validation for run tag ``tag`` (batch 13: tag + baseline + causes)."""
+    if tag in UNSCORABLE_VALIDATION_TAGS:
+        raise SystemExit(f"tag {tag!r} is a stopped validation run (PREREGISTRATION §8) — never scored; use r3")
     from r169_language_analysis import classify
     from agent_civilization.eval import r169_bench_v5 as b
     cases = {c["id"]: c for c in b.load_split("validation")}
@@ -177,7 +183,7 @@ def main(argv=None) -> int:
     r.add_argument("--lang", choices=["ar", "en"])
     r.add_argument("--tag", default="")
     sc = sub.add_parser("score")
-    sc.add_argument("--tag", default="r1")
+    sc.add_argument("--tag", default="r3")
     a = ap.parse_args(argv)
     if a.cmd == "run":
         print(asyncio.run(run(a.split, a.config, a.lang, a.tag)))
