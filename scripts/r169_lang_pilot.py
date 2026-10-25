@@ -34,6 +34,7 @@ from r169_language_analysis import mcnemar_exact  # noqa: E402
 
 OUT = ROOT / "docs/audit/M8/logs/raw/r169/v5/lang_pilot"
 PREREG = OUT / "PREREGISTRATION.md"
+ATTEMPT_TIMEOUT_S = 600
 RULE9_V2_PREFIX = "9. Write the ENTIRE reply in the language of the question"
 RULE9_V3 = (
     "9. Write the ENTIRE reply in the language of the question: Arabic if the question is Arabic, English "
@@ -86,7 +87,11 @@ async def run(split: str, config: str, lang: str | None, tag: str = "") -> Path:
             ctx = b4._case.set(c["id"])
             try:
                 for attempt in range(3):
-                    rec = await v5._one(c, "grounded-v2")
+                    try:  # batch 13: a hang (e.g. sandbox suspension) becomes a recorded error, not a stall
+                        rec = await asyncio.wait_for(v5._one(c, "baseline" if config == "baseline" else "grounded-v2"),
+                                                     timeout=ATTEMPT_TIMEOUT_S)
+                    except asyncio.TimeoutError:
+                        rec = {"id": c["id"], "reply": "", "error": f"attempt timeout > {ATTEMPT_TIMEOUT_S}s"}
                     if not rec.get("error"):
                         break
                     history.append(rec.get("error"))
@@ -110,21 +115,56 @@ def _scores(rid: str):
     return {json.loads(x)["id"]: v5.score_record(cases[json.loads(x)["id"]], json.loads(x)) for x in lines[1:] if x.strip()}
 
 
-def score() -> dict:
-    a, c = _scores("validation_grounded-v2_r1"), _scores("validation_grounded-v3-lang_r1")
-    ids = sorted(set(a) & set(c))
-    def paired(key, sub=lambda k: True):
-        both = [k for k in ids if sub(k) and a[k].get(key) is not None and c[k].get(key) is not None]
-        v2_only = sum(1 for k in both if a[k][key] and not c[k][key])
-        v3_only = sum(1 for k in both if c[k][key] and not a[k][key])
-        return {"n": len(both), "v2": sum(1 for k in both if a[k][key]), "v3": sum(1 for k in both if c[k][key]),
-                "v2_only": v2_only, "v3_only": v3_only, "mcnemar_exact_p": round(mcnemar_exact(v2_only, v3_only), 5)}
-    res = {"language_match_ar": paired("language_match", lambda k: a[k]["lang"] == "ar"),
-           "language_match_en": paired("language_match", lambda k: a[k]["lang"] == "en"),
-           "pass": paired("pass"),
-           "provider_errors": {"v2": sum(1 for k in a if a[k].get("provider_error")),
-                               "v3": sum(1 for k in c if c[k].get("provider_error"))}}
-    (OUT / "validation_score.json").write_text(json.dumps(res, indent=1) + "\n")
+def score(tag: str = "r1") -> dict:
+    """Paired comparison on validation for run tag ``tag`` (batch 13: tag + baseline + causes)."""
+    from r169_language_analysis import classify
+    from agent_civilization.eval import r169_bench_v5 as b
+    cases = {c["id"]: c for c in b.load_split("validation")}
+    runs = {cfg: _scores(f"validation_{cfg}_{tag}") for cfg in ("grounded-v2", "grounded-v3-lang", "baseline")
+            if (OUT / f"validation_{cfg}_{tag}.jsonl").exists()}
+    replies = {cfg: {json.loads(x)["id"]: json.loads(x) for x in
+                     (OUT / f"validation_{cfg}_{tag}.jsonl").read_text(encoding="utf-8").splitlines()[1:] if x.strip()}
+               for cfg in runs}
+
+    def paired(a, c, key, sub=lambda k: True):
+        ids = sorted(set(a) & set(c))
+        both = [k for k in ids if sub(k) and not a[k].get("provider_error") and not c[k].get("provider_error")
+                and a[k].get(key) is not None and c[k].get(key) is not None]
+        a_only = sum(1 for k in both if a[k][key] and not c[k][key])
+        c_only = sum(1 for k in both if c[k][key] and not a[k][key])
+        return {"n": len(both), "a": sum(1 for k in both if a[k][key]), "b": sum(1 for k in both if c[k][key]),
+                "a_only": a_only, "b_only": c_only, "mcnemar_exact_p": round(mcnemar_exact(a_only, c_only), 5)}
+
+    res = {"tag": tag, "runs": {cfg: {"n": len(r), "provider_errors": sum(1 for v in r.values() if v.get("provider_error"))}
+                                for cfg, r in runs.items()}, "comparisons": {}, "causes": {}}
+    pairs = [("grounded-v2", "grounded-v3-lang"), ("baseline", "grounded-v3-lang"), ("baseline", "grounded-v2")]
+    for a_cfg, c_cfg in pairs:
+        if a_cfg in runs and c_cfg in runs:
+            a, c = runs[a_cfg], runs[c_cfg]
+            res["comparisons"][f"{a_cfg} (a) vs {c_cfg} (b)"] = {
+                "language_match_ar": paired(a, c, "language_match", lambda k: cases[k]["lang"] == "ar"),
+                "language_match_en": paired(a, c, "language_match", lambda k: cases[k]["lang"] == "en"),
+                "pass": paired(a, c, "pass"),
+                "pass_ar": paired(a, c, "pass", lambda k: cases[k]["lang"] == "ar"),
+                "pass_en": paired(a, c, "pass", lambda k: cases[k]["lang"] == "en")}
+    for cfg, r in runs.items():
+        mism = [k for k, v in r.items() if v.get("language_match") is False and not v.get("provider_error")]
+        causes = {}
+        for k in mism:
+            causes.setdefault(classify(cases[k], replies[cfg][k].get("reply") or ""), []).append(k)
+        ie = [k for k, v in replies[cfg].items() if "INSUFFICIENT_EVIDENCE" in (v.get("reply") or "")]
+        res["causes"][cfg] = {"mismatches": {c: len(v) for c, v in causes.items()}, "mismatch_ids": causes,
+                              "insufficient_evidence_replies": len(ie),
+                              "insufficient_evidence_then_other_language": len(causes.get("ar_q:token_then_english_explanation", []))}
+    v = res["comparisons"].get("grounded-v2 (a) vs grounded-v3-lang (b)")
+    if v:
+        n_err = sum(res["runs"][x]["provider_errors"] for x in ("grounded-v2", "grounded-v3-lang"))
+        ar, en, ps = v["language_match_ar"], v["language_match_en"], v["pass"]
+        res["criteria"] = {"A1": ar["b"] > ar["a"] and ar["b_only"] - ar["a_only"] >= 3 and ar["a_only"] <= 1,
+                           "A2": en["a_only"] - en["b_only"] <= 1, "A3": ps["a_only"] - ps["b_only"] <= 2,
+                           "provider_error_share": round(n_err / max(2 * len(cases), 1), 4),
+                           "inconclusive_by_errors": n_err > 0.10 * 2 * len(cases)}
+    (OUT / f"validation_score_{tag}.json").write_text(json.dumps(res, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return res
 
 
@@ -133,15 +173,16 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
     r.add_argument("--split", required=True, choices=["dev", "validation", "test"])
-    r.add_argument("--config", required=True, choices=["grounded-v2", "grounded-v3-lang"])
+    r.add_argument("--config", required=True, choices=["grounded-v2", "grounded-v3-lang", "baseline"])
     r.add_argument("--lang", choices=["ar", "en"])
     r.add_argument("--tag", default="")
-    sub.add_parser("score")
+    sc = sub.add_parser("score")
+    sc.add_argument("--tag", default="r1")
     a = ap.parse_args(argv)
     if a.cmd == "run":
         print(asyncio.run(run(a.split, a.config, a.lang, a.tag)))
     else:
-        print(json.dumps(score(), indent=1))
+        print(json.dumps(score(a.tag), ensure_ascii=False, indent=1))
     return 0
 
 
