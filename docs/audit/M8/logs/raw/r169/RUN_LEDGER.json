@@ -1,15 +1,15 @@
 {
  "generated_by": "scripts/r169_run_ledger.py (offline; no provider calls; no scoring)",
- "runs_total": 35,
+ "runs_total": 37,
  "status_counts": {
   "duplicate_not_independent": 5,
   "incomplete_stopped": 6,
   "no_provider_call": 1,
   "provider_error_heavy": 1,
   "superseded": 1,
-  "valid": 21
+  "valid": 23
  },
- "provider_called_runs": 34,
+ "provider_called_runs": 36,
  "never_called_runs": 1,
  "runs": [
   {
@@ -1477,6 +1477,82 @@
    ],
    "stored_summary": null,
    "file_sha256": "52fe6719ab64b833dc3814fd35a355136f3b5ae1069bfa18f7ae615b02f1af14"
+  },
+  {
+   "run": "v5/lang_pilot/validation_grounded-v2_r3.jsonl",
+   "version": "v5",
+   "split": "validation",
+   "split_role": "validation",
+   "config": "grounded-v2",
+   "lang_filter": null,
+   "started_utc": "2026-10-25T07:21:27.997054+00:00",
+   "code_sha": "e973283784d03596b6b9181729e9de2fbc382568",
+   "provider_url": null,
+   "tree_dirty": null,
+   "dataset_sha_matches_manifest": null,
+   "records": 46,
+   "unique_ids": 46,
+   "expected": 46,
+   "provider": "called",
+   "replied": 46,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    -0.0,
+    0.0771
+   ],
+   "median_latency_s": 30.1,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": {
+    "run": "v5/lang_pilot/validation_grounded-v2_r1.jsonl",
+    "identical": 1,
+    "compared": 33
+   },
+   "records_with_retries": 2,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": null,
+   "file_sha256": "21041089f36c2547bffcf4c5e1a5b4a037905beb443f8cb7e51f92801609a0a1"
+  },
+  {
+   "run": "v5/lang_pilot/validation_grounded-v3-lang_r3.jsonl",
+   "version": "v5",
+   "split": "validation",
+   "split_role": "validation",
+   "config": "grounded-v3-lang",
+   "lang_filter": null,
+   "started_utc": "2026-10-25T07:55:58.117412+00:00",
+   "code_sha": "e973283784d03596b6b9181729e9de2fbc382568",
+   "provider_url": null,
+   "tree_dirty": null,
+   "dataset_sha_matches_manifest": null,
+   "records": 46,
+   "unique_ids": 46,
+   "expected": 46,
+   "provider": "called",
+   "replied": 46,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    -0.0,
+    0.0771
+   ],
+   "median_latency_s": 67.58,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": null,
+   "file_sha256": "c22b5c7f9589a88a31866dafe2bdcd2d5b4cbc4584650587030b5cb5e4228ed3"
   }
  ]
 }
