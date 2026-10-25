@@ -38,7 +38,7 @@
 
 ## فحص الحالات والأدلة (R-154، D-066)
 
-- خطوة **Status evidence check (R-154)**: `python3 scripts/check_status_evidence.py .` — تطبّق القواعد العشر في [`STATUS_DEFINITIONS.md`](STATUS_DEFINITIONS.md) §3 على ROADMAP وجدول «حالة بنود M8» في PROJECT_STATE: المفردات الست، حقول الدليل لكل حالة، ربط git لـ`done`، احتواء سجل القبول على `merge_sha`/`tested_sha`/`ci_run`/`success`، تناقض «مدموج ولا يزال awaiting_merge»، التزامن، والترتيب. خطأ git/ملفات ⇒ rc=2.
+- خطوة **Status evidence check (R-154)**: `python3 scripts/check_status_evidence.py .` — تطبّق القواعد العشر في [`STATUS_DEFINITIONS.md`](STATUS_DEFINITIONS.md) §3 على ROADMAP وجداول «حالة بنود <البرنامج>» في PROJECT_STATE (نطاق لكل برنامج منذ M9 — D-102: M8 ‏R-151..R-184، M9 ‏R-187+؛ الترتيب داخل كل برنامج فقط) + **القاعدة 10b (D-102)**: الاعتماديات المعلنة بسطر «الاعتماديات (R-NNN):» مفروضة آليًا — لا بند يبدأ قبل أن تصبح كل اعتمادياته done/accepted، والجدول الزائد لبرنامج بلا بنود يُرصد: المفردات الست، حقول الدليل لكل حالة، ربط git لـ`done`، احتواء سجل القبول على `merge_sha`/`tested_sha`/`ci_run`/`success`، تناقض «مدموج ولا يزال awaiting_merge»، التزامن، والترتيب. خطأ git/ملفات ⇒ rc=2.
 - الاختبارات: `tests/test_r154_status_evidence.py` + PR تجريبية حية (`docs/audit/M8/logs/raw/048`).
 
 ## حدود التنفيذ الآلي (للأمانة)

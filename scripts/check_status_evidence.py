@@ -19,6 +19,17 @@ Implements docs/governance/STATUS_DEFINITIONS.md §3:
     than HEAD itself) = contradiction
   9 PROJECT_STATE "M8 status" table == ROADMAP statuses
  10 order: no started M8 item after a still-planned earlier M8 item
+ 10b cross-program deps: a started item's declared dependencies
+    ("- الاعتماديات" line) must be done/accepted — machine-enforced.
+    For M9 items the line is mandatory and parsed strictly: exactly one
+    line, tag matching the item, value = the exact 'لا شيء' or R-NNN
+    tokens only; anything else is rejected, not ignored.
+Program scoping (M8→M9 transition, D-102): rules 2-8 apply to every item
+R-151+ regardless of program. Rules 9-10 are scoped per program: M8 =
+R-151..R-184 (R-185/R-186 are governance entries, not roadmap items),
+M9 = R-187+. Cross-program order is not enforced — M9 items document
+their M8 dependencies per item instead. Each program with roadmap items
+must have its own "## حالة بنود <program>" table in PROJECT_STATE.
 Reads repository files and git only — never PR text or the GitHub API.
 """
 from __future__ import annotations
@@ -30,7 +41,12 @@ import sys
 
 STATUSES = ("planned", "in_progress", "blocked", "awaiting_merge", "done", "accepted")
 M8_FIRST = 151
+M8_LAST = 186  # R-185/R-186 are governance entries, not roadmap items
+M9_FIRST = 187
+PROGRAMS = (("M8", M8_FIRST, M8_LAST), ("M9", M9_FIRST, None))
 FIELD_LINE = "- أدلة الحالة (R-154):"
+DEPS_LINE_RE = re.compile(r"^- الاعتماديات \((R-\d+)\): (.+)$", re.M)
+DEPS_TOKEN_RE = re.compile(r"^R-\d{3}[0-9a-z]*$")
 STATE_TABLE_HEADING = "## حالة بنود M8"
 REQUIRED = {
     "planned": (),
@@ -72,19 +88,44 @@ def parse_items(road: str) -> list[dict]:
                 if "=" in part:
                     k, v = part.split("=", 1)
                     fields[k.strip()] = v.strip()
+        deps_lines = DEPS_LINE_RE.findall(block)  # [(tag, value), ...]
         items.append({"id": m.group(1), "num": int(m.group(2)),
                       "statuses": STATUS_RE.findall(block), "fields": fields,
-                      "field_lines": len(lines)})
+                      "field_lines": len(lines), "deps": [],
+                      "deps_lines": deps_lines})
     return items
 
 
-def parse_state_table(state: str) -> dict[str, str] | None:
-    i = state.find(STATE_TABLE_HEADING)
+def _parse_deps(value: str) -> tuple[list[str], str | None]:
+    """Strict deps-line value parse: the exact 'لا شيء' or R-NNN tokens only.
+    Returns (deps, bad_token) — bad_token is None when valid, '' when empty,
+    or the offending token otherwise."""
+    val = value.strip()
+    if val == "لا شيء":
+        return [], None
+    deps: list[str] = []
+    for tok in re.split(r"[،,]", val):
+        tok = tok.strip()
+        if not tok or not DEPS_TOKEN_RE.match(tok):
+            return [], tok
+        deps.append(tok)
+    return deps, None
+
+
+def parse_state_table(state: str, heading: str) -> dict[str, str] | None:
+    i = state.find(heading)
     if i < 0:
         return None
     j = state.find("\n## ", i + 5)
     sec = state[i: j if j > 0 else len(state)]
     return dict(re.findall(r"^\| (R-\d{3}[a-z0-9]*) \| `?(\w+)`? \|", sec, re.M))
+
+
+def _program(num: int) -> str | None:
+    for name, lo, hi in PROGRAMS:
+        if num >= lo and (hi is None or num <= hi):
+            return name
+    return None
 
 
 def _read(root: str, rel: str) -> str | None:
@@ -120,7 +161,6 @@ def check(root: str = ".") -> list[str]:
         if n > 1:
             v.append(f"{rid}: duplicate item heading ({n}x)")
 
-    m8 = [it for it in items if it["num"] >= M8_FIRST]
     for it in items:
         rid, sts = it["id"], it["statuses"]
         if len(sts) != 1:
@@ -155,29 +195,84 @@ def check(root: str = ".") -> list[str]:
         if st in ("done", "accepted") and all(f.get(k) for k in REQUIRED[st]):
             v += _check_done(root, rid, st, f, decisions)
 
-    # 9: PROJECT_STATE table sync
-    table = parse_state_table(state)
-    if table is None:
-        v.append(f"PROJECT_STATE: section '{STATE_TABLE_HEADING}' missing")
-    else:
-        road_st = {it["id"]: it.get("status") for it in m8}
-        for rid, st in road_st.items():
-            if rid not in table:
-                v.append(f"PROJECT_STATE table: {rid} missing (ROADMAP={st})")
-            elif table[rid] != st:
-                v.append(f"PROJECT_STATE table: {rid}={table[rid]} but ROADMAP={st}")
-        for rid in table:
-            if rid not in road_st:
-                v.append(f"PROJECT_STATE table: {rid} not an M8 item in ROADMAP")
+    # 9: PROJECT_STATE table sync (per program, D-102)
+    by_prog: dict[str, list[dict]] = {}
+    for it in items:
+        if it["num"] >= M8_FIRST:
+            p = _program(it["num"])
+            if p:
+                by_prog.setdefault(p, []).append(it)
+    for pname, _lo, _hi in PROGRAMS:
+        its = by_prog.get(pname, [])
+        table = parse_state_table(state, f"## حالة بنود {pname}")
+        if its:
+            if table is None:
+                v.append(f"PROJECT_STATE: section '## حالة بنود {pname}' missing")
+                continue
+            road_st = {it["id"]: it.get("status") for it in its}
+            for rid, st in road_st.items():
+                if rid not in table:
+                    v.append(f"PROJECT_STATE table: {rid} missing (ROADMAP={st})")
+                elif table[rid] != st:
+                    v.append(f"PROJECT_STATE table: {rid}={table[rid]} but ROADMAP={st}")
+            for rid in table:
+                if rid not in road_st:
+                    v.append(f"PROJECT_STATE table: {rid} not an {pname} item in ROADMAP")
+        elif table:
+            # a program table whose rows reference no ROADMAP items (stale/
+            # surplus) must be flagged, not silently ignored
+            for rid in table:
+                v.append(f"PROJECT_STATE table: {rid} not an {pname} item in ROADMAP")
 
-    # 10: order
-    first_planned = None
-    for it in sorted(m8, key=lambda x: x["num"]):
-        st = it.get("status")
-        if st == "planned" and first_planned is None:
-            first_planned = it["id"]
-        elif st in ("in_progress", "awaiting_merge", "done", "accepted") and first_planned:
-            v.append(f"{it['id']}: is {st} while earlier item {first_planned} is still planned")
+    # 10: order (per program — cross-program order is not enforced; M9 items
+    # document their M8 dependencies per item, machine-enforced in rule 10b)
+    for its in by_prog.values():
+        first_planned = None
+        for it in sorted(its, key=lambda x: x["num"]):
+            st = it.get("status")
+            if st == "planned" and first_planned is None:
+                first_planned = it["id"]
+            elif st in ("in_progress", "awaiting_merge", "done", "accepted") and first_planned:
+                v.append(f"{it['id']}: is {st} while earlier item {first_planned} is still planned")
+
+    # 10b: cross-program dependencies are machine-enforced (D-102): a started
+    # item requires every declared dependency ("- الاعتماديات (R-NNN):" line)
+    # to be done/accepted. For M9 items the line is MANDATORY and parsed
+    # STRICTLY: exactly one line, tag matching the containing item, and a
+    # value that is either the exact 'لا شيء' or R-NNN tokens only — anything
+    # else (prose, other prefixes, 4-digit misparses) is rejected, not ignored.
+    st_by_id = {it["id"]: it.get("status") for it in items}
+    for it in items:
+        rid = it["id"]
+        if it["num"] >= M9_FIRST:
+            lines = it["deps_lines"]
+            if len(lines) > 1:
+                v.append(f"{rid}: more than one '- الاعتماديات' line")
+            if not lines:
+                v.append(f"{rid}: M9 items must declare dependencies via the "
+                         "'- الاعتماديات (R-NNN):' line (explicit 'لا شيء' if none)")
+            else:
+                tag, val = lines[0]
+                if tag != rid:
+                    v.append(f"{rid}: deps line tag mismatch — tagged {tag} "
+                             f"but sits inside {rid} (tag must match the item)")
+                deps, bad = _parse_deps(val)
+                if bad is None:
+                    it["deps"] = deps
+                else:
+                    v.append(f"{rid}: deps line is empty/malformed — invalid "
+                             f"token '{bad}'; the value must be the exact "
+                             "'لا شيء' (بالضبط) or a list of R-NNN ids only")
+        for dep in it.get("deps", []):
+            if dep not in st_by_id:
+                v.append(f"{rid}: dependency {dep} is not a ROADMAP item "
+                         "(typo/nonexistent — rejected at any status)")
+        if it.get("status") in ("in_progress", "awaiting_merge", "done", "accepted"):
+            for dep in it.get("deps", []):
+                dst = st_by_id.get(dep)
+                if dst not in ("done", "accepted"):
+                    v.append(f"{rid}: dependency {dep} is {dst or 'missing'}"
+                             " — must be done/accepted before this item starts")
     return v
 
 
@@ -241,7 +336,7 @@ def main(argv: list[str]) -> int:
         print(f"::error::status-evidence check could not run: {exc}")
         return 2
     if not violations:
-        print("Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10).")
+        print("Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10b).")
         return 0
     for msg in violations:
         print(f"::error::{msg}")
