@@ -37,3 +37,10 @@ full suite: 3322 passed / 8 skipped / 17 deselected / 9 xfailed (exit 0, offline
 - This batch does NOT close R-170: closing requires language-verification results (R-169 regression unsolved), regression evidence, and the true state of Q-028 (human review not performed).
 - Q-028 packet integrity re-verified during takeover: r170_phase_a_packet.zip sha256 c299caeaba6c257569ab90cc44f0703394ba88e121a53eed78c752d983806469 matches PACKET_SHA256.json; 60 blind cases (H01..H60); reviewer_form.json verdicts all empty; key kept separate. NOT sent; no human review performed.
 - R-169: no change this batch; regression confirmed (p=0.00049) and unsolved; live verification still requires the free keyless provider (owner consent path), no paid service used.
+
+---
+## تصحيح ملحق (2026-10-25، بعد مراجعة نهائية وقبل دفعة 13b — يحفظ النص التاريخي أعلاه كما هو)
+1. عبارة «committed BEFORE the code change» أعلاه غير دقيقة: التسجيل المسبق كُتب إلى القرص قبل تعديل الشيفرة (تسلسل الأدوات موثق)، لكنه دخل نفس الالتزام (752f9384) مع الإصلاح. الصياغة الدقيقة: «مكتوب قبل التغيير، ملتزم معه».
+2. «مجموعة القبول المستقلة 12/12»: ليست تحققًا مستقلًا بالمعنى الصارم — تصميم الحالات سبقه اطلاع على سلوك الشيفرة الحالية أثناء التصميم؛ النتيجة تثبت اتساق التوقعات المسجلة قبل التشغيل، لا استقلالية كاملة.
+3. تشغيل t2 هو تحقق انحدار على مجموعة معروفة (محاكاة ما قبل الإصلاح شملت test)، لا دليل قبول بحالات جديدة لم تُستخدم في الضبط — استيفاء جزئي فقط لشرط الأمر.
+4. القيد «الموثق» acc-05 (قبول قائمة «- تم» النقطية شكليًا) ليس مقبولًا كقيد: إصلاح الدفعة 13 هو الذي أزال الحاجز الأخير عنها، وهذا يخالف غرض R-170 الصريح — عولج فورًا في الدفعة التكميلية 13b (السجل 291، PR التكميلي).

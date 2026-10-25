@@ -103,11 +103,13 @@ def test_reviewer_no_line_citation_still_rejected(monkeypatch):
 # ------------------------------------------------- documented structural limits
 
 @pytest.mark.parametrize("prompt,answer", [
-    ("أعطني خطة من ثلاث خطوات لإطلاق متجر إلكتروني.", "- تم\n- تم\n- تم"),
+    # batch 13 registered "- تم" x3 as a documented structural limitation;
+    # batch 13b (supersession, see tests/test_r170_pr_st3b.py) REJECTS it as a
+    # bare success-claim list. Legitimate one-word items (colors) stay accepted.
     ("List three colors for the brand.", "- red\n- blue\n- green"),
 ])
 def test_count_satisfied_single_word_items_accepted_structurally(prompt, answer, monkeypatch):
-    """Documented limitation (prereg PRST3 section 5): a count-complete list of
-    one-word items passes the STRUCTURAL gate — form, not content."""
+    """A count-complete list of legitimate one-word items passes the STRUCTURAL
+    gate — form, not content."""
     ok, _ = gate("strategist", {"prompt": prompt}, {"ok": True, "answer": answer}, monkeypatch)
     assert ok is True
