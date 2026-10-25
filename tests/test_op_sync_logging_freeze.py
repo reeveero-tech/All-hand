@@ -27,8 +27,14 @@ import logging
 import threading
 import time
 
-import httpx
 import pytest
+
+# same import pattern as the patched starlette in this repo (requirements-dev):
+# the httpx fork ships as ``httpx2``; plain ``httpx`` is the fallback.
+try:
+    import httpx2 as httpx
+except ModuleNotFoundError:  # pragma: no cover — local dev environments
+    import httpx
 
 
 class _BlockedDestination(logging.Handler):
