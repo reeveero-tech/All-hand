@@ -15,8 +15,10 @@ Two evidence forms are accepted:
   contrast, a valid build order, finding lines inside the code, ...);
 * prose (another implementation, e.g. an LLM) — STRUCTURAL checks only: the
   answer is in the request's language, is not an abstention, a bare success
-  claim or an echo of the request, has the requested number of list items,
-  and is long enough to be an answer. This proves form, NOT correctness.
+  claim or an echo of the request, has the requested number of list items (when
+  the request itself sizes the deliverable, that count is its acceptance
+  criterion and the generic word floor yields to it), and is long enough to be
+  an answer. This proves form, NOT correctness.
 
 What this module does NOT prove (documented, never claimed): that a plan is
 good, that an explanation is true, or that a review found every defect.
@@ -210,14 +212,19 @@ def assess_prose(info: Mapping[str, Any], result: Mapping[str, Any]) -> List[str
         reasons.append("echo of the request")
     if lang_of(a) != info.get("lang"):
         reasons.append(f"answer language {lang_of(a)} != request language {info.get('lang')}")
-    words = len(re.findall(r"\w+", a))
-    if words < 15:
-        reasons.append(f"too short to be the requested deliverable ({words} words < 15)")
     n = info.get("count")
-    if n:
-        k = len(_list_items(a))
-        if k != n:
-            reasons.append(f"requested {n} item(s), answer lists {k}")
+    listed = len(_list_items(a))
+    # pr-st-3: when the request itself sizes the deliverable ("list N items"),
+    # delivering exactly N list items satisfies the request's own acceptance
+    # criterion; the generic word floor yields to it (a complete N-item list can
+    # naturally be under 15 words — Arabic KPI names are terse). The floor stays
+    # for everything else: no count requested, count not met, non-list prose.
+    count_satisfied = bool(n) and listed == n
+    words = len(re.findall(r"\w+", a))
+    if words < 15 and not count_satisfied:
+        reasons.append(f"too short to be the requested deliverable ({words} words < 15)")
+    if n and listed != n:
+        reasons.append(f"requested {n} item(s), answer lists {listed}")
     if info["spec"] == "reviewer" and info.get("code", "").strip() and not re.search(r"\bline \d+|السطر|\(\w+\)|`", a):
         reasons.append("code review prose cites no line or code element")
     return reasons
