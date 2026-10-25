@@ -551,6 +551,27 @@ def _volatile_admission(tenant_id: str) -> None:
                           TASK_RETRY_AFTER_S)
 
 
+def _civilization_rate_limit(request: Request) -> None:
+    """SEC-08: the /civilization/* routes use the same per-client limiter as
+    every /api/* route (``rate_limit``)."""
+    check_rate_limit(request.client.host if request.client else "unknown")
+
+
+def _civilization_admit(tenant_id: str) -> None:
+    """SEC-08: /civilization/execute|coordinate run synchronously and keep an
+    in-flight record in TASKS — they pass the same admission as a volatile
+    POST /api/tasks (accept rate, per-tenant and global caps) before writing
+    it. Keeping in-flight records <= MAX_TASKS_KEPT is also what guarantees the
+    pruner never evicts a running record (R-164). The accept slot is given
+    back when admission refuses (a refused request leaves no trace)."""
+    slot = _reserve_accept_slot(tenant_id)
+    try:
+        _volatile_admission(tenant_id)
+    except BaseException:
+        _release_accept_slot(tenant_id, slot)
+        raise
+
+
 async def _durable_admission(storage, tenant_id: str) -> None:
     """R-164: queue caps for the durable mode, counted in the store (the
     truth across restarts). Each count reads at most cap rows. A store that
@@ -2027,7 +2048,8 @@ async def remove_external_agent(
 # ---------------------------------------------------------------------------
 try:
     from agent_civilization.civilization_routes import register_civilization_routes
-    register_civilization_routes(app, CIVILIZATION, TASKS, _prune_tasks, verify_api_key, require_principal)
+    register_civilization_routes(app, CIVILIZATION, TASKS, _prune_tasks, verify_api_key, require_principal,
+                                 rate_limiter=_civilization_rate_limit, admit=_civilization_admit)
     logger.info("Civilization routes registered successfully")
 except ImportError as e:
     logger.warning("Civilization routes not available: %s (%s)", type(e).__name__, e.name)  # R-160 (G-159-1)

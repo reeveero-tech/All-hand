@@ -25,6 +25,7 @@
       "title": "Data"
     },
     "message": {
+      "maxLength": 20000,
       "title": "Message",
       "type": "string"
     }

@@ -1,3 +1,9 @@
+## 2026-10-25 — لاحق 38: دفعة أمن SEC-07/SEC-08 (مراجعة من الشيفرة)
+
+- **SEC-07**: `ExternalAgentAdapter.snapshot()` — `url` ⇒ `public_url()` = `scheme://host[:port]` (كان العنوان كاملًا عبر `GET /api/agents` العام). `tests/test_sec07_external_url_redaction.py` (16).
+- **SEC-08**: `/civilization/*` — محدد المعدل نفسه لـ`/api/*`، `message` ≤ 20000، قبول المهام المتطاير (`_civilization_admit`) قبل كتابة السجل، و`_finish()` لا يعطي 500 عند طرد السجل. العقدان `execute_request`/`coordinate_request` أُعيد توليدهما (قيد `maxLength`، بلا رفع نسخة). `tests/test_sec08_civilization_admission.py` (18).
+- التوثيق: `API.md`، `SECURITY.md`. السجل [`293`](../audit/M8/logs/raw/293_sec07_sec08_hardening.log).
+
 ## 2026-10-25 — لاحق 37: دفعة R-169 — سجل كل التشغيلات وتصنيفها
 
 - ``scripts/r169_run_ledger.py`` (جديد، غير متصل، قراءة فقط): يحصي كل ملف تشغيل R-169 في المستودع ويصنفه آليًا — هل استدعى المزود فعلًا (رد/خطأ مزود/خطأ إعداد بلا استدعاء)، الاكتمال مقابل حجم القسم، المعرّفات المكررة، تطابق الردود بايتًا مع تشغيل سابق (عدم استقلال)، الاستبدال، الشجرة غير النظيفة، نسبة أخطاء المزود مع فاصل Wilson. المخرجات ``docs/audit/M8/logs/raw/r169/RUN_LEDGER.json`` و``RUN_LEDGER.md``. لا يستدعي مزودًا ولا يقيّم.
