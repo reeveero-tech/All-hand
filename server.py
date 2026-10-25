@@ -21,9 +21,11 @@ Security Features:
 
 import asyncio
 import json
-import math
 import logging
+import logging.handlers
+import math
 import os
+import queue
 import time
 import urllib.parse
 import uuid
@@ -73,6 +75,46 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(funcName)s:%(lineno)d"
 )
 logger = logging.getLogger("agos.server")
+
+# Operational hardening (log 294 §72): the telemetry middleware writes one INFO
+# record per request from inside the event loop, so with synchronous
+# destinations a slow or blocked log destination (full pipe, stalled collector)
+# froze the whole server — reproduced red-first in
+# tests/test_op_sync_logging_freeze.py. The root destinations now sit behind a
+# queue: the loop only enqueues; a daemon drain thread writes to the real
+# destinations. Reload-safe: if this module is reloaded (tests do
+# importlib.reload), the existing queue and listener are reused and any handler
+# added to the root logger in the meantime (e.g. a test capture handler) stays
+# synchronous on the root logger instead of being moved behind the queue.
+# Residual risk (documented, accepted): a destination blocked forever grows the
+# queue in memory — the loop stays live; the queue drains when the destination
+# recovers; monitoring/restart bounds the damage.
+class _AsyncLogQueueHandler(logging.handlers.QueueHandler):
+    """Marks our queue handler; carries the listener so a reload can reuse it."""
+
+    listener: "logging.handlers.QueueListener | None" = None
+
+
+_root_logger = logging.getLogger()
+# NOTE: marked on the instance (not isinstance of this module's class) so that
+# importlib.reload(server) — which redefines the class and breaks isinstance —
+# still recognizes the previously installed handler and reuses its queue.
+_existing_qh = next(
+    (h for h in _root_logger.handlers if getattr(h, "_agos_async_log_queue", None)), None
+)
+if _existing_qh is None:
+    _LOG_QUEUE: "queue.SimpleQueue[logging.LogRecord]" = queue.SimpleQueue()
+    _LOG_LISTENER = logging.handlers.QueueListener(
+        _LOG_QUEUE, *list(_root_logger.handlers), respect_handler_level=True
+    )
+    _LOG_LISTENER.start()
+    _qh = _AsyncLogQueueHandler(_LOG_QUEUE)
+    _qh.listener = _LOG_LISTENER
+    _qh._agos_async_log_queue = _LOG_QUEUE
+    _root_logger.handlers = [_qh]
+else:
+    _LOG_QUEUE = _existing_qh._agos_async_log_queue
+    _LOG_LISTENER = _existing_qh.listener
 
 # Security Configuration
 API_KEY = os.getenv("AGOS_API_KEY", "")  # Legacy operator key (admin principal, SEC-02)
