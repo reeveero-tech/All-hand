@@ -1,0 +1,50 @@
+# 293 — دفعة أمن SEC-07 / SEC-08 (مراجعة أمن وموثوقية من الشيفرة الفعلية)
+date: 2026-10-25  branch: m8/sec07-08-hardening  base: main 710997f9
+no production change enabled; no deploy; R-170 gate stays OFF by default; R-170 status unchanged.
+
+## scope of the review (read from code, not assumed)
+tenant isolation (task/SSE routes per tenant), SSRF (external agent registration + tool URLs), limits (rate limiter, SSE queue,
+task queue, message size), timeouts, failure/retry, task state stability, health/readiness, secret leakage, behavior on
+storage/model/tool/network outage. Two defects confirmed and fixed below; other observations recorded under residual risks.
+
+## SEC-07 — external agent URL (with credentials) exposed by public read routes
+problem: ExternalAgentAdapter.snapshot() returned the full registered url; snapshot feeds unauthenticated GET /api/agents
+(and the admin registration response). A url like https://alice:s3cr3t-PW@agent.example.com/v1/chat?api_key=TOK-123#frag
+was returned verbatim (reproduced: test output on old code shows the full string in the /api/agents body).
+acceptance (set before fix): no userinfo/path/query/fragment of an external url in any public read response; adapter
+still calls the full url; unparseable url never echoed.
+fix: agent_civilization/agents/external_adapter.py public_url() -> scheme://host[:port] (lowercased host, IPv6 bracketed),
+invalid -> "(invalid)"; snapshot() uses it; self.url unchanged.
+tests: tests/test_sec07_external_url_redaction.py (16).
+red-first: on full pre-change source, 16/16 fail (import shim for the absent public_url); both route-level leak tests fail
+with the secret visible in the body. Reverting only the snapshot line: 7 fail.
+
+## SEC-08 — /civilization/* bypassed the controls of /api/tasks
+problem (reproduced on old code): D1 no rate limit (5/5 200 with limit 2); D2 message unbounded (~1MB accepted; /api/tasks
+caps 20000 -> 422); D3 no admission (volatile in-flight cap ignored); D4 if the running record was evicted while work ran,
+the route raised KeyError -> 500 after the work was done.
+acceptance (set before fix): same limiter as /api/*; message > 20000 -> 422; admission refused -> 503 + Retry-After and no
+record written; evicted record -> normal response, never 500; existing /civilization contract otherwise unchanged.
+fix: agent_civilization/civilization_routes.py register_civilization_routes(..., rate_limiter=None, admit=None),
+MAX_MESSAGE_CHARS=20000 on ExecuteRequest/CoordinateRequest.message, _limit/_admit/_finish, base_record in coordinate;
+server.py _civilization_rate_limit (check_rate_limit) and _civilization_admit (_reserve_accept_slot + _volatile_admission,
+slot released on refusal). Contract schemas execute_request.v1 / coordinate_request.v1 regenerated (maxLength added;
+export_contract_schemas --check classes it non-structural; no version bump). Client-visible change: messages > 20000 chars
+on /civilization/* now get 422.
+tests: tests/test_sec08_civilization_admission.py (18). red-first: on pre-change source 17 fail, 1 pass.
+
+## results
+targeted: 34 passed (both files) after fix.
+full suite (local, Python 3.14): 3365 passed, 8 skipped, 17 deselected, 9 xfailed, EXIT 0 (266.55s).
+CI: see PR checks.
+
+## residual risks (not fixed here)
+- rate limiter is per-process memory: with several workers/instances the effective limit multiplies.
+- admission counts only volatile-mode in-memory tasks; durable mode relies on the queue cap.
+- /civilization/execute has no overall timeout (coordinate has 60 s per participant).
+- synchronous logging at fixed INFO on the event loop: a blocked log sink freezes the whole server incl. /health/live
+  (observed during local load work, log 294).
+- SSE has no replay: events published before a subscription is registered are lost to that subscriber.
+
+## not proven
+behavior in production/Render; multi-instance deployment; any live attack. These are local tests only.

@@ -18,7 +18,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import HTTPException, Security
+from fastapi import HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
@@ -28,10 +28,12 @@ from agent_civilization.pipeline import dag, execute_plan
 from agent_civilization.core import coordination
 
 _STAGE_NAME = r"^[A-Za-z0-9_.-]{1,64}$"
+# SEC-08: same bound as TaskRequest.prompt / ChatRequest.message (server.py).
+MAX_MESSAGE_CHARS = 20000
 
 
 class ExecuteRequest(BaseModel):
-    message: str
+    message: str = Field(..., max_length=MAX_MESSAGE_CHARS)
     data: Optional[Any] = None
     # SEC-06 (R-145): explicit per-request consent to the public (keyless) LLM
     # provider — strict bool, default False (a missing field is refusal).
@@ -59,7 +61,7 @@ class CoordinateRequest(BaseModel):
     explicit approval in ``approve_stages`` — they are reported as
     ``pending_approvals`` (the R-165 gate cannot be bypassed via this route).
     """
-    message: str
+    message: str = Field(..., max_length=MAX_MESSAGE_CHARS)
     specializations: Optional[List[str]] = None
     participants_per_specialty: int = Field(1, ge=1, le=50)
     approve_stages: List[str] = Field(default_factory=list, max_length=dag.MAX_STAGES)
@@ -67,7 +69,7 @@ class CoordinateRequest(BaseModel):
 
 
 def register_civilization_routes(app, civilization, tasks_store, prune_tasks, verify_api_key=None,
-                                 require_principal=None):
+                                 require_principal=None, rate_limiter=None, admit=None):
     """Attach civilization routes to an existing FastAPI app.
 
     When `verify_api_key` is provided (the server's own helper), the routes
@@ -76,8 +78,31 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
     SEC-02: /civilization/execute stores a task and runs memory for a tenant,
     so it needs `require_principal` (the server's identity check). Without it
     the route refuses every request — it never runs without a tenant.
+
+    SEC-08: ``rate_limiter(request)`` is the server's per-client limiter (the
+    one every /api/* route uses) and ``admit(tenant_id)`` its volatile task
+    admission (R-164 caps + accept rate). Every route here calls the limiter
+    first; execute/coordinate call ``admit`` before writing any record.
     """
     api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+    def _limit(request: Request):
+        if rate_limiter is not None:
+            rate_limiter(request)
+
+    def _admit(tenant_id: str):
+        if admit is not None:
+            admit(tenant_id)
+
+    def _finish(task_id: str, record: dict, **fields):
+        # SEC-08 (D3): the record may have been evicted while the run was in
+        # flight — restore it as finished instead of raising KeyError (500).
+        rec = tasks_store.get(task_id)
+        if rec is None:
+            rec = tasks_store.setdefault(task_id, dict(record))
+            prune_tasks()
+        rec.update(fields)
+        return rec
 
     def _guard(api_key):
         if verify_api_key is not None:
@@ -85,7 +110,8 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         return None
 
     @app.get("/civilization/registry")
-    async def registry_route(api_key: Optional[str] = Security(api_key_header)):
+    async def registry_route(request: Request, api_key: Optional[str] = Security(api_key_header)):
+        _limit(request)
         _guard(api_key)
         return {
             "count": len(AGENTS),
@@ -94,7 +120,9 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         }
 
     @app.post("/civilization/plan")
-    async def preview_plan(req: ExecuteRequest, api_key: Optional[str] = Security(api_key_header)):
+    async def preview_plan(request: Request, req: ExecuteRequest,
+                           api_key: Optional[str] = Security(api_key_header)):
+        _limit(request)
         _guard(api_key)
         plan = auto_route(req.message)
         try:
@@ -104,12 +132,15 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             raise HTTPException(400, f"invalid plan: {exc}") from None
 
     @app.post("/civilization/execute")
-    async def execute(req: ExecuteRequest, api_key: Optional[str] = Security(api_key_header)):
+    async def execute(request: Request, req: ExecuteRequest,
+                      api_key: Optional[str] = Security(api_key_header)):
+        _limit(request)
         if require_principal is None:
             raise HTTPException(401, "authentication is not configured for this route")
         principal = require_principal(api_key)
         if not req.message.strip():
             raise HTTPException(400, "message is required")
+        _admit(principal.tenant_id)       # SEC-08: before any record is written
         plan = auto_route(req.message)
         task_id = str(uuid.uuid4())
         tasks_store[task_id] = {
@@ -147,9 +178,9 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             raise
         finally:
             reset_public_llm_consent(token)
-        tasks_store[task_id]["status"] = "completed"
-        tasks_store[task_id]["result"] = result
-        tasks_store[task_id]["run_id"] = result["run_id"]
+        _finish(task_id, {"id": task_id, "message": req.message, "plan": plan,
+                          "created_at": time.time(), "tenant_id": principal.tenant_id},
+                status="completed", result=result, run_id=result["run_id"])
         return {"task_id": task_id, **result}
 
     def _principal(api_key):
@@ -158,7 +189,8 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         return require_principal(api_key)
 
     @app.get("/civilization/runs/{run_id}")
-    async def get_run(run_id: str, api_key: Optional[str] = Security(api_key_header)):
+    async def get_run(request: Request, run_id: str, api_key: Optional[str] = Security(api_key_header)):
+        _limit(request)
         principal = _principal(api_key)
         try:
             run = dag.RUNS.get(run_id, principal.tenant_id)
@@ -167,8 +199,9 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         return {"task_id": run.task_id, **dag.report(run)}
 
     @app.post("/civilization/runs/{run_id}/resume")
-    async def resume_run(run_id: str, req: ResumeRequest,
+    async def resume_run(request: Request, run_id: str, req: ResumeRequest,
                          api_key: Optional[str] = Security(api_key_header)):
+        _limit(request)
         principal = _principal(api_key)
         from agent_civilization.core.llm import reset_public_llm_consent, set_public_llm_consent
         try:
@@ -192,7 +225,8 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         return {"task_id": run.task_id, **result}
 
     @app.post("/civilization/coordinate")
-    async def coordinate(req: CoordinateRequest, api_key: Optional[str] = Security(api_key_header)):
+    async def coordinate(request: Request, req: CoordinateRequest,
+                         api_key: Optional[str] = Security(api_key_header)):
         """R-166 (D-085, amended D-086): fan-out/fan-in over the real agents.
 
         The message becomes one subtask per requested specialization (default:
@@ -203,6 +237,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         a hidden success. Sensitive specializations (dag.SENSITIVE) are not
         executed without an explicit approval and are reported as pending.
         """
+        _limit(request)
         principal = _principal(api_key)
         if not req.message.strip():
             raise HTTPException(400, "message is required")
@@ -217,8 +252,9 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         # as pending and never executed.
         pending = [s for s in specs if s in dag.SENSITIVE and s not in req.approve_stages]
         executable = [s for s in specs if s not in pending]
+        _admit(principal.tenant_id)       # SEC-08: before any record is written
         task_id = str(uuid.uuid4())
-        tasks_store[task_id] = {
+        base_record = {
             "id": task_id,
             "message": req.message,
             "plan": plan,
@@ -226,6 +262,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             "created_at": time.time(),
             "tenant_id": principal.tenant_id,
         }
+        tasks_store[task_id] = dict(base_record)
         prune_tasks()
 
         # participants: real agents, capped per specialty; ids are unique
@@ -283,9 +320,8 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
                     ok=False, incomplete_reason="awaiting approval",
                     subtasks=0, participants=0)
         except coordination.CoordinationError as exc:
-            rec = tasks_store[task_id]
-            rec.update(status="failed", finished_at=time.time(),
-                       result={"error": f"coordination refused: {exc}"})
+            _finish(task_id, base_record, status="failed", finished_at=time.time(),
+                    result={"error": f"coordination refused: {exc}"})
             raise HTTPException(400, f"coordination refused: {exc}") from None
         finally:
             reset_public_llm_consent(token)
@@ -298,9 +334,8 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         if report.ok and pending:
             incomplete = "awaiting approval"
 
-        rec = tasks_store[task_id]
-        rec["status"] = "completed" if ok else "failed"
-        rec["finished_at"] = time.time()
+        rec = _finish(task_id, base_record, status="completed" if ok else "failed",
+                      finished_at=time.time())
         rec["result"] = {
             "ok": ok,
             "results": report.results,

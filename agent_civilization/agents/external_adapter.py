@@ -184,6 +184,26 @@ def guarded_session_kwargs(allow_private: bool, limit: int = 100) -> Dict[str, A
     return {"connector": connector, "trace_configs": [trace]}
 
 
+def public_url(url: str) -> str:
+    """SEC-07: the disclosable form of an external agent URL — ``scheme://host[:port]``.
+
+    The configured URL may carry credentials in its userinfo, query, fragment or
+    path (``/bot<token>/``); snapshots are served by the public ``GET /api/agents``,
+    so only the origin is exposed (same disclosure as the R-159 log line).
+    Unparseable input yields ``"(invalid)"`` — never an echo of the input."""
+    try:
+        parts = urlsplit(url or "")
+        host = (parts.hostname or "").lower()
+        port = parts.port
+    except ValueError:
+        return "(invalid)"
+    if not parts.scheme or not host:
+        return "(invalid)"
+    if ":" in host:
+        host = f"[{host}]"
+    return f"{parts.scheme.lower()}://{host}" + (f":{port}" if port is not None else "")
+
+
 class ExternalAgentAdapter:
     """Wraps a real remote agent behind the same execute() contract."""
 
@@ -333,7 +353,7 @@ class ExternalAgentAdapter:
             "name": self.name,
             "specialization": "external",
             "status": self.status,
-            "url": self.url,
+            "url": public_url(self.url),  # SEC-07: never the credential-bearing URL
             "model": self.model,
             "stats": dict(self.stats),
         }
