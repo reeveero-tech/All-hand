@@ -75,6 +75,24 @@ _COUNT_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7
                 "ست": 6, "سته": 6, "سبع": 7, "عشر": 10, "عشره": 10}
 _SUCCESS_ONLY = re.compile(r"^(task )?(completed?|done|finished|success(fully)?|reviewed|ok)\b|here is the result"
                            r"|^تم( انجاز| الانجاز| المراجعه|ت المراجعه)?|^تمت", re.I)
+# R-170/13b: a list item that is NOTHING but a bare success claim or an
+# abstention (bullet/numbering prefixes and trailing punctuation stripped).
+_BARE_ITEM = re.compile(r"^(?:task )?(?:completed?|done|finished|success(?:fully)?|reviewed|ok|"
+                        r"here is the result|تم(?: انجاز| الانجاز| المراجعه|ت المراجعه)?|تمت)"
+                        r"[.،,;؛!؟…]*$", re.I)
+_BARE_ABSTAIN = re.compile(r"^(?:i don'?t know|لا اعرف|لا اعلم)$")
+
+
+def _bare_kind(item: str) -> Optional[str]:
+    """'success' or 'abstain' when a list item carries no content beyond a
+    bare claim — a bulleted "- تم" x3 is a bare success claim, not a deliverable
+    (the bullet prefix must not defeat the ^-anchored whole-text checks)."""
+    t = norm(re.sub(r"^\s*(?:[-*•]|\d+[.)])\s*", "", item)).strip(" .،,;؛!؟…")
+    if not t:
+        return None
+    if _BARE_ABSTAIN.match(t):
+        return "abstain"
+    return "success" if _BARE_ITEM.match(t) else None
 
 
 def _colour_word(t: str) -> Optional[str]:
@@ -213,7 +231,8 @@ def assess_prose(info: Mapping[str, Any], result: Mapping[str, Any]) -> List[str
     if lang_of(a) != info.get("lang"):
         reasons.append(f"answer language {lang_of(a)} != request language {info.get('lang')}")
     n = info.get("count")
-    listed = len(_list_items(a))
+    items = _list_items(a)
+    listed = len(items)
     # pr-st-3: when the request itself sizes the deliverable ("list N items"),
     # delivering exactly N list items satisfies the request's own acceptance
     # criterion; the generic word floor yields to it (a complete N-item list can
@@ -225,6 +244,12 @@ def assess_prose(info: Mapping[str, Any], result: Mapping[str, Any]) -> List[str
         reasons.append(f"too short to be the requested deliverable ({words} words < 15)")
     if n and listed != n:
         reasons.append(f"requested {n} item(s), answer lists {listed}")
+    # R-170/13b: a list whose EVERY item is a bare success claim or abstention
+    # is hollow even when it satisfies the requested count ("- تم" x3).
+    kinds = [_bare_kind(i) for i in items] if items else []
+    if items and all(kinds):
+        reasons.append("abstention, not a completed task" if "abstain" in kinds
+                       else "a bare success claim, no deliverable")
     if info["spec"] == "reviewer" and info.get("code", "").strip() and not re.search(r"\bline \d+|السطر|\(\w+\)|`", a):
         reasons.append("code review prose cites no line or code element")
     return reasons
