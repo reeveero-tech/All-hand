@@ -412,3 +412,8 @@
   - ruff صفر في النطاقين، و`export_contract_schemas.py --check` بـ29 عقداً ولا مشكلة (`157_r165_contracts.log`).
   - web ‏`npm test` ‏39/39، وبناء web والجذر ناجحان (`157_r165_gates.log`).
 
+## السجل 295 — بوابة علامات التعارض
+- **تغيير CI**: خطوة «Conflict-marker check» في `.github/workflows/governance-gate.yml` (job ‏`governance`) تشغّل `scripts/check_conflict_markers.py origin/main HEAD` — تفشل إن أضافت الـPR سطر `<<<<<<<`/`>>>>>>>`/`|||||||`.
+- **السبب**: حادثة 2026-10-25 — التزام 49b91804 حمل علامات تعارض في ROADMAP/PROJECT_STATE/CHANGELOG ومرّت no-delete والذرية v2 والحالات.
+- **اختبارات**: `tests/test_conflict_marker_gate.py` — 20 على مستودعات git حقيقية؛ الحادثة الفعلية تُكشف (9 أسطر)؛ main ينجح.
+- **الطفرات**: 5/5 مقتولة بعد إضافة اختبار واحد (M4 نجت أولًا) — التفاصيل في `docs/audit/M8/logs/raw/295_conflict_marker_gate.log`.
