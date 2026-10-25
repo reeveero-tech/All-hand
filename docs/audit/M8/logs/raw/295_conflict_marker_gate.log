@@ -1,0 +1,59 @@
+# 295 — بوابة علامات التعارض (حادثة أثناء دمج دفعات 37–39)
+date: 2026-10-25  branch: m8/gate-conflict-markers  base: main 4972e9ca
+category: governance gate (CI). No server code change. No production change.
+
+## incident (my error, recorded as is)
+After merging #251, rebasing m8/r171-s0-local-load onto main produced conflicts in the header lines of
+ROADMAP.md / PROJECT_STATE.md and the top of CHANGELOG.md. My resolution script aborted on an assertion
+(the HEAD side had 2 lines, not 1), but the same shell command went on to `git add` + `rebase --continue` +
+`push --force-with-lease`. Commit 49b91804 was pushed to the PR branch with unresolved
+`<<<<<<<` / `=======` / `>>>>>>>` blocks. The local gates run in that same command all PASSED:
+no-delete, atomic batch v2, status evidence. Fixed by a separate commit 7ab87498 (entries 39, 38, 37 kept)
+before CI finished; PR #250 merged only after CI on 7ab87498 passed. main was checked after each merge:
+`git grep -E "^(<<<<<<< |>>>>>>> )" origin/main` ⇒ no hits (after #249, #251, #250).
+Process lesson: never chain a conflict-resolution step with add/continue/push in one command.
+
+## problem + acceptance (set before writing the gate)
+problem: no gate detects conflict markers; a PR can merge them into governance docs or code.
+acceptance:
+- G1 the exact incident (3de45eac...49b91804) ⇒ exit 1 with each marker line listed by path:line.
+- G2 the fixed tree (3de45eac...7ab87498) and current main (710997f9...origin/main) ⇒ exit 0.
+- G3 only lines ADDED by the PR count; existing files with historical markers are not re-judged.
+- G4 bare `=======` (common in recorded pytest output: 2 such lines exist in docs/audit/M6/logs/39_r072_after.log)
+  is not a failure by itself; it is reported only alongside `<<<<<<<`/`>>>>>>>` in the same file.
+- G5 non-ASCII (Arabic), quoted and space-containing paths are scanned, never skipped; CRLF handled.
+- G6 git error (bad ref) ⇒ exit 2, never pass. G7 the governance workflow runs it.
+
+## implementation
+scripts/check_conflict_markers.py (stdlib; `git -c core.quotePath=false diff -U0 BASE...HEAD`; C-style path
+unquoting; strips the TAB git appends after paths with spaces). Step "Conflict-marker check" added to
+.github/workflows/governance-gate.yml (runs even if an earlier step failed).
+
+## tests — tests/test_conflict_marker_gate.py (20)
+two defects in my own first draft were found by these tests before commit (class: path handling):
+- Arabic file name skipped silently (git quotes non-ASCII paths in `+++` headers) ⇒ fixed with quotePath=false + unquote.
+- path with a space/quote char skipped (git appends TAB after such paths) ⇒ fixed.
+red-first: test_workflow_runs_gate failed before the workflow step was added; the two path tests failed on the draft.
+
+## results
+G1: FAILED-as-expected — 9 marker lines reported in CHANGELOG/PROJECT_STATE/ROADMAP, exit 1.
+G2: exit 0 on 3de45eac...7ab87498 and on 710997f9...origin/main.
+targeted: tests/test_conflict_marker_gate.py 20 passed; with R-152/R-153 gate tests: all pass.
+full suite: see bottom of this log.
+
+## not proven / residual
+- a marker inside a binary file, or a marker that a PR adds and later commits remove, is not reported (net diff only — intended).
+- the gate does not stop a direct push to main (branch protection is an owner setting; not changed).
+
+## mutations (5, run against the committed tests)
+M1 drop the space/EOL boundary in MARKER ⇒ 2 fail (killed)
+M2 skip path unquoting ⇒ 1 fail (killed)
+M3 git error returns 0 ⇒ 1 fail (killed)
+M4 report bare ======= from any file ⇒ SURVIVED with 19 tests; added
+   test_bare_separator_in_other_file_not_reported (first version still let it survive because the mutant
+   reports the other file's separator under the marker file's path; tightened to exact count) ⇒ 1 fail (killed)
+M5 ignore +++ headers ⇒ 10 fail (killed)
+final: 5/5 killed, 20 tests.
+
+## full suite
+3393 passed, 8 skipped, 17 deselected, 9 xfailed in 269.46s, EXIT 0 (local, Python 3.14, with 19 gate tests; the 20th was added after mutation M4 — targeted run 20 passed).

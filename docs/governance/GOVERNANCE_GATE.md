@@ -24,6 +24,12 @@
 - **لا استثناء داخل المستودع** (D-064): لا ملف allowlist ولا label ولا نص PR. الحذف المصرّح يحتاج قرار مالك منفصلاً يُدخل آلية مراجَعة في دفعته الخاصة.
 - الاختبارات: `tests/test_r152_no_delete_gate.py` (13، مستودعات git حقيقية) + PR تجريبية حية سالبة (`docs/audit/M8/logs/raw/016`).
 
+## فحص علامات التعارض (السجل 295)
+
+- خطوة **Conflict-marker check** في job ‏`governance`: `python3 scripts/check_conflict_markers.py origin/main HEAD` — تفشل إن أضافت الـPR سطرًا يبدأ بـ`<<<<<<<` أو `>>>>>>>` أو `|||||||` (يليه مسافة أو نهاية السطر). `=======` وحده لا يُفشل (شائع في مخرجات pytest المسجلة) ويُذكر فقط مع علامة أخرى في الملف نفسه. الأسطر المضافة فقط — الملفات التاريخية لا يعاد الحكم عليها.
+- السبب: حادثة 2026-10-25 — إعادة أساس دفعت علامات تعارض إلى ROADMAP/PROJECT_STATE/CHANGELOG ومرّت كل البوابات الأخرى.
+- الاختبارات: `tests/test_conflict_marker_gate.py` (20، مستودعات git حقيقية، مسارات عربية ومقتبسة وبمسافات).
+
 ## فحص الذرية v2 (R-153، D-065)
 
 - خطوة **Atomic batch check v2 (R-153)** بعد الفحص المضمن v1 (الباقي بلا تغيير): `python3 scripts/check_atomic_batch.py origin/main HEAD`. القواعد: **R0** ROADMAP/PROJECT_STATE/CHANGELOG دائماً؛ **R1** أي تغيير تنفيذي (مسارات v1 + `scripts/`، `.github/`، Docker/Render، `requirements*`، `package(-lock).json`، إعدادات البناء والاختبار، `public/`، `.env.example`، `docs/sql/`) يتطلب دليلاً في `docs/audit/`؛ **R2** API.md؛ **R3** DATA_MODEL.md؛ **R4** QUALITY.md؛ **R5** Python تشغيلي ⇒ تغيير في `tests/`؛ **R6** مصدر `web/` ⇒ تغيير في `web/tests/` أو `tests/`. تُذكر كل المخالفات دفعةً واحدة؛ خطأ git ⇒ rc=2.
