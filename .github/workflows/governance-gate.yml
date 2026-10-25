@@ -24,6 +24,12 @@ jobs:
       - name: No-delete check (R-152)
         run: python3 scripts/check_no_delete.py origin/main HEAD
 
+      # Log 295: unresolved merge-conflict markers added by the PR (a rebase
+      # once committed them into ROADMAP/PROJECT_STATE/CHANGELOG unnoticed).
+      - name: Conflict-marker check
+        if: ${{ !cancelled() }}
+        run: python3 scripts/check_conflict_markers.py origin/main HEAD
+
       - name: Atomic batch check
         # run even if the no-delete step failed, so both verdicts are reported
         if: ${{ !cancelled() }}
