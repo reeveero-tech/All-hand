@@ -1,0 +1,37 @@
+# 291 — R-170 batch 13b: رفض قوائم ادعاء النجاح/الامتناع النقطية (تكملة إصلاح pr-st-3)
+date: 2026-10-25  branch: m8/r170-batch13-pr-st-3 (supplement commits)  base: main 17358f7f
+owner decision unchanged: gate stays OFF by default; no deploy; R-170 not closed by this batch.
+
+## context: regression found by final review of batch 13
+batch 13 (PR #247, merged with owner approval) exempted count-complete lists from the 15-word floor. Side effect: bulleted lists made ONLY of bare success-claim words ("- تم" x3) or abstentions ("- لا أعرف" x3) — previously rejected by the floor alone — became formally acceptable (the ^-anchored whole-text bare-success/abstention checks are defeated by the "- " prefix). This contradicts R-170's explicit purpose. Batch 13b closes the path.
+
+## change (smallest safe; agent_civilization/core/task_fit.py)
+new check in assess_prose at the LIST-ITEM level: if EVERY list item (bullet/numbering prefix stripped, trailing punctuation stripped, standard normalization) is a bare success claim or an abstention, the answer is rejected ("a bare success claim, no deliverable" / "abstention, not a completed task"). No word floor re-imposed on correct lists; whole-text checks unchanged; gate default unchanged (off).
+
+## pre-registration (PREREGISTRATION_PRST3B.md, written before the code change; committed in the same commit as the fix — sequence documented via tool-call order; wording corrected vs batch 13's phrasing, see log 290 correction appendix)
+acceptance set B frozen by sha256 (13 cases): 178640ea3cbf2dcc10a8ed705ffab91bfec51a6f5568209a5291db6031c2bf41 — corrected expectation for acc-05 (bulleted "- تم" x3 now REJECTED), English/numbered/punctuation variants, and controls that pr-st-3 / color lists stay accepted.
+whole-corpus offline simulation on pre-change code: ZERO verdict flips in the 244 frozen cases (the check is purely protective).
+
+## evidence (code d2767cc5; runs regenerated AFTER the code commit so code_sha matches reality — the pre-commit d6/v3/t3/b_a1 runs were discarded and redone, uncommitted evidence, no history rewritten)
+dev_d6: verdicts identical to dev_d5 (script-compared, both modes).
+validation_v3: verdicts identical to validation_v2.
+test_t3: verdicts identical to test_t2 (H1 34/34, H2 0/48, H3 48/48 gate-on; the frozen test split is regression evidence here, not new-case acceptance — see prereg B section 4).
+acceptance set B: 13/13 matched, mismatches [] (acceptance_prst3b_a1, code_sha d2767cc5).
+red-first regression tests: tests/test_r170_pr_st3b.py — 5 failed on pre-change code, all pass after.
+batch-13 test updated (tests/test_r170_pr_st3.py): the "- تم" x3 documented-limitation parametrization is superseded by 13b (comment in-file records the supersession); the colors case stays.
+full suite: see PR CI (run locally too, result in PR checks).
+ruff --select F,E722 (CI ruleset): clean.
+
+## criteria (prereg B section 6) — status
+1 full suite + ruff + gate default unchanged: MET (local run + PR CI).
+2 dev/validation/test non-regression (d6/v3/t3 identical to d5/v2/t2): MET.
+3 acceptance set B 13/13: MET.
+4 permanent red-first regression tests: MET.
+5 log 290 correction appendix + this log: MET.
+
+## honest disclosures (unchanged + new)
+- acceptance sets a/b are CONSISTENCY evidence, not fully independent acceptance: case design happened after observing current-code behavior (dev-level); their expectations were registered before their runs but after that observation. Registered in prereg B section 4.
+- t2/t3 runs are regression verification on a known frozen set (the pre-fix whole-corpus simulation included test), not new-case acceptance.
+- mixed lists (one substantive item + bare claims) are accepted formally — documented structural scope (only ALL-bare lists are rejected).
+- R-170 remains open: language verification (R-169 regression unsolved), owner enablement decision, Q-028 human review all outstanding.
+- Q-028 re-verified during takeover: zip sha + all three inner-file sha256s match PACKET_SHA256.json; 60 blind cases (H01..H60); reviewer_form.json verdict/confidence/note all empty. NOT sent. No human review performed. Handoff must give the reviewer ONLY the packet, not the public repo link (the key lives in the repo).

@@ -1,0 +1,9 @@
+{
+ "stem": "acceptance_prst3b_a1",
+ "code_sha": "d2767cc5048553b6f6528e3487c83d2e41a30b08",
+ "cases_sha256": "178640ea3cbf2dcc10a8ed705ffab91bfec51a6f5568209a5291db6031c2bf41",
+ "n": 13,
+ "matched": 13,
+ "all_match": true,
+ "mismatches": []
+}
