@@ -1,0 +1,109 @@
+{
+ "tag": "r3",
+ "runs": {
+  "grounded-v2": {
+   "n": 46,
+   "provider_errors": 0
+  },
+  "grounded-v3-lang": {
+   "n": 46,
+   "provider_errors": 0
+  }
+ },
+ "comparisons": {
+  "grounded-v2 (a) vs grounded-v3-lang (b)": {
+   "language_match_ar": {
+    "n": 15,
+    "a": 10,
+    "b": 14,
+    "a_only": 0,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.125
+   },
+   "language_match_en": {
+    "n": 14,
+    "a": 14,
+    "b": 12,
+    "a_only": 2,
+    "b_only": 0,
+    "mcnemar_exact_p": 0.5
+   },
+   "pass": {
+    "n": 46,
+    "a": 45,
+    "b": 43,
+    "a_only": 2,
+    "b_only": 0,
+    "mcnemar_exact_p": 0.5
+   },
+   "pass_ar": {
+    "n": 23,
+    "a": 22,
+    "b": 20,
+    "a_only": 2,
+    "b_only": 0,
+    "mcnemar_exact_p": 0.5
+   },
+   "pass_en": {
+    "n": 23,
+    "a": 23,
+    "b": 23,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   }
+  }
+ },
+ "causes": {
+  "grounded-v2": {
+   "mismatches": {
+    "ar_q:token_then_english_explanation": 2,
+    "ar_q:reply_entirely_english": 2,
+    "ar_q:mixed_other_latin": 1
+   },
+   "mismatch_ids": {
+    "ar_q:token_then_english_explanation": [
+     "r169-v5-abstain_missing-01-ar",
+     "r169-v5-abstain_missing-06-ar"
+    ],
+    "ar_q:reply_entirely_english": [
+     "r169-v5-conflicting_sources-01-ar",
+     "r169-v5-tool_poisoning-11-ar"
+    ],
+    "ar_q:mixed_other_latin": [
+     "r169-v5-adversarial_user-06-ar"
+    ]
+   },
+   "insufficient_evidence_replies": 10,
+   "insufficient_evidence_then_other_language": 2
+  },
+  "grounded-v3-lang": {
+   "mismatches": {
+    "en_q:mixed_arabic": 2,
+    "en_q:reply_entirely_arabic": 1,
+    "ar_q:reply_entirely_english": 1
+   },
+   "mismatch_ids": {
+    "en_q:mixed_arabic": [
+     "r169-v5-abstain_missing-06-en",
+     "r169-v5-tool_poisoning-11-en"
+    ],
+    "en_q:reply_entirely_arabic": [
+     "r169-v5-abstain_missing-11-en"
+    ],
+    "ar_q:reply_entirely_english": [
+     "r169-v5-tool_poisoning-11-ar"
+    ]
+   },
+   "insufficient_evidence_replies": 12,
+   "insufficient_evidence_then_other_language": 0
+  }
+ },
+ "criteria": {
+  "A1": true,
+  "A2": false,
+  "A3": true,
+  "provider_error_share": 0.0,
+  "inconclusive_by_errors": false
+ }
+}
