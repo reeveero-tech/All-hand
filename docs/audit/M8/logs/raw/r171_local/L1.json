@@ -1,0 +1,249 @@
+{
+ "category": "local test (one process, loopback HTTP, volatile mode, offline task mix)",
+ "agents_per_spec": 50,
+ "python": "3.14.8",
+ "cpu_count": 2,
+ "config": {
+  "AGOS_RATE_LIMIT_REQUESTS": "100000000",
+  "AGOS_TASK_RETRY_AFTER_S": "1",
+  "AGOS_SSE_QUEUE_SIZE": "10000"
+ },
+ "startup_s": 0.506,
+ "idle": {
+  "VmHWM": 76356,
+  "VmRSS": 76356,
+  "Threads": 5
+ },
+ "agents_reported": 1000,
+ "ladder": [
+  {
+   "clients": 1,
+   "tasks_planned": 20,
+   "wall_s": 0.046,
+   "http_codes": {
+    "202": 20
+   },
+   "terminal": {
+    "completed": 16,
+    "failed": 4
+   },
+   "record_vanished_404": 0,
+   "stopped_by_deadline": 0,
+   "throughput_completed_per_s": 430.24,
+   "accept_latency_s": {
+    "n": 20,
+    "p50": 0.0007,
+    "p95": 0.0008,
+    "p99": 0.0028,
+    "max": 0.0028,
+    "mean": 0.0008
+   },
+   "end_to_end_latency_s": {
+    "n": 20,
+    "p50": 0.002,
+    "p95": 0.0048,
+    "p99": 0.0058,
+    "max": 0.0058,
+    "mean": 0.0023
+   },
+   "server": {
+    "samples": 1,
+    "rss_kb_max": 76680,
+    "threads_max": 5,
+    "tasks_pending_max": 0.0
+   }
+  },
+  {
+   "clients": 10,
+   "tasks_planned": 200,
+   "wall_s": 0.389,
+   "http_codes": {
+    "202": 200
+   },
+   "terminal": {
+    "completed": 160,
+    "failed": 40
+   },
+   "record_vanished_404": 0,
+   "stopped_by_deadline": 0,
+   "throughput_completed_per_s": 514.25,
+   "accept_latency_s": {
+    "n": 200,
+    "p50": 0.0072,
+    "p95": 0.0168,
+    "p99": 0.0249,
+    "max": 0.048,
+    "mean": 0.0085
+   },
+   "end_to_end_latency_s": {
+    "n": 200,
+    "p50": 0.0173,
+    "p95": 0.0302,
+    "p99": 0.0347,
+    "max": 0.0614,
+    "mean": 0.0179
+   },
+   "server": {
+    "samples": 1,
+    "rss_kb_max": 78060,
+    "threads_max": 5,
+    "tasks_pending_max": 7.0
+   }
+  },
+  {
+   "clients": 50,
+   "tasks_planned": 1000,
+   "wall_s": 2.424,
+   "http_codes": {
+    "202": 1000
+   },
+   "terminal": {
+    "completed": 800,
+    "failed": 200
+   },
+   "record_vanished_404": 0,
+   "stopped_by_deadline": 0,
+   "throughput_completed_per_s": 412.61,
+   "accept_latency_s": {
+    "n": 1000,
+    "p50": 0.037,
+    "p95": 0.075,
+    "p99": 0.7868,
+    "max": 1.3405,
+    "mean": 0.056
+   },
+   "end_to_end_latency_s": {
+    "n": 1000,
+    "p50": 0.078,
+    "p95": 0.1387,
+    "p99": 0.845,
+    "max": 1.437,
+    "mean": 0.0951
+   },
+   "server": {
+    "samples": 4,
+    "rss_kb_max": 82812,
+    "threads_max": 5,
+    "tasks_pending_max": 16.0
+   }
+  },
+  {
+   "clients": 100,
+   "tasks_planned": 2000,
+   "wall_s": 7.538,
+   "http_codes": {
+    "202": 2000
+   },
+   "terminal": {
+    "completed": 1600,
+    "failed": 400
+   },
+   "record_vanished_404": 0,
+   "stopped_by_deadline": 0,
+   "throughput_completed_per_s": 265.33,
+   "accept_latency_s": {
+    "n": 2000,
+    "p50": 0.0803,
+    "p95": 0.2289,
+    "p99": 3.1503,
+    "max": 5.7816,
+    "mean": 0.157
+   },
+   "end_to_end_latency_s": {
+    "n": 2000,
+    "p50": 0.1952,
+    "p95": 0.3755,
+    "p99": 3.4729,
+    "max": 5.8549,
+    "mean": 0.2855
+   },
+   "server": {
+    "samples": 8,
+    "rss_kb_max": 86508,
+    "threads_max": 5,
+    "tasks_pending_max": 19.0
+   }
+  },
+  {
+   "clients": 200,
+   "tasks_planned": 4000,
+   "wall_s": 18.205,
+   "http_codes": {
+    "202": 4000
+   },
+   "terminal": {
+    "completed": 3200,
+    "failed": 800
+   },
+   "record_vanished_404": 0,
+   "stopped_by_deadline": 0,
+   "throughput_completed_per_s": 219.72,
+   "accept_latency_s": {
+    "n": 4000,
+    "p50": 0.1149,
+    "p95": 0.3732,
+    "p99": 12.4396,
+    "max": 16.2022,
+    "mean": 0.3775
+   },
+   "end_to_end_latency_s": {
+    "n": 4000,
+    "p50": 0.45,
+    "p95": 0.7695,
+    "p99": 12.5281,
+    "max": 16.351,
+    "mean": 0.6352
+   },
+   "server": {
+    "samples": 20,
+    "rss_kb_max": 89412,
+    "threads_max": 5,
+    "tasks_pending_max": 12.0
+   }
+  }
+ ],
+ "burst": {
+  "submitted": 2000,
+  "submitters": 100,
+  "submit_wall_s": 7.849,
+  "http_codes": {
+   "202": 2000
+  },
+  "accepted": 2000,
+  "accept_latency_s": {
+   "n": 2000,
+   "p50": 0.3989,
+   "p95": 0.423,
+   "p99": 0.4241,
+   "max": 0.7004,
+   "mean": 0.3862
+  },
+  "retry_after_values": [],
+  "terminal_events_for_accepted": 2000,
+  "accepted_without_terminal_event": 0,
+  "duplicate_terminal_events": 0,
+  "sse_stream_gap_missed": 0,
+  "sse_errors": [],
+  "sse_event_types": {
+   "task_created": 2000,
+   "task_started": 2000,
+   "task_completed": 2000
+  },
+  "status_of_accepted_without_event": {},
+  "drain_wall_s": 8.151,
+  "accepted_per_s": 254.81,
+  "server": {
+   "samples": 15,
+   "rss_kb_max": 90732,
+   "threads_max": 5,
+   "tasks_pending_max": 28.0
+  }
+ },
+ "final": {
+  "VmHWM": 90732,
+  "VmRSS": 90732,
+  "Threads": 5
+ },
+ "server_alive_after": true,
+ "server_log_bytes": 30899915
+}

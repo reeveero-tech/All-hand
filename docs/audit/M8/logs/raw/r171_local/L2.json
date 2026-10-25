@@ -1,0 +1,63 @@
+{
+ "category": "local test (one process, loopback HTTP, volatile mode, offline task mix)",
+ "agents_per_spec": 50,
+ "python": "3.14.8",
+ "cpu_count": 2,
+ "config": {
+  "AGOS_RATE_LIMIT_REQUESTS": "100000000",
+  "AGOS_TASK_RETRY_AFTER_S": "1",
+  "AGOS_SSE_QUEUE_SIZE": "10000"
+ },
+ "startup_s": 0.507,
+ "idle": {
+  "VmHWM": 76328,
+  "VmRSS": 76328,
+  "Threads": 5
+ },
+ "agents_reported": 1000,
+ "ladder": [],
+ "burst": {
+  "submitted": 10000,
+  "submitters": 200,
+  "submit_wall_s": 31.574,
+  "http_codes": {
+   "202": 10000
+  },
+  "accepted": 10000,
+  "accept_latency_s": {
+   "n": 10000,
+   "p50": 0.5317,
+   "p95": 0.6263,
+   "p99": 0.635,
+   "max": 31.5407,
+   "mean": 0.62
+  },
+  "retry_after_values": [],
+  "terminal_events_for_accepted": 10000,
+  "accepted_without_terminal_event": 0,
+  "duplicate_terminal_events": 0,
+  "sse_stream_gap_missed": 0,
+  "sse_errors": [],
+  "sse_event_types": {
+   "task_created": 10000,
+   "task_started": 10000,
+   "task_completed": 10000
+  },
+  "status_of_accepted_without_event": {},
+  "drain_wall_s": 31.676,
+  "accepted_per_s": 316.72,
+  "server": {
+   "samples": 11,
+   "rss_kb_max": 90704,
+   "threads_max": 5,
+   "tasks_pending_max": 0.0
+  }
+ },
+ "final": {
+  "VmHWM": 90704,
+  "VmRSS": 90704,
+  "Threads": 5
+ },
+ "server_alive_after": true,
+ "server_log_bytes": 30234164
+}
