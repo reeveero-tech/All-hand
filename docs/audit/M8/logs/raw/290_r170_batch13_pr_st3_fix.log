@@ -1,0 +1,39 @@
+# 290 — R-170 batch 13: pr-st-3 false-rejection fix (word floor yields to the request's own count criterion)
+date: 2026-10-25  branch: m8/r170-batch13-pr-st-3  base: main 42715267
+owner decision unchanged (2026-10-24): gate stays OFF by default; no deploy; R-170 not closed by this batch.
+
+## pre-registration (committed BEFORE the code change; see PR history: prereg + acceptance set are in the same commit as the fix, written/verified against CURRENT code during design only)
+PREREGISTRATION_PRST3.md — sha-pinned acceptance set benchmarks/r170/hollow/acceptance_prst3.jsonl
+sha256 0f5038cb7350cfcbe66ccefd5546fda886c46325d8b78817ca63e298dc0a7f4e (12 new cases, NOT in the frozen 244-case corpus; corpus untouched, its pinned sha still verified by scripts/r170_hollow_eval.py).
+root cause (code reading, before fix): the generic 15-word floor in assess_prose is a proxy for "substance" in open-ended prose; when the request ITSELF sizes the deliverable ("list N items") and the answer delivers exactly N list items, the count is the request's own acceptance criterion and the floor double-counts (a complete Arabic KPI list was 14 words). Fix = the floor yields to a satisfied count. NOT a threshold tune (15 stays 15; no rule was fitted to test).
+offline whole-corpus simulation on CURRENT code before the change: exactly ONE verdict flip in 244 cases (pr-st-3, test, completable -> accepted); ph-st-9 (not_completable) also matches floor+count-satisfied but keeps its language-mismatch reason -> still rejected.
+
+## change (smallest safe)
+agent_civilization/core/task_fit.py::assess_prose — skip the word floor ONLY when info.count is set AND the answer lists exactly that count. Every other check untouched; floor unchanged for no-count / count-not-met / non-list prose. Module docstring updated to state the rule.
+
+## evidence (all runs on branch m8/r170-batch13-pr-st-3, code 752f9384 for the post-freeze runs)
+dev_d5 gate_off: H1 37/37 [0.9059, 1.0] | H2 0/53 [0.0, 0.0676] | H3 53/53 [0.9324, 1.0]
+dev_d5 gate_on:  H1 41/41 [0.9143, 1.0] | H2 0/62 [0.0, 0.0583] | H3 62/62 [0.9417, 1.0]
+validation_v2 gate_off: H1 27/27 [0.8754, 1.0] | H2 0/27 [0.0, 0.1246] | H3 27/27 [0.8754, 1.0]
+validation_v2 gate_on:  H1 29/29 [0.883, 1.0] | H2 0/30 [0.0, 0.1135] | H3 30/30 [0.8865, 1.0]
+non-regression: dev_d5 vs dev_d4 and validation_v2 vs validation_v1 — ALL verdicts identical (script-compared, both modes).
+test_t2 (post-freeze, run ONCE) gate_off: H1 30/30 [0.8865, 1.0] | H2 0/46 [0.0, 0.0771] | H3 46/46 [0.9229, 1.0] — identical to t1 gate_off.
+test_t2 gate_on: H1 34/34 [0.8985, 1.0] | H2 0/48 [0.0, 0.0741] | H3 48/48 [0.9259, 1.0]
+test_t2 verdict diff vs t1: EXACTLY ['pr-st-3'] (now accepted; oracle-correct — prose_correct hand-written truth). false_rejections: [] hollow_accepted: [] accepted_incorrect: [].
+acceptance_prst3_a1 (independent, post-freeze, sha-verified set): 12/12 matched, mismatches [].
+unit regression tests: tests/test_r170_pr_st3.py (12 tests incl. the exact pr-st-3 case) — red-first verified (4 failed on pre-fix code, 11+1 parametrized pass post-fix).
+full suite: 3322 passed / 8 skipped / 17 deselected / 9 xfailed (exit 0, offline). ruff --select F,E722 (CI ruleset): clean. AGOS_OUTPUT_VALIDATORS default: unchanged (off).
+
+## criteria (prereg PRST3 §6) — all MET
+1 full suite green + ruff + gate default unchanged: MET (CI on the PR is the remaining external confirmation).
+2 dev/validation non-regression: MET (verdict-identical).
+3 test t2: H1 34/34, H2 0/48, H3 48/48, gate_off unchanged: MET.
+4 acceptance set 12/12: MET.
+5 permanent regression tests in CI: MET.
+
+## limits & honest disclosures
+- task_fit remains STRUCTURAL: accepting a count-complete list proves form, not content. Two documented structural limitations (registered in the prereg BEFORE the runs): acc-05 (bulleted bare success-claim words "- تم" — the "- " prefix defeats the ^-anchored bare-success regex; PRE-EXISTING gap, independent of this fix, candidate for a separate future batch) and acc-08 (count-complete one-word items accepted formally).
+- dev/validation re-runs after a code change are verification, not new tuning; test was run once post-freeze (t2) per the batch-12 protocol.
+- This batch does NOT close R-170: closing requires language-verification results (R-169 regression unsolved), regression evidence, and the true state of Q-028 (human review not performed).
+- Q-028 packet integrity re-verified during takeover: r170_phase_a_packet.zip sha256 c299caeaba6c257569ab90cc44f0703394ba88e121a53eed78c752d983806469 matches PACKET_SHA256.json; 60 blind cases (H01..H60); reviewer_form.json verdicts all empty; key kept separate. NOT sent; no human review performed.
+- R-169: no change this batch; regression confirmed (p=0.00049) and unsolved; live verification still requires the free keyless provider (owner consent path), no paid service used.
