@@ -456,27 +456,80 @@ def test_background_task_trace_links_request_task_and_storage(auth, fake_storage
 
 
 def test_durable_trace_id_accepts_only_known_internal_trace_ids():
-    """R-159 no-leak (advisor round 4): a value sitting under the reserved
-    ``_agos_trace_id`` key in a legacy/foreign payload is accepted ONLY in
-    the internal trace-id format (telemetry.new_trace_id = token_hex(16) →
-    32 lowercase hex chars); anything else — e.g. a sensitive experimental
-    value — is ignored and the run starts its own trace: payload data must
-    never become an emitted trace_id."""
+    """R-159 no-leak (advisor rounds 4+5): a value under the reserved
+    ``_agos_trace_id`` key is accepted ONLY from the KNOWN INTERNAL ENVELOPE
+    that ``_durable_payload`` writes (the reserved ``_agos_prompt`` key is
+    always present in it) AND in the internal trace-id format
+    (telemetry.new_trace_id = token_hex(16) → 32 lowercase hex chars).
+    A raw dict whose value merely MATCHES the format — or a sensitive
+    experimental value in an internal-looking envelope — is ignored and the
+    run starts its own trace: payload data must never become an emitted
+    trace_id."""
     good = secrets.token_hex(16)
-    assert server._durable_trace_id({"payload": {"_agos_trace_id": good}}) == good
-    # a sensitive/foreign value under the reserved key — ignored
+    # the internal envelope (as _durable_payload writes it) + valid id
+    assert server._durable_trace_id({"payload": {"_agos_prompt": "p", "data": None,
+                                                 "_agos_trace_id": good}}) == good
+    # a RAW dict whose value merely MATCHES the internal format — rejected:
+    # the envelope is unknown (foreign/legacy payload)
+    assert server._durable_trace_id({"payload": {"_agos_trace_id": "a" * 32}}) is None
+    # internal envelope + a sensitive/foreign value — rejected
     assert server._durable_trace_id(
-        {"payload": {"_agos_trace_id": "SECRET-VALUE-do-not-emit"}}) is None
-    assert server._durable_trace_id({"payload": {"_agos_trace_id": "not hex!"}}) is None
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": "SECRET-VALUE-do-not-emit"}}) is None
+    assert server._durable_trace_id(
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": "not hex!"}}) is None
     # wrong case / shape / length / type
     assert server._durable_trace_id(
-        {"payload": {"_agos_trace_id": "ABCDEF0123456789ABCDEF0123456789"}}) is None
-    assert server._durable_trace_id({"payload": {"_agos_trace_id": "abc"}}) is None
-    assert server._durable_trace_id({"payload": {"_agos_trace_id": 12345}}) is None
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": "ABCDEF0123456789ABCDEF0123456789"}}) is None
+    assert server._durable_trace_id(
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": "abc"}}) is None
+    assert server._durable_trace_id(
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": 12345}}) is None
     # legacy raw-data payloads / no payload — no trace to adopt
     assert server._durable_trace_id({"payload": "raw legacy data"}) is None
     assert server._durable_trace_id({"payload": {"other": True}}) is None
     assert server._durable_trace_id({}) is None
+
+
+def test_foreign_payload_trace_value_never_becomes_an_emitted_trace(auth, fake_storage):
+    """R-159 no-leak through the RUN path (advisor round 5): a row whose
+    payload carries a foreign value under the reserved key — even one that
+    MATCHES the internal format — is never adopted. The run starts a FRESH
+    trace: not the payload value, and not an inherited ambient trace (the
+    queue loops can be started from a REQUEST context via the self-healing
+    start — a leaked ambient trace would silently join unrelated requests to
+    this run). Verified via the emitted records, not just the extractor."""
+    foreign = "a" * 32  # matches the internal FORMAT — never written by us
+    with TestClient(server.app) as c:
+        # a normal accept starts the queue loops (self-healing) from the
+        # REQUEST context — the dispatcher loop inherits that request's trace
+        r = c.post("/api/tasks", json={"specialization": "analyst",
+                                       "prompt": "numbers 1 2 3"}, headers=auth)
+        assert r.status_code == 202, r.text
+        # a queued row whose payload carries the foreign value (no internal
+        # envelope — nothing a foreign writer could forge by format alone)
+        fake_storage.rows["tasks"].append({
+            "task_id": "foreign_trace_row", "specialization": "analyst",
+            "prompt": "numbers 4 5 6", "status": "queued",
+            "tenant_id": "any_tenant", "payload": {"_agos_trace_id": foreign},
+        })
+        deadline = time.time() + 20
+        while time.time() < deadline and not any(
+            x["kind"] == "task" and x["op"] == "run" and x.get("task_id") == "foreign_trace_row"
+            for x in telemetry.recent()):
+            time.sleep(0.05)
+    recs = telemetry.recent()
+    # the foreign value NEVER appears as an emitted trace_id
+    assert all(x["trace_id"] != foreign for x in recs)
+    run = [x for x in recs if x["kind"] == "task" and x["op"] == "run"
+           and x.get("task_id") == "foreign_trace_row"]
+    assert run, "the dispatcher must run the foreign row"
+    # the run's trace is FRESH: valid internal format, not the payload value,
+    # and NOT the trace of any http request (nothing inherited from the
+    # dispatcher's ambient context)
+    http_traces = {x["trace_id"] for x in recs if x["kind"] == "http"}
+    assert re.fullmatch(r"[0-9a-f]{32}", run[0]["trace_id"])
+    assert run[0]["trace_id"] != foreign
+    assert run[0]["trace_id"] not in http_traces
 
 
 def test_idempotent_replay_is_attributed_to_the_original_task(auth, fake_storage):

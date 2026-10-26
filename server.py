@@ -1036,12 +1036,17 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
 async def _run_task_durable(task_id: str, specialization: str, prompt: str,
                            data: Any, claim_token: str,
                            trace_id: Optional[str] = None) -> None:
-    # R-159/R-188: the run CONTINUES the accept request's trace (stored in
-    # the row's payload) — the request and the run are ONE trace. Legacy
-    # rows (no trace_id) start their own trace as before.
-    trace_token = telemetry.adopt_trace(trace_id, task_id) if trace_id else None
-    if trace_token is None:
-        telemetry.bind_task(task_id)
+    if trace_id:
+        # R-159/R-188: the run CONTINUES the accept request's trace (stored
+        # in the row's payload) — the request and the run are ONE trace.
+        telemetry.adopt_trace(trace_id, task_id)
+    else:
+        # R-159/R-188: no valid internal trace to continue — start a FRESH
+        # trace. Never inherit the dispatcher's ambient context: the loops
+        # can be started from a REQUEST context via the self-healing start,
+        # and a leaked ambient trace would silently join unrelated requests
+        # to this run. Legacy rows (no trace_id) get their own trace as before.
+        telemetry.start_trace(task_id)
     try:
         with telemetry.span("task", "run", specialization=specialization) as sp:
             await _run_task_durable_traced(sp, task_id, specialization, prompt, data, claim_token)
@@ -1090,15 +1095,17 @@ _TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")  # telemetry.new_trace_id(): token_
 
 
 def _durable_trace_id(row: Dict[str, Any]) -> Optional[str]:
-    """The accept request's trace_id from the row's payload. Accepts ONLY the
-    known internal trace-id format (telemetry.new_trace_id = token_hex(16) →
-    32 lowercase hex chars): a foreign or sensitive value sitting under the
-    reserved ``_agos_trace_id`` key in a legacy/foreign row is IGNORED and
-    the run starts its own trace — payload data must never become an emitted
-    trace_id (R-159's no-leak guarantee). None for legacy rows with raw-data
-    payloads."""
+    """The accept request's trace_id from the row's payload. Accepted ONLY
+    from the KNOWN INTERNAL ENVELOPE that ``_durable_payload`` writes (its
+    reserved ``_agos_prompt`` key is always present — a raw/foreign payload
+    that merely matches the id format is rejected) AND in the internal
+    trace-id format (telemetry.new_trace_id = token_hex(16) → 32 lowercase
+    hex chars). A foreign or sensitive value under the reserved key is
+    ignored and the run starts its own trace — payload data must never
+    become an emitted trace_id (R-159's no-leak guarantee). None for legacy
+    rows with raw-data payloads."""
     payload = row.get("payload")
-    if isinstance(payload, dict):
+    if isinstance(payload, dict) and "_agos_prompt" in payload:
         t = payload.get("_agos_trace_id")
         if isinstance(t, str) and _TRACE_ID_RE.fullmatch(t):
             return t
