@@ -611,6 +611,26 @@ def test_r188_cancellation_stops_running_task_at_checkpoint_boundary(
         # (row claimed/running, live lease) — the fresh process MUST recover
         # it; the cancelled row must stay cancelled through that very cycle
         srv.kill()
+        # POST-MORTEM on the positive control (independent copy, read from
+        # the fake backend after the death): it must STILL be mid-execution
+        # AT THE KILL — non-terminal row with the claim fence. Without this,
+        # the later `completed` could have landed in the FIRST process and
+        # no recovery cycle would be proven at all (evidence-deficiency fix,
+        # review round: the sleepy row's state at the kill was never asserted).
+        # Only the dead process and the fresh process below can execute the
+        # task; the dead one cannot, so the completion observed below can
+        # only be the fresh process's own recovery.
+        row_sleepy = next(r for r in _row_rows() if r["task_id"] == sleepy_tid)
+        assert row_sleepy["status"] in ("claimed", "running"), \
+            (f"positive-control premise broken at the kill: the sleepy row "
+             f"is {row_sleepy['status']!r}, not mid-execution — its later "
+             f"completion would not prove a recovery cycle")
+        assert row_sleepy.get("claim_token"), \
+            "positive-control premise broken at the kill: no claim fence"
+        # and the cancelled row must still be cancelled at the same moment
+        row_cancelled = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row_cancelled["status"] == "cancelled", \
+            "the cancelled row did not stay cancelled across the kill itself"
         stage_a_before = len([r for r in _MultiStageServer.requests["stage-a"]
                              if r["key"] == f"{tid}:a"])
         srv2 = _Server(**kwargs)
