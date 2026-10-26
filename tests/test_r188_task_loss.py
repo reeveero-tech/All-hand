@@ -2037,3 +2037,59 @@ def test_r188_capacity_deferral_rejected_release_touches_nothing():
                             (sv._QUEUE_BACKOFF, saved[2])):
             target.clear()
             target.update(old)
+
+
+def test_r188_fingerprint_key_is_a_deployment_secret(tmp_path, monkeypatch):
+    """REQUIRED behavior (R-188 review round 4): the fingerprint's HMAC key
+    is a DEPLOYMENT SECRET — never a literal committed in the source. A
+    committed default key is public to everyone who can read the repository,
+    and a keyed HMAC against a publicly known key protects nothing: anyone
+    could recompute the fingerprint of a guessed URL (credentials included)
+    offline against the pin, which is readable through the task API.
+    """
+    import hmac
+    from pathlib import Path
+
+    import server as sv
+
+    # 1. the env var is the explicit deployment secret — honored verbatim
+    monkeypatch.setenv("AGOS_PIN_FINGERPRINT_KEY", "r188-deployment-secret")
+    assert sv._load_pin_fingerprint_key() == b"r188-deployment-secret"
+
+    # 2. without the env var: a host-local key FILE (fresh random, mode
+    #    0600, OUTSIDE the source tree), stable across calls, and DIFFERENT
+    #    for a different location (random per host — never a fixed literal)
+    monkeypatch.delenv("AGOS_PIN_FINGERPRINT_KEY", raising=False)
+    f1 = tmp_path / "key1"
+    f2 = tmp_path / "key2"
+    monkeypatch.setenv("AGOS_PIN_FINGERPRINT_KEY_FILE", str(f1))
+    k1 = sv._load_pin_fingerprint_key()
+    assert len(k1) == 32
+    assert f1.exists() and (f1.stat().st_mode & 0o777) == 0o600
+    assert sv._load_pin_fingerprint_key() == k1  # stable across calls
+    monkeypatch.setenv("AGOS_PIN_FINGERPRINT_KEY_FILE", str(f2))
+    k2 = sv._load_pin_fingerprint_key()
+    assert k2 != k1  # random per location — no fixed literal
+    # the generated key is NOT committed anywhere in the source
+    source = Path(sv.__file__).read_bytes()
+    assert k1 not in source and k1.hex().encode() not in source
+
+    # 3. a payload reader WITHOUT the key cannot verify a guess: two
+    #    different keys give different fingerprints for the same URL, and
+    #    neither equals the BARE hash (the offline-guessing exposure the
+    #    key exists to prevent)
+    url = "http://user:secret-r188@127.0.0.1:9/run"
+    fp1 = hmac.new(k1, url.encode(), hashlib.sha256).hexdigest()
+    fp2 = hmac.new(k2, url.encode(), hashlib.sha256).hexdigest()
+    assert fp1 != fp2
+    assert fp1 != hashlib.sha256(url.encode()).hexdigest()
+
+    # 4. fail-closed: an UNAVAILABLE key source (an uncreatable location and
+    #    no env var) is a LOUD error, never a silent pin with an
+    #    unverifiable key (a parent that is a regular file makes the open
+    #    fail for every user, root included)
+    notadir = tmp_path / "notadir"
+    notadir.write_text("a regular file")
+    monkeypatch.setenv("AGOS_PIN_FINGERPRINT_KEY_FILE", str(notadir / "key"))
+    with pytest.raises(RuntimeError):
+        sv._load_pin_fingerprint_key()

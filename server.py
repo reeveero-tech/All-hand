@@ -29,6 +29,8 @@ import math
 import os
 import queue
 import re
+import secrets
+import tempfile
 import time
 import urllib.parse
 import uuid
@@ -1225,17 +1227,76 @@ _TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")  # telemetry.new_trace_id(): token_
 # pattern, so a legally registered name is always pinnable) plus the
 # destination's PUBLIC identity (see _pin_endpoint).
 _RECIPIENT_NAME_MAX = 200
-# R-188 review round 3: the fingerprint is a KEYED HMAC, not a bare hash — a
-# bare hash of a URL that carries credentials would let anyone who can read
-# the pin (the task API) test password guesses offline. The HMAC key is
-# FIXED across processes (recovery!) and deployments, and is NOT exposed
-# through the task API (the same trust boundary as telemetry's
-# AGOS_TELEMETRY_TENANT_KEY: only the deployment's source/env, never the
-# payload). Changing it invalidates existing pins (they surface as conflicts
-# — fail-safe, documented).
-_PIN_FINGERPRINT_KEY = os.environ.get("AGOS_PIN_FINGERPRINT_KEY", "").encode() \
-    or bytes.fromhex(
-        "7d5c1f0b92a84e63b1d6f8a3c47e09521f6b8d0a4c3e579f2b6d8a1c4e0f3b79")
+# R-188 review round 4: the fingerprint is a KEYED HMAC — the key is a
+# DEPLOYMENT SECRET, never a literal in the source. A committed default
+# key is public to everyone who can read the repository, and "keyed" against
+# a publicly known key is not keyed at all: anyone could recompute the
+# fingerprint of a guessed URL (credentials included) offline against the
+# pin, which is readable through the task API. The key therefore comes from
+# the deployment's own secret material, in order:
+#   1. AGOS_PIN_FINGERPRINT_KEY (env) — the explicit deployment secret. A
+#      multi-host deployment MUST set the SAME value on every host (a pin is
+#      only as stable as the key is shared; a diverging key surfaces existing
+#      pins as recipient_pinned_conflict — fail-safe, documented).
+#   2. AGOS_PIN_FINGERPRINT_KEY_FILE (env) or, by default, a host-local file
+#      created with a fresh random key on first use (mode 0600) OUTSIDE the
+#      source tree. It is stable across processes and restarts on the same
+#      host — the host-local recovery scope. If the file is lost (an
+#      ephemeral filesystem), existing pins surface as conflicts — fail-safe:
+#      the operator re-registers the recipient (a new pin) or sets the env
+#      var to a stable value.
+# If neither source is available (a read-only location and no env var), the
+# server refuses to START with a loud error rather than pin tasks with an
+# unverifiable key (fail-closed, like the rest of the pin path).
+def _load_pin_fingerprint_key() -> bytes:
+    env_key = os.environ.get("AGOS_PIN_FINGERPRINT_KEY", "").strip()
+    if env_key:
+        return env_key.encode("utf-8")
+    path = os.environ.get("AGOS_PIN_FINGERPRINT_KEY_FILE", "").strip() or os.path.join(
+        tempfile.gettempdir(), "agos_pin_fingerprint_key")
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read()
+        if data:
+            return data
+        raise RuntimeError(
+            f"AGOS pin fingerprint key file {path!r} is empty — remove it or set "
+            "AGOS_PIN_FINGERPRINT_KEY")
+    except FileNotFoundError:
+        pass  # first use on this host — create it below
+    except OSError as e:
+        raise RuntimeError(
+            f"AGOS pin fingerprint key file {path!r} is unreadable ({type(e).__name__}) — "
+            "set AGOS_PIN_FINGERPRINT_KEY or AGOS_PIN_FINGERPRINT_KEY_FILE") from e
+    fresh = secrets.token_bytes(32)  # never a source literal — random per host
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        # another process (a second worker) won the creation race — read what
+        # it wrote (the SAME host-local key — the point of the file)
+        with open(path, "rb") as fh:
+            data = fh.read()
+        if data:
+            return data
+        raise RuntimeError(
+            f"AGOS pin fingerprint key file {path!r} was created empty by a "
+            "concurrent process — remove it or set AGOS_PIN_FINGERPRINT_KEY")
+    except OSError as e:
+        raise RuntimeError(
+            f"AGOS pin fingerprint key: cannot create {path!r} ({type(e).__name__}) — "
+            "set AGOS_PIN_FINGERPRINT_KEY or AGOS_PIN_FINGERPRINT_KEY_FILE to a "
+            "writable secret location outside the source tree") from e
+    with os.fdopen(fd, "wb") as fh:
+        fh.write(fresh)
+        fh.flush()
+        os.fsync(fh.fileno())
+    return fresh
+
+
+# loaded ONCE at startup (fail-closed: an unavailable key source is a loud
+# STARTUP error, never a silent pin with an unverifiable key). Tests may
+# monkeypatch this cached value; the loader stays pure for direct testing.
+_PIN_FINGERPRINT_KEY: bytes = _load_pin_fingerprint_key()
 # R-188: the pin binds the recipient's PUBLIC identity only: name + the
 # URL's public form + a NON-REVEALING keyed fingerprint of the FULL
 # destination. An API key is never pinned, and neither is the raw URL (it
@@ -1301,9 +1362,13 @@ def _pin_fingerprint(url: str) -> str:
     KEYED, not bare: the pin (and the task's payload) is readable through the
     task API — a bare hash of a URL that carries credentials would let
     anyone test password guesses offline against that payload. The HMAC key
-    is fixed across processes (recovery) and deployments and is never in the
-    payload, so the fingerprint discloses nothing verifiable from the
-    payload alone. The raw URL (credentials included) is still never stored.
+    is a DEPLOYMENT SECRET (see ``_load_pin_fingerprint_key`` — the env var
+    or a host-local key file, never a source literal): an attacker who can
+    read the payload but not the deployment's secret material cannot verify
+    a guess against the fingerprint. The key is stable across processes and
+    restarts on the same host (recovery); a multi-host deployment must set
+    the SAME env value on every host. The raw URL (credentials included) is
+    still never stored.
 
     The fingerprint still does not "recover" the credentials — it proves
     destination identity without storing the raw URL."""
