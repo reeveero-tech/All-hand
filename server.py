@@ -26,6 +26,7 @@ import logging.handlers
 import math
 import os
 import queue
+import re
 import time
 import urllib.parse
 import uuid
@@ -1085,13 +1086,21 @@ def _durable_payload(prompt: str, data: Any) -> Dict[str, Any]:
     return payload
 
 
+_TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")  # telemetry.new_trace_id(): token_hex(16)
+
+
 def _durable_trace_id(row: Dict[str, Any]) -> Optional[str]:
-    """The accept request's trace_id from the row's payload (None for legacy
-    rows with raw-data payloads — those runs start their own trace as before)."""
+    """The accept request's trace_id from the row's payload. Accepts ONLY the
+    known internal trace-id format (telemetry.new_trace_id = token_hex(16) →
+    32 lowercase hex chars): a foreign or sensitive value sitting under the
+    reserved ``_agos_trace_id`` key in a legacy/foreign row is IGNORED and
+    the run starts its own trace — payload data must never become an emitted
+    trace_id (R-159's no-leak guarantee). None for legacy rows with raw-data
+    payloads."""
     payload = row.get("payload")
     if isinstance(payload, dict):
         t = payload.get("_agos_trace_id")
-        if isinstance(t, str) and t:
+        if isinstance(t, str) and _TRACE_ID_RE.fullmatch(t):
             return t
     return None
 
@@ -1629,10 +1638,6 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
         # lifespan, but if storage was configured AFTER the app started (tests
         # monkeypatching, late config) the durable accept would insert a row
         # no dispatcher ever claims. Idempotent: a no-op when already running.
-        # R-159: bind the task to the accept trace BEFORE any storage write —
-        # the admission/insert spans carry the task_id (the same ordering as
-        # the volatile path), so the whole accept trace is this task's.
-        telemetry.bind_task(task_id)
         _start_queue_loops()
         storage = get_storage()
         idem = (req.idempotency_key or "").strip() or None
@@ -1640,11 +1645,20 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
             existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
             if existing is not None:
                 # idempotent replay: the SAME task, its CURRENT public status,
-                # and no second run or side effect
+                # and no second run or side effect. R-159: the replay is
+                # attributed to the EXISTING task — the newly generated id is
+                # discarded here and never bound to the trace.
+                telemetry.bind_task(str(existing.get("task_id")))
                 _rebuild_task_record(existing)
                 return {"task_id": str(existing.get("task_id")),
                         "status": task_queue.public_status(existing.get("status") or "queued"),
                         "duplicate": True}
+        # R-159: bind the NEW task to the accept trace only AFTER the replay
+        # exclusion (a replay binds the existing task instead) and BEFORE any
+        # storage write — the admission/insert spans carry the task_id (the
+        # same ordering as the volatile path), so the whole accept trace is
+        # this task's.
+        telemetry.bind_task(task_id)
         # R-164: admission AFTER the idempotent replay (a replay is never
         # refused — it creates nothing) and BEFORE anything is written. The
         # rate slot is reserved before the first await and given back on

@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import re
+import secrets
 import threading
 import urllib.parse
 import time
@@ -452,6 +453,59 @@ def test_background_task_trace_links_request_task_and_storage(auth, fake_storage
     assert len(queued) == 1 and queued[0]["task_id"] == task_id
     assert all(x["task_id"] == task_id for x in recs if x["kind"] in ("agent", "tool", "storage"))
     _assert_no_secrets([json.dumps(x) for x in telemetry.recent()] + all_logs)
+
+
+def test_durable_trace_id_accepts_only_known_internal_trace_ids():
+    """R-159 no-leak (advisor round 4): a value sitting under the reserved
+    ``_agos_trace_id`` key in a legacy/foreign payload is accepted ONLY in
+    the internal trace-id format (telemetry.new_trace_id = token_hex(16) →
+    32 lowercase hex chars); anything else — e.g. a sensitive experimental
+    value — is ignored and the run starts its own trace: payload data must
+    never become an emitted trace_id."""
+    good = secrets.token_hex(16)
+    assert server._durable_trace_id({"payload": {"_agos_trace_id": good}}) == good
+    # a sensitive/foreign value under the reserved key — ignored
+    assert server._durable_trace_id(
+        {"payload": {"_agos_trace_id": "SECRET-VALUE-do-not-emit"}}) is None
+    assert server._durable_trace_id({"payload": {"_agos_trace_id": "not hex!"}}) is None
+    # wrong case / shape / length / type
+    assert server._durable_trace_id(
+        {"payload": {"_agos_trace_id": "ABCDEF0123456789ABCDEF0123456789"}}) is None
+    assert server._durable_trace_id({"payload": {"_agos_trace_id": "abc"}}) is None
+    assert server._durable_trace_id({"payload": {"_agos_trace_id": 12345}}) is None
+    # legacy raw-data payloads / no payload — no trace to adopt
+    assert server._durable_trace_id({"payload": "raw legacy data"}) is None
+    assert server._durable_trace_id({"payload": {"other": True}}) is None
+    assert server._durable_trace_id({}) is None
+
+
+def test_idempotent_replay_is_attributed_to_the_original_task(auth, fake_storage):
+    """R-159 (advisor round 4): the idempotent replay is attributed to the
+    EXISTING task — the newly generated id is discarded and never bound to
+    the trace. The replay request's http span (recorded at request end, in
+    the bound context) carries the ORIGINAL task id, and no telemetry record
+    carries any other task id."""
+    with TestClient(server.app) as c:
+        r1 = c.post("/api/tasks",
+                    json={"specialization": "analyst", "prompt": "numbers 1 2 3",
+                          "idempotency_key": "replay-attr-1"}, headers=auth)
+        assert r1.status_code == 202, r1.text
+        tid = r1.json()["task_id"]
+        r2 = c.post("/api/tasks",
+                    json={"specialization": "analyst", "prompt": "numbers 1 2 3",
+                          "idempotency_key": "replay-attr-1"}, headers=auth)
+        assert r2.status_code == 202, r2.text
+        body = r2.json()
+        assert body["task_id"] == tid and body["duplicate"] is True
+    task_recs = [r for r in _records() if r.get("task_id")]
+    assert task_recs, "the accepts' spans must be attributed to the task"
+    # the discarded new id never appears — every attributed record is the
+    # ORIGINAL task's
+    assert all(r["task_id"] == tid for r in task_recs)
+    # the replay request's http span (the LAST http span) carries the
+    # original task id — not the id generated for the replay attempt
+    https = [r for r in _records() if r["kind"] == "http"]
+    assert https and https[-1]["task_id"] == tid
 
 
 def test_provider_error_is_diagnosable_without_leaking(auth, fake_llm, all_logs):
