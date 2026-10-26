@@ -371,7 +371,7 @@ proven on a task whose stage-2 start depends on the coordinator process."""
 import json
 import os
 
-import httpx
+import aiohttp
 
 import server
 
@@ -388,17 +388,18 @@ class R188TwoStageAgent:
         import time
         started = time.time()
         tid = str(work.get("task_id") or "")
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=60.0)) as client:
             # stage 1: performed AND completed by THIS process (the result
             # comes back here)
             await client.post(_EFFECT_URL + "/stage-a",
-                              json={"prompt": work.get("prompt", "")},
-                              headers={"Idempotency-Key": tid + ":a"})
+                             json={"prompt": work.get("prompt", "")},
+                             headers={"Idempotency-Key": tid + ":a"})
             # the gate: stage 2 begins only after the test releases it —
             # while blocked here the coordinator is provably BETWEEN stages
             await client.post(_EFFECT_URL + "/gate",
-                              json={"prompt": work.get("prompt", "")},
-                              headers={"Idempotency-Key": tid + ":gate"})
+                             json={"prompt": work.get("prompt", "")},
+                             headers={"Idempotency-Key": tid + ":gate"})
             # stage 2
             await client.post(_EFFECT_URL + "/stage-b",
                              json={"prompt": work.get("prompt", "")},
