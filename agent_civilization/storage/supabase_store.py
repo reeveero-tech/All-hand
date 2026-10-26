@@ -642,6 +642,12 @@ class SupabaseStorage:
         if result is not None:
             body["result"] = _jsonable(result)
         body["elapsed_s"] = float(elapsed_s)
+        # parity with update_task (the volatile path): a terminal row carries
+        # its finish timestamp — PostgREST resolves "now()" server-side. The
+        # R-042 live-storage CI run caught the gap: the durable row completed
+        # with finished_at NULL while the task list reads the column.
+        if status in ("completed", "failed"):
+            body["finished_at"] = "now()"
         rows = await self._queue_patch(
             "queue_finish",
             {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
