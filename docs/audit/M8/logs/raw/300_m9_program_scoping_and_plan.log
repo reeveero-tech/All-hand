@@ -1,0 +1,92 @@
+# 300 — M9 «تحقيق الاسم»: خارطة جديدة فوق M8 + نطاق فحص لكل برنامج + إنفاذ الاعتماديات (توجيه المالك 2026-10-26، D-102)
+date: 2026-10-26  branch: m9/name-fulfillment-plan
+category: plan integration + checker scope + dependency enforcement — لا نشر، لا إنفاق، لا تغيير شيفرة إنتاج.
+
+## السياق (توجيه المالك)
+- صلاحية مطلقة للوكيل (خدمات/نشر/متغيرات/كل شيء) + سؤال الجدارة: هل المشروع حقيقي ويمثل اسمه؟ + مطلب ملزم واحد: لا دفع ولا عمل إلا بتوثيق يرافقه في نفس الدفعة. القرار D-102 في DECISIONS.md.
+- الإجابة الموثقة بالتدقيق (المصفوفة): المشروع منظومة حقيقية لكن اكتمال القدرات غير مثبت ⇒ المسار خطة لا نشر: برنامج M9 (R-187..R-193) في ROADMAP فوق M8 بلا تكرار، والعمل بدأ بـR-187 (القاعدة الملزمة نفسها).
+- مراجعة منهجية رافقت الدفعة (خارج المستودع — ثلاث جولات مراجعة) صححت أمورًا قبل الاعتماد: (1) الاعتماديات النثرية لا عبرة — أضيفت القاعدة 10b؛ (2) ترتيب بنود M9 لم يطابق ترتيب التنفيذ المطلوب — أُعيد الترقيم (المتانة أولًا)؛ (3) ادعاءات أوسع من الأدلة («لا موصلات»/«لا بوابات تغيرت») — صُححت الصياغات والأدلة.
+
+## الأحمر أولًا (فحص الحالات — أربع جولات، المخرجات من التشغيل الفعلي قبل كل تعديل مقابلها)
+- **الجولة 1 — النطاق لكل برنامج (4 اختبارات سلوكية فاشلة)**:
+```
+FAILED test_m9_started_while_earlier_m8_item_planned_is_not_order_violation
+  (['PROJECT_STATE table: R-187 missing (ROADMAP=in_progress)',
+     'R-187: is in_progress while earlier item R-152 is still planned'])
+FAILED test_m9_ordering_still_enforced_within_m9
+FAILED test_m9_state_table_section_required
+FAILED test_m9_state_table_mismatch
+1 passed (test_m9_done_item_requires_full_evidence_like_m8 — حارس موجب: القواعد 2-8 تشمل R-187+ أصلًا)
+4 failed, 1 passed, 53 deselected
+```
+- **الجولة 2 — القاعدة 10b والجدول الزائد (اختباران سلوكيان فاشلان + فشل إعداد وُثق كما هو لا كدليل أحمر)**:
+```
+FAILED test_m9_started_item_with_planned_dep_rejected   (R-188 بمًعتمد مخطط R-171 لم يُرفض)
+FAILED test_m9_started_item_with_done_dep_passes         (فشل الإعداد: بند done عند 163 خلف 152 مخطط أفجر قاعدة الترتيب داخل M8 — عُدّل الاختبار بإضافة R-152 done؛ الفشل ليس دليلًا على ميزة)
+FAILED test_surplus_program_table_without_roadmap_items_rejected (جدول M9 زائد بلا بنود لم يُرصد)
+3 failed, 58 deselected
+```
+- **الجولة 3 — إلزامية السطر ورفض المراجع غير المدعومة (3 اختبارات سلوكية فاشلة)**:
+```
+FAILED test_m9_item_without_deps_line_rejected           (حذف سطر الاعتماديات كان يمر صامتًا كـ deps=[])
+FAILED test_m9_deps_line_with_unrecognized_reference_rejected (SEC-07 في السطر كان يُتجاهل)
+FAILED test_m9_deps_line_empty_value_rejected           (قيمة مشوهة ليست تصريحًا)
+3 failed, 61 deselected
+```
+- **الجولة 4 — صرامة التحليل (4 اختبارات سلوكية فاشلة — بعد جولة مراجعة ثالثة؛ المخرجات الحرفية كما التقطت)**:
+```
+FAILED tests/test_r154_status_evidence.py::test_m9_deps_four_digit_id_not_misparsed
+FAILED tests/test_r154_status_evidence.py::test_m9_deps_unknown_prefix_token_rejected
+FAILED tests/test_r154_status_evidence.py::test_m9_deps_explicit_none_must_be_exact
+FAILED tests/test_r154_status_evidence.py::test_m9_deps_line_tag_must_match_item
+======================= 4 failed, 64 deselected in 2.33s =======================
+```
+دلالاتها: R-1510 كان يُقرأ R-151 بتجاهل الرقم الكامل (وبرفضه تُثبت أيضًا رفض الاعتماد على معرف غير موجود)؛ TOOL-07 رمز بادئة غير مدعومة (ليس R-NNN نقياً) كان يُقبل؛ «لا شيء — نص» ليس التصريح الكامل (مطابقة البادئة لا تكفي)؛ سطر اعتماديات وسمه R-189 داخل بند R-190 وسم خاطئ كان يُقبل (الوسم يجب أن يطابق البند الحاوي — هذا الخطأ بعينه وُجد في ROADMAP الفعلي ولم يكن مُلتقطًا).
+- **دليل على البيانات الحقيقية**: بعد الجولة 3 مباشرة، الفحص على مستودع المشروع الحقيقي أمسك مخالفة فعلية: `R-189: unrecognized dependency reference(s) ['SEC-07']` — سطر R-189 في ROADMAP ذكر SEC-07 فأُصلح إلى `R-100` وحده (توثيق SEC-07 انتقل إلى متن البند).
+
+## التغيير (scripts/check_status_evidence.py)
+- `PROGRAMS = (("M8", 151, 186), ("M9", 187, None))` — القواعد 9 (تزامن الجدول) و10 (الترتيب) لكل برنامج على حدة (M8 فعليًا R-151..R-184؛ R-185/R-186 قيدا حوكمة لا بنود خارطة)؛ الترتيب بين البرامج لا يُفرض ترقيمًا بل بالاعتماديات (10b).
+- **القاعدة 10b**: كل بند يعلن اعتمادياته بسطر `- الاعتماديات (R-NNN): R-XXX، ...` — ولا يُقبل `in_progress`/`awaiting_merge`/`done`/`accepted` قبل أن تصبح كلها `done`/`accepted`. **لبنود M9 السطر إلزامي ومحلل بصرامة (الجولة 4)**: سطر واحد فقط، وسم السطر يطابق معرف البند الحاوي، والقيمة إما «لا شيء» **بالضبط** أو معرفات R-NNN نقية فقط؛ الرمز المشوه أو غير النقي (SEC-/Q-/D-/RISK-/TOOL-) مرفوض لا متجاهل، والاعتماد على معرف R-NNN غير موجود في ROADMAP مرفوض **أيًا كانت حالة البند**، وتكرار السطر مرفوض.
+- الجدول الزائد لبرنامج بلا بنود خارطة يُرصد (لا يُتجاهل).
+- القواعد 2-8 لم تتغير وتشمل كل بند R-151+.
+
+## الأخضر (بعد التعديلات — أعداد التشغيل الفعلي)
+- `pytest tests/test_r154_status_evidence.py`: **68 passed** (كان 53 قبل الدفعة: +15 اختبار M9 عبر أربع جولات).
+- الحزمة الكاملة `pytest -q`: **3415 passed, 8 skipped, 17 deselected, 9 xfailed in 275.57s** — على اللقطة الملتزمة نفسها (`tested_sha` أدناه؛ المخرجات الحرفية في قسم المخرجات؛ تشغيلات وسيطة داخل تطوير الدفعة بلغت 3408 ثم 3411 ولا تُعد أساسًا).
+
+## محتوى الدفعة
+- جديد: `docs/audit/M8/prep/CAPABILITY_MATRIX_NAME_FULFILLMENT.md` (المصفوفة بأعمدة المراجعة، مصححة بعد المراجعة: التكاملات النقطية القائمة موثقة — الفجوة إطار عام وحوكمة، لا «لا موصلات»؛ مهلة النقل 120ث موجودة في المحول).
+- ROADMAP: قسم M9 (R-187..R-193) بترتيب تنفيذ مفروض بالفحص (القاعدة 10: لا بدء وبنود سابقة مخططة داخل البرنامج؛ 10b: الاعتماديات) + أسطر «الاعتماديات (R-NNN):» المهيكلة لكل بند؛ R-187 in_progress على هذا الفرع.
+- PROJECT_STATE: رأس لاحق 45 + جدول «حالة بنود M9» (R-187..R-193). CHANGELOG: لاحق 45. DECISIONS: D-102.
+- STATUS_DEFINITIONS §3-9/§3-10/§3-10b/§4، QUALITY (R-154)، GOVERNANCE_GATE: توثيق النطاق والقاعدة 10b.
+- PROJECT_CHARTER: تغليد قاعدة R-187 في الميثاق.
+- scripts/check_status_evidence.py + tests/test_r154_status_evidence.py: النطاق + 10b + اختباراتهما.
+
+## الحدود الصادقة
+- R-187 `in_progress`: النص الملزم منشور في الميثاق والخارطة؛ **الفحص الآلي لنطاق الدفع (الإنفاذ) دفعة تالية حمراء أولًا** — لا يُسجل done قبلها. حد موثق: CI يبدأ بعد الدفع فيمنع الدمج ويجعل المخالفة مرئية، ولا يمنع تقنيًا وصول الدفع نفسه.
+- بوابة الحالات تغير سلوكها — الوصف الدقيق: تعديل نطاق الترتيب من عالمي إلى داخل كل برنامج مع إضافة إنفاذ الاعتماديات (10b)؛ لم يُحذف فحص، لكن نجاح الحزمة الخضراء لا يثبت وحده أن كل القيود السابقة بقيت كما كانت — الإثبات بجولات الأحمر الموثقة أعلاه (كل ميزة جديدة مثبتة بفشلها قبل التنفيذ).
+- الأعداد الكاملة (10k/1M/10k) وأهداف M9 أهداف مستهدفة لا إنجازات مثبتة.
+- الدفع/الدمج معلقان: موصل GitHub غير موصول (رمز PAT السابق مكشوف — يجب إبطاله؛ لا يُستخدم).
+
+## مخرجات التشغيل الفعلي (الحرفية — التقطت بعد آخر تعديل برمجي، pipefail)
+```
+$ python3 -m pytest -q -p no:cacheprovider
+3415 passed, 8 skipped, 17 deselected, 9 xfailed in 275.57s   (PYTEST_FULL_RC=0)
+$ python3 -m pytest tests/test_r154_status_evidence.py -q
+68 passed in 30.39s
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'A': 2, 'M': 10}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.   (rc=0)
+$ python3 scripts/check_conflict_markers.py origin/main HEAD
+Conflict-marker gate passed: no conflict markers added in origin/main...HEAD.   (rc=0)
+$ python3 scripts/check_atomic_batch.py origin/main HEAD
+atomic-batch v2: 12 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).   (rc=0)
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10b).   (rc=0)
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests
+All checks passed!   (rc=0)
+```
+
+---
+إجراء الإثبات (وفق المراجعة): (1) التزام الشيفرة والتوثيق معًا في لقطة واحدة؛ (2) تشغيل الحزمة الكاملة والبوابات الأربع وruff على **اللقطة الملتزمة نفسها** (pipefail، rc=0 للجميع)؛ (3) تسجيل `tested_sha` هنا. **tested_sha = fb8901d555797259d4a54f2b466777f70ff47a12** — تحقق محلي على لقطة الالتزام: 3415 passed / 8 skipped / 17 deselected / 9 xfailed in 275.57s، 68/68 اختبار ملف الفحص، البوابات الأربع rc=0، ruff (نطاق CI) نظيف. رأس الدفعة النهائي يختلف عن هذه اللقطة بتعديلات توثيقية خالصة فقط (الفرق محقق: ملفات docs/ فقط — لا شيفرة ولا اختبارات)؛ هذا tested_sha دليل تحقق محلي سابق ولا يُستعمل دليل CI أو قبول للرأس النهائي — دليل القبول الكامل يسجل عند الدفع والدمج (run CI على رأس الـPR النهائي). تعديلات السجل اللاحقة الخالصة لا تستلزم إعادة تشغيل، ولا يُثبت معرف لقطة داخل نصها.

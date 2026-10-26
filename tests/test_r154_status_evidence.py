@@ -25,6 +25,12 @@ import check_status_evidence as cse  # noqa: E402
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
 TESTS = "12 passed, 1 skipped, 2 deselected"
+M9_FIRST_ITEM = 187  # M8 items: R-151..R-184 (R-185/R-186 are governance
+# entries, not roadmap items); M9 items start at R-187 (D-102)
+
+
+def _prog(rid: str) -> str:
+    return "M9" if int(rid[2:]) >= M9_FIRST_ITEM else "M8"
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -49,17 +55,28 @@ class Repo:
     def __init__(self, path: Path):
         self.p = path
         self.items: dict[str, tuple[str, str]] = {}   # id -> (status, field line)
-        self.table: dict[str, str] | None = None
+        self.table: dict[str, str] | None = None       # M8 table override
+        self.m9_table: dict[str, str] | None = None     # M9 table override
+        self.omit_m9_table = False
 
     def write(self) -> None:
         road = ["# ROADMAP", "", "### R-100 — legacy item", "- الحالة: **done**", ""]
         for rid, (st, fl) in self.items.items():
-            road += [f"#### {rid} — item", f"- الحالة: **{st}**"] + ([fl] if fl else []) + [""]
+            block = [f"#### {rid} — item", f"- الحالة: **{st}**"] + ([fl] if fl else [])
+            if _prog(rid) == "M9":
+                block.append(f"- الاعتماديات ({rid}): لا شيء")  # M9 must declare deps (10b)
+            road += block + [""]
         _w(self.p, "docs/governance/ROADMAP.md", "\n".join(road) + "\n")
-        table = self.table if self.table is not None else {k: v[0] for k, v in self.items.items()}
-        rows = "\n".join(f"| {k} | `{v}` |" for k, v in table.items())
-        _w(self.p, "docs/governance/PROJECT_STATE.md",
-           f"# STATE\n\n## حالة بنود M8 (مزامنة)\n\n| البند | الحالة |\n|---|---|\n{rows}\n\n## other\n")
+        state = ["# STATE", ""]
+        for pname, override, member in (("M8", self.table, _prog), ("M9", self.m9_table, _prog)):
+            prog_items = {rid: v[0] for rid, v in self.items.items() if member(rid) == pname}
+            if not prog_items or (pname == "M9" and self.omit_m9_table):
+                continue
+            table = override if override is not None else prog_items
+            rows = "\n".join(f"| {k} | `{v}` |" for k, v in table.items())
+            state += [f"## حالة بنود {pname} (مزامنة)", "", "| البند | الحالة |", "|---|---|", rows, ""]
+        state += ["## other", ""]
+        _w(self.p, "docs/governance/PROJECT_STATE.md", "\n".join(state) + "\n")
 
     def run(self):
         self.write()
@@ -276,6 +293,162 @@ def test_rule10_started_item_after_planned(repo):
     repo.items["R-152"] = ("in_progress", _fields(branch="m8/r152-x"))
     assert any("R-152: is in_progress while earlier item R-151 is still planned" in v
                for v in repo.run())
+
+
+# ---- M9 program scoping (M8→M9 transition, batch R-187 / D-102) -----------------
+# The checker scopes rules 9 (state-table sync) and 10 (ordering) per program:
+# M8 = R-151..R-184, M9 = R-187+. Cross-program order is NOT enforced — M9 items
+# document their M8 dependencies per item instead (e.g. R-188 depends on R-171).
+
+def test_m9_started_while_earlier_m8_item_planned_is_not_order_violation(repo):
+    repo.items["R-171"] = ("planned", "")
+    repo.items["R-187"] = ("in_progress", _fields(branch="m9/name-fulfillment-plan"))
+    assert repo.run() == []
+
+def test_m9_ordering_still_enforced_within_m9(repo):
+    repo.items["R-187"] = ("planned", "")
+    repo.items["R-188"] = ("in_progress", _fields(branch="m9/r188-x"))
+    assert any("R-188: is in_progress while earlier item R-187 is still planned" in v
+               for v in repo.run())
+
+def test_m9_state_table_section_required(repo):
+    repo.items["R-187"] = ("planned", "")
+    repo.omit_m9_table = True
+    assert any("'## حالة بنود M9' missing" in v for v in repo.run())
+
+def test_m9_state_table_mismatch(repo):
+    repo.items["R-187"] = ("planned", "")
+    repo.items["R-188"] = ("planned", "")
+    repo.m9_table = {"R-187": "planned", "R-188": "in_progress"}
+    assert any("PROJECT_STATE table: R-188=in_progress but ROADMAP=planned" in v
+               for v in repo.run())
+
+def test_m9_done_item_requires_full_evidence_like_m8(repo):
+    repo.items["R-187"] = ("done", "")
+    assert len([v for v in repo.run() if "missing evidence field" in v]) == 10
+
+
+def test_m9_started_item_with_planned_dep_rejected(repo):
+    # R-188 depends on R-171 (planned): cross-program dependencies are
+    # machine-enforced, not prose — starting a dependent item while its
+    # dependency is still planned is a violation (advisor review of D-102 batch).
+    repo.items["R-171"] = ("planned", "")
+    repo.items["R-187"] = ("in_progress", _fields(branch="m9/r187-x"))
+    repo.items["R-188"] = ("in_progress", _fields(branch="m9/r188-x"))
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-188): لا شيء", "- الاعتماديات (R-188): R-171"))
+    got = cse.check(str(repo.p))
+    assert any("R-188: dependency R-171 is planned" in v for v in got)
+    assert not any("R-187: dependency" in v for v in got)  # R-187 declares none
+
+
+def test_m9_started_item_with_done_dep_passes(repo):
+    repo.items["R-152"] = ("done", _fields(**repo.done))  # keep M8 ordering valid
+    repo.items["R-163"] = ("done", _fields(**repo.done))
+    repo.items["R-187"] = ("in_progress", _fields(branch="m9/r187-x"))
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-187): لا شيء", "- الاعتماديات (R-187): R-163"))
+    assert cse.check(str(repo.p)) == []
+
+
+def test_surplus_program_table_without_roadmap_items_rejected(repo):
+    # A program table whose rows reference no ROADMAP items must be flagged —
+    # the per-program loop may not silently ignore a stale table (advisor).
+    repo.write()
+    state = (repo.p / "docs/governance/PROJECT_STATE.md").read_text(encoding="utf-8")
+    _w(repo.p, "docs/governance/PROJECT_STATE.md", state.replace(
+        "## other",
+        "## حالة بنود M9 (مزامنة)\n\n| البند | الحالة |\n|---|---|\n| R-187 | `planned` |\n\n## other"))
+    assert any("R-187 not an M9 item in ROADMAP" in v for v in cse.check(str(repo.p)))
+
+
+def test_m9_item_without_deps_line_rejected(repo):
+    # M9 items MUST declare the deps line — deleting it (or never writing it)
+    # may not silently pass as deps=[] (advisor: absence accepted silently =
+    # open failure mode of 10b).
+    repo.items["R-187"] = ("planned", "")
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-187): لا شيء\n", ""))
+    assert any("R-187: M9 items must declare dependencies" in v
+               for v in cse.check(str(repo.p)))
+
+
+def test_m9_deps_line_with_unrecognized_reference_rejected(repo):
+    # Only R-NNN tokens are supported deps; SEC-07 (or any other prefix) in
+    # the deps line may not be silently ignored — strict token parsing.
+    repo.items["R-187"] = ("planned", "")
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-187): لا شيء", "- الاعتماديات (R-187): R-100، SEC-07"))
+    assert any("R-187: deps line is empty/malformed — invalid token 'SEC-07'" in v
+               for v in cse.check(str(repo.p)))
+
+
+def test_m9_deps_line_empty_value_rejected(repo):
+    # An empty/malformed deps value is not a declaration.
+    repo.items["R-187"] = ("planned", "")
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-187): لا شيء", "- الاعتماديات (R-187): (انظر النص)"))
+    assert any("R-187: deps line is empty/malformed" in v
+               for v in cse.check(str(repo.p)))
+
+
+def test_m9_deps_four_digit_id_not_misparsed(repo):
+    # R-1510 must NOT be silently read as R-151 (full-token parsing).
+    repo.items["R-151"] = ("planned", "")
+    repo.items["R-187"] = ("planned", "")
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-187): لا شيء", "- الاعتماديات (R-187): R-1510"))
+    got = cse.check(str(repo.p))
+    assert any("R-1510" in v for v in got)
+    assert not any("R-151:" in v for v in got)  # not misparsed as the real R-151
+
+
+def test_m9_deps_unknown_prefix_token_rejected(repo):
+    # TOOL-07 (or any non-R token) may not bypass a prefix blacklist — only
+    # well-formed R-NNN tokens are accepted.
+    repo.items["R-187"] = ("planned", "")
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-187): لا شيء", "- الاعتماديات (R-187): R-151، TOOL-07"))
+    assert any("TOOL-07" in v and "R-187" in v for v in cse.check(str(repo.p)))
+
+
+def test_m9_deps_explicit_none_must_be_exact(repo):
+    # «لا شيء — نص غير صالح» is not the explicit none value; prefix match is
+    # not enough — the value must be exactly 'لا شيء'.
+    repo.items["R-187"] = ("planned", "")
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-187): لا شيء", "- الاعتماديات (R-187): لا شيء — نص"))
+    assert any("R-187" in v and "لا شيء" in v and ("exactly" in v or "بالضبط" in v)
+               for v in cse.check(str(repo.p)))
+
+
+def test_m9_deps_line_tag_must_match_item(repo):
+    # A deps line tagged (R-189) inside item R-190 is a mislabel — the tag must
+    # match the containing item (this exact mislabel existed in the real
+    # ROADMAP and was not caught).
+    repo.items["R-187"] = ("planned", "")
+    repo.write()
+    _w(repo.p, "docs/governance/ROADMAP.md",
+       (repo.p / "docs/governance/ROADMAP.md").read_text(encoding="utf-8").replace(
+           "- الاعتماديات (R-187): لا شيء", "- الاعتماديات (R-189): لا شيء"))
+    assert any("R-187" in v and "R-189" in v and "tag" in v.lower()
+               for v in cse.check(str(repo.p)))
 
 
 # ---- CLI exit codes -----------------------------------------------------------
