@@ -111,14 +111,24 @@ class _Server:
     The DEFAULT configuration: AGOS_TASK_QUEUE is NOT set (no R-163 opt-in).
     """
 
-    def __init__(self, env_extra: dict = None):
+    def __init__(self, env_extra: dict = None, module: str = "server:app",
+                 pythonpath: str = None):
         """env_extra: additional env vars for the subprocess (e.g. EXTERNAL_AGENTS
         for the side-effect test, or a longer lease) — merged AFTER the base
         env so a test can override the timing knobs. None keeps the exact
-        behavior the existing tests rely on."""
+        behavior the existing tests rely on.
+
+        module: the uvicorn app spec to launch. The default is the real
+        server; the multi-stage scenario launches a TEST-ONLY wrapper module
+        (injected via pythonpath) that imports the real server and swaps the
+        analyst pool for a two-stage test agent — declared scope: the wrapper
+        exists to give the durable queue a task whose stage-2 start depends
+        on the coordinator process (R-188 full criterion a)."""
         self.port = _free_port()
         self.proc = None
         self.env_extra = dict(env_extra or {})
+        self.module = module
+        self.pythonpath = pythonpath
 
     def start(self):
         env = dict(os.environ)
@@ -141,11 +151,15 @@ class _Server:
                 "role": "user"}]),
         })
         env.update(self.env_extra)
+        if self.pythonpath:
+            existing = env.get("PYTHONPATH")
+            env["PYTHONPATH"] = (self.pythonpath + os.pathsep + existing) if existing \
+                else self.pythonpath
         import tempfile
         self._log = tempfile.NamedTemporaryFile(
             prefix="r188-server-", suffix=".log", delete=False)
         self.proc = subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "server:app", "--port", str(self.port),
+            [sys.executable, "-m", "uvicorn", self.module, "--port", str(self.port),
              "--log-level", "warning"],
             cwd=ROOT, env=env,
             stdout=self._log, stderr=subprocess.STDOUT)
@@ -267,6 +281,292 @@ def _api(port, method, path, body=None):
         headers=HEADERS)
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.status, json.loads(r.read().decode())
+
+
+# ------------------------------------------------- full criterion (a): a
+# MULTI-STAGE task whose stage-2 START depends on the coordinator process.
+# The system has no built-in multi-stage task execution (one agent.execute()
+# call per task), so the scenario runs a TEST-ONLY wrapper module inside the
+# uvicorn subprocess (declared scope — no production code is built for the
+# test): the wrapper swaps the analyst pool for a two-stage test agent whose
+# work is (1) stage A via HTTP, (2) a GATE the test controls, (3) stage B via
+# HTTP. The kill lands AFTER stage A's result is back in the killed process
+# and BEFORE stage B is requested — the transition to stage 2 depends on the
+# process being killed, which is what distinguishes this from the single-call
+# side-effect window of criterion (b).
+
+class _MultiStageServer:
+    """The two-stage work service (test process — survives the subprocess's
+    SIGKILL, so its counters are independent evidence). Endpoints:
+
+    - /stage-a and /stage-b: the WORK stages. Each applies its effect ONCE
+      per idempotency key (stage A: record the input; stage B: produce the
+      output) and answers 200 — the stage's RESULT is received by the CALLER
+      (the coordinator), which is what proves the stage completed there.
+    - /gate: the barrier between the stages. The FIRST entry blocks until
+      the test releases it; later entries pass. The coordinator is provably
+      BETWEEN the stages while blocked here.
+    """
+
+    requests: dict = {"stage-a": [], "gate": [], "stage-b": []}
+    applied: dict = {"stage-a": 0, "stage-b": 0}      # effects actually applied
+    applied_keys: dict = {"stage-a": set(), "stage-b": set()}
+    gate_armed = threading.Event()
+    gate_release = threading.Event()
+
+    @classmethod
+    def _reset(cls):
+        cls.requests = {"stage-a": [], "gate": [], "stage-b": []}
+        cls.applied = {"stage-a": 0, "stage-b": 0}
+        cls.applied_keys = {"stage-a": set(), "stage-b": set()}
+        cls.gate_armed.clear()
+        cls.gate_release.clear()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802
+            length = int(self.headers.get("Content-Length", 0) or 0)
+            # consume the request body (the stage is keyed by header, not body)
+            self.rfile.read(length)
+            key = self.headers.get("Idempotency-Key")
+            stage = self.path.lstrip("/")
+            if stage not in ("stage-a", "gate", "stage-b"):
+                self.send_response(404)
+                self.end_headers()
+                return
+            _MultiStageServer.requests[stage].append({"key": key})
+            if stage in ("stage-a", "stage-b"):
+                if not key or key not in _MultiStageServer.applied_keys[stage]:
+                    _MultiStageServer.applied[stage] += 1
+                    if key:
+                        _MultiStageServer.applied_keys[stage].add(key)
+            if stage == "gate" and _MultiStageServer.gate_armed.is_set():
+                _MultiStageServer.gate_armed.clear()  # only the FIRST entry blocks
+                if not _MultiStageServer.gate_release.wait(timeout=30):
+                    raise RuntimeError("R-188 gate: released nobody within 30s")
+            out = json.dumps({"ok": True}).encode()
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # the client died (SIGKILL) mid-call — expected here
+
+        def log_message(self, *args):
+            pass
+
+    @classmethod
+    def serve(cls):
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), cls.Handler)
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        return httpd
+
+
+# The wrapper module launched as the uvicorn app (written to tmp_path at
+# test setup, injected via PYTHONPATH). TEST-ONLY — declared scope above.
+_MULTISTAGE_WRAPPER_PY = '''"""R-188 test-only wrapper (NOT production code): imports the real server
+and swaps the analyst pool for a two-stage agent so the durable queue can be
+proven on a task whose stage-2 start depends on the coordinator process."""
+import json
+import os
+
+import aiohttp
+
+import server
+
+_EFFECT_URL = os.environ["R188_EFFECT_URL"]
+
+
+class R188TwoStageAgent:
+    name = "r188-two-stage-agent"
+    specialization = "analyst"
+    status = "idle"
+    stats = {"tasks_completed": 0, "tasks_failed": 0, "total_time_s": 0.0}
+
+    async def execute(self, work):
+        import time
+        started = time.time()
+        tid = str(work.get("task_id") or "")
+        async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=60.0)) as client:
+            # stage 1: performed AND completed by THIS process (the result
+            # comes back here)
+            await client.post(_EFFECT_URL + "/stage-a",
+                             json={"prompt": work.get("prompt", "")},
+                             headers={"Idempotency-Key": tid + ":a"})
+            # the gate: stage 2 begins only after the test releases it —
+            # while blocked here the coordinator is provably BETWEEN stages
+            await client.post(_EFFECT_URL + "/gate",
+                             json={"prompt": work.get("prompt", "")},
+                             headers={"Idempotency-Key": tid + ":gate"})
+            # stage 2
+            await client.post(_EFFECT_URL + "/stage-b",
+                             json={"prompt": work.get("prompt", "")},
+                             headers={"Idempotency-Key": tid + ":b"})
+        return {"ok": True, "agent": self.name,
+                "elapsed_s": round(time.time() - started, 3),
+                "result": {"answer": "r188 multistage done"}}
+
+
+server.CIVILIZATION["analyst"] = [R188TwoStageAgent()]
+app = server.app
+'''
+
+
+def test_r188_full_acceptance_multistage_running_task_recovers(
+        fake_backend, tmp_path):
+    """R-188 FULL acceptance scenario (criteria a + b, recovery time measured):
+    a MULTI-STAGE task whose execution BEGAN — stage A completed BY THE
+    COORDINATOR (its result is back in the killed process), the coordinator
+    provably waiting at the gate BEFORE stage 2 — is SIGKILLed; the next
+    process must recover the task to `completed` (criterion a: no loss),
+    execute stage 2 itself, with every stage's effect applied EXACTLY ONCE
+    (criterion b: no duplication across the re-run), and the recovery time
+    (fresh-process start -> completion observed) is measured and bounded.
+    The result must be readable through the fresh process's API.
+
+    Re-running the task FROM THE BEGINNING is the accepted recovery
+    semantics for criterion (a) (documented): no mid-stage resume is claimed;
+    the re-run's stage A is redelivered, and its effect is not re-applied
+    because each stage carries its own stable idempotency key.
+
+    RED capture (test-only knob, the documented opt-out): with
+    R188_FORCE_VOLATILE=1 the subprocess runs AGOS_TASK_QUEUE=0 (the explicit
+    volatile opt-out) and the SAME test fails on the no-loss assertion — the
+    multi-stage running task is LOST (the row stays non-terminal forever:
+    the volatile mode has no recovery path). The committed default is green.
+    """
+    # the test-only wrapper module: the two-stage agent inside the subprocess
+    wrapper_dir = str(tmp_path)
+    with open(os.path.join(wrapper_dir, "r188_ms_wrapper.py"), "w") as f:
+        f.write(_MULTISTAGE_WRAPPER_PY)
+    # the two-stage work service (this process — survives the SIGKILL)
+    _MultiStageServer._reset()
+    work_httpd = _MultiStageServer.serve()
+    work_url = f"http://127.0.0.1:{work_httpd.server_address[1]}"
+    env_extra = {
+        "R188_EFFECT_URL": work_url,
+        # a longer lease gives the kill a comfortable window AFTER stage A
+        # completes (the row must not expire its own lease while process A is
+        # still alive — its own reaper would recover it)
+        "AGOS_TASK_LEASE_S": "8",
+    }
+    if os.environ.get("R188_FORCE_VOLATILE") == "1":
+        env_extra["AGOS_TASK_QUEUE"] = "0"  # the documented explicit opt-out
+    kwargs = dict(env_extra=env_extra, module="r188_ms_wrapper:app",
+                 pythonpath=wrapper_dir)
+    srv = _Server(**kwargs)
+    try:
+        srv.start()
+        # arm the gate BEFORE the task exists: the coordinator will block
+        # between the stages
+        _MultiStageServer.gate_armed.set()
+        status, body = _api(srv.port, "POST", "/api/tasks",
+                           {"specialization": "analyst",
+                            "prompt": "multistage recovery"})
+        assert status == 202, body
+        tid = body["task_id"]
+        # the premise: stage A COMPLETED by the coordinator (its request is
+        # answered — the effect landed and the result came back to process
+        # A) and the coordinator is BLOCKED AT THE GATE (stage 2 not started)
+        assert _wait_for(lambda: len(_MultiStageServer.requests["stage-a"]) >= 1
+                         and len(_MultiStageServer.requests["gate"]) >= 1,
+                         timeout=30), \
+            "the run never reached the gate between the stages"
+        assert len(_MultiStageServer.requests["stage-b"]) == 0, \
+            "premise broken: stage 2 already started before the kill"
+        row = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row["status"] == "running", \
+            f"premise broken: the row is {row['status']!r}, not running"
+        forced_volatile = os.environ.get("R188_FORCE_VOLATILE") == "1"
+        if not forced_volatile:
+            # durable mode only — the claim's storage fence: the running row
+            # carries the claim token and a lease still valid at kill time (the
+            # lease the fresh process's reaper must wait out). The volatile red
+            # run must fail at the NO-LOSS assertion below, never here.
+            from datetime import datetime, timezone
+            assert row.get("claim_token"), \
+                "premise broken: no claim token on the running row"
+            lease_at = datetime.fromisoformat(row["lease_expires_at"])
+            assert lease_at > datetime.now(timezone.utc), \
+                f"premise broken: the lease already expired at kill time " \
+                f"({row['lease_expires_at']})"
+        # POST-MORTEM: an independent COPY of the row, captured after death
+        # (see below) — asserted non-terminal then; the completion can only be
+        # the fresh process's own recovery
+        # kill the coordinator BETWEEN the stages: stage A's result is in the
+        # dead process, stage 2 never started — the transition depends on it
+        t_kill = time.monotonic()
+        srv.kill()
+        # release the gate: the dead client's call fails on its corpse
+        _MultiStageServer.gate_release.set()
+        frozen = dict(next(r for r in _row_rows() if r["task_id"] == tid))
+        assert frozen["status"] not in ("completed", "failed"), \
+            f"premise broken: the task already reached {frozen['status']!r} before death"
+        if not forced_volatile:
+            # the fence survived the death with the row (durable mode only)
+            assert frozen.get("claim_token"), \
+                "premise broken: the claim fence vanished from the frozen row"
+        assert len(_MultiStageServer.requests["stage-b"]) == 0, \
+            "premise broken: stage 2 started after the death"
+        # a fresh process on the same backend + work service: its reaper waits
+        # out the dead process's lease and re-dispatches the row. The recovery
+        # clock starts BEFORE the restart request (boot time is part of it).
+        srv2 = _Server(**kwargs)
+        t0 = time.monotonic()
+        try:
+            srv2.start()
+            # THE assertion of R-188 criterion (a), full scenario — RED under
+            # the volatile opt-out: the multi-stage running task is lost
+            assert _wait_for(lambda: any(r["task_id"] == tid and
+                                         r["status"] == "completed"
+                                         for r in _row_rows()), timeout=40), \
+                (f"R-188 task loss: a multi-stage task provably in flight "
+                 f"(stage A completed by the coordinator, blocked at the gate "
+                 f"before stage 2, row frozen {frozen['status']!r}) was killed "
+                 f"and the next process never brought it to `completed` — no "
+                 f"recovery path exists")
+            t_done = time.monotonic()
+            # the recovery time, measured (fresh-process start -> completion
+            # observed; a bound for THIS test with THESE settings — not an
+            # operational guarantee) and the total from the kill (includes
+            # the test-imposed downtime)
+            recovery_s = t_done - t0
+            from_kill_s = t_done - t_kill
+            print(f"\nR-188 recovery time: {recovery_s:.1f}s (restart->completed), "
+                  f"{from_kill_s:.1f}s (kill->completed, incl. test downtime)")
+            assert recovery_s < 30, \
+                f"recovery took {recovery_s:.1f}s — beyond this test's bound"
+            # the fresh process executed stage 2 itself
+            assert len(_MultiStageServer.requests["stage-b"]) >= 1, \
+                "the recovery never executed stage 2"
+            # criterion (b) on both stages: the re-run redelivers stage A
+            # (proven) but re-applies NEITHER stage's effect
+            assert len(_MultiStageServer.requests["stage-a"]) >= 2, \
+                "the recovery never re-invoked stage A (no redelivery proven)"
+            assert _MultiStageServer.applied["stage-a"] == 1, \
+                (f"R-188 stage-A duplication: applied "
+                 f"{_MultiStageServer.applied['stage-a']} times for one logical task")
+            assert _MultiStageServer.applied["stage-b"] == 1, \
+                (f"R-188 stage-B duplication: applied "
+                 f"{_MultiStageServer.applied['stage-b']} times for one logical task")
+            # the stable idempotency keys: the task's identity + the stage,
+            # on EVERY delivery of that stage
+            assert all(r["key"] == f"{tid}:a"
+                       for r in _MultiStageServer.requests["stage-a"]), \
+                "stage A does not carry the task's stable identity"
+            assert all(r["key"] == f"{tid}:b"
+                       for r in _MultiStageServer.requests["stage-b"]), \
+                "stage B does not carry the task's stable identity"
+            # readable through the fresh process (no loss visible to the caller)
+            status, mem = _api(srv2.port, "GET", f"/api/tasks/{tid}")
+            assert status == 200 and mem["status"] == "completed" \
+                and mem["result"] is not None
+        finally:
+            srv2.stop()
+    finally:
+        srv.stop()
 
 
 def _row_rows():
