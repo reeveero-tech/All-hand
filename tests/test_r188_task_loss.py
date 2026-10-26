@@ -99,13 +99,16 @@ class _BarrierPostgREST(unit._PostgREST):
     # R-188 no-rebind guard: the pin write is conditional on the pin key
     # being ABSENT — mirror PostgREST's JSON-path filter
     # (payload->_agos_recipient = is.null) so the fake backend enforces it
-    # exactly like the real one.
+    # exactly like the real one. PostgREST semantics: `payload->'key' IS
+    # NULL` is TRUE only for an ABSENT key — a key PRESENT with a JSON null
+    # is a jsonb VALUE (not SQL NULL) and does NOT match (the write is
+    # refused); a non-dict payload carries no pin key at all.
     @staticmethod
     def _keep(row, col, val):
         if col == "payload->_agos_recipient" and val == "is.null":
             payload = row.get("payload")
             if isinstance(payload, dict):
-                return payload.get("_agos_recipient") is None
+                return "_agos_recipient" not in payload
             return True  # a non-dict payload carries no pin
         return unit._PostgREST._keep(row, col, val)
 
@@ -340,6 +343,20 @@ def _api(port, method, path, body=None):
         headers=HEADERS)
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.status, json.loads(r.read().decode())
+
+
+def _api_raw(port, method, path, body=None, headers=None):
+    """Like _api but also returns ERROR responses' status and body (422/409)
+    and accepts custom headers (e.g. an admin key)."""
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}{path}", method=method,
+        data=json.dumps(body).encode() if body is not None else None,
+        headers=headers or HEADERS)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read().decode() or b"{}")
 
 
 # ------------------------------------------------- full criterion (a): a
@@ -1273,13 +1290,15 @@ def test_r188_recipient_stability_across_recovery(fake_backend):
             assert sum(1 for r in a_state.requests if r["key"] == tid) >= 2, \
                 "the recovery never re-delivered to the pinned recipient A"
             # the pin is durable in the row (the PUBLIC identity only: name +
-            # the URL's public form scheme://host[:port] — NEVER the raw URL,
-            # which may carry credentials)
+            # the URL's public form scheme://host[:port] + a one-way
+            # fingerprint of the FULL destination — NEVER the raw URL, which
+            # may carry credentials)
             done = next(r for r in _row_rows() if r["task_id"] == tid)
             pin = (done.get("payload") or {}).get("_agos_recipient")
             _u = urllib.parse.urlsplit(a_url)
             assert pin == {"name": "r188-a",
-                           "endpoint": f"{_u.scheme}://{_u.netloc}"}, \
+                           "endpoint": f"{_u.scheme}://{_u.netloc}",
+                           "fingerprint": hashlib.sha256(a_url.encode()).hexdigest()}, \
                 f"the durable pin is wrong or missing (or leaked the raw URL): {pin!r}"
             # readable through the new process (no loss visible to the caller)
             status, mem = _api(srv2.port, "GET", f"/api/tasks/{tid}")
@@ -1438,12 +1457,28 @@ def test_r188_pin_never_leaks_url_credentials(fake_backend):
         assert _wait_for(_pin_landed, timeout=20), "the pin never landed"
         row = next(r for r in _row_rows() if r["task_id"] == tid)
         pin = row["payload"]["_agos_recipient"]
-        assert pin == {"name": "r188-a4", "endpoint": f"{u.scheme}://{u.netloc}"}, \
+        assert pin == {"name": "r188-a4", "endpoint": f"{u.scheme}://{u.netloc}",
+                       "fingerprint": hashlib.sha256(cred_url.encode()).hexdigest()}, \
             f"the pin must be the PUBLIC form only (no credentials): {pin!r}"
         # the stored payload never carries the credentials
         assert "secret-r188" not in json.dumps(row["payload"]), \
             "the stored payload leaked the URL credentials"
-        # and the task's PUBLIC response never does either
+        # and the task's PUBLIC response never does either — read from a
+        # process with NO local record (the stored-payload disclosure path:
+        # the row served from the database, source == "database"), not just
+        # the in-memory record of the process that ran the task
+        srv2 = _Server(env_extra={"AGOS_TASK_QUEUE": "0"})  # API-only: no dispatcher
+        try:
+            srv2.start()
+            status, mem = _api(srv2.port, "GET", f"/api/tasks/{tid}")
+            assert status == 200
+            assert mem.get("source") == "database", \
+                f"the read did not go through the stored-row path: {mem.get('source')!r}"
+            assert "secret-r188" not in json.dumps(mem), \
+                "the task's public response leaked the URL credentials"
+        finally:
+            srv2.stop()
+        # and the in-memory record of the running process neither
         status, mem = _api(srv.port, "GET", f"/api/tasks/{tid}")
         assert status == 200
         assert "secret-r188" not in json.dumps(mem), \
@@ -1513,52 +1548,76 @@ def test_r188_pinned_task_with_no_registered_agents_waits(fake_backend):
 
 def test_r188_corrupted_pin_stops_explicitly(fake_backend):
     """REQUIRED behavior (R-188 review round): a pin that does not satisfy
-    the validation contract (here: a string where the mapping is expected —
-    written DIRECTLY into the row's payload, bypassing every writer) STOPS
-    the run explicitly (recipient_pinned_invalid) — never a silent "treat as
-    absent" (that would pick another recipient and duplicate the effect).
-    Zero external sends, no attempt consumed."""
+    the validation contract STOPS the run explicitly (recipient_pinned_invalid)
+    — never a silent "treat as absent" (that would pick another recipient
+    and duplicate the effect). Zero external sends, no attempt consumed.
+
+    The corrupted pins are written DIRECTLY into the rows' payloads,
+    bypassing every writer, and cover every malformed form: a string instead
+    of the mapping, an endpoint that does not PARSE (an invalid IPv6 literal
+    — the regression the fail-closed parsing fixes: urlsplit raises there),
+    an endpoint carrying a path (the public form never has one), a bad
+    fingerprint, and a JSON-null pin (a key PRESENT with a JSON null —
+    which the no-rebind filter rightly refuses to overwrite and the
+    validation rightly rejects)."""
     a_state, a_url = _recipient("A6")
     env = {"EXTERNAL_AGENTS": json.dumps([{"name": "r188-a6", "url": a_url}]),
            "AGOS_TASK_LEASE_S": "8"}
     srv = _Server(env_extra=env)
     try:
         srv.start()
-        # a row whose pin is corrupted — inserted directly into the fake
-        # backend, bypassing every writer (the row otherwise carries the
+        # rows whose pins are corrupted — inserted directly into the fake
+        # backend, bypassing every writer (each row otherwise carries the
         # internal envelope the dispatcher unwraps)
-        tid = "r188-corrupt-pin-1"
-        unit._PostgREST.rows["tasks"].append({
-            "task_id": tid, "specialization": "external",
-            "prompt": "corrupted pin", "status": "queued",
-            "tenant_id": "r188_tenant", "attempts": 0,
-            "payload": {"_agos_prompt": "corrupted pin", "data": None,
-                        "_agos_recipient": "not-a-mapping"},
-            "created_at": "2026-01-01T00:00:00+00:00",
-        })
-        # the dispatcher claims it -> the invalid pin stops the run EXPLICITLY
+        _hex64 = hashlib.sha256(b"r188").hexdigest()
+        corrupted = {
+            "r188-corrupt-pin-1": "not-a-mapping",
+            "r188-corrupt-pin-2": {"name": "r188-a6", "endpoint": "http://[",
+                                  "fingerprint": _hex64},
+            "r188-corrupt-pin-3": {"name": "r188-a6",
+                                  "endpoint": "http://127.0.0.1:1/run",
+                                  "fingerprint": _hex64},
+            "r188-corrupt-pin-4": {"name": "r188-a6", "endpoint": "http://127.0.0.1:1",
+                                  "fingerprint": "not-hex"},
+            "r188-corrupt-pin-5": None,  # a JSON-null pin (key present, null)
+        }
+        for tid, bad_pin in corrupted.items():
+            unit._PostgREST.rows["tasks"].append({
+                "task_id": tid, "specialization": "external",
+                "prompt": "corrupted pin", "status": "queued",
+                "tenant_id": "r188_tenant", "attempts": 0,
+                "payload": {"_agos_prompt": "corrupted pin", "data": None,
+                            "_agos_recipient": bad_pin},
+                "created_at": "2026-01-01T00:00:00+00:00",
+            })
+        # the dispatcher claims each -> the invalid pin stops the run
+        # EXPLICITLY (and the unparsable endpoint must not crash it)
 
-        def _settled():
-            row = next((r for r in _row_rows() if r["task_id"] == tid), None)
-            return row is not None and row.get("status") in ("queued", "claimed")
+        def _all_settled():
+            for tid in corrupted:
+                row = next((r for r in _row_rows() if r["task_id"] == tid), None)
+                if row is None or row.get("status") not in ("queued", "claimed"):
+                    return False
+            return True
 
-        assert _wait_for(_settled, timeout=40), \
-            "the corrupted-pin task never entered the wait"
+        assert _wait_for(_all_settled, timeout=40), \
+            "the corrupted-pin tasks never entered the wait"
         time.sleep(4)  # a bounded observation window (several defer cycles)
-        row = next(r for r in _row_rows() if r["task_id"] == tid)
-        assert row["status"] in ("queued", "claimed"), \
-            f"the corrupted-pin task left the wait: {row['status']!r}"
-        # zero external sends
+        for tid in corrupted:
+            row = next(r for r in _row_rows() if r["task_id"] == tid)
+            assert row["status"] in ("queued", "claimed"), \
+                f"the corrupted-pin task {tid} left the wait: {row['status']!r}"
+            # no attempt consumed (the run stopped before start_task)
+            assert int(row.get("attempts") or 0) == 0, \
+                f"the corrupted pin {tid} consumed an execution attempt"
+            # the stop reason is observable
+            status, mem = _api(srv.port, "GET", f"/api/tasks/{tid}")
+            assert status == 200
+            assert mem.get("wait_reason") == "recipient_pinned_invalid", \
+                f"the stop reason for {tid} is not the invalid pin: {mem.get('wait_reason')!r}"
+        # zero external sends across ALL the corrupted rows
         assert a_state.requests == [], \
-            "the corrupted pin still sent to a recipient"
-        # no attempt consumed (the run stopped before start_task)
-        assert int(row.get("attempts") or 0) == 0, \
-            "the corrupted pin consumed an execution attempt"
-        # the stop reason is observable
-        status, mem = _api(srv.port, "GET", f"/api/tasks/{tid}")
-        assert status == 200
-        assert mem.get("wait_reason") == "recipient_pinned_invalid", \
-            f"the stop reason is not the invalid pin: {mem.get('wait_reason')!r}"
+            "a corrupted pin still sent to a recipient"
     finally:
         srv.stop()
 
@@ -1608,7 +1667,14 @@ def test_r188_cancel_during_pin_write_wait_keeps_cancellation(fake_backend):
         _BarrierPostgREST.release.set()
         assert _BarrierPostgREST.discarded.wait(timeout=10), \
             "the pin write was not discarded"
-        time.sleep(2)  # the deferral path completes
+        # an EXPLICIT witness that the deferral COMPLETED through the rejected
+        # release (not just that the pin write was discarded): the holding
+        # process logs the not-confirmed warning when _defer receives the
+        # rejection
+        assert _wait_for(lambda: "deferral not confirmed" in srv._tail(),
+                         timeout=10), \
+            "the deferral's rejected release was never observed"
+        time.sleep(0.5)  # the deferral path settles
         # the cancellation STAYS on the row
         row = next(r for r in _row_rows() if r["task_id"] == tid)
         assert row["status"] == "cancelled", \
@@ -1672,7 +1738,13 @@ def test_r188_pin_no_rebind_and_claim_loss(fake_backend, monkeypatch):
         lease = (datetime.now(timezone.utc) + timedelta(seconds=60)).isoformat()
         claim = await store.claim_task(tid, "tok-1", lease)
         assert claim is not None and claim.get("claim_token") == "tok-1"
-        # first write with the current claim: PINS
+        # the claim fence on an UNPINNED row first (a wrong claim token pins
+        # nothing — 0 rows matched — BEFORE any no-rebind filter could mask it)
+        wrong_payload = dict(claim.get("payload") or {})
+        wrong_payload["_agos_recipient"] = {"name": "r188-b", "endpoint": "http://127.0.0.1:2"}
+        assert await store.pin_task_recipient(tid, "tok-other", wrong_payload) is False, \
+            "a foreign claim pinned a row"
+        # and the CORRECT token still pins that same unpinned row
         payload = dict(claim.get("payload") or {})
         payload["_agos_recipient"] = {"name": "r188-a", "endpoint": "http://127.0.0.1:1"}
         assert await store.pin_task_recipient(tid, "tok-1", payload) is True
@@ -1692,6 +1764,22 @@ def test_r188_pin_no_rebind_and_claim_loss(fake_backend, monkeypatch):
         # the stored pin is still the FIRST one
         assert row["payload"]["_agos_recipient"] == \
             {"name": "r188-a", "endpoint": "http://127.0.0.1:1"}
+        # a JSON-NULL pin (key PRESENT with a JSON null) is NOT pinnable
+        # either: PostgREST's -> 'key' IS NULL matches an ABSENT key only —
+        # a present JSON null is a jsonb VALUE (not SQL NULL), so the filter
+        # refuses the write exactly like an already-pinned row (the run then
+        # stops on it as an INVALID pin — see the corrupted-pin test)
+        tid3 = "r188-rebind-3"
+        assert await store.insert_task(tid3, "external", "no rebind 3",
+                                       tenant_id="r188_tenant",
+                                       payload={"_agos_prompt": "n", "data": None,
+                                                "_agos_recipient": None})
+        claim3 = await store.claim_task(tid3, "tok-3", lease)
+        assert claim3 is not None
+        p3 = dict(claim3.get("payload") or {})
+        p3["_agos_recipient"] = {"name": "r188-d", "endpoint": "http://127.0.0.1:4"}
+        assert await store.pin_task_recipient(tid3, "tok-3", p3) is False, \
+            "a JSON-null pin was overwritten (the filter treats it as absent)"
         # a failed request answers None (not False): the contract
         # distinguishes "0 rows matched" from "the request itself failed"
         _BarrierPostgREST.fail_payload[0] = True
@@ -1710,3 +1798,169 @@ def test_r188_pin_no_rebind_and_claim_loss(fake_backend, monkeypatch):
             _BarrierPostgREST.fail_payload[0] = False
 
     asyncio.run(scenario())
+
+
+def test_r188_same_origin_path_change_is_a_conflict(fake_backend):
+    """REQUIRED behavior (R-188 review round 2): the public form alone does
+    not prove the destination's identity — two PATHS on the same origin may
+    be different services with independent idempotency stores. The pin's
+    FINGERPRINT (of the full destination, path and query included) makes a
+    same-origin path change surface as recipient_pinned_conflict (an explicit
+    wait, never a permission to send to the new path). Zero new sends."""
+    a_state, a_url = _recipient("A8")
+    # the SAME recipient server addressed by TWO DIFFERENT PATHS: same
+    # origin (scheme://host[:port]) — different destinations by identity
+    base = a_url.rsplit("/", 1)[0]
+    url_a = base + "/service-a/run"
+    url_b = base + "/service-b/run"
+    env1 = {"EXTERNAL_AGENTS": json.dumps([{"name": "r188-a8", "url": url_a}]),
+            "AGOS_TASK_LEASE_S": "8"}
+    srv = _Server(env_extra=env1)
+    try:
+        srv.start()
+        a_state.block.set()
+        s, target = _api(srv.port, "POST", "/api/tasks",
+                         {"specialization": "external",
+                          "prompt": "same-origin path change is a conflict"})
+        assert s == 202, target
+        tid = target["task_id"]
+        assert _wait_for(lambda: a_state.applied >= 1, timeout=20), \
+            "the run never reached the first path"
+        row = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row["status"] == "running" and row.get("claim_token")
+        pin = (row.get("payload") or {}).get("_agos_recipient")
+        assert pin == {"name": "r188-a8",
+                       "endpoint": urllib.parse.urlsplit(url_a)._replace(path="", query="", fragment="").geturl(),
+                       "fingerprint": hashlib.sha256(url_a.encode()).hexdigest()}, \
+            f"the pin does not carry the full destination's fingerprint: {pin!r}"
+        srv.kill()
+        a_state.release.set()
+        # the fresh process serves the SAME NAME on a DIFFERENT PATH of the
+        # SAME origin — a destination change that must NOT be honored
+        env2 = {"EXTERNAL_AGENTS": json.dumps([{"name": "r188-a8", "url": url_b}]),
+                "AGOS_TASK_LEASE_S": "8"}
+        srv2 = _Server(env_extra=env2)
+        try:
+            srv2.start()
+            assert _wait_for(lambda: next(
+                r for r in _row_rows() if r["task_id"] == tid
+            )["status"] in ("queued", "claimed"), timeout=40), \
+                "the path-changed task did not settle into the waiting state"
+            time.sleep(4)  # a bounded observation window
+            row2 = next(r for r in _row_rows() if r["task_id"] == tid)
+            assert row2["status"] in ("queued", "claimed"), \
+                f"the path-changed task left the wait: {row2['status']!r}"
+            status, mem = _api(srv2.port, "GET", f"/api/tasks/{tid}")
+            assert status == 200
+            assert mem.get("wait_reason") == "recipient_pinned_conflict", \
+                f"the wait reason is not the destination conflict: {mem.get('wait_reason')!r}"
+            # zero NEW sends: the first path applied once before the kill and
+            # the second path was never sent to
+            assert a_state.applied == 1, \
+                "the path-changed task sent to the new destination"
+        finally:
+            srv2.stop()
+    finally:
+        srv.stop()
+
+
+def test_r188_registration_name_contract_unified(fake_backend):
+    """REQUIRED behavior (R-188 review round 2): the registration contract and
+    the pin's name validation are UNIFIED (a non-empty string of at most 200
+    characters — 422 outside the range), so a legally registered name is
+    always pinnable and a pinned name can never be something registration
+    would refuse (which would turn a legal task's pin "invalid" at recovery)."""
+    admin_key = "r188-admin-" + secrets.token_urlsafe(12)
+    env = {"AGOS_TENANT_KEYS": json.dumps([{
+        "tenant": "r188_tenant",
+        "key_sha256": hashlib.sha256(admin_key.encode()).hexdigest(),
+        "role": "admin"}])}
+    srv = _Server(env_extra=env)
+    try:
+        srv.start()
+        admin_headers = {"X-API-Key": admin_key,
+                         "Content-Type": "application/json"}
+        # 201 characters -> 422 (the SAME contract the pin enforces)
+        s, body = _api_raw(srv.port, "POST", "/api/agents/external",
+                           {"name": "x" * 201, "url": "http://127.0.0.1:1/run"},
+                           headers=admin_headers)
+        assert s == 422, (s, body)
+        # empty -> 422
+        s, body = _api_raw(srv.port, "POST", "/api/agents/external",
+                           {"name": "", "url": "http://127.0.0.1:1/run"},
+                           headers=admin_headers)
+        assert s == 422, (s, body)
+        # 200 characters -> accepted: a legally registered name is pinnable
+        s, body = _api_raw(srv.port, "POST", "/api/agents/external",
+                           {"name": "y" * 200, "url": "http://127.0.0.1:1/run"},
+                           headers=admin_headers)
+        assert s == 201, (s, body)
+    finally:
+        srv.stop()
+
+
+def test_r188_capacity_deferral_rejected_release_touches_nothing():
+    """REQUIRED behavior (R-188 review round 2): the capacity deferral (the
+    registry's Saturated branch, via _defer_capacity) obeys the SAME
+    confirmed-release rule as _defer — a REJECTED release (the claim was
+    lost: a newer claim or a CANCELLATION may own the row) touches NOTHING:
+    not the record, not the deferral counters, not the back-off, not the
+    queue state. A CONFIRMED release applies them all."""
+    import asyncio
+    import server as sv
+
+    class _Store:
+        def __init__(self, ok):
+            self.ok = ok
+            self.calls = []
+
+        async def release_task(self, task_id, claim_token, to_status="queued"):
+            self.calls.append((task_id, claim_token, to_status))
+            return self.ok
+
+    class _Sp:
+        def __init__(self):
+            self.outcome = None
+
+        def set(self, **kw):
+            self.outcome = kw.get("outcome")
+
+    task_id = "r188-cap-1"
+    saved = (dict(sv._QUEUE_STATE), dict(sv._QUEUE_DEFERRALS),
+             dict(sv._QUEUE_BACKOFF))
+    sv._QUEUE_STATE.clear()
+    sv._QUEUE_DEFERRALS.clear()
+    sv._QUEUE_BACKOFF.clear()
+    try:
+        # a REJECTED release: nothing is touched
+        store = _Store(False)
+        rec = {"task_id": task_id, "status": "running"}
+        sp = _Sp()
+        asyncio.run(sv._defer_capacity(task_id, "tok-1", sp, store, rec))
+        assert store.calls == [(task_id, "tok-1", "queued")], \
+            "the capacity deferral did not attempt the release"
+        assert rec == {"task_id": task_id, "status": "running"}, \
+            "a rejected capacity release still touched the record"
+        assert not sv._QUEUE_DEFERRALS, \
+            "a rejected capacity release still touched the counters"
+        assert not sv._QUEUE_BACKOFF, \
+            "a rejected capacity release still touched the back-off"
+        assert not sv._QUEUE_STATE, \
+            "a rejected capacity release still touched the queue state"
+        assert sp.outcome == "deferred"
+        # a CONFIRMED release: the deferral applies (counters, back-off,
+        # queue state, record)
+        store2 = _Store(True)
+        rec2 = {"task_id": task_id, "status": "running"}
+        sp2 = _Sp()
+        asyncio.run(sv._defer_capacity(task_id, "tok-1", sp2, store2, rec2))
+        assert rec2["status"] == "queued"
+        assert sv._QUEUE_DEFERRALS.get(task_id) == 1
+        assert task_id in sv._QUEUE_BACKOFF
+        assert sp2.outcome == "deferred"
+    finally:
+        for target, old in ((sv._QUEUE_STATE, saved[0]),
+                            (sv._QUEUE_DEFERRALS, saved[1]),
+                            (sv._QUEUE_BACKOFF, saved[2])):
+            target.clear()
+            target.update(old)
