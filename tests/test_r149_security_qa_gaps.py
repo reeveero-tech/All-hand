@@ -273,15 +273,59 @@ def _writes(method=None, table=None):
 
 
 def _is_background_scan(query):
-    """The durable queue's system traffic (R-188): the dispatcher's queued
-    scan and the reaper's expired-lease scan — unscoped (no task_id, no
-    tenant_id, no idempotency_key), status-filtered, ordered, bounded.
-    Every OTHER recorded GET is a request's own read and must be
-    task-scoped and tenant-filtered — an unscoped wide read is rejected."""
-    if query.get("task_id") or query.get("tenant_id") or query.get("idempotency_key"):
+    """The durable queue's system traffic (R-188), matched by KEY SET AND
+    VALUES against the actual implementation (supabase_store.
+    list_queued_tasks / list_expired_lease_tasks — read before writing
+    this, not guessed):
+      - dispatcher claim scan: status=eq.queued, order=created_at.asc,
+        limit present, optional fairness exclusion tenant_id=not.in.(...)
+        (an EXCLUSION, never a read scope)
+      - reaper recovery scan: status=in.(claimed,running),
+        lease_expires_at=lt.<now>, order=lease_expires_at.asc, limit present
+    Anything else — an unscoped wide read, a wrong status value, a missing
+    limit, a wrong order, an extra field — is a request's own read and must
+    be task-scoped and tenant-filtered; it fails the caller's assertion."""
+    q = {k: (v[0] if isinstance(v, list) else v) for k, v in query.items()}
+    if q.get("task_id") is not None or q.get("idempotency_key") is not None:
         return False
-    return ("status" in query
-            and set(query) <= {"status", "order", "limit", "select", "lease_expires_at"})
+    tenant = q.get("tenant_id")
+    if tenant is not None and not str(tenant).startswith("not.in.("):
+        return False
+    keys = set(q) - ({"tenant_id"} if tenant is not None else set())
+    if (keys == {"status", "order", "limit"}
+            and q["status"] == "eq.queued"
+            and q["order"] == "created_at.asc"
+            and q.get("limit") is not None):
+        return True
+    if (keys == {"status", "lease_expires_at", "order", "limit"}
+            and q["status"] == "in.(claimed,running)"
+            and str(q["lease_expires_at"]).startswith("lt.")
+            and q["order"] == "lease_expires_at.asc"
+            and q.get("limit") is not None):
+        return True
+    return False
+
+
+def test_background_scan_allowlist_rejects_unknown_shapes():
+    """The R-188 isolation allowlist must accept ONLY the dispatcher's and
+    reaper's actual scan shapes and reject every other shape. Values here
+    are as r149's fake records them (parse_qs lists) — the predicate
+    normalizes before matching."""
+    assert _is_background_scan({"status": ["eq.queued"],
+                               "order": ["created_at.asc"], "limit": ["50"]})
+    assert _is_background_scan({"status": ["in.(claimed,running)"],
+                               "lease_expires_at": ["lt.2026-10-26T00:00:00+00:00"],
+                               "order": ["lease_expires_at.asc"], "limit": ["50"]})
+    assert not _is_background_scan({"status": ["eq.completed"],
+                                     "order": ["created_at.asc"], "limit": ["50"]})
+    assert not _is_background_scan({"status": ["eq.queued"],
+                                   "order": ["created_at.asc"]})
+    assert not _is_background_scan({"status": ["eq.queued"],
+                                   "order": ["created_at.desc"], "limit": ["50"]})
+    assert not _is_background_scan({"status": ["eq.queued"],
+                                   "order": ["created_at.asc"], "limit": ["50"],
+                                   "select": ["*"]})
+    assert not _is_background_scan({"task_id": ["eq.t1"], "limit": ["1"]})
 
 
 # ------------------------------------------------------------------ G1: /api/chat
@@ -406,10 +450,12 @@ def test_chat_response_and_events_never_carry_the_backend_error_marker(
 
 def test_background_task_with_every_write_rejected_ends_final_not_pending(
         tenant_auth, postgrest, agent_outcome, published, clean_tasks, monkeypatch):
-    # R-188: pinned for background-traffic pollution of the write sequence —
-    # the durable accept's own failure behavior (503, no silent RAM
-    # fallback) is covered in tests/test_r163_durable_queue.py + the
-    # R-164/R-185 probes.
+    # R-188: this test pins the VOLATILE accept semantics themselves — with
+    # the queue OFF the accept SUCCEEDS (202) even when every storage write
+    # is rejected (the documented volatile limit: silent RAM fallback); the
+    # durable accept instead FAILS 503 (covered in tests/test_r163_durable_queue.py
+    # + the R-164/R-185 probes). Pinned to the volatile mode to preserve
+    # both contracts' coverage.
     monkeypatch.setenv("AGOS_TASK_QUEUE", "0")
     agent_outcome(True)
     postgrest.policy = {("POST", "tasks"): 401, ("PATCH", "tasks"): 401,
@@ -443,8 +489,9 @@ def test_background_task_final_update_rejected_after_running_saved(
     update are ACCEPTED, only the FINAL update is rejected. The durable row
     stays stale at `running` (never reported as a saved success) while the
     memory record and the published event carry the true final status."""
-    # R-188: pinned for background-traffic pollution of the write sequence —
-    # the durable queue's fenced late-result discard has its own R-163 tests.
+    # R-188: this test pins the VOLATILE fence semantics themselves — the
+    # unfenced update_task of the volatile path; the durable queue's fenced
+    # late-result discard has its own R-163 tests.
     monkeypatch.setenv("AGOS_TASK_QUEUE", "0")
     agent_outcome(True)
     postgrest.policy = {("PATCH", "tasks"): {"status": "completed"}}

@@ -9,13 +9,13 @@ R-188 exists to close.
 
 The red test below reproduces the loss with a deterministic, test-controlled
 barrier: the fake PostgREST is armed BEFORE the task is created to BLOCK the
-first tasks-table PATCH (the mid-flight update/claim — inserts are POSTs and
+first tasks-table PATCH (the mid-flight update — inserts are POSTs and
 pass through). The server is then provably inside the task's mid-flight
 storage write when the test kills it (SIGKILL); the blocked write is
-ABANDONED, never applied (a request that reached the fake is not cancelled
+DISCARDED, never applied (a request that reached the fake is not cancelled
 by the client's death — without the discard it could land post-mortem and
-make the test pass vacuously); the handler confirms the abandonment before
-the row is snapshotted; and the snapshot (a COPY, not a live reference) is
+make the test pass vacuously); the handler signals the END of the discard
+before the row is snapshotted; and the snapshot (a COPY, not a live reference) is
 asserted non-terminal. Only then does a fresh process start on the same
 backend — any terminal state the row reaches afterwards can only be the
 fresh process's own recovery.
@@ -65,20 +65,22 @@ def _free_port() -> int:
 class _BarrierPostgREST(unit._PostgREST):
     """Fake PostgREST with a test-controlled barrier on tasks-table updates.
 
-    While `armed` is set, any PATCH to the tasks table blocks. The test
-    releases it in one of two modes: `abandon` set = the blocked write is
-    DISCARDED (never applied — used after the kill so a dead process's
-    write cannot land post-mortem); `abandon` clear = the write proceeds
-    (not used by this test). Inserts are POSTs and are never blocked, so
-    task creation itself is unaffected. A barrier timeout is LOUD (raises) —
-    it never silently lets the write through.
+    While `armed` is set, any PATCH to the tasks table blocks and — once
+    released — is DISCARDED, never applied: the discard decision is made at
+    ENTRY (a request that entered the barrier never lands), not by a flag
+    the test could clear at the wrong moment. This is what makes the kill
+    deterministic: a dead process's write cannot land post-mortem and fake
+    a recovery the fresh process never performed. `discarded` is set at the
+    END of the discard branch (handler-completed signal — the write is
+    provably not going to land). Inserts are POSTs and are never blocked,
+    so task creation itself is unaffected. A barrier timeout is LOUD
+    (raises) — it never silently lets the write through.
     """
 
     armed = threading.Event()
     release = threading.Event()
     entered = threading.Event()
-    abandoned = threading.Event()
-    abandon = threading.Event()   # set = discard the blocked write (never apply)
+    discarded = threading.Event()
 
     def do_PATCH(self):  # noqa: N802
         table, _ = self._table_q()
@@ -88,13 +90,13 @@ class _BarrierPostgREST(unit._PostgREST):
                 # LOUD: a silent timeout could let the write pass and the
                 # test would prove nothing
                 raise RuntimeError("R-188 barrier: released nobody within 30s")
-            if self.abandon.is_set():
-                self.abandoned.set()
-                try:
-                    self._send(409)  # abandoned: the write does NOT land
-                except BrokenPipeError:
-                    pass  # the client is dead — the write is already discarded
-                return
+            # entered-while-armed => discarded (never applied)
+            try:
+                self._send(409)
+            except BrokenPipeError:
+                pass  # the client is dead — the write is already discarded
+            self.discarded.set()  # END of the discard branch
+            return
         try:
             super().do_PATCH()
         except BrokenPipeError:
@@ -207,16 +209,14 @@ def fake_backend():
     unit._PostgREST.mode[0] = "ok"
     _BarrierPostgREST.armed.clear()
     _BarrierPostgREST.release.clear()
-    _BarrierPostgREST.abandon.clear()
     _BarrierPostgREST.entered.clear()
-    _BarrierPostgREST.abandoned.clear()
+    _BarrierPostgREST.discarded.clear()
     from http.server import ThreadingHTTPServer
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), _BarrierPostgREST)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     os.environ["R188_FAKE_URL"] = f"http://127.0.0.1:{httpd.server_address[1]}"
     yield unit._PostgREST.rows
     # teardown: never leave a blocked handler or an armed barrier behind
-    _BarrierPostgREST.abandon.set()
     _BarrierPostgREST.release.set()
     _BarrierPostgREST.armed.clear()
     httpd.shutdown()
@@ -271,18 +271,17 @@ def test_r188_default_mode_task_in_flight_survives_process_death(fake_backend):
             "the server never reached the mid-flight tasks-table write"
         # kill it mid-flight
         srv.kill()
-        # ABANDON the blocked write — a dead process's write must never land
+        # release the barrier: any handler that entered it DISCARDS its
+        # write (decided at entry) — a dead process's write must never land
         # (it would fake a recovery the fresh process never performed)
-        _BarrierPostgREST.abandon.set()
         _BarrierPostgREST.release.set()
-        assert _BarrierPostgREST.abandoned.wait(timeout=10), \
-            "the blocked write was not abandoned cleanly"
+        assert _BarrierPostgREST.discarded.wait(timeout=10), \
+            "the blocked write was not discarded cleanly (handler incomplete)"
         # disarm: the fresh process's writes must go through untouched
         _BarrierPostgREST.armed.clear()
-        _BarrierPostgREST.abandon.clear()
         _BarrierPostgREST.release.clear()
         # POST-MORTEM: an independent COPY of the row (not a live reference),
-        # captured after the death and the confirmed abandonment — the
+        # captured after the death and the confirmed discard — the
         # completion cannot have landed: the only write in flight was
         # discarded and the process is dead
         frozen = dict(next(r for r in _row_rows() if r["task_id"] == tid))

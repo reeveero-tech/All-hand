@@ -447,9 +447,16 @@ def test_background_task_trace_links_request_task_and_storage(auth, fake_storage
     # so the http span and the run span shared one trace. Under the durable
     # queue the run is dispatched by the QUEUE (a separate execution context,
     # by design cross-process capable) — the run is its own trace, and the
-    # two trees are joined by the task_id. The synchronous chain's one-trace
-    # guarantee (test_chain_..._one_trace) is UNCHANGED. Recorded in log 302
-    # + CHANGELOG لاحق 48; flagged for the owner in the PR description.
+    # two trees are joined by the task_id.
+    # Contract check (P2_OBSERVABILITY_CONTRACTS_AR.md, R-159): the contract
+    # requires linkage "اربطها بـtrace/task IDs" and its acceptance test is
+    # "trace كامل من API إلى stage إلى tool/model إلى storage" — the
+    # SYNCHRONOUS chain, which is UNCHANGED (test_chain_..._one_trace). The
+    # two-tree join by task_id satisfies the contract's linkage requirement;
+    # the prior background-task one-trace property was an artifact of the
+    # volatile in-request execution, not a contract requirement. This change
+    # is documented explicitly in log 302 + CHANGELOG لاحق 48 and flagged for
+    # the owner in the PR description.
     assert {x["kind"] for x in recs} >= {"task", "agent", "tool", "memory", "storage"}
     assert all(x["task_id"] == task_id for x in recs if x["kind"] in ("agent", "tool", "storage"))
     # the ACCEPT trace (the request) carries the http span and the queued
