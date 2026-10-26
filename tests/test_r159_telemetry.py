@@ -121,25 +121,52 @@ def fake_llm(monkeypatch):
 class _FakePostgREST(BaseHTTPRequestHandler):
     reject: int = 0
     calls: list = []
+    rows: dict = {"tasks": [], "events": [], "agent_stats": []}
 
     def log_message(self, *a):
         pass
 
     def _answer(self):
         n = int(self.headers.get("Content-Length") or 0)
-        if n:
-            self.rfile.read(n)
+        body_json = json.loads(self.rfile.read(n)) if n else None
         self.calls.append((self.command, self.path.split("?")[0]))
-        code = self.reject or (201 if self.command == "POST" else 200 if self.command == "GET" else 204)
-        body = {"message": BACKEND_SECRET} if self.reject else []
-        # R-161c: like PostgREST, a PATCH with return=representation answers 200
-        # with the updated key (the fake accepts every insert, so the row exists)
-        if (not self.reject and self.command == "PATCH"
-                and "return=representation" in (self.headers.get("Prefer") or "")):
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            code, body = 200, [{"task_id": q["task_id"][0].removeprefix("eq.")}]
+        table = self.path.split("?")[0].rstrip("/").rsplit("/", 1)[-1]
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        # R-188: the durable queue (now the default) drives the background
+        # task through the store — the fake must actually KEEP rows, apply
+        # PATCHes and answer Prefer: return=representation, or the dispatcher
+        # never sees a claimable task and the run never happens.
+        if self.reject:
+            code, body = self.reject, {"message": BACKEND_SECRET}
+        elif self.command == "POST":
+            self.rows.setdefault(table, []).append(body_json)
+            code, body = 201, []
+        elif self.command == "PATCH":
+            matched = []
+            for r in self.rows.get(table, []):
+                hit = all(
+                    (str(r.get(k)) in v[0][4:-1].split(",") if v[0].startswith("in.(")
+                     else str(r.get(k)) == v[0].removeprefix("eq."))
+                    for k, v in q.items() if k not in ("select",))
+                if hit:
+                    r.update(body_json)
+                    matched.append(r)
+            if "return=representation" in (self.headers.get("Prefer") or ""):
+                code, body = 200, matched
+            else:
+                code, body = 204, None
+        else:  # GET
+            out = list(self.rows.get(table, []))
+            for col, vals in q.items():
+                if col in ("order", "limit", "select"):
+                    continue
+                want = vals[0].removeprefix("eq.")
+                out = [r for r in out if r.get(col) is not None and str(r.get(col)) == want]
+            if "limit" in q:
+                out = out[: int(q["limit"][0])]
+            code, body = 200, out
         # a 204 carries no body (a body on 204 made aiohttp fail intermittently)
-        data = b"" if code == 204 else json.dumps(body).encode()
+        data = b"" if code == 204 or body is None else json.dumps(body).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
@@ -152,6 +179,7 @@ class _FakePostgREST(BaseHTTPRequestHandler):
 @pytest.fixture
 def fake_storage(monkeypatch):
     _FakePostgREST.reject, _FakePostgREST.calls = 0, []
+    _FakePostgREST.rows = {"tasks": [], "events": [], "agent_stats": []}
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), _FakePostgREST)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     monkeypatch.setattr(ss, "SUPABASE_URL", f"http://127.0.0.1:{httpd.server_address[1]}")
@@ -402,16 +430,29 @@ def test_background_task_trace_links_request_task_and_storage(auth, fake_storage
         assert r.status_code == 202
         task_id = r.json()["task_id"]
         deadline = time.time() + 10
-        while time.time() < deadline and not any(x["kind"] == "task" and x["op"] == "run" for x in _records()):
+        # R-188: scope to THIS task — the durable queue (now the default) runs
+        # background tasks in other tests too and their run spans stay in the
+        # bounded telemetry window.
+        while time.time() < deadline and not any(
+                x["kind"] == "task" and x["op"] == "run" and x.get("task_id") == task_id
+                for x in _records()):
             time.sleep(0.05)
-    run = [x for x in _records() if x["kind"] == "task" and x["op"] == "run"]
+    run = [x for x in _records() if x["kind"] == "task" and x["op"] == "run"
+           and x.get("task_id") == task_id]
     assert len(run) == 1 and run[0]["task_id"] == task_id and run[0]["outcome"] == "ok"
     trace = run[0]["trace_id"]
     recs = _records(trace)
-    assert {x["kind"] for x in recs} >= {"http", "task", "agent", "tool", "memory", "storage"}
-    queued = [x for x in recs if x["kind"] == "task" and x["op"] == "queued"]
-    assert len(queued) == 1 and queued[0]["task_id"] == task_id
+    # R-188: under the durable queue (now the default) the run is dispatched
+    # by the QUEUE, not the request — the http span is NOT part of the run's
+    # trace. The run tree still links agent/tool/memory/storage to the task.
+    assert {x["kind"] for x in recs} >= {"task", "agent", "tool", "memory", "storage"}
     assert all(x["task_id"] == task_id for x in recs if x["kind"] in ("agent", "tool", "storage"))
+    # the ACCEPT trace (the request) carries the http span and the queued
+    # event for the same task — the two trees are joined by the task_id
+    queued = [x for x in _records() if x["kind"] == "task" and x["op"] == "queued"
+              and x.get("task_id") == task_id]
+    assert len(queued) == 1
+    assert any(x["kind"] == "http" for x in _records(queued[0]["trace_id"]))
     _assert_no_secrets([json.dumps(x) for x in telemetry.recent()] + all_logs)
 
 

@@ -1,0 +1,95 @@
+{
+  "$id": "agos://contracts/storage_task_insert/v2",
+  "additionalProperties": false,
+  "properties": {
+    "idempotency_key": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Idempotency Key"
+    },
+    "max_attempts": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Max Attempts"
+    },
+    "payload": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Payload"
+    },
+    "prompt": {
+      "maxLength": 500,
+      "title": "Prompt",
+      "type": "string"
+    },
+    "specialization": {
+      "title": "Specialization",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "completed",
+        "failed",
+        "accepted",
+        "claimed",
+        "retrying",
+        "waiting",
+        "dead_letter",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "tenant_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tenant Id"
+    }
+  },
+  "required": [
+    "task_id",
+    "specialization",
+    "prompt",
+    "status"
+  ],
+  "title": "TaskInsert",
+  "type": "object",
+  "x-contract-version": 2,
+  "x-direction": "storage",
+  "x-flow": "SupabaseStorage.insert_task -> PostgREST"
+}

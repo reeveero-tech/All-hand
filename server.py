@@ -476,13 +476,20 @@ TASK_RETRY_BASE_S = backpressure._float_env("AGOS_TASK_RETRY_BASE_S", 1.0, 0.01,
 TASK_RETRY_CAP_S = backpressure._float_env("AGOS_TASK_RETRY_CAP_S", 30.0, 0.01, 3600.0)
 backpressure.validate_env()     # an invalid AGOS_BREAKER_* fails the start
 
-# R-163 (D-082): the durable queue is OPT-IN (precedent: AGOS_AGENT_IMPL,
-# D-037) — active only when storage is configured AND the operator explicitly
-# enables it. Default off keeps the volatile path (and its documented limits)
-# for every deployment that has not opted in; enabling it in production is an
-# owner decision (Q-026: no production setting changes without one).
+# R-188 (D-102): the durable queue is now the DEFAULT — active whenever
+# storage is configured. R-163 (D-082) shipped it OPT-IN; the red test
+# tests/test_r188_task_loss.py proved the default volatile path LOSES a task
+# on process death (the storage row is frozen non-terminal forever — no
+# recovery exists), so keeping the lossy path as the default was a silent
+# data-loss default. AGOS_TASK_QUEUE=0 remains the explicit opt-out for
+# deployments that want the volatile path and its documented limits (e.g.
+# no storage configured at all — then there is nothing durable to activate
+# and the flag is moot). Owner-directed activation per the R-188 decision.
+# Limits: this does NOT resurrect rows already stuck before the activation
+# (they carry no lease data); side-effect duplication on recovery is a
+# separate open item; recovery time is not yet measured.
 def _queue_enabled() -> bool:
-    return os.environ.get("AGOS_TASK_QUEUE", "0") == "1" and supabase_configured()
+    return os.environ.get("AGOS_TASK_QUEUE", "1") == "1" and supabase_configured()
 
 # BUG-05 (R-147): the startup log used to report specializations * a hardcoded
 # 50 ("1000 agents total") even though AGENTS_PER_SPEC has controlled the actual
@@ -1591,6 +1598,11 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
     # D-082): a durable run that needs the public LLM fails with the fixed
     # no-consent reason instead of resurrecting consent.
     if supabase_configured() and _queue_enabled():
+        # R-188: self-healing start — the loops normally start in the app
+        # lifespan, but if storage was configured AFTER the app started (tests
+        # monkeypatching, late config) the durable accept would insert a row
+        # no dispatcher ever claims. Idempotent: a no-op when already running.
+        _start_queue_loops()
         storage = get_storage()
         idem = (req.idempotency_key or "").strip() or None
         if idem is not None:

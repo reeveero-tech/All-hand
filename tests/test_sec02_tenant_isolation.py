@@ -511,11 +511,22 @@ class _PostgREST(BaseHTTPRequestHandler):
     def do_PATCH(self):
         table, q = self._table_q()
         patch = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        tid = q["task_id"][0].removeprefix("eq.")
+        # R-188: the durable queue (now the default) claims via a conditional
+        # PATCH with Prefer: return=representation — the fake must answer it
+        # like PostgREST (200 with the updated rows) or no task ever runs.
+        matched = []
         for r in self.rows[table]:
-            if r.get("task_id") == tid:
+            hit = all(
+                (str(r.get(k)) in v[0][4:-1].split(",") if v[0].startswith("in.(")
+                 else str(r.get(k)) == v[0].removeprefix("eq."))
+                for k, v in q.items() if k != "select")
+            if hit:
                 r.update({k: v for k, v in patch.items() if k != "tenant_id"})
-        self._send(204)
+                matched.append(r)
+        if "return=representation" in (self.headers.get("Prefer") or ""):
+            self._send(200, matched)
+        else:
+            self._send(204)
 
     def do_GET(self):
         table, q = self._table_q()

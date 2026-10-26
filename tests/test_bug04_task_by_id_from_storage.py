@@ -59,11 +59,22 @@ class _PostgREST(BaseHTTPRequestHandler):
     def do_PATCH(self):  # noqa: N802
         table, q = self._table_q()
         patch = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        want = q["task_id"].removeprefix("eq.")
+        # R-188: the durable queue (now the default) claims via a conditional
+        # PATCH with Prefer: return=representation — the fake must answer it
+        # like PostgREST (200 with the updated rows) or no task ever runs.
+        matched = []
         for r in self.rows[table]:
-            if r.get("task_id") == want:
+            hit = all(
+                (str(r.get(k)) in v[4:-1].split(",") if v.startswith("in.(")
+                 else str(r.get(k)) == v.removeprefix("eq."))
+                for k, v in q.items() if k != "select")
+            if hit:
                 r.update(patch)
-        self._send(204)
+                matched.append(r)
+        if "return=representation" in (self.headers.get("Prefer") or ""):
+            self._send(200, matched)
+        else:
+            self._send(204)
 
     def do_GET(self):  # noqa: N802
         table, q = self._table_q()
@@ -192,7 +203,11 @@ def test_memory_task_returned_without_db_query(tenants, db):
         r = c.get("/api/tasks/t_mem_1", headers=tenants.headers)
     assert r.status_code == 200
     assert r.json() == server.TASKS["t_mem_1"]                # exactly the memory record
-    assert _task_gets() == []                                 # no storage read
+    # R-188: the durable queue (now the default) polls storage in the
+    # background (dispatcher/reaper scans) — the contract here is that the
+    # MEMORY read itself issues no task-scoped query, not that the process
+    # makes no storage traffic at all.
+    assert all("task_id" not in g for g in _task_gets())     # no task-scoped storage read
 
 
 def test_memory_task_of_other_tenant_is_404_without_db_fallback(tenants, db):
@@ -205,7 +220,7 @@ def test_memory_task_of_other_tenant_is_404_without_db_fallback(tenants, db):
     with TestClient(server.app) as c:
         r = c.get("/api/tasks/t_mem_a", headers=tenants.headers_b)
     assert (r.status_code, r.json()) == (404, NOT_FOUND)
-    assert _task_gets() == []
+    assert all("task_id" not in g for g in _task_gets())     # R-188: no task-scoped storage read
 
 
 # ----------------------------------------------------------- isolation
@@ -220,7 +235,10 @@ def test_other_tenant_stored_task_is_identical_to_missing(tenants, db):
     assert cross.content == missing.content
     assert "stored output" not in cross.text and "t_owned_by_a" not in cross.text
     # the refusal comes from the scoped query: B's tenant filter, not a post-filter
-    assert _task_gets()[0] == {"task_id": "eq.t_owned_by_a", "tenant_id": "eq.other_tenant", "limit": "1"}
+    # (R-188: the durable queue's background scans are visible in the log —
+    # assert on the task-scoped query, not on the first recorded GET)
+    scoped = [g for g in _task_gets() if "task_id" in g]
+    assert scoped[0] == {"task_id": "eq.t_owned_by_a", "tenant_id": "eq.other_tenant", "limit": "1"}
 
 
 def test_admin_default_scope_vs_all_tenants(tenants, db):
@@ -232,10 +250,12 @@ def test_admin_default_scope_vs_all_tenants(tenants, db):
     assert (default.status_code, default.json()) == (404, NOT_FOUND)
     assert everything.status_code == 200 and everything.json()["tenant_id"] == "test_tenant"
     assert user_all.status_code == 403                         # unchanged SEC-02 rule
-    gets = _task_gets()
-    assert gets[0] == {"task_id": "eq.t_of_a", "tenant_id": "eq.test_admin", "limit": "1"}
-    assert gets[1] == {"task_id": "eq.t_of_a", "limit": "1"}   # ALL_TENANTS: no tenant filter
-    assert len(gets) == 2                                      # the 403 never reached storage
+    # R-188: task-scoped GETs only — the durable queue's background scans
+    # (status/order/limit, no task_id) are recorded too and are not requests
+    scoped = [g for g in _task_gets() if "task_id" in g]
+    assert scoped[0] == {"task_id": "eq.t_of_a", "tenant_id": "eq.test_admin", "limit": "1"}
+    assert scoped[1] == {"task_id": "eq.t_of_a", "limit": "1"}   # ALL_TENANTS: no tenant filter
+    assert len(scoped) == 2                                  # the 403 never reached storage
 
 
 def test_legacy_null_owner_row_is_unreadable_by_tenants(tenants, db):
@@ -261,7 +281,7 @@ def test_anonymous_is_401_and_never_reaches_storage(tenants, db):
     with TestClient(server.app) as c:
         r = c.get("/api/tasks/t_anon")
     assert r.status_code == 401
-    assert _task_gets() == []
+    assert all("task_id" not in g for g in _task_gets())     # R-188: the anonymous request never reached storage
 
 
 # ---------------------------------------------------------- exact query
