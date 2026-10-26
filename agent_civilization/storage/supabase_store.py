@@ -662,24 +662,32 @@ class SupabaseStorage:
     async def pin_task_recipient(self, task_id: str, claim_token: str,
                                  payload: Dict[str, Any]) -> Optional[bool]:
         """R-188 recipient stability: pin the chosen external recipient's
-        identity (name + endpoint binding — NEVER an API key) into the row's
-        payload BEFORE the first external send, so an at-least-once
-        redelivery reaches the SAME recipient (the idempotency key then
-        protects the effect there). Guarded by the CURRENT claim (claim
-        token) and the claimed/running state: a lost claim, a recovered row
-        or a cancelled row matches 0 rows and pins NOTHING — the caller must
-        then send nothing (zero external sends on pin failure). The payload
-        is written whole by the caller, who merged the pin into the row's
-        existing payload (the rest of the payload is preserved); a previous
-        pin is never replaced (the caller pins only when no pin exists).
-        Returns True (pinned), False (0 rows matched — the claim is not
-        ours), or None (the request itself failed — nothing pinned)."""
+        identity (name + the destination's PUBLIC form — never an API key,
+        never the raw URL) into the row's payload BEFORE the first external
+        send, so an at-least-once redelivery reaches the SAME recipient
+        (the idempotency key then protects the effect there). Guarded by
+        the CURRENT claim (claim token) and the claimed/running state, plus
+        a NO-REBIND guard: the write applies only while the pin key is
+        ABSENT (the PostgREST JSON-path filter ``payload->_agos_recipient=
+        is.null``) — a second write, from the same or a stale claim,
+        matches 0 rows and pins nothing. The payload is written whole by
+        the caller, who merged the pin into the row's existing payload
+        (the rest of the payload is preserved). A lost claim, a recovered
+        row or a cancelled row also matches 0 rows — the caller must then
+        send nothing (zero external sends on pin failure). Returns True
+        (pinned), False (0 rows matched — the claim is not ours, or a pin
+        already exists), or None (the request itself failed — nothing
+        pinned)."""
         rows = await self._queue_patch(
             "queue_pin_recipient",
             {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
-             "status": "in.(claimed,running)"},
+             "status": "in.(claimed,running)",
+             # no-rebind guard: only a row with NO pin yet can be pinned
+             "payload->_agos_recipient": "is.null"},
             {"payload": _jsonable(payload)},
         )
+        if rows is None:
+            return None
         return bool(rows) and str(rows[0].get("task_id")) == task_id
 
     @_traced("queue_transition")

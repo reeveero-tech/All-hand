@@ -948,12 +948,23 @@ async def _defer(task_id: str, claim_token: str, sp, storage, rec,
     line). The wait is UNBOUNDED by design: a pinned recipient that was
     removed or rebound never silently reroutes to another recipient. The
     deferral uses the same jittered, growing back-off as the capacity path
-    (R-164)."""
+    (R-164).
+
+    The record (and the queue state) is touched ONLY when the release is
+    CONFIRMED: an unconfirmed release means the claim was lost (a newer
+    claim or a CANCELLATION may own the row now) — touching the record
+    then could resurrect a cancelled task's public state or clobber a newer
+    claim's state, so nothing is modified beyond the log and the span."""
+    confirmed = await storage.release_task(task_id, claim_token, "queued") is True
+    if not confirmed:
+        logger.warning("Task %s deferral not confirmed by the store; the record "
+                      "is left untouched (a newer claim or a cancellation may own the row)",
+                       task_id)
+        sp.set(outcome="deferred")
+        return
     n = _QUEUE_DEFERRALS[task_id] = _QUEUE_DEFERRALS.get(task_id, 0) + 1
     _QUEUE_BACKOFF[task_id] = time.time() + backpressure.backoff_delay(
         n, TASK_RETRY_BASE_S, TASK_RETRY_CAP_S)
-    if await storage.release_task(task_id, claim_token, "queued") is not True:
-        logger.warning("Task %s deferral not confirmed by the store; lease expiry recovers it", task_id)
     _QUEUE_STATE.pop(task_id, None)
     if rec is not None:
         rec["status"] = "queued"
@@ -1005,20 +1016,13 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
     # said Saturated, so release_task (claimed -> queued only) silently
     # failed: the "deferred" task waited out a whole lease, lost an attempt
     # and could dead-letter without ever running.
-    try:
-        agent = _pick_agent(specialization)
-    except HTTPException as e:
-        if not await _start():
-            return
-        reason = NO_EXTERNAL_AGENT if specialization == "external" else str(e.detail)
-        await _finish_durable(task_id, specialization, claim_token,
-                              {"ok": False, "agent": None, "specialization": specialization,
-                               "elapsed_s": 0, "result": {"error": reason}}, sp, agent=None)
-        return
     # R-188 recipient stability (a redelivery must reach the SAME external
     # recipient): the pin travels in the row's payload, so it survives the
-    # coordinator's death. Checked BEFORE the first external send.
+    # coordinator's death. Read BEFORE the general selection and BEFORE the
+    # first external send — a pinned task never enters the no-agent failure
+    # path: it waits for ITS recipient.
     pin_state, pin = _durable_recipient(row_payload)
+    agent = None
     if pin_state == "invalid" or (pin_state == "valid" and specialization != "external"):
         # an invalid (or non-external) pin stops the run EXPLICITLY — it is
         # never silently treated as "no pin" (that would pick another
@@ -1032,21 +1036,32 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
             # was removed or disabled — never a silent move to another one
             await _defer(task_id, claim_token, sp, storage, rec, "recipient_pinned_absent")
             return
-        if pinned.url != pin["endpoint"]:
-            # the name exists but its binding changed: a CONFLICT, never a
+        if _pin_endpoint(pinned.url) != pin["endpoint"]:
+            # the name exists but its destination changed: a CONFLICT, never a
             # permission to send to the new destination
             await _defer(task_id, claim_token, sp, storage, rec, "recipient_pinned_conflict")
             return
         agent = pinned
-    elif (specialization == "external" and isinstance(row_payload, dict)
-          and "_agos_prompt" in row_payload and agent is not None):
+    else:
+        try:
+            agent = _pick_agent(specialization)
+        except HTTPException as e:
+            if not await _start():
+                return
+            reason = NO_EXTERNAL_AGENT if specialization == "external" else str(e.detail)
+            await _finish_durable(task_id, specialization, claim_token,
+                                  {"ok": False, "agent": None, "specialization": specialization,
+                                   "elapsed_s": 0, "result": {"error": reason}}, sp, agent=None)
+            return
+    if (pin_state == "absent" and specialization == "external" and agent is not None
+            and isinstance(row_payload, dict) and "_agos_prompt" in row_payload):
         # first dispatch: pin the chosen recipient BEFORE the first send. The
-        # write is fenced by the current claim (guard + representation) — if
-        # it does not durably land, the run sends NOTHING: an unpinned
-        # redelivery could reach a different recipient that never saw the
-        # idempotency key and re-apply the effect.
+        # write is fenced by the current claim (guard + representation + the
+        # no-rebind filter) — if it does not durably land, the run sends
+        # NOTHING: an unpinned redelivery could reach a different recipient
+        # that never saw the idempotency key and re-apply the effect.
         merged = dict(row_payload)
-        merged["_agos_recipient"] = {"name": agent.name, "endpoint": agent.url}
+        merged["_agos_recipient"] = {"name": agent.name, "endpoint": _pin_endpoint(agent.url)}
         pinned_ok = await storage.pin_task_recipient(task_id, claim_token, merged)
         if pinned_ok is not True:
             await _defer(task_id, claim_token, sp, storage, rec, "recipient_pin_unsaved")
@@ -1066,8 +1081,18 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
             n = _QUEUE_DEFERRALS[task_id] = _QUEUE_DEFERRALS.get(task_id, 0) + 1
             _QUEUE_BACKOFF[task_id] = time.time() + backpressure.backoff_delay(
                 n, TASK_RETRY_BASE_S, TASK_RETRY_CAP_S)
+            # R-188 review round: the record (and the queue state) is touched
+            # ONLY when the release is CONFIRMED — an unconfirmed release means
+            # the claim was lost (a newer claim or a CANCELLATION may own the
+            # row now); touching the record then could resurrect a cancelled
+            # task's public state (the same rule as _defer)
             if await storage.release_task(task_id, claim_token, "queued") is not True:
-                logger.warning("Task %s deferral not confirmed by the store; lease expiry recovers it", task_id)
+                logger.warning("Task %s capacity deferral not confirmed by the store; "
+                               "the record is left untouched (a newer claim or a cancellation "
+                               "may own the row)", task_id)
+                _QUEUE_STATE.pop(task_id, None)
+                sp.set(outcome="deferred")
+                return
             _QUEUE_STATE.pop(task_id, None)
             if rec is not None:
                 rec["status"] = "queued"
@@ -1173,11 +1198,16 @@ def _durable_payload(prompt: str, data: Any) -> Dict[str, Any]:
 
 
 _TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")  # telemetry.new_trace_id(): token_hex(16)
-# R-188: a pinned recipient NAME must be identifier-like (telemetry's
-# _SAFE_VALUE pattern) — a foreign or sensitive value is never honored.
-_RECIPIENT_NAME_RE = re.compile(r"^[A-Za-z0-9_.:/{}<>+\-]{0,80}$")
-# R-188: the pin binds the recipient's PUBLIC identity only: name + endpoint
-# URL. An API key is never pinned.
+# R-188: the recipient pin binds the agent's NAME (any non-empty string the
+# registration contract accepts — a plain pydantic str with no pattern; the
+# pin's validation mirrors THAT contract, not telemetry's redaction
+# pattern, so a legally registered name is always pinnable) plus the
+# destination's PUBLIC identity (see _pin_endpoint).
+_RECIPIENT_NAME_MAX = 200
+# R-188: the pin binds the recipient's PUBLIC identity only: name + the
+# URL's public form. An API key is never pinned, and neither is the raw
+# URL (it may carry credentials in userinfo/query/path — R-159 — and the
+# payload is readable through the task API).
 _PIN_KEYS = frozenset({"name", "endpoint"})
 
 
@@ -1199,6 +1229,27 @@ def _durable_trace_id(row: Dict[str, Any]) -> Optional[str]:
     return None
 
 
+def _pin_endpoint(url: str) -> str:
+    """The pin's destination identity: the URL's PUBLIC form —
+    scheme://host[:port], SEC-07's normalization of the external agents' url.
+    The RAW URL may carry credentials in userinfo/query/path (R-159) and the
+    payload is readable through the task API, so the pin NEVER stores the raw
+    URL. Coarser than the full URL by design: two endpoints on the same
+    origin are the same destination service (documented limit — the
+    idempotency key at the recipient still protects the effect)."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        return url  # not a parsable http(s) URL — the pin validation rejects it
+    host = parts.hostname  # userinfo is NOT part of the public identity
+    if not host:
+        return url
+    if parts.port is not None:  # an explicit port survives
+        netloc = f"[{host}]:{parts.port}" if ":" in host else f"{host}:{parts.port}"
+    else:
+        netloc = f"[{host}]" if ":" in host else host
+    return f"{parts.scheme}://{netloc}"
+
+
 def _durable_recipient(payload: Any) -> tuple:
     """R-188 recipient stability: the pinned external recipient, accepted
     ONLY from the KNOWN INTERNAL ENVELOPE that ``_durable_payload`` writes
@@ -1210,26 +1261,35 @@ def _durable_recipient(payload: Any) -> tuple:
       recipient and PINS it (via ``storage.pin_task_recipient``) before the
       first external send;
     - ``("valid", {"name", "endpoint"})`` — a redelivery must honor this
-      binding: same name AND same endpoint. A name whose endpoint changed
-      is a CONFLICT (defer, never a permission to send elsewhere);
+      binding: same name AND same destination (the URL's public form — see
+      ``_pin_endpoint``). A name whose destination changed is a CONFLICT
+      (defer, never a permission to send elsewhere);
     - ``("invalid", None)`` — a pin is present but malformed: the run
       stops EXPLICITLY (defer, zero sends) instead of silently treating it
       as absent and picking another recipient.
 
-    The pin binds the recipient's public identity only (name + endpoint
-    URL); an API key is never pinned. A pin on a non-external row is not
-    honored either — the system only pins external recipients."""
+    The pin binds the recipient's public identity only (name + the URL's
+    public form); an API key is never pinned, and neither is the raw URL.
+    The name is validated against the REGISTRATION contract (any non-empty
+    string ≤ _RECIPIENT_NAME_MAX — the registration endpoint enforces no
+    pattern), not telemetry's redaction pattern. A pin on a non-external
+    row is not honored either — the system only pins external recipients."""
     if not (isinstance(payload, dict) and "_agos_prompt" in payload
             and "_agos_recipient" in payload):
         return ("absent", None)
     pin = payload.get("_agos_recipient")
-    if (isinstance(pin, dict) and set(pin) == _PIN_KEYS
-            and isinstance(pin["name"], str) and _RECIPIENT_NAME_RE.fullmatch(pin["name"])
-            and isinstance(pin["endpoint"], str)
-            and pin["endpoint"].startswith(("http://", "https://"))
+    if not (isinstance(pin, dict) and set(pin) == _PIN_KEYS
+            and isinstance(pin["name"], str) and pin["name"]
+            and len(pin["name"]) <= _RECIPIENT_NAME_MAX):
+        return ("invalid", None)
+    ep = urllib.parse.urlsplit(pin["endpoint"]) if isinstance(pin["endpoint"], str) \
+        else urllib.parse.urlsplit("")
+    if not (isinstance(pin["endpoint"], str) and ep.scheme in ("http", "https")
+            and ep.netloc and not ep.path and not ep.query and not ep.fragment
+            and ep.username is None and ep.password is None
             and len(pin["endpoint"]) <= 2048):
-        return ("valid", {"name": pin["name"], "endpoint": pin["endpoint"]})
-    return ("invalid", None)
+        return ("invalid", None)
+    return ("valid", {"name": pin["name"], "endpoint": pin["endpoint"]})
 
 
 def _unwrap_durable_payload(row: Dict[str, Any]) -> tuple:
