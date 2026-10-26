@@ -311,6 +311,7 @@ class _MultiStageServer:
     requests: dict = {"stage-a": [], "gate": [], "stage-b": []}
     applied: dict = {"stage-a": 0, "stage-b": 0}      # effects actually applied
     applied_keys: dict = {"stage-a": set(), "stage-b": set()}
+    aborted: list = []                                   # client-side cancel witnesses
     gate_armed = threading.Event()
     gate_release = threading.Event()
 
@@ -319,16 +320,36 @@ class _MultiStageServer:
         cls.requests = {"stage-a": [], "gate": [], "stage-b": []}
         cls.applied = {"stage-a": 0, "stage-b": 0}
         cls.applied_keys = {"stage-a": set(), "stage-b": set()}
+        cls.aborted = []
         cls.gate_armed.clear()
         cls.gate_release.clear()
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):  # noqa: N802
             length = int(self.headers.get("Content-Length", 0) or 0)
-            # consume the request body (the stage is keyed by header, not body)
-            self.rfile.read(length)
-            key = self.headers.get("Idempotency-Key")
+            raw = self.rfile.read(length)
             stage = self.path.lstrip("/")
+            if stage == "aborted":
+                # the CLIENT-side cancellation witness: the run's coroutine
+                # was cancelled (recorded from inside the killed/cancelling
+                # process, not from this server's own connection state)
+                try:
+                    _MultiStageServer.aborted.append(
+                        json.loads(raw or b"{}").get("tid"))
+                except Exception:
+                    pass
+                out = json.dumps({"ok": True}).encode()
+                try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(out)))
+                    self.end_headers()
+                    self.wfile.write(out)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                return
+            # consume the request body (the stage is keyed by header, not body)
+            key = self.headers.get("Idempotency-Key")
             if stage not in ("stage-a", "gate", "stage-b"):
                 self.send_response(404)
                 self.end_headers()
@@ -367,15 +388,35 @@ class _MultiStageServer:
 # test setup, injected via PYTHONPATH). TEST-ONLY — declared scope above.
 _MULTISTAGE_WRAPPER_PY = '''"""R-188 test-only wrapper (NOT production code): imports the real server
 and swaps the analyst pool for a two-stage agent so the durable queue can be
-proven on a task whose stage-2 start depends on the coordinator process."""
+proven on a task whose stage-2 start depends on the coordinator process.
+Also swaps the builder pool for a sleepy agent — the RECOVERY positive
+control (a row left claimed/running with a lease by a killed process that the
+next process's reaper MUST recover; proves the recovery machinery is alive)."""
+import asyncio
 import json
 import os
+import urllib.request
 
 import aiohttp
 
 import server
 
 _EFFECT_URL = os.environ["R188_EFFECT_URL"]
+
+
+def _aborted_marker(tid):
+    """Execution-end witness (sync, best-effort): the run's coroutine was
+    CANCELLED at the gate — recorded from the CLIENT side, because waiting
+    for the gate handler on the server side alone proves nothing about the
+    client coroutine's state."""
+    try:
+        req = urllib.request.Request(
+            _EFFECT_URL + "/aborted", method="POST",
+            data=json.dumps({"tid": tid}).encode(),
+            headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=10).read()
+    except Exception:
+        pass  # never mask the cancellation itself
 
 
 class R188TwoStageAgent:
@@ -397,9 +438,15 @@ class R188TwoStageAgent:
                              headers={"Idempotency-Key": tid + ":a"})
             # the gate: stage 2 begins only after the test releases it —
             # while blocked here the coordinator is provably BETWEEN stages
-            await client.post(_EFFECT_URL + "/gate",
-                             json={"prompt": work.get("prompt", "")},
-                             headers={"Idempotency-Key": tid + ":gate"})
+            try:
+                await client.post(_EFFECT_URL + "/gate",
+                                 json={"prompt": work.get("prompt", "")},
+                                 headers={"Idempotency-Key": tid + ":gate"})
+            except asyncio.CancelledError:
+                # execution ended BY THE CANCELLATION, at the checkpoint
+                # boundary (between the stages) — client-side witness
+                _aborted_marker(tid)
+                raise
             # stage 2
             await client.post(_EFFECT_URL + "/stage-b",
                              json={"prompt": work.get("prompt", "")},
@@ -409,9 +456,197 @@ class R188TwoStageAgent:
                 "result": {"answer": "r188 multistage done"}}
 
 
+class R188SleepyAgent:
+    """The recovery positive control: a task still mid-execution when its
+    process is SIGKILLed (row claimed/running with a live lease) — the next
+    process's reaper MUST recover it."""
+    name = "r188-sleepy-agent"
+    specialization = "builder"
+    status = "idle"
+    stats = {"tasks_completed": 0, "tasks_failed": 0, "total_time_s": 0.0}
+
+    async def execute(self, work):
+        import time
+        started = time.time()
+        await asyncio.sleep(float(os.environ.get("R188_SLEEP_S", "20")))
+        return {"ok": True, "agent": self.name,
+                "elapsed_s": round(time.time() - started, 3),
+                "result": {"answer": "r188 sleepy done"}}
+
+
 server.CIVILIZATION["analyst"] = [R188TwoStageAgent()]
+server.CIVILIZATION["builder"] = [R188SleepyAgent()]
 app = server.app
 '''
+
+
+def test_r188_cancellation_stops_running_task_at_checkpoint_boundary(
+        fake_backend, tmp_path):
+    """R-188 cancellation criterion: cancelling a RUNNING task stops it AT
+    THE CHECKPOINT BOUNDARY — the prior effect stays (no rollback invented),
+    and the work after the tested boundary NEVER STARTS. The proof avoids the
+    trap of hiding a cancellation failure behind a closed gate or a kill:
+
+    1. CONTROL (no cancel): a two-stage task blocked at the gate is RELEASED
+       and stage 2 DOES start — proving an open gate allows stage 2, so the
+       main scenario's stop can only be the cancellation, never the barrier.
+    2. MAIN: a second two-stage task is provably between the stages (stage A
+       done BY the coordinator, blocked at the gate, row running with the
+       claim fence and a valid lease) — then CANCELLED while the coordinator
+       is STILL ALIVE and the gate is OPENED: the run's coroutine is provably
+       ended BY THE CANCELLATION (a client-side witness recorded from inside
+       the cancelling process), and stage 2 never begins.
+    3. NO RESURRECTION: the coordinator is then SIGKILLed and a fresh process
+       recovers ANOTHER task (the positive control — a sleepy task left
+       mid-execution with a live lease: its recovery proves the fresh
+       process's reaper is alive and would have resurrected anything
+       recoverable), while the cancelled row stays cancelled across that very
+       recovery cycle: no redelivery of stage A, no stage 2, the public
+       mapping still `failed`/error `cancelled`.
+
+    Honest limits: this proves the cancellation boundary semantics of the
+    TEST two-stage agent (declared scope — the system has no built-in
+    multi-stage execution); the observation window is bounded (the positive
+    control's full recovery cycle), not a forever-proof or a general
+    at-most-once guarantee; no rollback of effects already sent is claimed.
+    """
+    wrapper_dir = str(tmp_path)
+    with open(os.path.join(wrapper_dir, "r188_ms_wrapper.py"), "w") as f:
+        f.write(_MULTISTAGE_WRAPPER_PY)
+    _MultiStageServer._reset()
+    work_httpd = _MultiStageServer.serve()
+    work_url = f"http://127.0.0.1:{work_httpd.server_address[1]}"
+    env_extra = {"R188_EFFECT_URL": work_url, "AGOS_TASK_LEASE_S": "8"}
+    kwargs = dict(env_extra=env_extra, module="r188_ms_wrapper:app",
+                 pythonpath=wrapper_dir)
+    srv = _Server(**kwargs)
+    try:
+        srv.start()
+        # ---- 1. CONTROL (no cancel): an OPEN GATE ALLOWS stage 2 -----------
+        _MultiStageServer.gate_armed.set()
+        status, body = _api(srv.port, "POST", "/api/tasks",
+                           {"specialization": "analyst",
+                            "prompt": "control no cancel"})
+        assert status == 202, body
+        control_tid = body["task_id"]
+        assert _wait_for(lambda: any(
+            r["key"] == f"{control_tid}:gate"
+            for r in _MultiStageServer.requests["gate"]), timeout=30), \
+            "control: never reached the gate"
+        _MultiStageServer.gate_release.set()  # open the gate — NO cancel sent
+        assert _wait_for(lambda: any(
+            r["key"] == f"{control_tid}:b"
+            for r in _MultiStageServer.requests["stage-b"]), timeout=30), \
+            "control: an open gate did NOT allow stage 2 — the barrier " \
+            "cannot distinguish anything in the main scenario"
+        assert _wait_for(lambda: any(
+            r["task_id"] == control_tid and r["status"] == "completed"
+            for r in _row_rows()), timeout=30), \
+            "control: the released task never completed"
+        # ---- 2. MAIN: cancel a task provably BETWEEN the stages -------------
+        # the positive control first: a sleepy task that will still be
+        # mid-execution (row claimed/running with a live lease) when the
+        # coordinator is killed — the fresh process MUST recover it
+        status, body = _api(srv.port, "POST", "/api/tasks",
+                           {"specialization": "builder", "prompt": "sleepy"})
+        assert status == 202, body
+        sleepy_tid = body["task_id"]
+        assert _wait_for(lambda: next(
+            (r["status"] for r in _row_rows() if r["task_id"] == sleepy_tid),
+            None) == "running", timeout=30), \
+            "sleepy positive control never started running"
+        _MultiStageServer.gate_release.clear()  # re-arm BOTH: the release
+        _MultiStageServer.gate_armed.set()      # event must be unset again,
+        # or the main task's gate entry would pass straight through
+        status, body = _api(srv.port, "POST", "/api/tasks",
+                           {"specialization": "analyst",
+                            "prompt": "cancel at checkpoint"})
+        assert status == 202, body
+        tid = body["task_id"]
+        # the premise: stage A completed BY the coordinator, blocked at the
+        # gate, stage 2 not started, row running with the claim fence
+        assert _wait_for(lambda: any(
+            r["key"] == f"{tid}:a" for r in _MultiStageServer.requests["stage-a"])
+            and any(r["key"] == f"{tid}:gate"
+                    for r in _MultiStageServer.requests["gate"]), timeout=30), \
+            "the run never reached the gate between the stages"
+        assert not any(r["key"] == f"{tid}:b"
+                       for r in _MultiStageServer.requests["stage-b"]), \
+            "premise broken: stage 2 already started"
+        row = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row["status"] == "running", \
+            f"premise broken: the row is {row['status']!r}, not running"
+        from datetime import datetime, timezone
+        assert row.get("claim_token"), \
+            "premise broken: no claim token on the running row"
+        assert datetime.fromisoformat(row["lease_expires_at"]) \
+            > datetime.now(timezone.utc), \
+            "premise broken: the lease already expired"
+        # CANCEL while the coordinator is ALIVE (the gate stays closed until
+        # the next step — the stop must be the cancellation, not the barrier)
+        status, body = _api(srv.port, "POST", f"/api/tasks/{tid}/cancel", None)
+        assert status == 200, f"cancel answered {status}, contract says 200"
+        assert body.get("status") == "failed" and body.get("cancelled") is True, body
+        # NOW open the gate — the coordinator is still alive: if the
+        # cancellation failed to stop the run, stage 2 would start here
+        _MultiStageServer.gate_release.set()
+        # the client-side witness: the run's coroutine was cancelled AT the
+        # gate (recorded from inside the cancelling process)
+        assert _wait_for(lambda: tid in _MultiStageServer.aborted, timeout=30), \
+            "no client-side cancellation witness: the run's coroutine was " \
+            "not provably ended by the cancellation"
+        assert not any(r["key"] == f"{tid}:b"
+                       for r in _MultiStageServer.requests["stage-b"]), \
+            "R-188 cancellation violation: stage 2 STARTED after the cancel " \
+            "(gate open, coordinator alive) — the task did not stop at the " \
+            "checkpoint boundary"
+        row = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row["status"] == "cancelled", \
+            f"stored status is {row['status']!r}, not cancelled"
+        status, mem = _api(srv.port, "GET", f"/api/tasks/{tid}")
+        assert status == 200 and mem["status"] == "failed" \
+            and mem["result"]["result"]["error"] == "cancelled"
+        # ---- 3. NO RESURRECTION across a real recovery cycle ----------------
+        # kill the coordinator: the sleepy positive control is mid-execution
+        # (row claimed/running, live lease) — the fresh process MUST recover
+        # it; the cancelled row must stay cancelled through that very cycle
+        srv.kill()
+        stage_a_before = len([r for r in _MultiStageServer.requests["stage-a"]
+                             if r["key"] == f"{tid}:a"])
+        srv2 = _Server(**kwargs)
+        try:
+            srv2.start()  # liveness witness (health-checked)
+            # the observation window: the positive control's FULL recovery
+            # cycle (lease expiry -> reaper -> re-dispatch -> re-run ->
+            # completed). The reaper is proven alive here: it recovered the
+            # sleepy task; anything recoverable gets recovered in this window
+            assert _wait_for(lambda: any(
+                r["task_id"] == sleepy_tid and r["status"] == "completed"
+                for r in _row_rows()), timeout=90), \
+                "positive control: the fresh process never recovered the " \
+                "mid-execution task — the recovery machinery is not proven " \
+                "alive, so the non-resurrection below proves nothing"
+            # the cancelled row: no resurrection in that very window
+            row = next(r for r in _row_rows() if r["task_id"] == tid)
+            assert row["status"] == "cancelled", \
+                f"RESURRECTION: the cancelled row became {row['status']!r}"
+            stage_a_after = len([r for r in _MultiStageServer.requests["stage-a"]
+                                if r["key"] == f"{tid}:a"])
+            assert stage_a_after == stage_a_before, \
+                "RESURRECTION: stage A was redelivered for the cancelled task"
+            assert not any(r["key"] == f"{tid}:b"
+                           for r in _MultiStageServer.requests["stage-b"]), \
+                "RESURRECTION: stage 2 started for the cancelled task"
+            status, mem = _api(srv2.port, "GET", f"/api/tasks/{tid}")
+            assert status == 200 and mem["status"] == "failed" \
+                and mem["result"] is not None \
+                and mem["result"].get("result", {}).get("error") == "cancelled", \
+                f"the cancelled task's public representation after recovery lost " \
+                f"the cancellation error (result={mem.get('result')!r})"
+        finally:
+            srv2.stop()
+    finally:
+        srv.stop()
 
 
 def test_r188_full_acceptance_multistage_running_task_recovers(

@@ -1855,11 +1855,21 @@ async def cancel_task(request: Request, task_id: str,
         internal = task_queue.TaskState.QUEUED  # unknown status: treat as pending
     if task_queue.is_terminal(internal):
         raise HTTPException(409, f"task already finished: {task_queue.public_status(internal)}")
+    if rec is None:
+        rec = _rebuild_task_record(row or {"task_id": task_id, "status": "cancelled",
+                                           "tenant_id": scope})
+    outcome = task_queue.cancelled_outcome(rec.get("agent"), rec.get("specialization") or "")
     storage = get_storage()
     if supabase_configured():
+        # R-188: the outcome and the finish time travel WITH the guarded
+        # transition (same atomic CAS) — before, the row carried only the
+        # bare `cancelled` status, so a FRESH process rebuilding the record
+        # from the row served `failed` with NO result and NO finished_at:
+        # the public representation (D-082: failed + error "cancelled") was
+        # stable only in the cancelling process and lost across a restart.
         moved = await storage.transition_task(
             task_id, ("accepted", "queued", "claimed", "running", "waiting", "retrying"),
-            "cancelled")
+            "cancelled", result=outcome, finished_at="now()")
         if moved is None:
             # the request itself failed (store down): the cancel is NOT
             # confirmed — the row may be re-dispatched later. Answering 409
@@ -1868,10 +1878,6 @@ async def cancel_task(request: Request, task_id: str,
         if moved is False:
             # someone else finished/recovered it between the read and this write
             raise HTTPException(409, "task already finished")
-    if rec is None:
-        rec = _rebuild_task_record(row or {"task_id": task_id, "status": "cancelled",
-                                           "tenant_id": scope})
-    outcome = task_queue.cancelled_outcome(rec.get("agent"), rec.get("specialization") or "")
     rec.update(status="failed", result=outcome, finished_at=time.time())
     _QUEUE_STATE.pop(task_id, None)
     _QUEUE_BACKOFF.pop(task_id, None)
