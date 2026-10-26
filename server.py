@@ -26,6 +26,7 @@ import logging.handlers
 import math
 import os
 import queue
+import re
 import time
 import urllib.parse
 import uuid
@@ -476,13 +477,20 @@ TASK_RETRY_BASE_S = backpressure._float_env("AGOS_TASK_RETRY_BASE_S", 1.0, 0.01,
 TASK_RETRY_CAP_S = backpressure._float_env("AGOS_TASK_RETRY_CAP_S", 30.0, 0.01, 3600.0)
 backpressure.validate_env()     # an invalid AGOS_BREAKER_* fails the start
 
-# R-163 (D-082): the durable queue is OPT-IN (precedent: AGOS_AGENT_IMPL,
-# D-037) — active only when storage is configured AND the operator explicitly
-# enables it. Default off keeps the volatile path (and its documented limits)
-# for every deployment that has not opted in; enabling it in production is an
-# owner decision (Q-026: no production setting changes without one).
+# R-188 (D-102): the durable queue is now the DEFAULT — active whenever
+# storage is configured. R-163 (D-082) shipped it OPT-IN; the red test
+# tests/test_r188_task_loss.py proved the default volatile path LOSES a task
+# on process death (the storage row is frozen non-terminal forever — no
+# recovery exists), so keeping the lossy path as the default was a silent
+# data-loss default. AGOS_TASK_QUEUE=0 remains the explicit opt-out for
+# deployments that want the volatile path and its documented limits (e.g.
+# no storage configured at all — then there is nothing durable to activate
+# and the flag is moot). Owner-directed activation per the R-188 decision.
+# Limits: this does NOT resurrect rows already stuck before the activation
+# (they carry no lease data); side-effect duplication on recovery is a
+# separate open item; recovery time is not yet measured.
 def _queue_enabled() -> bool:
-    return os.environ.get("AGOS_TASK_QUEUE", "0") == "1" and supabase_configured()
+    return os.environ.get("AGOS_TASK_QUEUE", "1") == "1" and supabase_configured()
 
 # BUG-05 (R-147): the startup log used to report specializations * a hardcoded
 # 50 ("1000 agents total") even though AGENTS_PER_SPEC has controlled the actual
@@ -1026,8 +1034,19 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
 
 
 async def _run_task_durable(task_id: str, specialization: str, prompt: str,
-                           data: Any, claim_token: str) -> None:
-    telemetry.bind_task(task_id)
+                           data: Any, claim_token: str,
+                           trace_id: Optional[str] = None) -> None:
+    if trace_id:
+        # R-159/R-188: the run CONTINUES the accept request's trace (stored
+        # in the row's payload) — the request and the run are ONE trace.
+        telemetry.adopt_trace(trace_id, task_id)
+    else:
+        # R-159/R-188: no valid internal trace to continue — start a FRESH
+        # trace. Never inherit the dispatcher's ambient context: the loops
+        # can be started from a REQUEST context via the self-healing start,
+        # and a leaked ambient trace would silently join unrelated requests
+        # to this run. Legacy rows (no trace_id) get their own trace as before.
+        telemetry.start_trace(task_id)
     try:
         with telemetry.span("task", "run", specialization=specialization) as sp:
             await _run_task_durable_traced(sp, task_id, specialization, prompt, data, claim_token)
@@ -1059,8 +1078,38 @@ def _durable_payload(prompt: str, data: Any) -> Dict[str, Any]:
     inside the payload under the reserved ``_agos_prompt`` key (the dispatcher
     unwraps it). Without this, a durable task with a prompt longer than 500
     chars would execute on a truncated input — silent data loss, not a logging
-    bound."""
-    return {"_agos_prompt": prompt, "data": data}
+    bound.
+
+    R-159/R-188: the accept request's trace_id travels too, under the
+    reserved ``_agos_trace_id`` key — the dispatcher adopts it before running
+    (``_durable_trace_id``), so the request and the run stay ONE trace
+    across the queue boundary."""
+    payload: Dict[str, Any] = {"_agos_prompt": prompt, "data": data}
+    ctx = telemetry.current()
+    if ctx is not None:
+        payload["_agos_trace_id"] = ctx.trace_id
+    return payload
+
+
+_TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")  # telemetry.new_trace_id(): token_hex(16)
+
+
+def _durable_trace_id(row: Dict[str, Any]) -> Optional[str]:
+    """The accept request's trace_id from the row's payload. Accepted ONLY
+    from the KNOWN INTERNAL ENVELOPE that ``_durable_payload`` writes (its
+    reserved ``_agos_prompt`` key is always present — a raw/foreign payload
+    that merely matches the id format is rejected) AND in the internal
+    trace-id format (telemetry.new_trace_id = token_hex(16) → 32 lowercase
+    hex chars). A foreign or sensitive value under the reserved key is
+    ignored and the run starts its own trace — payload data must never
+    become an emitted trace_id (R-159's no-leak guarantee). None for legacy
+    rows with raw-data payloads."""
+    payload = row.get("payload")
+    if isinstance(payload, dict) and "_agos_prompt" in payload:
+        t = payload.get("_agos_trace_id")
+        if isinstance(t, str) and _TRACE_ID_RE.fullmatch(t):
+            return t
+    return None
 
 
 def _unwrap_durable_payload(row: Dict[str, Any]) -> tuple:
@@ -1126,7 +1175,8 @@ async def _queue_dispatcher() -> None:
             _rebuild_task_record(claimed)
             full_prompt, data = _unwrap_durable_payload(claimed)
             run = asyncio.create_task(_run_task_durable(tid, str(claimed.get("specialization")),
-                                                        full_prompt, data, token))
+                                                        full_prompt, data, token,
+                                                        trace_id=_durable_trace_id(claimed)))
             _RUNNING_RUNS[tid] = run
             _BACKGROUND_TASKS.add(run)  # R-160: keep a strong reference
             run.add_done_callback(_BACKGROUND_TASKS.discard)
@@ -1591,17 +1641,31 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
     # D-082): a durable run that needs the public LLM fails with the fixed
     # no-consent reason instead of resurrecting consent.
     if supabase_configured() and _queue_enabled():
+        # R-188: self-healing start — the loops normally start in the app
+        # lifespan, but if storage was configured AFTER the app started (tests
+        # monkeypatching, late config) the durable accept would insert a row
+        # no dispatcher ever claims. Idempotent: a no-op when already running.
+        _start_queue_loops()
         storage = get_storage()
         idem = (req.idempotency_key or "").strip() or None
         if idem is not None:
             existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
             if existing is not None:
                 # idempotent replay: the SAME task, its CURRENT public status,
-                # and no second run or side effect
+                # and no second run or side effect. R-159: the replay is
+                # attributed to the EXISTING task — the newly generated id is
+                # discarded here and never bound to the trace.
+                telemetry.bind_task(str(existing.get("task_id")))
                 _rebuild_task_record(existing)
                 return {"task_id": str(existing.get("task_id")),
                         "status": task_queue.public_status(existing.get("status") or "queued"),
                         "duplicate": True}
+        # R-159: bind the NEW task to the accept trace only AFTER the replay
+        # exclusion (a replay binds the existing task instead) and BEFORE any
+        # storage write — the admission/insert spans carry the task_id (the
+        # same ordering as the volatile path), so the whole accept trace is
+        # this task's.
+        telemetry.bind_task(task_id)
         # R-164: admission AFTER the idempotent replay (a replay is never
         # refused — it creates nothing) and BEFORE anything is written. The
         # rate slot is reserved before the first await and given back on
@@ -1642,7 +1706,6 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
                                 "state": "queued", "claim_token": None,
                                 "attempts": 0, "max_attempts": TASK_MAX_ATTEMPTS}
         _prune_tasks()
-        telemetry.bind_task(task_id)
         telemetry.event("task", "queued", specialization=req.specialization)
         await storage.insert_event("task_created", {"task_id": task_id, "specialization": req.specialization},
                                    tenant_id=principal.tenant_id)

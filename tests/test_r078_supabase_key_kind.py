@@ -6,6 +6,8 @@ R-078 /health reported storage "healthy" in that case (docs/audit/M6/logs/49).
 """
 import importlib.util
 import logging
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
@@ -101,8 +103,26 @@ def test_health_degraded_and_status_field_with_public_key(monkeypatch):
 
 def test_health_healthy_with_service_key(monkeypatch):
     _configure(monkeypatch, SERVICE_JWT, "SUPABASE_SERVICE_KEY")
+    # R-188: the durable queue (now the default) probes storage from the
+    # dispatcher/reaper loops — a healthy check needs storage that ANSWERS,
+    # so point it at a minimal live fake instead of a dead port.
+    class _Ok(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(b"[]")
+
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), _Ok)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    monkeypatch.setattr(st, "SUPABASE_URL", f"http://127.0.0.1:{httpd.server_address[1]}")
+    monkeypatch.setattr(st, "_storage", None)
     with _client() as c:
         storage = c.get("/health").json()["checks"]["storage"]
         s = c.get("/api/system/status").json()
+    httpd.shutdown()
     assert storage["status"] == "healthy" and storage["details"]["supabase_key"] == "service"
     assert s["supabase_key"]["kind"] == "service"

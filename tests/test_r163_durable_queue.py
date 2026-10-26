@@ -300,6 +300,24 @@ async def test_r163_start_counts_attempt_and_finish_is_fenced(db):
 
 
 @pytest.mark.asyncio
+async def test_r163_finish_task_writes_finished_at(db):
+    # R-042's live-storage CI run caught a real parity gap (PR #261 storage
+    # job): the volatile path's update_task writes finished_at="now()" on a
+    # terminal status, but the durable fenced path's finish_task didn't —
+    # the row completed with finished_at NULL and the task lifecycle test
+    # (test_task_lifecycle_persisted) failed on live Postgres/PostgREST.
+    # Parity here is a storage-write requirement, not an API nicety: the
+    # task list reads the column.
+    s = await _storage()
+    db["tasks"].append(_row("fin1", "t1", status="queued"))
+    await s.claim_task("fin1", "tok", "2026-10-18T10:01:00+00:00")
+    assert await s.finish_task("fin1", "tok", "completed",
+                              agent_name="analyst_007", result={"ok": True}) is True
+    assert db["tasks"][0]["status"] == "completed"
+    assert db["tasks"][0].get("finished_at") is not None
+
+
+@pytest.mark.asyncio
 async def test_r163_release_gives_claim_back_without_attempt(db):
     s = await _storage()
     db["tasks"].append(_row("rel1", "t1", status="queued", attempts=0))

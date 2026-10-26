@@ -56,7 +56,15 @@ def test_probe_reaches_storage_and_shows_r082_transitions():
     assert len(ph) == 3, r.stdout
     for head, _ in ph:
         # the credential is accepted: tenant routes answer, not 401
-        assert "POST /api/tasks -> 202" in head and "GET /api/tasks -> 200" in head, head
+        assert "GET /api/tasks -> 200" in head, head
+    # R-188: the durable queue (now the default) makes task acceptance
+    # HONEST — with storage down (phase 1) or rejecting writes (phase 2)
+    # the accept FAILS with 503 (no silent RAM fallback: a task accepted
+    # into RAM would be lost on restart); with storage healthy, 202. The
+    # credential is still accepted — 401/403 fails the probe's own check.
+    assert "POST /api/tasks -> 503" in ph[0][0], ph[0][0]
+    assert "POST /api/tasks -> 503" in ph[1][0], ph[1][0]
+    assert "POST /api/tasks -> 202" in ph[2][0], ph[2][0]
     reached = [int(re.search(r"reaching the fake storage: (\d+)", h).group(1)) for h, _ in ph]
     assert reached[0] == 0 and reached[1] > 0 and reached[2] > 0, reached
     (_, h1), (_, h2), (_, h3) = ph

@@ -16,6 +16,7 @@ import hashlib
 import json
 import logging
 import re
+import secrets
 import threading
 import urllib.parse
 import time
@@ -121,25 +122,52 @@ def fake_llm(monkeypatch):
 class _FakePostgREST(BaseHTTPRequestHandler):
     reject: int = 0
     calls: list = []
+    rows: dict = {"tasks": [], "events": [], "agent_stats": []}
 
     def log_message(self, *a):
         pass
 
     def _answer(self):
         n = int(self.headers.get("Content-Length") or 0)
-        if n:
-            self.rfile.read(n)
+        body_json = json.loads(self.rfile.read(n)) if n else None
         self.calls.append((self.command, self.path.split("?")[0]))
-        code = self.reject or (201 if self.command == "POST" else 200 if self.command == "GET" else 204)
-        body = {"message": BACKEND_SECRET} if self.reject else []
-        # R-161c: like PostgREST, a PATCH with return=representation answers 200
-        # with the updated key (the fake accepts every insert, so the row exists)
-        if (not self.reject and self.command == "PATCH"
-                and "return=representation" in (self.headers.get("Prefer") or "")):
-            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
-            code, body = 200, [{"task_id": q["task_id"][0].removeprefix("eq.")}]
+        table = self.path.split("?")[0].rstrip("/").rsplit("/", 1)[-1]
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+        # R-188: the durable queue (now the default) drives the background
+        # task through the store — the fake must actually KEEP rows, apply
+        # PATCHes and answer Prefer: return=representation, or the dispatcher
+        # never sees a claimable task and the run never happens.
+        if self.reject:
+            code, body = self.reject, {"message": BACKEND_SECRET}
+        elif self.command == "POST":
+            self.rows.setdefault(table, []).append(body_json)
+            code, body = 201, []
+        elif self.command == "PATCH":
+            matched = []
+            for r in self.rows.get(table, []):
+                hit = all(
+                    (str(r.get(k)) in v[0][4:-1].split(",") if v[0].startswith("in.(")
+                     else str(r.get(k)) == v[0].removeprefix("eq."))
+                    for k, v in q.items() if k not in ("select",))
+                if hit:
+                    r.update(body_json)
+                    matched.append(r)
+            if "return=representation" in (self.headers.get("Prefer") or ""):
+                code, body = 200, matched
+            else:
+                code, body = 204, None
+        else:  # GET
+            out = list(self.rows.get(table, []))
+            for col, vals in q.items():
+                if col in ("order", "limit", "select"):
+                    continue
+                want = vals[0].removeprefix("eq.")
+                out = [r for r in out if r.get(col) is not None and str(r.get(col)) == want]
+            if "limit" in q:
+                out = out[: int(q["limit"][0])]
+            code, body = 200, out
         # a 204 carries no body (a body on 204 made aiohttp fail intermittently)
-        data = b"" if code == 204 else json.dumps(body).encode()
+        data = b"" if code == 204 or body is None else json.dumps(body).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
@@ -152,6 +180,7 @@ class _FakePostgREST(BaseHTTPRequestHandler):
 @pytest.fixture
 def fake_storage(monkeypatch):
     _FakePostgREST.reject, _FakePostgREST.calls = 0, []
+    _FakePostgREST.rows = {"tasks": [], "events": [], "agent_stats": []}
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), _FakePostgREST)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     monkeypatch.setattr(ss, "SUPABASE_URL", f"http://127.0.0.1:{httpd.server_address[1]}")
@@ -402,17 +431,134 @@ def test_background_task_trace_links_request_task_and_storage(auth, fake_storage
         assert r.status_code == 202
         task_id = r.json()["task_id"]
         deadline = time.time() + 10
-        while time.time() < deadline and not any(x["kind"] == "task" and x["op"] == "run" for x in _records()):
+        # R-188: scope to THIS task — the durable queue (now the default) runs
+        # background tasks in other tests too and their run spans stay in the
+        # bounded telemetry window.
+        while time.time() < deadline and not any(
+                x["kind"] == "task" and x["op"] == "run" and x.get("task_id") == task_id
+                for x in _records()):
             time.sleep(0.05)
-    run = [x for x in _records() if x["kind"] == "task" and x["op"] == "run"]
+    run = [x for x in _records() if x["kind"] == "task" and x["op"] == "run"
+           and x.get("task_id") == task_id]
     assert len(run) == 1 and run[0]["task_id"] == task_id and run[0]["outcome"] == "ok"
     trace = run[0]["trace_id"]
     recs = _records(trace)
+    # R-188: the accept request's trace_id travels in the row payload
+    # (reserved _agos_trace_id key) and the dispatcher ADOPTS it before
+    # running — the request and the run are ONE trace, preserving R-159's
+    # background-task guarantee through the queue boundary (the original
+    # assertion, restored).
     assert {x["kind"] for x in recs} >= {"http", "task", "agent", "tool", "memory", "storage"}
     queued = [x for x in recs if x["kind"] == "task" and x["op"] == "queued"]
     assert len(queued) == 1 and queued[0]["task_id"] == task_id
     assert all(x["task_id"] == task_id for x in recs if x["kind"] in ("agent", "tool", "storage"))
     _assert_no_secrets([json.dumps(x) for x in telemetry.recent()] + all_logs)
+
+
+def test_durable_trace_id_accepts_only_known_internal_trace_ids():
+    """R-159 no-leak (advisor rounds 4+5): a value under the reserved
+    ``_agos_trace_id`` key is accepted ONLY from the KNOWN INTERNAL ENVELOPE
+    that ``_durable_payload`` writes (the reserved ``_agos_prompt`` key is
+    always present in it) AND in the internal trace-id format
+    (telemetry.new_trace_id = token_hex(16) → 32 lowercase hex chars).
+    A raw dict whose value merely MATCHES the format — or a sensitive
+    experimental value in an internal-looking envelope — is ignored and the
+    run starts its own trace: payload data must never become an emitted
+    trace_id."""
+    good = secrets.token_hex(16)
+    # the internal envelope (as _durable_payload writes it) + valid id
+    assert server._durable_trace_id({"payload": {"_agos_prompt": "p", "data": None,
+                                                 "_agos_trace_id": good}}) == good
+    # a RAW dict whose value merely MATCHES the internal format — rejected:
+    # the envelope is unknown (foreign/legacy payload)
+    assert server._durable_trace_id({"payload": {"_agos_trace_id": "a" * 32}}) is None
+    # internal envelope + a sensitive/foreign value — rejected
+    assert server._durable_trace_id(
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": "SECRET-VALUE-do-not-emit"}}) is None
+    assert server._durable_trace_id(
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": "not hex!"}}) is None
+    # wrong case / shape / length / type
+    assert server._durable_trace_id(
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": "ABCDEF0123456789ABCDEF0123456789"}}) is None
+    assert server._durable_trace_id(
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": "abc"}}) is None
+    assert server._durable_trace_id(
+        {"payload": {"_agos_prompt": "p", "_agos_trace_id": 12345}}) is None
+    # legacy raw-data payloads / no payload — no trace to adopt
+    assert server._durable_trace_id({"payload": "raw legacy data"}) is None
+    assert server._durable_trace_id({"payload": {"other": True}}) is None
+    assert server._durable_trace_id({}) is None
+
+
+def test_foreign_payload_trace_value_never_becomes_an_emitted_trace(auth, fake_storage):
+    """R-159 no-leak through the RUN path (advisor round 5): a row whose
+    payload carries a foreign value under the reserved key — even one that
+    MATCHES the internal format — is never adopted. The run starts a FRESH
+    trace: not the payload value, and not an inherited ambient trace (the
+    queue loops can be started from a REQUEST context via the self-healing
+    start — a leaked ambient trace would silently join unrelated requests to
+    this run). Verified via the emitted records, not just the extractor."""
+    foreign = "a" * 32  # matches the internal FORMAT — never written by us
+    with TestClient(server.app) as c:
+        # a normal accept starts the queue loops (self-healing) from the
+        # REQUEST context — the dispatcher loop inherits that request's trace
+        r = c.post("/api/tasks", json={"specialization": "analyst",
+                                       "prompt": "numbers 1 2 3"}, headers=auth)
+        assert r.status_code == 202, r.text
+        # a queued row whose payload carries the foreign value (no internal
+        # envelope — nothing a foreign writer could forge by format alone)
+        fake_storage.rows["tasks"].append({
+            "task_id": "foreign_trace_row", "specialization": "analyst",
+            "prompt": "numbers 4 5 6", "status": "queued",
+            "tenant_id": "any_tenant", "payload": {"_agos_trace_id": foreign},
+        })
+        deadline = time.time() + 20
+        while time.time() < deadline and not any(
+            x["kind"] == "task" and x["op"] == "run" and x.get("task_id") == "foreign_trace_row"
+            for x in telemetry.recent()):
+            time.sleep(0.05)
+    recs = telemetry.recent()
+    # the foreign value NEVER appears as an emitted trace_id
+    assert all(x["trace_id"] != foreign for x in recs)
+    run = [x for x in recs if x["kind"] == "task" and x["op"] == "run"
+           and x.get("task_id") == "foreign_trace_row"]
+    assert run, "the dispatcher must run the foreign row"
+    # the run's trace is FRESH: valid internal format, not the payload value,
+    # and NOT the trace of any http request (nothing inherited from the
+    # dispatcher's ambient context)
+    http_traces = {x["trace_id"] for x in recs if x["kind"] == "http"}
+    assert re.fullmatch(r"[0-9a-f]{32}", run[0]["trace_id"])
+    assert run[0]["trace_id"] != foreign
+    assert run[0]["trace_id"] not in http_traces
+
+
+def test_idempotent_replay_is_attributed_to_the_original_task(auth, fake_storage):
+    """R-159 (advisor round 4): the idempotent replay is attributed to the
+    EXISTING task — the newly generated id is discarded and never bound to
+    the trace. The replay request's http span (recorded at request end, in
+    the bound context) carries the ORIGINAL task id, and no telemetry record
+    carries any other task id."""
+    with TestClient(server.app) as c:
+        r1 = c.post("/api/tasks",
+                    json={"specialization": "analyst", "prompt": "numbers 1 2 3",
+                          "idempotency_key": "replay-attr-1"}, headers=auth)
+        assert r1.status_code == 202, r1.text
+        tid = r1.json()["task_id"]
+        r2 = c.post("/api/tasks",
+                    json={"specialization": "analyst", "prompt": "numbers 1 2 3",
+                          "idempotency_key": "replay-attr-1"}, headers=auth)
+        assert r2.status_code == 202, r2.text
+        body = r2.json()
+        assert body["task_id"] == tid and body["duplicate"] is True
+    task_recs = [r for r in _records() if r.get("task_id")]
+    assert task_recs, "the accepts' spans must be attributed to the task"
+    # the discarded new id never appears — every attributed record is the
+    # ORIGINAL task's
+    assert all(r["task_id"] == tid for r in task_recs)
+    # the replay request's http span (the LAST http span) carries the
+    # original task id — not the id generated for the replay attempt
+    https = [r for r in _records() if r["kind"] == "http"]
+    assert https and https[-1]["task_id"] == tid
 
 
 def test_provider_error_is_diagnosable_without_leaking(auth, fake_llm, all_logs):

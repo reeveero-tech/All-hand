@@ -809,7 +809,7 @@ def test_queue_payload_from_a_newer_writer_is_read_forward_compatibly():
 
 def _sql_columns():
     cols, table = {}, None
-    for f in ("001_init.sql", "002_tenant_isolation.sql"):
+    for f in ("001_init.sql", "002_tenant_isolation.sql", "003_task_queue.sql"):
         for line in (ROOT / "docs" / "sql" / f).read_text().splitlines():
             m = re.match(r"\s*create table if not exists (\w+)", line, re.I)
             if m:

@@ -59,11 +59,22 @@ class _PostgREST(BaseHTTPRequestHandler):
     def do_PATCH(self):  # noqa: N802
         table, q = self._table_q()
         patch = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        want = q["task_id"].removeprefix("eq.")
+        # R-188: the durable queue (now the default) claims via a conditional
+        # PATCH with Prefer: return=representation — the fake must answer it
+        # like PostgREST (200 with the updated rows) or no task ever runs.
+        matched = []
         for r in self.rows[table]:
-            if r.get("task_id") == want:
+            hit = all(
+                (str(r.get(k)) in v[4:-1].split(",") if v.startswith("in.(")
+                 else str(r.get(k)) == v.removeprefix("eq."))
+                for k, v in q.items() if k != "select")
+            if hit:
                 r.update(patch)
-        self._send(204)
+                matched.append(r)
+        if "return=representation" in (self.headers.get("Prefer") or ""):
+            self._send(200, matched)
+        else:
+            self._send(204)
 
     def do_GET(self):  # noqa: N802
         table, q = self._table_q()
@@ -129,6 +140,91 @@ def _task_gets():
     return [q for t, q in _PostgREST.gets if t == "tasks"]
 
 
+def _is_background_scan(query):
+    """The durable queue's system traffic (R-188), matched by EXACT KEY SET
+    AND VALUES against the actual implementation (supabase_store.
+    list_queued_tasks / list_expired_lease_tasks — read before writing
+    this, not guessed):
+      - dispatcher claim scan (called with TASK_DISPATCH_BATCH=50 in these
+        tests): {status: eq.queued, order: created_at.asc, limit: 50} —
+        optionally with the R-164 fairness exclusion tenant_id=not.in.(...)
+        (an EXCLUSION, never a read scope; the DISPATCHER scan only)
+      - reaper recovery scan: {status: in.(claimed,running),
+        lease_expires_at: lt.<now>, order: lease_expires_at.asc, limit: 50}
+        — NO tenant_id ever
+    Anything else — an unscoped wide read, a wrong status value, a wrong
+    limit value, a missing limit, a wrong order, an extra field, a
+    multi-value param — is a request's own read and must be task-scoped;
+    it fails the caller's assertion."""
+    if any(isinstance(v, list) and len(v) != 1 for v in query.values()):
+        return False  # the scans send single values only — multi-value is not one
+    q = {k: (v[0] if isinstance(v, list) else v) for k, v in query.items()}
+    if q.get("task_id") is not None or q.get("idempotency_key") is not None:
+        return False
+    # dispatcher claim scan — the ONLY shape allowed to carry the fairness
+    # exclusion tenant_id=not.in.(...)
+    if (q.get("status") == "eq.queued" and q.get("order") == "created_at.asc"
+            and q.get("limit") == "50"):
+        tenant = q.get("tenant_id")
+        if tenant is None:
+            return set(q) == {"status", "order", "limit"}
+        return (str(tenant).startswith("not.in.(")
+                and set(q) == {"status", "order", "limit", "tenant_id"})
+    # reaper recovery scan — never carries tenant_id
+    if (q.get("status") == "in.(claimed,running)"
+            and str(q.get("lease_expires_at", "")).startswith("lt.")
+            and q.get("order") == "lease_expires_at.asc" and q.get("limit") == "50"):
+        return set(q) == {"status", "lease_expires_at", "order", "limit"}
+    return False
+
+
+def test_background_scan_allowlist_rejects_unknown_shapes():
+    """The R-188 isolation allowlist must accept ONLY the dispatcher's and
+    reaper's actual scan shapes (read from the implementation) and reject
+    every other shape — a wrong status, a wrong limit value, a missing
+    limit, a wrong order, an extra field, a fairness exclusion on the wrong
+    scan, a task-scoped query, a multi-value param."""
+    # the real shapes (as bug04's fake records them: string values)
+    assert _is_background_scan({"status": "eq.queued", "order": "created_at.asc",
+                               "limit": "50"})
+    assert _is_background_scan({"status": "eq.queued", "order": "created_at.asc",
+                               "limit": "50", "tenant_id": "not.in.(a,b)"})
+    assert _is_background_scan({"status": "in.(claimed,running)",
+                               "lease_expires_at": "lt.2026-10-26T00:00:00+00:00",
+                               "order": "lease_expires_at.asc", "limit": "50"})
+    # wrong status value
+    assert not _is_background_scan({"status": "eq.completed",
+                                   "order": "created_at.asc", "limit": "50"})
+    # wrong limit value (the dispatcher sends TASK_DISPATCH_BATCH=50)
+    assert not _is_background_scan({"status": "eq.queued", "order": "created_at.asc",
+                                   "limit": "1"})
+    # missing limit
+    assert not _is_background_scan({"status": "eq.queued", "order": "created_at.asc"})
+    # wrong order
+    assert not _is_background_scan({"status": "eq.queued", "order": "created_at.desc",
+                                   "limit": "50"})
+    # extra field
+    assert not _is_background_scan({"status": "eq.queued", "order": "created_at.asc",
+                                   "limit": "50", "select": "*"})
+    # a tenant READ scope (not an exclusion)
+    assert not _is_background_scan({"status": "eq.queued", "order": "created_at.asc",
+                                   "limit": "50", "tenant_id": "eq.some_tenant"})
+    # the fairness exclusion does NOT belong to the reaper scan
+    assert not _is_background_scan({"status": "in.(claimed,running)",
+                                     "lease_expires_at": "lt.2026-10-26T00:00:00+00:00",
+                                     "order": "lease_expires_at.asc", "limit": "50",
+                                     "tenant_id": "not.in.(a)"})
+    # a task-scoped query is a request read, never background
+    assert not _is_background_scan({"task_id": "eq.t1", "limit": "1"})
+    # multi-value param — the scans send single values only
+    assert not _is_background_scan({"status": ["eq.queued", "eq.completed"],
+                                    "order": ["created_at.asc"], "limit": ["50"]})
+    # reaper shape without limit
+    assert not _is_background_scan({"status": "in.(claimed,running)",
+                                     "lease_expires_at": "lt.2026-10-26T00:00:00+00:00",
+                                     "order": "lease_expires_at.asc"})
+
+
 # ------------------------------------------------------- restart round trip
 
 def test_task_created_through_api_is_readable_by_id_after_memory_loss(tenants, db):
@@ -192,7 +288,12 @@ def test_memory_task_returned_without_db_query(tenants, db):
         r = c.get("/api/tasks/t_mem_1", headers=tenants.headers)
     assert r.status_code == 200
     assert r.json() == server.TASKS["t_mem_1"]                # exactly the memory record
-    assert _task_gets() == []                                 # no storage read
+    # R-188: the durable queue (now the default) polls storage in the
+    # background (dispatcher/reaper scans) — the contract here is that the
+    # MEMORY read itself issues no read of its own: every recorded GET must
+    # be a KNOWN background scan shape; anything else (including an
+    # unscoped wide read) fails this assertion.
+    assert all(_is_background_scan(g) for g in _task_gets())
 
 
 def test_memory_task_of_other_tenant_is_404_without_db_fallback(tenants, db):
@@ -205,7 +306,7 @@ def test_memory_task_of_other_tenant_is_404_without_db_fallback(tenants, db):
     with TestClient(server.app) as c:
         r = c.get("/api/tasks/t_mem_a", headers=tenants.headers_b)
     assert (r.status_code, r.json()) == (404, NOT_FOUND)
-    assert _task_gets() == []
+    assert all(_is_background_scan(g) for g in _task_gets())  # R-188: only known background scans — the out-of-scope memory hit never read storage
 
 
 # ----------------------------------------------------------- isolation
@@ -220,7 +321,11 @@ def test_other_tenant_stored_task_is_identical_to_missing(tenants, db):
     assert cross.content == missing.content
     assert "stored output" not in cross.text and "t_owned_by_a" not in cross.text
     # the refusal comes from the scoped query: B's tenant filter, not a post-filter
-    assert _task_gets()[0] == {"task_id": "eq.t_owned_by_a", "tenant_id": "eq.other_tenant", "limit": "1"}
+    # (R-188: the durable queue's background scans are visible in the log —
+    # every non-scan GET must be exactly this request's scoped read)
+    scoped = [g for g in _task_gets() if not _is_background_scan(g)]
+    assert scoped == [{"task_id": "eq.t_owned_by_a", "tenant_id": "eq.other_tenant", "limit": "1"},
+                      {"task_id": "eq.t_no_such_id", "tenant_id": "eq.other_tenant", "limit": "1"}]
 
 
 def test_admin_default_scope_vs_all_tenants(tenants, db):
@@ -232,10 +337,13 @@ def test_admin_default_scope_vs_all_tenants(tenants, db):
     assert (default.status_code, default.json()) == (404, NOT_FOUND)
     assert everything.status_code == 200 and everything.json()["tenant_id"] == "test_tenant"
     assert user_all.status_code == 403                         # unchanged SEC-02 rule
-    gets = _task_gets()
-    assert gets[0] == {"task_id": "eq.t_of_a", "tenant_id": "eq.test_admin", "limit": "1"}
-    assert gets[1] == {"task_id": "eq.t_of_a", "limit": "1"}   # ALL_TENANTS: no tenant filter
-    assert len(gets) == 2                                      # the 403 never reached storage
+    # R-188: every non-scan GET must be exactly the two task-scoped reads
+    # (admin default + admin ALL_TENANTS); the 403 never reached storage
+    scoped = [g for g in _task_gets() if not _is_background_scan(g)]
+    assert scoped == [
+        {"task_id": "eq.t_of_a", "tenant_id": "eq.test_admin", "limit": "1"},
+        {"task_id": "eq.t_of_a", "limit": "1"},   # ALL_TENANTS: no tenant filter
+    ]
 
 
 def test_legacy_null_owner_row_is_unreadable_by_tenants(tenants, db):
@@ -261,7 +369,9 @@ def test_anonymous_is_401_and_never_reaches_storage(tenants, db):
     with TestClient(server.app) as c:
         r = c.get("/api/tasks/t_anon")
     assert r.status_code == 401
-    assert _task_gets() == []
+    # R-188: only KNOWN background scan shapes — the anonymous request never
+    # reached storage (any request-shaped read, scoped or not, fails here)
+    assert all(_is_background_scan(g) for g in _task_gets())
 
 
 # ---------------------------------------------------------- exact query

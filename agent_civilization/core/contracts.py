@@ -455,20 +455,36 @@ class QueueTask(_Strict):
 
 # ----------------------------------------------------------- storage writes
 
+# R-188: the durable queue (now the default) writes INTERNAL queue states
+# (accepted/claimed/retrying/waiting/dead_letter/cancelled) and its fencing
+# fields (claim_token, lease_expires_at, attempts) to storage. These are
+# storage-write statuses — the PUBLIC task statuses stay the four above.
+StorageTaskStatus = Literal["queued", "running", "completed", "failed", "accepted",
+                            "claimed", "retrying", "waiting", "dead_letter", "cancelled"]
+
+
 class TaskInsert(_Strict):
     task_id: str
     specialization: str
     prompt: str = Field(max_length=500)
-    status: TaskStatus
+    status: StorageTaskStatus
     tenant_id: Optional[str] = None
+    # R-163 (R-188 default-on): the durable accept's insert fields
+    payload: Optional[Dict[str, Any]] = None
+    idempotency_key: Optional[str] = None
+    max_attempts: Optional[int] = None
 
 
 class TaskUpdate(_Strict):
-    status: TaskStatus
+    status: StorageTaskStatus
     agent_name: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
     elapsed_s: Optional[float] = None
     finished_at: Optional[Literal["now()"]] = None
+    # R-163 (R-188 default-on): the durable queue's fenced transitions
+    attempts: Optional[int] = None
+    claim_token: Optional[str] = None
+    lease_expires_at: Optional[str] = None
 
 
 class EventInsert(_Strict):
@@ -510,8 +526,8 @@ CONTRACTS: Dict[str, tuple] = {
     "memory_list":          (1, MemoryList, "response", "GET /api/memory -> client"),
     "llm_result":           (1, LLMResult, "internal", "LLMClient.complete -> handlers"),
     "queue_task":           (1, QueueTask, "storage", "RedisQueue -> Redis -> RedisQueue"),
-    "storage_task_insert":  (1, TaskInsert, "storage", "SupabaseStorage.insert_task -> PostgREST"),
-    "storage_task_update":  (1, TaskUpdate, "storage", "SupabaseStorage.update_task -> PostgREST"),
+    "storage_task_insert":  (2, TaskInsert, "storage", "SupabaseStorage.insert_task -> PostgREST"),
+    "storage_task_update":  (2, TaskUpdate, "storage", "SupabaseStorage.update_task -> PostgREST"),
     "storage_event_insert": (1, EventInsert, "storage", "SupabaseStorage.insert_event -> PostgREST"),
     "storage_agent_stats":  (1, AgentStatsUpsert, "storage", "SupabaseStorage.upsert_agent_stats -> PostgREST"),
     "stage_artifact":       (1, StageArtifact, "internal", "DAG stage output -> dependent stages (R-165)"),
