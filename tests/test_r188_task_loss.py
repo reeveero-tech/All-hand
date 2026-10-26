@@ -1280,10 +1280,13 @@ def test_r188_pinned_recipient_absent_waits_without_silent_rerouting(fake_backen
         try:
             srv2.start()
             # observation window: several defer/re-dispatch cycles (the
-            # lease expiry + back-off) — the task must stay waiting
+            # lease expiry + the reaper's pass) — the task must stay waiting.
+            # The bounded wait must tolerate the worst honest recovery clock
+            # (lease 8s + a reaper pass 5s + boot) — CI caught 10s as too
+            # tight under load (the settle may legitimately take ~15-20s).
             assert _wait_for(lambda: next(
                 r for r in _row_rows() if r["task_id"] == tid
-            )["status"] in ("queued", "claimed"), timeout=10), \
+            )["status"] in ("queued", "claimed"), timeout=40), \
                 "the pinned task did not settle into the waiting state"
             time.sleep(6)  # a bounded observation window (not an eternity claim)
             row2 = next(r for r in _row_rows() if r["task_id"] == tid)
