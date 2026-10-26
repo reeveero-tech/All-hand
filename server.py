@@ -21,6 +21,7 @@ Security Features:
 
 import asyncio
 import hashlib
+import hmac
 import json
 import logging
 import logging.handlers
@@ -1224,11 +1225,22 @@ _TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")  # telemetry.new_trace_id(): token_
 # pattern, so a legally registered name is always pinnable) plus the
 # destination's PUBLIC identity (see _pin_endpoint).
 _RECIPIENT_NAME_MAX = 200
+# R-188 review round 3: the fingerprint is a KEYED HMAC, not a bare hash — a
+# bare hash of a URL that carries credentials would let anyone who can read
+# the pin (the task API) test password guesses offline. The HMAC key is
+# FIXED across processes (recovery!) and deployments, and is NOT exposed
+# through the task API (the same trust boundary as telemetry's
+# AGOS_TELEMETRY_TENANT_KEY: only the deployment's source/env, never the
+# payload). Changing it invalidates existing pins (they surface as conflicts
+# — fail-safe, documented).
+_PIN_FINGERPRINT_KEY = os.environ.get("AGOS_PIN_FINGERPRINT_KEY", "").encode() \
+    or bytes.fromhex(
+        "7d5c1f0b92a84e63b1d6f8a3c47e09521f6b8d0a4c3e579f2b6d8a1c4e0f3b79")
 # R-188: the pin binds the recipient's PUBLIC identity only: name + the
-# URL's public form + a NON-REVEALING fingerprint of the FULL destination.
-# An API key is never pinned, and neither is the raw URL (it may carry
-# credentials in userinfo/query/path — R-159 — and the payload is readable
-# through the task API).
+# URL's public form + a NON-REVEALING keyed fingerprint of the FULL
+# destination. An API key is never pinned, and neither is the raw URL (it
+# may carry credentials in userinfo/query/path — R-159 — and the payload is
+# readable through the task API).
 _PIN_KEYS = frozenset({"name", "endpoint", "fingerprint"})
 
 
@@ -1280,14 +1292,23 @@ def _pin_endpoint(url: str) -> Optional[str]:
 
 
 def _pin_fingerprint(url: str) -> str:
-    """The pin's destination PROOF: a non-revealing fingerprint (sha256) of
-    the FULL raw destination URL — path and query included, because two
-    paths on the same origin may be different destination services with
-    independent idempotency stores, and a destination change must surface as
-    a CONFLICT, not as "the same recipient". One-way by design: the raw
-    URL's credentials (userinfo/query) can never be recovered from the pin,
-    and the payload is readable through the task API."""
-    return hashlib.sha256(url.encode("utf-8")).hexdigest()
+    """The pin's destination PROOF: a keyed fingerprint (HMAC-SHA256) of the
+    FULL raw destination URL — path and query included, because two paths on
+    the same origin may be different destination services with independent
+    idempotency stores, and a destination change must surface as a CONFLICT,
+    not as "the same recipient".
+
+    KEYED, not bare: the pin (and the task's payload) is readable through the
+    task API — a bare hash of a URL that carries credentials would let
+    anyone test password guesses offline against that payload. The HMAC key
+    is fixed across processes (recovery) and deployments and is never in the
+    payload, so the fingerprint discloses nothing verifiable from the
+    payload alone. The raw URL (credentials included) is still never stored.
+
+    The fingerprint still does not "recover" the credentials — it proves
+    destination identity without storing the raw URL."""
+    return hmac.new(_PIN_FINGERPRINT_KEY, url.encode("utf-8"),
+                    hashlib.sha256).hexdigest()
 
 
 def _durable_recipient(payload: Any) -> tuple:
@@ -1313,8 +1334,10 @@ def _durable_recipient(payload: Any) -> tuple:
       cleanly is invalid — the raw value is never echoed or honored.
 
     The pin binds the recipient's public identity only (name + the URL's
-    public form + a one-way fingerprint of the full destination); an API key
-    is never pinned, and neither is the raw URL. The name is validated
+    public form + a KEYED fingerprint of the full destination — HMAC-SHA256
+    with a fixed key that is never exposed through the task API; a bare hash
+    would let anyone who can read the pin test credential guesses offline);
+    an API key is never pinned, and neither is the raw URL. The name is validated
     against the REGISTRATION contract (any non-empty string ≤
     _RECIPIENT_NAME_MAX — the registration endpoint enforces the SAME
     contract), not telemetry's redaction pattern. A pin on a non-external

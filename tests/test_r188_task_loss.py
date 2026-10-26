@@ -1290,15 +1290,16 @@ def test_r188_recipient_stability_across_recovery(fake_backend):
             assert sum(1 for r in a_state.requests if r["key"] == tid) >= 2, \
                 "the recovery never re-delivered to the pinned recipient A"
             # the pin is durable in the row (the PUBLIC identity only: name +
-            # the URL's public form scheme://host[:port] + a one-way
+            # the URL's public form scheme://host[:port] + a one-way keyed
             # fingerprint of the FULL destination — NEVER the raw URL, which
             # may carry credentials)
             done = next(r for r in _row_rows() if r["task_id"] == tid)
             pin = (done.get("payload") or {}).get("_agos_recipient")
+            import server as sv
             _u = urllib.parse.urlsplit(a_url)
             assert pin == {"name": "r188-a",
                            "endpoint": f"{_u.scheme}://{_u.netloc}",
-                           "fingerprint": hashlib.sha256(a_url.encode()).hexdigest()}, \
+                           "fingerprint": sv._pin_fingerprint(a_url)}, \
                 f"the durable pin is wrong or missing (or leaked the raw URL): {pin!r}"
             # readable through the new process (no loss visible to the caller)
             status, mem = _api(srv2.port, "GET", f"/api/tasks/{tid}")
@@ -1457,8 +1458,9 @@ def test_r188_pin_never_leaks_url_credentials(fake_backend):
         assert _wait_for(_pin_landed, timeout=20), "the pin never landed"
         row = next(r for r in _row_rows() if r["task_id"] == tid)
         pin = row["payload"]["_agos_recipient"]
+        import server as sv
         assert pin == {"name": "r188-a4", "endpoint": f"{u.scheme}://{u.netloc}",
-                       "fingerprint": hashlib.sha256(cred_url.encode()).hexdigest()}, \
+                       "fingerprint": sv._pin_fingerprint(cred_url)}, \
             f"the pin must be the PUBLIC form only (no credentials): {pin!r}"
         # the stored payload never carries the credentials
         assert "secret-r188" not in json.dumps(row["payload"]), \
@@ -1829,10 +1831,16 @@ def test_r188_same_origin_path_change_is_a_conflict(fake_backend):
         row = next(r for r in _row_rows() if r["task_id"] == tid)
         assert row["status"] == "running" and row.get("claim_token")
         pin = (row.get("payload") or {}).get("_agos_recipient")
+        import server as sv
         assert pin == {"name": "r188-a8",
                        "endpoint": urllib.parse.urlsplit(url_a)._replace(path="", query="", fragment="").geturl(),
-                       "fingerprint": hashlib.sha256(url_a.encode()).hexdigest()}, \
+                       "fingerprint": sv._pin_fingerprint(url_a)}, \
             f"the pin does not carry the full destination's fingerprint: {pin!r}"
+        # the SENDS discriminator (not the EFFECTS): the same server uses ONE
+        # idempotency store for both paths, so a redelivery to the second
+        # path would still be deduped (applied would stay 1) — the number of
+        # REQUESTS for the target task is what proves zero new sends
+        sends_before = len([r for r in a_state.requests if r["key"] == tid])
         srv.kill()
         a_state.release.set()
         # the fresh process serves the SAME NAME on a DIFFERENT PATH of the
@@ -1854,10 +1862,15 @@ def test_r188_same_origin_path_change_is_a_conflict(fake_backend):
             assert status == 200
             assert mem.get("wait_reason") == "recipient_pinned_conflict", \
                 f"the wait reason is not the destination conflict: {mem.get('wait_reason')!r}"
-            # zero NEW sends: the first path applied once before the kill and
-            # the second path was never sent to
-            assert a_state.applied == 1, \
+            # zero NEW SENDS: the request count for the target task did not
+            # grow after the conflict appeared (the effect counter alone could
+            # not prove this — the same server's idempotency store would
+            # dedup a redelivery to the other path)
+            assert len([r for r in a_state.requests if r["key"] == tid]) \
+                == sends_before, \
                 "the path-changed task sent to the new destination"
+            assert a_state.applied == 1, \
+                "the path-changed task applied the effect again"
         finally:
             srv2.stop()
     finally:
@@ -1899,6 +1912,57 @@ def test_r188_registration_name_contract_unified(fake_backend):
         srv.stop()
 
 
+def test_r188_env_loader_refuses_unacceptable_names(fake_backend):
+    """REQUIRED behavior (R-188 review round 3): the env loader honours the
+    SAME name contract as the registration endpoint and the pin (a non-empty
+    string of at most 200 characters). An EXTERNAL_AGENTS entry with an
+    unacceptable name is refused by the LOADER itself — before any send or
+    pin — and the skip is logged by POSITION only, never echoing the value
+    (R-160)."""
+    a_state, a_url = _recipient("A9")
+    invalid_name = "n" * 201
+    entries = [
+        {"name": invalid_name, "url": a_url, "model": "", "api_key": ""},
+        {"name": "r188-a9", "url": a_url, "model": "", "api_key": ""},
+    ]
+    env = {"EXTERNAL_AGENTS": json.dumps(entries),
+           "AGOS_TASK_LEASE_S": "8"}
+    srv = _Server(env_extra=env)
+    try:
+        srv.start()
+        s, target = _api(srv.port, "POST", "/api/tasks",
+                         {"specialization": "external",
+                          "prompt": "env loader refuses unacceptable names"})
+        assert s == 202, target
+        tid = target["task_id"]
+        assert _wait_for(lambda: any(r["task_id"] == tid and
+                                     r["status"] == "completed"
+                                     for r in _row_rows()), timeout=40), \
+            "the task never completed at the valid entry"
+        # the task is pinned to the VALID entry — the refused entry was
+        # never loadable, so it is not pinnable and not sendable
+        import server as sv
+        done = next(r for r in _row_rows() if r["task_id"] == tid)
+        pin = (done.get("payload") or {}).get("_agos_recipient")
+        _u = urllib.parse.urlsplit(a_url)
+        assert pin == {"name": "r188-a9",
+                       "endpoint": f"{_u.scheme}://{_u.netloc}",
+                       "fingerprint": sv._pin_fingerprint(a_url)}, \
+            f"the pin must point at the VALID entry only: {pin!r}"
+        # the loader logged the skip — by POSITION only, never the value
+        # (the full log: the skip line is written at startup, before the
+        # dispatch noise that would push it out of a short tail window)
+        log = srv._tail(200000)
+        assert "EXTERNAL_AGENTS entry 0 skipped" in log, \
+            "the env loader did not log the skipped entry"
+        assert "200 characters" in log, \
+            "the skip line does not cite the name contract"
+        assert invalid_name not in log, \
+            "the server log echoed the unacceptable name"
+    finally:
+        srv.stop()
+
+
 def test_r188_capacity_deferral_rejected_release_touches_nothing():
     """REQUIRED behavior (R-188 review round 2): the capacity deferral (the
     registry's Saturated branch, via _defer_capacity) obeys the SAME
@@ -1931,8 +1995,15 @@ def test_r188_capacity_deferral_rejected_release_touches_nothing():
     sv._QUEUE_STATE.clear()
     sv._QUEUE_DEFERRALS.clear()
     sv._QUEUE_BACKOFF.clear()
+    # SEED the task's queue state, counters and back-off FIRST: the old bug
+    # (popping the queue state and touching the counters on a REJECTED
+    # release) is only OBSERVABLE against pre-existing values — against an
+    # empty dict a pop is invisible
+    sv._QUEUE_STATE[task_id] = sv.task_queue.TaskState.CLAIMED
+    sv._QUEUE_DEFERRALS[task_id] = 7
+    sv._QUEUE_BACKOFF[task_id] = 1234.5
     try:
-        # a REJECTED release: nothing is touched
+        # a REJECTED release: NOTHING is touched — the seeded values survive
         store = _Store(False)
         rec = {"task_id": task_id, "status": "running"}
         sp = _Sp()
@@ -1941,22 +2012,24 @@ def test_r188_capacity_deferral_rejected_release_touches_nothing():
             "the capacity deferral did not attempt the release"
         assert rec == {"task_id": task_id, "status": "running"}, \
             "a rejected capacity release still touched the record"
-        assert not sv._QUEUE_DEFERRALS, \
+        assert sv._QUEUE_DEFERRALS.get(task_id) == 7, \
             "a rejected capacity release still touched the counters"
-        assert not sv._QUEUE_BACKOFF, \
+        assert sv._QUEUE_BACKOFF.get(task_id) == 1234.5, \
             "a rejected capacity release still touched the back-off"
-        assert not sv._QUEUE_STATE, \
+        assert sv._QUEUE_STATE.get(task_id) == sv.task_queue.TaskState.CLAIMED, \
             "a rejected capacity release still touched the queue state"
         assert sp.outcome == "deferred"
-        # a CONFIRMED release: the deferral applies (counters, back-off,
-        # queue state, record)
+        # a CONFIRMED release: the deferral applies — the task's queue state
+        # is ACTUALLY REMOVED (not just an empty dict), the counters grow
         store2 = _Store(True)
         rec2 = {"task_id": task_id, "status": "running"}
         sp2 = _Sp()
         asyncio.run(sv._defer_capacity(task_id, "tok-1", sp2, store2, rec2))
         assert rec2["status"] == "queued"
-        assert sv._QUEUE_DEFERRALS.get(task_id) == 1
+        assert sv._QUEUE_DEFERRALS.get(task_id) == 8
         assert task_id in sv._QUEUE_BACKOFF
+        assert task_id not in sv._QUEUE_STATE, \
+            "a confirmed capacity release did not remove the queue state"
         assert sp2.outcome == "deferred"
     finally:
         for target, old in ((sv._QUEUE_STATE, saved[0]),
