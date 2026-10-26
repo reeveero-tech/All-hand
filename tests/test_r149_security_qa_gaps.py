@@ -272,14 +272,28 @@ def _writes(method=None, table=None):
             if (method is None or w[0] == method) and (table is None or w[1] == table)]
 
 
+def _is_background_scan(query):
+    """The durable queue's system traffic (R-188): the dispatcher's queued
+    scan and the reaper's expired-lease scan — unscoped (no task_id, no
+    tenant_id, no idempotency_key), status-filtered, ordered, bounded.
+    Every OTHER recorded GET is a request's own read and must be
+    task-scoped and tenant-filtered — an unscoped wide read is rejected."""
+    if query.get("task_id") or query.get("tenant_id") or query.get("idempotency_key"):
+        return False
+    return ("status" in query
+            and set(query) <= {"status", "order", "limit", "select", "lease_expires_at"})
+
+
 # ------------------------------------------------------------------ G1: /api/chat
 
 def test_chat_with_every_write_rejected_401_stays_true_and_attempts_all_writes(
         tenant_auth, postgrest, agent_outcome, monkeypatch):
-    # R-188: this test pins the VOLATILE path's write semantics (RAM record +
-    # the exact POST/PATCH/POST/POST write sequence). The durable queue (now
-    # the default) writes different shapes through its fenced transitions —
-    # its own coverage lives in tests/test_r163_durable_queue.py.
+    # R-188: pinned to the volatile mode because the durable queue's
+    # background dispatcher/reaper traffic is recorded by the fake backend
+    # and pollutes this test's exact write-sequence assertion — NOT because
+    # the chat contract changed (chat keeps its own TASKS entry independent
+    # of the durable accept branch). The queue's own coverage lives in
+    # tests/test_r163_durable_queue.py.
     monkeypatch.setenv("AGOS_TASK_QUEUE", "0")
     agent_outcome(True)
     postgrest.policy = {("POST", "tasks"): 401, ("PATCH", "tasks"): 401,
@@ -350,7 +364,8 @@ def test_chat_with_final_update_rejected_500_keeps_memory_truth(
 
 
 def test_chat_with_transport_cut_before_response(tenant_auth, postgrest, agent_outcome, monkeypatch):
-    # R-188: volatile-path write semantics — see the pin note above.
+    # R-188: pinned for background-traffic pollution of the write sequence —
+    # see the pin note above (the chat contract itself is unchanged).
     monkeypatch.setenv("AGOS_TASK_QUEUE", "0")
     agent_outcome(True)
     postgrest.policy = {("POST", "tasks"): "cut"}
@@ -391,9 +406,10 @@ def test_chat_response_and_events_never_carry_the_backend_error_marker(
 
 def test_background_task_with_every_write_rejected_ends_final_not_pending(
         tenant_auth, postgrest, agent_outcome, published, clean_tasks, monkeypatch):
-    # R-188: volatile-path semantics — the durable accept FAILS (503) when
-    # every write is rejected (no silent RAM fallback); its own coverage is
-    # in tests/test_r163_durable_queue.py + the R-164/R-185 probes.
+    # R-188: pinned for background-traffic pollution of the write sequence —
+    # the durable accept's own failure behavior (503, no silent RAM
+    # fallback) is covered in tests/test_r163_durable_queue.py + the
+    # R-164/R-185 probes.
     monkeypatch.setenv("AGOS_TASK_QUEUE", "0")
     agent_outcome(True)
     postgrest.policy = {("POST", "tasks"): 401, ("PATCH", "tasks"): 401,
@@ -427,8 +443,8 @@ def test_background_task_final_update_rejected_after_running_saved(
     update are ACCEPTED, only the FINAL update is rejected. The durable row
     stays stale at `running` (never reported as a saved success) while the
     memory record and the published event carry the true final status."""
-    # R-188: volatile-path fence semantics (unfenced update_task) — the
-    # durable queue's fenced late-result discard has its own R-163 tests.
+    # R-188: pinned for background-traffic pollution of the write sequence —
+    # the durable queue's fenced late-result discard has its own R-163 tests.
     monkeypatch.setenv("AGOS_TASK_QUEUE", "0")
     agent_outcome(True)
     postgrest.policy = {("PATCH", "tasks"): {"status": "completed"}}
@@ -673,9 +689,11 @@ def test_storage_read_timeout_is_degraded_404(tenant_auth, postgrest, clean_task
     with TestClient(server.app) as c:
         r = c.get(f"/api/tasks/{tid}", headers=tenant_auth.headers)
         assert r.status_code == 404 and r.json() == {"detail": "task not found"}
-    for _, _, query, _ in _writes("GET", "tasks"):
-        if not query.get("task_id"):
-            continue  # R-188: the durable queue's background scans (no task_id)
+    # R-188: every non-scan GET is this request's own read — task-scoped
+    # and tenant-filtered; the background scans are system traffic
+    attempts = [q for _, _, q, _ in _writes("GET", "tasks") if not _is_background_scan(q)]
+    assert attempts, "the stored read must be attempted"
+    for query in attempts:
         assert query.get("task_id") == [f"eq.{tid}"]
         assert query.get("tenant_id") == [f"eq.{tenant_auth.tenant}"]
     assert ss.storage_stats()["last_error"]["reason"].startswith("exception: ")
@@ -777,14 +795,14 @@ def test_failed_stored_read_is_404_and_every_attempt_stays_scoped(
         r = c.get(f"/api/tasks/{tid}", headers=tenant_auth.headers)
         assert r.status_code == 404 and r.json() == {"detail": "task not found"}
         assert MARKER not in r.text
-    # R-188: task-scoped attempts only — the durable queue's background scans
-    # (status/order/limit, no task_id) are system traffic, not this request
-    attempts = [q for _, _, q, _ in _writes("GET", "tasks") if q.get("task_id")]
+    # R-188: every non-scan GET is this request's own read — task-scoped and
+    # tenant-filtered; the background scans are system traffic, not requests
+    attempts = [q for _, _, q, _ in _writes("GET", "tasks") if not _is_background_scan(q)]
     assert attempts, "the stored read must be attempted"
     for query in attempts:
         assert query.get("task_id") == [f"eq.{tid}"]
         assert query.get("tenant_id") == [f"eq.{tenant_auth.tenant}"]
-    # no task-scoped attempt without the tenant filter — no unscoped fallback
+    # no attempt without the tenant filter — no unscoped fallback
     assert all(q.get("tenant_id") for q in attempts)
 
 
@@ -797,10 +815,11 @@ def test_failed_stored_read_for_another_tenant_never_leaks_the_row(
     with TestClient(server.app) as c:
         r = c.get(f"/api/tasks/{tid}", headers=tenant_auth.headers)
         assert r.status_code == 404 and MARKER not in r.text
-    for _, _, query, _ in _writes("GET", "tasks"):
-        if not query.get("task_id"):
-            continue  # R-188: the durable queue's background scans
+    attempts = [q for _, _, q, _ in _writes("GET", "tasks") if not _is_background_scan(q)]
+    assert attempts, "the stored read must be attempted"
+    for query in attempts:
         assert query.get("tenant_id") == [f"eq.{tenant_auth.tenant}"]
+        assert query.get("task_id") == [f"eq.{tid}"]
 
 
 def test_control_read_success_returns_the_scoped_row(tenant_auth, postgrest, clean_tasks):

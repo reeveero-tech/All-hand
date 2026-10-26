@@ -8,25 +8,31 @@ entry, no dispatcher for it, no reaper. That silent zombie IS the task loss
 R-188 exists to close.
 
 The red test below reproduces the loss with a deterministic, test-controlled
-barrier: the fake PostgREST is armed to BLOCK the first tasks-table PATCH
-(update/claim — inserts are POSTs and pass through). The server is then
-provably inside the task's mid-flight storage write when the test kills it
-(SIGKILL), the row is captured frozen non-terminal (post-mortem, before the
-fresh process starts — a completion cannot have landed after death), and a
-fresh process on the same backend must bring the task to `completed` with a
-result. RED in the volatile mode: the row stays non-terminal forever.
+barrier: the fake PostgREST is armed BEFORE the task is created to BLOCK the
+first tasks-table PATCH (the mid-flight update/claim — inserts are POSTs and
+pass through). The server is then provably inside the task's mid-flight
+storage write when the test kills it (SIGKILL); the blocked write is
+ABANDONED, never applied (a request that reached the fake is not cancelled
+by the client's death — without the discard it could land post-mortem and
+make the test pass vacuously); the handler confirms the abandonment before
+the row is snapshotted; and the snapshot (a COPY, not a live reference) is
+asserted non-terminal. Only then does a fresh process start on the same
+backend — any terminal state the row reaches afterwards can only be the
+fresh process's own recovery.
 
 Deliberately separated from side-effect duplication (advisor, R-188
 scoping): this test proves NO LOSS only — it does not assert attempt counts
 or single execution (recovery may re-run; whether side effects may duplicate
-is a separate, later test).
+is a separate, later test). Scope note (advisor): this is an INITIAL recovery
+proof on a simple local task — the full criterion (a) (a MULTI-STAGE task)
+is a later item inside R-188.
 
-Honest limits: the backend is the fake PostgREST (the storage CI job runs
-the real one); the analyst prompt is numeric ("3 4 5") so the dispatcher's
-analyst path is the pure-stdlib statistics branch (real_dispatcher._analyst
-— no LLM, no network); the recovery time is not measured here (later R-188
-item); this test does not prove that rows stuck BEFORE the activation are
-recovered (they carry no lease data — documented as a limit).
+Honest limits: the backend is the fake PostgREST (this scenario on a real
+backend is NOT proven here); the analyst prompt is numeric ("3 4 5") so the
+dispatcher's analyst path is the pure-stdlib statistics branch
+(real_dispatcher._analyst — no LLM, no network); recovery of rows stuck
+BEFORE the activation is untested (not claimed either way); the recovery
+time is not measured here.
 """
 from __future__ import annotations
 
@@ -59,20 +65,36 @@ def _free_port() -> int:
 class _BarrierPostgREST(unit._PostgREST):
     """Fake PostgREST with a test-controlled barrier on tasks-table updates.
 
-    While `armed` is set, any PATCH to the tasks table blocks until
-    `release` is set (the handler signals `entered` first). Inserts are
-    POSTs and are never blocked, so task creation itself is unaffected.
+    While `armed` is set, any PATCH to the tasks table blocks. The test
+    releases it in one of two modes: `abandon` set = the blocked write is
+    DISCARDED (never applied — used after the kill so a dead process's
+    write cannot land post-mortem); `abandon` clear = the write proceeds
+    (not used by this test). Inserts are POSTs and are never blocked, so
+    task creation itself is unaffected. A barrier timeout is LOUD (raises) —
+    it never silently lets the write through.
     """
 
     armed = threading.Event()
     release = threading.Event()
     entered = threading.Event()
+    abandoned = threading.Event()
+    abandon = threading.Event()   # set = discard the blocked write (never apply)
 
     def do_PATCH(self):  # noqa: N802
         table, _ = self._table_q()
         if table == "tasks" and self.armed.is_set():
             self.entered.set()
-            self.release.wait(timeout=30)
+            if not self.release.wait(timeout=30):
+                # LOUD: a silent timeout could let the write pass and the
+                # test would prove nothing
+                raise RuntimeError("R-188 barrier: released nobody within 30s")
+            if self.abandon.is_set():
+                self.abandoned.set()
+                try:
+                    self._send(409)  # abandoned: the write does NOT land
+                except BrokenPipeError:
+                    pass  # the client is dead — the write is already discarded
+                return
         try:
             super().do_PATCH()
         except BrokenPipeError:
@@ -185,14 +207,18 @@ def fake_backend():
     unit._PostgREST.mode[0] = "ok"
     _BarrierPostgREST.armed.clear()
     _BarrierPostgREST.release.clear()
+    _BarrierPostgREST.abandon.clear()
     _BarrierPostgREST.entered.clear()
+    _BarrierPostgREST.abandoned.clear()
     from http.server import ThreadingHTTPServer
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), _BarrierPostgREST)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     os.environ["R188_FAKE_URL"] = f"http://127.0.0.1:{httpd.server_address[1]}"
     yield unit._PostgREST.rows
-    _BarrierPostgREST.armed.clear()
+    # teardown: never leave a blocked handler or an armed barrier behind
+    _BarrierPostgREST.abandon.set()
     _BarrierPostgREST.release.set()
+    _BarrierPostgREST.armed.clear()
     httpd.shutdown()
 
 
@@ -219,48 +245,61 @@ def test_r188_activation_matrix(monkeypatch):
 
 
 def test_r188_default_mode_task_in_flight_survives_process_death(fake_backend):
-    """REQUIRED behavior (R-188 criterion A): no task loss on restart.
-
-    A task in flight (provably: the process dies blocked inside the task's
-    mid-flight storage write, and the row is captured frozen non-terminal
-    AFTER death) must be brought to `completed` with a result by the next
-    process. RED in the volatile mode: the row stays non-terminal forever —
-    the default mode has no recovery path at all.
+    """REQUIRED behavior (R-188 criterion A, initial scope): no task loss on
+    restart. A task in flight (provably: the process dies blocked inside the
+    task's mid-flight storage write, the write is discarded, and the row
+    snapshot is captured non-terminal AFTER death) must be brought to
+    `completed` with a result by the next process. RED in the volatile mode:
+    the row stays non-terminal forever — the default mode has no recovery
+    path at all.
     """
     srv = _Server()
     try:
         srv.start()
+        # arm the barrier BEFORE creating the task: the insert (POST) passes,
+        # the task's first mid-flight PATCH (update/claim) blocks — no race
+        # with a task that might otherwise complete first
+        _BarrierPostgREST.armed.set()
         status, body = _api(srv.port, "POST", "/api/tasks",
                            {"specialization": "analyst",
                             "prompt": "summarise 3 4 5"})
         assert status == 202, body
         tid = body["task_id"]
-        # arm the barrier: the next tasks-table PATCH (the mid-flight
-        # update/claim of THIS task) blocks inside the fake backend
-        _BarrierPostgREST.armed.set()
-        # the server is now provably inside the task's storage write
+        # the server is now provably inside the task's mid-flight storage
+        # write (the PATCH is blocked inside the fake backend)
         assert _BarrierPostgREST.entered.wait(timeout=20), \
             "the server never reached the mid-flight tasks-table write"
         # kill it mid-flight
         srv.kill()
-        # free the fake backend for the fresh process
-        _BarrierPostgREST.armed.clear()
+        # ABANDON the blocked write — a dead process's write must never land
+        # (it would fake a recovery the fresh process never performed)
+        _BarrierPostgREST.abandon.set()
         _BarrierPostgREST.release.set()
-        # POST-MORTEM: the row is frozen non-terminal after death — the
-        # completion cannot have landed after the process died
-        row = next(r for r in _row_rows() if r["task_id"] == tid)
-        assert row["status"] not in ("completed", "failed"), \
-            f"premise broken: the task already reached {row['status']!r} before death"
+        assert _BarrierPostgREST.abandoned.wait(timeout=10), \
+            "the blocked write was not abandoned cleanly"
+        # disarm: the fresh process's writes must go through untouched
+        _BarrierPostgREST.armed.clear()
+        _BarrierPostgREST.abandon.clear()
+        _BarrierPostgREST.release.clear()
+        # POST-MORTEM: an independent COPY of the row (not a live reference),
+        # captured after the death and the confirmed abandonment — the
+        # completion cannot have landed: the only write in flight was
+        # discarded and the process is dead
+        frozen = dict(next(r for r in _row_rows() if r["task_id"] == tid))
+        assert frozen["status"] not in ("completed", "failed"), \
+            f"premise broken: the task already reached {frozen['status']!r} before death"
         # a fresh process on the same backend
         srv2 = _Server()
         try:
             srv2.start()
-            # THE assertion of R-188 criterion A — RED in the volatile mode
+            # THE assertion of R-188 criterion A — RED in the volatile mode:
+            # whatever terminal state the row reaches now can only be the
+            # fresh process's own recovery
             assert _wait_for(lambda: any(r["task_id"] == tid and
                                          r["status"] == "completed"
                                          for r in _row_rows()), timeout=20), \
                 (f"R-188 task loss: the task was provably in flight (row frozen "
-                 f"non-terminal, status={row['status']!r}) when the process died "
+                 f"non-terminal, status={frozen['status']!r}) when the process died "
                  f"and the next process never brought it to `completed` — the "
                  f"default (volatile) mode has no recovery; the row is a silent zombie")
             done = next(r for r in _row_rows() if r["task_id"] == tid)

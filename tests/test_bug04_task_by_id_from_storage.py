@@ -140,6 +140,18 @@ def _task_gets():
     return [q for t, q in _PostgREST.gets if t == "tasks"]
 
 
+def _is_background_scan(query):
+    """The durable queue's system traffic (R-188): the dispatcher's queued
+    scan and the reaper's expired-lease scan — unscoped (no task_id, no
+    tenant_id, no idempotency_key), status-filtered, ordered, bounded.
+    Every OTHER recorded GET is a request's own read and must be
+    task-scoped — an unscoped wide read is rejected by this predicate."""
+    if query.get("task_id") or query.get("tenant_id") or query.get("idempotency_key"):
+        return False
+    return ("status" in query
+            and set(query) <= {"status", "order", "limit", "select", "lease_expires_at"})
+
+
 # ------------------------------------------------------- restart round trip
 
 def test_task_created_through_api_is_readable_by_id_after_memory_loss(tenants, db):
@@ -205,9 +217,10 @@ def test_memory_task_returned_without_db_query(tenants, db):
     assert r.json() == server.TASKS["t_mem_1"]                # exactly the memory record
     # R-188: the durable queue (now the default) polls storage in the
     # background (dispatcher/reaper scans) — the contract here is that the
-    # MEMORY read itself issues no task-scoped query, not that the process
-    # makes no storage traffic at all.
-    assert all("task_id" not in g for g in _task_gets())     # no task-scoped storage read
+    # MEMORY read itself issues no read of its own: every recorded GET must
+    # be a KNOWN background scan shape; anything else (including an
+    # unscoped wide read) fails this assertion.
+    assert all(_is_background_scan(g) for g in _task_gets())
 
 
 def test_memory_task_of_other_tenant_is_404_without_db_fallback(tenants, db):
@@ -220,7 +233,7 @@ def test_memory_task_of_other_tenant_is_404_without_db_fallback(tenants, db):
     with TestClient(server.app) as c:
         r = c.get("/api/tasks/t_mem_a", headers=tenants.headers_b)
     assert (r.status_code, r.json()) == (404, NOT_FOUND)
-    assert all("task_id" not in g for g in _task_gets())     # R-188: no task-scoped storage read
+    assert all(_is_background_scan(g) for g in _task_gets())  # R-188: only known background scans — the out-of-scope memory hit never read storage
 
 
 # ----------------------------------------------------------- isolation
@@ -236,9 +249,10 @@ def test_other_tenant_stored_task_is_identical_to_missing(tenants, db):
     assert "stored output" not in cross.text and "t_owned_by_a" not in cross.text
     # the refusal comes from the scoped query: B's tenant filter, not a post-filter
     # (R-188: the durable queue's background scans are visible in the log —
-    # assert on the task-scoped query, not on the first recorded GET)
-    scoped = [g for g in _task_gets() if "task_id" in g]
-    assert scoped[0] == {"task_id": "eq.t_owned_by_a", "tenant_id": "eq.other_tenant", "limit": "1"}
+    # every non-scan GET must be exactly this request's scoped read)
+    scoped = [g for g in _task_gets() if not _is_background_scan(g)]
+    assert scoped == [{"task_id": "eq.t_owned_by_a", "tenant_id": "eq.other_tenant", "limit": "1"},
+                      {"task_id": "eq.t_no_such_id", "tenant_id": "eq.other_tenant", "limit": "1"}]
 
 
 def test_admin_default_scope_vs_all_tenants(tenants, db):
@@ -250,12 +264,13 @@ def test_admin_default_scope_vs_all_tenants(tenants, db):
     assert (default.status_code, default.json()) == (404, NOT_FOUND)
     assert everything.status_code == 200 and everything.json()["tenant_id"] == "test_tenant"
     assert user_all.status_code == 403                         # unchanged SEC-02 rule
-    # R-188: task-scoped GETs only — the durable queue's background scans
-    # (status/order/limit, no task_id) are recorded too and are not requests
-    scoped = [g for g in _task_gets() if "task_id" in g]
-    assert scoped[0] == {"task_id": "eq.t_of_a", "tenant_id": "eq.test_admin", "limit": "1"}
-    assert scoped[1] == {"task_id": "eq.t_of_a", "limit": "1"}   # ALL_TENANTS: no tenant filter
-    assert len(scoped) == 2                                  # the 403 never reached storage
+    # R-188: every non-scan GET must be exactly the two task-scoped reads
+    # (admin default + admin ALL_TENANTS); the 403 never reached storage
+    scoped = [g for g in _task_gets() if not _is_background_scan(g)]
+    assert scoped == [
+        {"task_id": "eq.t_of_a", "tenant_id": "eq.test_admin", "limit": "1"},
+        {"task_id": "eq.t_of_a", "limit": "1"},   # ALL_TENANTS: no tenant filter
+    ]
 
 
 def test_legacy_null_owner_row_is_unreadable_by_tenants(tenants, db):
@@ -281,7 +296,9 @@ def test_anonymous_is_401_and_never_reaches_storage(tenants, db):
     with TestClient(server.app) as c:
         r = c.get("/api/tasks/t_anon")
     assert r.status_code == 401
-    assert all("task_id" not in g for g in _task_gets())     # R-188: the anonymous request never reached storage
+    # R-188: only KNOWN background scan shapes — the anonymous request never
+    # reached storage (any request-shaped read, scoped or not, fails here)
+    assert all(_is_background_scan(g) for g in _task_gets())
 
 
 # ---------------------------------------------------------- exact query

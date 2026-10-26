@@ -442,9 +442,14 @@ def test_background_task_trace_links_request_task_and_storage(auth, fake_storage
     assert len(run) == 1 and run[0]["task_id"] == task_id and run[0]["outcome"] == "ok"
     trace = run[0]["trace_id"]
     recs = _records(trace)
-    # R-188: under the durable queue (now the default) the run is dispatched
-    # by the QUEUE, not the request — the http span is NOT part of the run's
-    # trace. The run tree still links agent/tool/memory/storage to the task.
+    # R-188 — DOCUMENTED CHANGE to the R-159 background-task trace shape:
+    # under the volatile mode the run executed inside the request's context,
+    # so the http span and the run span shared one trace. Under the durable
+    # queue the run is dispatched by the QUEUE (a separate execution context,
+    # by design cross-process capable) — the run is its own trace, and the
+    # two trees are joined by the task_id. The synchronous chain's one-trace
+    # guarantee (test_chain_..._one_trace) is UNCHANGED. Recorded in log 302
+    # + CHANGELOG لاحق 48; flagged for the owner in the PR description.
     assert {x["kind"] for x in recs} >= {"task", "agent", "tool", "memory", "storage"}
     assert all(x["task_id"] == task_id for x in recs if x["kind"] in ("agent", "tool", "storage"))
     # the ACCEPT trace (the request) carries the http span and the queued
