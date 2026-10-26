@@ -939,8 +939,32 @@ async def _finish_durable(task_id: str, specialization: str, claim_token: str,
         })
 
 
+async def _defer(task_id: str, claim_token: str, sp, storage, rec,
+                  reason: str) -> None:
+    """R-188 recipient stability: an EXPLICIT wait — the claim goes back
+    WITHOUT consuming an attempt (the pin checks run while the row is still
+    `claimed`, so the release really happens), the task stays cancellable,
+    and the reason is observable (the record's ``wait_reason`` + a log
+    line). The wait is UNBOUNDED by design: a pinned recipient that was
+    removed or rebound never silently reroutes to another recipient. The
+    deferral uses the same jittered, growing back-off as the capacity path
+    (R-164)."""
+    n = _QUEUE_DEFERRALS[task_id] = _QUEUE_DEFERRALS.get(task_id, 0) + 1
+    _QUEUE_BACKOFF[task_id] = time.time() + backpressure.backoff_delay(
+        n, TASK_RETRY_BASE_S, TASK_RETRY_CAP_S)
+    if await storage.release_task(task_id, claim_token, "queued") is not True:
+        logger.warning("Task %s deferral not confirmed by the store; lease expiry recovers it", task_id)
+    _QUEUE_STATE.pop(task_id, None)
+    if rec is not None:
+        rec["status"] = "queued"
+        rec["wait_reason"] = reason
+    logger.info("Task %s deferred: %s", task_id, reason)
+    sp.set(outcome="deferred")
+
+
 async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt: str,
-                                  data: Any, claim_token: str) -> None:
+                                  data: Any, claim_token: str,
+                                  row_payload: Any = None) -> None:
     """The durable execution path (R-163). Differences from the volatile path:
 
     - SEC-06: the dispatcher's context carries NO request consent — the
@@ -991,6 +1015,44 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
                               {"ok": False, "agent": None, "specialization": specialization,
                                "elapsed_s": 0, "result": {"error": reason}}, sp, agent=None)
         return
+    # R-188 recipient stability (a redelivery must reach the SAME external
+    # recipient): the pin travels in the row's payload, so it survives the
+    # coordinator's death. Checked BEFORE the first external send.
+    pin_state, pin = _durable_recipient(row_payload)
+    if pin_state == "invalid" or (pin_state == "valid" and specialization != "external"):
+        # an invalid (or non-external) pin stops the run EXPLICITLY — it is
+        # never silently treated as "no pin" (that would pick another
+        # recipient and duplicate the effect)
+        await _defer(task_id, claim_token, sp, storage, rec, "recipient_pinned_invalid")
+        return
+    if pin_state == "valid":
+        pinned = next((a for a in EXTERNAL_AGENTS if a.name == pin["name"]), None)
+        if pinned is None:
+            # explicit WAIT (no attempt consumed, cancellable): the recipient
+            # was removed or disabled — never a silent move to another one
+            await _defer(task_id, claim_token, sp, storage, rec, "recipient_pinned_absent")
+            return
+        if pinned.url != pin["endpoint"]:
+            # the name exists but its binding changed: a CONFLICT, never a
+            # permission to send to the new destination
+            await _defer(task_id, claim_token, sp, storage, rec, "recipient_pinned_conflict")
+            return
+        agent = pinned
+    elif (specialization == "external" and isinstance(row_payload, dict)
+          and "_agos_prompt" in row_payload and agent is not None):
+        # first dispatch: pin the chosen recipient BEFORE the first send. The
+        # write is fenced by the current claim (guard + representation) — if
+        # it does not durably land, the run sends NOTHING: an unpinned
+        # redelivery could reach a different recipient that never saw the
+        # idempotency key and re-apply the effect.
+        merged = dict(row_payload)
+        merged["_agos_recipient"] = {"name": agent.name, "endpoint": agent.url}
+        pinned_ok = await storage.pin_task_recipient(task_id, claim_token, merged)
+        if pinned_ok is not True:
+            await _defer(task_id, claim_token, sp, storage, rec, "recipient_pin_unsaved")
+            return
+        # a foreign payload (no internal envelope) is never pinned: it is
+        # outside the internal envelope's guarantees (documented limit)
     try:
         _start_registry_worker()
         AGENT_REGISTRY.heartbeat(WORKER_ID)
@@ -1022,6 +1084,7 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
         return
     if rec is not None:
         rec["agent"] = agent.name
+        rec.pop("wait_reason", None)  # R-188: the wait ended — the run is live
     await _publish(tenant_id, {"type": "task_started", "task_id": task_id, "agent": agent.name,
                                "specialization": specialization})
     # R-188 criterion (b) — PARTIAL, CONDITIONAL: the task's identity travels
@@ -1033,7 +1096,12 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
     # documented in log 302; not claimed beyond it). The key is the task_id
     # (stable across attempts by design), never the claim token or the
     # attempt number (both differ across processes). Recipient stability
-    # across processes is NOT guaranteed (see the honest limits).
+    # across processes is NOT guaranteed (see the honest limits) — UNTIL the
+    # R-188 pin: since this batch the first dispatch pins the recipient
+    # (name + endpoint binding) in the row BEFORE the first send, and a
+    # redelivery honors the pin (same recipient, same key — the effect is
+    # not re-applied there). A recipient that ignores the key stays
+    # at-least-once (contract limit — unchanged).
     outcome = await _execute_bounded(agent, {"prompt": prompt, "data": data,
                                             "task_id": task_id})   # R-164: deadline
     if (TASKS.get(task_id) or {}).get("status") in TERMINAL_TASK_STATES \
@@ -1046,7 +1114,8 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
 
 async def _run_task_durable(task_id: str, specialization: str, prompt: str,
                            data: Any, claim_token: str,
-                           trace_id: Optional[str] = None) -> None:
+                           trace_id: Optional[str] = None,
+                           row_payload: Any = None) -> None:
     if trace_id:
         # R-159/R-188: the run CONTINUES the accept request's trace (stored
         # in the row's payload) — the request and the run are ONE trace.
@@ -1060,7 +1129,8 @@ async def _run_task_durable(task_id: str, specialization: str, prompt: str,
         telemetry.start_trace(task_id)
     try:
         with telemetry.span("task", "run", specialization=specialization) as sp:
-            await _run_task_durable_traced(sp, task_id, specialization, prompt, data, claim_token)
+            await _run_task_durable_traced(sp, task_id, specialization, prompt, data,
+                                           claim_token, row_payload=row_payload)
     except asyncio.CancelledError:
         # the run was cancelled (endpoint or shutdown): the caller already
         # moved the record and the row to cancelled — only release the lease
@@ -1103,6 +1173,12 @@ def _durable_payload(prompt: str, data: Any) -> Dict[str, Any]:
 
 
 _TRACE_ID_RE = re.compile(r"^[0-9a-f]{32}$")  # telemetry.new_trace_id(): token_hex(16)
+# R-188: a pinned recipient NAME must be identifier-like (telemetry's
+# _SAFE_VALUE pattern) — a foreign or sensitive value is never honored.
+_RECIPIENT_NAME_RE = re.compile(r"^[A-Za-z0-9_.:/{}<>+\-]{0,80}$")
+# R-188: the pin binds the recipient's PUBLIC identity only: name + endpoint
+# URL. An API key is never pinned.
+_PIN_KEYS = frozenset({"name", "endpoint"})
 
 
 def _durable_trace_id(row: Dict[str, Any]) -> Optional[str]:
@@ -1121,6 +1197,39 @@ def _durable_trace_id(row: Dict[str, Any]) -> Optional[str]:
         if isinstance(t, str) and _TRACE_ID_RE.fullmatch(t):
             return t
     return None
+
+
+def _durable_recipient(payload: Any) -> tuple:
+    """R-188 recipient stability: the pinned external recipient, accepted
+    ONLY from the KNOWN INTERNAL ENVELOPE that ``_durable_payload`` writes
+    (its reserved ``_agos_prompt`` key must be present — a raw/foreign
+    payload is never treated as carrying a pin). Returns a (state, pin)
+    tuple:
+
+    - ``("absent", None)`` — no pin: the first dispatch picks the
+      recipient and PINS it (via ``storage.pin_task_recipient``) before the
+      first external send;
+    - ``("valid", {"name", "endpoint"})`` — a redelivery must honor this
+      binding: same name AND same endpoint. A name whose endpoint changed
+      is a CONFLICT (defer, never a permission to send elsewhere);
+    - ``("invalid", None)`` — a pin is present but malformed: the run
+      stops EXPLICITLY (defer, zero sends) instead of silently treating it
+      as absent and picking another recipient.
+
+    The pin binds the recipient's public identity only (name + endpoint
+    URL); an API key is never pinned. A pin on a non-external row is not
+    honored either — the system only pins external recipients."""
+    if not (isinstance(payload, dict) and "_agos_prompt" in payload
+            and "_agos_recipient" in payload):
+        return ("absent", None)
+    pin = payload.get("_agos_recipient")
+    if (isinstance(pin, dict) and set(pin) == _PIN_KEYS
+            and isinstance(pin["name"], str) and _RECIPIENT_NAME_RE.fullmatch(pin["name"])
+            and isinstance(pin["endpoint"], str)
+            and pin["endpoint"].startswith(("http://", "https://"))
+            and len(pin["endpoint"]) <= 2048):
+        return ("valid", {"name": pin["name"], "endpoint": pin["endpoint"]})
+    return ("invalid", None)
 
 
 def _unwrap_durable_payload(row: Dict[str, Any]) -> tuple:
@@ -1187,7 +1296,8 @@ async def _queue_dispatcher() -> None:
             full_prompt, data = _unwrap_durable_payload(claimed)
             run = asyncio.create_task(_run_task_durable(tid, str(claimed.get("specialization")),
                                                         full_prompt, data, token,
-                                                        trace_id=_durable_trace_id(claimed)))
+                                                        trace_id=_durable_trace_id(claimed),
+                                                        row_payload=claimed.get("payload")))
             _RUNNING_RUNS[tid] = run
             _BACKGROUND_TASKS.add(run)  # R-160: keep a strong reference
             run.add_done_callback(_BACKGROUND_TASKS.discard)

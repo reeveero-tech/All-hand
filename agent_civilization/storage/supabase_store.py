@@ -658,6 +658,30 @@ class SupabaseStorage:
             return None
         return bool(rows) and str(rows[0].get("task_id")) == task_id
 
+    @_traced("queue_pin_recipient")
+    async def pin_task_recipient(self, task_id: str, claim_token: str,
+                                 payload: Dict[str, Any]) -> Optional[bool]:
+        """R-188 recipient stability: pin the chosen external recipient's
+        identity (name + endpoint binding — NEVER an API key) into the row's
+        payload BEFORE the first external send, so an at-least-once
+        redelivery reaches the SAME recipient (the idempotency key then
+        protects the effect there). Guarded by the CURRENT claim (claim
+        token) and the claimed/running state: a lost claim, a recovered row
+        or a cancelled row matches 0 rows and pins NOTHING — the caller must
+        then send nothing (zero external sends on pin failure). The payload
+        is written whole by the caller, who merged the pin into the row's
+        existing payload (the rest of the payload is preserved); a previous
+        pin is never replaced (the caller pins only when no pin exists).
+        Returns True (pinned), False (0 rows matched — the claim is not
+        ours), or None (the request itself failed — nothing pinned)."""
+        rows = await self._queue_patch(
+            "queue_pin_recipient",
+            {"task_id": f"eq.{task_id}", "claim_token": f"eq.{claim_token}",
+             "status": "in.(claimed,running)"},
+            {"payload": _jsonable(payload)},
+        )
+        return bool(rows) and str(rows[0].get("task_id")) == task_id
+
     @_traced("queue_transition")
     async def transition_task(self, task_id: str, from_statuses: tuple, to_status: str,
                               *, lease_expired_before: Optional[str] = None,

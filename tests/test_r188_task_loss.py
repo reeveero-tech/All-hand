@@ -83,6 +83,10 @@ class _BarrierPostgREST(unit._PostgREST):
     release = threading.Event()
     entered = threading.Event()
     discarded = threading.Event()
+    # R-188 recipient stability: when set, a tasks-table PATCH whose body
+    # carries a "payload" column (only the recipient-pin write does) fails
+    # with 500 — the pin-write-failure condition (zero external sends).
+    fail_payload = [False]
 
     def do_PATCH(self):  # noqa: N802
         table, _ = self._table_q()
@@ -98,6 +102,24 @@ class _BarrierPostgREST(unit._PostgREST):
             except BrokenPipeError:
                 pass  # the client is dead — the write is already discarded
             self.discarded.set()  # END of the discard branch
+            return
+        if table == "tasks" and self.fail_payload[0]:
+            length = int(self.headers.get("Content-Length", 0) or 0)
+            body = self.rfile.read(length) or b""
+            if b'"payload"' in body:
+                self._send(500)
+                return
+            # not the pin write: apply it here (the body is already read —
+            # the base handler cannot re-read it)
+            patch = json.loads(body)
+            q = self._table_q()[1]
+            matched = self._matched(table, q)
+            for r in matched:
+                r.update(patch)
+            if "return=representation" in self.headers.get("Prefer", ""):
+                self._send(200, matched)
+            else:
+                self._send(204)
             return
         try:
             super().do_PATCH()
@@ -846,6 +868,7 @@ def fake_backend():
     _BarrierPostgREST.release.clear()
     _BarrierPostgREST.entered.clear()
     _BarrierPostgREST.discarded.clear()
+    _BarrierPostgREST.fail_payload[0] = False
     from http.server import ThreadingHTTPServer
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), _BarrierPostgREST)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
@@ -1039,3 +1062,295 @@ def test_r188_side_effect_applied_exactly_once_on_recovery(fake_backend):
     finally:
         srv.stop()
         effect_httpd.shutdown()
+
+
+# ------------------------------------------------ recipient stability (the
+# last open half of criterion B): an at-least-once redelivery must reach the
+# SAME external recipient — the routing choice (min tasks_completed, an
+# IN-PROCESS stat) is not durable, so a fresh process can naturally pick a
+# DIFFERENT recipient that never saw the task's idempotency key and would
+# re-apply the effect. The fix: the first dispatch PINS the recipient's
+# public identity (name + endpoint binding — never an API key) in the row's
+# payload BEFORE the first send, and a redelivery honors the pin.
+class _RecipientState:
+    def __init__(self):
+        self.requests = []        # {"key": str|None, "prompt": str} per call
+        self.applied = 0          # effects actually applied
+        self.applied_keys = set()
+        self.block = threading.Event()    # armed: the FIRST request blocks AFTER applying
+        self.release = threading.Event()
+
+
+class _RecipientServer(BaseHTTPRequestHandler):
+    """One external RECIPIENT (R-188 recipient stability). It runs in the
+    TEST process, so it survives the coordinator's SIGKILL: its counters are
+    independent evidence, never the killed process's memory. Same contract
+    as _EffectServer: each call is RECORDED (attempt evidence); the effect
+    applies once per idempotency key; a keyless call cannot be deduplicated.
+    The response barrier is PER RECIPIENT (independent logs and keys)."""
+
+    state: _RecipientState = None  # per-recipient, set by the factory below
+
+    def log_message(self, *a):
+        pass
+
+    def do_POST(self):  # noqa: N802
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        body = json.loads(self.rfile.read(length) or b"{}")
+        key = self.headers.get("Idempotency-Key")
+        prompt = ""
+        try:
+            prompt = str((body.get("messages") or [{}])[0].get("content", ""))
+        except Exception:
+            pass
+        st = self.state
+        st.requests.append({"key": key, "prompt": prompt})
+        if not key or key not in st.applied_keys:
+            st.applied += 1
+            if key:
+                st.applied_keys.add(key)
+        if st.block.is_set():
+            st.block.clear()  # only the FIRST request blocks
+            if not st.release.wait(timeout=30):
+                raise RuntimeError("R-188 recipient barrier: released nobody within 30s")
+        try:
+            out = json.dumps({"choices": [
+                {"message": {"role": "assistant", "content": "r188 recipient run done"}}
+            ]}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(out)))
+            self.end_headers()
+            self.wfile.write(out)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # the client died (SIGKILL) mid-call — expected here
+
+
+def _recipient(name: str):
+    """Start one independent recipient; returns (state, url)."""
+    state = _RecipientState()
+    handler = type(f"_Recipient_{name}", (_RecipientServer,), {"state": state})
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return state, f"http://127.0.0.1:{httpd.server_address[1]}/run"
+
+
+def test_r188_recipient_stability_across_recovery(fake_backend):
+    """REQUIRED behavior (R-188 criterion B, recipient stability): a redelivery
+    must reach the SAME external recipient. The routing choice (min
+    tasks_completed — an in-process stat) is not durable, so a fresh process
+    can naturally pick a DIFFERENT recipient (B) that never saw the task's
+    idempotency key and would re-apply the effect.
+
+    RED before the fix: the redelivery went to B (the natural fresh-process
+    choice) and B applied the effect again (total applied == 2).
+    """
+    # two INDEPENDENT recipients: A (the first dispatch's choice) and B (the
+    # fresh process's natural choice — its own app log and idempotency keys)
+    a_state, a_url = _recipient("A")
+    b_state, b_url = _recipient("B")
+    # srv1: A first in the list (the tie-break) so the target goes to A
+    env1 = {"EXTERNAL_AGENTS": json.dumps([{"name": "r188-a", "url": a_url},
+                                           {"name": "r188-b", "url": b_url}]),
+            "AGOS_TASK_LEASE_S": "8"}
+    srv = _Server(env_extra=env1)
+    try:
+        srv.start()
+        # ---- 1. ROUTING CONTROL: prove the project's ACTUAL routing mechanism
+        # (min tasks_completed, tie -> first in the list) picks B when B has
+        # fewer completed — these controls run in srv1 and complete BEFORE the
+        # barrier is armed, so they cannot disturb the target's kill window.
+        s, b1 = _api(srv.port, "POST", "/api/tasks",
+                    {"specialization": "external", "prompt": "routing control one"})
+        assert s == 202, b1
+        assert _wait_for(lambda: any(r["task_id"] == b1["task_id"] and
+                                     r["status"] == "completed"
+                                     for r in _row_rows()), timeout=40)
+        assert any(r["key"] == b1["task_id"] for r in a_state.requests), \
+            "routing control broken: the first task did not go to A (list tie-break)"
+        s, b2 = _api(srv.port, "POST", "/api/tasks",
+                    {"specialization": "external", "prompt": "routing control two"})
+        assert s == 202, b2
+        assert _wait_for(lambda: any(r["task_id"] == b2["task_id"] and
+                                     r["status"] == "completed"
+                                     for r in _row_rows()), timeout=40)
+        assert any(r["key"] == b2["task_id"] for r in b_state.requests), \
+            "routing control broken: min(tasks_completed) did not pick B"
+        # ---- 2. THE TARGET TASK: dispatched to A via the real path (tie
+        # again: both completed one). A's response is blocked AFTER applying
+        # the effect — the run is mid-flight with the effect landed and the
+        # completion NOT stored (the at-least-once window).
+        a_state.block.set()
+        s, target = _api(srv.port, "POST", "/api/tasks",
+                         {"specialization": "external",
+                          "prompt": "recipient stability exactly once"})
+        assert s == 202, target
+        tid = target["task_id"]
+        assert _wait_for(lambda: a_state.applied >= 2, timeout=20), \
+            "the run never reached recipient A"
+        row = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row["status"] == "running", \
+            f"premise broken: the row is {row['status']!r}, not running"
+        assert row.get("claim_token"), "premise broken: no claim fence"
+        assert a_state.applied == 2 and b_state.applied == 1, \
+            "premise broken: the control/task applications are off"
+        assert not any(r["key"] == tid for r in b_state.requests), \
+            "premise broken: the target already reached B"
+        # kill the coordinator mid-call: the effect landed at A, the
+        # completion is NOT stored — the recovery must re-deliver
+        srv.kill()
+        frozen = dict(next(r for r in _row_rows() if r["task_id"] == tid))
+        assert frozen["status"] not in ("completed", "failed", "cancelled"), \
+            f"premise broken: the task already reached {frozen['status']!r} before death"
+        assert frozen.get("claim_token"), \
+            "premise broken: the claim fence vanished from the frozen row"
+        assert a_state.applied == 2  # the target's effect is still applied exactly once
+        a_state.release.set()  # let A's blocked handler finish (its client is dead)
+        # ---- 3. THE FRESH PROCESS: B FIRST in its list (the natural tie-break
+        # picks B — the routing instability is real, not contrived). The
+        # redelivery must honor the pinned recipient A instead.
+        env2 = {"EXTERNAL_AGENTS": json.dumps([{"name": "r188-b", "url": b_url},
+                                               {"name": "r188-a", "url": a_url}]),
+                "AGOS_TASK_LEASE_S": "8"}
+        srv2 = _Server(env_extra=env2)
+        try:
+            srv2.start()
+            # THE assertion of R-188 recipient stability — RED before the
+            # fix: the fresh process's natural choice was B, B never saw the
+            # key, and the effect was applied again (total 4, not 3)
+            assert _wait_for(lambda: any(r["task_id"] == tid and
+                                         r["status"] == "completed"
+                                         for r in _row_rows()), timeout=40), \
+                ("R-188 recipient instability: the recovered task never "
+                 "completed — the pinned recipient was not honored")
+            assert a_state.applied + b_state.applied == 3, \
+                (f"R-188 recipient instability: the effect was applied "
+                 f"{a_state.applied} times at A and {b_state.applied} times "
+                 f"at B — the redelivery reached a recipient that never saw "
+                 f"the task's idempotency key and re-applied the effect")
+            # the target NEVER reached B (no silent rerouting)
+            assert not any(r["key"] == tid for r in b_state.requests), \
+                "R-188 recipient instability: the target task reached B"
+            # the redelivery DID re-reach A (with the same key — A honored it)
+            assert sum(1 for r in a_state.requests if r["key"] == tid) >= 2, \
+                "the recovery never re-delivered to the pinned recipient A"
+            # the pin is durable in the row (the public identity only)
+            done = next(r for r in _row_rows() if r["task_id"] == tid)
+            pin = (done.get("payload") or {}).get("_agos_recipient")
+            assert pin == {"name": "r188-a", "endpoint": a_url}, \
+                f"the durable pin is wrong or missing: {pin!r}"
+            # readable through the new process (no loss visible to the caller)
+            status, mem = _api(srv2.port, "GET", f"/api/tasks/{tid}")
+            assert status == 200 and mem["status"] == "completed"
+        finally:
+            srv2.stop()
+    finally:
+        srv.stop()
+
+
+def test_r188_pinned_recipient_absent_waits_without_silent_rerouting(fake_backend):
+    """REQUIRED behavior (R-188 recipient stability, absence policy): a task
+    pinned to recipient A, whose recipient is NOT registered in the fresh
+    process (A was removed/disabled), must NOT silently move to B — it waits
+    (no attempt consumed, cancellable, observable reason). The wait is
+    UNBOUNDED by design: a permanently removed recipient never reroutes."""
+    a_state, a_url = _recipient("A2")
+    b_state, b_url = _recipient("B2")
+    env1 = {"EXTERNAL_AGENTS": json.dumps([{"name": "r188-a2", "url": a_url}]),
+            "AGOS_TASK_LEASE_S": "8"}
+    srv = _Server(env_extra=env1)
+    try:
+        srv.start()
+        a_state.block.set()
+        s, target = _api(srv.port, "POST", "/api/tasks",
+                         {"specialization": "external",
+                          "prompt": "absent recipient waits"})
+        assert s == 202, target
+        tid = target["task_id"]
+        assert _wait_for(lambda: a_state.applied >= 1, timeout=20), \
+            "the run never reached recipient A"
+        row = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row["status"] == "running" and row.get("claim_token")
+        srv.kill()
+        a_state.release.set()
+        # the fresh process knows ONLY B — the pinned A is absent there
+        env3 = {"EXTERNAL_AGENTS": json.dumps([{"name": "r188-b2", "url": b_url}]),
+                "AGOS_TASK_LEASE_S": "8"}
+        srv2 = _Server(env_extra=env3)
+        try:
+            srv2.start()
+            # observation window: several defer/re-dispatch cycles (the
+            # lease expiry + back-off) — the task must stay waiting
+            assert _wait_for(lambda: next(
+                r for r in _row_rows() if r["task_id"] == tid
+            )["status"] in ("queued", "claimed"), timeout=10), \
+                "the pinned task did not settle into the waiting state"
+            time.sleep(6)  # a bounded observation window (not an eternity claim)
+            row2 = next(r for r in _row_rows() if r["task_id"] == tid)
+            assert row2["status"] in ("queued", "claimed"), \
+                f"the pinned-absent task left the wait: {row2['status']!r}"
+            # NO silent rerouting: B never received the target
+            assert not any(r["key"] == tid for r in b_state.requests), \
+                "R-188 absence policy broken: the task silently moved to B"
+            # no attempt consumed by the waiting (start_task never ran again)
+            assert int(row2.get("attempts") or 0) == int(row.get("attempts") or 0) + 0, \
+                "the wait consumed an execution attempt"
+            # observable reason through the new process's API
+            status, mem = _api(srv2.port, "GET", f"/api/tasks/{tid}")
+            assert status == 200
+            assert mem.get("wait_reason") == "recipient_pinned_absent", \
+                f"the wait reason is not observable: {mem.get('wait_reason')!r}"
+            # the task stays CANCELLABLE while waiting
+            status, body = _api(srv2.port, "POST", f"/api/tasks/{tid}/cancel")
+            assert status == 200 and body["status"] == "failed" and body["cancelled"], body
+            final = next(r for r in _row_rows() if r["task_id"] == tid)
+            assert final["status"] == "cancelled"
+        finally:
+            srv2.stop()
+    finally:
+        srv.stop()
+
+
+def test_r188_pin_write_failure_sends_nothing(fake_backend):
+    """REQUIRED behavior (R-188 recipient stability, zero-send guarantee): if
+    the pin does not durably land (the storage write fails or the claim is
+    lost), the run sends NOTHING — an unpinned redelivery could reach a
+    different recipient that never saw the idempotency key and re-apply the
+    effect. The store failure here is targeted: only the pin write (the only
+    tasks-table PATCH carrying a payload) is rejected."""
+    a_state, a_url = _recipient("A3")
+    env = {"EXTERNAL_AGENTS": json.dumps([{"name": "r188-a3", "url": a_url}]),
+           "AGOS_TASK_LEASE_S": "8"}
+    srv = _Server(env_extra=env)
+    try:
+        srv.start()
+        _BarrierPostgREST.fail_payload[0] = True  # the pin write fails (500)
+        s, target = _api(srv.port, "POST", "/api/tasks",
+                         {"specialization": "external",
+                          "prompt": "pin write failure sends nothing"})
+        assert s == 202, target
+        tid = target["task_id"]
+        # observation window: several claim -> pin-fail -> defer cycles —
+        # the recipient must NEVER be called (zero external sends)
+        time.sleep(8)
+        assert a_state.requests == [], \
+            "R-188 zero-send broken: the recipient was called without a durable pin"
+        row = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row["status"] in ("queued", "claimed"), \
+            f"the unpinnable task left the wait: {row['status']!r}"
+        assert int(row.get("attempts") or 0) == 0, \
+            "the pin-write failure consumed an execution attempt"
+        # the wait reason is observable
+        status, mem = _api(srv.port, "GET", f"/api/tasks/{tid}")
+        assert status == 200 and mem.get("wait_reason") == "recipient_pin_unsaved", \
+            f"the wait reason is not observable: {mem.get('wait_reason')!r}"
+        # recovery: the store heals -> the pin lands -> the run proceeds
+        _BarrierPostgREST.fail_payload[0] = False
+        assert _wait_for(lambda: any(r["task_id"] == tid and
+                                    r["status"] == "completed"
+                                    for r in _row_rows()), timeout=40), \
+            "the task never ran after the pin write recovered"
+        assert a_state.applied == 1  # exactly one effect application
+    finally:
+        _BarrierPostgREST.fail_payload[0] = False
+        srv.stop()
