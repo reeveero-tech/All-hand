@@ -479,6 +479,19 @@ def test_r188_full_acceptance_multistage_running_task_recovers(
         row = next(r for r in _row_rows() if r["task_id"] == tid)
         assert row["status"] == "running", \
             f"premise broken: the row is {row['status']!r}, not running"
+        forced_volatile = os.environ.get("R188_FORCE_VOLATILE") == "1"
+        if not forced_volatile:
+            # durable mode only — the claim's storage fence: the running row
+            # carries the claim token and a lease still valid at kill time (the
+            # lease the fresh process's reaper must wait out). The volatile red
+            # run must fail at the NO-LOSS assertion below, never here.
+            from datetime import datetime, timezone
+            assert row.get("claim_token"), \
+                "premise broken: no claim token on the running row"
+            lease_at = datetime.fromisoformat(row["lease_expires_at"])
+            assert lease_at > datetime.now(timezone.utc), \
+                f"premise broken: the lease already expired at kill time " \
+                f"({row['lease_expires_at']})"
         # POST-MORTEM: an independent COPY of the row, captured after death
         # (see below) — asserted non-terminal then; the completion can only be
         # the fresh process's own recovery
@@ -491,6 +504,10 @@ def test_r188_full_acceptance_multistage_running_task_recovers(
         frozen = dict(next(r for r in _row_rows() if r["task_id"] == tid))
         assert frozen["status"] not in ("completed", "failed"), \
             f"premise broken: the task already reached {frozen['status']!r} before death"
+        if not forced_volatile:
+            # the fence survived the death with the row (durable mode only)
+            assert frozen.get("claim_token"), \
+                "premise broken: the claim fence vanished from the frozen row"
         assert len(_MultiStageServer.requests["stage-b"]) == 0, \
             "premise broken: stage 2 started after the death"
         # a fresh process on the same backend + work service: its reaper waits
