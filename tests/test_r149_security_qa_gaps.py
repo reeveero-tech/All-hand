@@ -273,36 +273,40 @@ def _writes(method=None, table=None):
 
 
 def _is_background_scan(query):
-    """The durable queue's system traffic (R-188), matched by KEY SET AND
-    VALUES against the actual implementation (supabase_store.
+    """The durable queue's system traffic (R-188), matched by EXACT KEY SET
+    AND VALUES against the actual implementation (supabase_store.
     list_queued_tasks / list_expired_lease_tasks — read before writing
     this, not guessed):
-      - dispatcher claim scan: status=eq.queued, order=created_at.asc,
-        limit present, optional fairness exclusion tenant_id=not.in.(...)
-        (an EXCLUSION, never a read scope)
-      - reaper recovery scan: status=in.(claimed,running),
-        lease_expires_at=lt.<now>, order=lease_expires_at.asc, limit present
-    Anything else — an unscoped wide read, a wrong status value, a missing
-    limit, a wrong order, an extra field — is a request's own read and must
-    be task-scoped and tenant-filtered; it fails the caller's assertion."""
+      - dispatcher claim scan (called with TASK_DISPATCH_BATCH=50 in these
+        tests): {status: eq.queued, order: created_at.asc, limit: 50} —
+        optionally with the R-164 fairness exclusion tenant_id=not.in.(...)
+        (an EXCLUSION, never a read scope; the DISPATCHER scan only)
+      - reaper recovery scan: {status: in.(claimed,running),
+        lease_expires_at: lt.<now>, order: lease_expires_at.asc, limit: 50}
+        — NO tenant_id ever
+    Anything else — an unscoped wide read, a wrong status value, a wrong
+    limit value, a missing limit, a wrong order, an extra field, a
+    multi-value param — is a request's own read and must be task-scoped
+    and tenant-filtered; it fails the caller's assertion."""
+    if any(isinstance(v, list) and len(v) != 1 for v in query.values()):
+        return False  # the scans send single values only — multi-value is not one
     q = {k: (v[0] if isinstance(v, list) else v) for k, v in query.items()}
     if q.get("task_id") is not None or q.get("idempotency_key") is not None:
         return False
-    tenant = q.get("tenant_id")
-    if tenant is not None and not str(tenant).startswith("not.in.("):
-        return False
-    keys = set(q) - ({"tenant_id"} if tenant is not None else set())
-    if (keys == {"status", "order", "limit"}
-            and q["status"] == "eq.queued"
-            and q["order"] == "created_at.asc"
-            and q.get("limit") is not None):
-        return True
-    if (keys == {"status", "lease_expires_at", "order", "limit"}
-            and q["status"] == "in.(claimed,running)"
-            and str(q["lease_expires_at"]).startswith("lt.")
-            and q["order"] == "lease_expires_at.asc"
-            and q.get("limit") is not None):
-        return True
+    # dispatcher claim scan — the ONLY shape allowed to carry the fairness
+    # exclusion tenant_id=not.in.(...)
+    if (q.get("status") == "eq.queued" and q.get("order") == "created_at.asc"
+            and q.get("limit") == "50"):
+        tenant = q.get("tenant_id")
+        if tenant is None:
+            return set(q) == {"status", "order", "limit"}
+        return (str(tenant).startswith("not.in.(")
+                and set(q) == {"status", "order", "limit", "tenant_id"})
+    # reaper recovery scan — never carries tenant_id
+    if (q.get("status") == "in.(claimed,running)"
+            and str(q.get("lease_expires_at", "")).startswith("lt.")
+            and q.get("order") == "lease_expires_at.asc" and q.get("limit") == "50"):
+        return set(q) == {"status", "lease_expires_at", "order", "limit"}
     return False
 
 
@@ -310,14 +314,21 @@ def test_background_scan_allowlist_rejects_unknown_shapes():
     """The R-188 isolation allowlist must accept ONLY the dispatcher's and
     reaper's actual scan shapes and reject every other shape. Values here
     are as r149's fake records them (parse_qs lists) — the predicate
-    normalizes before matching."""
+    normalizes single-value lists before matching and REJECTS multi-value
+    lists."""
     assert _is_background_scan({"status": ["eq.queued"],
                                "order": ["created_at.asc"], "limit": ["50"]})
+    assert _is_background_scan({"status": ["eq.queued"],
+                               "order": ["created_at.asc"], "limit": ["50"],
+                               "tenant_id": ["not.in.(a)"]})
     assert _is_background_scan({"status": ["in.(claimed,running)"],
                                "lease_expires_at": ["lt.2026-10-26T00:00:00+00:00"],
                                "order": ["lease_expires_at.asc"], "limit": ["50"]})
     assert not _is_background_scan({"status": ["eq.completed"],
                                      "order": ["created_at.asc"], "limit": ["50"]})
+    # wrong limit value (the dispatcher sends TASK_DISPATCH_BATCH=50)
+    assert not _is_background_scan({"status": ["eq.queued"],
+                                   "order": ["created_at.asc"], "limit": ["1"]})
     assert not _is_background_scan({"status": ["eq.queued"],
                                    "order": ["created_at.asc"]})
     assert not _is_background_scan({"status": ["eq.queued"],
@@ -325,7 +336,19 @@ def test_background_scan_allowlist_rejects_unknown_shapes():
     assert not _is_background_scan({"status": ["eq.queued"],
                                    "order": ["created_at.asc"], "limit": ["50"],
                                    "select": ["*"]})
+    # a tenant READ scope (not an exclusion)
+    assert not _is_background_scan({"status": ["eq.queued"],
+                                   "order": ["created_at.asc"], "limit": ["50"],
+                                   "tenant_id": ["eq.some_tenant"]})
+    # the fairness exclusion does NOT belong to the reaper scan
+    assert not _is_background_scan({"status": ["in.(claimed,running)"],
+                                     "lease_expires_at": ["lt.2026-10-26T00:00:00+00:00"],
+                                     "order": ["lease_expires_at.asc"], "limit": ["50"],
+                                     "tenant_id": ["not.in.(a)"]})
     assert not _is_background_scan({"task_id": ["eq.t1"], "limit": ["1"]})
+    # multi-value param — the scans send single values only
+    assert not _is_background_scan({"status": ["eq.queued", "eq.completed"],
+                                    "order": ["created_at.asc"], "limit": ["50"]})
 
 
 # ------------------------------------------------------------------ G1: /api/chat

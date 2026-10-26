@@ -442,29 +442,15 @@ def test_background_task_trace_links_request_task_and_storage(auth, fake_storage
     assert len(run) == 1 and run[0]["task_id"] == task_id and run[0]["outcome"] == "ok"
     trace = run[0]["trace_id"]
     recs = _records(trace)
-    # R-188 — DOCUMENTED CHANGE to the R-159 background-task trace shape:
-    # under the volatile mode the run executed inside the request's context,
-    # so the http span and the run span shared one trace. Under the durable
-    # queue the run is dispatched by the QUEUE (a separate execution context,
-    # by design cross-process capable) — the run is its own trace, and the
-    # two trees are joined by the task_id.
-    # Contract check (P2_OBSERVABILITY_CONTRACTS_AR.md, R-159): the contract
-    # requires linkage "اربطها بـtrace/task IDs" and its acceptance test is
-    # "trace كامل من API إلى stage إلى tool/model إلى storage" — the
-    # SYNCHRONOUS chain, which is UNCHANGED (test_chain_..._one_trace). The
-    # two-tree join by task_id satisfies the contract's linkage requirement;
-    # the prior background-task one-trace property was an artifact of the
-    # volatile in-request execution, not a contract requirement. This change
-    # is documented explicitly in log 302 + CHANGELOG لاحق 48 and flagged for
-    # the owner in the PR description.
-    assert {x["kind"] for x in recs} >= {"task", "agent", "tool", "memory", "storage"}
+    # R-188: the accept request's trace_id travels in the row payload
+    # (reserved _agos_trace_id key) and the dispatcher ADOPTS it before
+    # running — the request and the run are ONE trace, preserving R-159's
+    # background-task guarantee through the queue boundary (the original
+    # assertion, restored).
+    assert {x["kind"] for x in recs} >= {"http", "task", "agent", "tool", "memory", "storage"}
+    queued = [x for x in recs if x["kind"] == "task" and x["op"] == "queued"]
+    assert len(queued) == 1 and queued[0]["task_id"] == task_id
     assert all(x["task_id"] == task_id for x in recs if x["kind"] in ("agent", "tool", "storage"))
-    # the ACCEPT trace (the request) carries the http span and the queued
-    # event for the same task — the two trees are joined by the task_id
-    queued = [x for x in _records() if x["kind"] == "task" and x["op"] == "queued"
-              and x.get("task_id") == task_id]
-    assert len(queued) == 1
-    assert any(x["kind"] == "http" for x in _records(queued[0]["trace_id"]))
     _assert_no_secrets([json.dumps(x) for x in telemetry.recent()] + all_logs)
 
 

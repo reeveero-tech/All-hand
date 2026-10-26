@@ -133,6 +133,18 @@ def bind_task(task_id: str) -> None:
         _CTX.set(replace(ctx, task_id=tid))
 
 
+def adopt_trace(trace_id: str, task_id: Optional[str] = None) -> contextvars.Token:
+    """R-159/R-188: CONTINUE an existing trace in this context (reset with
+    ``end_trace``). The durable queue is a boundary the request's trace must
+    survive: the accept stores its trace_id inside the task row's payload
+    (reserved ``_agos_trace_id`` key), and the dispatcher adopts it before
+    creating the run's spans — so the request and the run stay ONE trace,
+    preserving R-159's background-task guarantee through the queue (works
+    across processes too: the trace_id lives in the row)."""
+    _SPAN.set(None)
+    return _CTX.set(TraceContext(str(trace_id), _safe_id(task_id)))
+
+
 def tenant_ref(tenant: Any = None, *, _lookup: bool = True) -> str:
     if tenant is None and _lookup:
         try:

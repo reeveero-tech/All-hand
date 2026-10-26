@@ -1033,8 +1033,14 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
 
 
 async def _run_task_durable(task_id: str, specialization: str, prompt: str,
-                           data: Any, claim_token: str) -> None:
-    telemetry.bind_task(task_id)
+                           data: Any, claim_token: str,
+                           trace_id: Optional[str] = None) -> None:
+    # R-159/R-188: the run CONTINUES the accept request's trace (stored in
+    # the row's payload) — the request and the run are ONE trace. Legacy
+    # rows (no trace_id) start their own trace as before.
+    trace_token = telemetry.adopt_trace(trace_id, task_id) if trace_id else None
+    if trace_token is None:
+        telemetry.bind_task(task_id)
     try:
         with telemetry.span("task", "run", specialization=specialization) as sp:
             await _run_task_durable_traced(sp, task_id, specialization, prompt, data, claim_token)
@@ -1066,8 +1072,28 @@ def _durable_payload(prompt: str, data: Any) -> Dict[str, Any]:
     inside the payload under the reserved ``_agos_prompt`` key (the dispatcher
     unwraps it). Without this, a durable task with a prompt longer than 500
     chars would execute on a truncated input — silent data loss, not a logging
-    bound."""
-    return {"_agos_prompt": prompt, "data": data}
+    bound.
+
+    R-159/R-188: the accept request's trace_id travels too, under the
+    reserved ``_agos_trace_id`` key — the dispatcher adopts it before running
+    (``_durable_trace_id``), so the request and the run stay ONE trace
+    across the queue boundary."""
+    payload: Dict[str, Any] = {"_agos_prompt": prompt, "data": data}
+    ctx = telemetry.current()
+    if ctx is not None:
+        payload["_agos_trace_id"] = ctx.trace_id
+    return payload
+
+
+def _durable_trace_id(row: Dict[str, Any]) -> Optional[str]:
+    """The accept request's trace_id from the row's payload (None for legacy
+    rows with raw-data payloads — those runs start their own trace as before)."""
+    payload = row.get("payload")
+    if isinstance(payload, dict):
+        t = payload.get("_agos_trace_id")
+        if isinstance(t, str) and t:
+            return t
+    return None
 
 
 def _unwrap_durable_payload(row: Dict[str, Any]) -> tuple:
@@ -1133,7 +1159,8 @@ async def _queue_dispatcher() -> None:
             _rebuild_task_record(claimed)
             full_prompt, data = _unwrap_durable_payload(claimed)
             run = asyncio.create_task(_run_task_durable(tid, str(claimed.get("specialization")),
-                                                        full_prompt, data, token))
+                                                        full_prompt, data, token,
+                                                        trace_id=_durable_trace_id(claimed)))
             _RUNNING_RUNS[tid] = run
             _BACKGROUND_TASKS.add(run)  # R-160: keep a strong reference
             run.add_done_callback(_BACKGROUND_TASKS.discard)
@@ -1602,6 +1629,10 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
         # lifespan, but if storage was configured AFTER the app started (tests
         # monkeypatching, late config) the durable accept would insert a row
         # no dispatcher ever claims. Idempotent: a no-op when already running.
+        # R-159: bind the task to the accept trace BEFORE any storage write —
+        # the admission/insert spans carry the task_id (the same ordering as
+        # the volatile path), so the whole accept trace is this task's.
+        telemetry.bind_task(task_id)
         _start_queue_loops()
         storage = get_storage()
         idem = (req.idempotency_key or "").strip() or None
@@ -1654,7 +1685,6 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
                                 "state": "queued", "claim_token": None,
                                 "attempts": 0, "max_attempts": TASK_MAX_ATTEMPTS}
         _prune_tasks()
-        telemetry.bind_task(task_id)
         telemetry.event("task", "queued", specialization=req.specialization)
         await storage.insert_event("task_created", {"task_id": task_id, "specialization": req.specialization},
                                    tenant_id=principal.tenant_id)
