@@ -464,8 +464,15 @@ def test_server_registers_the_civilization_and_one_inproc_worker():
     assert ident.specialization == "analyst" and ident.capabilities == ("statistics",)
 
 
-async def test_a_running_task_holds_a_lease_and_releases_it(tenant_auth, slow_analyst):
+async def test_a_running_task_holds_a_lease_and_releases_it(tenant_auth, slow_analyst, monkeypatch):
     import server
+    # R-188 (log 302, لاحق 60 ج2): one terminal-write attempt — this test pins
+    # the LEASE lifecycle (held while running, released when the run ends),
+    # not the terminal-write retry policy (its own deterministic tests live
+    # in tests/test_r188_terminal_write_retry.py); without this the release
+    # assertion races the retry backoff after a soft storage failure (no
+    # fake PostgREST here — storage unconfigured = one False).
+    monkeypatch.setattr(server, "TASK_TERMINAL_WRITE_ATTEMPTS", 1)
     gate, _ = slow_analyst
     before = server.AGENT_REGISTRY.worker(server.WORKER_ID).in_flight
     async with await _asgi(tenant_auth) as c:

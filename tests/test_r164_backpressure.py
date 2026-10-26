@@ -565,6 +565,13 @@ def test_r164_accept_rate_per_tenant(tenants, monkeypatch):
 
 def test_r164_volatile_timeout_fails_the_run_and_frees_the_slot(tenants, monkeypatch):
     log = []
+    # R-188 (log 302, لاحق 60 ج2): one terminal-write attempt — this test pins
+    # the TIMEOUT outcome and the SLOT being freed (the run leaves
+    # _VOLATILE_RUNS when it ends), not the terminal-write retry policy (its
+    # own deterministic tests live in tests/test_r188_terminal_write_retry.py);
+    # without this the slot-free assertion races the retry backoff after a
+    # soft storage failure (no fake PostgREST here — storage unconfigured).
+    monkeypatch.setattr(server, "TASK_TERMINAL_WRITE_ATTEMPTS", 1)
     monkeypatch.setattr(server, "_pick_agent", lambda specialization: _HangAgent(log))
     monkeypatch.setattr(server, "TASK_TIMEOUT_S", 0.3)
     with _client() as c:
