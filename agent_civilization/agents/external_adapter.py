@@ -236,6 +236,18 @@ class ExternalAgentAdapter:
         started = time.time()
         self.status = "working"
         headers = {"Content-Type": "application/json"}
+        # R-188 criterion (b): the durable queue's redelivery is at-least-once
+        # — an external side effect must still be applied exactly once. The
+        # task's IDENTITY is the idempotency key (stable across attempts by
+        # design; never the claim token or the attempt number — both differ
+        # across processes). A service that honors idempotency keys (the
+        # standard Idempotency-Key convention) applies the effect once per
+        # key; the delivery may repeat, the application does not. Absent only
+        # when the caller has no stable identity (the single-attempt chat
+        # path) — a keyless call is a single delivery, nothing to deduplicate.
+        task_id = task.get("task_id")
+        if task_id:
+            headers["Idempotency-Key"] = str(task_id)
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         payload: Dict[str, Any] = {

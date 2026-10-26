@@ -1024,7 +1024,18 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
         rec["agent"] = agent.name
     await _publish(tenant_id, {"type": "task_started", "task_id": task_id, "agent": agent.name,
                                "specialization": specialization})
-    outcome = await _execute_bounded(agent, {"prompt": prompt, "data": data})   # R-164: deadline
+    # R-188 criterion (b) — PARTIAL, CONDITIONAL: the task's identity travels
+    # with the execution; the external adapter sends it as the idempotency
+    # key. An at-least-once redelivery cannot re-apply the effect AT A
+    # RECIPIENT THAT HONORS the key (the standard Idempotency-Key
+    # convention): the delivery may repeat, the application does not. A
+    # recipient that ignores the key stays at-least-once (contract limit —
+    # documented in log 302; not claimed beyond it). The key is the task_id
+    # (stable across attempts by design), never the claim token or the
+    # attempt number (both differ across processes). Recipient stability
+    # across processes is NOT guaranteed (see the honest limits).
+    outcome = await _execute_bounded(agent, {"prompt": prompt, "data": data,
+                                            "task_id": task_id})   # R-164: deadline
     if (TASKS.get(task_id) or {}).get("status") in TERMINAL_TASK_STATES \
             or AGENT_REGISTRY.lease(task_id) is None:
         logger.warning("Task %s late result discarded: its lease had ended", task_id)

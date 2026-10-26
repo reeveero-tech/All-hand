@@ -48,6 +48,8 @@ import threading
 import time
 import urllib.request
 
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -109,9 +111,14 @@ class _Server:
     The DEFAULT configuration: AGOS_TASK_QUEUE is NOT set (no R-163 opt-in).
     """
 
-    def __init__(self):
+    def __init__(self, env_extra: dict = None):
+        """env_extra: additional env vars for the subprocess (e.g. EXTERNAL_AGENTS
+        for the side-effect test, or a longer lease) — merged AFTER the base
+        env so a test can override the timing knobs. None keeps the exact
+        behavior the existing tests rely on."""
         self.port = _free_port()
         self.proc = None
+        self.env_extra = dict(env_extra or {})
 
     def start(self):
         env = dict(os.environ)
@@ -133,6 +140,7 @@ class _Server:
                 "key_sha256": hashlib.sha256(RKEY.encode()).hexdigest(),
                 "role": "user"}]),
         })
+        env.update(self.env_extra)
         import tempfile
         self._log = tempfile.NamedTemporaryFile(
             prefix="r188-server-", suffix=".log", delete=False)
@@ -178,6 +186,78 @@ class _Server:
 
 RKEY = "r188-task-loss-" + secrets.token_urlsafe(12)
 HEADERS = {"X-API-Key": RKEY, "Content-Type": "application/json"}
+
+
+class _EffectServer:
+    """The external-agent service — the SIDE-EFFECT TARGET (R-188 criterion
+    B). It runs in the TEST process, so it survives the uvicorn subprocess's
+    SIGKILL: its counters are independent evidence, never the killed
+    process's memory.
+
+    The contract under test: each call is RECORDED (attempt evidence); the
+    EFFECT is applied once per idempotency key — a request WITHOUT a key
+    cannot be deduplicated and applies again (an external service cannot
+    guess the caller's intent). The FIRST request's response is blocked
+    (test-controlled): the effect has landed but the run has not recorded
+    its success — the exact at-least-once window between "effect applied"
+    and "completion stored".
+    """
+
+    requests: list = []            # {"key": str|None, "prompt": str} per call
+    applied: int = 0               # effects actually applied
+    applied_keys: set = set()
+    block = threading.Event()       # armed: the FIRST request blocks after applying
+    release = threading.Event()
+
+    @classmethod
+    def _reset(cls):
+        cls.requests = []
+        cls.applied = 0
+        cls.applied_keys = set()
+        cls.block.clear()
+        cls.release.clear()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802
+            length = int(self.headers.get("Content-Length", 0) or 0)
+            body = json.loads(self.rfile.read(length) or b"{}")
+            key = self.headers.get("Idempotency-Key")
+            prompt = ""
+            try:
+                prompt = str((body.get("messages") or [{}])[0].get("content", ""))
+            except Exception:
+                pass
+            _EffectServer.requests.append({"key": key, "prompt": prompt})
+            # the effect: applied ONCE per key; a keyless call cannot be
+            # deduplicated (the service cannot know it is a re-delivery)
+            if not key or key not in _EffectServer.applied_keys:
+                _EffectServer.applied += 1
+                if key:
+                    _EffectServer.applied_keys.add(key)
+            if _EffectServer.block.is_set():
+                _EffectServer.block.clear()  # only the FIRST request blocks
+                if not _EffectServer.release.wait(timeout=30):
+                    raise RuntimeError("R-188 effect barrier: released nobody within 30s")
+            try:
+                out = json.dumps({"choices": [
+                    {"message": {"role": "assistant", "content": "r188 side-effect run done"}}
+                ]}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(out)))
+                self.end_headers()
+                self.wfile.write(out)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # the client died (SIGKILL) mid-call — expected here
+
+        def log_message(self, *args):
+            pass
+
+    @classmethod
+    def serve(cls):
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), cls.Handler)
+        threading.Thread(target=httpd.serve_forever, daemon=True).start()
+        return httpd
 
 
 def _api(port, method, path, body=None):
@@ -310,3 +390,97 @@ def test_r188_default_mode_task_in_flight_survives_process_death(fake_backend):
             srv2.stop()
     finally:
         srv.stop()
+
+
+# --------------------------------------------------------------- criterion B:
+# side-effect duplication on recovery (the test the module docstring
+# deliberately deferred). The at-least-once redelivery MUST NOT re-apply the
+# external side effect: the delivery is at-least-once, the APPLICATION of the
+# effect must be exactly-once — enforced by a STABLE idempotency key (the
+# task's identity, not the claim token or the attempt number) carried on the
+# external-agent call.
+def test_r188_side_effect_applied_exactly_once_on_recovery(fake_backend):
+    """REQUIRED behavior (R-188 criterion B): no side-effect duplication on
+    recovery. A durable task whose execution BEGAN (row `running`, lease held)
+    and whose external side effect LANDED, then the coordinator is SIGKILLed
+    before the run records its success; the next process recovers the row via
+    the real reaper + dispatcher and re-runs it (at-least-once redelivery).
+    The effect target (this test process — it survives the kill) must see the
+    effect applied EXACTLY ONCE, while seeing the second attempt (retry and
+    effect-application are proven separately).
+
+    RED today: the re-run re-applies the effect (applied == 2) — the external
+    call carries no stable idempotency key, so the effect target cannot know
+    the second delivery is a re-delivery of the same logical operation.
+    """
+    # the side-effect target: an external-agent service in the test process
+    _EffectServer._reset()
+    effect_httpd = _EffectServer.serve()
+    effect_url = f"http://127.0.0.1:{effect_httpd.server_address[1]}/run"
+    env_extra = {
+        "EXTERNAL_AGENTS": json.dumps(
+            [{"name": "r188-effect", "url": effect_url}]),
+        # a longer lease gives the kill a comfortable window AFTER the effect
+        # lands (the row must not expire its own lease while process A is
+        # still alive — its own reaper would recover it)
+        "AGOS_TASK_LEASE_S": "8",
+    }
+    srv = _Server(env_extra=env_extra)
+    try:
+        srv.start()
+        # arm the response barrier BEFORE the task exists: the FIRST external
+        # call blocks AFTER applying the effect — the run is mid-flight with
+        # the effect landed and the completion NOT stored (the critical window)
+        _EffectServer.block.set()
+        status, body = _api(srv.port, "POST", "/api/tasks",
+                           {"specialization": "external",
+                            "prompt": "side effect exactly once"})
+        assert status == 202, body
+        tid = body["task_id"]
+        # wait until the execution provably BEGAN and the effect LANDED:
+        # the external call only happens after claim -> running, so this
+        # also proves the row is `running` with a lease held by process A
+        assert _wait_for(lambda: _EffectServer.applied >= 1, timeout=20), \
+            "the run never reached the external side effect"
+        row = next(r for r in _row_rows() if r["task_id"] == tid)
+        assert row["status"] == "running", \
+            f"premise broken: the row is {row['status']!r}, not running"
+        # kill the coordinator mid-run: the effect has landed, the completion
+        # has NOT been stored — the at-least-once window
+        srv.kill()
+        # release the blocked response: its write fails on the dead client
+        _EffectServer.release.set()
+        # a fresh process on the same backend + effect target: its reaper
+        # waits out the dead process's lease and re-dispatches the row
+        srv2 = _Server(env_extra=env_extra)
+        try:
+            srv2.start()
+            assert _wait_for(lambda: any(r["task_id"] == tid and
+                                         r["status"] == "completed"
+                                         for r in _row_rows()), timeout=40), \
+                ("R-188 recovery never completed the re-run task — the "
+                 "side-effect scenario is also a task-loss scenario")
+            # the recovery re-attempt provably reached the effect target
+            assert len(_EffectServer.requests) >= 2, \
+                "the recovery never re-invoked the external agent (no second attempt)"
+            # both deliveries are the SAME logical task (same prompt)
+            assert all(r["prompt"] == "side effect exactly once"
+                       for r in _EffectServer.requests)
+            # THE assertion of R-188 criterion B — RED today (applied == 2):
+            # the effect target must apply the effect EXACTLY ONCE across the
+            # re-deliveries of the same logical task
+            assert _EffectServer.applied == 1, \
+                (f"R-188 side-effect duplication: the effect was applied "
+                 f"{_EffectServer.applied} times for one logical task — the "
+                 f"at-least-once redelivery re-applied the external side effect")
+            # the stable idempotency key: the task's identity on EVERY
+            # delivery — not the claim token and not the attempt number (both
+            # differ across the two processes)
+            assert all(r["key"] == tid for r in _EffectServer.requests), \
+                "the external call does not carry the task's stable identity " \
+                "as its idempotency key (key={r['key']!r})"
+        finally:
+            srv2.stop()
+    finally:
+        srv.stop()
+        effect_httpd.shutdown()
