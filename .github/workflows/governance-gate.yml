@@ -9,9 +9,14 @@ name: Governance Gate
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: ['**']
 
 jobs:
   governance:
+    # PR-scoped only: it reads github.event.pull_request.number (R-186),
+    # which does not exist on push events.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
@@ -96,3 +101,36 @@ jobs:
       - name: Status evidence check (R-154)
         if: ${{ !cancelled() }}
         run: python3 scripts/check_status_evidence.py .
+
+  # R-187 (D-102): the owner's single binding rule — documentation travels
+  # WITH every push, not only in PR aggregate diffs. Two paths, ONE context:
+  # - push events: same-event scope github.event.before..after (branch
+  #   creation: the branch's own commits vs origin/main).
+  # - pull_request events: bind the verdict to the delivery head — verify
+  #   the head SHA has a green push-event run of this check ON THE HEAD
+  #   BRANCH (the same SHA pushed elsewhere satisfies nothing; a red docless
+  #   push on the head keeps the merge blocked). The PR path verifies
+  #   explicitly — it never relies on what a skip would or would not mean.
+  # Honest limit: CI runs after the ref update, so this cannot reject a push
+  # from ARRIVING — it fails the run loudly and blocks MERGES via the
+  # required context. A check that starts after a push event cannot prevent
+  # that push itself from arriving.
+  push-scope-docs:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Push-scope docs check (R-187)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            python3 scripts/check_push_docs.py "${{ github.event.before }}" "${{ github.event.after }}"
+          else
+            python3 scripts/verify_push_scope_head.py "$GITHUB_REPOSITORY" "${{ github.event.pull_request.head.sha }}" "${{ github.event.pull_request.head.ref }}"
+          fi
