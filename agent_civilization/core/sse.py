@@ -21,6 +21,17 @@ Model now:
     tenant and per client connections. Refusal -> ``StreamLimit`` (the route
     answers 429 with a fixed message and ``Retry-After``).
   * ``close`` is idempotent; empty per-tenant / per-client entries are removed.
+
+  SHARED ADMISSION (log 299 residual, fixed with ``sse_admission``): when the
+  bus is constructed with an ``admission`` store, the caps and the open-rate
+  window are enforced by ONE shared lease per subscription (host-local SQLite
+  — the pattern of log 303) instead of the process-local maps above. The
+  local maps then only track subscriptions for EVENT DELIVERY and metrics;
+  the lease is released on ``close`` and renewed by an independent periodic
+  loop (``sse_admission.renewal_loop``), so a killed worker's capacity frees
+  at lease expiry. A store outage refuses admission (fail-closed). Without a
+  store the behavior is exactly the previous in-process one (the server
+  always passes a store).
 """
 from __future__ import annotations
 
@@ -32,6 +43,11 @@ import time
 from collections import OrderedDict, deque
 from dataclasses import dataclass
 from typing import Any, Callable, Deque, Dict, Optional, Set
+
+from agent_civilization.core.sse_admission import (
+    SSEAdmissionRefused,
+    SSELeaseStore,
+)
 
 logger = logging.getLogger("agos.sse")
 
@@ -49,6 +65,8 @@ _LIMITS = {
     "open_window_s":   ("AGOS_SSE_OPEN_WINDOW", 60, 1, 3_600),
     "max_lifetime_s":  ("AGOS_SSE_MAX_LIFETIME", 3600, 10, 86_400),
     "heartbeat_s":     ("AGOS_SSE_HEARTBEAT", 30, 1, 300),
+    "lease_ttl_s":     ("AGOS_SSE_LEASE_TTL", 90, 1, 86_400),
+    "lease_renewal_s": ("AGOS_SSE_LEASE_RENEWAL", 30, 1, 3_600),
 }
 
 
@@ -62,6 +80,8 @@ class SSELimits:
     open_window_s: int = 60
     max_lifetime_s: int = 3600
     heartbeat_s: int = 30
+    lease_ttl_s: int = 90
+    lease_renewal_s: int = 30
 
     def __post_init__(self):
         for name, (var, _d, lo, hi) in _LIMITS.items():
@@ -71,6 +91,13 @@ class SSELimits:
         for name in ("max_per_tenant", "max_per_client"):
             if getattr(self, name) > self.max_connections:
                 raise ValueError(f"{_LIMITS[name][0]} must not exceed AGOS_SSE_MAX_CONNECTIONS")
+        # The renewal interval must be much shorter than the lease TTL, or a
+        # single missed renewal could expire a live stream's lease (and the
+        # renewal loop's outage bound would be meaningless).
+        if self.lease_renewal_s >= self.lease_ttl_s:
+            raise ValueError(
+                "AGOS_SSE_LEASE_RENEWAL must be smaller than AGOS_SSE_LEASE_TTL "
+                f"(got {self.lease_renewal_s} >= {self.lease_ttl_s})")
 
     @classmethod
     def from_env(cls, env=None) -> "SSELimits":
@@ -103,8 +130,10 @@ class StreamLimit(Exception):
 class Subscription:
     """One SSE connection: its own bounded queue."""
 
-    def __init__(self, bus: "EventBus", tenant: str, client: str, opened_at: float):
+    def __init__(self, bus: "EventBus", tenant: str, client: str, opened_at: float,
+                 lease_id: Optional[str] = None):
         self.bus, self.tenant, self.client, self.opened_at = bus, tenant, client, opened_at
+        self.lease_id = lease_id          # shared-admission lease (None = in-process)
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=bus.limits.queue_size)
         self.dropped = 0          # total dropped for this connection
         self._gap = 0             # dropped since the last stream_gap was delivered
@@ -139,10 +168,12 @@ class Subscription:
 
 class EventBus:
     def __init__(self, limits: Optional[SSELimits] = None, clock: Callable[[], float] = time.monotonic,
-                 on_metric: Optional[Callable[[str, float], None]] = None):
+                 on_metric: Optional[Callable[[str, float], None]] = None,
+                 admission: Optional[SSELeaseStore] = None):
         self.limits = limits or SSELimits()
         self.clock = clock
         self._on_metric = on_metric
+        self._admission = admission      # shared caps (None = in-process)
         self._subs: Dict[str, Set[Subscription]] = {}
         self._per_client: Dict[str, int] = {}
         self._opens: "OrderedDict[str, Deque[float]]" = OrderedDict()
@@ -224,7 +255,14 @@ class EventBus:
 
     def open(self, tenant: str, client: str) -> Subscription:
         """Admit one connection (counts toward the open-rate even if then
-        refused for capacity) and register its subscription."""
+        refused for capacity) and register its subscription.
+
+        With a shared ``admission`` store the caps and the open-rate window
+        are decided by ONE lease transaction in the store (see
+        ``sse_admission``); the local maps below then only track the
+        subscription for delivery."""
+        if self._admission is not None:
+            return self._open_shared(tenant, client)
         now = self.clock()
         self._check_rate(client, now)
         lim = self.limits
@@ -241,12 +279,47 @@ class EventBus:
         self._metric("sse_connections", self.total)
         return sub
 
+    def _open_shared(self, tenant: str, client: str) -> Subscription:
+        """Shared-admission path: the store's ONE transaction decides the
+        open-rate window and every cap; the local maps are delivery state."""
+        lim = self.limits
+        try:
+            lease_id = self._admission.acquire(
+                tenant, client,
+                max_connections=lim.max_connections,
+                max_per_tenant=lim.max_per_tenant,
+                max_per_client=lim.max_per_client,
+                open_rate=lim.open_rate,
+                open_window_s=lim.open_window_s,
+                lease_ttl_s=lim.lease_ttl_s)
+        except SSEAdmissionRefused as e:
+            if e.reason == "open_rate":
+                self.stats["refused_rate"] += 1
+            else:
+                self.stats["refused_capacity"] += 1
+            self._metric("sse_refused_total")
+            raise StreamLimit(e.reason, e.retry_after_s) from None
+        sub = Subscription(self, tenant, client, self.clock(), lease_id=lease_id)
+        self._subs.setdefault(tenant, set()).add(sub)
+        self._per_client[client] = self._per_client.get(client, 0) + 1
+        self.stats["opened"] += 1
+        self._metric("sse_connections_opened_total")
+        self._metric("sse_connections", self.total)
+        return sub
+
     def close(self, sub: Subscription) -> bool:
         """Release the subscription and its slots. Idempotent: True only the
         first time."""
         if sub.closed:
             return False
         sub.closed = True
+        if sub.lease_id is not None and self._admission is not None:
+            try:
+                self._admission.release(sub.lease_id)
+            except Exception as exc:  # noqa: BLE001 — type only, per R-149
+                logger.warning(
+                    "sse: lease release failed (%s) — the TTL will reclaim "
+                    "the capacity", type(exc).__name__)
         subs = self._subs.get(sub.tenant)
         if subs is not None:
             subs.discard(sub)

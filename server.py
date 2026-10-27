@@ -61,6 +61,12 @@ from agent_civilization.core import task_queue
 from agent_civilization.core import backpressure, pools
 from agent_civilization.core.tenancy import ALL_TENANTS, Principal
 from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
+from agent_civilization.core.sse_admission import (
+    SSEAdmissionError,
+    SSELeaseStore,
+    renewal_loop as _sse_renewal_loop,
+    sse_admission_default_db_path as _sse_admission_db_path,
+)
 from agent_civilization.routing import route as route_request
 from agent_civilization.core.llm import (
     get_llm, keyless_enabled, reset_public_llm_consent, set_public_llm_consent,
@@ -480,7 +486,13 @@ def _sse_metric(name: str, value: float) -> None:
 
 
 SSE_LIMITS = SSELimits.from_env()
-EVENT_BUS = EventBus(SSE_LIMITS, on_metric=_sse_metric)
+# SSE admission is SHARED across processes on this host (log 299 residual):
+# one lease per subscription in a host-local SQLite file, renewed by an
+# independent periodic loop, released on disconnect, expired by TTL when a
+# worker dies. Loud init — a broken store must stop the server (admission
+# never silently degrades to process-local caps).
+SSE_ADMISSION = SSELeaseStore(_sse_admission_db_path())
+EVENT_BUS = EventBus(SSE_LIMITS, on_metric=_sse_metric, admission=SSE_ADMISSION)
 
 
 async def _publish(tenant_id: Optional[str], event: Dict[str, Any]) -> None:
@@ -2557,17 +2569,46 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
     except StreamLimit as e:
         logger.warning("sse: connection refused (%s), retry after %ss", e.reason, e.retry_after)
         raise HTTPException(429, SSE_LIMIT_DETAIL, headers={"Retry-After": str(e.retry_after)})
+    except SSEAdmissionError:
+        # fail-closed: the shared admission store is unavailable — admission
+        # is REFUSED (503), never degraded to process-local caps.
+        logger.warning("sse: admission store unavailable — refusing (503)")
+        raise HTTPException(503, "admission temporarily unavailable",
+                             headers={"Retry-After": "5"})
 
     def release() -> None:
-        sub.bus.close(sub)  # the bus it was opened on (idempotent)
+        sub.bus.close(sub)  # the bus it was opened on (idempotent; frees the lease)
+
+    def _lease_lost() -> None:
+        # Confirmed lease loss (or an outage we can no longer bridge): the
+        # stream must END — capacity is never held on an unprovable lease.
+        # The wake event unblocks a generator parked in sub.next() so it
+        # notices sub.closed and returns without yielding anything new.
+        sub.bus.close(sub)
+        try:
+            sub.offer({"type": "_lease_wake"})
+        except Exception:  # pragma: no cover — best-effort wake
+            pass
 
     async def generate():
+        renew = None
+        if sub.lease_id is not None:
+            # INDEPENDENT periodic renewal (must not depend on heartbeat
+            # output: heartbeats may not fire under a continuous stream of
+            # events or a stalled reader).
+            renew = asyncio.create_task(_sse_renewal_loop(
+                sub.lease_id, SSE_ADMISSION, SSE_LIMITS.lease_ttl_s,
+                SSE_LIMITS.lease_renewal_s, on_loss=_lease_lost))
         try:
             while True:
+                if sub.closed:
+                    return  # lease lost / stream closed — end before yielding
                 left = sub.bus.lifetime_left(sub)
                 if left <= 0:
                     return  # max lifetime: end the stream; the client reconnects
                 event = await sub.next(timeout=min(sub.bus.limits.heartbeat_s, left))
+                if sub.closed:
+                    return  # lease lost while parked in next()
                 if event is None:
                     if sub.bus.lifetime_left(sub) <= 0:
                         return
@@ -2575,6 +2616,8 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
                 else:
                     yield f"data: {json.dumps(event)}\n\n"
         finally:
+            if renew is not None:
+                renew.cancel()
             release()
 
     return _SSEResponse(generate(), release, media_type="text/event-stream", headers={
