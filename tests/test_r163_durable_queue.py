@@ -40,6 +40,10 @@ class _PostgREST(BaseHTTPRequestHandler):
     rows: dict = {"tasks": [], "events": [], "agent_stats": []}
     gets: list = []
     mode: list = ["ok"]          # "ok" | "reject" (store down) | "reject_insert"
+                                 # | "reject_insert_hold" (task insert blocks on
+                                 # `gate`, then fails — see below)
+    gate: list = [None]           # a threading.Event the held inserts wait on
+    gate_waiting: list = [0]      # how many inserts are currently held
 
     def log_message(self, *a):
         pass
@@ -87,6 +91,17 @@ class _PostgREST(BaseHTTPRequestHandler):
         row = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         # "reject_insert" (R-164 review): reads answer, task inserts fail
         if self.mode[0] == "reject" or (self.mode[0] == "reject_insert" and table == "tasks"):
+            self._send(500)
+            return
+        # "reject_insert_hold" (log 299): the task insert BLOCKS on the gate —
+        # a request that is genuinely IN FLIGHT (holding its accept slot)
+        # while the test asserts the rate refusals, and only then fails and
+        # gives the slot back. An instant 500 cannot prove the hold: the
+        # release raced the next reserve once the client rate limiter
+        # became async (shared-store to_thread yield before the reserve).
+        if self.mode[0] == "reject_insert_hold" and table == "tasks":
+            self.gate_waiting[0] += 1
+            self.gate[0].wait(timeout=30)
             self._send(500)
             return
         idem = row.get("idempotency_key")

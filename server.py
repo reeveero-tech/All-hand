@@ -143,8 +143,22 @@ if not CREDENTIALS:
 RATE_LIMIT_REQUESTS = int(os.getenv("AGOS_RATE_LIMIT_REQUESTS", "100"))
 RATE_LIMIT_WINDOW = int(os.getenv("AGOS_RATE_LIMIT_WINDOW", "60"))  # seconds
 
-# Request tracking for rate limiting
-request_counts: Dict[str, List[datetime]] = defaultdict(list)
+# Shared rate-limit counter (log 299; red tests b061663 / 76b7522): the limit
+# must be GLOBAL across server processes — a process-local memory counter
+# admitted a full window PER WORKER behind a balancer (N workers = N× the
+# configured limit). One store instance per process; the SQLite file (WAL,
+# BEGIN IMMEDIATE — atomic prune+count+insert) is the shared state. Created
+# at import, loudly: a broken store stops the server, never runs unlimited.
+from agent_civilization.core.rate_limit_store import (  # noqa: E402
+    RateLimitStore, RateLimitStoreError,
+    default_db_path as _rate_limit_default_db_path,
+)
+_RATE_LIMIT_STORE = RateLimitStore(_rate_limit_default_db_path())
+
+
+def reset_rate_limits() -> None:
+    """Test/ops helper: clear the shared counter (was ``request_counts.clear()``)."""
+    _RATE_LIMIT_STORE.reset()
 
 # App metadata
 @asynccontextmanager
@@ -260,30 +274,37 @@ def _scope(principal: Principal, all_tenants: bool):
     return principal.tenant_id
 
 
-def check_rate_limit(client_id: str) -> None:
-    """Check and enforce rate limiting per client."""
-    now = datetime.now()
-    window_start = now - timedelta(seconds=RATE_LIMIT_WINDOW)
-    
-    # Clean old entries
-    request_counts[client_id] = [
-        ts for ts in request_counts[client_id] if ts > window_start
-    ]
-    
-    # Check limit
-    if len(request_counts[client_id]) >= RATE_LIMIT_REQUESTS:
+async def check_rate_limit(client_id: str) -> None:
+    """Check and enforce rate limiting per client.
+
+    Log 299 (b061663 / 76b7522): the counter is the SHARED store above, not
+    process memory — behind a balancer the in-memory counter used to admit a
+    full window per worker. The store call is blocking SQLite, so it runs
+    off the event loop (``asyncio.to_thread``). Fail-closed: a store outage
+    refuses the request (503 + Retry-After) — never a silent fallback to
+    unlimited or process-local counting.
+    """
+    try:
+        allowed, wait = await asyncio.to_thread(
+            _RATE_LIMIT_STORE.check, client_id, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW)
+    except RateLimitStoreError as exc:
+        # R-149/R-160: the exception TYPE only — never the object (its message
+        # could carry store details) in a runtime log.
+        logger.error("rate-limit store unavailable — refusing (fail-closed): %s",
+                    type(exc).__name__)
+        raise HTTPException(
+            status_code=503,
+            detail="rate limiter unavailable; retry later",
+            headers={"Retry-After": "5"},
+        )
+    if not allowed:
         # R-164: tell the client WHEN — the oldest request in the window
         # leaves it after this many seconds (body unchanged: error_detail v1).
-        oldest = min(request_counts[client_id])
-        wait = max(1, math.ceil((oldest + timedelta(seconds=RATE_LIMIT_WINDOW) - now).total_seconds()))
         raise HTTPException(
             status_code=429,
             detail=f"Rate limit exceeded. Max {RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW}s",
             headers={"Retry-After": str(wait)},
         )
-    
-    # Add current request
-    request_counts[client_id].append(now)
 
 
 def rate_limit(func: Callable) -> Callable:
@@ -291,7 +312,7 @@ def rate_limit(func: Callable) -> Callable:
     @wraps(func)
     async def wrapper(request: Request, *args, **kwargs):
         client_id = request.client.host if request.client else "unknown"
-        check_rate_limit(client_id)
+        await check_rate_limit(client_id)
         return await func(request, *args, **kwargs)
     return wrapper
 
@@ -606,10 +627,10 @@ def _volatile_admission(tenant_id: str) -> None:
                           TASK_RETRY_AFTER_S)
 
 
-def _civilization_rate_limit(request: Request) -> None:
+async def _civilization_rate_limit(request: Request) -> None:
     """SEC-08: the /civilization/* routes use the same per-client limiter as
-    every /api/* route (``rate_limit``)."""
-    check_rate_limit(request.client.host if request.client else "unknown")
+    every /api/* route (``rate_limit``) — the shared store, awaited."""
+    await check_rate_limit(request.client.host if request.client else "unknown")
 
 
 def _civilization_admit(tenant_id: str) -> None:
@@ -1903,7 +1924,7 @@ class ExternalAgentRequest(BaseModel):
 @app.get("/api")
 async def api_root(request: Request):
     """Root API endpoint - returns API information."""
-    check_rate_limit(request.client.host if request.client else "unknown")
+    await check_rate_limit(request.client.host if request.client else "unknown")
     return {
         "name": "AGOS Agent Civilization",
         "version": "3.0.0",
