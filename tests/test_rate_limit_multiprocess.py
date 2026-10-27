@@ -283,16 +283,18 @@ def test_a_waited_admission_samples_its_timestamp_after_acquiring_the_lock(tmp_p
     can be born already expired (wait longer than the window), the next
     check prunes it, and the limit never holds.
 
-    Proof design (no scheduling assumptions): an explicit handshake knows
-    the worker reached its connection; with the blocker owning the writer
-    lock the worker can only be waiting inside BEGIN IMMEDIATE (asserted
-    alive at that point). A CONTROLLED clock is then advanced far past the
-    window WHILE the worker still waits, and only then is the lock
-    released — so the acquisition time is provably the advanced time. The
-    hit must hold the window measured from THAT time and expire exactly
-    window-seconds later. Verified red on the pre-fix code (timestamp
-    sampled before BEGIN): the hit is stamped at wait-start, already
-    expired at the advanced time, and the next check admits again."""
+    Proof design (no scheduling assumptions): an explicit handshake
+    establishes CHECKPOINT ORDERING — the worker's connection is created and
+    BEGIN is its next step, and with the blocker owning the writer lock it
+    cannot have finished (asserted alive). The exact statement it is parked
+    in is not asserted; what the controlled clock plus the mutation result
+    detect is the defect. The clock is advanced far past the window while
+    the worker still waits, and only then is the lock released — the
+    acquisition time is provably the advanced time. The hit must hold the
+    window measured from THAT time and expire exactly window-seconds later.
+    Verified red on the pre-fix code (timestamp sampled before BEGIN): the
+    hit is stamped at wait-start, already expired at the advanced time, and
+    the next check admits again."""
     import sqlite3 as _sqlite3
     import threading as _threading
     db = tmp_path / "ts.sqlite3"
