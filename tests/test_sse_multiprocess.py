@@ -431,15 +431,30 @@ async def test_renewal_maintains_capacity_beyond_the_lease_ttl(tmp_path):
                 # and their leases are still counted: the cap holds on B
                 assert await sb.open(0) == 429
                 # closing them frees the capacity — EXPIRY-DISCRIMINATING
-                # (advisor review, round 6): a bounded HTTP poll alone
-                # could pass through TTL EXPIRY (this test's TTL is 2s
-                # and a 5s poll would OUTLIVE it), so the release is
-                # observed on the shared store itself: the lease rows
-                # must be DELETED within a fraction of their remaining
-                # validity (read at close time) — a broken release leaves
-                # them until expiry, which is AFTER the deadline, so the
-                # test FAILS instead of passing through TTL reclamation;
-                # only then is the freed slot probed over HTTP.
+                # (advisor review, round 6; reasoning corrected round 7):
+                # a bounded HTTP poll alone could pass through TTL EXPIRY
+                # (this test's TTL is 2s and a 5s poll would OUTLIVE it),
+                # so the release is observed on the shared store itself.
+                # VALIDITY OF THAT OBSERVATION (round 7 — it does NOT
+                # rest on the window being a fraction of the remaining
+                # validity: scheduling delays can shrink that margin, and
+                # max(expires_at) is not the earliest expiry): it rests
+                # on the store's DELETE call sites. The only writers that
+                # can DELETE lease rows are (a) release() itself — the
+                # behavior under test; (b) acquire()'s purge, which
+                # deletes ONLY rows already expired (expires_at <= now)
+                # — and NO acquire is issued between close_all and the
+                # released assertion (the freed-slot probe runs only
+                # AFTER it); (c) renew() — a conditional UPDATE that
+                # never deletes; (d) reset() — a test helper, not called
+                # here. So within the observation window the rows can
+                # vanish ONLY via release: a broken release leaves them
+                # standing and the RAW count(*) (no expiry filtering)
+                # fails the test instead of passing through TTL
+                # reclamation. The window (a fraction of the remaining
+                # validity, min 0.5s) is a bounded observation BUDGET,
+                # not the proof. Only then is the freed slot probed
+                # over HTTP.
                 import sqlite3
                 import time as _time
 
