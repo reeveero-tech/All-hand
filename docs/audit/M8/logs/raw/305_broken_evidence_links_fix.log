@@ -1,0 +1,36 @@
+# Log 305 — إصلاح الروابط النسبية المكسورة في الأدلة (لاحق 63)
+
+- التاريخ: 2026-10-27
+- النوع: وثائق فقط — لا تغيير شيفرة إنتاج ولا اختبارات ولا بوابات
+- الحالة: منفذ محليًا على فرع m9/broken-evidence-links من main (dfa6c29)
+
+## الطريقة
+
+ماسح روابط: لكل ملف .md تحت docs/ استُخرجت روابط markdown النسبية `[..](path)` (استُبعدت http/https/mailto/#/data)، حُلّ المسار نسبةً إلى موضع الملف، وفُحص وجود الهدف. النتيجة الأولية على main: **95 رابطًا مكسورًا** في 6 ملفات — مطابقة لتدقيق الدفعة السابقة.
+
+## ما أُصلح (6 روابط في الوثائق الحية)
+
+1. `docs/governance/ROADMAP.md` — رابط السجل 289 كان ينقصه `../` (كان يُحل إلى docs/governance/audit/...): أُصلح إلى `../audit/M8/logs/raw/289_r170_batch12_hollow_success_language_q028.log`.
+2. `docs/audit/M8/R169_REPORT_V2.md` — ثلاثة:
+   - `../governance/R169_BENCHMARK_V2.md` كان ينقصه `../` (يُحل إلى docs/audit/governance/): أُصلح إلى `../../governance/R169_BENCHMARK_V2.md`.
+   - رابطا ملفي f4 (`test_baseline_f4.jsonl` و`test_grounded-v2_f4.jsonl`) أُعيد توجيههما إلى `superseded_test_baseline_f4.jsonl` و`superseded_test_grounded-v2_f4.jsonl`. **التحقق بالبايت**: نفس الـgit blob للملفين الأصليين المرتبطَين (blob 4ae7b676 و15f90846) — سُمّيا superseded في الدفعة 780078f حرفيًا «كما رُكِض» (EVIDENCE.md: «حُفظ f4 موسومًا superseded_* كما رُكِض — لا إعادة كتابة صامتة»).
+3. `docs/audit/M8/EVIDENCE.md` — رابطا ملفي f4 نفسهما أُعيد توجيههما إلى النسخ superseded_ المطابقة بالبايت.
+
+## ما لم يُحرَّر ولماذا (89 رابطًا في مصنفات مجمّدة)
+
+- `raw_report_A.md` (87 رابط `material/...`) و`reviewed_versions/*.reviewed.md` (رابطان): بصمات sha256 لهذه الملفات مسجلة في `RECEIPT_LOG.md` داخل نفس الدفعة (تقرير A مثلًا: 325f1e01…) — تحرير أي حرف فيها يكسر دليل الاستلام، لذلك **لم تُحرَّر**.
+- الروابط تشير إلى حزمة مجلس المراجعة في مساحة عمل خارج المستودع (`/home/user/workspace/council_q028/material/` وفق INSTRUCTIONS.txt) فلا تُحل داخل المستودع أصلًا.
+- عولجت بملف رفق جديد `docs/audit/review_council/q028_handoff_full/LINKS_NOTE.md` يوثق كل رابط مجمّد ومآله:
+  - 4 من 6 ملفات material لها نسخ داخل المستودع **مطابقة بالبايت** (تحقق sha256 مقابل MATERIAL_FINGERPRINTS.txt): BLIND_REVIEW_CASES_PHASE_A.md وBLIND_REVIEW_PROTOCOL.md وREVIEWER_CASE_INDEX_PHASE_A.md وreviewer_blind_form.json — كلها في `docs/audit/M8/logs/raw/r169/v4/human_review/`.
+  - ملفان (Q028_HANDOFF_INSTRUCTIONS.md وREVIEWER_OUTREACH.md) **لا توجد لهما نسخة مطابقة داخل المستودع** (الموجود في docs/audit/M8/q028/ يخالف البصمة المرجعية) — حقيقة موثقة لا نقصًا في الدفعة؛ المادة الأصلية خارج نطاق المستودع.
+
+## النتيجة النهائية
+
+- فحص الروابط بعد الإصلاح: 89 رابطًا مكسورًا متبقيًا، **كلها** في المصنفات المجمّدة الموثقة في LINKS_NOTE.md (87 + 2)، وصفر روابط مكسورة في الوثائق الحية.
+- لا حذف ولا نقل ولا إعادة تسمية لأي ملف؛ ملف واحد جديد أُنشئ (LINKS_NOTE.md).
+- لا نشر ولا إنفاق.
+
+## الحدود الصادقة
+
+- الفحص يغطي روابط markdown النسبية في ملفات .md تحت docs/ فقط (لا روابط html في web/ ولا مراجع نصية غير روابط).
+- مطابقة «النسخة الوحيدة المتاحة» لملفَي f4 مثبتة بidentity الـgit blob؛ هذا لا يثبت شيئًا عن ملفات لم تدخل المستودع أصلًا.
