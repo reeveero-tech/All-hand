@@ -147,6 +147,7 @@ class SecretStore:
             self._db_path, timeout=self._busy_timeout_ms / 1000.0,
             isolation_level=None)
         conn.execute(f"PRAGMA busy_timeout={self._busy_timeout_ms}")
+        conn.execute("PRAGMA journal_mode=WAL")  # same-host cross-process pattern as the rate-limit store
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -158,10 +159,20 @@ class SecretStore:
             " meta TEXT NOT NULL DEFAULT '{}',"
             " created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
             " PRIMARY KEY (tenant, name))")
+        # key-check marker: verifies the PRESENTED key against the store at
+        # initialize() — a wrong (but well-formed) key is refused at startup,
+        # not per-request; a populated store without a marker is refused too
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS store_key_check ("
+            " k INTEGER PRIMARY KEY CHECK (k=1), nonce BLOB NOT NULL, ct BLOB NOT NULL)")
+
+    _MARKER = b"agos-secret-store-key-check-v1"
 
     def initialize(self) -> None:
         """EXPLICIT initialization: create the master-key file (0600, random)
-        and the schema. Never regenerates a key for an existing database."""
+        and the schema, and VERIFY the key against the store (a wrong but
+        well-formed key is refused HERE — at startup, not per-request). Never
+        regenerates a key for an existing database."""
         key_exists = os.path.exists(self._key_file)
         db_exists = os.path.exists(self._db_path)
         if not key_exists and db_exists:
@@ -178,8 +189,39 @@ class SecretStore:
             finally:
                 os.close(fd)
         os.chmod(self._key_file, 0o600)  # idempotent hardening
+        key = self._load_master_key()  # wrong length refused HERE
         with self._conn() as conn:
             self._schema(conn)
+            self._key_check(conn, key)
+
+    def _key_check(self, conn: sqlite3.Connection, key: bytes) -> None:
+        """Verify the key against the store's marker (or write one for a
+        fresh store). A populated store without a marker cannot be verified
+        and is refused — fail-closed."""
+        row = conn.execute(
+            "SELECT nonce, ct FROM store_key_check WHERE k=1").fetchone()
+        if row is not None:
+            try:
+                pt = AESGCM(key).decrypt(row["nonce"], row["ct"],
+                                         b"store_key_check")
+            except Exception:
+                raise MasterKeyError(
+                    "wrong master key for this secrets DB — refusing") from None
+            if pt != self._MARKER:
+                raise MasterKeyError(
+                    "key-check marker mismatch — refusing")
+            return
+        have_secrets = conn.execute(
+            "SELECT COUNT(*) FROM secrets").fetchone()[0]
+        if have_secrets:
+            raise MasterKeyError(
+                "existing secrets DB lacks a key-check marker — the "
+                "presented key cannot be verified against it; refusing")
+        nonce = os.urandom(_NONCE_LEN)
+        ct = AESGCM(key).encrypt(nonce, self._MARKER, b"store_key_check")
+        conn.execute(
+            "INSERT INTO store_key_check (k, nonce, ct) VALUES (1, ?, ?)",
+            (nonce, ct))
 
     # ------------------------------------------------------------- helpers
     @staticmethod
@@ -239,16 +281,34 @@ class SecretStore:
                       new_value: Optional[str] = None) -> str:
         """Rotate: replace with a new value (random 32-byte url-safe token
         when none is given) and return the NEW value to the trusted caller.
-        The old value stops being resolvable immediately (single row, new
-        version). Store rotation does NOT revoke the old value at any
-        external provider — that is the operator's separate action."""
+        The rotation is ONE ``BEGIN IMMEDIATE`` transaction — existence
+        check, version bump, re-encryption and update are atomic, so a
+        revoke racing the rotation can never be overridden by a recreated
+        row (whoever commits first wins; the other sees the final state).
+        The secret's METADATA (e.g. role) is PRESERVED — rotation changes
+        the value, not the identity. Store rotation does NOT revoke the
+        old value at any external provider — that is the operator's
+        separate action."""
         self._check_tenant_name(tenant, name)
         value = new_value or _secrets.token_urlsafe(_MASTER_KEY_LEN)
+        if not isinstance(value, str) or not value or len(value) > _VALUE_MAX:
+            raise SecretStoreError(
+                f"secret value for '{name}' must be a non-empty string "
+                f"of at most {_VALUE_MAX} chars")
+        key = self._load_master_key()
         with self._conn() as conn:
+            conn.execute("BEGIN IMMEDIATE")
             row = self._row(conn, tenant, name)
             if row is None:
+                conn.execute("ROLLBACK")
                 raise SecretNotFound(f"secret '{name}' not found")
-        self.put_secret(tenant, name, value, meta=None)
+            version = row["version"] + 1
+            nonce, ct = self._encrypt(key, tenant, name, version, value)
+            conn.execute(
+                "UPDATE secrets SET version=?, nonce=?, value_ct=?"
+                " WHERE tenant=? AND name=?",
+                (version, nonce, ct, tenant, name))
+            conn.execute("COMMIT")
         return value
 
     def revoke_secret(self, tenant: str, name: str) -> None:

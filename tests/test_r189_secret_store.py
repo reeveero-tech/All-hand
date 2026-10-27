@@ -399,3 +399,114 @@ def test_r189_store_disabled_by_default_no_behavior_change(tmp_path):
     out = subprocess.run([sys.executable, "-c", code], capture_output=True,
                          text=True, timeout=120, cwd=ROOT)
     assert "store=off" in out.stdout, out.stderr
+
+# ------------------------------------------- corrective batch (advisor review)
+def test_r189_rotation_preserves_meta_and_role(tmp_path):
+    # regression: rotate used to drop metadata (an admin key silently became
+    # user) — the rotation must preserve the secret's identity and role
+    store, db, key = _mk_store(tmp_path)
+    store.put_secret("acme", "api_key", "sk-1", {"role": "admin"})
+    new = store.rotate_secret("acme", "api_key")
+    assert store.authenticate_key(new) == {"tenant": "acme", "role": "admin"}
+    assert store.list_secrets("acme")[0]["meta"] == {"role": "admin"}
+
+
+def test_r189_rotate_cannot_resurrect_revoked(tmp_path):
+    # regression: the existence check and the write were separate
+    # transactions — a revoke landing between them let rotate RECREATE the
+    # row. The rotation must be atomic: after any interleaving the revoked
+    # secret must NOT exist.
+    store, db, key = _mk_store(tmp_path)
+    store.put_secret("acme", "api_key", "sk-1")
+
+    class _Probe(SecretStore):
+        def _row(self, conn, tenant, name):
+            r = super()._row(conn, tenant, name)
+            # a write-lock probe fired EXACTLY between the existence check
+            # and the write: on the broken code the check ran in its own
+            # (already closed) connection, so the probe acquires the write
+            # lock instantly — another writer could interleave (a revoke
+            # landing there left the row deleted, then the write recreated
+            # it: resurrection). On the fixed code the rotation holds the
+            # lock from before the read until after the write, so the
+            # probe BLOCKS and times out.
+            import sqlite3 as _sq
+            probe = _sq.connect(db, timeout=0.2)
+            try:
+                probe.execute("BEGIN IMMEDIATE")
+                if _Probe.acquired is None:
+                    _Probe.acquired = True   # FIRST probe: the check phase
+            except Exception:
+                if _Probe.acquired is None:
+                    _Probe.acquired = False
+            finally:
+                try:
+                    probe.execute("ROLLBACK")
+                except Exception:
+                    pass
+                probe.close()
+            return r
+        acquired = None
+
+    it = _Probe(db, key)
+    it.rotate_secret("acme", "api_key")
+    assert _Probe.acquired is False, (
+        "another writer interleaved between the rotation's check and write "
+        "— the rotation is not atomic")
+
+
+def test_r189_initialize_validates_key_length(tmp_path):
+    # regression: a wrong-length key file passed initialize() — the server
+    # booted with a broken store and failed only per-request
+    db = str(tmp_path / "s.db")
+    short = str(tmp_path / "short.key")
+    with open(short, "wb") as fh:
+        fh.write(b"tooshort")
+    with pytest.raises(MasterKeyError):
+        SecretStore(db, short).initialize()
+
+
+def test_r189_wrong_key_refused_for_existing_db(tmp_path):
+    # regression: a DIFFERENT valid-length key passed initialize() on an
+    # existing DB — the key must be verified against the store at init
+    store, db, key = _mk_store(tmp_path)
+    store.put_secret("acme", "api_key", "sk-1")
+    other = str(tmp_path / "other.key")
+    with open(other, "wb") as fh:
+        fh.write(os.urandom(32))
+    with pytest.raises(MasterKeyError):
+        SecretStore(db, other).initialize()
+    # and the legitimate key still opens the store
+    assert SecretStore(db, key).get_secret("acme", "api_key") == "sk-1"
+
+
+def test_r189_store_runs_in_wal_mode_and_wal_leaks_nothing(tmp_path):
+    # regression: the store never enabled WAL — the "no leak in WAL" claim
+    # was untested. WAL must actually be the journal mode, the -wal file
+    # must really exist during operation, and it must not leak the value.
+    store, db, key = _mk_store(tmp_path)
+    store.put_secret("acme", "api_key", MARKER)
+    mode = store._conn().execute("PRAGMA journal_mode").fetchone()[0]
+    assert mode == "wal", mode
+    store.rotate_secret("acme", "api_key")
+    assert os.path.exists(db + "-wal")
+    assert MARKER.encode() not in _all_bytes(db)
+
+
+def test_r189_broken_key_stops_server_at_boot(tmp_path):
+    # the server must refuse to START with a configured-but-broken store:
+    # a short key file and a wrong-length-free but WRONG key both stop boot
+    db = str(tmp_path / "secrets.db")
+    good = str(tmp_path / "master.key")
+    SecretStore(db, good).initialize()
+    short = str(tmp_path / "short.key")
+    with open(short, "wb") as fh:
+        fh.write(b"tooshort")
+    with pytest.raises(RuntimeError, match="died at boot"):
+        _Server(db, short).start()
+    wrong = str(tmp_path / "wrong.key")
+    with open(wrong, "wb") as fh:
+        fh.write(os.urandom(32))
+    with pytest.raises(RuntimeError, match="died at boot"):
+        _Server(db, wrong).start()
+
