@@ -198,7 +198,7 @@ def test_data_worker_error_logs_type_only(caplog):
 
 @pytest.mark.parametrize("raw", [
     "{not json " + SECRET,                                     # decode error
-    json.dumps([{"url": "http://x", "api_key": SECRET}]),      # KeyError: 'name'
+    json.dumps([{"url": "http://x", "api_key": SECRET}]),      # entry refused by the name contract (R-188 review round 3)
     json.dumps({"name": SECRET}),                              # not a list
 ])
 def test_external_agents_env_error_logs_position_only(raw, monkeypatch, caplog):
@@ -207,7 +207,12 @@ def test_external_agents_env_error_logs_position_only(raw, monkeypatch, caplog):
     caplog.set_level(logging.DEBUG)
     assert external_adapter.load_external_agents_from_env() == []
     text = _no_secret(caplog)
-    assert "Invalid EXTERNAL_AGENTS JSON" in text
+    # R-160: the log never echoes the offending VALUE — only the type and
+    # position. R-188 review round 3: an entry with an unacceptable name is
+    # now refused PER-ENTRY (skipped by position) instead of failing the
+    # whole environment — the redaction contract itself is unchanged.
+    assert ("Invalid EXTERNAL_AGENTS JSON" in text
+            or "EXTERNAL_AGENTS entry 0 skipped" in text)
 
 
 class _FakeRedis:

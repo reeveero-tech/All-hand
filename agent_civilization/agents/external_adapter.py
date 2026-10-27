@@ -377,17 +377,41 @@ def load_external_agents_from_env() -> List[ExternalAgentAdapter]:
         return []
     try:
         entries = json.loads(raw)
-        return [
-            ExternalAgentAdapter(
-                name=e["name"], url=e["url"],
-                model=e.get("model", ""), api_key=e.get("api_key", ""),
-                allow_private=True,  # operator-provided configuration
-            )
-            for e in entries
-        ]
     except Exception as e:
         # R-160 (G-159-1): type (and JSON position, if any) only — the message
         # of a decode/key/type error can echo the env value (urls, api keys).
         logger.error("Invalid EXTERNAL_AGENTS JSON: %s at line %s column %s",
                      type(e).__name__, getattr(e, "lineno", "?"), getattr(e, "colno", "?"))
         return []
+    if not isinstance(entries, list):
+        logger.error("Invalid EXTERNAL_AGENTS JSON: expected a JSON list, "
+                     "got %s", type(entries).__name__)
+        return []
+    adapters: List[ExternalAgentAdapter] = []
+    for position, e in enumerate(entries):
+        # R-188 review round 3: ONE name contract everywhere — the env loader,
+        # the registration endpoint and the recipient pin all accept the same
+        # names (a non-empty string of at most 200 characters). An
+        # unacceptable name is refused HERE, before any send or pin: loading
+        # it anyway would let the writer pin and send to a recipient whose
+        # pin the reader would reject at recovery (an invalid pin stops the
+        # run). The offending value is never echoed (only its position) —
+        # the R-160 rule.
+        name = e.get("name") if isinstance(e, dict) else None
+        if not (isinstance(name, str) and name and len(name) <= 200):
+            logger.error("EXTERNAL_AGENTS entry %s skipped: name must be a "
+                         "non-empty string of at most 200 characters",
+                         position)
+            continue
+        try:
+            adapters.append(ExternalAgentAdapter(
+                name=name, url=e["url"],
+                model=e.get("model", ""), api_key=e.get("api_key", ""),
+                allow_private=True,  # operator-provided configuration
+            ))
+        except Exception as err:
+            # R-160 (G-159-1): type only — the message can echo the value.
+            logger.error("EXTERNAL_AGENTS entry %s skipped: %s",
+                         position, type(err).__name__)
+            continue
+    return adapters
