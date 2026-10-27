@@ -1,0 +1,30 @@
+# Log 309 — R-189 (الدفعة التصحيحية، لاحق 66): قسط القبول بعد الدمج (لاحق 67) — توثيق فقط، لا شيفرة
+
+- التاريخ: 2026-10-27
+- النوع: توثيق قبول بعد الدمج (لا شيفرة ولا اختبارات في هذا الإدخال)
+- الحالة: يُسجَّل داخل الدفعة التالية (فرع m8/sse-shared-admission) وفق STATUS_DEFINITIONS §3
+
+## الدمج
+
+- PR ‏#274 مدموج بـ`--merge` (بلا حذف فرع): merge_sha = `64b9c4e23628370c13ab30566a5bc9359ee0b871`
+- رأس الـPR المختبر: tested_sha = `c591ed615ca2af214c22f3eda79e109fd14258b8` (يحمل لاحق 65 و66 معًا)
+- تشغيل CI على main عند merge_sha: ‏40501438586 — `ci_conclusion=success`
+
+## فحوص التشغيل على رأس الدمج (main)
+
+- test: success — `3507 passed, 8 skipped, 17 deselected, 9 xfailed` في ثلاث مصفوفات (البثّة الحية 499.16ث؛ Python 3.12 ‏519.65ث؛ Python 3.12 مع AGOS_AGENT_IMPL=specialists ‏485.80ث)
+- storage: success | network: success | audit: success | build: success | docker: success | quality: success | push-scope-docs: success
+- publish: skipped (لا نشر) | governance: skipped (مسار pull_request فقط)
+
+## ملاحظات صدق
+
+- فحصا r156 اللذان فشلا قبل الالتزام (متوقع: الخريطة تُبنى من HEAD الملتزم) اخضرّا فعلًا على main بعد الدمج — داخل الـ3507 الناجحة (لا متغيرات بيئة جديدة في هذه الدفعة التصحيحية).
+- العيوب الأربعة التي أصلحتها الدفعة التصحيحية (فقدان الدور عند التدوير، احتمال إحياء سر ملغى، اجتياز مفتاح قصير/خاطئ للتهيئة، ادعاء WAL بلا ملف) مثبتة باختباراتها الستة الحمراء أولًا (السجل 308) — والحزمة خضراء على رأس الدمج أعلاه.
+- الحدود الصادقة كما هي في السجلين 306 و308.
+- نجاح CI لا يثبت الجاهزية الإنتاجية (R-184 GO + قرار المالك).
+
+## روابط
+
+- PR: https://github.com/reeveero-tech/All-hand/pull/274
+- تشغيل CI على main: https://github.com/reeveero-tech/All-hand/actions/runs/40501438586
+- سجل الدفعة التصحيحية: docs/audit/M8/logs/raw/308_r189_followup_fixes.log
