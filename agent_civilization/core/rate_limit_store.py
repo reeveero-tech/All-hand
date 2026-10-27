@@ -69,9 +69,16 @@ class RateLimitStore:
     SQLite file is the shared state. Safe across threads (a connection per
     call) and across processes (BEGIN IMMEDIATE serializes admission)."""
 
-    def __init__(self, db_path: str, busy_timeout_s: float = 2.0):
+    def __init__(self, db_path: str, busy_timeout_s: float = 2.0,
+                 init_retries: int = 10, init_retry_sleep_s: float = 0.2):
         self._db_path = db_path
         self._busy_timeout_ms = max(1, int(busy_timeout_s * 1000))
+        # init retry budget: an ATTEMPT LIMIT plus the sleep between attempts
+        # (NOT a wall-clock promise — each attempt can also spend its whole
+        # busy_timeout waiting on the lock before failing). Test knobs: small
+        # budgets keep the persistent-busy regression fast.
+        self._init_retries = max(1, init_retries)
+        self._init_retry_sleep_s = init_retry_sleep_s
         self._init_db()  # loud: a broken store must stop the server, not run unlimited
 
     def _connect(self) -> sqlite3.Connection:
@@ -82,13 +89,15 @@ class RateLimitStore:
         return conn
 
     def _init_db(self) -> None:
-        """Create the schema, RETRYING on `database is locked`: the WAL-mode
-        switch can return SQLITE_BUSY without invoking the busy handler (a
-        sqlite quirk of the journal-mode change), so N workers importing
-        this module against one shared file at the same moment must not
-        crash whichever of them loses that race."""
+        """Create the schema, RETRYING on `database is locked`/`busy`: N workers
+        importing this module against one shared file at the same moment must
+        not crash whichever of them loses the init race (observed in the log:
+        concurrent startup hit `database is locked` during init). Bounded: at
+        most ``init_retries`` attempts, ``init_retry_sleep_s`` apart — a store
+        that stays busy past that budget is reported loudly, never silently
+        run without a limit."""
         last: sqlite3.Error | None = None
-        for _attempt in range(10):
+        for _attempt in range(self._init_retries):
             try:
                 conn = self._connect()
                 try:
@@ -105,11 +114,11 @@ class RateLimitStore:
                         f"(fix the path or the filesystem — the limiter does not "
                         f"degrade to unlimited): {e}") from e
                 last = e
-                time.sleep(0.2)
+                time.sleep(self._init_retry_sleep_s)
         raise RateLimitStoreError(
-            f"rate-limit store unusable at {self._db_path!r} (kept busy for "
-            f"the whole retry budget — the limiter does not degrade to "
-            f"unlimited): {last}") from last
+            f"rate-limit store unusable at {self._db_path!r} (still busy after "
+            f"{self._init_retries} init attempts — the limiter does not degrade "
+            f"to unlimited): {last}") from last
 
     def check(self, client_id: str, limit: int, window_s: float) -> Tuple[bool, int]:
         """One atomic admission decision: prune the expired hits for this
@@ -120,12 +129,18 @@ class RateLimitStore:
         Returns ``(allowed, retry_after_seconds)``. ``retry_after_seconds``
         is the ceiling of (oldest hit + window - now), at least 1 — the same
         number the in-process counter used to send.
+
+        The window timestamp is sampled **after** ``BEGIN IMMEDIATE``
+        acquires the writer lock, never before: a check that WAITED for the
+        lock must not insert a hit whose timestamp was taken before the wait
+        (it could be born already expired — the next check would prune it and
+        the limit would never hold). Regression-tested below.
         """
-        now = time.time()
         try:
             conn = self._connect()
             try:
                 conn.execute("BEGIN IMMEDIATE")
+                now = time.time()
                 conn.execute(
                     "DELETE FROM rate_limit_hits WHERE client_id=? AND ts<=?",
                     (client_id, now - window_s))

@@ -52,6 +52,7 @@ import time
 from pathlib import Path
 
 import aiohttp
+import pytest
 
 import agent_civilization.core.rate_limit_store as rate_limit_store
 
@@ -274,3 +275,78 @@ def test_the_default_store_file_is_outside_the_tracked_source_tree(monkeypatch):
     assert not default.startswith(str(REPO)), default
     monkeypatch.setenv("AGOS_RATE_LIMIT_DB", "/somewhere/else/rl.sqlite3")
     assert rate_limit_store.default_db_path() == "/somewhere/else/rl.sqlite3"
+
+
+def test_a_waited_admission_samples_its_timestamp_after_acquiring_the_lock(tmp_path):
+    """Log-299 review: a check that WAITED for the writer lock must stamp
+    its hit with the time AFTER the wait, not before — a pre-wait timestamp
+    can be born already expired (wait longer than the window), the next
+    check prunes it, and the limit never holds. Regression: another
+    connection holds the writer lock while a check waits."""
+    import sqlite3 as _sqlite3
+    import threading as _threading
+    db = tmp_path / "ts.sqlite3"
+    store = rate_limit_store.RateLimitStore(str(db))
+    blocker = _sqlite3.connect(str(db), isolation_level=None)
+    blocker.execute("BEGIN IMMEDIATE")   # hold the writer lock
+    outcome = {}
+    def _waiting_check():
+        outcome["res"] = store.check("waiter", 1, window_s=1.0)
+    th = _threading.Thread(target=_waiting_check)
+    t0 = time.monotonic()
+    th.start()
+    time.sleep(1.2)                       # hold longer than the window
+    blocker.execute("COMMIT")             # release: the waiter proceeds
+    th.join(timeout=10)
+    elapsed = time.monotonic() - t0
+    assert not th.is_alive(), "the waiting check never finished"
+    assert elapsed >= 1.2, elapsed        # it really waited for the lock
+    assert outcome["res"] == (True, 0), outcome   # it was admitted
+    # the hit was stamped AFTER the wait: it is fresh, so the very next
+    # check is refused (a pre-wait stamp would already be pruned → admitted)
+    assert store.check("waiter", 1, window_s=1.0) == (False, 1), \
+        "a waited admission was born expired — timestamp sampled before the lock"
+    blocker.close()
+
+
+def test_transient_busy_during_init_retries_and_succeeds(tmp_path):
+    """Another connection holds the writer lock while the store initializes:
+    the WAL/schema init hits `database is locked`, the bounded retry rides
+    it out, and the construction SUCCEEDS (observed live: two servers
+    starting on one shared file — the loser used to crash at import)."""
+    import sqlite3 as _sqlite3
+    import threading as _threading
+    db = tmp_path / "init-busy.sqlite3"
+    blocker = _sqlite3.connect(str(db), isolation_level=None)
+    blocker.execute("BEGIN IMMEDIATE")
+    built = {}
+    def _build():
+        # short busy timeout + short sleeps: retries are fast and observable
+        built["store"] = rate_limit_store.RateLimitStore(
+            str(db), busy_timeout_s=0.3, init_retries=20, init_retry_sleep_s=0.05)
+    th = _threading.Thread(target=_build)
+    th.start()
+    time.sleep(0.5)                       # a few attempts fail on the lock
+    blocker.execute("COMMIT")             # release mid-retry
+    th.join(timeout=10)
+    assert not th.is_alive(), "init never finished after the lock was released"
+    assert built["store"].check("c", 5, window_s=60) == (True, 0)
+    blocker.close()
+
+
+def test_persistent_busy_during_init_fails_closed_within_the_retry_budget(tmp_path):
+    """The lock is NEVER released: the init gives up after its bounded
+    attempt budget and raises loudly (a store that cannot initialize must
+    stop the process — never run unlimited), and it gives up FAST."""
+    import sqlite3 as _sqlite3
+    db = tmp_path / "init-stuck.sqlite3"
+    blocker = _sqlite3.connect(str(db), isolation_level=None)
+    blocker.execute("BEGIN IMMEDIATE")
+    t0 = time.monotonic()
+    with pytest.raises(rate_limit_store.RateLimitStoreError) as ei:
+        rate_limit_store.RateLimitStore(
+            str(db), busy_timeout_s=0.3, init_retries=3, init_retry_sleep_s=0.05)
+    elapsed = time.monotonic() - t0
+    assert "3 init attempts" in str(ei.value)
+    assert elapsed < 5, elapsed          # bounded, not open-ended
+    blocker.close()

@@ -290,13 +290,19 @@ def test_r164_review_storage_failure_gives_the_slot_back(durable_rate, db, monke
             _PostgREST.mode[0] = "reject_insert_hold"
             held = [asyncio.ensure_future(_asgi_post("/api/tasks", _new(i), durable_rate.headers))
                     for i in range(3)]
-            # wait until all 3 inserts are actually blocked on the gate (their
-            # slots held) — only then are the refusals below deterministic
+            # wait until all 3 inserts have ARRIVED at the gate (that alone is
+            # not the proof — the proof is phase 2: with the gate closed the
+            # inserts cannot complete, so no slot can free while we assert)
             deadline = time.monotonic() + 10
             while _PostgREST.gate_waiting[0] < 3 and time.monotonic() < deadline:
                 await asyncio.sleep(0.01)
             assert _PostgREST.gate_waiting[0] == 3, "the 3 admitted inserts never reached the gate"
-            # phase 2: while the 3 hold their slots, 3 more are refused by the rate
+            # phase 2: while the 3 hold their slots, 3 more are refused by the rate.
+            # Pre-gate proof the hold is real right now: the 3 admitted requests
+            # are still unfinished and their 3 reservations are still in the window.
+            assert all(not t.done() for t in held), "an 'in-flight' request finished early"
+            assert len(server._ACCEPTED_AT.get("test_tenant", [])) == 3, \
+                server._ACCEPTED_AT.get("test_tenant")
             refused = await asyncio.gather(*[_asgi_post("/api/tasks", _new(10 + i), durable_rate.headers)
                                              for i in range(3)])
             assert all(_rate_refused(r) for r in refused), refused
@@ -314,9 +320,17 @@ def test_r164_review_storage_failure_gives_the_slot_back(durable_rate, db, monke
             assert sum(1 for r in res if _rate_refused(r)) == 3
             assert len(db["tasks"]) == 3
         finally:
-            _PostgREST.mode[0] = "ok"
+            # lifecycle: never leave the gate closed, an insert blocked, or the
+            # mock broken — whatever assertion failed above
             if _PostgREST.gate[0] is not None:
                 _PostgREST.gate[0].set()
+            _PostgREST.mode[0] = "ok"
+            _PostgREST.gate[0] = None
+            _PostgREST.gate_waiting[0] = 0
+            if "held" in locals():
+                pending = [t for t in held if not t.done()]
+                if pending:
+                    await asyncio.wait(pending, timeout=10)
             from agent_civilization.storage import supabase_store as ss
             if ss._storage is not None:
                 await ss._storage.close()
