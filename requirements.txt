@@ -4,3 +4,4 @@ fastapi
 uvicorn[standard]
 pydantic>=2.12,<3
 python-multipart
+cryptography

@@ -133,9 +133,33 @@ CREDENTIALS: Dict[str, Principal] = tenancy.load_credentials()
 # without valid credentials; only an explicit AGOS_ENV=development|test may,
 # and never on a deployed platform (RENDER=true). Raises CredentialsError.
 RUNTIME_ENV = tenancy.enforce_startup(CREDENTIALS)
-ENABLE_AUTH = bool(CREDENTIALS)  # credentials configured (tenant data needs them in any case)
-logger.info("startup: AGOS_ENV=%s, %d credential(s) for %d tenant(s)", RUNTIME_ENV, len(CREDENTIALS),
-            len({p.tenant_id for p in CREDENTIALS.values()}))
+# R-189: encrypted per-tenant secret storage — OPT-IN. No AGOS_SECRETS_DB =
+# no store and no behavior change (env-configured SEC-02 auth stays the base
+# and the production bootstrap). A configured-but-broken store stops the
+# server loudly (fail-closed — never a silent auth downgrade). Store-backed
+# tenant keys are additive principals: created/rotated/revoked at runtime,
+# resolved per request (no cache — rotation and revocation apply immediately
+# across processes sharing the file).
+from agent_civilization.core.secret_store import (  # noqa: E402
+    MasterKeyError, SecretStore, SecretStoreError,
+    default_master_key_file as _secrets_master_key_file,
+)
+def _build_secret_store():
+    db = (os.environ.get("AGOS_SECRETS_DB") or "").strip()
+    if not db:
+        return None
+    store = SecretStore(db, _secrets_master_key_file())
+    try:
+        store.initialize()  # explicit init: creates key file + schema; never regenerates for existing data
+    except (MasterKeyError, SecretStoreError) as exc:
+        raise RuntimeError(f"AGOS_SECRETS_DB is configured but the secret store is unusable: {exc}") from None
+    return store
+_SECRET_STORE = _build_secret_store()
+ENABLE_AUTH = bool(CREDENTIALS) or _SECRET_STORE is not None
+logger.info("startup: AGOS_ENV=%s, %d credential(s) for %d tenant(s), secret store %s",
+            RUNTIME_ENV, len(CREDENTIALS),
+            len({p.tenant_id for p in CREDENTIALS.values()}),
+            "enabled" if _SECRET_STORE is not None else "disabled")
 if not CREDENTIALS:
     logger.warning("startup: no credentials (AGOS_ENV=%s) — every tenant-data route answers 401", RUNTIME_ENV)
 
@@ -231,6 +255,12 @@ def _authenticate(api_key: Optional[str]) -> Principal:
     if not api_key:
         raise HTTPException(status_code=401, detail="API key required", headers=_AUTH_HEADERS)
     principal = tenancy.authenticate(api_key, CREDENTIALS)
+    if principal is None and _SECRET_STORE is not None:
+        # R-189: store-backed tenant keys (the tenant identity comes ONLY
+        # from this server-side resolution — SEC-02; never from the caller).
+        info = _SECRET_STORE.authenticate_key(api_key)
+        if info is not None:
+            principal = Principal(info["tenant"], info["role"])
     if principal is None:
         raise HTTPException(status_code=401, detail="Invalid API key", headers=_AUTH_HEADERS)
     return principal
