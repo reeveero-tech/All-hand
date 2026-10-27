@@ -42,8 +42,10 @@ HONEST limits of this design (documented, not hidden):
 - LEASED ADMISSION, NOT A SOCKET CAP: admission grants a lease; a process
   suspended past its TTL can find its lease expired while its socket is
   still open — the guarantee is "leased active-stream admission with
-  liveness", not an absolute count of live sockets. Renewal narrows the
-  window to the renewal interval, it cannot close it.
+  liveness", not an absolute count of live sockets. The deadline watchdog
+  ends the RESPONSE at the last confirmed expiry (even while a renewal is
+  blocked inside SQLite); no claim is made that the doubt window itself
+  closes — while the store answers, renewal keeps the proof alive.
 - EVENT DELIVERY IS NOT SHARED: only the ADMISSION limits are shared. Each
   process's EventBus still delivers events to its own local subscribers
   only (the pre-existing, documented behavior).
@@ -306,50 +308,107 @@ class SSELeaseStore:
             raise SSEAdmissionError(f"reset failed: {e}") from e
 
 
-async def renewal_loop(lease_id: str, store: SSELeaseStore, ttl_s: float,
-                       interval_s: float, on_loss: Callable[[], None],
-                       valid_until: float) -> None:
-    """The INDEPENDENT periodic lease renewal (it must not depend on
-    heartbeat output: heartbeats may not fire under a continuous stream of
-    events or a stalled reader).
+class LeaseKeeper:
+    """Keeps one SSE lease alive — or ends its response at the last
+    CONFIRMED deadline. Two INDEPENDENT asyncio tasks (advisor review,
+    corrective round 2):
 
-    ``valid_until`` is the expiry written by the LAST CONFIRMED transaction
-    (acquisition or renewal — never a local clock guess); the loop must
-    not let the stream run past it while unconfirmed:
+    * a RENEWAL task: attempts ``store.renew`` every ``interval_s`` (the
+      store call runs OFF the loop via ``to_thread`` and is UNBOUNDED —
+      SQLite may sit on its busy timeout while the lease expires);
+    * a DEADLINE WATCHDOG: pure asyncio — it fires at the last confirmed
+      expiry EVEN IF a renewal is blocked inside SQLite at that moment.
+      The renewal task cannot substitute for it: an unbounded ``await``
+      inside the renewal path would let the stream run past the deadline
+      whenever the store is slow or locked.
 
-    * the next wake is scheduled at ``min(now + interval, valid_until)`` —
-      an outage is decided BEFORE the deadline passes, never discovered
-      after waking late past it (the plain-interval sleep could overshoot:
-      fail at t=interval with ttl < 2*interval, wake at 2*interval — past
-      the deadline);
-    * a successful renewal returns the NEW expiry and re-arms the deadline;
-    * a confirmed loss (``renew`` → None) closes the stream;
-    * a store OUTAGE does not fail open: the loop retries, bounded by the
-      deadline — the wake is capped at ``valid_until``, so the retry budget
-      is consumed inside the validity window and the close decision is made
-      no later than it.
+    A successful renewal pushes the NEW expiry to the watchdog (the wake
+    event re-arms it); a confirmed loss (``renew`` → None) or the deadline
+    passing calls ``on_loss`` EXACTLY ONCE — ON THE EVENT LOOP (on_loss is
+    asyncio signaling: it cancels the response; it must not wait on the
+    store — the lease release is the response's cleanup, off-loop). A
+    renewal completing AFTER the loss is ignored (no revive: the keeper is
+    stopped).
 
-    The store calls run OFF the event loop (``asyncio.to_thread``): a lock
-    wait inside SQLite must never block the loop that serves the stream.
-    ``on_loss`` runs off-loop too (it may touch the store).
+    The keeper does not depend on the response body in any way: it is
+    created by the ROUTE (before the first ASGI send), so a response whose
+    first ``send()`` stalls is still kept alive — and still ended at its
+    deadline.
+    """
 
-    The interval must be much shorter than the TTL (a startup-time
-    validation in ``SSELimits``); the numbers are operational defaults, not
-    a verified safety bound."""
-    while True:
-        wake_at = min(time.time() + interval_s, valid_until)
-        await asyncio.sleep(max(0.0, wake_at - time.time()))
+    def __init__(self, lease_id: str, store: SSELeaseStore, ttl_s: float,
+                 interval_s: float, on_loss: Callable[[], None],
+                 valid_until: float):
+        self._lease_id = lease_id
+        self._store = store
+        self._ttl = ttl_s
+        self._interval = interval_s
+        self._on_loss = on_loss
+        self._deadline = valid_until        # last CONFIRMED expiry
+        self._wake = asyncio.Event()        # stop() or deadline moved
+        self._stopped = False
+        self._loss_called = False
+        self.task: Optional[asyncio.Task] = None
+
+    def stop(self) -> None:
+        """End the keeper without calling on_loss (the response is done)."""
+        self._stopped = True
+        self._wake.set()
+
+    def _finish(self) -> None:
+        self._stopped = True
+        self._wake.set()
+        if not self._loss_called:
+            self._loss_called = True
+            self._on_loss()                # on-loop: signaling only
+
+    async def _wait(self, timeout: float) -> bool:
+        """True = woken (stop/deadline moved); False = timeout elapsed."""
         try:
-            expiry = await asyncio.to_thread(store.renew, lease_id, ttl_s)
-        except SSEAdmissionError as e:
-            logger.warning("sse: lease renewal store unavailable (%s) — "
-                           "deciding before the last confirmed expiry "
-                           "passes", type(e).__name__)
-            if time.time() >= valid_until:
-                await asyncio.to_thread(on_loss)
+            await asyncio.wait_for(self._wake.wait(), timeout)
+            self._wake.clear()
+            return True
+        except asyncio.TimeoutError:
+            return False
+
+    async def run(self) -> None:
+        """Run both tasks to completion (call via asyncio.create_task)."""
+        self.task = asyncio.current_task()
+        watchdog = asyncio.create_task(self._watchdog())
+        renewal = asyncio.create_task(self._renewal())
+        await asyncio.gather(watchdog, renewal)
+
+    async def _watchdog(self) -> None:
+        while not self._stopped:
+            now = time.time()
+            if now >= self._deadline:
+                break                        # the last confirmed expiry passed
+            if await self._wait(self._deadline - now):
+                continue                     # stop() or a newer deadline
+            break                            # the deadline itself arrived
+        if not self._stopped:
+            logger.warning("sse: lease %s unprovable at its deadline — "
+                           "ending the stream", self._lease_id[:8])
+            self._finish()
+
+    async def _renewal(self) -> None:
+        while not self._stopped:
+            if await self._wait(self._interval):
+                continue                     # stop() or deadline moved
+            if self._stopped:
                 return
-            continue  # bounded: the next wake is capped at valid_until
-        if expiry is None:
-            await asyncio.to_thread(on_loss)
-            return
-        valid_until = expiry
+            try:
+                expiry = await asyncio.to_thread(
+                    self._store.renew, self._lease_id, self._ttl)
+            except SSEAdmissionError as e:
+                logger.warning("sse: lease renewal store unavailable (%s) "
+                               "— the deadline watchdog decides",
+                               type(e).__name__)
+                continue                     # the watchdog owns the deadline
+            if self._stopped:
+                return                       # late completion: no revive
+            if expiry is None:               # confirmed loss
+                self._finish()
+                return
+            self._deadline = expiry          # re-arm the watchdog
+            self._wake.set()

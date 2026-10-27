@@ -34,10 +34,10 @@ import pytest
 
 from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
 from agent_civilization.core.sse_admission import (
+    LeaseKeeper,
     SSEAdmissionError,
     SSEAdmissionRefused,
     SSELeaseStore,
-    renewal_loop,
     sse_admission_default_db_path,
 )
 
@@ -307,18 +307,21 @@ async def _heartbeat(interval):
         await asyncio.sleep(interval)
 
 
-# ------------------------------------------------------------- renewal loop
-
+# --------------------------------------------------------- the lease keeper
 class _FakeStore:
-    """Scripted renew outcomes for the renewal loop tests (renew returns
-    the new expiry, or None = confirmed loss, or raises = outage)."""
+    """Scripted renew outcomes for the keeper tests (renew returns the
+    new expiry, or None = confirmed loss, or raises = outage; ``delay``
+    simulates a locked/slow store call)."""
 
-    def __init__(self, outcomes):
+    def __init__(self, outcomes, delay=None):
         self.outcomes = list(outcomes)
         self.calls = 0
+        self.delay = delay
 
     def renew(self, lease_id, ttl_s):
         self.calls += 1
+        if self.delay is not None:
+            time.sleep(self.delay)          # a locked/slow store call
         if self.outcomes:
             out = self.outcomes.pop(0)
         else:
@@ -328,100 +331,133 @@ class _FakeStore:
         if out is True:
             return time.time() + ttl_s
         if out is False:
-            return None          # confirmed loss
-        return out               # a scripted expiry (float)
+            return None                     # confirmed loss
+        return out                          # a scripted expiry (float)
 
 
-async def test_renewal_loop_closes_on_confirmed_lease_loss():
+async def test_keeper_closes_on_confirmed_lease_loss():
     lost = []
     fake = _FakeStore([True, True, False])     # renewed twice, then lost
-    await renewal_loop("lease", fake, ttl_s=60, interval_s=0.01,
-                       on_loss=lambda: lost.append(True),
-                       valid_until=time.time() + 60)
+    keeper = LeaseKeeper("lease", fake, ttl_s=60, interval_s=0.01,
+                         on_loss=lambda: lost.append(True),
+                         valid_until=time.time() + 60)
+    await asyncio.wait_for(keeper.run(), timeout=5)
     assert lost == [True]
     assert fake.calls == 3
 
 
-async def test_renewal_loop_retries_store_outage_while_lease_may_be_valid():
-    """A store outage must NOT fail open: the loop keeps retrying only
-    while the last confirmed lease could still be valid; past the TTL since
-    the last confirmation it releases (closes the stream)."""
-    lost = []
-    # outage for longer than the ttl since last confirmation → give up
+async def test_keeper_watchdog_fires_at_deadline_during_outage():
+    """A store outage must NOT fail open: the WATCHDOG (independent of the
+    renewal's unbounded store call) ends the stream at the last confirmed
+    deadline — the renewal task may be blocked inside SQLite, the watchdog
+    is not."""
+    lost_at = []
     fake = _FakeStore([True] + [SSEAdmissionError("down")] * 400)
+    keeper = LeaseKeeper("lease", fake, ttl_s=0.05, interval_s=0.01,
+                        on_loss=lambda: lost_at.append(time.time()),
+                        valid_until=time.time() + 0.05)
     t0 = time.monotonic()
-    await renewal_loop("lease", fake, ttl_s=0.05, interval_s=0.01,
-                       on_loss=lambda: lost.append(True),
-                       valid_until=time.time() + 0.05)
-    assert lost == [True]
+    await asyncio.wait_for(keeper.run(), timeout=5)
+    assert len(lost_at) == 1
     assert time.monotonic() - t0 < 5          # bounded: it did not hang forever
 
 
-async def test_renewal_loop_outage_deadline_is_not_overshot():
+async def test_keeper_deadline_is_not_overshot():
     """DEADLINE REGRESSION (advisor review): with TTL=0.3s and interval=0.25s
-    (interval < TTL, so the config is legal), a renewal failing at t=0.25
-    must be decided BEFORE the last confirmed expiry (0.3s) passes — the
-    wake is capped at the deadline. A plain-interval sleep would wake at
-    0.5s: ONE FULL RENEWAL INTERVAL PAST the deadline, holding the stream on
-    an unprovable lease. The old loop did exactly that; this pins the fix.
-    """
+    (interval < TTL, a legal config), a renewal failing at t=0.25 must be
+    decided AT the deadline (0.3s) — a plain-interval loop would wake at
+    0.5s: one full renewal interval PAST the deadline, holding the stream
+    on an unprovable lease. The old loop did exactly that."""
     lost_at = []
-    fake = _FakeStore([SSEAdmissionError("down")] * 400)   # fails from the start
+    fake = _FakeStore([SSEAdmissionError("down")] * 400)  # fails from t=0
     t0 = time.time()
-    await renewal_loop("lease", fake, ttl_s=0.3, interval_s=0.25,
-                       on_loss=lambda: lost_at.append(time.time()),
-                       valid_until=t0 + 0.3)
+    keeper = LeaseKeeper("lease", fake, ttl_s=0.3, interval_s=0.25,
+                        on_loss=lambda: lost_at.append(time.time()),
+                        valid_until=t0 + 0.3)
+    await asyncio.wait_for(keeper.run(), timeout=5)
     assert len(lost_at) == 1
-    # decided no later than the deadline (+ scheduling margin, well under
-    # the 0.25s interval the old code would have overshot by)
+    # fired no later than the deadline (+ scheduling margin, well under the
+    # 0.25s interval the old code would have overshot by)
     assert lost_at[0] - t0 <= 0.3 + 0.05
 
 
-async def test_renewal_loop_survives_outage_then_recovers():
-    """A SHORT outage (shorter than the time the last confirmation stays
-    valid) must not close the stream: the loop retries and the next
-    successful renewal re-arms the validity window."""
+async def test_keeper_fires_while_renewal_is_blocked_in_the_store():
+    """SLOW/LOCKED RENEWAL (advisor review, round 2): the renewal's store
+    call is UNBOUNDED (SQLite may sit on its busy timeout while the lease
+    expires) — the WATCHDOG must still end the stream at the deadline,
+    WITHOUT waiting for that blocked call. A renewal blocked for 1s with
+    TTL=0.2 must produce the loss at ~0.2s, and the late completion must
+    not revive anything (on_loss exactly once)."""
+    lost_at = []
+    fake = _FakeStore([True] * 10, delay=1.0)   # every renew blocks 1s
+    t0 = time.time()
+    keeper = LeaseKeeper("lease", fake, ttl_s=0.2, interval_s=0.05,
+                        on_loss=lambda: lost_at.append(time.time()),
+                        valid_until=t0 + 0.2)
+    await asyncio.wait_for(keeper.run(), timeout=5)
+    assert len(lost_at) == 1
+    assert lost_at[0] - t0 <= 0.2 + 0.1        # the deadline, not the renew
+    # the late (blocked) renewals completed but revived nothing
+    assert keeper._loss_called and keeper._stopped
+
+
+async def test_keeper_survives_short_outage_then_recovers():
+    """A SHORT outage (shorter than the last confirmation's validity) must
+    not close the stream: the watchdog deadline is re-armed by the next
+    successful renewal."""
     lost = []
-    fake = _FakeStore([True, SSEAdmissionError("down"), SSEAdmissionError("down"), True, False])
-    await renewal_loop("lease", fake, ttl_s=5, interval_s=0.01,
-                       on_loss=lambda: lost.append(True),
-                       valid_until=time.time() + 5)
+    fake = _FakeStore([True, SSEAdmissionError("down"), SSEAdmissionError("down"),
+                      True, False])
+    keeper = LeaseKeeper("lease", fake, ttl_s=5, interval_s=0.01,
+                         on_loss=lambda: lost.append(True),
+                         valid_until=time.time() + 5)
+    await asyncio.wait_for(keeper.run(), timeout=5)
     assert lost == [True]                     # closed only on the final loss
     assert fake.calls == 5
 
 
-async def test_renewal_loop_is_independent_of_heartbeats_or_events():
-    """Continuous events (or none at all) must not matter: renewal is a
-    periodic schedule of its own. A store that always succeeds keeps the
-    stream alive for many intervals with zero events in flight."""
-    fake = _FakeStore([])
-    alive = []
+async def test_keeper_renewal_is_independent_of_events_or_heartbeats():
+    """The keeper's renewal must not depend on heartbeat output or events:
+    with NO events flowing at all, renewals still happen on schedule."""
+    fake = _FakeStore([])                       # always renews
+    keeper = LeaseKeeper("lease", fake, ttl_s=60, interval_s=0.01,
+                         on_loss=lambda: None,
+                         valid_until=time.time() + 60)
 
     async def events_flow():
-        for _ in range(20):                  # a busy event loop, no heartbeats
-            alive.append(1)
-            await asyncio.sleep(0.005)
+        await asyncio.sleep(0.05)              # no events, no heartbeats
 
-    task = asyncio.create_task(
-        renewal_loop("lease", fake, ttl_s=60, interval_s=0.01,
-                     on_loss=lambda: alive.append("lost"),
-                     valid_until=time.time() + 60))
+    task = asyncio.create_task(keeper.run())
     await events_flow()
-    assert fake.calls >= 2                   # renewed regardless of events
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
+    assert fake.calls >= 2                     # renewed regardless
+    keeper.stop()
+    await task
 
 
-# ------------------------- the RESPONSE side (server.py): lease loss vs a STALL
+async def test_keeper_no_late_completion_revive():
+    """A renewal completing AFTER the loss must not revive anything: the
+    keeper is stopped, on_loss was called exactly once, and the run task
+    ends (no surviving renewal task)."""
+    lost = []
+    fake = _FakeStore([None, True, True])       # loss, then late successes
+    keeper = LeaseKeeper("lease", fake, ttl_s=5, interval_s=0.01,
+                         on_loss=lambda: lost.append(True),
+                         valid_until=time.time() + 5)
+    task = asyncio.create_task(keeper.run())   # as production runs it
+    await asyncio.wait_for(task, timeout=5)
+    assert lost == [True]                      # exactly once
+    assert task.done() and keeper.task is task # the run task ended
+
+
+# ------------------ the RESPONSE side (server.py): a lease loss vs a STALLED body
 def test_lease_loss_cancels_a_stalled_response():
-    """The advisor's probe, at the response level: a stalled reader can
-    leave the generator parked inside ``send()`` — no in-generator check
-    (sub.closed, lifetime, the wake event) would ever run there. The lease
-    loss must STILL end the response:
+    """A stalled reader can leave the generator parked inside ``send()`` —
+    no in-generator check (sub.closed, lifetime, the wake event) would ever
+    run there. The lease loss must STILL end the response:
 
-    * the renewal loop keeps running WHILE the body is stalled (its
-      independence is not just from heartbeats — it is from the body);
+    * the keeper (production class) keeps renewing WHILE the body is
+      stalled (its independence is not just from heartbeats — it is from
+      the body);
     * on the confirmed loss the response body task is CANCELLED and the
       release runs (the stream never outlives its lease).
     """
@@ -444,16 +480,20 @@ def test_lease_loss_cancels_a_stalled_response():
             await asyncio.Event().wait()
             return {"type": "http.request"}
 
+        async def release():
+            released.append(True)
+
         response = srv._SSEResponse(
-            gen(), release=lambda: released.append(True),
-            media_type="text/event-stream")
+            gen(), release=release, media_type="text/event-stream")
 
         fake = _FakeStore([True, True, False])   # renewed, renewed, LOST
         lost = []
-        loop = asyncio.create_task(renewal_loop(
-            "lease", fake, ttl_s=5, interval_s=0.01,
-            on_loss=lambda: (lost.append(True), response.abort()),
-            valid_until=time.time() + 5))
+        keeper = LeaseKeeper("lease", fake, ttl_s=5, interval_s=0.01,
+                             on_loss=lambda: (lost.append(True),
+                                               response.abort()),
+                             valid_until=time.time() + 5)
+        response.attach_keeper(keeper)
+        loop = asyncio.create_task(keeper.run())
 
         scope = {"type": "http", "http_version": "1.1", "method": "GET",
                  "path": "/api/events/stream", "headers": [],
@@ -462,7 +502,7 @@ def test_lease_loss_cancels_a_stalled_response():
         try:
             # wait until the body is parked inside send() (the stall)
             await asyncio.wait_for(stalled_in_send.wait(), timeout=5)
-            # the renewal loop kept running WHILE the body was stalled
+            # the keeper kept running WHILE the body was stalled
             await asyncio.wait_for(asyncio.sleep(0.05), timeout=1)
             assert fake.calls >= 2, fake.calls
             # the loss ends the response: the body task is cancelled,
@@ -471,7 +511,7 @@ def test_lease_loss_cancels_a_stalled_response():
             assert lost == [True]
             assert released == [True]
         finally:
-            loop.cancel()
+            keeper.stop()
             try:
                 await loop
             except asyncio.CancelledError:

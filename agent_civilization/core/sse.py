@@ -254,16 +254,53 @@ class EventBus:
             stamps = self._opens[client] = deque(maxlen=self.limits.open_rate)
         stamps.append(now)
 
-    def open(self, tenant: str, client: str) -> Subscription:
+    @property
+    def shared_admission(self) -> bool:
+        """True when this bus decides admission through the shared lease
+        store (the server route then splits acquire/registry by thread)."""
+        return self._admission is not None
+
+    def acquire_lease(self, tenant: str, client: str) -> tuple:
+        """The shared-admission store transaction ONLY — no registry
+        mutation, so it is SAFE TO RUN OFF THE EVENT LOOP (the server route
+        runs it via ``asyncio.to_thread``; the registry add stays on the
+        loop — a worker thread must never mutate ``_subs`` while the loop
+        iterates it). Returns ``(lease_id, expires_at)``; raises
+        ``StreamLimit`` on refusal (rate/capacity) exactly like ``open``.
+        """
+        lim = self.limits
+        try:
+            return self._admission.acquire(
+                tenant, client,
+                max_connections=lim.max_connections,
+                max_per_tenant=lim.max_per_tenant,
+                max_per_client=lim.max_per_client,
+                open_rate=lim.open_rate,
+                open_window_s=lim.open_window_s,
+                lease_ttl_s=lim.lease_ttl_s)
+        except SSEAdmissionRefused as e:
+            if e.reason == "open_rate":
+                self.stats["refused_rate"] += 1
+            else:
+                self.stats["refused_capacity"] += 1
+            self._metric("sse_refused_total")
+            raise StreamLimit(e.reason, e.retry_after_s) from None
+
+    def open(self, tenant: str, client: str,
+             lease: Optional[tuple] = None) -> Subscription:
         """Admit one connection (counts toward the open-rate even if then
         refused for capacity) and register its subscription.
 
         With a shared ``admission`` store the caps and the open-rate window
         are decided by ONE lease transaction in the store (see
         ``sse_admission``); the local maps below then only track the
-        subscription for delivery."""
+        subscription for delivery.
+
+        ``lease``: a lease PRE-ACQUIRED off-loop via :meth:`acquire_lease`
+        (the route's to_thread split: store I/O off-loop, registry
+        mutation on-loop). ``None`` acquires here (sync, tests/local)."""
         if self._admission is not None:
-            return self._open_shared(tenant, client)
+            return self._open_shared(tenant, client, lease=lease)
         now = self.clock()
         self._check_rate(client, now)
         lim = self.limits
@@ -280,26 +317,16 @@ class EventBus:
         self._metric("sse_connections", self.total)
         return sub
 
-    def _open_shared(self, tenant: str, client: str) -> Subscription:
+    def _open_shared(self, tenant: str, client: str,
+                     lease: Optional[tuple] = None) -> Subscription:
         """Shared-admission path: the store's ONE transaction decides the
-        open-rate window and every cap; the local maps are delivery state."""
-        lim = self.limits
-        try:
-            lease_id, expires_at = self._admission.acquire(
-                tenant, client,
-                max_connections=lim.max_connections,
-                max_per_tenant=lim.max_per_tenant,
-                max_per_client=lim.max_per_client,
-                open_rate=lim.open_rate,
-                open_window_s=lim.open_window_s,
-                lease_ttl_s=lim.lease_ttl_s)
-        except SSEAdmissionRefused as e:
-            if e.reason == "open_rate":
-                self.stats["refused_rate"] += 1
-            else:
-                self.stats["refused_capacity"] += 1
-            self._metric("sse_refused_total")
-            raise StreamLimit(e.reason, e.retry_after_s) from None
+        open-rate window and every cap; the local maps are delivery state.
+        With ``lease`` given (pre-acquired off-loop) the store is not
+        touched here — only the on-loop registry add."""
+        if lease is not None:
+            lease_id, expires_at = lease
+        else:
+            lease_id, expires_at = self.acquire_lease(tenant, client)
         sub = Subscription(self, tenant, client, self.clock(), lease_id=lease_id)
         sub.lease_expires_at = expires_at   # the renewal deadline (from the store)
         self._subs.setdefault(tenant, set()).add(sub)
@@ -309,12 +336,19 @@ class EventBus:
         self._metric("sse_connections", self.total)
         return sub
 
-    def close(self, sub: Subscription) -> bool:
-        """Release the subscription and its slots. Idempotent: True only the
-        first time."""
+    def detach(self, sub: Subscription) -> bool:
+        """Remove the subscription from the delivery registry (ON-LOOP:
+        registry mutation only, no store I/O — safe in the loss path,
+        where the response must be cancelled BEFORE any SQLite wait).
+        Idempotent: True only the first time."""
         if sub.closed:
             return False
         sub.closed = True
+        return self._unregister(sub)
+
+    def release_lease(self, sub: Subscription) -> None:
+        """The store release ONLY (run OFF the loop via to_thread; the TTL
+        reclaims the capacity if this fails). Idempotent at the store."""
         if sub.lease_id is not None and self._admission is not None:
             try:
                 self._admission.release(sub.lease_id)
@@ -322,6 +356,21 @@ class EventBus:
                 logger.warning(
                     "sse: lease release failed (%s) — the TTL will reclaim "
                     "the capacity", type(exc).__name__)
+
+    def close(self, sub: Subscription) -> bool:
+        """Release the subscription and its slots (sync, whole: detach +
+        store release — tests/local paths). Idempotent: True only the
+        first time."""
+        if sub.closed:
+            return False
+        sub.closed = True
+        self.release_lease(sub)
+        self._unregister(sub)
+        return True
+
+    def _unregister(self, sub: Subscription) -> bool:
+        if not sub.closed:
+            sub.closed = True
         subs = self._subs.get(sub.tenant)
         if subs is not None:
             subs.discard(sub)
