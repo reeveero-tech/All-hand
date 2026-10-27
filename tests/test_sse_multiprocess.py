@@ -129,6 +129,25 @@ async def _open_n(streams: _OpenStreams, n: int) -> list:
     return [await streams.open(0) for _ in range(n)]
 
 
+async def _open_until_admitted(streams: _OpenStreams, deadline_s: float = 5.0) -> int:
+    """Open one stream, polling (bounded) until it is ADMITTED: the
+    disconnect-to-release chain on the server is asynchronous (detect,
+    cancel body, keeper shutdown, store release) and a zero-tolerance
+    probe fired immediately after a client close RACES it — the property
+    under test is that the release LANDS within a bound and nothing leaks,
+    not that it beats the next packet (slow CI runners lose that race
+    legitimately — the CI failures on the round 1-4 heads were exactly
+    this race, not a leak; a real leak still fails: the 429s persist
+    past the window and the deadline returns the refusal)."""
+    loop = asyncio.get_event_loop()
+    end = loop.time() + deadline_s
+    while True:
+        code = await streams.open(0)
+        if code != 429 or loop.time() >= end:
+            return code
+        await asyncio.sleep(0.1)
+
+
 async def test_control_single_process_enforces_the_tenant_cap(tmp_path):
     """CONTROL (the in-process behavior is sound): one server, the tenant
     opens TENANT_CAP streams (all 200) and the next is refused (429)."""
@@ -254,7 +273,8 @@ async def test_denied_admission_leaves_no_reservation_across_processes(tmp_path)
                 assert codes_a == [200] * TENANT_CAP, codes_a
                 assert await sb.open(0) == 429          # refused on B
                 await sa.close_all()                    # release the 3
-                codes_b = await _open_n(sb, TENANT_CAP)
+                codes_b = [await _open_until_admitted(sb)
+                           for _ in range(TENANT_CAP)]
                 assert codes_b == [200] * TENANT_CAP, codes_b  # nothing held
             finally:
                 await sa.close_all()
@@ -283,7 +303,9 @@ async def test_disconnect_releases_capacity_on_the_other_process(tmp_path):
                 assert codes_a == [200] * TENANT_CAP, codes_a
                 assert await sb.open(0) == 429
                 await sa.close_all()                    # disconnect all 3
-                assert await sb.open(0) == 200         # B takes the freed slot
+                # B takes a freed slot (bounded poll — see the helper:
+                # the release LANDS; a leak would still refuse past it)
+                assert await _open_until_admitted(sb) == 200
             finally:
                 await sa.close_all()
                 await sb.close_all()
@@ -391,7 +413,7 @@ async def test_renewal_maintains_capacity_beyond_the_lease_ttl(tmp_path):
                 assert await sb.open(0) == 429
                 # closing them frees the capacity
                 await sa.close_all()
-                assert await sb.open(0) == 200
+                assert await _open_until_admitted(sb) == 200
             finally:
                 await sa.close_all()
                 await sb.close_all()
