@@ -499,8 +499,15 @@ async def _asgi(tenant_auth):
                              base_url="http://agos.test", headers=tenant_auth.headers)
 
 
-async def test_sse_events_of_a_task_follow_the_frame_contract(tenant_auth):
+async def test_sse_events_of_a_task_follow_the_frame_contract(tenant_auth, monkeypatch):
     import server
+    # R-188 (log 302, لاحق 60 ج2): one terminal-write attempt — this test
+    # pins the SSE FRAME contract (the event sequence this task publishes),
+    # not the terminal-write retry policy (which has its own deterministic
+    # tests in tests/test_r188_terminal_write_retry.py); without this the
+    # task_completed frame waits out the retry backoff after a soft storage
+    # failure (no fake PostgREST here — storage unconfigured = one False).
+    monkeypatch.setattr(server, "TASK_TERMINAL_WRITE_ATTEMPTS", 1)
     sub = server.EVENT_BUS.open(tenant_auth.tenant, "contract-test")
     try:
         async with await _asgi(tenant_auth) as c:

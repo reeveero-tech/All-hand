@@ -28,6 +28,7 @@ import logging.handlers
 import math
 import os
 import queue
+import random
 import re
 import secrets
 import tempfile
@@ -721,6 +722,204 @@ def _end_unfinished(task_id: str, specialization: str, reason: str) -> None:
                                       "ok": False, "elapsed_s": 0})
 
 
+# R-188 (log 302): ``update_task`` FAILS SOFT — it catches every storage
+# error (transport, timeout, the storage circuit's ``CircuitOpen``) and
+# returns False, and the terminal-write call sites used to IGNORE that
+# return value. Proven by the 500-task volatile load test (this batch):
+# under the completion storm the storage breaker opened (5 failures / 10s
+# reset) and the terminal write of a few tasks failed — their rows stayed
+# ``running`` FOREVER (the effect had happened and the record lost it:
+# no retry, no reconciliation in the volatile mode; the durable queue has
+# its own). The terminal write is now retried with a bounded jittered
+# budget — a single transient failure (a breaker trip, a blip) is absorbed
+# inline. The budget is NOT a guarantee against a sustained outage: the
+# backoff sleeps alone span ~7.5-11.25s with the defaults, which straddles
+# (not outlasts) the storage breaker's 10s reset, and the storage calls add
+# their own latency. When the budget is exhausted (a SUSTAINED outage:
+# reproduced under verified external saturation — log 302, round 3), the
+# write is no longer ORPHANED: it is DEFERRED to an in-memory pending map
+# drained by a background loop task that keeps retrying (a bounded batch per
+# round, every TERMINAL_WRITE_DRAIN_INTERVAL_S) until the write lands — so a
+# living server converges on its own rows once storage recovers, instead
+# of leaving them ``running`` forever. Honest limits (unchanged in
+# kind): the deferral is IN-MEMORY — a server restart still loses the
+# pending writes (the volatile mode's documented durability bound; the
+# durable queue is the no-loss guarantee). The pending map has NO
+# configured memory bound: entries accumulate for as long as the outage
+# lasts across the server's lifetime, and each entry carries the task's
+# result payload — a sustained outage is an unbounded memory liability,
+# bounded only by the number of terminal tasks (documented, not solved
+# here). Reconciliation after recovery is eventual (round-by-round),
+# never immediate, and says nothing about exactly-once execution. The
+# failure is CRITICAL-logged at defer time, never silent. The
+# intermediate ``running`` write is not
+# retried: its failure self-heals at the terminal write.
+TASK_TERMINAL_WRITE_ATTEMPTS = max(1, int(os.getenv(
+    "AGOS_TASK_TERMINAL_WRITE_ATTEMPTS", "5")))
+TASK_TERMINAL_WRITE_MAX_WAIT_S = max(0.0, float(os.getenv(
+    "AGOS_TASK_TERMINAL_WRITE_MAX_WAIT_S", "4")))
+
+# The deferral map + drainer (see the block comment above). The map is
+# mutated and drained ONLY on the event loop (the defer happens inside
+# _write_task_terminal, the drainer is a loop task), so a plain dict is
+# safe without a lock. Keyed by task_id — a re-defer of the same task
+# overwrites (a task is terminal exactly once; the payload is the
+# terminal write's exact arguments).
+TERMINAL_WRITE_PENDING: Dict[str, Dict[str, Any]] = {}
+TERMINAL_WRITE_DRAIN_INTERVAL_S = max(0.05, float(os.getenv(
+    "AGOS_TASK_TERMINAL_WRITE_DRAIN_INTERVAL_S", "5")))
+TERMINAL_WRITE_DRAIN_BATCH = max(1, int(os.getenv(
+    "AGOS_TASK_TERMINAL_WRITE_DRAIN_BATCH", "25")))
+_TERMINAL_WRITE_DRAIN_TASK: Optional[asyncio.Task] = None
+
+
+async def _drain_terminal_writes() -> None:
+    """Retry the DEFERRED terminal writes until they land (or the loop
+    dies with the server). One bounded batch per round, attempted
+    CONCURRENTLY (a saturated storage times out at ~30s per call — a
+    serial round of 25 could take 12 minutes; concurrent, the round is
+    bounded by the slowest call). Per-write failures are contained:
+    an exception in ONE write is caught and logged for that write alone
+    (the entry stays pending) — it must never end reconciliation for the
+    rest; a failure ANYWHERE in a round restarts the loop after an
+    interval instead of exiting, so a living server keeps reconciling
+    while entries exist. FAIRNESS: a failed entry is moved to the BACK
+    of the map for the next round — a persistently-failing head of the
+    queue cannot starve the entries behind it. The task ends when the
+    map is empty — it is not a forever-idle loop; the next defer starts
+    a fresh one."""
+    while True:
+        try:
+            while TERMINAL_WRITE_PENDING:
+                await asyncio.sleep(TERMINAL_WRITE_DRAIN_INTERVAL_S)
+                batch = list(TERMINAL_WRITE_PENDING.items())[:TERMINAL_WRITE_DRAIN_BATCH]
+
+                async def _one(task_id: str, payload: Dict[str, Any]) -> bool:
+                    try:
+                        landed = await get_storage().update_task(
+                            task_id, payload["status"], **payload["kw"])
+                    except asyncio.CancelledError:
+                        raise
+                    except Exception as e:
+                        # one bad write must not end reconciliation for the
+                        # others — the entry stays pending and is retried.
+                        # R-149 redaction: the TYPE only, never the raw
+                        # message or traceback (arbitrary adapter text is
+                        # not ours to forward to the log)
+                        logger.error(
+                            "task %s deferred terminal write (%s) raised %s "
+                            "during a drain round; it stays pending", task_id,
+                            payload["status"], type(e).__name__)
+                        landed = False
+                    if landed:
+                        # only remove OUR entry: if a NEWER deferral replaced
+                        # it while this attempt was in flight, that payload
+                        # is the one that must land — leave it untouched
+                        if TERMINAL_WRITE_PENDING.get(task_id) is payload:
+                            TERMINAL_WRITE_PENDING.pop(task_id, None)
+                            logger.info(
+                                "task %s terminal write (%s) landed via the "
+                                "background drainer", task_id, payload["status"])
+                        return True
+                    # failed (False or raised): move to the BACK so a
+                    # persistently-failing head cannot starve the rest —
+                    # but never touch a NEWER deferral that replaced this
+                    # entry while the attempt was in flight
+                    if TERMINAL_WRITE_PENDING.get(task_id) is payload:
+                        TERMINAL_WRITE_PENDING.pop(task_id, None)
+                        TERMINAL_WRITE_PENDING[task_id] = payload
+                    return False
+
+                await asyncio.gather(*(
+                    _one(task_id, payload) for task_id, payload in batch))
+            return  # map empty — the drainer ends (the next defer restarts it)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            # a round-level crash must never take the loop down NOR end
+            # reconciliation: log it (the TYPE only — R-149 redaction) and
+            # keep reconciling while entries exist (the map is the source
+            # of truth, not this task)
+            logger.error(
+                "terminal-write drainer round failed (%s); the pending "
+                "writes stay deferred and the drainer keeps retrying",
+                type(e).__name__)
+            await asyncio.sleep(TERMINAL_WRITE_DRAIN_INTERVAL_S)
+
+
+def _ensure_terminal_write_drainer() -> None:
+    """Start the drainer loop task if it is not already running (lazily —
+    from the event loop; _write_task_terminal is always loop-side).
+    A drainer is only "alive" for THIS loop: a task abandoned on a closed
+    loop (tests run each app in its own loop) is never done() and would
+    otherwise block a fresh drainer forever — so the loop identity, not
+    just done(), decides."""
+    global _TERMINAL_WRITE_DRAIN_TASK
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return  # no running loop (e.g. import time) — the next defer retries
+    t = _TERMINAL_WRITE_DRAIN_TASK
+    if t is not None and not t.done() and t.get_loop() is loop:
+        return
+    _TERMINAL_WRITE_DRAIN_TASK = loop.create_task(_drain_terminal_writes())
+
+
+async def _write_task_terminal(task_id: str, status: str, *, agent_name=None,
+                               result=None, elapsed_s=None) -> bool:
+    """Persist a task's TERMINAL state with a bounded, jittered retry (see
+    the block comment above for why). Returns True when the row is written;
+    False means the budget was exhausted — the write is then DEFERRED to the
+    background drainer (retried until it lands or the server restarts),
+    CRITICAL-logged by name: visible, never silent, never orphaned while
+    the server lives."""
+    delay = 0.5
+    for attempt in range(1, TASK_TERMINAL_WRITE_ATTEMPTS + 1):
+        try:
+            if await get_storage().update_task(
+                    task_id, status, agent_name=agent_name, result=result,
+                    elapsed_s=elapsed_s):
+                if attempt > 1:
+                    logger.info("task %s terminal write (%s) succeeded on attempt %d",
+                                task_id, status, attempt)
+                return True
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            # a storage adapter that RAISES (a code bug — the contract is a
+            # soft False) must not escape and orphan the row: count the
+            # attempt, log it (the TYPE only — R-149 redaction), and keep
+            # the budget
+            logger.error(
+                "task %s terminal write (%s) RAISED %s on attempt %d; the "
+                "attempt is spent and the budget continues", task_id, status,
+                type(e).__name__, attempt)
+        if attempt >= TASK_TERMINAL_WRITE_ATTEMPTS:
+            break
+        await asyncio.sleep(delay + random.uniform(0, delay * 0.5))
+        delay = min(delay * 2, TASK_TERMINAL_WRITE_MAX_WAIT_S)
+    # Sustained outage past the in-line budget: DEFER instead of orphan —
+    # the drainer keeps retrying this exact write until it lands (or the
+    # server restarts, which loses the in-memory deferral: the volatile
+    # mode's documented durability bound — the durable queue is the
+    # no-loss guarantee).
+    TERMINAL_WRITE_PENDING[task_id] = {
+        "status": status,
+        "kw": {"agent_name": agent_name, "result": result,
+               "elapsed_s": elapsed_s},
+    }
+    _ensure_terminal_write_drainer()
+    logger.critical(
+        "task %s terminal state %s was NOT persisted after %d attempts — "
+        "DEFERRED to the background drainer (retried every %.1fs until it "
+        "lands or the server restarts; a restart loses the in-memory "
+        "deferral — the volatile mode's documented durability bound, the "
+        "durable queue is the no-loss guarantee)",
+        task_id, status, TASK_TERMINAL_WRITE_ATTEMPTS,
+        TERMINAL_WRITE_DRAIN_INTERVAL_S)
+    return False
+
+
 async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
     # R-159: the background run keeps the trace of the request that created it
     # (asyncio copies the context) and is one `task` span bound to task_id.
@@ -758,7 +957,7 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
         TASKS[task_id].update(status="failed", result=outcome, finished_at=time.time())
         sp.set(outcome="fail")
         storage = get_storage()
-        await storage.update_task(task_id, "failed", result=outcome, elapsed_s=0)
+        await _write_task_terminal(task_id, "failed", result=outcome, elapsed_s=0)
         await storage.insert_event("task_completed", {"task_id": task_id, "agent": None,
                                                       "specialization": specialization, "ok": False},
                                    tenant_id=tenant_id)
@@ -786,7 +985,7 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
         TASKS[task_id].update(status="failed", result=outcome, finished_at=time.time())
         sp.set(outcome="fail")
         storage = get_storage()
-        await storage.update_task(task_id, "failed", result=outcome, elapsed_s=0)
+        await _write_task_terminal(task_id, "failed", result=outcome, elapsed_s=0)
         await storage.insert_event("task_completed", {"task_id": task_id, "agent": None,
                                                       "specialization": specialization, "ok": False},
                                    tenant_id=tenant_id)
@@ -814,8 +1013,9 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
     TASKS[task_id]["finished_at"] = time.time()
     sp.set(outcome="ok" if outcome["ok"] else "fail")
 
-    await storage.update_task(task_id, TASKS[task_id]["status"],
-                              agent_name=agent.name, result=outcome, elapsed_s=outcome.get("elapsed_s", 0))
+    await _write_task_terminal(task_id, TASKS[task_id]["status"],
+                              agent_name=agent.name, result=outcome,
+                              elapsed_s=outcome.get("elapsed_s", 0))
     await storage.upsert_agent_stats(
         agent.name, specialization,
         agent.stats["tasks_completed"], agent.stats["tasks_failed"], agent.stats["total_time_s"]

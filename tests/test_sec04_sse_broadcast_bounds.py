@@ -206,8 +206,17 @@ def test_two_listeners_of_one_tenant_each_receive_every_event_and_other_tenant_n
     assert b1.types() == ["b-0", "b-1"]
 
 
-def test_real_task_events_reach_both_listeners(live, tenant_auth, bus):
+def test_real_task_events_reach_both_listeners(live, tenant_auth, bus, monkeypatch):
     """Task execution still publishes; both listeners get the task's events."""
+    # R-188 (log 302, لاحق 60 ج2): one terminal-write attempt — this test
+    # pins the SSE BROADCAST contract (both listeners get the task's events),
+    # not the terminal-write retry policy (its own deterministic tests live in
+    # tests/test_r188_terminal_write_retry.py); without this the
+    # task_completed frame waits out the retry backoff after a soft storage
+    # failure (no fake PostgREST here — storage unconfigured = one False) and
+    # its late arrival leaked into the NEXT test's listener (a real
+    # cross-test pollution observed in the first full-suite run of the fix).
+    monkeypatch.setattr(server, "TASK_TERMINAL_WRITE_ATTEMPTS", 1)
     async def go():
         async with aiohttp.ClientSession(base_url=live.base) as c:
             a1 = await _connect(c, tenant_auth.headers)
