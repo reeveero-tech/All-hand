@@ -246,7 +246,7 @@ def durable_rate(tenants, db, monkeypatch):
     _enable_queue(monkeypatch)
     monkeypatch.setattr(server, "TASK_ACCEPT_RATE_PER_MIN", 3)
     server._ACCEPTED_AT.clear()
-    server.request_counts.clear()
+    server.reset_rate_limits()
     yield tenants
     server._ACCEPTED_AT.clear()
 
@@ -265,24 +265,63 @@ def test_r164_review_durable_accept_rate_holds_under_concurrency(durable_rate, d
 
 
 def test_r164_review_storage_failure_gives_the_slot_back(durable_rate, db, monkeypatch):
-    """Inserts fail (store answers 500 on POST). While the 3 admitted
+    """Inserts fail (the store answers 500 on the task POST — held on a gate
+    first, so the failure is genuinely IN FLIGHT). While the 3 admitted
     requests are in flight they HOLD their reservations (so the 3 others are
     refused by the rate, not let through); each failed insert is a 503 and
     gives its slot back — afterwards no quota is consumed and the next
-    concurrent burst still gets exactly the full 3 slots."""
-    monkeypatch.setenv("AGOS_BREAKER_STORAGE_THRESHOLD", "0")   # keep the store reachable
-    backpressure.reset_all()
-    _PostgREST.mode[0] = "reject_insert"
-    res = _burst(durable_rate.headers, [_new(i) for i in range(6)])
-    failed = [r for r in res if r["status"] == 503]
-    assert len(failed) == 3 and all("storage unavailable" in r["json"]["detail"] for r in failed)
-    assert sum(1 for r in res if _rate_refused(r)) == 3
-    assert db["tasks"] == [] and server._ACCEPTED_AT.get("test_tenant", []) == []
-    _PostgREST.mode[0] = "ok"
-    res = _burst(durable_rate.headers, [_new(10 + i) for i in range(6)])
-    assert sum(1 for r in res if r["status"] == 202) == 3
-    assert sum(1 for r in res if _rate_refused(r)) == 3
-    assert len(db["tasks"]) == 3
+    concurrent burst still gets exactly the full 3 slots.
+
+    Log 299: the hold is now REAL — the insert blocks on the mock's gate
+    until the test opens it. An instant 500 could never prove the hold: the
+    client rate limiter became async (the shared store runs off the event
+    loop), so a slot released by a fast-failing insert raced the next
+    reserve inside the same burst."""
+    import time
+
+    async def go():
+        try:
+            # phase 1: 3 admitted; their inserts are held IN FLIGHT on the gate
+            monkeypatch.setenv("AGOS_BREAKER_STORAGE_THRESHOLD", "0")  # keep the store reachable
+            backpressure.reset_all()
+            gate = threading.Event()
+            _PostgREST.gate[0] = gate
+            _PostgREST.gate_waiting[0] = 0
+            _PostgREST.mode[0] = "reject_insert_hold"
+            held = [asyncio.ensure_future(_asgi_post("/api/tasks", _new(i), durable_rate.headers))
+                    for i in range(3)]
+            # wait until all 3 inserts are actually blocked on the gate (their
+            # slots held) — only then are the refusals below deterministic
+            deadline = time.monotonic() + 10
+            while _PostgREST.gate_waiting[0] < 3 and time.monotonic() < deadline:
+                await asyncio.sleep(0.01)
+            assert _PostgREST.gate_waiting[0] == 3, "the 3 admitted inserts never reached the gate"
+            # phase 2: while the 3 hold their slots, 3 more are refused by the rate
+            refused = await asyncio.gather(*[_asgi_post("/api/tasks", _new(10 + i), durable_rate.headers)
+                                             for i in range(3)])
+            assert all(_rate_refused(r) for r in refused), refused
+            # phase 3: open the gate — the held inserts fail; each gives its slot back
+            gate.set()
+            failed = await asyncio.gather(*held)
+            assert all(r["status"] == 503 and "storage unavailable" in r["json"]["detail"]
+                       for r in failed), failed
+            assert db["tasks"] == [] and server._ACCEPTED_AT.get("test_tenant", []) == []
+            # phase 4: storage healthy; a 6-burst gets exactly the full 3 slots
+            _PostgREST.mode[0] = "ok"
+            res = await asyncio.gather(*[_asgi_post("/api/tasks", _new(20 + i), durable_rate.headers)
+                                         for i in range(6)])
+            assert sum(1 for r in res if r["status"] == 202) == 3
+            assert sum(1 for r in res if _rate_refused(r)) == 3
+            assert len(db["tasks"]) == 3
+        finally:
+            _PostgREST.mode[0] = "ok"
+            if _PostgREST.gate[0] is not None:
+                _PostgREST.gate[0].set()
+            from agent_civilization.storage import supabase_store as ss
+            if ss._storage is not None:
+                await ss._storage.close()
+                ss._storage = None
+    asyncio.run(go())
 
 
 def test_r164_review_replays_never_refused_and_never_charged(durable_rate, db):

@@ -31,10 +31,10 @@ from fastapi.testclient import TestClient
 def srv(monkeypatch, tenant_auth):
     import server
     monkeypatch.setattr(server, "RATE_LIMIT_REQUESTS", 100000)
-    server.request_counts.clear()
+    server.reset_rate_limits()
     server._ACCEPTED_AT.clear()
     yield server
-    server.request_counts.clear()
+    server.reset_rate_limits()
     server._ACCEPTED_AT.clear()
 
 
@@ -56,7 +56,7 @@ ROUTES = [
 @pytest.mark.parametrize("method,path,body", ROUTES)
 def test_every_civilization_route_is_rate_limited(srv, client, monkeypatch, method, path, body):
     monkeypatch.setattr(srv, "RATE_LIMIT_REQUESTS", 2)
-    srv.request_counts.clear()
+    srv.reset_rate_limits()
     call = getattr(client, method)
     codes = [(call(path, json=body) if body is not None else call(path)).status_code for _ in range(3)]
     assert codes[2] == 429, codes

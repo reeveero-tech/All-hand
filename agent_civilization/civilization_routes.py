@@ -86,9 +86,11 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
     """
     api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-    def _limit(request: Request):
+    async def _limit(request: Request):
         if rate_limiter is not None:
-            rate_limiter(request)
+            # Log 299: the server's limiter is async (the shared SQLite store
+            # runs off the event loop) — every caller awaits it.
+            await rate_limiter(request)
 
     def _admit(tenant_id: str):
         if admit is not None:
@@ -111,7 +113,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
 
     @app.get("/civilization/registry")
     async def registry_route(request: Request, api_key: Optional[str] = Security(api_key_header)):
-        _limit(request)
+        await _limit(request)
         _guard(api_key)
         return {
             "count": len(AGENTS),
@@ -122,7 +124,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
     @app.post("/civilization/plan")
     async def preview_plan(request: Request, req: ExecuteRequest,
                            api_key: Optional[str] = Security(api_key_header)):
-        _limit(request)
+        await _limit(request)
         _guard(api_key)
         plan = auto_route(req.message)
         try:
@@ -134,7 +136,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
     @app.post("/civilization/execute")
     async def execute(request: Request, req: ExecuteRequest,
                       api_key: Optional[str] = Security(api_key_header)):
-        _limit(request)
+        await _limit(request)
         if require_principal is None:
             raise HTTPException(401, "authentication is not configured for this route")
         principal = require_principal(api_key)
@@ -190,7 +192,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
 
     @app.get("/civilization/runs/{run_id}")
     async def get_run(request: Request, run_id: str, api_key: Optional[str] = Security(api_key_header)):
-        _limit(request)
+        await _limit(request)
         principal = _principal(api_key)
         try:
             run = dag.RUNS.get(run_id, principal.tenant_id)
@@ -201,7 +203,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
     @app.post("/civilization/runs/{run_id}/resume")
     async def resume_run(request: Request, run_id: str, req: ResumeRequest,
                          api_key: Optional[str] = Security(api_key_header)):
-        _limit(request)
+        await _limit(request)
         principal = _principal(api_key)
         from agent_civilization.core.llm import reset_public_llm_consent, set_public_llm_consent
         try:
@@ -237,7 +239,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         a hidden success. Sensitive specializations (dag.SENSITIVE) are not
         executed without an explicit approval and are reported as pending.
         """
-        _limit(request)
+        await _limit(request)
         principal = _principal(api_key)
         if not req.message.strip():
             raise HTTPException(400, "message is required")

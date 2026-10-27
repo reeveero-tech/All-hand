@@ -82,6 +82,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_ALLOWED_ORIGINS` | server.py | `"*"` |
 | `AGOS_RATE_LIMIT_REQUESTS` | server.py | 100 |
 | `AGOS_RATE_LIMIT_WINDOW` | server.py | 60 |
+| `AGOS_RATE_LIMIT_DB` (لاحق 61) | core/rate_limit_store.py | ملف مؤقت للمضيف (`agos_rate_limit.sqlite3`) — عدّاد المعدل المشترك بين عمليات المضيف نفسه |
 | `AGOS_SSE_QUEUE_SIZE` (R-144) | core/sse.py | 100 أحداث لكل اتصال SSE [1–10000] |
 | `AGOS_SSE_MAX_CONNECTIONS` (R-144) | core/sse.py | 100 اتصال SSE متزامن للعملية [1–10000] |
 | `AGOS_SSE_MAX_PER_TENANT` (R-144) | core/sse.py | 10 [1–10000، ≤ الإجمالي] |
