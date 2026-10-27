@@ -348,6 +348,7 @@ class LeaseKeeper:
         self._wake = asyncio.Event()        # stop() or deadline moved
         self._stopped = False
         self._loss_called = False
+        self._children: Optional[tuple] = None
         self.task: Optional[asyncio.Task] = None
 
     def stop(self) -> None:
@@ -372,11 +373,47 @@ class LeaseKeeper:
             return False
 
     async def run(self) -> None:
-        """Run both tasks to completion (call via asyncio.create_task)."""
+        """Run both tasks to completion (call via asyncio.create_task).
+
+        ``run`` OWNS its children: on ANY exit path (normal end, a loss,
+        or ``shutdown`` cancelling them) the finally cancels and joins both
+        — no asyncio task outlives it. (A renewal already INSIDE a SQLite
+        call is a separate lifetime: cancelling its asyncio task ends the
+        task promptly; the worker thread's operation may finish later, and
+        its result is discarded — the stopped state is checked before any
+        result is acted on, so a late completion can neither revive the
+        keeper nor fire ``on_loss`` again.)"""
         self.task = asyncio.current_task()
         watchdog = asyncio.create_task(self._watchdog())
         renewal = asyncio.create_task(self._renewal())
-        await asyncio.gather(watchdog, renewal)
+        self._children = (watchdog, renewal)
+        try:
+            await asyncio.gather(watchdog, renewal, return_exceptions=True)
+        finally:
+            for t in self._children:
+                t.cancel()
+            await asyncio.gather(*self._children, return_exceptions=True)
+
+    async def shutdown(self) -> None:
+        """End the keeper and JOIN its asyncio tasks (explicit, bounded by
+        pure asyncio — no database wait is involved in ending the tasks:
+        cancelling a task awaiting ``to_thread`` ends the TASK promptly;
+        only the worker thread's own operation may outlive it, harmlessly —
+        see ``run``). Idempotent. The response cleanup awaits this AFTER
+        the ASGI body was cancelled, so no keeper task outlives the
+        response."""
+        self._stopped = True
+        self._wake.set()
+        children = self._children
+        if children is not None:
+            for t in children:
+                t.cancel()
+            await asyncio.gather(*children, return_exceptions=True)
+        if self.task is not None and self.task is not asyncio.current_task():
+            try:
+                await self.task            # prompt: run() joins its children
+            except asyncio.CancelledError:
+                pass
 
     async def _watchdog(self) -> None:
         while not self._stopped:

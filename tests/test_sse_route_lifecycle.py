@@ -339,15 +339,66 @@ def test_deadline_cancels_production_send_while_renewal_is_blocked(
 
 def test_outer_cancel_during_blocked_renewal(monkeypatch, tmp_path):
     """OUTER CANCELLATION while a renewal is BLOCKED inside the store
-    (advisor review, round 3): the response cleanup stops the keeper and
-    joins it BOUNDED — the body cancellation happens BEFORE any waiting on
-    database work, and a renewal blocked in SQLite (which to_thread cannot
-    terminate) neither blocks the cleanup unboundedly nor fires anything
-    after the stop. After the lock is released the keeper task ends."""
-    db, store, bus = _setup(monkeypatch, tmp_path, ttl=4, renewal=1)
+    (advisor reviews, rounds 3-4 — deterministic): a barrier around the
+    production store's ``renew`` proves the renewal ENTERED the blocked
+    operation before the cancellation. Then:
+
+    1. the ASGI send receives the cancellation (bounded — the response
+       cleanup never waits on the blocked database work);
+    2. the keeper's asyncio tasks FINISH while the renewal barrier is
+       STILL HELD (shutdown cancels and joins them; the worker thread's
+       own operation may outlive them, harmlessly);
+    3. releasing the barrier afterwards produces no revival and no
+       further loss notification (the late result is discarded).
+    The barrier is released in the test cleanup so no worker thread is
+    left hanging on the default executor."""
+    import threading
+
+    db, store, bus = _setup(monkeypatch, tmp_path, ttl=8, renewal=1)
+
+    class _RenewBarrierStore:
+        """Delegates everything to the real store; ``renew`` signals that
+        it ENTERED and then blocks on the gate (a worker-thread barrier —
+        deterministic, unlike a write lock whose blocking is timing)."""
+
+        def __init__(self, inner):
+            self._inner = inner
+            self.entered = threading.Event()
+            self.gate = threading.Event()
+
+        def acquire(self, *a, **kw):
+            return self._inner.acquire(*a, **kw)     # normal (unblocked)
+
+        def release(self, *a, **kw):
+            return self._inner.release(*a, **kw)
+
+        def renew(self, lease_id, ttl_s):
+            self.entered.set()                       # ENTERED the op
+            self.gate.wait(timeout=30)               # held by the test
+            return self._inner.renew(lease_id, ttl_s)
+
+        def counts(self):
+            return self._inner.counts()
+
+        def reset(self):
+            return self._inner.reset()
+
+    barrier = _RenewBarrierStore(store)
+    monkeypatch.setattr(srv, "SSE_ADMISSION", barrier)
+    monkeypatch.setattr(bus, "_admission", barrier)
+
+    async def wait_entered(evt, timeout=5):
+        loop = asyncio.get_event_loop()
+        end = loop.time() + timeout
+        while not evt.is_set():
+            if loop.time() > end:
+                return False
+            await asyncio.sleep(0.02)
+        return True
 
     async def scenario():
         resp = await srv.event_stream(_request(), "k")
+        assert resp._keeper is not None
         stalled = asyncio.Event()
 
         async def send(message):
@@ -356,22 +407,124 @@ def test_outer_cancel_during_blocked_renewal(monkeypatch, tmp_path):
                 await asyncio.Event().wait()
 
         call = asyncio.create_task(resp(_SCOPE, _no_receive, send))
-        await asyncio.wait_for(stalled.wait(), timeout=5)
-        # a renewal barrier: the write lock blocks every renew inside SQLite
-        con = sqlite3.connect(db)
-        con.execute("BEGIN IMMEDIATE")
+        await asyncio.wait_for(stalled.wait(), timeout=5)     # body parked
+        # DETERMINISTIC: a renewal has ENTERED the blocked store operation
+        assert await wait_entered(barrier.entered), "renewal never entered"
         try:
             call.cancel()                        # the OUTER cancellation
             with pytest.raises(asyncio.CancelledError):
-                await asyncio.wait_for(call, timeout=15)  # bounded cleanup
-            # the body was cancelled BEFORE any database wait; the keeper
-            # was stopped (no on_loss can fire anymore)
+                await asyncio.wait_for(call, timeout=5)  # bounded cleanup
+            # (2) the keeper's asyncio tasks finished WHILE the barrier is
+            # still held — no keeper task outlives the response
+            await asyncio.wait_for(resp._keeper.task, timeout=5)
+            assert resp._keeper.task.done()
+            assert not barrier.gate.is_set()      # ...still held
+            # the keeper is stopped: no on_loss can fire anymore
             assert resp._keeper._stopped
+            # (3) release the barrier: the worker's renew completes, its
+            # result is discarded — no revival, no further loss
+            barrier.gate.set()
+            await asyncio.sleep(0.3)
+            assert resp._keeper.task.done()        # still done
+            assert not resp._abort.is_set()        # no loss notification
         finally:
-            con.rollback()                        # the barrier ends
-        # the (formerly blocked) renewal returns; the keeper task ends
-        await asyncio.wait_for(resp._keeper.task, timeout=15)
-        assert resp._keeper.task.done()
-        assert bus.total == 0                    # the subscription detached
+            barrier.gate.set()                     # never hang the executor
+        assert bus.total == 0                      # the subscription detached
+
+    asyncio.run(scenario())
+
+
+def test_route_cancellation_releases_the_in_flight_acquisition(
+        monkeypatch, tmp_path):
+    """ACQUISITION CANCELLATION (advisor review, round 4): the caller can
+    vanish while the store transaction is IN FLIGHT — the worker may still
+    COMMIT a lease that no subscription, keeper, or response cleanup will
+    ever see (the reservation would live until the TTL). The acquisition is
+    SHIELDED and OWNED: a cancelled caller leaves a cleanup task that
+    awaits the in-flight transaction and RELEASES whatever it acquires —
+    without registering any subscription off-loop. Proven with a barrier:
+    the acquisition ENTERS the transaction, the caller is cancelled, the
+    gate opens, and the lease is RELEASED well before the TTL could expire
+    (poll window < ttl — the release, not expiry, is what frees it)."""
+    import threading
+
+    db, store, bus = _setup(monkeypatch, tmp_path, ttl=8, renewal=2)
+
+    class _AcquireBarrierStore:
+        """Delegates everything; ``acquire`` signals ENTRY and blocks on the
+        gate (deterministic in-flight transaction)."""
+
+        def __init__(self, inner):
+            self._inner = inner
+            self.entered = threading.Event()
+            self.gate = threading.Event()
+            self.committed = threading.Event()
+            self.failure = None
+
+        def acquire(self, *a, **kw):
+            self.entered.set()                      # ENTERED the transaction
+            self.gate.wait(timeout=30)              # held by the test
+            try:
+                r = self._inner.acquire(*a, **kw)   # the worker COMMITS here
+            except BaseException as e:              # pragma: no cover
+                self.failure = e
+                raise
+            finally:
+                self.committed.set()                # transaction finished
+            return r
+
+        def release(self, *a, **kw):
+            return self._inner.release(*a, **kw)
+
+        def renew(self, *a, **kw):
+            return self._inner.renew(*a, **kw)
+
+        def counts(self):
+            return self._inner.counts()
+
+        def reset(self):
+            return self._inner.reset()
+
+    barrier = _AcquireBarrierStore(store)
+    monkeypatch.setattr(srv, "SSE_ADMISSION", barrier)
+    monkeypatch.setattr(bus, "_admission", barrier)
+
+    async def wait_entered(evt, timeout=5):
+        loop = asyncio.get_event_loop()
+        end = loop.time() + timeout
+        while not evt.is_set():
+            if loop.time() > end:
+                return False
+            await asyncio.sleep(0.02)
+        return True
+
+    async def scenario():
+        route = asyncio.create_task(srv.event_stream(_request(), "k"))
+        # DETERMINISTIC: the store transaction is IN FLIGHT
+        assert await wait_entered(barrier.entered), "acquire never entered"
+        route.cancel()                            # the caller vanishes
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(route, timeout=5)   # shielded: bounded
+        # open the gate: the worker COMMITS the lease — the cleanup owns it.
+        # FIRST wait for the commit to be observable (the transaction
+        # finished — outcome in ``committed``/``failure``): a poll that
+        # started BEFORE the commit could trivially see 0 rows and pass
+        # without proving anything (advisor review, round 4).
+        barrier.gate.set()
+        assert await wait_entered(barrier.committed), "acquire never finished"
+        assert barrier.failure is None, barrier.failure
+        # the lease is RELEASED (poll window 4s << ttl 8s — the TTL could
+        # not have expired yet; only the late-acquisition cleanup frees it)
+        deadline = asyncio.get_event_loop().time() + 4
+        released = False
+        while asyncio.get_event_loop().time() < deadline:
+            if _lease_count(db) == 0:
+                released = True
+                break
+            await asyncio.sleep(0.05)
+        assert released, (
+            "the in-flight lease was not released after the caller was "
+            "cancelled — it would live until the TTL")
+        assert bus.total == 0                     # no subscription leaked
 
     asyncio.run(scenario())

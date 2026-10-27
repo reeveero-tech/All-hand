@@ -2602,23 +2602,17 @@ class _SSEResponse(StreamingResponse):
                 except Exception:  # pragma: no cover — cleanup must not mask
                     pass
             if self._keeper is not None:
-                # OWNERSHIP of keeper cleanup (advisor review, round 3):
-                # stop FIRST (no further on_loss can fire — the stopped
-                # flag is checked by every keeper path), then JOIN the
-                # keeper task BOUNDED — the ASGI body was already cancelled
-                # above, so no waiting-on-database-work happens before the
-                # body cancellation. A renewal blocked inside SQLite
-                # cannot be terminated (to_thread cancellation does not
-                # stop the worker thread); the join is bounded and the
-                # keeper exits when the blocked call returns — with stop()
-                # already in effect it can only exit, never fire again.
-                self._keeper.stop()      # no on_loss: the response is done
-                if self._keeper.task is not None:
-                    try:
-                        await asyncio.wait_for(
-                            asyncio.shield(self._keeper.task), timeout=10)
-                    except (asyncio.TimeoutError, TimeoutError):
-                        pass             # bounded: the blocked renew ends it
+                # OWNERSHIP of keeper cleanup (advisor review, rounds 3-4):
+                # the ASGI body was already cancelled above — no database
+                # wait happens before it. shutdown() stops the state (no
+                # further on_loss can ever fire) and CANCELS + JOINS the
+                # keeper's asyncio tasks (prompt: cancelling a task awaiting
+                # to_thread ends the task; only the worker thread's own
+                # SQLite operation may outlive it — its result is checked
+                # against the stopped state, so it can neither revive the
+                # keeper nor fire on_loss). No keeper task outlives the
+                # response.
+                await self._keeper.shutdown()
             await self._release()       # detach on-loop, store release off-loop
 
 
@@ -2640,8 +2634,31 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
         # mutate _subs while the loop iterates it). A bus WITHOUT a store
         # (in-process tests/local) keeps the exact old single open.
         if EVENT_BUS.shared_admission:
-            lease = await asyncio.to_thread(
-                EVENT_BUS.acquire_lease, tenant, client)
+            # The acquisition OWNS its in-flight lease (advisor review,
+            # round 4): shielded, so a caller that vanishes mid-transaction
+            # does NOT cancel the worker (the store may still COMMIT a
+            # lease). If the caller was cancelled, the in-flight
+            # transaction is awaited by a cleanup task that releases
+            # whatever it acquires — no subscription is registered (that
+            # stays on-loop), so nothing else would ever release it and
+            # the reservation would otherwise live until the TTL.
+            acq = asyncio.create_task(asyncio.to_thread(
+                EVENT_BUS.acquire_lease, tenant, client))
+            try:
+                lease = await asyncio.shield(acq)
+            except asyncio.CancelledError:
+                async def _release_late_acquisition() -> None:
+                    try:
+                        late = await acq      # let it complete (SQLite-bounded)
+                    except Exception:         # refused/failed: nothing held
+                        return
+                    try:
+                        await asyncio.to_thread(
+                            SSE_ADMISSION.release, late[0])
+                    except Exception:        # pragma: no cover — TTL reclaims
+                        pass
+                asyncio.create_task(_release_late_acquisition())
+                raise
             sub = EVENT_BUS.open(tenant, client, lease=lease)
         else:
             sub = EVENT_BUS.open(tenant, client)
