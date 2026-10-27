@@ -162,7 +162,7 @@
 |---|---|
 | R-187 | `done` |
 | R-188 | `in_progress` |
-| R-189 | `in_progress` |
+| R-189 | `awaiting_merge` |
 | R-190 | `planned` |
 | R-191 | `planned` |
 | R-192 | `planned` |
