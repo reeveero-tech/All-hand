@@ -241,13 +241,22 @@ def clean_tasks(monkeypatch):
     return server.TASKS
 
 
-def _wait_final(task_id, published_events, timeout=10.0):
+def _wait_final(task_id, published_events, timeout=25.0):
     """Wait until the background run is REALLY done: the final status in
     TASKS AND the task_completed event published for this task id (the
     status is set before the final storage write, the event after it —
     waiting for both leaves nothing pending behind). A task left pending
     fails here with its status: that is the assertion. (This polls
-    server.TASKS directly, not through the HTTP route.)"""
+    server.TASKS directly, not through the HTTP route.)
+    The deadline (25s) must EXCEED the terminal write's documented retry
+    budget (5 attempts, backoff sleeps 0.5-0.75/1-1.5/2-3/4-6s ≈ up to
+    ~11.25s of sleep alone plus the storage calls' own latency): these
+    tests run with an absent storage by design, every terminal write
+    exhausts its budget before the event fires, and the old 10s deadline
+    made the wait flake BY CONSTRUCTION on any runner where the failing
+    storage calls take ~0.2s+ each (reproduced under verified saturation,
+    log 302 round 3). Bounded, not infinite: an event that never comes
+    still fails the test."""
     deadline = time.time() + timeout
     status = None
     while time.time() < deadline:
@@ -480,6 +489,13 @@ def test_background_task_with_every_write_rejected_ends_final_not_pending(
     # + the R-164/R-185 probes). Pinned to the volatile mode to preserve
     # both contracts' coverage.
     monkeypatch.setenv("AGOS_TASK_QUEUE", "0")
+    # R-188 (log 302, لاحق 60 ج2): isolate this test's ORIGINAL subject — the
+    # volatile accept/fence semantics (a rejected final write leaves the row
+    # stale while the memory record and the SSE bus carry the truth) — from
+    # the NEW terminal-write retry policy: one attempt here keeps the pinned
+    # write count/shape; the retry policy itself has its own deterministic
+    # tests (tests/test_r188_terminal_write_retry.py).
+    monkeypatch.setattr(server, "TASK_TERMINAL_WRITE_ATTEMPTS", 1)
     agent_outcome(True)
     postgrest.policy = {("POST", "tasks"): 401, ("PATCH", "tasks"): 401,
                         ("POST", "agent_stats"): 401, ("POST", "events"): 401}
@@ -516,6 +532,9 @@ def test_background_task_final_update_rejected_after_running_saved(
     # unfenced update_task of the volatile path; the durable queue's fenced
     # late-result discard has its own R-163 tests.
     monkeypatch.setenv("AGOS_TASK_QUEUE", "0")
+    # R-188 (log 302, لاحق 60 ج2): one attempt — same isolation as the
+    # every-write-rejected test above (the fence subject, not the retry).
+    monkeypatch.setattr(server, "TASK_TERMINAL_WRITE_ATTEMPTS", 1)
     agent_outcome(True)
     postgrest.policy = {("PATCH", "tasks"): {"status": "completed"}}
     with TestClient(server.app) as c:

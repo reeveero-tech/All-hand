@@ -306,3 +306,23 @@ def _fresh_backpressure_state():
         srv._ACCEPTED_AT.clear()
     yield
     backpressure.reset_all()
+
+
+@pytest.fixture(autouse=True)
+def _fresh_terminal_write_deferrals():
+    """R-188 test isolation: the terminal-write DEFERRAL map
+    (``server.TERMINAL_WRITE_PENDING``) is module-level and would carry a
+    write deferred by one test (its drainer died with that test's event
+    loop) into the next — where a fresh defer would start a drainer that
+    lands the STALE payload against the NEW test's storage. Each test
+    starts with an empty deferral map. The drainer task itself is loop-
+    local (it dies with the test's loop); the retry file's own fixture
+    cancels it explicitly."""
+    import sys
+    srv = sys.modules.get("server")
+    if srv is not None and hasattr(srv, "TERMINAL_WRITE_PENDING"):
+        srv.TERMINAL_WRITE_PENDING.clear()
+    yield
+    srv = sys.modules.get("server")
+    if srv is not None and hasattr(srv, "TERMINAL_WRITE_PENDING"):
+        srv.TERMINAL_WRITE_PENDING.clear()
