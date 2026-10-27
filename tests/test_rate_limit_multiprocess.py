@@ -325,12 +325,15 @@ def test_a_waited_admission_samples_its_timestamp_after_acquiring_the_lock(tmp_p
     try:
         th.start()
         assert reached.wait(timeout=10), "the worker never reached its connection"
-        # the worker can only be inside BEGIN IMMEDIATE's busy wait now
-        # (the blocker owns the writer lock); prove it is still waiting...
+        # Evidence, not an exact-location claim: the connection checkpoint is
+        # behind us and BEGIN is the worker's next step; with the blocker
+        # owning the writer lock the worker cannot have finished. (The exact
+        # statement inside it is not asserted — what matters is the mutation
+        # result below.) It is still waiting:
         time.sleep(0.3)
         assert th.is_alive(), "the check finished while the lock was held?!"
-        # ...then advance the clock FAR past the window while it waits, and
-        # only now release: the acquisition time is provably the advanced one
+        # ...advance the clock FAR past the window while it waits, and only
+        # now release: the acquisition time is provably the advanced one
         clock.now = 1010.0
         blocker.execute("COMMIT")
         th.join(timeout=10)
@@ -352,36 +355,54 @@ def test_a_waited_admission_samples_its_timestamp_after_acquiring_the_lock(tmp_p
 
 def test_transient_busy_during_init_retries_and_succeeds(tmp_path):
     """Another connection holds the writer lock while the store initializes:
-    the init hits `database is locked` (an ACTUAL busy failure is recorded),
+    the init hits `database is locked` (an ACTUAL caught busy failure — the
+    handshake below parks the worker inside the retry sleep that follows it),
     the bounded retry rides it out, and the construction SUCCEEDS (observed
     live: two servers starting on one shared file — the loser used to crash
-    at import)."""
+    at import). No timing assumptions: the lock is released only AFTER the
+    busy failure is provably caught."""
     import sqlite3 as _sqlite3
     import threading as _threading
     db = tmp_path / "init-busy.sqlite3"
     blocker = _sqlite3.connect(str(db), isolation_level=None)
     blocker.execute("BEGIN IMMEDIATE")
+    # test-local gate around the module's `time`: the retry sleep that
+    # FOLLOWS a caught busy failure signals busy_seen and parks until the
+    # test allows the next attempt (the clock itself stays real)
+    class _RetryGate:
+        def __init__(self):
+            self.busy_seen = _threading.Event()
+            self.proceed = _threading.Event()
+        def time(self):
+            return time.time()
+        def sleep(self, s):
+            self.busy_seen.set()          # a busy failure was CAUGHT
+            assert self.proceed.wait(timeout=30), "the retry sleep was never released"
+    gate = _RetryGate()
+    real_time_mod = rate_limit_store.time
+    rate_limit_store.time = gate
     built = {}
     def _build():
-        # short busy timeout + short sleeps: retries are fast and observable
         built["store"] = rate_limit_store.RateLimitStore(
             str(db), busy_timeout_s=0.3, init_retries=20, init_retry_sleep_s=0.05)
     th = _threading.Thread(target=_build)
     th.start()
     try:
-        time.sleep(0.5)                       # attempts fail while held...
-        assert th.is_alive(), "init finished while the lock was still held?!"
-        blocker.execute("COMMIT")             # ...release mid-retry
+        # wait for the actual caught busy failure (the worker is parked in
+        # the retry sleep) — only then release the blocker
+        assert gate.busy_seen.wait(timeout=10), "init never hit a busy failure"
+        blocker.execute("COMMIT")
+        gate.proceed.set()                # the next attempt runs lock-free
         th.join(timeout=10)
         assert not th.is_alive(), "init never finished after the lock was released"
         store = built["store"]
-        # an actual busy failure was recorded before the release, and a
-        # later attempt (post-release) succeeded
         assert store._init_busy_failures >= 1, (store._init_attempts,
                                                 store._init_busy_failures)
         assert store._init_attempts > store._init_busy_failures
         assert store.check("c", 5, window_s=60) == (True, 0)
     finally:
+        gate.proceed.set()               # never leave the worker parked
+        rate_limit_store.time = real_time_mod
         try:
             blocker.execute("COMMIT")   # release if an assertion failed above
         except _sqlite3.Error:
