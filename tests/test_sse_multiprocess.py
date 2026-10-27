@@ -362,11 +362,31 @@ async def test_renewal_maintains_capacity_beyond_the_lease_ttl(tmp_path):
                 assert codes_a == [200] * TENANT_CAP, codes_a
                 # past the ORIGINAL TTL with the streams still open
                 await asyncio.sleep(ttl + 1.5)
-                # the streams are still alive: heartbeats (1s apart) still
-                # arrive on a stream we did NOT touch since opening it
-                line = await asyncio.wait_for(
-                    sa._resps[0].content.readline(), timeout=5)
-                assert line.startswith(b"data:")        # a live heartbeat
+                # the streams are still alive — proven by a FRESH event
+                # produced AFTER this point (a buffered/stale heartbeat
+                # read proves nothing about liveness): create a task on
+                # server A (the process serving this stream) and read
+                # until ITS event arrives on the stream.
+                async with s.post(
+                        f"{a.base}/api/tasks", headers=headers,
+                        json={"specialization": "analyst",
+                              "prompt": "multiprocess liveness probe"}) as r:
+                    assert r.status == 202, r.status
+                    task_id = (await r.json())["task_id"]
+                deadline = asyncio.get_event_loop().time() + 10
+                got_fresh_event = False
+                while asyncio.get_event_loop().time() < deadline:
+                    try:
+                        line = await asyncio.wait_for(
+                            sa._resps[0].content.readline(), timeout=2)
+                    except asyncio.TimeoutError:
+                        line = b""
+                    if task_id.encode() in line and b"data:" in line:
+                        got_fresh_event = True      # task_started/completed
+                        break
+                assert got_fresh_event, (
+                    "no fresh event reached the stream after the TTL — "
+                    "the stream is not provably alive")
                 # and their leases are still counted: the cap holds on B
                 assert await sb.open(0) == 429
                 # closing them frees the capacity

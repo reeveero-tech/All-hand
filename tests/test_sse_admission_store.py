@@ -50,7 +50,8 @@ def _acquire(store: SSELeaseStore, tenant: str = "t1", client: str = "c1", **kw)
     params = dict(max_connections=100, max_per_tenant=3, max_per_client=2,
                   open_rate=10, open_window_s=60, lease_ttl_s=90)
     params.update(kw)
-    return store.acquire(tenant, client, **params)
+    lease_id, _expires_at = store.acquire(tenant, client, **params)
+    return lease_id
 
 
 # ------------------------------------------------------------- acquire basics
@@ -130,12 +131,16 @@ def test_tenant_client_and_global_caps_shared_across_store_instances(tmp_path):
         _acquire(a, client="cc", max_per_client=2, tenant="tc1")
         _acquire(b, client="cc", max_per_client=2, tenant="tc2")
         _acquire(a, client="cc", max_per_client=2, tenant="tc3")
-    # global cap shared
+    # global cap shared — ISOLATED: distinct tenants AND distinct clients
+    # with their own caps far above the opens made, so the ONLY binding
+    # constraint is max_connections (verified by mutation: removing the
+    # global-cap condition must turn this red).
     g1 = _store(tmp_path)
     g2 = SSELeaseStore(str(tmp_path / "sse_admission.sqlite3"))
     with pytest.raises(SSEAdmissionRefused) as ei:
         for i in range(4):
-            _acquire(g1 if i % 2 == 0 else g2, tenant=f"g{i}", max_connections=3)
+            _acquire(g1 if i % 2 == 0 else g2, tenant=f"g{i}",
+                     client=f"gc{i}", max_connections=3)
     assert ei.value.reason == "capacity"
 
 
@@ -170,7 +175,7 @@ def test_expired_leases_free_capacity_and_cannot_be_resurrected(tmp_path):
     assert _acquire(store, tenant="kill", max_per_tenant=1,
                      max_per_client=5) is not None
     # the expired lease cannot be renewed back to life
-    assert store.renew(lease, ttl_s=90) is False
+    assert store.renew(lease, ttl_s=90) is None
 
 
 def test_renew_extends_capacity_beyond_original_ttl(tmp_path):
@@ -183,19 +188,20 @@ def test_renew_extends_capacity_beyond_original_ttl(tmp_path):
     with pytest.raises(SSEAdmissionRefused):
         _acquire(store, tenant="live", max_per_tenant=1, max_per_client=5)
     time.sleep(0.3)
-    assert store.renew(lease, ttl_s=60) is True      # renewed before expiry
+    expiry = store.renew(lease, ttl_s=60)
+    assert expiry is not None and expiry > time.time()  # renewed before expiry
     time.sleep(0.4)                                   # past the ORIGINAL TTL
     assert store.counts() == {"leases": 1}            # still held
     with pytest.raises(SSEAdmissionRefused):          # cap still enforced
         _acquire(store, tenant="live", max_per_tenant=1, max_per_client=5)
-    assert store.renew(lease, ttl_s=60) is True       # and renewable again
+    assert store.renew(lease, ttl_s=60) is not None   # and renewable again
 
 
 def test_renew_of_released_lease_is_false(tmp_path):
     store = _store(tmp_path)
     lease = _acquire(store)
     store.release(lease)
-    assert store.renew(lease, ttl_s=90) is False
+    assert store.renew(lease, ttl_s=90) is None
 
 
 # ------------------------------------------------------------- fail-closed
@@ -214,10 +220,98 @@ def test_renew_raises_store_error_not_false(tmp_path):
         SSELeaseStore(str(tmp_path / "no" / "such" / "dir" / "x.sqlite3"))
 
 
+# ------------------------------------------- no-resurrection / outages / loop
+def test_expired_but_present_lease_is_not_resurrected(tmp_path: Path):
+    """Advisors' probe: an expired row that is STILL PRESENT (not pruned)
+    must NOT be renewed back to life. The renew is conditional
+    (expires_at > now) — it stays rejected, and capacity is still
+    available for new opens (the row is purged on the next acquire)."""
+    store = _store(tmp_path)
+    lease = _acquire(store, lease_ttl_s=0.2)
+    time.sleep(0.35)                      # expired, but the ROW stays present
+    assert store.renew(lease, ttl_s=90) is None        # NOT resurrected
+    _acquire(store, max_per_tenant=1, max_per_client=5)  # capacity available
+    assert store.counts()["leases"] == 1                 # old row purged on open
+
+
+def test_admission_refuses_while_store_is_write_locked(tmp_path: Path):
+    """First-run failure is not the only outage: while a store is healthy,
+    a single stuck transaction (write lock held — BEGIN IMMEDIATE) turns
+    every open into a fail-closed SSEAdmissionError — never an open
+    stream. (sqlite3 only admits one writer at a time.)"""
+    db = tmp_path / "wl.sqlite3"
+    store = SSELeaseStore(str(db))
+    _acquire(store)
+    con = sqlite3.connect(str(db))                 # hold the write lock
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        with pytest.raises(SSEAdmissionError):
+            store.acquire("t1", "c2", max_connections=100, max_per_tenant=3,
+                          max_per_client=2, open_rate=10, open_window_s=60,
+                          lease_ttl_s=90)
+    finally:
+        con.rollback()
+    assert _acquire(store, tenant="t9", client="c9")   # usable again
+
+
+def test_admission_recovers_after_write_lock_release(tmp_path: Path):
+    """A healthy-open → outage → recover cycle must leave the store usable
+    without oversubscribing (the recovery-capacity regression)."""
+    db = tmp_path / "wl.sqlite3"
+    store = SSELeaseStore(str(db))
+    _acquire(store, tenant="t1", client="c1")
+    con = sqlite3.connect(str(db))
+    con.execute("BEGIN IMMEDIATE")
+    with pytest.raises(SSEAdmissionError):        # outage: fail-closed
+        _acquire(store, tenant="t1", client="c2")
+    con.rollback()                                  # outage ends
+    _acquire(store, tenant="t1", client="c2")      # opens again
+    with pytest.raises(SSEAdmissionRefused):       # caps still enforced
+        _acquire(store, tenant="t1", client="c3", max_per_tenant=2,
+                 max_per_client=5)
+
+
+def test_admission_does_not_block_event_loop_under_write_lock(tmp_path: Path):
+    """The open path must not BLOCK the event loop: while the store's
+    write lock is held, a concurrent asyncio task on the SAME loop keeps
+    making progress. The server route pushes the open off the loop via
+    to_thread — this pins the same contract at the store level."""
+    db = tmp_path / "wl.sqlite3"
+    store = SSELeaseStore(str(db))
+    _acquire(store)
+    con = sqlite3.connect(str(db))
+    con.execute("BEGIN IMMEDIATE")                 # hold the write lock
+    try:
+        async def scenario():
+            beat = asyncio.create_task(_heartbeat(0.005))
+            try:
+                await asyncio.to_thread(            # off-loop, like the route
+                    store.acquire, "t1", "c2",
+                    max_connections=100, max_per_tenant=3, max_per_client=2,
+                    open_rate=10, open_window_s=60, lease_ttl_s=90)
+            except SSEAdmissionError:
+                pass                                # the contract
+            finally:
+                beat.cancel()
+                try:
+                    await beat
+                except asyncio.CancelledError:
+                    pass
+        asyncio.run(scenario())
+    finally:
+        con.rollback()
+
+
+async def _heartbeat(interval):
+    while True:
+        await asyncio.sleep(interval)
+
+
 # ------------------------------------------------------------- renewal loop
 
 class _FakeStore:
-    """Scripted renew outcomes for the renewal loop tests."""
+    """Scripted renew outcomes for the renewal loop tests (renew returns
+    the new expiry, or None = confirmed loss, or raises = outage)."""
 
     def __init__(self, outcomes):
         self.outcomes = list(outcomes)
@@ -231,14 +325,19 @@ class _FakeStore:
             out = True
         if isinstance(out, Exception):
             raise out
-        return out
+        if out is True:
+            return time.time() + ttl_s
+        if out is False:
+            return None          # confirmed loss
+        return out               # a scripted expiry (float)
 
 
 async def test_renewal_loop_closes_on_confirmed_lease_loss():
     lost = []
     fake = _FakeStore([True, True, False])     # renewed twice, then lost
     await renewal_loop("lease", fake, ttl_s=60, interval_s=0.01,
-                       on_loss=lambda: lost.append(True))
+                       on_loss=lambda: lost.append(True),
+                       valid_until=time.time() + 60)
     assert lost == [True]
     assert fake.calls == 3
 
@@ -252,9 +351,30 @@ async def test_renewal_loop_retries_store_outage_while_lease_may_be_valid():
     fake = _FakeStore([True] + [SSEAdmissionError("down")] * 400)
     t0 = time.monotonic()
     await renewal_loop("lease", fake, ttl_s=0.05, interval_s=0.01,
-                       on_loss=lambda: lost.append(True))
+                       on_loss=lambda: lost.append(True),
+                       valid_until=time.time() + 0.05)
     assert lost == [True]
     assert time.monotonic() - t0 < 5          # bounded: it did not hang forever
+
+
+async def test_renewal_loop_outage_deadline_is_not_overshot():
+    """DEADLINE REGRESSION (advisor review): with TTL=0.3s and interval=0.25s
+    (interval < TTL, so the config is legal), a renewal failing at t=0.25
+    must be decided BEFORE the last confirmed expiry (0.3s) passes — the
+    wake is capped at the deadline. A plain-interval sleep would wake at
+    0.5s: ONE FULL RENEWAL INTERVAL PAST the deadline, holding the stream on
+    an unprovable lease. The old loop did exactly that; this pins the fix.
+    """
+    lost_at = []
+    fake = _FakeStore([SSEAdmissionError("down")] * 400)   # fails from the start
+    t0 = time.time()
+    await renewal_loop("lease", fake, ttl_s=0.3, interval_s=0.25,
+                       on_loss=lambda: lost_at.append(time.time()),
+                       valid_until=t0 + 0.3)
+    assert len(lost_at) == 1
+    # decided no later than the deadline (+ scheduling margin, well under
+    # the 0.25s interval the old code would have overshot by)
+    assert lost_at[0] - t0 <= 0.3 + 0.05
 
 
 async def test_renewal_loop_survives_outage_then_recovers():
@@ -264,7 +384,8 @@ async def test_renewal_loop_survives_outage_then_recovers():
     lost = []
     fake = _FakeStore([True, SSEAdmissionError("down"), SSEAdmissionError("down"), True, False])
     await renewal_loop("lease", fake, ttl_s=5, interval_s=0.01,
-                       on_loss=lambda: lost.append(True))
+                       on_loss=lambda: lost.append(True),
+                       valid_until=time.time() + 5)
     assert lost == [True]                     # closed only on the final loss
     assert fake.calls == 5
 
@@ -283,12 +404,80 @@ async def test_renewal_loop_is_independent_of_heartbeats_or_events():
 
     task = asyncio.create_task(
         renewal_loop("lease", fake, ttl_s=60, interval_s=0.01,
-                     on_loss=lambda: alive.append("lost")))
+                     on_loss=lambda: alive.append("lost"),
+                     valid_until=time.time() + 60))
     await events_flow()
     assert fake.calls >= 2                   # renewed regardless of events
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
+
+
+# ------------------------- the RESPONSE side (server.py): lease loss vs a STALL
+def test_lease_loss_cancels_a_stalled_response():
+    """The advisor's probe, at the response level: a stalled reader can
+    leave the generator parked inside ``send()`` — no in-generator check
+    (sub.closed, lifetime, the wake event) would ever run there. The lease
+    loss must STILL end the response:
+
+    * the renewal loop keeps running WHILE the body is stalled (its
+      independence is not just from heartbeats — it is from the body);
+    * on the confirmed loss the response body task is CANCELLED and the
+      release runs (the stream never outlives its lease).
+    """
+    import server as srv
+
+    async def scenario():
+        released = []
+        stalled_in_send = asyncio.Event()
+
+        async def gen():                      # the SSE body generator
+            yield b"data: {\"type\":\"open\"}\n\n"
+            yield b"data: {\"type\":\"never\"}\n\n"   # parked after this
+
+        async def send(message):              # the ASGI send: a stalled reader
+            if message["type"] == "http.response.body":
+                stalled_in_send.set()         # the body ENTERED send()
+                await asyncio.Event().wait()  # ... and never returns
+
+        async def receive():                   # no disconnect ever comes
+            await asyncio.Event().wait()
+            return {"type": "http.request"}
+
+        response = srv._SSEResponse(
+            gen(), release=lambda: released.append(True),
+            media_type="text/event-stream")
+
+        fake = _FakeStore([True, True, False])   # renewed, renewed, LOST
+        lost = []
+        loop = asyncio.create_task(renewal_loop(
+            "lease", fake, ttl_s=5, interval_s=0.01,
+            on_loss=lambda: (lost.append(True), response.abort()),
+            valid_until=time.time() + 5))
+
+        scope = {"type": "http", "http_version": "1.1", "method": "GET",
+                 "path": "/api/events/stream", "headers": [],
+                 "query_string": b""}
+        call = asyncio.create_task(response(scope, receive, send))
+        try:
+            # wait until the body is parked inside send() (the stall)
+            await asyncio.wait_for(stalled_in_send.wait(), timeout=5)
+            # the renewal loop kept running WHILE the body was stalled
+            await asyncio.wait_for(asyncio.sleep(0.05), timeout=1)
+            assert fake.calls >= 2, fake.calls
+            # the loss ends the response: the body task is cancelled,
+            # the __call__ returns, and the release ran
+            await asyncio.wait_for(call, timeout=5)
+            assert lost == [True]
+            assert released == [True]
+        finally:
+            loop.cancel()
+            try:
+                await loop
+            except asyncio.CancelledError:
+                pass
+
+    asyncio.run(scenario())
 
 
 # ------------------------------------------------------- EventBus integration

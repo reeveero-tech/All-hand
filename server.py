@@ -2540,17 +2540,45 @@ SSE_LIMIT_DETAIL = "too many event streams, retry later"
 class _SSEResponse(StreamingResponse):
     """Releases the subscription however the response ends (normal end,
     lifetime, client disconnect, cancellation, error) — even if the body
-    generator never started."""
+    generator never started.
+
+    SHARED ADMISSION (لاحق 68): the response can be ABORTED — the lease
+    renewal loop calls :meth:`abort` on a confirmed lease loss, and the
+    body task is CANCELLED: a stalled reader can leave the generator
+    parked inside ``send()`` where no in-generator check would ever run;
+    only cancelling the body ends that response. The release runs OFF the
+    event loop (a thread — it touches the shared SQLite store)."""
 
     def __init__(self, content, release: Callable[[], Any], **kw):
         super().__init__(content, **kw)
         self._release = release
+        self._abort: asyncio.Event | None = None
+
+    def abort(self) -> None:
+        """End this response as soon as possible (confirmed lease loss).
+        A no-op before ``__call__`` or after it finished."""
+        if self._abort is not None:
+            self._abort.set()
 
     async def __call__(self, scope, receive, send):
+        self._abort = asyncio.Event()
+        body = asyncio.create_task(super().__call__(scope, receive, send))
+        loss = asyncio.create_task(self._abort.wait())
         try:
-            await super().__call__(scope, receive, send)
+            done, _pending = await asyncio.wait(
+                {body, loss}, return_when=asyncio.FIRST_COMPLETED)
+            if body in done:
+                loss.cancel()
+                await body               # propagate the original outcome
+            else:
+                # lease lost: end the response NOW — cancel the body (a
+                # stalled reader may be parked inside send(); nothing else
+                # would ever end it), then release.
+                body.cancel()
+                await asyncio.gather(body, return_exceptions=True)
         finally:
-            self._release()
+            loss.cancel()
+            await asyncio.to_thread(self._release)   # off the loop
 
 
 @app.get("/api/events/stream")
@@ -2565,7 +2593,9 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
     tenant = require_principal(api_key).tenant_id
     client = request.client.host if request.client else "unknown"
     try:
-        sub = EVENT_BUS.open(tenant, client)
+        # off the event loop: the admission transaction can wait on the
+        # shared store's write lock — it must never block the loop.
+        sub = await asyncio.to_thread(EVENT_BUS.open, tenant, client)
     except StreamLimit as e:
         logger.warning("sse: connection refused (%s), retry after %ss", e.reason, e.retry_after)
         raise HTTPException(429, SSE_LIMIT_DETAIL, headers={"Retry-After": str(e.retry_after)})
@@ -2582,13 +2612,17 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
     def _lease_lost() -> None:
         # Confirmed lease loss (or an outage we can no longer bridge): the
         # stream must END — capacity is never held on an unprovable lease.
-        # The wake event unblocks a generator parked in sub.next() so it
-        # notices sub.closed and returns without yielding anything new.
+        # THREE exits, because the generator can be parked in different
+        # places: sub.closed ends it at the next check; the wake event
+        # unblocks a park inside sub.next(); and response.abort() CANCELS
+        # the response body — a stalled reader can leave the generator
+        # parked inside send() where no in-generator check would ever run.
         sub.bus.close(sub)
         try:
             sub.offer({"type": "_lease_wake"})
         except Exception:  # pragma: no cover — best-effort wake
             pass
+        response.abort()
 
     async def generate():
         renew = None
@@ -2596,9 +2630,13 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
             # INDEPENDENT periodic renewal (must not depend on heartbeat
             # output: heartbeats may not fire under a continuous stream of
             # events or a stalled reader).
+            # valid_until is the expiry written by the ADMISSION
+            # transaction (never a local clock guess); the loop schedules
+            # its outage decision BEFORE it passes.
             renew = asyncio.create_task(_sse_renewal_loop(
                 sub.lease_id, SSE_ADMISSION, SSE_LIMITS.lease_ttl_s,
-                SSE_LIMITS.lease_renewal_s, on_loss=_lease_lost))
+                SSE_LIMITS.lease_renewal_s, on_loss=_lease_lost,
+                valid_until=sub.lease_expires_at))
         try:
             while True:
                 if sub.closed:
@@ -2618,13 +2656,20 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
         finally:
             if renew is not None:
                 renew.cancel()
-            release()
+                try:
+                    await renew      # never abandon it running
+                except asyncio.CancelledError:
+                    pass
+            await asyncio.to_thread(release)   # off the loop (touches the store)
 
-    return _SSEResponse(generate(), release, media_type="text/event-stream", headers={
+    # `response` is late-bound inside generate(): it exists before the
+    # generator can ever run (it runs only inside response.__call__).
+    response = _SSEResponse(generate(), release, media_type="text/event-stream", headers={
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
         "X-Accel-Buffering": "no",
     })
+    return response
 
 
 ROUTER_SYSTEM = (

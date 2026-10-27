@@ -178,8 +178,11 @@ class SSELeaseStore:
 
         The open-rate hit is recorded even when the open is then refused
         for capacity (parity with the in-process semantics: the rate check
-        runs first and counts the attempt). Returns the unpredictable
-        lease id. Raises ``SSEAdmissionRefused`` (no lease inserted) or
+        runs first and counts the attempt). Returns ``(lease_id,
+        expires_at)`` — the id is unpredictable and the expiry is the
+        expiry written by THIS transaction (the caller's renewal deadline
+        is derived from it, never from a local clock guess). Raises
+        ``SSEAdmissionRefused`` (no lease inserted) or
         ``SSEAdmissionError`` (store unusable — the caller must refuse,
         fail-closed)."""
         try:
@@ -213,14 +216,15 @@ class SSELeaseStore:
                     conn.execute("COMMIT")
                     raise SSEAdmissionRefused("capacity", CAPACITY_RETRY_AFTER)
                 lease_id = secrets.token_urlsafe(16)
+                expires_at = now + lease_ttl_s
                 conn.execute(
                     "INSERT INTO sse_leases (lease_id, tenant, client, opened_at, expires_at) "
                     "VALUES (?, ?, ?, ?, ?)",
-                    (lease_id, tenant, client, now, now + lease_ttl_s))
+                    (lease_id, tenant, client, now, expires_at))
                 conn.execute("INSERT INTO sse_open_hits (client, ts) VALUES (?, ?)",
                              (client, now))
                 conn.execute("COMMIT")
-                return lease_id
+                return lease_id, expires_at
             finally:
                 conn.close()
         except sqlite3.Error as e:
@@ -229,24 +233,27 @@ class SSELeaseStore:
                 f"(refusing — never unlimited): {e}") from e
 
     # ------------------------------------------------------------- liveness
-    def renew(self, lease_id: str, ttl_s: float) -> bool:
+    def renew(self, lease_id: str, ttl_s: float) -> Optional[float]:
         """CONDITIONAL extension: only a still-valid lease is extended
         (``expires_at > now``); an expired or released lease is never
-        resurrected. ``True`` = renewed, ``False`` = the lease is gone
-        (confirmed loss). A store outage raises ``SSEAdmissionError`` —
-        distinct from a loss, so the caller can retry in a bounded way."""
+        resurrected. Returns the NEW expiry written by this transaction
+        (the renewal deadline is derived from it), or ``None`` = the lease
+        is gone (confirmed loss). A store outage raises
+        ``SSEAdmissionError`` — distinct from a loss, so the caller can
+        retry in a bounded way."""
         try:
             conn = self._connect()
             try:
                 conn.execute("BEGIN IMMEDIATE")
                 now = time.time()
+                expires_at = now + ttl_s
                 cur = conn.execute(
                     "UPDATE sse_leases SET expires_at=? "
                     "WHERE lease_id=? AND expires_at>?",
-                    (now + ttl_s, lease_id, now))
+                    (expires_at, lease_id, now))
                 ok = cur.rowcount == 1
                 conn.execute("COMMIT")
-                return ok
+                return expires_at if ok else None
             finally:
                 conn.close()
         except sqlite3.Error as e:
@@ -300,36 +307,49 @@ class SSELeaseStore:
 
 
 async def renewal_loop(lease_id: str, store: SSELeaseStore, ttl_s: float,
-                       interval_s: float, on_loss: Callable[[], None]) -> None:
+                       interval_s: float, on_loss: Callable[[], None],
+                       valid_until: float) -> None:
     """The INDEPENDENT periodic lease renewal (it must not depend on
     heartbeat output: heartbeats may not fire under a continuous stream of
     events or a stalled reader).
 
-    * a successful renewal re-arms the validity window;
-    * a confirmed loss (``renew`` → False) closes the stream;
-    * a store OUTAGE does not fail open: the loop retries, bounded, only
-      while the last confirmed lease could still be valid (``ttl_s`` since
-      the last confirmation); past that the stream is released — capacity is
-      never held on an unprovable lease.
+    ``valid_until`` is the expiry written by the LAST CONFIRMED transaction
+    (acquisition or renewal — never a local clock guess); the loop must
+    not let the stream run past it while unconfirmed:
+
+    * the next wake is scheduled at ``min(now + interval, valid_until)`` —
+      an outage is decided BEFORE the deadline passes, never discovered
+      after waking late past it (the plain-interval sleep could overshoot:
+      fail at t=interval with ttl < 2*interval, wake at 2*interval — past
+      the deadline);
+    * a successful renewal returns the NEW expiry and re-arms the deadline;
+    * a confirmed loss (``renew`` → None) closes the stream;
+    * a store OUTAGE does not fail open: the loop retries, bounded by the
+      deadline — the wake is capped at ``valid_until``, so the retry budget
+      is consumed inside the validity window and the close decision is made
+      no later than it.
+
+    The store calls run OFF the event loop (``asyncio.to_thread``): a lock
+    wait inside SQLite must never block the loop that serves the stream.
+    ``on_loss`` runs off-loop too (it may touch the store).
 
     The interval must be much shorter than the TTL (a startup-time
     validation in ``SSELimits``); the numbers are operational defaults, not
     a verified safety bound."""
-    last_ok = time.monotonic()
     while True:
-        await asyncio.sleep(interval_s)
+        wake_at = min(time.time() + interval_s, valid_until)
+        await asyncio.sleep(max(0.0, wake_at - time.time()))
         try:
-            ok = store.renew(lease_id, ttl_s)
+            expiry = await asyncio.to_thread(store.renew, lease_id, ttl_s)
         except SSEAdmissionError as e:
             logger.warning("sse: lease renewal store unavailable (%s) — "
-                           "retrying while the last confirmed lease may "
-                           "still be valid", type(e).__name__)
-            if time.monotonic() - last_ok >= ttl_s:
-                on_loss()
+                           "deciding before the last confirmed expiry "
+                           "passes", type(e).__name__)
+            if time.time() >= valid_until:
+                await asyncio.to_thread(on_loss)
                 return
-            continue
-        if ok:
-            last_ok = time.monotonic()
-        else:
-            on_loss()
+            continue  # bounded: the next wake is capped at valid_until
+        if expiry is None:
+            await asyncio.to_thread(on_loss)
             return
+        valid_until = expiry

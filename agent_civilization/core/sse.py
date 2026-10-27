@@ -134,6 +134,7 @@ class Subscription:
                  lease_id: Optional[str] = None):
         self.bus, self.tenant, self.client, self.opened_at = bus, tenant, client, opened_at
         self.lease_id = lease_id          # shared-admission lease (None = in-process)
+        self.lease_expires_at = None      # last CONFIRMED expiry (renewal deadline)
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=bus.limits.queue_size)
         self.dropped = 0          # total dropped for this connection
         self._gap = 0             # dropped since the last stream_gap was delivered
@@ -284,7 +285,7 @@ class EventBus:
         open-rate window and every cap; the local maps are delivery state."""
         lim = self.limits
         try:
-            lease_id = self._admission.acquire(
+            lease_id, expires_at = self._admission.acquire(
                 tenant, client,
                 max_connections=lim.max_connections,
                 max_per_tenant=lim.max_per_tenant,
@@ -300,6 +301,7 @@ class EventBus:
             self._metric("sse_refused_total")
             raise StreamLimit(e.reason, e.retry_after_s) from None
         sub = Subscription(self, tenant, client, self.clock(), lease_id=lease_id)
+        sub.lease_expires_at = expires_at   # the renewal deadline (from the store)
         self._subs.setdefault(tenant, set()).add(sub)
         self._per_client[client] = self._per_client.get(client, 0) + 1
         self.stats["opened"] += 1
