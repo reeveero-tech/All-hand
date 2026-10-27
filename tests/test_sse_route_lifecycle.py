@@ -365,6 +365,7 @@ def test_outer_cancel_during_blocked_renewal(monkeypatch, tmp_path):
             self._inner = inner
             self.entered = threading.Event()
             self.gate = threading.Event()
+            self.completed = threading.Event()
 
         def acquire(self, *a, **kw):
             return self._inner.acquire(*a, **kw)     # normal (unblocked)
@@ -375,7 +376,10 @@ def test_outer_cancel_during_blocked_renewal(monkeypatch, tmp_path):
         def renew(self, lease_id, ttl_s):
             self.entered.set()                       # ENTERED the op
             self.gate.wait(timeout=30)               # held by the test
-            return self._inner.renew(lease_id, ttl_s)
+            try:
+                return self._inner.renew(lease_id, ttl_s)   # the real op
+            finally:
+                self.completed.set()                 # worker op FINISHED
 
         def counts(self):
             return self._inner.counts()
@@ -400,35 +404,55 @@ def test_outer_cancel_during_blocked_renewal(monkeypatch, tmp_path):
         resp = await srv.event_stream(_request(), "k")
         assert resp._keeper is not None
         stalled = asyncio.Event()
+        send_cancelled = asyncio.Event()
 
         async def send(message):
             if message["type"] == "http.response.body":
                 stalled.set()
-                await asyncio.Event().wait()
+                try:
+                    await asyncio.Event().wait()
+                except asyncio.CancelledError:
+                    send_cancelled.set()   # the BODY saw the cancellation
+                    raise                  # (recorded inside send — not
+                                          # inferred from the outer result)
 
         call = asyncio.create_task(resp(_SCOPE, _no_receive, send))
-        await asyncio.wait_for(stalled.wait(), timeout=5)     # body parked
-        # DETERMINISTIC: a renewal has ENTERED the blocked store operation
-        assert await wait_entered(barrier.entered), "renewal never entered"
+        # cleanup ownership from the START (advisor review, round 5): the
+        # gate is released and the call cancelled/joined whatever happens
         try:
+            await asyncio.wait_for(stalled.wait(), timeout=5)  # body parked
+            # DETERMINISTIC: a renewal has ENTERED the blocked store operation
+            assert await wait_entered(barrier.entered), "renewal never entered"
             call.cancel()                        # the OUTER cancellation
             with pytest.raises(asyncio.CancelledError):
                 await asyncio.wait_for(call, timeout=5)  # bounded cleanup
-            # (2) the keeper's asyncio tasks finished WHILE the barrier is
-            # still held — no keeper task outlives the response
-            await asyncio.wait_for(resp._keeper.task, timeout=5)
+            assert send_cancelled.is_set()        # the stalled send WAS hit
+            # (2) IMMEDIATELY after the response call finished — no grace
+            # wait (an extra wait_for(keeper) would permit exactly the
+            # outliving under review): the keeper's task AND its children
+            # are DONE while the renewal barrier is STILL HELD
             assert resp._keeper.task.done()
+            children = getattr(resp._keeper, "_children", ())
+            assert children and all(t.done() for t in children)
             assert not barrier.gate.is_set()      # ...still held
             # the keeper is stopped: no on_loss can fire anymore
             assert resp._keeper._stopped
-            # (3) release the barrier: the worker's renew completes, its
-            # result is discarded — no revival, no further loss
+            # (3) release the barrier and WAIT for the worker's delegated
+            # real renew to FINISH (worker-completion event — no sleep:
+            # the same pre-completion gap fixed in the acquisition test):
+            # its late result is discarded — no revival, no further loss
             barrier.gate.set()
-            await asyncio.sleep(0.3)
+            assert await wait_entered(barrier.completed), "renew never finished"
             assert resp._keeper.task.done()        # still done
             assert not resp._abort.is_set()        # no loss notification
         finally:
             barrier.gate.set()                     # never hang the executor
+            if not call.done():
+                call.cancel()
+                try:
+                    await call
+                except BaseException:             # pragma: no cover
+                    pass
         assert bus.total == 0                      # the subscription detached
 
     asyncio.run(scenario())
@@ -500,31 +524,42 @@ def test_route_cancellation_releases_the_in_flight_acquisition(
 
     async def scenario():
         route = asyncio.create_task(srv.event_stream(_request(), "k"))
-        # DETERMINISTIC: the store transaction is IN FLIGHT
-        assert await wait_entered(barrier.entered), "acquire never entered"
-        route.cancel()                            # the caller vanishes
-        with pytest.raises(asyncio.CancelledError):
-            await asyncio.wait_for(route, timeout=5)   # shielded: bounded
-        # open the gate: the worker COMMITS the lease — the cleanup owns it.
-        # FIRST wait for the commit to be observable (the transaction
-        # finished — outcome in ``committed``/``failure``): a poll that
-        # started BEFORE the commit could trivially see 0 rows and pass
-        # without proving anything (advisor review, round 4).
-        barrier.gate.set()
-        assert await wait_entered(barrier.committed), "acquire never finished"
-        assert barrier.failure is None, barrier.failure
-        # the lease is RELEASED (poll window 4s << ttl 8s — the TTL could
-        # not have expired yet; only the late-acquisition cleanup frees it)
-        deadline = asyncio.get_event_loop().time() + 4
-        released = False
-        while asyncio.get_event_loop().time() < deadline:
-            if _lease_count(db) == 0:
-                released = True
-                break
-            await asyncio.sleep(0.05)
-        assert released, (
-            "the in-flight lease was not released after the caller was "
-            "cancelled — it would live until the TTL")
-        assert bus.total == 0                     # no subscription leaked
+        # cleanup ownership from the START (advisor review, round 5): the
+        # gate is released and the route cancelled/joined whatever happens
+        try:
+            # DETERMINISTIC: the store transaction is IN FLIGHT
+            assert await wait_entered(barrier.entered), "acquire never entered"
+            route.cancel()                            # the caller vanishes
+            with pytest.raises(asyncio.CancelledError):
+                await asyncio.wait_for(route, timeout=5)   # shielded: bounded
+            # open the gate: the worker COMMITS the lease — the cleanup owns it.
+            # FIRST wait for the commit to be observable (the transaction
+            # finished — outcome in ``committed``/``failure``): a poll that
+            # started BEFORE the commit could trivially see 0 rows and pass
+            # without proving anything (advisor review, round 4).
+            barrier.gate.set()
+            assert await wait_entered(barrier.committed), "acquire never finished"
+            assert barrier.failure is None, barrier.failure
+            # the lease is RELEASED (poll window 4s << ttl 8s — the TTL could
+            # not have expired yet; only the late-acquisition cleanup frees it)
+            deadline = asyncio.get_event_loop().time() + 4
+            released = False
+            while asyncio.get_event_loop().time() < deadline:
+                if _lease_count(db) == 0:
+                    released = True
+                    break
+                await asyncio.sleep(0.05)
+            assert released, (
+                "the in-flight lease was not released after the caller was "
+                "cancelled — it would live until the TTL")
+            assert bus.total == 0                     # no subscription leaked
+        finally:
+            barrier.gate.set()          # never hang the executor worker
+            if not route.done():
+                route.cancel()
+                try:
+                    await route
+                except BaseException:             # pragma: no cover
+                    pass
 
     asyncio.run(scenario())
