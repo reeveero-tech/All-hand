@@ -131,16 +131,24 @@ def test_tenant_client_and_global_caps_shared_across_store_instances(tmp_path):
         _acquire(a, client="cc", max_per_client=2, tenant="tc1")
         _acquire(b, client="cc", max_per_client=2, tenant="tc2")
         _acquire(a, client="cc", max_per_client=2, tenant="tc3")
-    # global cap shared — ISOLATED: distinct tenants AND distinct clients
-    # with their own caps far above the opens made, so the ONLY binding
-    # constraint is max_connections (verified by mutation: removing the
+    # global cap shared — ISOLATED (advisor review, rounds 2-3): a FRESH
+    # database (the sections above already hold leases on the other one),
+    # distinct tenants AND clients with their own caps far above the opens
+    # made, so the ONLY binding constraint is max_connections — and the
+    # outcomes are asserted INDIVIDUALLY: exactly 3 admitted, the 4th
+    # refused for capacity (verified by mutation: removing the
     # global-cap condition must turn this red).
-    g1 = _store(tmp_path)
-    g2 = SSELeaseStore(str(tmp_path / "sse_admission.sqlite3"))
-    with pytest.raises(SSEAdmissionRefused) as ei:
-        for i in range(4):
-            _acquire(g1 if i % 2 == 0 else g2, tenant=f"g{i}",
-                     client=f"gc{i}", max_connections=3)
+    gdb = str(tmp_path / "global_cap_isolated.sqlite3")
+    g1 = SSELeaseStore(gdb)
+    g2 = SSELeaseStore(gdb)
+    admitted = 0
+    for i in range(3):                       # exactly the cap: 3 admitted
+        _acquire(g1 if i % 2 == 0 else g2, tenant=f"g{i}",
+                 client=f"gc{i}", max_connections=3)
+        admitted += 1
+    assert admitted == 3
+    with pytest.raises(SSEAdmissionRefused) as ei:   # the 4th: refused
+        _acquire(g1, tenant="g9", client="gc9", max_connections=3)
     assert ei.value.reason == "capacity"
 
 

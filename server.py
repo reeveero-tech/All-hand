@@ -2552,7 +2552,11 @@ class _SSEResponse(StreamingResponse):
     def __init__(self, content, release: Callable[[], Any], **kw):
         super().__init__(content, **kw)
         self._release = release          # ASYNC callable (route's release())
-        self._abort: asyncio.Event | None = None
+        # PERSISTENT from construction (advisor review, round 3): a lease
+        # loss BEFORE __call__ (the keeper starts in the ROUTE, before the
+        # first ASGI send) must not be forgotten — the event is created
+        # here, never re-created inside __call__.
+        self._abort = asyncio.Event()
         self._keeper = None             # the route's LeaseKeeper, if any
 
     def attach_keeper(self, keeper) -> None:
@@ -2562,12 +2566,12 @@ class _SSEResponse(StreamingResponse):
 
     def abort(self) -> None:
         """End this response as soon as possible (confirmed lease loss).
-        A no-op before ``__call__`` or after it finished."""
-        if self._abort is not None:
-            self._abort.set()
+        Works before, during, and after ``__call__`` — the event persists
+        from construction, so an early loss is honored by the race the
+        moment the body task is created."""
+        self._abort.set()
 
     async def __call__(self, scope, receive, send):
-        self._abort = asyncio.Event()
         body = asyncio.create_task(super().__call__(scope, receive, send))
         loss = asyncio.create_task(self._abort.wait())
         try:
@@ -2598,7 +2602,23 @@ class _SSEResponse(StreamingResponse):
                 except Exception:  # pragma: no cover — cleanup must not mask
                     pass
             if self._keeper is not None:
+                # OWNERSHIP of keeper cleanup (advisor review, round 3):
+                # stop FIRST (no further on_loss can fire — the stopped
+                # flag is checked by every keeper path), then JOIN the
+                # keeper task BOUNDED — the ASGI body was already cancelled
+                # above, so no waiting-on-database-work happens before the
+                # body cancellation. A renewal blocked inside SQLite
+                # cannot be terminated (to_thread cancellation does not
+                # stop the worker thread); the join is bounded and the
+                # keeper exits when the blocked call returns — with stop()
+                # already in effect it can only exit, never fire again.
                 self._keeper.stop()      # no on_loss: the response is done
+                if self._keeper.task is not None:
+                    try:
+                        await asyncio.wait_for(
+                            asyncio.shield(self._keeper.task), timeout=10)
+                    except (asyncio.TimeoutError, TimeoutError):
+                        pass             # bounded: the blocked renew ends it
             await self._release()       # detach on-loop, store release off-loop
 
 

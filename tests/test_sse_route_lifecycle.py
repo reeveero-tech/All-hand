@@ -242,3 +242,136 @@ def test_outer_cancellation_leaves_no_body_or_renewal_task(monkeypatch, tmp_path
         assert _lease_count(db) == 0
 
     asyncio.run(scenario())
+
+
+def test_loss_before_call_is_not_forgotten(monkeypatch, tmp_path):
+    """LOSS BEFORE ``__call__`` (advisor review, round 3): the keeper starts
+    in the ROUTE — before the first ASGI send — so a lease loss can fire
+    BEFORE the response is ever invoked. The abort event is PERSISTENT from
+    construction: an early loss must still cancel the body the moment the
+    response is invoked (a stale event re-created inside ``__call__`` would
+    forget it and the stalled send would never end). Mutation check:
+    re-creating the event in ``__call__`` turns this red (hang)."""
+    db, store, bus = _setup(monkeypatch, tmp_path, ttl=4, renewal=1)
+
+    async def scenario():
+        resp = await srv.event_stream(_request(), "k")
+        assert resp._keeper is not None
+        # FORCE the loss BEFORE any __call__ — and let the keeper finish
+        con = sqlite3.connect(db)
+        con.execute("DELETE FROM sse_leases")
+        con.commit()
+        con.close()
+        await asyncio.wait_for(resp._keeper.task, timeout=6)  # loss fired
+        # NOW invoke the response with a stalled FIRST send: the persistent
+        # abort must cancel the body immediately (no keeper is left)
+        stalled = asyncio.Event()
+
+        async def send(message):
+            if message["type"] == "http.response.start":
+                stalled.set()
+                await asyncio.Event().wait()   # stalls forever
+
+        call = asyncio.create_task(resp(_SCOPE, _no_receive, send))
+        await asyncio.wait_for(stalled.wait(), timeout=5)
+        await asyncio.wait_for(call, timeout=5)   # ended by the EARLY abort
+        assert bus.total == 0
+
+    asyncio.run(scenario())
+
+
+def test_deadline_cancels_production_send_while_renewal_is_blocked(
+        monkeypatch, tmp_path):
+    """DEADLINE-DRIVEN CANCELLATION of the PRODUCTION response (advisor
+    review, round 3): acquire normally, stall the ASGI send, then HOLD the
+    store's write lock so every renewal is blocked INSIDE SQLite across
+    the expiry — the WATCHDOG must still cancel the production send task
+    NEAR the last confirmed deadline, while the lock is still held (no
+    renewal ever succeeded after the stall). Proven result (stated
+    honestly): the body is signalled/cancelled at the deadline subject to
+    event-loop scheduling; response cleanup and socket closure complete
+    afterwards (bounded by the store's busy timeout)."""
+    db, store, bus = _setup(monkeypatch, tmp_path, ttl=2, renewal=1)
+
+    async def scenario():
+        t0 = time.monotonic()
+        resp = await srv.event_stream(_request(), "k")
+        # HOLD the write lock IMMEDIATELY — BEFORE the first renewal
+        # interval (1s) can elapse: no renewal ever succeeds after this
+        # point, so the last confirmed deadline stays t0+ttl. (Holding it
+        # only after the send stalled let the first renewal race past and
+        # legitimately push the deadline — a flake, not a defect.)
+        con = sqlite3.connect(db)
+        con.execute("BEGIN IMMEDIATE")
+        cancelled_at = []
+        stalled = asyncio.Event()
+
+        async def send(message):
+            if message["type"] == "http.response.body":
+                stalled.set()
+                try:
+                    await asyncio.Event().wait()   # parked forever
+                except asyncio.CancelledError:      # the deadline watchdog
+                    cancelled_at.append(time.monotonic())
+                    raise
+
+        call = asyncio.create_task(resp(_SCOPE, _no_receive, send))
+        await asyncio.wait_for(stalled.wait(), timeout=5)
+        try:
+            # the production send task is cancelled NEAR the deadline
+            # (ttl=2 + scheduling margin) — while the lock is STILL held
+            for _ in range(200):
+                if cancelled_at:
+                    break
+                await asyncio.sleep(0.05)
+            assert cancelled_at, "the stalled send was never cancelled"
+            assert cancelled_at[0] - t0 <= 2 + 1.0, (   # at the deadline
+                "the stalled send was not cancelled near the lease "
+                "deadline", cancelled_at[0] - t0)
+        finally:
+            con.rollback()                        # release the lock
+        # cleanup completes afterwards (bounded by the store busy timeout)
+        await asyncio.wait_for(call, timeout=15)
+        assert bus.total == 0
+
+    asyncio.run(scenario())
+
+
+def test_outer_cancel_during_blocked_renewal(monkeypatch, tmp_path):
+    """OUTER CANCELLATION while a renewal is BLOCKED inside the store
+    (advisor review, round 3): the response cleanup stops the keeper and
+    joins it BOUNDED — the body cancellation happens BEFORE any waiting on
+    database work, and a renewal blocked in SQLite (which to_thread cannot
+    terminate) neither blocks the cleanup unboundedly nor fires anything
+    after the stop. After the lock is released the keeper task ends."""
+    db, store, bus = _setup(monkeypatch, tmp_path, ttl=4, renewal=1)
+
+    async def scenario():
+        resp = await srv.event_stream(_request(), "k")
+        stalled = asyncio.Event()
+
+        async def send(message):
+            if message["type"] == "http.response.body":
+                stalled.set()
+                await asyncio.Event().wait()
+
+        call = asyncio.create_task(resp(_SCOPE, _no_receive, send))
+        await asyncio.wait_for(stalled.wait(), timeout=5)
+        # a renewal barrier: the write lock blocks every renew inside SQLite
+        con = sqlite3.connect(db)
+        con.execute("BEGIN IMMEDIATE")
+        try:
+            call.cancel()                        # the OUTER cancellation
+            with pytest.raises(asyncio.CancelledError):
+                await asyncio.wait_for(call, timeout=15)  # bounded cleanup
+            # the body was cancelled BEFORE any database wait; the keeper
+            # was stopped (no on_loss can fire anymore)
+            assert resp._keeper._stopped
+        finally:
+            con.rollback()                        # the barrier ends
+        # the (formerly blocked) renewal returns; the keeper task ends
+        await asyncio.wait_for(resp._keeper.task, timeout=15)
+        assert resp._keeper.task.done()
+        assert bus.total == 0                    # the subscription detached
+
+    asyncio.run(scenario())
