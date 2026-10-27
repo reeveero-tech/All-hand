@@ -136,23 +136,38 @@ async def _open_until_admitted(streams: _OpenStreams, deadline_s: float = 5.0) -
     probe fired immediately after a client close RACES it — the property
     under test is that the release LANDS within a bound and nothing leaks,
     not that it beats the next packet (slow CI runners lose that race
-    legitimately — the CI failures on the round 1-4 heads were exactly
-    this race, not a leak; a real leak still fails: the 429s persist
-    past the window and the deadline returns the refusal)."""
+    legitimately). A real leak still fails: the 429s persist past the
+    window and the deadline returns the refusal.
+
+    (advisor review, round 6): the deadline COVERS the open itself — each
+    attempt is bounded by the REMAINING budget, so one slow HTTP request
+    cannot silently exceed the advertised bound."""
     loop = asyncio.get_event_loop()
     end = loop.time() + deadline_s
+    code = None
     while True:
-        code = await streams.open(0)
-        if code != 429 or loop.time() >= end:
+        remaining = end - loop.time()
+        if remaining <= 0:
+            return code if code is not None else 429
+        try:
+            code = await asyncio.wait_for(streams.open(0), timeout=remaining)
+        except asyncio.TimeoutError:
+            return code if code is not None else 429
+        if code != 429:
             return code
-        await asyncio.sleep(0.1)
 
 
 async def test_control_single_process_enforces_the_tenant_cap(tmp_path):
     """CONTROL (the in-process behavior is sound): one server, the tenant
     opens TENANT_CAP streams (all 200) and the next is refused (429)."""
     key = _tenant_key()
-    srv = _SSEServer(key)
+    # ISOLATED admission DB (advisor review, round 6): without this the
+    # server uses the DEFAULT shared path (/tmp/agos_sse_admission.sqlite3)
+    # and rows left by a PREVIOUS run (a killed run, or one whose releases
+    # were suppressed by a mutation check) poison this one for a full TTL
+    # — cross-run state has no place in a test.
+    srv = _SSEServer(key, extra_env={
+        "AGOS_SSE_ADMISSION_DB": _shared_admission_db(tmp_path)})
     try:
         async with aiohttp.ClientSession() as s:
             await srv.wait_ready(s)
@@ -179,8 +194,12 @@ async def test_contract_sse_admission_does_not_multiply_across_processes(tmp_pat
     separate batch; this red test is its acceptance test, kept like
     b061663e was for the rate limiter (merged only WITH the fix)."""
     key = _tenant_key()
-    a = _SSEServer(key)
-    b = _SSEServer(key)
+    # both processes share ONE tmp admission DB (that is the contract under
+    # test) — but ISOLATED from the default shared path, so no rows from a
+    # previous run can leak into this one (advisor review, round 6).
+    db = _shared_admission_db(tmp_path)
+    a = _SSEServer(key, extra_env={"AGOS_SSE_ADMISSION_DB": db})
+    b = _SSEServer(key, extra_env={"AGOS_SSE_ADMISSION_DB": db})
     try:
         async with aiohttp.ClientSession() as s:
             await a.wait_ready(s)
@@ -411,9 +430,43 @@ async def test_renewal_maintains_capacity_beyond_the_lease_ttl(tmp_path):
                     "the stream is not provably alive")
                 # and their leases are still counted: the cap holds on B
                 assert await sb.open(0) == 429
-                # closing them frees the capacity
+                # closing them frees the capacity — EXPIRY-DISCRIMINATING
+                # (advisor review, round 6): a bounded HTTP poll alone
+                # could pass through TTL EXPIRY (this test's TTL is 2s
+                # and a 5s poll would OUTLIVE it), so the release is
+                # observed on the shared store itself: the lease rows
+                # must be DELETED within a fraction of their remaining
+                # validity (read at close time) — a broken release leaves
+                # them until expiry, which is AFTER the deadline, so the
+                # test FAILS instead of passing through TTL reclamation;
+                # only then is the freed slot probed over HTTP.
+                import sqlite3
+                import time as _time
+
+                def _lease_rows():
+                    con = sqlite3.connect(db, timeout=2)
+                    try:
+                        return con.execute(
+                            "select count(*), max(expires_at)"
+                            " from sse_leases").fetchone()
+                    finally:
+                        con.close()
+
                 await sa.close_all()
-                assert await _open_until_admitted(sb) == 200
+                n_rows, max_exp = _lease_rows()
+                remaining = (max_exp - _time.time()) if n_rows else 0.0
+                window = max(0.5, remaining * 0.6)
+                released = False
+                end = asyncio.get_event_loop().time() + window
+                while asyncio.get_event_loop().time() < end:
+                    if _lease_rows()[0] == 0:
+                        released = True
+                        break
+                    await asyncio.sleep(0.05)
+                assert released, (
+                    "the leases were not RELEASED after close — expiry "
+                    "(not release) would be the only recovery")
+                assert await _open_until_admitted(sb, deadline_s=window) == 200
             finally:
                 await sa.close_all()
                 await sb.close_all()
