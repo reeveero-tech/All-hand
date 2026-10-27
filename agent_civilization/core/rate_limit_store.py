@@ -97,7 +97,10 @@ class RateLimitStore:
         that stays busy past that budget is reported loudly, never silently
         run without a limit."""
         last: sqlite3.Error | None = None
+        self._init_attempts = 0        # test/ops telemetry: attempts made
+        self._init_busy_failures = 0   # ...and how many hit locked/busy
         for _attempt in range(self._init_retries):
+            self._init_attempts += 1
             try:
                 conn = self._connect()
                 try:
@@ -114,10 +117,12 @@ class RateLimitStore:
                         f"(fix the path or the filesystem — the limiter does not "
                         f"degrade to unlimited): {e}") from e
                 last = e
+                self._init_busy_failures += 1
                 time.sleep(self._init_retry_sleep_s)
         raise RateLimitStoreError(
             f"rate-limit store unusable at {self._db_path!r} (still busy after "
-            f"{self._init_retries} init attempts — the limiter does not degrade "
+            f"{self._init_attempts} init attempts, {self._init_busy_failures} of "
+            f"them busy — the limiter does not degrade "
             f"to unlimited): {last}") from last
 
     def check(self, client_id: str, limit: int, window_s: float) -> Tuple[bool, int]:

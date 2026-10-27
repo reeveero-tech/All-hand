@@ -281,39 +281,81 @@ def test_a_waited_admission_samples_its_timestamp_after_acquiring_the_lock(tmp_p
     """Log-299 review: a check that WAITED for the writer lock must stamp
     its hit with the time AFTER the wait, not before — a pre-wait timestamp
     can be born already expired (wait longer than the window), the next
-    check prunes it, and the limit never holds. Regression: another
-    connection holds the writer lock while a check waits."""
+    check prunes it, and the limit never holds.
+
+    Proof design (no scheduling assumptions): an explicit handshake knows
+    the worker reached its connection; with the blocker owning the writer
+    lock the worker can only be waiting inside BEGIN IMMEDIATE (asserted
+    alive at that point). A CONTROLLED clock is then advanced far past the
+    window WHILE the worker still waits, and only then is the lock
+    released — so the acquisition time is provably the advanced time. The
+    hit must hold the window measured from THAT time and expire exactly
+    window-seconds later. Verified red on the pre-fix code (timestamp
+    sampled before BEGIN): the hit is stamped at wait-start, already
+    expired at the advanced time, and the next check admits again."""
     import sqlite3 as _sqlite3
     import threading as _threading
     db = tmp_path / "ts.sqlite3"
     store = rate_limit_store.RateLimitStore(str(db))
+    # controlled clock: the store samples time.time() — swap the module's
+    # `time` for a shim whose .time() this test advances by hand (the
+    # module only uses time.sleep in init retries, kept real)
+    class _Clock:
+        now = 1000.0
+        def time(self):
+            return self.now
+        def sleep(self, s):
+            time.sleep(s)
+    clock = _Clock()
+    real_time_mod = rate_limit_store.time
+    rate_limit_store.time = clock
     blocker = _sqlite3.connect(str(db), isolation_level=None)
     blocker.execute("BEGIN IMMEDIATE")   # hold the writer lock
+    reached = _threading.Event()
+    orig_connect = store._connect
+    def _tracked_connect():
+        conn = orig_connect()
+        reached.set()   # the worker built its connection — next it runs BEGIN
+        return conn
+    store._connect = _tracked_connect
     outcome = {}
     def _waiting_check():
         outcome["res"] = store.check("waiter", 1, window_s=1.0)
     th = _threading.Thread(target=_waiting_check)
-    t0 = time.monotonic()
-    th.start()
-    time.sleep(1.2)                       # hold longer than the window
-    blocker.execute("COMMIT")             # release: the waiter proceeds
-    th.join(timeout=10)
-    elapsed = time.monotonic() - t0
-    assert not th.is_alive(), "the waiting check never finished"
-    assert elapsed >= 1.2, elapsed        # it really waited for the lock
-    assert outcome["res"] == (True, 0), outcome   # it was admitted
-    # the hit was stamped AFTER the wait: it is fresh, so the very next
-    # check is refused (a pre-wait stamp would already be pruned → admitted)
-    assert store.check("waiter", 1, window_s=1.0) == (False, 1), \
-        "a waited admission was born expired — timestamp sampled before the lock"
-    blocker.close()
+    try:
+        th.start()
+        assert reached.wait(timeout=10), "the worker never reached its connection"
+        # the worker can only be inside BEGIN IMMEDIATE's busy wait now
+        # (the blocker owns the writer lock); prove it is still waiting...
+        time.sleep(0.3)
+        assert th.is_alive(), "the check finished while the lock was held?!"
+        # ...then advance the clock FAR past the window while it waits, and
+        # only now release: the acquisition time is provably the advanced one
+        clock.now = 1010.0
+        blocker.execute("COMMIT")
+        th.join(timeout=10)
+        assert not th.is_alive(), "the waiting check never finished"
+        assert outcome["res"] == (True, 0), outcome   # it was admitted
+        # stamped at ACQUISITION (1010): still holding at 1010.9, and it
+        # expires exactly one window after 1010 — a wait-start stamp (1000)
+        # would already be pruned and the 1010.9 check would ADMIT
+        clock.now = 1010.9
+        assert store.check("waiter", 1, window_s=1.0) == (False, 1), \
+            "a waited admission was born expired — timestamp sampled before the lock"
+        clock.now = 1011.05
+        assert store.check("waiter", 1, window_s=1.0) == (True, 0)
+    finally:
+        rate_limit_store.time = real_time_mod
+        blocker.close()
+        th.join(timeout=10)
 
 
 def test_transient_busy_during_init_retries_and_succeeds(tmp_path):
     """Another connection holds the writer lock while the store initializes:
-    the WAL/schema init hits `database is locked`, the bounded retry rides
-    it out, and the construction SUCCEEDS (observed live: two servers
-    starting on one shared file — the loser used to crash at import)."""
+    the init hits `database is locked` (an ACTUAL busy failure is recorded),
+    the bounded retry rides it out, and the construction SUCCEEDS (observed
+    live: two servers starting on one shared file — the loser used to crash
+    at import)."""
     import sqlite3 as _sqlite3
     import threading as _threading
     db = tmp_path / "init-busy.sqlite3"
@@ -326,27 +368,50 @@ def test_transient_busy_during_init_retries_and_succeeds(tmp_path):
             str(db), busy_timeout_s=0.3, init_retries=20, init_retry_sleep_s=0.05)
     th = _threading.Thread(target=_build)
     th.start()
-    time.sleep(0.5)                       # a few attempts fail on the lock
-    blocker.execute("COMMIT")             # release mid-retry
-    th.join(timeout=10)
-    assert not th.is_alive(), "init never finished after the lock was released"
-    assert built["store"].check("c", 5, window_s=60) == (True, 0)
-    blocker.close()
+    try:
+        time.sleep(0.5)                       # attempts fail while held...
+        assert th.is_alive(), "init finished while the lock was still held?!"
+        blocker.execute("COMMIT")             # ...release mid-retry
+        th.join(timeout=10)
+        assert not th.is_alive(), "init never finished after the lock was released"
+        store = built["store"]
+        # an actual busy failure was recorded before the release, and a
+        # later attempt (post-release) succeeded
+        assert store._init_busy_failures >= 1, (store._init_attempts,
+                                                store._init_busy_failures)
+        assert store._init_attempts > store._init_busy_failures
+        assert store.check("c", 5, window_s=60) == (True, 0)
+    finally:
+        try:
+            blocker.execute("COMMIT")   # release if an assertion failed above
+        except _sqlite3.Error:
+            pass
+        blocker.close()
+        th.join(timeout=10)
 
 
 def test_persistent_busy_during_init_fails_closed_within_the_retry_budget(tmp_path):
     """The lock is NEVER released: the init gives up after its bounded
     attempt budget and raises loudly (a store that cannot initialize must
-    stop the process — never run unlimited), and it gives up FAST."""
+    stop the process — never run unlimited). The budget is proven SPENT:
+    the message carries the ACTUAL attempt count, and the inter-attempt
+    sleeps alone span at least (attempts-1) x sleep."""
     import sqlite3 as _sqlite3
     db = tmp_path / "init-stuck.sqlite3"
     blocker = _sqlite3.connect(str(db), isolation_level=None)
     blocker.execute("BEGIN IMMEDIATE")
     t0 = time.monotonic()
-    with pytest.raises(rate_limit_store.RateLimitStoreError) as ei:
-        rate_limit_store.RateLimitStore(
-            str(db), busy_timeout_s=0.3, init_retries=3, init_retry_sleep_s=0.05)
-    elapsed = time.monotonic() - t0
-    assert "3 init attempts" in str(ei.value)
-    assert elapsed < 5, elapsed          # bounded, not open-ended
-    blocker.close()
+    try:
+        with pytest.raises(rate_limit_store.RateLimitStoreError) as ei:
+            rate_limit_store.RateLimitStore(
+                str(db), busy_timeout_s=0.3, init_retries=3, init_retry_sleep_s=0.2)
+        elapsed = time.monotonic() - t0
+        # the ACTUAL count (3 attempts, all busy) is in the message —
+        # "3 init attempts, 3 of them busy" — not just the configured one
+        assert "3 init attempts, 3 of them busy" in str(ei.value), str(ei.value)
+        # the inter-attempt sleeps alone prove the loop ran its full budget:
+        # 3 attempts = 2 sleeps >= 2 x 0.2s; each attempt itself fails fast
+        assert elapsed >= 0.4, elapsed
+        assert elapsed < 5, elapsed          # bounded, not open-ended
+    finally:
+        blocker.close()

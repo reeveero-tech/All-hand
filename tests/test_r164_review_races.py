@@ -306,6 +306,14 @@ def test_r164_review_storage_failure_gives_the_slot_back(durable_rate, db, monke
             refused = await asyncio.gather(*[_asgi_post("/api/tasks", _new(10 + i), durable_rate.headers)
                                              for i in range(3)])
             assert all(_rate_refused(r) for r in refused), refused
+            # post-refusal proof the hold is STILL real, immediately before
+            # the gate opens: the 3 admitted requests are still unfinished
+            # and their 3 reservations are still in the window. (The mock's
+            # hold is a 30s gate timeout, not an unconditional hold — these
+            # assertions run well inside it.)
+            assert all(not t.done() for t in held), "an 'in-flight' request finished early"
+            assert len(server._ACCEPTED_AT.get("test_tenant", [])) == 3, \
+                server._ACCEPTED_AT.get("test_tenant")
             # phase 3: open the gate — the held inserts fail; each gives its slot back
             gate.set()
             failed = await asyncio.gather(*held)
@@ -320,21 +328,31 @@ def test_r164_review_storage_failure_gives_the_slot_back(durable_rate, db, monke
             assert sum(1 for r in res if _rate_refused(r)) == 3
             assert len(db["tasks"]) == 3
         finally:
-            # lifecycle: never leave the gate closed, an insert blocked, or the
-            # mock broken — whatever assertion failed above
+            # lifecycle, in order: release the gate FIRST (an insert already
+            # entering the hold branch must never see a closed gate); wait
+            # boundedly for the held requests; CANCEL whatever is still
+            # pending and await every held task (exceptions retrieved so a
+            # failure inside them cannot be swallowed); close storage; and
+            # reset the mock state LAST — a handler mid-hold must never see
+            # gate=None.
             if _PostgREST.gate[0] is not None:
                 _PostgREST.gate[0].set()
-            _PostgREST.mode[0] = "ok"
-            _PostgREST.gate[0] = None
-            _PostgREST.gate_waiting[0] = 0
             if "held" in locals():
-                pending = [t for t in held if not t.done()]
-                if pending:
-                    await asyncio.wait(pending, timeout=10)
+                todo = [t for t in held if not t.done()]
+                if todo:
+                    done, pending = await asyncio.wait(todo, timeout=10)
+                    for t in pending:
+                        t.cancel()
+                # await every held task, retrieving exceptions (a cancelled
+                # or failed one must not warn or hide its error)
+                await asyncio.gather(*held, return_exceptions=True)
             from agent_civilization.storage import supabase_store as ss
             if ss._storage is not None:
                 await ss._storage.close()
                 ss._storage = None
+            _PostgREST.mode[0] = "ok"
+            _PostgREST.gate[0] = None
+            _PostgREST.gate_waiting[0] = 0
     asyncio.run(go())
 
 
