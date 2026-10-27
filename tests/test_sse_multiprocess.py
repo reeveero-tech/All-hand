@@ -23,7 +23,6 @@ import sys
 from pathlib import Path
 
 import aiohttp
-import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 TENANT_CAP = 3      # AGOS_SSE_MAX_PER_TENANT for every spawned process
