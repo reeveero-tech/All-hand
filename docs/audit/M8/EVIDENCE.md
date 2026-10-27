@@ -1254,7 +1254,7 @@
 
 - **الغرض**: معالجة كل ثغرة مصحح أكدتها المراجعة المستقلة للطلب #214 دون المساس بـv1 المجمد.
 - **الإثبات**: 39 اختباراً أحمر في `tests/test_r169_benchmark_v2.py` (كل ثغرة بمسبار؛ مسابير التطوير fixtures داخل الاختبارات) + تدقيق يدوي حرفي لكل فشل في المحاولة f3 كشف 7 إيجابيات/سلبيات كاذبة أُصلحت قبل القياس النهائي (المحاولة f3 محفوظة موسومة `superseded_*` مع ردودها الخام وأحكام وقت تشغيلها) + تدقيق عينات نجاح عشوائية.
-- **القياس النهائي f4** عند التجميد الكامل (SHA `96b0d6e`، شجرة نظيفة): [`v2/test_baseline_f4`](logs/raw/r169/v2/test_baseline_f4.jsonl) و[`v2/test_grounded-v2_f4`](logs/raw/r169/v2/test_grounded-v2_f4.jsonl) (‏72/84 مقابل 83/84؛ McNemar ‏p=0.0034؛ التقرير [`R169_REPORT_V2.md`](R169_REPORT_V2.md))؛ CI يعيد التصحيح حرفياً.
+- **القياس النهائي f4** عند التجميد الكامل (SHA `96b0d6e`، شجرة نظيفة): [`v2/test_baseline_f4`](logs/raw/r169/v2/superseded_test_baseline_f4.jsonl) و[`v2/test_grounded-v2_f4`](logs/raw/r169/v2/superseded_test_grounded-v2_f4.jsonl) (‏72/84 مقابل 83/84؛ McNemar ‏p=0.0034؛ التقرير [`R169_REPORT_V2.md`](R169_REPORT_V2.md))؛ CI يعيد التصحيح حرفياً.
 - **حزمة المراجعة البشرية v2**: [`v2/human_review/`](logs/raw/r169/v2/human_review/REVIEW_PACKAGE.md) تولّدها `scripts/r169_human_review_v2.py` حتمياً (`--check` يتحقق التطابق البايتي)؛ 51 حالة غير موجّهة مسبقاً.
 - **حدود معلنة**: closed_book تعيد وقائع v1 (جِدّة test ‏78/84)؛ المصحح معجمي (الاختلاق العربي خارج forbidden_names يحتاج مراجعة بشرية)؛ تشغيل واحد لكل تكوين؛ نموذج شيفرة baseline مجهول (حد `_code_generator`).
 - **R-169 تبقى `awaiting_merge`** حتى تنفيذ المراجعة البشرية (Q-028) وتوثيقها؛ أي تصحيح لاحق للمصحح يستلزم v3.

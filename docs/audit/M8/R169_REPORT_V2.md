@@ -8,7 +8,7 @@
 > جديداً (v3) بمجموعة اختبار طازجة تُجمّد قبل أول قياس عليها. v1 مجمّد كدليل تاريخي
 > (تقريره: [`R169_REPORT.md`](R169_REPORT.md))؛ علاقة v2 بـv1 في
 > [`benchmarks/r169/v2/CHANGES.md`](../../../benchmarks/r169/v2/CHANGES.md).
-> المنهجية: [`R169_BENCHMARK_V2.md`](../governance/R169_BENCHMARK_V2.md).
+> المنهجية: [`R169_BENCHMARK_V2.md`](../../governance/R169_BENCHMARK_V2.md).
 > **ليس** قياساً لنموذج الإنتاج المعلن في `render.yaml` (Q-026 قائمة)، ولا إعلان عتبة.
 
 ## ما قيس بالضبط
@@ -24,8 +24,8 @@
 | محاولات سابقة محفوظة | `superseded_test_baseline_f2_partial` (أُوقفت بعد تصليب المصحح) و`superseded_test_{baseline,grounded-v2}_f3` (قياس كامل بالمصحح السابق؛ اكتشف تدقيق إجاباتها 7 إيجابيات/سلبيات كاذبة أُصلحت ثم أعيد القياس هنا) — ردودها الخام وأحكام وقت التشغيل محفوظة كدليل |
 | التكلفة | صفر (بلا مفتاح ولا حساب)؛ `render.yaml` والإنتاج والأسرار لم تُمسّ |
 
-المخرجات الخام: [`v2/test_baseline_f4.jsonl`](logs/raw/r169/v2/test_baseline_f4.jsonl)
-و[`v2/test_grounded-v2_f4.jsonl`](logs/raw/r169/v2/test_grounded-v2_f4.jsonl) مع ملخصيهما؛
+المخرجات الخام: [`v2/test_baseline_f4.jsonl`](logs/raw/r169/v2/superseded_test_baseline_f4.jsonl)
+و[`v2/test_grounded-v2_f4.jsonl`](logs/raw/r169/v2/superseded_test_grounded-v2_f4.jsonl) مع ملخصيهما؛
 يعيد CI تصحيحهما حرفياً (`tests/test_r169_benchmark_v2.py`). حزمة المراجعة البشرية للعينة:
 [`v2/human_review/`](logs/raw/r169/v2/human_review/REVIEW_PACKAGE.md).
 
