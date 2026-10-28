@@ -8,28 +8,26 @@ fake PostgREST, slow external recipient). No internet, no model provider, no
 paid service, no production change. Not an integration test with Supabase, not
 a live test.
 
-What it measures (preregistered BEFORE the official run — see
-docs/audit/M8/logs/raw/r188_sustained_pressure/PREREGISTRATION.md):
-  - admission latency for POST /api/tasks, SEPARATED: accepted (202) vs
-    capacity-refused (503); percentiles over ALL requests of each class;
-    errors/timeouts recorded as-is;
-  - completion latency: submit -> FIRST terminal observation via bounded
-    polling of GET /api/tasks/{id} (the number includes polling delay — an
-    upper bound on completion, stated as such);
-  - throughput: completions/sec observed during the sustained window;
-  - occupancy of unfinished tasks during the window (tasks_pending from
-    /metrics — verified in server.py to count ALL non-terminal tasks in the
-    process registry, i.e. exactly what the volatile cap applies to);
-  - the server process's VmRSS/VmHWM/Threads sampled from /proc every 5 s:
-    baseline after warmup, the pressure window, the drain, and a FIXED idle
-    period after — start/peak/end reported as-is. NO "no memory leak" claim
-    is made from a single run of this window;
-  - in THIS run: one send per accepted task observed at the recipient (via a
-    synthetic unique correlation id in the prompt — the volatile external
-    path sends no Idempotency-Key, consistent with the contract), one
-    terminal state per accepted task, and post-drain recovery (a NEW task
-    accepted and completed; live count back to zero). Named as "observed in
-    this run without restart" — NOT a proof of exactly-once in general.
+Protocol v2 (this file) — the v1 run (docs/audit/M8/logs/raw/
+r188_sustained_pressure/OFFICIAL_RUN_REPORT.json + FIRST_RUN_APPENDIX.md) is
+kept UNMODIFIED as a first run with documented measurement-tool defects; v2
+fixes them:
+  1. EVERY measured task (fill + window) is observed from acceptance by the
+     same bounded pollers — first terminal observation recorded ONCE per task;
+     warmup tasks are observed too but tagged and EXCLUDED from the stats.
+  2. Occupancy samples are restricted to the measurement window by EXPLICIT
+     timestamps [window_t0, window_t1] (phase tags alone are not trusted);
+     drain time is measured from the moment submissions STOP, not from after
+     thread joins.
+  3. send_t is the time the POST is actually SENT (before urlopen), so
+     completion latency = send -> first terminal observation.
+  4. Verification is set-based and explicit: accepted task ids are matched to
+     recipient sends by unique correlation id (missing send = loss, >1 send per
+     correlation = duplicate side effect), final statuses are DISTRIBUTED
+     (completed/failed/cancelled counted separately), ALL worker exceptions
+     are collected, and the report carries an explicit measurement_valid
+     verdict (exit code 1 when invalid — a run with violations is never
+     reported as a successful measurement).
 
 Frozen params (any change after the official run = a NEW documented run):
   --window 120 (official)  --hold 30 (recipient hold per official request)
@@ -52,10 +50,12 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault("AGOS_ENV", "development")  # before importing server code
+
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 
@@ -63,6 +63,8 @@ import test_r188_operational_limits as oplim  # REAL_CAP + admin headers helpers
 import test_r188_task_loss as loss  # the shared real-server harness
 
 REAL_CAP = oplim.REAL_CAP  # 500 — asserted by the imported test module
+
+TERMINAL = ("completed", "failed", "cancelled")
 
 
 # ---------------------------------------------------------------- slow recipient
@@ -164,24 +166,128 @@ def proc_status(pid: int):
         return None
 
 
+# ------------------------------------------------- pure computations (tested)
+def window_occupancy(samples, t0, t1, phase="sustain"):
+    """Occupancy values of samples STRICTLY inside [t0, t1] with the given phase.
+
+    Phase tags alone are not trusted (v1 defect): the window is enforced by
+    explicit timestamps.
+    """
+    return [s["tasks_pending"] for s in samples
+            if s.get("phase") == phase and t0 <= s["t"] <= t1
+            and s.get("tasks_pending") is not None]
+
+
+def dedupe_first_observations(completions):
+    """One completion record per task id — the EARLIEST observation wins."""
+    best = {}
+    for c in completions:
+        prev = best.get(c["tid"])
+        if prev is None or c["observed_t"] < prev["observed_t"]:
+            best[c["tid"]] = c
+    return list(best.values())
+
+
+def completion_stats(completions, exclude_phases=("warmup", "recovery")):
+    """Latency + status distribution over measured tasks (warmup/recovery out)."""
+    kept = [c for c in completions if c["phase"] not in exclude_phases]
+    out = {
+        "n": len(kept),
+        "status_distribution": dict(Counter(c["status"] for c in kept)),
+        "latency_send_to_first_observation": lat(
+            [c["observed_t"] - c["send_t"] for c in kept]),
+        "by_phase": {},
+    }
+    for ph in sorted({c["phase"] for c in kept}):
+        sub = [c for c in kept if c["phase"] == ph]
+        out["by_phase"][ph] = {
+            "n": len(sub),
+            "status_distribution": dict(Counter(c["status"] for c in sub)),
+            "latency": lat([c["observed_t"] - c["send_t"] for c in sub]),
+        }
+    return out
+
+
+def verify_measurement(*, corr_by_tid, sends_by_corr, completions, worker_errors,
+                       http_errors, non_terminal, live_after_drain,
+                       recovery_terminal):
+    """Explicit set-based verification. Returns a verdict dict; a run with any
+    violation is INVALID (never reported as a successful measurement)."""
+    reasons = []
+    # 1) identity match: every expected correlation sent >= 1 time (no loss)
+    expected = set(corr_by_tid.values())
+    missing = sorted(expected - set(sends_by_corr))
+    if missing:
+        reasons.append({"violation": "task_never_sent_to_recipient",
+                        "count": len(missing), "examples": missing[:5]})
+    # 2) no duplicate side effect: no correlation sent more than once
+    dupes = {c: n for c, n in sends_by_corr.items() if n > 1}
+    if dupes:
+        reasons.append({"violation": "duplicate_recipient_send",
+                        "count": len(dupes), "examples": dict(list(dupes.items())[:5])})
+    # 3) unexpected final statuses (in this scenario everything must complete)
+    unexpected = {c["tid"]: c["status"] for c in completions
+                  if c["status"] != "completed"}
+    if unexpected:
+        reasons.append({"violation": "unexpected_terminal_status",
+                        "count": len(unexpected),
+                        "examples": dict(list(unexpected.items())[:5])})
+    # 4) every accepted task reached a terminal state
+    if non_terminal:
+        reasons.append({"violation": "non_terminal_after_drain", "count": non_terminal})
+    # 5) no worker/thread died with an exception
+    if worker_errors:
+        reasons.append({"violation": "worker_exception", "count": len(worker_errors),
+                        "examples": worker_errors[:5]})
+    # 6) no HTTP-level errors (timeouts, 5xx other than capacity 503)
+    if http_errors:
+        reasons.append({"violation": "http_error", "count": len(http_errors),
+                        "examples": http_errors[:5]})
+    # 7) no leaked live tasks after drain
+    if live_after_drain not in (0,):
+        reasons.append({"violation": "live_tasks_after_drain", "value": live_after_drain})
+    # 8) recovery task accepted AND completed
+    if recovery_terminal != "completed":
+        reasons.append({"violation": "recovery_task_not_completed",
+                        "value": recovery_terminal})
+    return {
+        "measurement_valid": not reasons,
+        "invalidity_reasons": reasons,
+        "tasks_expected": len(corr_by_tid),
+        "tasks_observed_terminal": len(completions),
+        "recipient_sends_total": sum(sends_by_corr.values()),
+        "recipient_send_counts_per_correlation": {
+            "min": min(sends_by_corr.values()) if sends_by_corr else None,
+            "max": max(sends_by_corr.values()) if sends_by_corr else None,
+        },
+    }
+
+
 class Metrics:
     def __init__(self):
         self.lock = threading.Lock()
         self.accept_lat = []      # POST -> 202
         self.refuse_lat = []      # POST -> 503 (queue full)
-        self.errors = []          # POST exceptions/timeouts, recorded as-is
-        self.completions = []     # (submit_t, first_terminal_observation_t)
-        self.rss_series = []       # (t_monotonic, phase, VmRSS, VmHWM, Threads, tasks_pending)
+        self.errors = []          # non-(202|503) HTTP outcomes, recorded as-is
+        self.completions = []     # {"tid","phase","send_t","observed_t","status"}
+        self.worker_errors = []    # exceptions raised inside worker threads
+        self.rss_series = []       # {"t","phase",VmRSS,VmHWM,Threads,tasks_pending}
 
     def snapshot(self):
         with self.lock:
             return {"accept_lat": list(self.accept_lat), "refuse_lat": list(self.refuse_lat),
                     "errors": list(self.errors), "completions": list(self.completions),
+                    "worker_errors": list(self.worker_errors),
                     "rss_series": list(self.rss_series)}
 
 
 def _post(port, headers, prompt, timeout=120):
-    """One admission POST. Returns (status, task_id|None, body) — or raises."""
+    """One admission POST. Returns (status, task_id|None, body, send_t, dt).
+
+    send_t is the monotonic time the request is actually SENT (before
+    urlopen) — completion latency is measured from it, not from the arrival
+    of the response.
+    """
     req = urllib.request.Request(
         f"http://127.0.0.1:{port}/api/tasks", method="POST",
         data=json.dumps({"specialization": "external", "prompt": prompt}).encode(),
@@ -190,9 +296,9 @@ def _post(port, headers, prompt, timeout=120):
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             body = json.loads(r.read().decode())
-            return r.status, body.get("task_id"), body, time.monotonic() - t0
+            return r.status, body.get("task_id"), body, t0, time.monotonic() - t0
     except urllib.error.HTTPError as e:
-        return e.code, None, json.loads(e.read().decode() or b"{}"), time.monotonic() - t0
+        return e.code, None, json.loads(e.read().decode() or b"{}"), t0, time.monotonic() - t0
 
 
 def _get_task(port, headers, task_id, timeout=15):
@@ -219,6 +325,16 @@ def _metrics_pending(port, admin_headers):
     return None
 
 
+def _meminfo_total():
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    return int(line.split()[1])
+    except Exception:
+        return None
+
+
 # ---------------------------------------------------------------- the run
 def main():
     ap = argparse.ArgumentParser()
@@ -237,10 +353,23 @@ def main():
     ap.add_argument("--cap", type=int, default=REAL_CAP)
     ap.add_argument("--official", action="store_true",
                     help="marks the report as the preregistered official run")
+    ap.add_argument("--protocol-ref", default="HEAD",
+                    help="git ref of the committed protocol/tool this run follows "
+                         "(embedded in the report; proves preregistration order)")
     args = ap.parse_args()
 
     m = Metrics()
     t_start = time.monotonic()
+    phase_now = ["setup"]  # shared mutable phase tag for the sampler
+
+    # protocol provenance: the git commit of this tool + protocol (v2)
+    import subprocess
+    try:
+        protocol_commit = subprocess.run(
+            ["git", "-C", ROOT, "rev-parse", args.protocol_ref],
+            capture_output=True, text=True, check=True).stdout.strip()
+    except Exception:
+        protocol_commit = f"unresolved:{args.protocol_ref}"
 
     # 1) fake PostgREST (storage mirror — same scenario as the oplimits tests)
     loss.unit._PostgREST.rows = {"tasks": [], "events": [], "agent_stats": []}
@@ -267,37 +396,93 @@ def main():
     try:
         headers = dict(loss.HEADERS)
         port = srv.port
-        accepted = {}          # task_id -> submit_t
+        # task bookkeeping: tid -> {"send_t","phase","corr"}
+        accepted = {}
         accepted_lock = threading.Lock()
+        poll_set = set()            # ALL observed tasks (fill+sustain+warmup), from acceptance
+        recorded = set()            # tids with a first-terminal observation recorded
 
-        def sample_rss(phase):
+        def sample_rss():
             pid = srv.proc.pid
             st = proc_status(pid)
             pending = _metrics_pending(port, admin_headers)
             with m.lock:
                 m.rss_series.append({
-                    "t": round(time.monotonic() - t_start, 2), "phase": phase,
+                    "t": round(time.monotonic() - t_start, 2), "phase": phase_now[0],
                     **(st or {}), "tasks_pending": pending})
+
+        def observe_terminal(tid):
+            """Record the FIRST terminal observation of a task (once)."""
+            gs, gbody = _get_task(port, headers, tid)
+            if gs == 200 and gbody.get("status") in TERMINAL:
+                with accepted_lock:
+                    info = accepted.get(tid)
+                    first = tid not in recorded
+                    if first:
+                        recorded.add(tid)
+                if first and info:
+                    with m.lock:
+                        m.completions.append({
+                            "tid": tid, "phase": info["phase"], "send_t": info["send_t"],
+                            "observed_t": time.monotonic(),
+                            "status": gbody.get("status")})
+                return True
+            return False
 
         # ---- warmup (1 s hold): completes fast, then a fixed idle baseline
         for i in range(args.warmup):
-            st, tid, _, _ = _post(port, headers, f"r188sp-warmup-{i}")
+            st, tid, _, send_t, _ = _post(port, headers, f"r188sp-warmup-{i}")
             if st == 202 and tid:
                 with accepted_lock:
-                    accepted[tid] = time.monotonic()
-        deadline = time.time() + 60
-        while time.time() < deadline:
-            live = [t for t in accepted if _get_task(port, headers, t)[1].get("status")
-                    not in ("completed", "failed", "cancelled")]
-            if not live:
+                    accepted[tid] = {"send_t": send_t, "phase": "warmup",
+                                     "corr": f"r188sp-warmup-{i}"}
+                    poll_set.add(tid)
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline:
+            with accepted_lock:
+                warm = [t for t in accepted if accepted[t]["phase"] == "warmup"]
+            if all(t in recorded for t in warm):
                 break
-            time.sleep(0.5)
-        sample_rss("baseline_after_warmup")
+            for t in warm:
+                if t not in recorded:
+                    observe_terminal(t)
+            time.sleep(0.2)
+        sample_rss()
+        phase_now[0] = "baseline_after_warmup"
+
+        # ---- pollers start HERE (before fill): every measured task is
+        # observed from acceptance — v1 defect fixed.
+        stop_submitters = threading.Event()
+        stop_pollers = threading.Event()
+
+        def poller(idx):
+            try:
+                while not stop_pollers.is_set():
+                    with accepted_lock:
+                        mine = [t for i, t in enumerate(poll_set) if i % args.pollers == idx]
+                    if not mine:
+                        if stop_submitters.is_set():
+                            return
+                        time.sleep(0.05)
+                        continue
+                    for tid in mine:
+                        observe_terminal(tid)
+                        with accepted_lock:
+                            poll_set.discard(tid)
+                        time.sleep(0.02)  # pacing: bounded GET rate, not a poll storm
+            except Exception as e:  # a worker death must invalidate the run
+                with m.lock:
+                    m.worker_errors.append({"worker": f"poller-{idx}", "exception": repr(e)})
+
+        poll_threads = [threading.Thread(target=poller, args=(i,), daemon=True)
+                        for i in range(args.pollers)]
+        for t in poll_threads:
+            t.start()
 
         # ---- fill to the cap (barrier first: zero completions during fill).
         # The server's own 503 is the authoritative "cap reached" signal; the
-        # metrics pending count (now that the agos_ prefix is parsed) is the
-        # occupancy evidence. Hard bound = cap + warmup + 50 (never runaway).
+        # metrics pending count is the occupancy evidence. Hard bound prevents
+        # runaway fills.
         fill_accepted = 0
         fill_refused = 0
         fill_t0 = time.monotonic()
@@ -310,11 +495,13 @@ def main():
             pending_now = _metrics_pending(port, admin_headers)
             if pending_now is not None and pending_now >= args.cap:
                 break
-            st, tid, body, dt = _post(port, headers, f"r188sp-{n}")
+            st, tid, body, send_t, dt = _post(port, headers, f"r188sp-f{n}")
             n += 1
             if st == 202 and tid:
                 with accepted_lock:
-                    accepted[tid] = time.monotonic()
+                    accepted[tid] = {"send_t": send_t, "phase": "fill",
+                                     "corr": f"r188sp-f{n-1}"}
+                    poll_set.add(tid)
                 with m.lock:
                     m.accept_lat.append(dt)
                 fill_accepted += 1
@@ -322,132 +509,132 @@ def main():
                 with m.lock:
                     m.refuse_lat.append(dt)
                 fill_refused += 1
-                # the server's own signal: the cap is full — stop filling
-                break
+                break  # the server's own signal: the cap is full — stop filling
             else:
                 with m.lock:
                     m.errors.append({"phase": "fill", "status": st, "body": str(body)[:200]})
         fill_s = time.monotonic() - fill_t0
-        sample_rss("after_fill")
+        phase_now[0] = "after_fill"
+        sample_rss()
 
         # ---- sustained window: paced submitters keep occupancy at/near the
-        # cap; SEPARATE bounded-concurrency pollers observe first-terminal
-        # times (a submitter must NOT wait for its task to complete — that
-        # collapses the occupancy; the pollers own the waiting).
-        poll_set = set()            # accepted, not yet observed terminal
-        recorded = set()            # first-terminal observation recorded (once)
-        stop_submitters = threading.Event()
-
+        # cap; the pollers (already running) observe first-terminal times for
+        # EVERY task (fill + window). The window is bounded by EXPLICIT
+        # timestamps (window_t0/window_t1) used for all window statistics.
         def submitter(idx):
-            local_n = 0
-            while not stop_submitters.is_set():
-                st, tid, body, dt = _post(port, headers, f"r188sp-w{idx}-{local_n}")
-                local_n += 1
-                if st == 202 and tid:
-                    with accepted_lock:
-                        accepted[tid] = time.monotonic()
-                    with m.lock:
-                        m.accept_lat.append(dt)
-                    with accepted_lock:
-                        poll_set.add(tid)
-                elif st == 503:
-                    with m.lock:
-                        m.refuse_lat.append(dt)
-                else:
-                    with m.lock:
-                        m.errors.append({"phase": "sustain", "status": st,
-                                          "body": str(body)[:200]})
-                stop_submitters.wait(args.submit_pace)
-
-        def poller(idx):
-            while True:
-                with accepted_lock:
-                    mine = [t for i, t in enumerate(poll_set) if i % args.pollers == idx]
-                if not mine and stop_submitters.is_set():
-                    return
-                for tid in mine:
-                    gs, gbody = _get_task(port, headers, tid)
-                    if gs == 200 and gbody.get("status") in ("completed", "failed", "cancelled"):
-                        with m.lock:
-                            if tid not in recorded:
-                                recorded.add(tid)
-                                m.completions.append((accepted[tid], time.monotonic()))
+            try:
+                local_n = 0
+                while not stop_submitters.is_set():
+                    corr = f"r188sp-w{idx}-{local_n}"
+                    st, tid, body, send_t, dt = _post(port, headers, corr)
+                    local_n += 1
+                    if st == 202 and tid:
                         with accepted_lock:
-                            poll_set.discard(tid)
-                    time.sleep(0.02)  # pacing: bounded GET rate, not a poll storm
+                            accepted[tid] = {"send_t": send_t, "phase": "sustain",
+                                             "corr": corr}
+                            poll_set.add(tid)
+                        with m.lock:
+                            m.accept_lat.append(dt)
+                    elif st == 503:
+                        with m.lock:
+                            m.refuse_lat.append(dt)
+                    else:
+                        with m.lock:
+                            m.errors.append({"phase": "sustain", "status": st,
+                                             "body": str(body)[:200]})
+                    stop_submitters.wait(args.submit_pace)
+            except Exception as e:  # a worker death must invalidate the run
+                with m.lock:
+                    m.worker_errors.append({"worker": f"submitter-{idx}",
+                                            "exception": repr(e)})
 
         sampler_stop = threading.Event()
 
         def sampler():
-            while not sampler_stop.is_set():
-                sample_rss("sustain")
-                sampler_stop.wait(5.0)
+            try:
+                while not sampler_stop.is_set():
+                    sample_rss()
+                    sampler_stop.wait(5.0)
+            except Exception as e:
+                with m.lock:
+                    m.worker_errors.append({"worker": "sampler", "exception": repr(e)})
 
         threads = [threading.Thread(target=submitter, args=(i,), daemon=True)
                    for i in range(args.fillers)]
         for t in threads:
             t.start()
-        poll_threads = [threading.Thread(target=poller, args=(i,), daemon=True)
-                       for i in range(args.pollers)]
-        for t in poll_threads:
-            t.start()
         th_sampler = threading.Thread(target=sampler, daemon=True)
         th_sampler.start()
+
+        phase_now[0] = "sustain"
         window_t0 = time.monotonic()
         while time.monotonic() - window_t0 < args.window:
             time.sleep(1.0)
         window_t1 = time.monotonic()
+        phase_now[0] = "sustain_tail"  # submitters being stopped — NOT window
         stop_submitters.set()
+        join_deadline = time.monotonic() + 30
         for t in threads:
-            t.join(timeout=10)
-        # let the pollers finish what is already terminal, then stop them
-        # (a TOTAL deadline — the per-thread 5 s joins once cost 60 s)
-        join_deadline = time.monotonic() + 10
-        for t in poll_threads:
             t.join(timeout=max(0.0, join_deadline - time.monotonic()))
 
-        # ---- drain: no new admissions; every accepted task reaches terminal
+        # ---- drain: measured from the moment submissions STOPPED (after the
+        # joins above) — v1 measured it after thread waits, inflating it.
+        drain_t0 = time.monotonic()
+        phase_now[0] = "drain"
+        drain_deadline = drain_t0 + args.hold * 3 + 120
+        while time.monotonic() < drain_deadline:
+            with accepted_lock:
+                left = [t for t in accepted if t not in recorded]
+            if not left:
+                break
+            time.sleep(args.poll)
+        drain_s = time.monotonic() - drain_t0
+        stop_pollers.set()
+        for t in poll_threads:
+            t.join(timeout=5)
         sampler_stop.set()
         th_sampler.join(timeout=2)
-        drain_t0 = time.monotonic()
-        drain_deadline = drain_t0 + args.hold * 3 + 120
-        still = dict(accepted)
-        while still and time.monotonic() < drain_deadline:
-            for tid in list(still):
-                gs, gbody = _get_task(port, headers, tid)
-                if gs == 200 and gbody.get("status") in ("completed", "failed", "cancelled"):
-                    with m.lock:
-                        if tid not in recorded:  # a poller may have recorded it first
-                            recorded.add(tid)
-                            m.completions.append((accepted[tid], time.monotonic()))
-                    del still[tid]
-            if still:
-                time.sleep(args.poll)
-        drain_s = time.monotonic() - drain_t0
-        sample_rss("after_drain")
+        sample_rss()
 
         # ---- fixed idle period (post-pressure memory observation)
+        phase_now[0] = "idle_after"
         idle_t0 = time.monotonic()
         while time.monotonic() - idle_t0 < args.idle:
             time.sleep(2.0)
-            sample_rss("idle_after")
+            sample_rss()
 
-        # ---- verification (this run, no restart)
-        # every accepted task terminal?
-        non_terminal = []
-        for tid in accepted:
+        # ---- verification (this run, no restart): set-based, explicit verdict
+        non_terminal = 0
+        status_counts = Counter()
+        for tid, info in accepted.items():
+            if tid in recorded:
+                continue
             gs, gbody = _get_task(port, headers, tid)
-            if not (gs == 200 and gbody.get("status") in ("completed", "failed", "cancelled")):
-                non_terminal.append(tid)
-        # recipient: one send per accepted task (correlation id in prompt)
+            if gs == 200 and gbody.get("status") in TERMINAL:
+                # observed only now (poller missed it) — record it
+                with m.lock:
+                    m.completions.append({
+                        "tid": tid, "phase": info["phase"], "send_t": info["send_t"],
+                        "observed_t": time.monotonic(), "status": gbody.get("status")})
+                recorded.add(tid)
+                status_counts[gbody.get("status")] += 1
+            else:
+                non_terminal += 1
+        for c in m.snapshot()["completions"]:
+            status_counts[c["status"]] += 1
+
+        # recipient sends by correlation id (identity match to accepted tasks)
         import re as _re
-        sends = {}
+        corr_by_tid = {tid: info["corr"] for tid, info in accepted.items()}
+        sends_by_corr = Counter()
+        keys_seen = []
         for r in recipient_state.requests:
-            mm = _re.search(r"r188sp-(?:warmup-)?\d+|r188sp-w\d+-\d+", r["prompt"] or "")
-            corr = (mm.group(0) if mm else (r["prompt"] or "")[:40])
-            sends[corr] = sends.get(corr, 0) + 1
-        # Idempotency-Key must be ABSENT on the volatile external path (contract)
-        keys_seen = [r["key"] for r in recipient_state.requests]
+            keys_seen.append(r["key"])
+            prompt = r["prompt"] or ""
+            mm = _re.search(r"r188sp-(?:warmup-)?\d+|r188sp-f\d+|r188sp-w\d+-\d+", prompt)
+            corr = mm.group(0) if mm else prompt[:40]
+            sends_by_corr[corr] += 1
+
         # live count back to zero?
         live_now = None
         try:
@@ -456,29 +643,49 @@ def main():
             with urllib.request.urlopen(req, timeout=10) as r:
                 rows = json.loads(r.read().decode())
                 rows = rows.get("tasks", rows) if isinstance(rows, dict) else rows
-                live_now = sum(1 for t in rows if t.get("status")
-                               not in ("completed", "failed", "cancelled"))
+                live_now = sum(1 for t in rows if t.get("status") not in TERMINAL)
         except Exception as e:
             live_now = f"error: {e}"
+
         # recovery: a NEW task accepted and completed (no leaked slot)
-        rec_st, rec_tid, _, _ = _post(port, headers, "r188sp-recovery-check")
+        rec_st, rec_tid, _, rec_send_t, _ = _post(port, headers, "r188sp-recovery-check")
         rec_terminal = None
         if rec_st == 202 and rec_tid:
-            deadline = time.monotonic() + 60
+            with accepted_lock:
+                accepted[rec_tid] = {"send_t": rec_send_t, "phase": "recovery",
+                                     "corr": "r188sp-recovery-check"}
+            deadline = time.monotonic() + 90
             while time.monotonic() < deadline:
-                gs, gbody = _get_task(port, headers, rec_tid)
-                if gs == 200 and gbody.get("status") in ("completed", "failed", "cancelled"):
-                    rec_terminal = gbody.get("status")
+                if observe_terminal(rec_tid):
                     break
                 time.sleep(0.5)
+            with accepted_lock:
+                rec_first = next((c for c in m.snapshot()["completions"]
+                                  if c["tid"] == rec_tid), None)
+            rec_terminal = rec_first["status"] if rec_first else None
 
-        # ---- window occupancy evidence (sustained pressure verification)
-        window_samples = [s for s in m.snapshot()["rss_series"] if s["phase"] == "sustain"]
-        pendings = [s["tasks_pending"] for s in window_samples if s["tasks_pending"] is not None]
+        # ---- aggregate (pure functions above) + verdict
+        snap = m.snapshot()
+        comps = dedupe_first_observations(snap["completions"])
+        window_samples = window_occupancy(snap["rss_series"], window_t0, window_t1)
+        cstats = completion_stats(comps)
+        verdict = verify_measurement(
+            corr_by_tid=corr_by_tid,
+            sends_by_corr=dict(sends_by_corr),
+            completions=comps,
+            worker_errors=snap["worker_errors"],
+            http_errors=snap["errors"],
+            non_terminal=non_terminal,
+            live_after_drain=live_now,
+            recovery_terminal=rec_terminal,
+        )
+        in_window = [c for c in comps if window_t0 <= c["observed_t"] <= window_t1]
 
         report = {
             "official": bool(args.official),
-            "preregistration": "docs/audit/M8/logs/raw/r188_sustained_pressure/PREREGISTRATION.md",
+            "protocol": "v2 (see FIRST_RUN_APPENDIX.md for the v1 defects fixed here)",
+            "protocol_commit": protocol_commit,
+            "preregistration": "docs/audit/M8/logs/raw/r188_sustained_pressure/PREREGISTRATION_V2.md",
             "date_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "category": "local test — one machine, real uvicorn subprocess, volatile mode, "
                         "fake PostgREST, slow recipient; no internet/provider/production",
@@ -496,61 +703,46 @@ def main():
             "fill": {"accepted": fill_accepted, "refused_503": fill_refused,
                      "duration_s": round(fill_s, 2)},
             "sustained_window": {
+                "explicit_bounds_s": [round(window_t0 - t_start, 2),
+                                      round(window_t1 - t_start, 2)],
                 "duration_s": round(window_t1 - window_t0, 2),
-                "tasks_pending_min": min(pendings) if pendings else None,
-                "tasks_pending_median": statistics.median(pendings) if pendings else None,
-                "tasks_pending_max": max(pendings) if pendings else None,
-                "samples_at_ge_90pct_cap": sum(1 for p in pendings if p >= 0.9 * args.cap),
-                "samples_total": len(pendings),
+                "tasks_pending_min": min(window_samples) if window_samples else None,
+                "tasks_pending_median": statistics.median(window_samples) if window_samples else None,
+                "tasks_pending_max": max(window_samples) if window_samples else None,
+                "samples_at_ge_90pct_cap": sum(1 for p in window_samples if p >= 0.9 * args.cap),
+                "samples_total": len(window_samples),
             },
-            "admission_latency_202": lat([c for c in m.snapshot()["accept_lat"]]),
-            "admission_latency_503": lat([c for c in m.snapshot()["refuse_lat"]]),
-            "errors": m.snapshot()["errors"],
-            "completion_latency_first_observation": lat(
-                [b - a for a, b in m.snapshot()["completions"]]),
-            "completions_total_observed": len(m.snapshot()["completions"]),
+            "admission_latency_202": lat(snap["accept_lat"]),
+            "admission_latency_503": lat(snap["refuse_lat"]),
+            "http_errors": snap["errors"],
+            "worker_errors": snap["worker_errors"],
+            "completion_latency_first_observation": cstats,
+            "completions_total_observed": len(comps),
+            "throughput_completions_per_sec_observed_in_window": (
+                round(len(in_window) / (window_t1 - window_t0), 2) if comps else None),
             "memory_server_process": {
-                "series": m.snapshot()["rss_series"],
+                "series": snap["rss_series"],
                 "note": "VmRSS/VmHWM/Threads of the SERVER process only; single run — "
                         "no leak/no-leak claim is made from this window",
             },
-            "verification_this_run": {
-                "accepted_tasks": len(accepted),
-                "non_terminal_after_drain": len(non_terminal),
-                "recipient_sends_per_correlation_max": max(sends.values()) if sends else None,
-                "recipient_requests_total": len(recipient_state.requests),
-                "idempotency_key_present_on_volatile_external_path": any(keys_seen),
-                "live_tasks_after_drain": live_now,
-                "recovery_new_task": {"status": rec_st, "terminal": rec_terminal},
-            },
+            "drain": {"duration_s": round(drain_s, 2),
+                      "measured_from": "submission stop (after submitter joins)",
+                      "still_pending_at_timeout": non_terminal},
+            "verification_this_run": verdict,
         }
-        # throughput over the window: completions FIRST OBSERVED strictly
-        # inside the window (the drain is reported separately, never merged)
-        comps = m.snapshot()["completions"]
-        in_window = [b for a, b in comps if window_t0 <= b <= window_t1]
-        report["throughput_completions_per_sec_observed"] = (
-            round(len(in_window) / (window_t1 - window_t0), 2) if comps else None)
-        report["drain"] = {"duration_s": round(drain_s, 2),
-                           "still_pending_at_timeout": len(still)}
 
         with open(args.out, "w") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
-        print(json.dumps({k: v for k, v in report.items()
-                          if k != "memory_server_process"}, ensure_ascii=False, indent=2))
+        printable = {k: v for k, v in report.items() if k != "memory_server_process"}
+        print(json.dumps(printable, ensure_ascii=False, indent=2))
         print(f"\nfull report (with memory series): {args.out}")
+        if not verdict["measurement_valid"]:
+            print("\nMEASUREMENT INVALID — see verification_this_run.invalidity_reasons",
+                  file=sys.stderr)
+            sys.exit(1)
     finally:
         srv.stop()
         backend.shutdown()
-
-
-def _meminfo_total():
-    try:
-        with open("/proc/meminfo") as f:
-            for line in f:
-                if line.startswith("MemTotal:"):
-                    return int(line.split()[1])
-    except Exception:
-        return None
 
 
 if __name__ == "__main__":
