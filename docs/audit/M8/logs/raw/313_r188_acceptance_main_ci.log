@@ -1,0 +1,24 @@
+# R-188 لاحق 71 — دفعة القبول (registration of done) — تسجيل done بأدلة الدمج
+# النموذج يتبع سابقة R-189 (السجل 307): الرأس المختبر لرأس الـPR والدمج الحقيقي لرأس main والملخص الحرفي من مهمة test في تشغيل رأس main.
+
+tested_sha=3ba34b672c93b34efa93ff39f31f87ee20645e04  (رأس PR #277)
+merge_sha=2f395144af2f49b69b1075b38b15f4b719c5e10f  (رأس main بعد الدمج — Merge pull request #277 from reeveero-tech/m9/r188-sustained-pressure)
+pr=#277
+ci_run=40652699130  (تشغيل رأس الدمج على main، الوظائف كلها خضراء)
+ci_conclusion=success
+
+# سطر ملخص الاختبار الحرفي من مهمة test (matrix 3.11.15 / 3.12.15 / 3.12.15 AGOS_AGENT_IMPL=specialists — الكل أخضر):
+#   (3.11.15)      ==== 3571 passed, 8 skipped, 17 deselected, 9 xfailed in 603.00s (0:10:02) ====
+#   (3.12.15)      ==== 3571 passed, 8 skipped, 17 deselected, 9 xfailed in 567.40s (0:09:27) ====
+#   (specialists)  ==== 3571 passed, 8 skipped, 17 deselected, 9 xfailed in 587.80s (0:09:47) ====
+# جُمع من تشغيل gh run view 40652699130 --log على رأس الدمج مباشرة (مواضع السطور 4083 و4391 و4567 من السجل الخام).
+tests=3571 passed, 8 skipped, 17 deselected, 9 xfailed
+
+# الفحوص المتوقعة الأخرى على رأس الدمج: storage (live، نجح 4+2+1 passed)، network (17 passed)، quality، build، docker، governance، audit — كلها success.
+# الحدود الصادقة (R-154):
+#   8 skipped = R-042 live storage (تُشغَّل في job storage، نجح)؛ 17 deselected = علامة network (تُشغَّل في job network، نجح 17 passed)؛ 9 xfailed = انحدارات معلومة تُطبع كما هي في pytest ولا تُعد فشلًا.
+#   untested: تشغيل واحد محلي بجهاز واحد (لا استنتاج أداء إنتاج)، الوضع المتطائر فقط، لا تعدد مضيفين ولا إيصال أحداث بين العمليات (السجل 311)، وزمن الإكمال حد رصد يتضمن تأخر الاستقصاء، ولا ادعاء «لا تسرب» من تشغيل واحد.
+#   نجاح CI لا يثبت جاهزية إنتاجية (R-184 GO + قرار المالك).
+
+# المصدر الخام للتقرير (الموثق في دفعة الإغلاق لاحق 70): docs/audit/M8/logs/raw/r188_sustained_pressure/OFFICIAL_RUN_2_REPORT.json
+# سجل دفعة الإغلاق: docs/audit/M8/logs/raw/312_r188_sustained_pressure_and_delivery_semantics_docs_review.log
