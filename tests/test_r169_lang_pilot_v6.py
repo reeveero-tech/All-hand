@@ -248,3 +248,18 @@ def test_v6_bench_reexports_frozen_v5_grader():
     assert b7.grounded_v2_messages is b5.grounded_v2_messages
     assert b7.score_case is b5.score_case
     assert b7.run_code_tests is b5.run_code_tests
+
+
+def test_prereg_guard_covers_v8_prereg(tmp_path):
+    """تعديل تسجيل v8 بعد التجميد يجب أن يمنع أي تشغيل — الحارس يشمل V8 لا V6 فقط."""
+    # الحالة السليمة: كلا التسجيلين ملتزم ومطابق لـ HEAD ⇒ True
+    assert pilot._prereg_committed() is True
+    # تسجيل v8 معدّل/غير ملتزم ⇒ False (قبل إصلاح هذه الدفعة كان يُرجع True)
+    tampered = tmp_path / "PREREGISTRATION_V8.md"
+    tampered.write_text("criteria edited after results\n", encoding="utf-8")
+    monkey = pytest.MonkeyPatch()
+    monkey.setattr(pilot, "PREREG_V8", tampered)
+    try:
+        assert pilot._prereg_committed() is False
+    finally:
+        monkey.undo()

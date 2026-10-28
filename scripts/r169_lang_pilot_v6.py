@@ -42,6 +42,7 @@ from r169_language_analysis import mcnemar_exact  # noqa: E402
 
 OUT = ROOT / "docs/audit/M8/logs/raw/r169/v6/lang_pilot"
 PREREG = OUT / "PREREGISTRATION_V6.md"
+PREREG_V8 = ROOT / "docs/audit/M8/logs/raw/r169/v8/lang_pilot/PREREGISTRATION_V8.md"
 ATTEMPT_TIMEOUT_S = 600
 ARMS = ("grounded-v2", "grounded-v4-lang", "baseline")
 RULE9_V2_PREFIX = "9. Write the ENTIRE reply in the language of the question"
@@ -87,18 +88,26 @@ def _bench_for(split: str, dataset: str = "v7"):
 def _prereg_committed() -> bool:
     """The prereg must be COMMITTED (its current content must match HEAD) —
     merely being tracked is not enough (advisor review: `git ls-files` only
-    proves tracking, not that the on-disk content is what was frozen)."""
-    if not PREREG.exists():
-        return False
-    r = subprocess.run(["git", "ls-files", "--error-unmatch", str(PREREG)],
-                       cwd=ROOT, capture_output=True)
-    if r.returncode:
-        return False
-    head = subprocess.run(["git", "show", f"HEAD:{PREREG.relative_to(ROOT)}"],
+    proves tracking, not that the on-disk content is what was frozen).
+
+    Both preregistrations are guarded: V6 (the original pilot prereg) and V8
+    (the lang-retry candidate prereg — its criteria govern the v8 judgment).
+    A run must not start if EITHER file was edited after commit."""
+    ok = True
+    for prereg in (PREREG, PREREG_V8):
+        if not prereg.exists():
+            ok = False
+            continue
+        r = subprocess.run(["git", "ls-files", "--error-unmatch", str(prereg)],
                            cwd=ROOT, capture_output=True)
-    if head.returncode:
-        return False
-    return head.stdout == PREREG.read_bytes()
+        if r.returncode:
+            ok = False
+            continue
+        head = subprocess.run(["git", "show", f"HEAD:{prereg.relative_to(ROOT)}"],
+                               cwd=ROOT, capture_output=True)
+        if head.returncode or head.stdout != prereg.read_bytes():
+            ok = False
+    return ok
 
 
 async def _one_arm_case(bench, arm: str, case: dict) -> dict:
