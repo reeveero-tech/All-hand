@@ -414,9 +414,36 @@ _lang_retry_last: "_contextvars.ContextVar[dict | None]" = _contextvars.ContextV
     "llm_lang_retry_last", default=None)
 
 
+# R-170 (دفعة 16 — إصلاح CI على Python 3.11، السجل 317): ContextVar.set داخل
+# مهمة فرعية لا يصل إلى المستدعي — في 3.11 تلفّ asyncio.wait_for الاستدعاء في
+# Task بنسخة سياق، فكانت metadata الإعادة تضيع قبل وصولها إلى الصف (وفي 3.12+
+# يُنتظر في المهمة نفسها فتصل). الحل: «حاوية التقاط» قابلة للتعديل يُنشئها
+# المستدعي في سياقه قبل عبور أي حد مهمة؛ النسخة المنسوخة من السياق تشير إلى
+# الحاوية نفسها فتصل الكتابة عبر الحد. كل مستدعٍ ينشئ حاويته في سياقه الخاص
+# (لا مشاركة بين مهام متزامنة).
+_lang_retry_sink: "_contextvars.ContextVar[list | None]" = _contextvars.ContextVar(
+    "llm_lang_retry_sink", default=None)
+
+
+def begin_lang_retry_capture() -> _contextvars.Token:
+    """ابدأ التقاط metadata الإعادة لهذا السياق (يُستدعى قبل wait_for/create_task)."""
+    return _lang_retry_sink.set([])
+
+
+def end_lang_retry_capture(token: _contextvars.Token) -> None:
+    _lang_retry_sink.reset(token)
+
+
 def get_last_lang_retry() -> dict | None:
     """آخر metadata لغة من آخر استدعاء في هذا السياق — قراءة تستهلك (تعيد
-    الضبط إلى None) حتى لا تتسرب بيانات استدعاء إلى ما بعده."""
+    الضبط إلى None) حتى لا تتسرب بيانات استدعاء إلى ما بعده. إن كانت حاوية
+    التقاط مفعلة فهي المصدر (تعبر حدود المهام)؛ وإلا فالسلوك السابق كما هو."""
+    sink = _lang_retry_sink.get()
+    if sink is not None:
+        v = sink[-1] if sink else None
+        sink.clear()
+        _lang_retry_last.set(None)
+        return v
     v = _lang_retry_last.get()
     _lang_retry_last.set(None)
     return v
@@ -438,6 +465,9 @@ async def _keyless_maybe_lang_retry(system: str, prompt: str, max_tokens: int,
     metadata الطبقة الدنيا إلى الصف)."""
     out = await _keyless_maybe_lang_retry_impl(system, prompt, max_tokens, max_wait_s)
     _lang_retry_last.set(out.get("lang_retry"))
+    sink = _lang_retry_sink.get()
+    if sink is not None:  # آخر استدعاء يفوز — نفس دلالة _lang_retry_last
+        sink.append(out.get("lang_retry"))
     return out
 
 

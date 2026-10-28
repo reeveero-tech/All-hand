@@ -257,3 +257,81 @@ def test_target_is_question_language_not_sources(monkeypatch):
                                     "موظف في عدة دول، ورئيسها التنفيذي عبد الرحمن الفهد منذ 2019."}]}
     msgs_en = b.grounded_v2_messages(case_en)
     assert lang_policy.target_language(msgs_en["user"]) == "en"
+
+
+# ---------------------------------------------------------------------------
+# R-170 دفعة 16 — إصلاح CI على Python 3.11 (السجل 317): metadata الإعادة يجب أن
+# تعبر حد المهمة الذي ينشئه asyncio.wait_for (3.11) أو create_task (كل الإصدارات).
+# أحمر أولًا: قبل الإصلاح كان هذا الاختبار يفشل على كل إصدار (create_task ينسخ
+# السياق دائمًا) — لا يعتمد على إصدار Python كي يكشف الخلل في CI ومحليًا.
+# ---------------------------------------------------------------------------
+def test_lang_retry_metadata_crosses_task_boundary(monkeypatch):
+    import asyncio as _aio
+    from agent_civilization.core import llm as _l
+
+    replies = ["The answer is not mentioned in the sources. [S1]",
+               "الجواب غير مذكور في المصادر. [S1]"]
+    calls = []
+
+    def post(system, prompt, max_tokens, timeout):
+        calls.append(system)
+        return {"choices": [{"message": {"content": replies[len(calls) - 1]}}]}
+
+    monkeypatch.setattr(_l, "_keyless_post", post)
+    monkeypatch.setattr(_l, "KEYLESS_MIN_SPACING_S", 0.0)
+    monkeypatch.setattr(_l, "KEYLESS_BUDGET_S", 10.0)
+    monkeypatch.setattr(_l, "KEYLESS_CALL_TIMEOUT_S", 5.0)
+
+    async def main():
+        rt = _l.set_llm_lang_retry(True)
+        ct = _l.begin_lang_retry_capture()
+        try:
+            # حد مهمة صريح — يحاكي wait_for في 3.11 على كل الإصدارات
+            out = await _aio.create_task(
+                _l._keyless_maybe_lang_retry("sys", "ما هو الجواب؟", 64, 10.0))
+            return out, _l.get_last_lang_retry(), _l.get_last_lang_retry()
+        finally:
+            _l.end_lang_retry_capture(ct)
+            _l.reset_llm_lang_retry(rt)
+
+    out, meta, again = _aio.run(main())
+    assert len(calls) == 2
+    assert out["lang_retry"]["attempts"] == 2
+    assert meta is not None and meta["attempts"] == 2
+    assert meta["reason"] == "first-reply language mismatch"
+    assert again is None  # القراءة تستهلك — لا تسرب إلى الاستدعاء التالي
+
+
+def test_lang_retry_capture_is_isolated_between_concurrent_tasks(monkeypatch):
+    """كل مستدعٍ ينشئ حاويته في سياقه — مهمتان متزامنتان لا تتبادلان metadata."""
+    import asyncio as _aio
+    from agent_civilization.core import llm as _l
+
+    def post(system, prompt, max_tokens, timeout):
+        if "ar-task" in prompt and "CORRECTION" not in system:
+            return {"choices": [{"message": {"content": "This is wrong language here."}}]}
+        if "ar-task" in prompt:
+            return {"choices": [{"message": {"content": "هذا جواب عربي صحيح."}}]}
+        return {"choices": [{"message": {"content": "A correct English answer."}}]}
+
+    monkeypatch.setattr(_l, "_keyless_post", post)
+    monkeypatch.setattr(_l, "KEYLESS_MIN_SPACING_S", 0.0)
+    monkeypatch.setattr(_l, "KEYLESS_BUDGET_S", 10.0)
+    monkeypatch.setattr(_l, "KEYLESS_CALL_TIMEOUT_S", 5.0)
+
+    async def one(prompt):
+        rt = _l.set_llm_lang_retry(True)
+        ct = _l.begin_lang_retry_capture()
+        try:
+            await _aio.wait_for(_l._keyless_maybe_lang_retry("sys", prompt, 64, 10.0), 10)
+            return _l.get_last_lang_retry()
+        finally:
+            _l.end_lang_retry_capture(ct)
+            _l.reset_llm_lang_retry(rt)
+
+    async def main():
+        return await _aio.gather(one("ما هو الجواب؟ ar-task"), one("What is the answer?"))
+
+    ar_meta, en_meta = _aio.run(main())
+    assert ar_meta is not None and ar_meta["attempts"] == 2
+    assert en_meta is None

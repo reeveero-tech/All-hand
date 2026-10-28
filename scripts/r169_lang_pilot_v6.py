@@ -149,6 +149,9 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
     # الأخرى تعطّل السياسة صراحةً (لا اعتماد على البيئة) حتى يكون الفرق الوحيد
     # بين v4 وv4r هو السياسة نفسها (ذراع الضبط — prereg v8 §3).
     retry_token = _llm_policy.set_llm_lang_retry(arm == "grounded-v4r-lang")
+    # حاوية الالتقاط قبل wait_for (إصلاح 3.11 — السجل 317): بدونها تضيع
+    # metadata الإعادة عند حد المهمة الذي ينشئه wait_for في Python 3.11.
+    capture_token = _llm_policy.begin_lang_retry_capture()
     try:
         if arm in ("grounded-v4-lang", "grounded-v4r-lang"):
             exec_bench.GROUNDED_V2_SYSTEM = v4_system(original)
@@ -157,6 +160,8 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
         ctx = b4._case.set(case["id"])
         try:
             for attempt in range(3):
+                # metadata المحاولة الأخيرة فقط: تفريغ حاوية الالتقاط قبل كل محاولة
+                _llm_policy.get_last_lang_retry()
                 try:
                     rec = await asyncio.wait_for(
                         v5run._one(case, "baseline" if arm == "baseline" else "grounded-v2"),
@@ -182,6 +187,7 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
         return rec
     finally:
         exec_bench.GROUNDED_V2_SYSTEM = original
+        _llm_policy.end_lang_retry_capture(capture_token)
         _llm_policy.reset_llm_lang_retry(retry_token)
 
 
