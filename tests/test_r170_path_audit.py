@@ -226,8 +226,8 @@ def test_char_http_task_with_tool_evidence_completes(
 
 def test_char_http_task_gate_off_is_unchanged(
         tenant_auth, postgrest, published, clean_tasks, monkeypatch):
-    """CHAR: العلم معطل — السلوك التاريخي (نجاح بلا دليل ⇒ completed)."""
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    """CHAR: التعطيل الصريح (0): السلوك التاريخي (نجاح بلا دليل ⇒ completed)."""
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     _patch(monkeypatch, _evidence_free)
     with TestClient(server.app) as c:
         tid = _post_task(c, tenant_auth, r149.SPEC, r149.MESSAGE)
@@ -262,7 +262,7 @@ def _hub_run(agent, work):
 def test_hub_path_failed_result_counts_as_failed(spec, monkeypatch):
     """RED: نتيجة ``ok=False`` في مسار المحور كانت تُعدّ ``tasks_completed``
     (حتى والعلم معطل) — إعلان إكمال كاذب في الإحصاءات."""
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     _patch(monkeypatch, lambda s, w: {"ok": False, "error": "boom"})
     a = _template_agent(spec)
     content = _hub_run(a, {"task_id": "t1", "prompt": "x"})
@@ -286,7 +286,7 @@ def test_hub_path_forged_success_rejected_when_gate_on(spec, monkeypatch, gate_o
 
 def test_char_hub_path_honest_success_counts_completed(monkeypatch):
     """CHAR: نجاح صادق والعلم معطل ⇒ مكتمل (السلوك المقصود محفوظ)."""
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     _patch(monkeypatch, lambda s, w: {"ok": True, "answer": "fine"})
     a = _template_agent("analyst")
     content = _hub_run(a, {"task_id": "t1", "prompt": "x"})

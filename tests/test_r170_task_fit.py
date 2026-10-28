@@ -112,7 +112,7 @@ def test_reviewer_reviews_the_previous_stage_artifact():
     ("reviewer", "هل استعلام SQL الخاص بي آمن؟ أبنيه بدمج النصوص.", "no code"),
 ])
 def test_hollow_success_becomes_honest_failure_without_the_gate(spec, prompt, why, monkeypatch):
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     r = run(spec, {"prompt": prompt})
     assert r["ok"] is False and r["error"].startswith("task_not_completed:"), r
     assert why in r["error"]

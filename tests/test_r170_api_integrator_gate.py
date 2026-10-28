@@ -116,7 +116,7 @@ def test_payload_containers_are_not_read_as_self_report(key):
 
 
 def test_gate_off_api_unchanged(monkeypatch):
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     _serve(monkeypatch, json.dumps(GITLAB_LIKE))
     out = _run({"prompt": "GET https://api.example.org/pipelines"})
     assert out["ok"] is True and "verification" not in out["result"]

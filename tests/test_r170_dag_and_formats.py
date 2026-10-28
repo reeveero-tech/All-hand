@@ -112,8 +112,8 @@ def test_char_dag_forged_stage_fails_when_gate_on(impl, monkeypatch):
 
 @pytest.mark.parametrize("impl", IMPLS)
 def test_char_dag_gate_off_keeps_legacy_success(impl, monkeypatch):
-    """CHAR (توافق خلفي): العلم معطل — المرحلة المزوّرة تنجح كما كانت."""
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    """CHAR (توافق خلفي): التعطيل الصريح (0): المرحلة المزوّرة تنجح كما كانت."""
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     agent = _agent(monkeypatch, impl, _forged)
     rep = _run_plan(_plan(_stage()), agent)
     assert rep["stages"][0]["status"] == dag.SUCCEEDED
@@ -276,8 +276,8 @@ def test_handler_result_inner_contradiction_is_rejected(monkeypatch):
 
 
 def test_char_handler_result_gate_off_is_untouched(monkeypatch):
-    """CHAR: العلم معطل — النموذج يعود كما هو (الكائن نفسه)."""
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    """CHAR: التعطيل الصريح (0): النموذج يعود كما هو (الكائن نفسه)."""
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     hr = _hr(ok=True, answer="The task completed successfully.")
     ok, res = apply_output_verification(None, True, hr)
     assert ok is True and res is hr

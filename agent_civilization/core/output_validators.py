@@ -624,11 +624,16 @@ def _bind_task_fit(specialization: str, work: Any, req: Dict[str, Any]) -> Dict[
 
 
 def output_gate_enabled() -> bool:
-    """علم تفعيل بوابة الإكمال: ``AGOS_OUTPUT_VALIDATORS=1`` (الافتراضي معطل).
+    """علم بوابة الإكمال — **مفعلة افتراضيًا** (قرار المالك 2026-10-28، دفعة 15).
 
-    توافق خلفي موثق: المعطل = السلوك الحالي كما هو دون أي تغيير.
+    التعطيل صريح فقط: ``AGOS_OUTPUT_VALIDATORS=0`` (مسار التراجع التشغيلي).
+    القيمة الافتراضية عند غياب المتغير هي التفعيل؛ أي قيمة غير ``0`` تعني
+    تفعيلًا — لا تعطيلًا صامتًا لسطر تكوين ناقص.
+
+    يُقرأ عند كل استدعاء (لا لقطة عند الاستيراد): تغيير القيمة يأثر فورًا
+    دون إعادة تشغيل — اختبارات monkeypatch تعمل بلا اختراق.
     """
-    return os.getenv("AGOS_OUTPUT_VALIDATORS", "") == "1"
+    return os.getenv("AGOS_OUTPUT_VALIDATORS", "1") != "0"
 
 
 def _result_as_dict(result: Any) -> Optional[Dict[str, Any]]:
