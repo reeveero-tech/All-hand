@@ -217,9 +217,9 @@ def _scores(split: str, arm: str, tag: str = "") -> dict:
 
 
 def score(tag: str = "") -> dict:
-    """Paired comparison on the v6 holdout (prereg §6) + descriptive baseline arms."""
-    from agent_civilization.eval import r169_bench_v6 as b6
-    cases = {c["id"]: c for c in b6.load_split("holdout")}
+    """Paired comparison on the v7 judgment holdout (prereg §6 + §5.1) + descriptive baseline arms."""
+    from agent_civilization.eval import r169_bench_v7 as b7
+    cases = {c["id"]: c for c in b7.load_split("holdout")}
     runs = {arm: _scores("holdout", arm, tag) for arm in ARMS}
 
     def paired(a, c, key, sub=lambda k: True):
