@@ -1,0 +1,395 @@
+{
+  "official": true,
+  "preregistration": "docs/audit/M8/logs/raw/r188_sustained_pressure/PREREGISTRATION.md",
+  "date_utc": "2026-10-28T06:36:05Z",
+  "category": "local test — one machine, real uvicorn subprocess, volatile mode, fake PostgREST, slow recipient; no internet/provider/production",
+  "environment": {
+    "machine": "2 vCPU",
+    "meminfo_total_kb": 8148712,
+    "python": "3.12.15",
+    "kernel": "6.1.155",
+    "runs": 1
+  },
+  "params": {
+    "window_s": 120.0,
+    "hold_s": 30.0,
+    "fillers": 8,
+    "poll_s": 0.5,
+    "warmup_tasks": 10,
+    "idle_s": 20.0,
+    "cap": 500
+  },
+  "fill": {
+    "accepted": 500,
+    "refused_503": 0,
+    "duration_s": 3.02
+  },
+  "sustained_window": {
+    "duration_s": 120.04,
+    "tasks_pending_min": 405.0,
+    "tasks_pending_median": 499.0,
+    "tasks_pending_max": 500.0,
+    "samples_at_ge_90pct_cap": 25,
+    "samples_total": 26
+  },
+  "admission_latency_202": {
+    "n": 2299,
+    "p50": 0.0129,
+    "p95": 0.075,
+    "p99": 0.1971,
+    "max": 1.169,
+    "mean": 0.0245
+  },
+  "admission_latency_503": {
+    "n": 2508,
+    "p50": 0.0067,
+    "p95": 0.0583,
+    "p99": 0.1856,
+    "max": 1.2367,
+    "mean": 0.0172
+  },
+  "errors": [],
+  "completion_latency_first_observation": {
+    "n": 2309,
+    "p50": 33.2294,
+    "p95": 142.4693,
+    "p99": 144.7467,
+    "max": 144.9523,
+    "mean": 54.9707
+  },
+  "completions_total_observed": 2309,
+  "memory_server_process": {
+    "series": [
+      {
+        "t": 2.12,
+        "phase": "baseline_after_warmup",
+        "VmHWM": 77180,
+        "VmRSS": 77180,
+        "Threads": 8,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 5.14,
+        "phase": "after_fill",
+        "VmHWM": 90224,
+        "VmRSS": 90224,
+        "Threads": 8,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 5.17,
+        "phase": "sustain",
+        "VmHWM": 90400,
+        "VmRSS": 90400,
+        "Threads": 12,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 10.17,
+        "phase": "sustain",
+        "VmHWM": 91152,
+        "VmRSS": 91120,
+        "Threads": 12,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 15.19,
+        "phase": "sustain",
+        "VmHWM": 91412,
+        "VmRSS": 91380,
+        "Threads": 13,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 20.19,
+        "phase": "sustain",
+        "VmHWM": 91760,
+        "VmRSS": 91632,
+        "Threads": 13,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 25.2,
+        "phase": "sustain",
+        "VmHWM": 91760,
+        "VmRSS": 91728,
+        "Threads": 13,
+        "tasks_pending": 499.0
+      },
+      {
+        "t": 30.2,
+        "phase": "sustain",
+        "VmHWM": 92088,
+        "VmRSS": 92056,
+        "Threads": 13,
+        "tasks_pending": 491.0
+      },
+      {
+        "t": 35.2,
+        "phase": "sustain",
+        "VmHWM": 92664,
+        "VmRSS": 92516,
+        "Threads": 15,
+        "tasks_pending": 492.0
+      },
+      {
+        "t": 40.2,
+        "phase": "sustain",
+        "VmHWM": 93080,
+        "VmRSS": 93060,
+        "Threads": 15,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 45.21,
+        "phase": "sustain",
+        "VmHWM": 93476,
+        "VmRSS": 93444,
+        "Threads": 15,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 50.21,
+        "phase": "sustain",
+        "VmHWM": 93896,
+        "VmRSS": 93864,
+        "Threads": 15,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 55.21,
+        "phase": "sustain",
+        "VmHWM": 94148,
+        "VmRSS": 94148,
+        "Threads": 15,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 60.21,
+        "phase": "sustain",
+        "VmHWM": 94196,
+        "VmRSS": 94196,
+        "Threads": 17,
+        "tasks_pending": 499.0
+      },
+      {
+        "t": 65.22,
+        "phase": "sustain",
+        "VmHWM": 94668,
+        "VmRSS": 94668,
+        "Threads": 17,
+        "tasks_pending": 494.0
+      },
+      {
+        "t": 70.22,
+        "phase": "sustain",
+        "VmHWM": 94668,
+        "VmRSS": 94668,
+        "Threads": 17,
+        "tasks_pending": 498.0
+      },
+      {
+        "t": 75.22,
+        "phase": "sustain",
+        "VmHWM": 95188,
+        "VmRSS": 95188,
+        "Threads": 17,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 80.23,
+        "phase": "sustain",
+        "VmHWM": 95700,
+        "VmRSS": 95700,
+        "Threads": 17,
+        "tasks_pending": 498.0
+      },
+      {
+        "t": 85.23,
+        "phase": "sustain",
+        "VmHWM": 95700,
+        "VmRSS": 95700,
+        "Threads": 17,
+        "tasks_pending": 498.0
+      },
+      {
+        "t": 90.23,
+        "phase": "sustain",
+        "VmHWM": 95700,
+        "VmRSS": 95700,
+        "Threads": 17,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 95.24,
+        "phase": "sustain",
+        "VmHWM": 95700,
+        "VmRSS": 95700,
+        "Threads": 17,
+        "tasks_pending": 499.0
+      },
+      {
+        "t": 100.24,
+        "phase": "sustain",
+        "VmHWM": 95700,
+        "VmRSS": 95700,
+        "Threads": 17,
+        "tasks_pending": 498.0
+      },
+      {
+        "t": 105.25,
+        "phase": "sustain",
+        "VmHWM": 96400,
+        "VmRSS": 96400,
+        "Threads": 17,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 110.25,
+        "phase": "sustain",
+        "VmHWM": 96400,
+        "VmRSS": 96400,
+        "Threads": 17,
+        "tasks_pending": 499.0
+      },
+      {
+        "t": 115.25,
+        "phase": "sustain",
+        "VmHWM": 96400,
+        "VmRSS": 96400,
+        "Threads": 17,
+        "tasks_pending": 500.0
+      },
+      {
+        "t": 120.25,
+        "phase": "sustain",
+        "VmHWM": 96400,
+        "VmRSS": 96400,
+        "Threads": 17,
+        "tasks_pending": 498.0
+      },
+      {
+        "t": 125.26,
+        "phase": "sustain",
+        "VmHWM": 96400,
+        "VmRSS": 96400,
+        "Threads": 18,
+        "tasks_pending": 495.0
+      },
+      {
+        "t": 130.26,
+        "phase": "sustain",
+        "VmHWM": 96400,
+        "VmRSS": 96400,
+        "Threads": 18,
+        "tasks_pending": 405.0
+      },
+      {
+        "t": 165.81,
+        "phase": "after_drain",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 167.81,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 169.81,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 171.81,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 173.82,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 175.82,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 177.82,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 179.82,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 181.83,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 183.83,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      },
+      {
+        "t": 185.83,
+        "phase": "idle_after",
+        "VmHWM": 96656,
+        "VmRSS": 96656,
+        "Threads": 18,
+        "tasks_pending": 0.0
+      }
+    ],
+    "note": "VmRSS/VmHWM/Threads of the SERVER process only; single run — no leak/no-leak claim is made from this window"
+  },
+  "verification_this_run": {
+    "accepted_tasks": 2309,
+    "non_terminal_after_drain": 0,
+    "recipient_sends_per_correlation_max": 1,
+    "recipient_requests_total": 2310,
+    "idempotency_key_present_on_volatile_external_path": false,
+    "live_tasks_after_drain": 0,
+    "recovery_new_task": {
+      "status": 202,
+      "terminal": "completed"
+    }
+  },
+  "throughput_completions_per_sec_observed": 10.5,
+  "drain": {
+    "duration_s": 30.61,
+    "still_pending_at_timeout": 0
+  }
+}
