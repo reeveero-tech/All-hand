@@ -47,6 +47,26 @@ import pytest
 # make every import fail loudly (RENDER=true forbids AGOS_ENV=test) — intended.
 os.environ["AGOS_ENV"] = "test"
 
+# Log 319 — session-private runtime stores. The rate-limit counter and the
+# SSE admission lease store default to ONE host-wide file in the temp dir
+# (correct for production: every worker on the host must share them). For a
+# test session that default is cross-process shared state: a second pytest
+# process on the same machine (a parallel run, a killed run still alive, a
+# subprocess test) calls ``reset()`` on the same file and a rate-limit test
+# sees [200, 200, 200] instead of a 429 — reproduced in log 319. Each session
+# therefore gets its own files, set before any test module imports
+# ``server``. ``setdefault`` keeps an explicit operator/CI choice, and
+# subprocesses inherit the env, so multi-process tests still share ONE file
+# within the session. Production defaults are unchanged.
+import tempfile as _tempfile
+
+_SESSION_STATE_DIR = _tempfile.mkdtemp(prefix="agos_pytest_state_")
+os.environ.setdefault(
+    "AGOS_RATE_LIMIT_DB", os.path.join(_SESSION_STATE_DIR, "rate_limit.sqlite3"))
+os.environ.setdefault(
+    "AGOS_SSE_ADMISSION_DB",
+    os.path.join(_SESSION_STATE_DIR, "sse_admission.sqlite3"))
+
 _LOOPBACK_NAMES = {"localhost", "127.0.0.1", "::1", "testserver"}
 _ORIG_URLOPEN = urllib.request.urlopen
 _ORIG_OPENER_OPEN = urllib.request.OpenerDirector.open

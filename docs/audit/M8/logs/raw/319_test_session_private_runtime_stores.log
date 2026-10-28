@@ -1,0 +1,60 @@
+# Log 319 — test session uses private runtime stores (sec08 order-dependent failure)
+date_utc: 2026-10-28T22:34:19Z
+base: origin/main e5b1c6674bd977a3eb80b52697db7a3136e3bf8b
+python: Python 3.11.17
+
+## Symptom (from log 317 local full run, 3.11)
+tests/test_sec08_civilization_admission.py::test_every_civilization_route_is_rate_limited
+  [get-/civilization/registry-None] codes [200,200,200]; [post-/civilization/execute-body2] 400 instead of 429.
+  Passed alone and in CI. Not reproduced by ordering alone.
+
+## Root cause hypothesis
+server._RATE_LIMIT_STORE = RateLimitStore(default_db_path()); default = $TMPDIR/agos_rate_limit.sqlite3
+(host-wide, intended for production). The test session used the same host file, so any other
+process on the host calling reset() wipes this session's counters. During the log-317 work a
+second pytest process existed on the host (a detached run that the sandbox reported as stopped);
+that it was alive at the failure moment is INFERRED, not proven.
+
+## Reproduction on main (before fix): concurrent reset loop on the host file
+$ python -c "<loop: RateLimitStore(default_db_path()).reset() for 20s>" & pytest tests/test_sec08_civilization_admission.py -k rate_limited
+E   assert 400 == 429
+    assert codes[2] == 429, codes
+E   assert 400 == 429
+    assert codes[2] == 429, codes
+E   assert 404 == 429
+    assert codes[2] == 429, codes
+E   assert 404 == 429
+======================= 6 failed, 12 deselected in 1.76s =======================
+
+## Same experiment AFTER fix (tests/conftest.py session-private AGOS_RATE_LIMIT_DB / AGOS_SSE_ADMISSION_DB)
+======================= 6 passed, 12 deselected in 0.74s =======================
+
+## Regression tests: tests/test_session_private_runtime_stores.py (3 tests)
+- test_session_stores_are_not_the_host_wide_files
+- test_production_default_is_still_the_host_wide_file (product default unchanged)
+- test_a_foreign_process_resetting_the_host_file_cannot_reach_the_limiter
+  (subprocess hammers reset() on the HOST file; expects [200,200,429])
+fixed:  3 passed in 0.66s
+mutation (setdefault calls in conftest replaced by no-ops):
+  FAILED test_session_stores_are_not_the_host_wide_files
+  FAILED test_a_foreign_process_resetting_the_host_file_cannot_reach_the_limiter
+  2 failed, 1 passed in 0.73s  -> the behavioral test detects the interference.
+  (conftest restored; cmp with saved copy = identical)
+Note: a first draft used a wrong function name (sse_admission.default_db_path;
+the real name is sse_admission_default_db_path) -> 2 failed; corrected before any commit.
+
+## Targeted run (fixed): session_private + sec08 + rate_limit_multiprocess + sse_multiprocess + sse_admission_store
+67 passed (+2 failures of the wrong-name draft, corrected), then 3/3 of the new file.
+
+## Full local suite, Python 3.11.17, fixed branch
+3634 passed, 8 skipped, 17 deselected, 9 xfailed in 633.17s (0:10:33)
+(main baseline in CI: 3631 passed; +3 = the new tests. No sec08 failure.)
+
+## What is proven / inferred / not tested
+proven: a foreign process resetting the host-wide file breaks the sec08 limiter tests on main (6/6),
+        and cannot after the fix (6/6 pass, plus the behavioral regression test).
+inferred: the log-317 local failure had this cause (a second pytest process on the host).
+not tested: production behavior change - none intended; product code untouched
+            (only tests/conftest.py and a new test file). No skip/xfail/deselect added.
+Side effect: each test session leaves one empty-ish temp dir agos_pytest_state_* in $TMPDIR
+             (runtime files, not project files; not cleaned to avoid any deletion logic).
