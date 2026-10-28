@@ -51,6 +51,53 @@ def test_v4_system_replaces_only_rule9():
 
 
 # ---------------------------------------------------------------------------#
+# the CRITICAL sent-prompt test (advisor review: the v4 arm must change the
+# system prompt that r169_run_v5._one actually builds — via r169_bench_v5 —
+# even when the cases were loaded from the v6 bench; swapping the case-loading
+# bench has NO effect on the execution bench)
+# ---------------------------------------------------------------------------#
+
+def _capture_one(monkeypatch, bench, arm, case):
+    import asyncio
+    from agent_civilization.eval import r169_bench_v5 as b5
+    prompts = []
+
+    async def fake_one(c, config):
+        prompts.append(b5.grounded_v2_messages(c)["system"])
+        return {"id": c["id"], "reply": "", "error": None}
+
+    monkeypatch.setattr(pilot.v5run, "_one", fake_one)
+    asyncio.run(pilot._one_arm_case(bench, arm, case))
+    return prompts[-1], b5.GROUNDED_V2_SYSTEM
+
+
+def test_v4_arm_changes_the_actual_sent_prompt_on_holdout(monkeypatch):
+    """The bug the advisor caught: on holdout the bench is v6, and swapping
+    v6.GROUNDED_V2_SYSTEM does not affect the v5 module that _one reads — the
+    v4 arm would silently send the ORIGINAL prompt. The fix swaps the
+    execution bench (v5) directly."""
+    from agent_civilization.eval import r169_bench_v7 as b7
+    case = b7.load_split("holdout")[0]
+    v2_prompt, _ = _capture_one(monkeypatch, b7, "grounded-v2", case)
+    v4_prompt, restored = _capture_one(monkeypatch, b7, "grounded-v4-lang", case)
+    assert v4_prompt != v2_prompt, "the v4 arm did not change the sent prompt (the execution-bench bug)"
+    assert "use ONLY this example" in v4_prompt
+    assert "use ONLY this example" not in v2_prompt
+    # the original must be restored after the arm (no leakage to the next arm)
+    assert "use ONLY this example" not in restored
+
+
+def test_v4_arm_changes_the_actual_sent_prompt_on_dev(monkeypatch):
+    from agent_civilization.eval import r169_bench_v5 as b5
+    case = b5.load_split("dev")[0]
+    v2_prompt, _ = _capture_one(monkeypatch, b5, "grounded-v2", case)
+    v4_prompt, restored = _capture_one(monkeypatch, b5, "grounded-v4-lang", case)
+    assert v4_prompt != v2_prompt
+    assert "use ONLY this example" in v4_prompt
+    assert "use ONLY this example" not in restored
+
+
+# ---------------------------------------------------------------------------#
 # guards (no live call may happen when a guard fires)
 # ---------------------------------------------------------------------------#
 
@@ -119,13 +166,27 @@ def test_score_refuses_missing_holdout_arm(monkeypatch, tmp_path):
 
 
 def test_score_refuses_mismatched_ids(monkeypatch, tmp_path):
-    """Result rows whose ids are not the v6 holdout must not be scored."""
+    """Result rows whose ids are not the v6 holdout must not be scored
+    (46 DISTINCT foreign ids — no duplicates, so the id-set check fires)."""
     monkeypatch.setattr(pilot, "OUT", tmp_path)
-    from agent_civilization.eval import r169_bench_v6 as b6
-    n = len(b6.load_split("holdout"))
-    rows = [{"id": "r169-v5-grounded_qa-00-en", "reply": "", "error": None}] * n  # v5 ids
+    from agent_civilization.eval import r169_bench_v7 as b7
+    n = len(b7.load_split("holdout"))
+    rows = [{"id": f"r169-v5-grounded_qa-{i:02d}-en", "reply": "", "error": None}
+            for i in range(n)]  # distinct v5-style ids, none in the v6 holdout
     _write_run(tmp_path, "holdout", "grounded-v2", n, rows)
-    with pytest.raises(KeyError):
+    with pytest.raises(SystemExit, match="ids do not match the frozen split"):
+        pilot._scores("holdout", "grounded-v2")
+
+
+def test_score_refuses_duplicate_ids(monkeypatch, tmp_path):
+    """A file with 46 rows all repeating ONE correct id must be rejected
+    (duplicates — the count alone cannot catch this)."""
+    monkeypatch.setattr(pilot, "OUT", tmp_path)
+    from agent_civilization.eval import r169_bench_v7 as b7
+    real = b7.load_split("holdout")[0]["id"]
+    rows = [{"id": real, "reply": "", "error": None}] * 46
+    _write_run(tmp_path, "holdout", "grounded-v2", 46, rows)
+    with pytest.raises(SystemExit, match="duplicate case ids"):
         pilot._scores("holdout", "grounded-v2")
 
 
@@ -134,12 +195,12 @@ def test_score_refuses_mismatched_ids(monkeypatch, tmp_path):
 # ---------------------------------------------------------------------------#
 
 def test_v6_holdout_composition():
-    from agent_civilization.eval import r169_bench_v6 as b6
-    cases = b6.load_split("holdout")
+    from agent_civilization.eval import r169_bench_v7 as b7
+    cases = b7.load_split("holdout")
     assert len(cases) == 46
     langs = [c["lang"] for c in cases]
     assert langs.count("ar") == 23 and langs.count("en") == 23
-    assert all(c["split"] == "holdout" and c["version"] == "r169-v6" for c in cases)
+    assert all(c["split"] == "holdout" and c["version"] == "r169-v7" for c in cases)
     fam = {}
     for c in cases:
         fam[c["task_type"]] = fam.get(c["task_type"], 0) + 1
@@ -152,7 +213,7 @@ def test_v6_holdout_vocabulary_disjoint_from_v5():
     """No v6 FICTIONAL vocabulary (towns/names/packages/companies) may appear
     anywhere in the v5 dataset files. Common English words (Windows, Linux, API…)
     are template words, not vocabulary."""
-    from agent_civilization.eval import r169_bench_v6 as b6
+    from agent_civilization.eval import r169_bench_v7 as b7
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         "r169_build_dataset_v6", ROOT / "scripts/r169_build_dataset_v6.py")
@@ -166,7 +227,7 @@ def test_v6_holdout_vocabulary_disjoint_from_v5():
     for w in vocab:
         assert w not in v5_all, f"v6 vocabulary {w!r} appears in the v5 dataset"
     # and the holdout actually uses this vocabulary (smoke: first case id exists)
-    assert len(b6.load_split("holdout")) == 46
+    assert len(b7.load_split("holdout")) == 46
 
 
 def test_v6_generator_is_deterministic():
@@ -178,8 +239,8 @@ def test_v6_generator_is_deterministic():
 
 def test_v6_bench_reexports_frozen_v5_grader():
     from agent_civilization.eval import r169_bench_v5 as b5
-    from agent_civilization.eval import r169_bench_v6 as b6
-    assert b6.GROUNDED_V2_SYSTEM == b5.GROUNDED_V2_SYSTEM
-    assert b6.grounded_v2_messages is b5.grounded_v2_messages
-    assert b6.score_case is b5.score_case
-    assert b6.run_code_tests is b5.run_code_tests
+    from agent_civilization.eval import r169_bench_v7 as b7
+    assert b7.GROUNDED_V2_SYSTEM == b5.GROUNDED_V2_SYSTEM
+    assert b7.grounded_v2_messages is b5.grounded_v2_messages
+    assert b7.score_case is b5.score_case
+    assert b7.run_code_tests is b5.run_code_tests

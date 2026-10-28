@@ -76,25 +76,45 @@ def _bench_for(split: str):
         from agent_civilization.eval import r169_bench_v5 as b
         return b
     if split == "holdout":
-        from agent_civilization.eval import r169_bench_v6 as b
+        # the v7 JUDGMENT holdout (advisor review: v6 was created BEFORE the
+        # v4 candidate was frozen — a prereg §4 order deviation, documented;
+        # v6 is kept as-is and never used for judgment).
+        from agent_civilization.eval import r169_bench_v7 as b
         return b
     raise SystemExit(f"refusing: split {split!r} is not dev or holdout")
 
 
 def _prereg_committed() -> bool:
+    """The prereg must be COMMITTED (its current content must match HEAD) —
+    merely being tracked is not enough (advisor review: `git ls-files` only
+    proves tracking, not that the on-disk content is what was frozen)."""
     if not PREREG.exists():
         return False
     r = subprocess.run(["git", "ls-files", "--error-unmatch", str(PREREG)],
                        cwd=ROOT, capture_output=True)
-    return r.returncode == 0
+    if r.returncode:
+        return False
+    head = subprocess.run(["git", "show", f"HEAD:{PREREG.relative_to(ROOT)}"],
+                           cwd=ROOT, capture_output=True)
+    if head.returncode:
+        return False
+    return head.stdout == PREREG.read_bytes()
 
 
 async def _one_arm_case(bench, arm: str, case: dict) -> dict:
-    """Run ONE case for ONE arm with the arm's system prompt swapped at runtime."""
-    original = bench.GROUNDED_V2_SYSTEM
+    """Run ONE case for ONE arm with the arm's system prompt swapped at runtime.
+
+    CRITICAL: the swap MUST happen on ``r169_bench_v5`` — the module that
+    ``r169_run_v5._one`` actually imports and reads at call time — regardless
+    of which bench loaded the cases (v5 for dev, v6/v7 for the holdout). The
+    advisor review caught that swapping the *case-loading* bench (e.g. v6) has
+    no effect on the prompt that ``_one`` builds.
+    """
+    from agent_civilization.eval import r169_bench_v5 as exec_bench
+    original = exec_bench.GROUNDED_V2_SYSTEM
     try:
         if arm == "grounded-v4-lang":
-            bench.GROUNDED_V2_SYSTEM = v4_system(original)
+            exec_bench.GROUNDED_V2_SYSTEM = v4_system(original)
         rec, history = None, []
         b4.CALLS.clear()
         ctx = b4._case.set(case["id"])
@@ -116,7 +136,7 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
         rec["config"], rec["calls"], rec["retry_errors"] = arm, list(b4.CALLS), history
         return rec
     finally:
-        bench.GROUNDED_V2_SYSTEM = original
+        exec_bench.GROUNDED_V2_SYSTEM = original
 
 
 async def run(split: str, arms: list[str], tag: str = "") -> list[Path]:
@@ -169,24 +189,38 @@ async def run(split: str, arms: list[str], tag: str = "") -> list[Path]:
     return [paths[a] for a in arms]
 
 
-def _scores(split: str, arm: str) -> dict:
+def _scores(split: str, arm: str, tag: str = "") -> dict:
+    """Score one arm's run. REFUSES: a run whose row ids are not EXACTLY the
+    frozen split's id set (duplicates, missing cases, forged metadata counts
+    and foreign ids all fail — advisor review)."""
     bench = _bench_for(split)
-    p = OUT / f"{split}_{arm}.jsonl"
+    suffix = f"_{tag}" if tag else ""
+    p = OUT / f"{split}_{arm}{suffix}.jsonl"
     lines = p.read_text(encoding="utf-8").splitlines()
     meta = json.loads(lines[0])
     n_declared = meta["cases"]
     rows = [json.loads(x) for x in lines[1:] if x.strip()]
     if len(rows) != n_declared:
         raise SystemExit(f"refusing: {p.name} has {len(rows)}/{n_declared} cases — incomplete run")
+    row_ids = [r["id"] for r in rows]
+    if len(row_ids) != len(set(row_ids)):
+        dupes = sorted({x for x in row_ids if row_ids.count(x) > 1})
+        raise SystemExit(f"refusing: {p.name} has duplicate case ids: {dupes}")
     cases = {c["id"]: c for c in bench.load_split(split)}
+    frozen_ids = set(cases)
+    if set(row_ids) != frozen_ids:
+        missing = sorted(frozen_ids - set(row_ids))
+        foreign = sorted(set(row_ids) - frozen_ids)
+        raise SystemExit(f"refusing: {p.name} ids do not match the frozen split — "
+                         f"missing={missing[:3]}… foreign={foreign[:3]}…")
     return {r["id"]: v5run.score_record(cases[r["id"]], r) for r in rows}
 
 
-def score() -> dict:
+def score(tag: str = "") -> dict:
     """Paired comparison on the v6 holdout (prereg §6) + descriptive baseline arms."""
     from agent_civilization.eval import r169_bench_v6 as b6
     cases = {c["id"]: c for c in b6.load_split("holdout")}
-    runs = {arm: _scores("holdout", arm) for arm in ARMS}
+    runs = {arm: _scores("holdout", arm, tag) for arm in ARMS}
 
     def paired(a, c, key, sub=lambda k: True):
         ids = sorted(set(a) & set(c))
@@ -230,7 +264,8 @@ def main(argv=None) -> int:
     r.add_argument("--split", required=True, choices=["dev", "holdout"])
     r.add_argument("--arms", default="v2,v4,baseline")
     r.add_argument("--tag", default="")
-    sub.add_parser("score")
+    sc = ap.add_parser("score")  # noqa: F841  (kept for symmetry with run)
+    sc.add_argument("--tag", default="")
     a = ap.parse_args(argv)
     if a.cmd == "run":
         arms = {"v2": "grounded-v2", "v4": "grounded-v4-lang", "baseline": "baseline"}
@@ -238,7 +273,7 @@ def main(argv=None) -> int:
         for p in asyncio.run(run(a.split, chosen, a.tag)):
             print(p)
     else:
-        print(json.dumps(score(), ensure_ascii=False, indent=1))
+        print(json.dumps(score(a.tag), ensure_ascii=False, indent=1))
     return 0
 
 
