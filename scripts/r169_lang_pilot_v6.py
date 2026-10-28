@@ -44,16 +44,22 @@ OUT = ROOT / "docs/audit/M8/logs/raw/r169/v6/lang_pilot"
 PREREG = OUT / "PREREGISTRATION_V6.md"
 PREREG_V8 = ROOT / "docs/audit/M8/logs/raw/r169/v8/lang_pilot/PREREGISTRATION_V8.md"
 OUT_V8 = PREREG_V8.parent
+PREREG_V9 = ROOT / "docs/audit/M8/logs/raw/r169/v9/lang_pilot/PREREGISTRATION_V9.md"
+OUT_V9 = PREREG_V9.parent
 
 
 def _out(dataset: str) -> Path:
-    """مسار المخرجات لكل حزمة — تشغيل/تقييم v8 يكتب في دليل v8 حصرًا،
-    فلا يمكنه استبدال أدلة حكم v7 التاريخية في دليل v6 (مراجعة مستقلة)."""
-    return OUT_V8 if dataset == "v8" else OUT
+    """مسار المخرجات لكل حزمة — تشغيل/تقييم v8/v9 يكتب في دليله حصرًا،
+    فلا يمكنه استبدال أدلة الأحكام التاريخية في دليل v6 (مراجعة مستقلة)."""
+    if dataset == "v8":
+        return OUT_V8
+    if dataset == "v9":
+        return OUT_V9
+    return OUT
 
 
 def _prereg_for(dataset: str) -> Path:
-    return PREREG_V8 if dataset == "v8" else PREREG
+    return {"v8": PREREG_V8, "v9": PREREG_V9}.get(dataset, PREREG)
 
 
 ATTEMPT_TIMEOUT_S = 600
@@ -86,14 +92,16 @@ def v4_system(v2_system: str) -> str:
 
 def _bench_for(split: str, dataset: str = "v7"):
     """dev uses the v5 bench (the tuning surface); holdout uses the judgment
-    bench of the batch: v7 = دفعة 14 (r170-batch14)؛ v8 = المرشح الجديد
-    (دفعة 16 — «إعادة محدودة عند اختلاف اللغة»، PREREGISTRATION_V8 §4)."""
+    bench of the batch: v7 = دفعة 14؛ v8 = دفعة 16 (انحراف ترتيب موثق —
+    PREREGISTRATION_V9 §0، لا تُستخدم للحكم)؛ v9 = حزمة الحكم المطابقة
+    (PREREGISTRATION_V9 §4)."""
     if split == "dev":
         from agent_civilization.eval import r169_bench_v5 as b
         return b
     if split == "holdout":
         import importlib
-        mod = {"v7": "r169_bench_v7", "v8": "r169_bench_v8"}[dataset]
+        mod = {"v7": "r169_bench_v7", "v8": "r169_bench_v8",
+               "v9": "r169_bench_v9"}[dataset]
         return importlib.import_module(f"agent_civilization.eval.{mod}")
     raise SystemExit(f"refusing: split {split!r} is not dev or holdout")
 
@@ -103,11 +111,12 @@ def _prereg_committed() -> bool:
     merely being tracked is not enough (advisor review: `git ls-files` only
     proves tracking, not that the on-disk content is what was frozen).
 
-    Both preregistrations are guarded: V6 (the original pilot prereg) and V8
-    (the lang-retry candidate prereg — its criteria govern the v8 judgment).
-    A run must not start if EITHER file was edited after commit."""
+    All three preregistrations are guarded: V6 (the original pilot prereg),
+    V8 (kept with its documented order deviation — never used for judgment)
+    and V9 (the compliant judgment package — PREREGISTRATION_V9 governs the
+    v9 judgment). A run must not start if ANY file was edited after commit."""
     ok = True
-    for prereg in (PREREG, PREREG_V8):
+    for prereg in (PREREG, PREREG_V8, PREREG_V9):
         if not prereg.exists():
             ok = False
             continue
@@ -179,7 +188,8 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
 # أذرع الحكم لكل حزمة (interleaved — نفس الحالات): v7 = دفعة 14 (3 أذرع مع
 # baseline)؛ v8 = دفعة 16 (v2 + v4 ضبط + v4r المرشح — prereg v8 §3).
 JUDGMENT_ARMS = {"v7": ("grounded-v2", "grounded-v4-lang", "baseline"),
-                 "v8": ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang")}
+                 "v8": ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang"),
+                 "v9": ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang")}
 
 
 async def run(split: str, arms: list[str], tag: str = "",
@@ -350,10 +360,10 @@ def main(argv=None) -> int:
     r.add_argument("--split", required=True, choices=["dev", "holdout"])
     r.add_argument("--arms", default="v2,v4,baseline")
     r.add_argument("--tag", default="")
-    r.add_argument("--dataset", default="v7", choices=["v7", "v8"])
+    r.add_argument("--dataset", default="v7", choices=["v7", "v8", "v9"])
     sc = sub.add_parser("score")  # noqa: F841  (kept for symmetry with run)
     sc.add_argument("--tag", default="")
-    sc.add_argument("--dataset", default="v7", choices=["v7", "v8"])
+    sc.add_argument("--dataset", default="v7", choices=["v7", "v8", "v9"])
     a = ap.parse_args(argv)
     if a.cmd == "run":
         arms = {"v2": "grounded-v2", "v4": "grounded-v4-lang",

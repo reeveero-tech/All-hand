@@ -263,3 +263,16 @@ def test_prereg_guard_covers_v8_prereg(tmp_path):
         assert pilot._prereg_committed() is False
     finally:
         monkey.undo()
+
+
+def test_prereg_guard_covers_v9_prereg(tmp_path):
+    """حارس التسجيلات يشمل V9 (حزمة الحكم المطابقة) — تعديله بعد التسجيل يمنع أي تشغيل."""
+    assert pilot._prereg_committed() is True
+    tampered = tmp_path / "PREREGISTRATION_V9.md"
+    tampered.write_text("criteria edited after registration\n", encoding="utf-8")
+    monkey = pytest.MonkeyPatch()
+    monkey.setattr(pilot, "PREREG_V9", tampered)
+    try:
+        assert pilot._prereg_committed() is False
+    finally:
+        monkey.undo()
