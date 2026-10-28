@@ -12,7 +12,7 @@
 from __future__ import annotations
 
 import asyncio
-
+import json
 
 from agent_civilization.eval import r169_bench_v5 as b5
 from agent_civilization.core import lang_policy
@@ -152,3 +152,90 @@ def _synthetic_score(monkeypatch, tmp_path, v4_ar_wrong, v2_ar_wrong,
                             "grounded-v4r-lang": arm_rows(set(), provider_errors[2]),
                         }[arm])
     _ = en_ids  # كل الإنجليزية مطابقة في كل الأذرع
+
+
+def test_v8_inconclusive_per_arm_not_average(monkeypatch, tmp_path):
+    """الشرط المسجل «أخطاء مزود تتجاوز 10% في أي ذراع» — لكل ذراع على حدة:
+    5 أخطاء في ذراع واحد (46 حالة) تستوجب غير حاسم رغم أن مجموعها 5 < 13.8،
+    و4 في ذراع واحد لا تستوجبه (4 < 4.6)."""
+    _synthetic_score(monkeypatch, tmp_path, v4_ar_wrong=5, v2_ar_wrong=4,
+                     provider_errors=(0, 0, 4))
+    res = pilot.score(dataset="v8")
+    assert not res["criteria"]["inconclusive_by_errors"]
+    assert res["criteria"]["decision"] == "candidate promising"  # المعايير متحققة
+    _synthetic_score(monkeypatch, tmp_path, v4_ar_wrong=5, v2_ar_wrong=4,
+                     provider_errors=(0, 0, 5))
+    res = pilot.score(dataset="v8")
+    assert res["criteria"]["inconclusive_by_errors"]
+    assert res["criteria"]["decision"] == "inconclusive"
+
+
+def test_v8_error_threshold_is_strictly_greater(monkeypatch, tmp_path):
+    """عند 10% بالضبط (5 أخطاء من 50 حالة) ⇒ ليس غير حاسم: المقارنة > لا >=."""
+    cases = {f"r169-v8-syn-{i:02d}": {"lang": "ar" if i % 2 else "en"}
+             for i in range(50)}
+
+    class FakeBench:
+        GROUNDED_V2_SYSTEM = "sys"
+
+        def load_split(self, split):
+            return [{"id": k, **v} for k, v in cases.items()]
+
+    monkeypatch.setattr(pilot, "_bench_for", lambda split, dataset: FakeBench())
+
+    def arm_rows(n_err):
+        rows = {k: {"language_match": True, "pass": True, "provider_error": None}
+                for k in cases}
+        for k in list(rows)[:n_err]:
+            rows[k]["provider_error"] = "synthetic"
+        return rows
+
+    def scores(split, arm, tag="", dataset="v7"):
+        return {"grounded-v2": arm_rows(0), "grounded-v4-lang": arm_rows(0),
+                "grounded-v4r-lang": arm_rows(5)}[arm]  # 5 = 10% بالضبط
+
+    monkeypatch.setattr(pilot, "_scores", scores)
+    monkeypatch.setattr(pilot, "OUT_V8", tmp_path)
+    res = pilot.score(dataset="v8")
+    assert not res["criteria"]["inconclusive_by_errors"]   # 10% بالضبط لا يكفي
+    assert res["criteria"]["decision"] != "inconclusive"
+
+
+def test_v4r_meta_fingerprint_matches_sent_system(monkeypatch, tmp_path):
+    """بصمة الموجّه المسجلة في meta لذراع v4r = موجّه v4-revised المُرسل فعليًا
+    عند أول طلب (تصحيح المراجعة: كانت تسجل بصمة v2). عبر run() الحقيقي مع بديل
+    نقل يلتقط الموجّه المُرسل."""
+    import hashlib
+    post, calls = _fake_post([AR_OK])
+    monkeypatch.setattr(_llm, "_keyless_post", post)
+    # run() يستبدل _keyless_post بـ make_seeded_post — يُستبدل هنا ببديلنا
+    # حتى لا يخرج أي استدعاء حقيقي للمزود من الاختبار ويلتقط الموجّه المرسل.
+    monkeypatch.setattr(pilot.b4, "make_seeded_post", lambda tag: post)
+    monkeypatch.setenv("AGOS_LLM_KEYLESS", "1")
+    monkeypatch.setattr(_llm, "KEYLESS_MIN_SPACING_S", 0.0)
+    monkeypatch.setattr(_llm, "KEYLESS_BUDGET_S", 10.0)
+    monkeypatch.setattr(pilot, "OUT_V8", tmp_path)
+    monkeypatch.setattr(pilot, "_prereg_committed", lambda: True)
+
+    case = _ar_case()
+
+    class FakeBench:
+        GROUNDED_V2_SYSTEM = b5.GROUNDED_V2_SYSTEM
+
+        def load_split(self, split):
+            return [case]
+
+    monkeypatch.setattr(pilot, "_bench_for", lambda split, dataset: FakeBench())
+    consent = _llm.set_public_llm_consent(True)
+    try:
+        paths = asyncio.run(pilot.run("dev", ["grounded-v4r-lang"], dataset="v8"))
+    finally:
+        _llm.reset_public_llm_consent(consent)
+    meta = json.loads(paths[0].read_text().splitlines()[0])
+    captured_system = calls[0]["system"]  # الموجّه المُرسل فعليًا عند أول طلب
+    assert meta["system_prompt_sha256"] == hashlib.sha256(
+        pilot.v4_system(b5.GROUNDED_V2_SYSTEM).encode()).hexdigest()
+    assert meta["system_prompt_sha256"] != hashlib.sha256(
+        b5.GROUNDED_V2_SYSTEM.encode()).hexdigest()
+    assert meta["system_prompt_sha256"] == hashlib.sha256(
+        captured_system.encode()).hexdigest()

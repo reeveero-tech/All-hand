@@ -211,7 +211,7 @@ async def run(split: str, arms: list[str], tag: str = "",
                                         capture_output=True, text=True).stdout.strip(),
              "started_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
              "system_prompt_sha256": hashlib.sha256(
-                 (v4_system(bench.GROUNDED_V2_SYSTEM) if arm == "grounded-v4-lang"
+                 (v4_system(bench.GROUNDED_V2_SYSTEM) if arm in ("grounded-v4-lang", "grounded-v4r-lang")
                   else bench.GROUNDED_V2_SYSTEM).encode()).hexdigest(),
              "prereg": str(_prereg_for(dataset).relative_to(ROOT))}) + "\n")
     _llm._keyless_post = b4.make_seeded_post(f"lang-pilot-v6|{split}")
@@ -325,7 +325,13 @@ def score(tag: str = "", dataset: str = "v7") -> dict:
             "B2": cen["a_only"] - cen["b_only"] <= 1,
             "B3": cps["a_only"] - cps["b_only"] <= 2 and hps["a_only"] - hps["b_only"] <= 2,
             "provider_error_share": round(n_err8 / max(3 * n_cases, 1), 4),
-            "inconclusive_by_errors": n_err8 > 0.10 * 3 * n_cases}
+            # الشرط المسجل: «أخطاء مزود تتجاوز 10% في أي ذراع» — لكل ذراع على
+            # حدة لا متوسط الأذرع (تصحيح المراجعة المستقلة الثانية).
+            "per_arm_provider_errors": {x: res["runs"][x]["provider_errors"] for x in
+                                        ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang")},
+            "inconclusive_by_errors": any(
+                res["runs"][x]["provider_errors"] > 0.10 * n_cases
+                for x in ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang"))}
         # قرار ثلاثي الحالات — عدم الحسم له الأولوية (مراجعة مستقلة):
         # أخطاء المزود > 10% ⇒ «غير حاسم» لا «لم يثبت».
         cr = res["criteria"]
