@@ -26,13 +26,14 @@ import r169_lang_pilot_v6 as pilot  # noqa: E402
 # ---------------------------------------------------------------------------#
 
 def test_rule9_v4_is_symmetric_with_both_examples():
-    assert "Example (Arabic question):" in pilot.RULE9_V4
-    assert "Example (English question):" in pilot.RULE9_V4
     assert "المصادر المتاحة لا تذكر هذه المعلومة" in pilot.RULE9_V4
     assert "The available sources do not mention this fact" in pilot.RULE9_V4
+    assert pilot.RULE9_V4.count("use ONLY this example") == 2
     # symmetric instructions (the v3 failure mode was an Arabic-only prohibition)
-    assert "For an Arabic question, everything after the token must be Arabic." in pilot.RULE9_V4
-    assert "For an English question, everything after the token must be English." in pilot.RULE9_V4
+    assert "If the question is Arabic, everything after the token MUST be Arabic" in pilot.RULE9_V4
+    assert "If the question is English, everything after the token MUST be English" in pilot.RULE9_V4
+    assert "use ONLY this example" in pilot.RULE9_V4
+    assert "Never use the example of the other language" in pilot.RULE9_V4
     assert "Never write an English sentence in reply to an Arabic question." not in pilot.RULE9_V4
 
 

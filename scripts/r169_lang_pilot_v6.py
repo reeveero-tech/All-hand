@@ -48,14 +48,19 @@ RULE9_V2_PREFIX = "9. Write the ENTIRE reply in the language of the question"
 
 # v4 — rebalanced rule 9 (symmetric instructions AND both examples; the v3
 # failure mode was an Arabic-only example plus an Arabic-focused prohibition).
+# REVISION 1 (after the dev inspection, prereg §3 allows ONE revision): the
+# first v4 draft leaked the ENGLISH example into Arabic replies (4/26 dev
+# Arabic mismatches — the model copied "The available sources do not mention…"
+# verbatim for Arabic questions). This revision forces example selection:
+# "If the question is X … use ONLY this example … never the other language's".
 RULE9_V4 = (
     "9. Write the ENTIRE reply in the language of the question: Arabic if the question is Arabic, English "
-    "if the question is English. The INSUFFICIENT_EVIDENCE token stays in English in every reply. For an "
-    "Arabic question, everything after the token must be Arabic. Example (Arabic question): "
-    "\"INSUFFICIENT_EVIDENCE — المصادر المتاحة لا تذكر هذه المعلومة.\" For an English question, everything "
-    "after the token must be English. Example (English question): \"INSUFFICIENT_EVIDENCE — The available "
-    "sources do not mention this fact.\" Match the question's language exactly and never mix the two "
-    "languages in one reply.\n"
+    "if the question is English. Never mix the two languages in one reply. The INSUFFICIENT_EVIDENCE "
+    "token stays in English in every reply. If the question is Arabic, everything after the token MUST "
+    "be Arabic — use ONLY this example: \"INSUFFICIENT_EVIDENCE — المصادر المتاحة لا تذكر هذه المعلومة.\" "
+    "If the question is English, everything after the token MUST be English — use ONLY this example: "
+    "\"INSUFFICIENT_EVIDENCE — The available sources do not mention this fact.\" Never use the example "
+    "of the other language.\n"
 )
 
 
@@ -114,7 +119,7 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
         bench.GROUNDED_V2_SYSTEM = original
 
 
-async def run(split: str, arms: list[str]) -> list[Path]:
+async def run(split: str, arms: list[str], tag: str = "") -> list[Path]:
     from agent_civilization.core import llm as _llm
     bench = _bench_for(split)
     if not _prereg_committed():
@@ -129,7 +134,8 @@ async def run(split: str, arms: list[str]) -> list[Path]:
     # separates arm identity from time drift (prereg §5).
     paths, handles = {}, {}
     for arm in arms:
-        p = OUT / f"{split}_{arm}.jsonl"
+        suffix = f"_{tag}" if tag else ""
+        p = OUT / f"{split}_{arm}{suffix}.jsonl"
         if p.exists():
             raise SystemExit(f"refusing to overwrite {p}")
         paths[arm] = p
@@ -223,12 +229,13 @@ def main(argv=None) -> int:
     r = sub.add_parser("run")
     r.add_argument("--split", required=True, choices=["dev", "holdout"])
     r.add_argument("--arms", default="v2,v4,baseline")
+    r.add_argument("--tag", default="")
     sub.add_parser("score")
     a = ap.parse_args(argv)
     if a.cmd == "run":
         arms = {"v2": "grounded-v2", "v4": "grounded-v4-lang", "baseline": "baseline"}
         chosen = [arms[x] for x in a.arms.split(",") if x.strip()]
-        for p in asyncio.run(run(a.split, chosen)):
+        for p in asyncio.run(run(a.split, chosen, a.tag)):
             print(p)
     else:
         print(json.dumps(score(), ensure_ascii=False, indent=1))
