@@ -125,10 +125,13 @@ def test_v8_outputs_are_isolated_from_v6_dir(monkeypatch, tmp_path):
 
 
 def _synthetic_score(monkeypatch, tmp_path, v4_ar_wrong, v2_ar_wrong,
-                     provider_errors):
-    """تقييم v8 ببيانات اصطناعية عبر monkeypatch: المخرجات إلى tmp_path."""
+                     provider_errors, dataset="v8"):
+    """تقييم اصطناعي عبر monkeypatch — المخرجات إلى tmp_path دائمًا (v8 وv9
+    معًا حتى لا يلوث أي اختبار أصطناعي دليل الأحكام الحقيقي). الحالات من
+    بذرعة الحزمة المطلوبة (v8 أوv9 — معرفاتها مختلفة)."""
     monkeypatch.setattr(pilot, "OUT_V8", tmp_path)
-    cases = {c["id"]: c for c in pilot._bench_for("holdout", "v8").load_split("holdout")}
+    monkeypatch.setattr(pilot, "OUT_V9", tmp_path)
+    cases = {c["id"]: c for c in pilot._bench_for("holdout", dataset).load_split("holdout")}
     ar_ids = [i for i, c in cases.items() if c["lang"] == "ar"]
     en_ids = [i for i, c in cases.items() if c["lang"] == "en"]
 
@@ -239,3 +242,13 @@ def test_v4r_meta_fingerprint_matches_sent_system(monkeypatch, tmp_path):
         b5.GROUNDED_V2_SYSTEM.encode()).hexdigest()
     assert meta["system_prompt_sha256"] == hashlib.sha256(
         captured_system.encode()).hexdigest()
+
+
+def test_v9_criteria_end_to_end_synthetic(monkeypatch, tmp_path):
+    """تقييم v9 (حزمة الحكم المطابقة) من طرف إلى طرف ببيانات اصطناعية مستوفية
+    — نفس فرع المعايير المشترك، عبر بذرعة v9 الحقيقي (bench + مسار v9)."""
+    _synthetic_score(monkeypatch, tmp_path, v4_ar_wrong=5, v2_ar_wrong=4,
+                     provider_errors=(0, 0, 0), dataset="v9")
+    res = pilot.score(dataset="v9")
+    assert res["criteria"]["B1"] and res["criteria"]["B2"] and res["criteria"]["B3"]
+    assert res["criteria"]["decision"] == "candidate promising"

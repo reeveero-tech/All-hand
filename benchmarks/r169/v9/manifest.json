@@ -1,0 +1,16 @@
+{
+  "changes_from_v5": "v9 judgment package (compliant order — PREREGISTRATION_V9 §4): third vocabulary set (disjoint from v1-v8), new seed (1699) and canary salt, new code tasks and closed_book fact; single holdout split; graded by the frozen v5 grader (via the r169_bench_v9 thin wrapper)",
+  "dataset_sha256": "82b8dfaab1fe11be7514f7d8be05ebafa035ea5e9bce1ab2ddd27275a97123dd",
+  "dataset_version": "r169-v9",
+  "files": {
+    "holdout.jsonl": {
+      "cases": 46,
+      "sha256": "0d308f72772bc3e10768cd0a89e7106fbd3f56bb501f90279dacd0dc7e16684b"
+    }
+  },
+  "generator": "scripts/r169_build_dataset_v9.py",
+  "licence": "synthetic cases CC0-1.0; closed_book case restates a short fact from the cited official page",
+  "seed": 1699,
+  "split_rule": "single holdout split (all 23 groups); mirrors the spent v5 validation family composition",
+  "total_cases": 46
+}

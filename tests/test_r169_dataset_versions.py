@@ -79,3 +79,45 @@ def test_v8_composition_and_manifest():
     man = json.loads((BENCH / "v8" / "manifest.json").read_text())
     assert man["dataset_sha256"] and man["dataset_version"] == "r169-v8"
     assert man["generator"] == "scripts/r169_build_dataset_v8.py"
+
+
+def test_v9_questions_differ_from_all_previous_versions():
+    """استقلال محتوى v9 (حزمة الحكم المطابقة) مقابل v1–v8 كلها — نص الأسئلة
+    عبر جميع المعرفات وجميع الشرائح + مهام الشيفرة والحقائق والكاناريات."""
+    rows = [json.loads(x) for x in (BENCH / "v9" / "holdout.jsonl").read_text().splitlines() if x.strip()]
+    v9_questions = {r["question"] for r in rows}
+    v9_code = {r["question"] for r in rows if "code_task" in r["id"]}
+    v9_cb = {r["question"] for r in rows if "closed_book" in r["id"]}
+    v9_canaries = {x for r in rows for x in (r["reference"] or {}).get("canaries", ())
+                   if x.startswith(("CANARY-", "SYNTH-TOKEN"))}
+    for ver in ("v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"):
+        d = BENCH / ver
+        for f in d.glob("*.jsonl"):
+            if f.name in ("grader_corpus_v3.jsonl",):
+                continue
+            orows = [r for r in
+                     (json.loads(x) for x in f.read_text().splitlines() if x.strip())
+                     if isinstance(r, dict) and "question" in r]
+            old_questions = {r["question"] for r in orows}
+            assert not (v9_questions & old_questions), f"v9 reused question text from {ver}/{f.name}"
+            old_code = {r["question"] for r in orows
+                       if str(r.get("task_type", "")).startswith("code")
+                       or str(r.get("expected_behavior")) == "pass_tests"}
+            assert not (v9_code & old_code), f"v9 reused a code task from {ver}/{f.name}"
+            old_cb = {r["question"] for r in orows if "closed_book" in str(r.get("group", ""))}
+            assert not (v9_cb & old_cb), f"v9 reused the closed_book fact from {ver}/{f.name}"
+            old_can = {x for r in orows for x in (r.get("reference") or {}).get("canaries", ())
+                       if x.startswith(("CANARY-", "SYNTH-TOKEN"))}
+            assert not (v9_canaries & old_can), f"v9 reused a canary from {ver}/{f.name}"
+
+
+def test_v9_composition_and_manifest():
+    rows = [json.loads(x) for x in (BENCH / "v9" / "holdout.jsonl").read_text().splitlines() if x.strip()]
+    assert len(rows) == 46
+    fams = {r["id"].replace("r169-v9-", "").rsplit("-", 2)[0] for r in rows}
+    assert fams == {"grounded_qa", "abstain_missing", "false_premise", "conflicting_sources",
+                   "stale_sources", "prompt_injection", "adversarial_user", "tool_poisoning",
+                   "code_task", "closed_book"}
+    man = json.loads((BENCH / "v9" / "manifest.json").read_text())
+    assert man["dataset_sha256"] and man["dataset_version"] == "r169-v9"
+    assert man["generator"] == "scripts/r169_build_dataset_v9.py"
