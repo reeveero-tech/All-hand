@@ -264,7 +264,7 @@ def main(argv=None) -> int:
     r.add_argument("--split", required=True, choices=["dev", "holdout"])
     r.add_argument("--arms", default="v2,v4,baseline")
     r.add_argument("--tag", default="")
-    sc = ap.add_parser("score")  # noqa: F841  (kept for symmetry with run)
+    sc = sub.add_parser("score")  # noqa: F841  (kept for symmetry with run)
     sc.add_argument("--tag", default="")
     a = ap.parse_args(argv)
     if a.cmd == "run":
