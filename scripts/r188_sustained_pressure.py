@@ -208,9 +208,19 @@ def completion_stats(completions, exclude_phases=("warmup", "recovery")):
     return out
 
 
+def poller_keep_or_drop(is_terminal):
+    """A poller drops a task from its polling set ONLY when a TERMINAL state
+    has been observed. (v2 run-1 regression, caught before acceptance: the
+    poller dropped tasks after the FIRST poll — terminal or not — so
+    completions were only mopped up by the final verification sweep and the
+    first-observation latencies were garbage. Pinned by test.)
+    """
+    return is_terminal
+
+
 def verify_measurement(*, corr_by_tid, sends_by_corr, completions, worker_errors,
                        http_errors, non_terminal, live_after_drain,
-                       recovery_terminal):
+                       recovery_terminal, verification_mopup=0):
     """Explicit set-based verification. Returns a verdict dict; a run with any
     violation is INVALID (never reported as a successful measurement)."""
     reasons = []
@@ -235,6 +245,12 @@ def verify_measurement(*, corr_by_tid, sends_by_corr, completions, worker_errors
     # 4) every accepted task reached a terminal state
     if non_terminal:
         reasons.append({"violation": "non_terminal_after_drain", "count": non_terminal})
+    # 4b) the pollers observed every terminal task PROMPTLY — a non-zero
+    # mop-up by the final verification sweep means an observation gap (the
+    # run's first-observation latencies cannot be trusted)
+    if verification_mopup:
+        reasons.append({"violation": "poller_missed_terminal_task",
+                        "count": verification_mopup})
     # 5) no worker/thread died with an exception
     if worker_errors:
         reasons.append({"violation": "worker_exception", "count": len(worker_errors),
@@ -466,9 +482,11 @@ def main():
                         time.sleep(0.05)
                         continue
                     for tid in mine:
-                        observe_terminal(tid)
-                        with accepted_lock:
-                            poll_set.discard(tid)
+                        # drop from the polling set ONLY on an observed
+                        # TERMINAL state — a non-terminal task stays polled
+                        if poller_keep_or_drop(observe_terminal(tid)):
+                            with accepted_lock:
+                                poll_set.discard(tid)
                         time.sleep(0.02)  # pacing: bounded GET rate, not a poll storm
             except Exception as e:  # a worker death must invalidate the run
                 with m.lock:
@@ -604,6 +622,9 @@ def main():
             sample_rss()
 
         # ---- verification (this run, no restart): set-based, explicit verdict
+        # tasks the pollers never observed terminal (mop-up here) = an
+        # observation gap that INVALIDATES the measurement
+        verification_mopup = 0
         non_terminal = 0
         status_counts = Counter()
         for tid, info in accepted.items():
@@ -611,7 +632,9 @@ def main():
                 continue
             gs, gbody = _get_task(port, headers, tid)
             if gs == 200 and gbody.get("status") in TERMINAL:
-                # observed only now (poller missed it) — record it
+                # observed only now (poller missed it) — recorded, and counted
+                # as a mop-up that invalidates the measurement
+                verification_mopup += 1
                 with m.lock:
                     m.completions.append({
                         "tid": tid, "phase": info["phase"], "send_t": info["send_t"],
@@ -667,7 +690,9 @@ def main():
         # ---- aggregate (pure functions above) + verdict
         snap = m.snapshot()
         comps = dedupe_first_observations(snap["completions"])
-        window_samples = window_occupancy(snap["rss_series"], window_t0, window_t1)
+        # occupancy window bounds are RELATIVE (samples store t = now-t_start)
+        window_samples = window_occupancy(
+            snap["rss_series"], window_t0 - t_start, window_t1 - t_start)
         cstats = completion_stats(comps)
         verdict = verify_measurement(
             corr_by_tid=corr_by_tid,
@@ -678,6 +703,7 @@ def main():
             non_terminal=non_terminal,
             live_after_drain=live_now,
             recovery_terminal=rec_terminal,
+            verification_mopup=verification_mopup,
         )
         in_window = [c for c in comps if window_t0 <= c["observed_t"] <= window_t1]
 
@@ -729,6 +755,7 @@ def main():
                       "measured_from": "submission stop (after submitter joins)",
                       "still_pending_at_timeout": non_terminal},
             "verification_this_run": verdict,
+            "verification_mopup_tasks": verification_mopup,
         }
 
         with open(args.out, "w") as f:

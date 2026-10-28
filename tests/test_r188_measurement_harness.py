@@ -177,6 +177,27 @@ def test_r188_verdict_invalid_on_leaked_live_task_or_failed_recovery():
     assert v["invalidity_reasons"][0]["violation"] == "recovery_task_not_completed"
 
 
+# ------------------------------------------------- poller drop rule (v2 run-1 regression)
+def test_r188_poller_keeps_non_terminal_tasks_polled():
+    # a NON-terminal observation must KEEP the task in the polling set —
+    # v2 run-1 dropped it after the first poll, so completions were only
+    # mopped up by the final verification sweep (garbage latencies)
+    assert h.poller_keep_or_drop(False) is False
+    # only an observed TERMINAL state drops the task
+    assert h.poller_keep_or_drop(True) is True
+
+
+def test_r188_verdict_invalid_on_poller_mopup():
+    # tasks the pollers never observed terminal (mopped up by the final
+    # verification sweep) = an observation gap that invalidates the run
+    kw = _ok_kwargs()
+    kw["verification_mopup"] = 3
+    v = h.verify_measurement(**kw)
+    assert v["measurement_valid"] is False
+    assert v["invalidity_reasons"][0]["violation"] == "poller_missed_terminal_task"
+    assert v["invalidity_reasons"][0]["count"] == 3
+
+
 def test_r188_verdict_reports_all_reasons_together():
     kw = _ok_kwargs()
     kw["non_terminal"] = 2
