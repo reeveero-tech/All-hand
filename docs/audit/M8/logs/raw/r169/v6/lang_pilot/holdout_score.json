@@ -1,0 +1,154 @@
+{
+ "runs": {
+  "grounded-v2": {
+   "n": 46,
+   "provider_errors": 0,
+   "language_match_none": 12
+  },
+  "grounded-v4-lang": {
+   "n": 46,
+   "provider_errors": 0,
+   "language_match_none": 9
+  },
+  "baseline": {
+   "n": 46,
+   "provider_errors": 0,
+   "language_match_none": 9
+  }
+ },
+ "comparisons": {
+  "grounded-v2 (a) vs grounded-v4-lang (b)": {
+   "language_match_ar": {
+    "n": 17,
+    "a": 13,
+    "b": 13,
+    "a_only": 2,
+    "b_only": 2,
+    "mcnemar_exact_p": 1.0
+   },
+   "language_match_en": {
+    "n": 16,
+    "a": 16,
+    "b": 16,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 46,
+    "a": 45,
+    "b": 45,
+    "a_only": 1,
+    "b_only": 1,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass_ar": {
+    "n": 23,
+    "a": 23,
+    "b": 23,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass_en": {
+    "n": 23,
+    "a": 22,
+    "b": 22,
+    "a_only": 1,
+    "b_only": 1,
+    "mcnemar_exact_p": 1.0
+   }
+  },
+  "baseline (a) vs grounded-v4-lang (b)": {
+   "language_match_ar": {
+    "n": 17,
+    "a": 15,
+    "b": 12,
+    "a_only": 3,
+    "b_only": 0,
+    "mcnemar_exact_p": 0.25
+   },
+   "language_match_en": {
+    "n": 17,
+    "a": 17,
+    "b": 17,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 46,
+    "a": 37,
+    "b": 45,
+    "a_only": 0,
+    "b_only": 8,
+    "mcnemar_exact_p": 0.00781
+   },
+   "pass_ar": {
+    "n": 23,
+    "a": 19,
+    "b": 23,
+    "a_only": 0,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.125
+   },
+   "pass_en": {
+    "n": 23,
+    "a": 18,
+    "b": 22,
+    "a_only": 0,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.125
+   }
+  },
+  "baseline (a) vs grounded-v2 (b)": {
+   "language_match_ar": {
+    "n": 17,
+    "a": 15,
+    "b": 13,
+    "a_only": 2,
+    "b_only": 0,
+    "mcnemar_exact_p": 0.5
+   },
+   "language_match_en": {
+    "n": 15,
+    "a": 15,
+    "b": 15,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 46,
+    "a": 37,
+    "b": 45,
+    "a_only": 0,
+    "b_only": 8,
+    "mcnemar_exact_p": 0.00781
+   },
+   "pass_ar": {
+    "n": 23,
+    "a": 19,
+    "b": 23,
+    "a_only": 0,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.125
+   },
+   "pass_en": {
+    "n": 23,
+    "a": 18,
+    "b": 22,
+    "a_only": 0,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.125
+   }
+  }
+ },
+ "criteria": {
+  "A1": false,
+  "A2": true,
+  "A3": true,
+  "provider_error_share": 0.0,
+  "inconclusive_by_errors": false
+ }
+}
