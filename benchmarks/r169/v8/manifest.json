@@ -1,0 +1,16 @@
+{
+  "changes_from_v5": "v8 judgment package for the bounded language-mismatch retry candidate: new vocabulary pools (disjoint from v1-v7), new seed (1698) and canary salt, new code tasks and closed_book fact; single holdout split; graded by the frozen v5 grader (via the r169_bench_v8 thin wrapper)",
+  "dataset_sha256": "85aa901259f402f362e7272b3f41cc62c4301ecb39d687bfd80234c294a55128",
+  "dataset_version": "r169-v8",
+  "files": {
+    "holdout.jsonl": {
+      "cases": 46,
+      "sha256": "24663b1ae9b229a611a661d6b2378488d26d380025b8aa7c0afcb9bbf1c00f8e"
+    }
+  },
+  "generator": "scripts/r169_build_dataset_v8.py",
+  "licence": "synthetic cases CC0-1.0; closed_book case restates a short fact from the cited official page",
+  "seed": 1698,
+  "split_rule": "single holdout split (all 23 groups); mirrors the spent v5 validation family composition",
+  "total_cases": 46
+}

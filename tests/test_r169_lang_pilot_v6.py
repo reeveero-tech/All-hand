@@ -122,8 +122,12 @@ def test_run_refuses_unknown_split():
 
 def test_run_holdout_requires_all_three_arms(monkeypatch):
     monkeypatch.setattr(pilot, "_prereg_committed", lambda: True)
-    with pytest.raises(SystemExit, match="ALL THREE arms"):
+    with pytest.raises(SystemExit, match="needs ALL of"):
         asyncio.run(pilot.run("holdout", ["grounded-v2", "grounded-v4-lang"]))
+    # v8: نفس الحارس لحزمة المرشح الجديد (v2 + v4 ضبط + v4r)
+    with pytest.raises(SystemExit, match="needs ALL of"):
+        asyncio.run(pilot.run("holdout", ["grounded-v2", "grounded-v4-lang"],
+                             dataset="v8"))
 
 
 def test_run_refuses_paid_key(monkeypatch, tmp_path):
@@ -244,3 +248,31 @@ def test_v6_bench_reexports_frozen_v5_grader():
     assert b7.grounded_v2_messages is b5.grounded_v2_messages
     assert b7.score_case is b5.score_case
     assert b7.run_code_tests is b5.run_code_tests
+
+
+def test_prereg_guard_covers_v8_prereg(tmp_path):
+    """تعديل تسجيل v8 بعد التجميد يجب أن يمنع أي تشغيل — الحارس يشمل V8 لا V6 فقط."""
+    # الحالة السليمة: كلا التسجيلين ملتزم ومطابق لـ HEAD ⇒ True
+    assert pilot._prereg_committed() is True
+    # تسجيل v8 معدّل/غير ملتزم ⇒ False (قبل إصلاح هذه الدفعة كان يُرجع True)
+    tampered = tmp_path / "PREREGISTRATION_V8.md"
+    tampered.write_text("criteria edited after results\n", encoding="utf-8")
+    monkey = pytest.MonkeyPatch()
+    monkey.setattr(pilot, "PREREG_V8", tampered)
+    try:
+        assert pilot._prereg_committed() is False
+    finally:
+        monkey.undo()
+
+
+def test_prereg_guard_covers_v9_prereg(tmp_path):
+    """حارس التسجيلات يشمل V9 (حزمة الحكم المطابقة) — تعديله بعد التسجيل يمنع أي تشغيل."""
+    assert pilot._prereg_committed() is True
+    tampered = tmp_path / "PREREGISTRATION_V9.md"
+    tampered.write_text("criteria edited after registration\n", encoding="utf-8")
+    monkey = pytest.MonkeyPatch()
+    monkey.setattr(pilot, "PREREG_V9", tampered)
+    try:
+        assert pilot._prereg_committed() is False
+    finally:
+        monkey.undo()

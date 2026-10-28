@@ -1,0 +1,73 @@
+# السجل 317 — R-170 دفعة 16 (تكملة): إصلاح فشل CI على Python 3.11 — metadata الإعادة اللغوية لا تعبر حد المهمة (لاحق 75، m8/r170-batch16-lang-retry)
+
+**التاريخ**: 2026-10-29 | **الفرع**: `m8/r170-batch16-lang-retry` (PR #281) | **البرنامج**: M8 / R-170
+**الرأس قبل التغيير**: `2e9c6460541bda776e884c08c0e3557d5242071e` | **main وقت العمل**: `405452514ba1819ffc1568722ba3fcfd27584d71`
+
+## 1. الفشل كما وقع (CI)
+
+- تشغيل [40745368233](https://github.com/reeveero-tech/All-hand/actions/runs/40745368233) على `2e9c6460`:
+  خطوة test ‏(Python 3.11.17) فشلت باختبار واحد فقط:
+  `FAILED tests/test_r169_v8_judgment.py::test_v4r_retry_metadata_reaches_saved_row - KeyError: 'attempts'`
+  بقية المهام: governance/quality/network/push-scope-docs = success؛ build/storage/docker/audit/publish = skipped
+  (تعتمد على نجاح test — لم تُشغّل، لا تُحسب ناجحة).
+- وصف PR #281 كان يذكر «3627 passed … exit=0» على رأس الدفعة: ذلك تشغيل محلي على إصدار Python أحدث، لا يطابق CI 3.11.
+  الادعاء صحيح لبيئته فقط؛ CI على الرأس نفسه كان أحمر.
+
+## 2. التصنيف والسبب الجذري (مُعاد إنتاجه)
+
+- إعادة إنتاج محلية حتمية: Python 3.11.17 ⇒ `1 failed, 22 passed` (نفس KeyError)؛ Python 3.12 ⇒ `10 passed`.
+  الأوامر: `python -m pytest -q tests/test_r169_v8_judgment.py tests/test_llm_lang_retry.py` في venv لكل إصدار
+  (اعتماديات `requirements.lock` + `requirements-dev.lock` كما في CI).
+- **ليس فشلًا بيئيًا ولا اعتمادًا خارجيًا**: عيب حقيقي في أداة التسجيل يعتمد على إصدار اللغة.
+- السبب: `_one_arm_case` يستدعي `asyncio.wait_for(v5run._one(...))`. في 3.11 يلف `wait_for` الكوروتين في Task
+  جديدة بنسخة من السياق؛ `_keyless_maybe_lang_retry` يكتب الـmetadata بـ`ContextVar.set` داخل تلك المهمة، فلا يراها
+  المستدعي ⇒ `get_last_lang_retry()` تعيد None ⇒ الصف يحمل policy/target فقط. في 3.12+ يُنتظر الكوروتين داخل المهمة
+  نفسها فتصل الكتابة. السياسة نفسها (الإعادة والرد المقبول) كانت تعمل على الإصدارين: الاختبار نجح في
+  `len(calls) == 2` و`reply == AR_OK` قبل أن يفشل عند `attempts`.
+
+## 3. أثر العيب على حكم v9 (فُحص، لا افتراض)
+
+- التسجيل والتقييم يقرآن الرد (`reply`) لا الـmetadata ⇒ الحكم «لم يثبت» غير متأثر بنيويًا.
+- فحص أدلة v9 الخام (`holdout_grounded-v4r-lang.jsonl`): الصفان اللذان انطلقت فيهما الإعادة (3 استدعاءات:
+  prompt_injection-00-ar وprompt_injection-01-ar) يحملان metadata كاملة (attempts/first_reply_sha256/reason) ⇒ تشغيل v9
+  جرى على إصدار تصل فيه الكتابة؛ الصفوف الـ44 الأخرى policy/target فقط ومتسقة مع عدد استدعاءاتها.
+- **حد**: meta التشغيل لا تسجل إصدار Python — الاستنتاج من الاتساق الداخلي لا من حقل مسجل.
+
+## 4. الإصلاح
+
+- `agent_civilization/core/llm.py`: حاوية التقاط قابلة للتعديل `_lang_retry_sink` + `begin_lang_retry_capture()` /
+  `end_lang_retry_capture()`. يُنشئها المستدعي في سياقه قبل أي حد مهمة؛ السياق المنسوخ يشير إلى الحاوية نفسها فتعبر
+  الكتابة. `get_last_lang_retry()` تقرأ الحاوية إن كانت مفعلة (قراءة تستهلك)، وإلا فالسلوك السابق حرفيًا.
+  لا تغيير في السياسة ولا الكاشف ولا عدد استدعاءات المزود ولا الرد.
+- `scripts/r169_lang_pilot_v6.py`: `_one_arm_case` يبدأ الالتقاط قبل `wait_for` ويغلقه في `finally`، ويفرغ الحاوية
+  قبل كل محاولة من حلقة المحاولات الثلاث (metadata المحاولة الأخيرة فقط).
+- `tests/test_llm_lang_retry.py`: اختباران جديدان مستقلان عن إصدار Python (حد مهمة صريح `create_task` + عزل بين
+  مهمتين متزامنتين بـ`gather`/`wait_for`).
+- `benchmarks/r169/FREEZE_DRIFT.json`: مدخل جديد للانجراف `2c9000c70f6249ca → fe612a4f9dd5e69e` لملف llm.py
+  (الفحص نفسه لم يُرخَ؛ التشغيلات المحجوزة الجديدة لـv2–v5 ما زالت مرفوضة).
+
+## 5. الأحمر/الأخضر
+
+- أحمر قبل الإصلاح: اختبار CI الأصلي على 3.11 (أعلاه).
+- طفرة (نسخة احتياطية + trap + استعادة `cmp`): استبدال `sink.append(...)` بـ`pass` ⇒ الاختبارات الثلاثة
+  (الأصلي + الجديدان) `3 failed`، pytest_exit=1؛ الاستعادة مؤكدة بـ`cmp`.
+- أخضر بعد الإصلاح: 3.11.17 ⇒ `25 passed`؛ 3.12 ⇒ `25 passed` (الملفان).
+- ملفات التجميد بعد مدخل الدفتر: `1004 passed` (test_r169_b4_runner + v3 + v4 + test_r170_freeze_drift_ledger).
+
+## 6. الحزمة الكاملة محليًا (Python 3.11.17)
+
+- الأمر: `python -m pytest tests/ -q -p no:cacheprovider` قبل مدخل الدفتر:
+  `9 failed, 3622 passed, 8 skipped, 17 deselected, 9 xfailed in 662.95s`.
+  - 7 منها انجراف التجميد المتوقع لتعديل llm.py ⇒ عولجت بمدخل الدفتر (أخضر أعلاه).
+  - 2: `tests/test_sec08_civilization_admission.py::test_every_civilization_route_is_rate_limited[get-/civilization/registry-None]`
+    و`[post-/civilization/execute-body2]` — يمران منفردين على الشجرة المعدلة (18 passed) وعلى نسخة نظيفة من رأس PR
+    `2e9c6460` (18 passed)، ومرا في CI على الرأس نفسه. **مصنفان: اعتماد على ترتيب/توقيت في تشغيل محلي كامل، غير ناتج
+    عن هذه الدفعة** — لم يُشخص سببه الجذري بعد (مفتوح، لم يُخفَ ولم يُتخطَّ).
+- الحكم النهائي للحزمة على الرأس الجديد: CI (روابطه في PR #281).
+
+## 7. ما ثبت / ما لم يُختبر
+
+- ثبت: السبب الجذري، وأن الإصلاح يجعل الـmetadata تصل على 3.11 و3.12، وعزل الحاوية بين مهام متزامنة.
+- لم يتغير: حكم v9 «لم يثبت» — لم يُعد تشغيل أي حكم، ولم تتغير المعايير ولا الحزمة.
+- لم يُختبر: سلوك السياسة على مزود إنتاج (Q-026)؛ السياسة معطلة افتراضيًا ولم تُفعّل.
+- لا نشر، لا إنفاق، لا حذف/نقل ملفات.

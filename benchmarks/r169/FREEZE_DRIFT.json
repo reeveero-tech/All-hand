@@ -30,6 +30,36 @@
    "change": "R-170 batch 12: strategist/architect/designer/reviewer return ok=False (task_not_completed) when core/task_fit finds no evidence the requested task was done; reviewer gains structured findings and checks (empty-input division/index, SQL built by formatting, eval/exec, == True/False, range(len())); strategist parses objectives listed in the request.",
    "consequence": "The v2-v5 baseline uses only the code_generator path of real_dispatcher; the four changed handlers are not on any R-169 path. All R-169 results stay attributable to their recorded commits; new held-out runs of v2-v5 are still refused by check_freeze.",
    "recorded": "2026-10-24"
+  },
+  {
+   "benchmarks": [
+    "v2",
+    "v3",
+    "v4",
+    "v5"
+   ],
+   "key": "baseline_dependency_sha256",
+   "file": "agent_civilization/core/llm.py",
+   "frozen": "f6eefabd71ba32eb",
+   "current": "2c9000c70f6249ca",
+   "change": "R-170 batch 16 (lang-retry candidate): the keyless branch routes through _keyless_maybe_lang_retry — one bounded regeneration when the reply language mismatches the prompt's detected language (independent detector, contextvar/env gated, default OFF, deterministic: second accepted if ok, first kept on retry error, never a third attempt). Also a consuming get_last_lang_retry() hook for the pilot recorder. Baseline behavior with the policy OFF is unchanged (early return to _keyless_complete).",
+   "consequence": "All R-169 results (v1-v7, and the v8 arms with the contextvar OFF: v2/v4) stay attributable to the frozen code; new held-out runs of v2-v5 remain refused by check_freeze. The v4r arm (batch 16) runs with the contextvar ON by design — that is the candidate under judgment, recorded in PREREGISTRATION_V8.",
+   "recorded": "2026-10-28"
+  },
+  {
+   "benchmarks": [
+    "v2",
+    "v3",
+    "v4",
+    "v5"
+   ],
+   "key": "baseline_dependency_sha256",
+   "file": "agent_civilization/core/llm.py",
+   "frozen": "2c9000c70f6249ca",
+   "current": "fe612a4f9dd5e69e",
+   "change": "R-170 batch 16 CI fix (log 317): retry metadata capture sink (begin_lang_retry_capture/end_lang_retry_capture) so lang_retry metadata crosses the Task boundary that asyncio.wait_for creates on Python 3.11 (ContextVar.set inside a child task is invisible to the caller). get_last_lang_retry() reads the sink when one is active, otherwise the previous behavior is unchanged. No change to the retry policy, the detector, the provider call count or the reply.",
+   "consequence": "Recording only: the policy (default OFF), its decisions and the replies are unchanged, so all R-169/R-170 results incl. the v9 judgment stay attributable to their recorded commits; new held-out runs of v2-v5 remain refused by check_freeze.",
+   "recorded": "2026-10-29"
   }
  ]
 }

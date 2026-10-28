@@ -201,7 +201,8 @@ class LLMClient:
                     "model": self.model,
                     "provider": "keyless",
                 }
-            return await _keyless_complete(system, prompt, max_tokens, max_wait_s)
+            return await _keyless_maybe_lang_retry(system, prompt, max_tokens,
+                                                    max_wait_s)
         if not self.available:
             return {
                 "ok": False,
@@ -385,6 +386,127 @@ _keyless_lock: "_asyncio.Lock | None" = None
 _keyless_last = 0.0
 _keyless_waiting = 0
 keyless_stats = {"calls": 0, "ok": 0, "rate_limited": 0, "errors": 0, "busy": 0}
+
+# ---------------------------------------------------------------------------
+# R-170 (دفعة 16): سياسة «إعادة محدودة عند اختلاف اللغة» — مرشح جديد لإصلاح
+# تراجع اللغة العربية على المزود المجاني، في مسار الاستدعاء الفعلي لا داخل
+# أداة القياس. الكاشف (core/lang_policy.py) مستقل عن المدقق المجمد (لا
+# استيراد منه)؛ الادعاء يظل مقتصرًا على الامتثال لقاعدة الكاشف هذه نفسها.
+# التفعيل: contextvar (لكل استدعاء — مسار القياس/الأذرع) أو
+# AGOS_LLM_LANG_RETRY=1 (افتراضي معطل: مرشح تحت الاختبار حتى الحكم).
+# ---------------------------------------------------------------------------
+import contextvars as _contextvars  # noqa: E402
+
+_lang_retry_ctx: "_contextvars.ContextVar[bool | None]" = _contextvars.ContextVar(
+    "llm_lang_retry", default=None)
+
+
+def set_llm_lang_retry(value: bool | None) -> _contextvars.Token:
+    """تفعيل/تعطيل السياسة لهذا الاستدعاء (نمط consent) — asyncio-safe."""
+    return _lang_retry_ctx.set(value)
+
+
+def reset_llm_lang_retry(token: _contextvars.Token) -> None:
+    _lang_retry_ctx.reset(token)
+
+
+_lang_retry_last: "_contextvars.ContextVar[dict | None]" = _contextvars.ContextVar(
+    "llm_lang_retry_last", default=None)
+
+
+# R-170 (دفعة 16 — إصلاح CI على Python 3.11، السجل 317): ContextVar.set داخل
+# مهمة فرعية لا يصل إلى المستدعي — في 3.11 تلفّ asyncio.wait_for الاستدعاء في
+# Task بنسخة سياق، فكانت metadata الإعادة تضيع قبل وصولها إلى الصف (وفي 3.12+
+# يُنتظر في المهمة نفسها فتصل). الحل: «حاوية التقاط» قابلة للتعديل يُنشئها
+# المستدعي في سياقه قبل عبور أي حد مهمة؛ النسخة المنسوخة من السياق تشير إلى
+# الحاوية نفسها فتصل الكتابة عبر الحد. كل مستدعٍ ينشئ حاويته في سياقه الخاص
+# (لا مشاركة بين مهام متزامنة).
+_lang_retry_sink: "_contextvars.ContextVar[list | None]" = _contextvars.ContextVar(
+    "llm_lang_retry_sink", default=None)
+
+
+def begin_lang_retry_capture() -> _contextvars.Token:
+    """ابدأ التقاط metadata الإعادة لهذا السياق (يُستدعى قبل wait_for/create_task)."""
+    return _lang_retry_sink.set([])
+
+
+def end_lang_retry_capture(token: _contextvars.Token) -> None:
+    _lang_retry_sink.reset(token)
+
+
+def get_last_lang_retry() -> dict | None:
+    """آخر metadata لغة من آخر استدعاء في هذا السياق — قراءة تستهلك (تعيد
+    الضبط إلى None) حتى لا تتسرب بيانات استدعاء إلى ما بعده. إن كانت حاوية
+    التقاط مفعلة فهي المصدر (تعبر حدود المهام)؛ وإلا فالسلوك السابق كما هو."""
+    sink = _lang_retry_sink.get()
+    if sink is not None:
+        v = sink[-1] if sink else None
+        sink.clear()
+        _lang_retry_last.set(None)
+        return v
+    v = _lang_retry_last.get()
+    _lang_retry_last.set(None)
+    return v
+
+
+def llm_lang_retry_enabled() -> bool:
+    """contextvar إن ضُبط، وإلا فالمتغير البيئي (الافتراضي معطل — يُقرأ عند
+    كل استدعاء لا لقطة عند الاستيراد)."""
+    v = _lang_retry_ctx.get()
+    if v is not None:
+        return v
+    return os.getenv("AGOS_LLM_LANG_RETRY", "0") == "1"
+
+
+async def _keyless_maybe_lang_retry(system: str, prompt: str, max_tokens: int,
+                                    max_wait_s: float | None = None) -> dict:
+    """الفرع المجاني مع سياسة اللغة — يخزن آخر metadata لغة في سياق الاستدعاء
+    (يستهلكها مسجل التجربة عبر get_last_lang_retry لأن v5run._one لا يمرر
+    metadata الطبقة الدنيا إلى الصف)."""
+    out = await _keyless_maybe_lang_retry_impl(system, prompt, max_tokens, max_wait_s)
+    _lang_retry_last.set(out.get("lang_retry"))
+    sink = _lang_retry_sink.get()
+    if sink is not None:  # آخر استدعاء يفوز — نفس دلالة _lang_retry_last
+        sink.append(out.get("lang_retry"))
+    return out
+
+
+async def _keyless_maybe_lang_retry_impl(system: str, prompt: str, max_tokens: int,
+                                        max_wait_s: float | None = None) -> dict:
+    """الفرع المجاني مع سياسة اللغة: محاولة واحدة؛ فإن كان لغة الرد لا تطابق
+    لغة السؤال (قاعدة الكاشف المستقلة) أُعيد التوليد **مرة واحدة** من المدخل
+    نفسه مع نص تصحيح مُلحق بالموجّه. سياسة حتمية: نجحت الثانية ⇒ هي المقبولة،
+    فشلت ⇒ تُحفظ الأولى؛ لا ثالثة أبدًا ولا «أفضل الردّين» ولا نجاح مصطنع.
+    """
+    if not llm_lang_retry_enabled():
+        return await _keyless_complete(system, prompt, max_tokens, max_wait_s)
+    from agent_civilization.core import lang_policy
+    target = lang_policy.target_language(prompt)
+    t0 = _time.monotonic()
+    first = await _keyless_complete(system, prompt, max_tokens, max_wait_s)
+    if not first.get("ok") or target is None:
+        return first
+    content = first.get("content") or ""
+    if lang_policy.reply_matches(content, target) is not False:
+        return first  # مطابق أو غير قابل للحكم (شيفرة/رمز فقط) — لا إعادة
+    elapsed = _time.monotonic() - t0
+    if max_wait_s is not None and elapsed >= max_wait_s:
+        first["lang_retry"] = {"target": target, "attempts": 1,
+                               "reason": "no budget for retry"}
+        return first  # احترام الميزانية الكلية: لا إعادة بلا وقت متبقٍ
+    second = await _keyless_complete(
+        system + lang_policy.CORRECTION[target], prompt, max_tokens,
+        None if max_wait_s is None else max(0.0, max_wait_s - elapsed))
+    tag = {"target": target, "attempts": 2,
+           "first_reply_sha256": __import__("hashlib").sha256(
+               content.encode()).hexdigest()[:16]}
+    if second.get("ok"):
+        second["lang_retry"] = {**tag, "reason": "first-reply language mismatch"}
+        return second
+    # حتمي: فشلت الإعادة ⇒ تُحفظ الأولى (لا فقدان جواب صالح بفشل الإعادة)
+    first["lang_retry"] = {**tag, "reason": "retry error; first reply kept",
+                           "retry_error": second.get("error")}
+    return first
 
 
 class MalformedCompletion(ValueError):
