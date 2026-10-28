@@ -70,17 +70,17 @@ def v4_system(v2_system: str) -> str:
     return v2_system[:start] + RULE9_V4 + v2_system[end:]
 
 
-def _bench_for(split: str):
-    """dev uses the v5 bench (the tuning surface); holdout uses the v6 bench."""
+def _bench_for(split: str, dataset: str = "v7"):
+    """dev uses the v5 bench (the tuning surface); holdout uses the judgment
+    bench of the batch: v7 = دفعة 14 (r170-batch14)؛ v8 = المرشح الجديد
+    (دفعة 16 — «إعادة محدودة عند اختلاف اللغة»، PREREGISTRATION_V8 §4)."""
     if split == "dev":
         from agent_civilization.eval import r169_bench_v5 as b
         return b
     if split == "holdout":
-        # the v7 JUDGMENT holdout (advisor review: v6 was created BEFORE the
-        # v4 candidate was frozen — a prereg §4 order deviation, documented;
-        # v6 is kept as-is and never used for judgment).
-        from agent_civilization.eval import r169_bench_v7 as b
-        return b
+        import importlib
+        mod = {"v7": "r169_bench_v7", "v8": "r169_bench_v8"}[dataset]
+        return importlib.import_module(f"agent_civilization.eval.{mod}")
     raise SystemExit(f"refusing: split {split!r} is not dev or holdout")
 
 
@@ -111,9 +111,15 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
     no effect on the prompt that ``_one`` builds.
     """
     from agent_civilization.eval import r169_bench_v5 as exec_bench
+    from agent_civilization.core import llm as _llm_policy
     original = exec_bench.GROUNDED_V2_SYSTEM
+    # v4r (دفعة 16): نفس موجّه v4-revised + سياسة «إعادة محدودة عند اختلاف اللغة»
+    # في مسار الاستدعاء الفعلي (contextvar لكل استدعاء — asyncio-safe). الأذرع
+    # الأخرى تعطّل السياسة صراحةً (لا اعتماد على البيئة) حتى يكون الفرق الوحيد
+    # بين v4 وv4r هو السياسة نفسها (ذراع الضبط — prereg v8 §3).
+    retry_token = _llm_policy.set_llm_lang_retry(arm == "grounded-v4r-lang")
     try:
-        if arm == "grounded-v4-lang":
+        if arm in ("grounded-v4-lang", "grounded-v4r-lang"):
             exec_bench.GROUNDED_V2_SYSTEM = v4_system(original)
         rec, history = None, []
         b4.CALLS.clear()
@@ -134,18 +140,32 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
         finally:
             b4._case.reset(ctx)
         rec["config"], rec["calls"], rec["retry_errors"] = arm, list(b4.CALLS), history
+        if arm == "grounded-v4r-lang":
+            from agent_civilization.core import lang_policy
+            rec["lang_retry"] = {
+                "policy": "bounded-retry-v1",
+                "target": lang_policy.target_language(case.get("question", ""))}
         return rec
     finally:
         exec_bench.GROUNDED_V2_SYSTEM = original
+        _llm_policy.reset_llm_lang_retry(retry_token)
 
 
-async def run(split: str, arms: list[str], tag: str = "") -> list[Path]:
+# أذرع الحكم لكل حزمة (interleaved — نفس الحالات): v7 = دفعة 14 (3 أذرع مع
+# baseline)؛ v8 = دفعة 16 (v2 + v4 ضبط + v4r المرشح — prereg v8 §3).
+JUDGMENT_ARMS = {"v7": ("grounded-v2", "grounded-v4-lang", "baseline"),
+                 "v8": ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang")}
+
+
+async def run(split: str, arms: list[str], tag: str = "",
+              dataset: str = "v7") -> list[Path]:
     from agent_civilization.core import llm as _llm
-    bench = _bench_for(split)
+    bench = _bench_for(split, dataset)
     if not _prereg_committed():
         raise SystemExit("refusing: PREREGISTRATION_V6.md is not committed (run nothing before the prereg)")
-    if split == "holdout" and set(arms) != set(ARMS):
-        raise SystemExit(f"refusing: the holdout judgment needs ALL THREE arms interleaved ({ARMS})")
+    if split == "holdout" and set(arms) != set(JUDGMENT_ARMS[dataset]):
+        raise SystemExit(f"refusing: the {dataset} holdout judgment needs ALL of "
+                         f"{JUDGMENT_ARMS[dataset]} interleaved (got {arms})")
     if os.environ.get("OPENROUTER_API_KEY"):
         raise SystemExit("refusing: a paid key is set; this pilot uses the free keyless provider only")
     os.environ["AGOS_LLM_KEYLESS"] = "1"
@@ -189,11 +209,11 @@ async def run(split: str, arms: list[str], tag: str = "") -> list[Path]:
     return [paths[a] for a in arms]
 
 
-def _scores(split: str, arm: str, tag: str = "") -> dict:
+def _scores(split: str, arm: str, tag: str = "", dataset: str = "v7") -> dict:
     """Score one arm's run. REFUSES: a run whose row ids are not EXACTLY the
     frozen split's id set (duplicates, missing cases, forged metadata counts
     and foreign ids all fail — advisor review)."""
-    bench = _bench_for(split)
+    bench = _bench_for(split, dataset)
     suffix = f"_{tag}" if tag else ""
     p = OUT / f"{split}_{arm}{suffix}.jsonl"
     lines = p.read_text(encoding="utf-8").splitlines()
@@ -216,11 +236,13 @@ def _scores(split: str, arm: str, tag: str = "") -> dict:
     return {r["id"]: v5run.score_record(cases[r["id"]], r) for r in rows}
 
 
-def score(tag: str = "") -> dict:
-    """Paired comparison on the v7 judgment holdout (prereg §6 + §5.1) + descriptive baseline arms."""
-    from agent_civilization.eval import r169_bench_v7 as b7
-    cases = {c["id"]: c for c in b7.load_split("holdout")}
-    runs = {arm: _scores("holdout", arm, tag) for arm in ARMS}
+def score(tag: str = "", dataset: str = "v7") -> dict:
+    """Paired comparison on the judgment holdout (v7: prereg v6 §6+§5.1;
+    v8: PREREGISTRATION_V8 §6 — المقارنة الأساسية v4r مقابل v4)."""
+    bench = _bench_for("holdout", dataset)
+    cases = {c["id"]: c for c in bench.load_split("holdout")}
+    runs = {arm: _scores("holdout", arm, tag, dataset)
+            for arm in JUDGMENT_ARMS[dataset]}
 
     def paired(a, c, key, sub=lambda k: True):
         ids = sorted(set(a) & set(c))
@@ -234,7 +256,12 @@ def score(tag: str = "") -> dict:
     res = {"runs": {arm: {"n": len(r), "provider_errors": sum(1 for v in r.values() if v.get("provider_error")),
                           "language_match_none": sum(1 for v in r.values() if v.get("language_match") is None)}
                     for arm, r in runs.items()}, "comparisons": {}}
-    pairs = [("grounded-v2", "grounded-v4-lang"), ("baseline", "grounded-v4-lang"), ("baseline", "grounded-v2")]
+    if dataset == "v7":
+        pairs = [("grounded-v2", "grounded-v4-lang"), ("baseline", "grounded-v4-lang"),
+                 ("baseline", "grounded-v2")]
+    else:
+        pairs = [("grounded-v2", "grounded-v4-lang"), ("grounded-v4-lang", "grounded-v4r-lang"),
+                 ("grounded-v2", "grounded-v4r-lang")]
     for a_cfg, c_cfg in pairs:
         a, c = runs[a_cfg], runs[c_cfg]
         res["comparisons"][f"{a_cfg} (a) vs {c_cfg} (b)"] = {
@@ -247,13 +274,35 @@ def score(tag: str = "") -> dict:
     ar, en, ps = v["language_match_ar"], v["language_match_en"], v["pass"]
     n_err = sum(res["runs"][x]["provider_errors"] for x in ("grounded-v2", "grounded-v4-lang"))
     n_cases = len(cases)
-    res["criteria"] = {"A1": ar["b"] > ar["a"] and ar["b_only"] - ar["a_only"] >= 3 and ar["a_only"] <= 1,
-                      "A2": en["a_only"] - en["b_only"] <= 1,
-                      "A3": ps["a_only"] - ps["b_only"] <= 2,
-                      "provider_error_share": round(n_err / max(2 * n_cases, 1), 4),
-                      "inconclusive_by_errors": n_err > 0.10 * 2 * n_cases}
-    (OUT / "holdout_score.json").write_text(json.dumps(res, ensure_ascii=False, indent=1) + "\n",
-                                           encoding="utf-8")
+    if dataset == "v7":
+        res["criteria"] = {"A1": ar["b"] > ar["a"] and ar["b_only"] - ar["a_only"] >= 3 and ar["a_only"] <= 1,
+                          "A2": en["a_only"] - en["b_only"] <= 1,
+                          "A3": ps["a_only"] - ps["b_only"] <= 2,
+                          "provider_error_share": round(n_err / max(2 * n_cases, 1), 4),
+                          "inconclusive_by_errors": n_err > 0.10 * 2 * n_cases}
+    else:
+        # v8 (PREREGISTRATION_V8 §6): المقارنة الأساسية v4r مقابل v4 (ذراع الضبط)،
+        # مع v2 مرجعًا تاريخيًا متزامنًا. B1 يشترط التفوق على الضبط وعلى التراجع الأصلي.
+        c = res["comparisons"]["grounded-v4-lang (a) vs grounded-v4r-lang (b)"]
+        car, cen, cps = c["language_match_ar"], c["language_match_en"], c["pass"]
+        h = res["comparisons"]["grounded-v2 (a) vs grounded-v4r-lang (b)"]
+        har, hps = h["language_match_ar"], h["pass"]
+        n_err8 = sum(res["runs"][x]["provider_errors"] for x in
+                     ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang"))
+        res["criteria"] = {
+            "B1": (car["b"] > car["a"] and car["b_only"] - car["a_only"] >= 3
+                   and car["a_only"] <= 1 and har["b"] > har["a"]
+                   and har["a_only"] - har["b_only"] >= 2),
+            "B2": cen["a_only"] - cen["b_only"] <= 1,
+            "B3": cps["a_only"] - cps["b_only"] <= 2 and hps["a_only"] - hps["b_only"] <= 2,
+            "provider_error_share": round(n_err8 / max(3 * n_cases, 1), 4),
+            "inconclusive_by_errors": n_err8 > 0.10 * 3 * n_cases}
+        res["criteria"]["decision"] = ("candidate promising" if (res["criteria"]["B1"]
+                                 and res["criteria"]["B2"] and res["criteria"]["B3"]
+                                 and not res["criteria"]["inconclusive_by_errors"])
+                                else "not proven")
+    (OUT / f"holdout_score{'_' + tag if tag else ''}.json").write_text(
+        json.dumps(res, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return res
 
 
@@ -264,16 +313,19 @@ def main(argv=None) -> int:
     r.add_argument("--split", required=True, choices=["dev", "holdout"])
     r.add_argument("--arms", default="v2,v4,baseline")
     r.add_argument("--tag", default="")
+    r.add_argument("--dataset", default="v7", choices=["v7", "v8"])
     sc = sub.add_parser("score")  # noqa: F841  (kept for symmetry with run)
     sc.add_argument("--tag", default="")
+    sc.add_argument("--dataset", default="v7", choices=["v7", "v8"])
     a = ap.parse_args(argv)
     if a.cmd == "run":
-        arms = {"v2": "grounded-v2", "v4": "grounded-v4-lang", "baseline": "baseline"}
+        arms = {"v2": "grounded-v2", "v4": "grounded-v4-lang",
+               "baseline": "baseline", "v4r": "grounded-v4r-lang"}
         chosen = [arms[x] for x in a.arms.split(",") if x.strip()]
-        for p in asyncio.run(run(a.split, chosen, a.tag)):
+        for p in asyncio.run(run(a.split, chosen, a.tag, a.dataset)):
             print(p)
     else:
-        print(json.dumps(score(a.tag), ensure_ascii=False, indent=1))
+        print(json.dumps(score(a.tag, a.dataset), ensure_ascii=False, indent=1))
     return 0
 
 

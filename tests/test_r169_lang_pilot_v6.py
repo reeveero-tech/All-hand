@@ -122,8 +122,12 @@ def test_run_refuses_unknown_split():
 
 def test_run_holdout_requires_all_three_arms(monkeypatch):
     monkeypatch.setattr(pilot, "_prereg_committed", lambda: True)
-    with pytest.raises(SystemExit, match="ALL THREE arms"):
+    with pytest.raises(SystemExit, match="needs ALL of"):
         asyncio.run(pilot.run("holdout", ["grounded-v2", "grounded-v4-lang"]))
+    # v8: نفس الحارس لحزمة المرشح الجديد (v2 + v4 ضبط + v4r)
+    with pytest.raises(SystemExit, match="needs ALL of"):
+        asyncio.run(pilot.run("holdout", ["grounded-v2", "grounded-v4-lang"],
+                             dataset="v8"))
 
 
 def test_run_refuses_paid_key(monkeypatch, tmp_path):
