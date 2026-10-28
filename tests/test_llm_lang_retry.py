@@ -233,3 +233,27 @@ def test_cancellation_during_retry_propagates(monkeypatch):
     finally:
         _llm.reset_public_llm_consent(consent)
         _llm.reset_llm_lang_retry(token)
+
+
+def test_target_is_question_language_not_sources(monkeypatch):
+    """سؤال عربي مع مصادر إنجليزية طويلة: الهدف يظل لغة السؤال لا لغة المصادر
+    (مراجعة مستقلة قبل حكم v8). أحمر قبل تنقيح الكاشف: المصادر اللاتينية
+    الطويلة كانت تجعل الهدف en خطأً."""
+    from agent_civilization.eval import r169_bench_v5 as b
+    case = {"id": "x", "expected_behavior": "answer", "lang": "ar",
+            "question": "ما اسم الرئيس التنفيذي لشركة نور البيان؟",
+            "sources": [{"id": "S1", "title": "Company profile", "date": "2025-01-01",
+                         "kind": "document",
+                         "text": "Nour Al-Bayan Corporation is a regional holding company founded in 1987. "
+                                 "Its chief executive officer is Abdulrahman Al-Fahd, who joined in 2019 "
+                                 "after leading the logistics division. The board meets quarterly."}]}
+    msgs = b.grounded_v2_messages(case)
+    assert lang_policy.target_language(msgs["user"]) == "ar"
+    # والاتجاه المقابل: سؤال إنجليزي مع مصادر عربية طويلة ⇒ en
+    case_en = {"id": "y", "expected_behavior": "answer", "lang": "en",
+               "question": "Who is the chief executive officer of Nour Al-Bayan?",
+               "sources": [{"id": "S1", "title": "ملف الشركة", "date": "2025-01-01", "kind": "document",
+                            "text": "شركة نور البيان القابضة تأسست عام 1987 ويعمل بها أكثر من ألف "
+                                    "موظف في عدة دول، ورئيسها التنفيذي عبد الرحمن الفهد منذ 2019."}]}
+    msgs_en = b.grounded_v2_messages(case_en)
+    assert lang_policy.target_language(msgs_en["user"]) == "en"

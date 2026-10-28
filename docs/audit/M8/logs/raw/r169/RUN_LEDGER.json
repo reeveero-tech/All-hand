@@ -1,15 +1,15 @@
 {
  "generated_by": "scripts/r169_run_ledger.py (offline; no provider calls; no scoring)",
- "runs_total": 42,
+ "runs_total": 43,
  "status_counts": {
   "duplicate_not_independent": 5,
   "incomplete_stopped": 6,
   "no_provider_call": 1,
   "provider_error_heavy": 1,
   "superseded": 1,
-  "valid": 28
+  "valid": 29
  },
- "provider_called_runs": 41,
+ "provider_called_runs": 42,
  "never_called_runs": 1,
  "runs": [
   {
@@ -1737,6 +1737,42 @@
    "reasons": [],
    "stored_summary": null,
    "file_sha256": "c54990efe74ecd51d52f4ee930d48007f742feec28bd5f500b9311139febb0f6"
+  },
+  {
+   "run": "v6/lang_pilot/dev_grounded-v4r-lang.jsonl",
+   "version": "v6",
+   "split": "dev",
+   "split_role": "development",
+   "config": "grounded-v4r-lang",
+   "lang_filter": null,
+   "started_utc": "2026-10-28T15:56:22.586590+00:00",
+   "code_sha": "ecca31384fd16e371985f2f12066515c2d651383",
+   "provider_url": null,
+   "tree_dirty": null,
+   "dataset_sha_matches_manifest": null,
+   "records": 52,
+   "unique_ids": 52,
+   "expected": null,
+   "provider": "called",
+   "replied": 52,
+   "provider_errors": 0,
+   "not_called": 0,
+   "error_classes": {},
+   "provider_error_rate": 0.0,
+   "provider_error_rate_ci95": [
+    0.0,
+    0.0688
+   ],
+   "median_latency_s": 14.25,
+   "identical_to_earlier": null,
+   "max_reply_identity_vs_earlier": null,
+   "records_with_retries": 0,
+   "superseded": false,
+   "status": "valid",
+   "valid_for_analysis": true,
+   "reasons": [],
+   "stored_summary": null,
+   "file_sha256": "d4759749d90aa65af65ae94f8e90dee932b8be8dd6dc87b359021b9acc890173"
   }
  ]
 }

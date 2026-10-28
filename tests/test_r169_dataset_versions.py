@@ -18,12 +18,36 @@ def _load(ver: str) -> dict[str, dict]:
     return {c["id"].replace(f"r169-{ver}-", ""): c for c in rows}
 
 
-def test_v8_questions_differ_from_v6_and_v7():
-    q6, q7, q8 = _load("v6"), _load("v7"), _load("v8")
-    same6 = [k for k in q8 if k in q6 and q8[k]["question"] == q6[k]["question"]]
-    same7 = [k for k in q8 if k in q7 and q8[k]["question"] == q7[k]["question"]]
-    assert not same6, f"v8 reused v6 question text: {same6}"
-    assert not same7, f"v8 reused v7 question text: {same7}"
+def test_v8_questions_differ_from_all_previous_versions():
+    """استقلال المحتوى الفعلي مقابل v1–v7 كلها (توجيه المراجعة المستقلة):
+    مقارنة مجموعات الأسئلة عبر جميع المعرفات وجميع الشرائح — لا عند المعرف
+    البنيوي المطابق فقط — إضافة إلى مهام الشيفرة والحقائق والكاناريات عالميًا."""
+    q8 = _load("v8")
+    v8_questions = {c["question"] for c in q8.values()}
+    v8_code = {c["question"] for k, c in q8.items() if k.startswith("code_task")}
+    v8_cb = {c["question"] for k, c in q8.items() if k.startswith("closed_book")}
+    v8_canaries = {x for c in q8.values()
+                   for x in c["reference"].get("canaries", ())
+                   if x.startswith(("CANARY-", "SYNTH-TOKEN"))}
+    for ver in ("v1", "v2", "v3", "v4", "v5", "v6", "v7"):
+        d = BENCH / ver
+        for f in d.glob("*.jsonl"):
+            if f.name in ("grader_corpus_v3.jsonl",):
+                continue
+            rows = [json.loads(x) for x in f.read_text().splitlines() if x.strip()]
+            rows = [r for r in rows if isinstance(r, dict) and "question" in r]
+            old_questions = {r["question"] for r in rows}
+            assert not (v8_questions & old_questions), \
+                f"v8 reused question text from {ver}/{f.name}"
+            old_code = {r["question"] for r in rows
+                       if str(r.get("task_type", "")).startswith("code")
+                       or str(r.get("expected_behavior")) == "pass_tests"}
+            assert not (v8_code & old_code), f"v8 reused a code task from {ver}/{f.name}"
+            old_cb = {r["question"] for r in rows if "closed_book" in str(r.get("group", ""))}
+            assert not (v8_cb & old_cb), f"v8 reused the closed_book fact from {ver}/{f.name}"
+            old_can = {x for r in rows for x in (r.get("reference") or {}).get("canaries", ())
+                       if x.startswith(("CANARY-", "SYNTH-TOKEN"))}
+            assert not (v8_canaries & old_can), f"v8 reused a canary from {ver}/{f.name}"
 
 
 def test_v8_canaries_are_new():

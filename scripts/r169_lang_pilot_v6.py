@@ -43,6 +43,19 @@ from r169_language_analysis import mcnemar_exact  # noqa: E402
 OUT = ROOT / "docs/audit/M8/logs/raw/r169/v6/lang_pilot"
 PREREG = OUT / "PREREGISTRATION_V6.md"
 PREREG_V8 = ROOT / "docs/audit/M8/logs/raw/r169/v8/lang_pilot/PREREGISTRATION_V8.md"
+OUT_V8 = PREREG_V8.parent
+
+
+def _out(dataset: str) -> Path:
+    """مسار المخرجات لكل حزمة — تشغيل/تقييم v8 يكتب في دليل v8 حصرًا،
+    فلا يمكنه استبدال أدلة حكم v7 التاريخية في دليل v6 (مراجعة مستقلة)."""
+    return OUT_V8 if dataset == "v8" else OUT
+
+
+def _prereg_for(dataset: str) -> Path:
+    return PREREG_V8 if dataset == "v8" else PREREG
+
+
 ATTEMPT_TIMEOUT_S = 600
 ARMS = ("grounded-v2", "grounded-v4-lang", "baseline")
 RULE9_V2_PREFIX = "9. Write the ENTIRE reply in the language of the question"
@@ -150,10 +163,13 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
             b4._case.reset(ctx)
         rec["config"], rec["calls"], rec["retry_errors"] = arm, list(b4.CALLS), history
         if arm == "grounded-v4r-lang":
+            # دمج لا استبدال: metadata الطبقة الدنيا (attempts/first_reply_sha256/
+            # reason عند انطلاق الإعادة فعلاً) تُحفظ في الصف — وجود policy/target
+            # وحدهما لا يثبت أن بيانات الإعادة الكاملة تُحفظ (مراجعة مستقلة).
             from agent_civilization.core import lang_policy
-            rec["lang_retry"] = {
-                "policy": "bounded-retry-v1",
-                "target": lang_policy.target_language(case.get("question", ""))}
+            rec["lang_retry"] = {"policy": "bounded-retry-v1",
+                                  "target": lang_policy.target_language(case.get("question", "")),
+                                  **(_llm_policy.get_last_lang_retry() or {})}
         return rec
     finally:
         exec_bench.GROUNDED_V2_SYSTEM = original
@@ -184,7 +200,7 @@ async def run(split: str, arms: list[str], tag: str = "",
     paths, handles = {}, {}
     for arm in arms:
         suffix = f"_{tag}" if tag else ""
-        p = OUT / f"{split}_{arm}{suffix}.jsonl"
+        p = _out(dataset) / f"{split}_{arm}{suffix}.jsonl"
         if p.exists():
             raise SystemExit(f"refusing to overwrite {p}")
         paths[arm] = p
@@ -197,7 +213,7 @@ async def run(split: str, arms: list[str], tag: str = "",
              "system_prompt_sha256": hashlib.sha256(
                  (v4_system(bench.GROUNDED_V2_SYSTEM) if arm == "grounded-v4-lang"
                   else bench.GROUNDED_V2_SYSTEM).encode()).hexdigest(),
-             "prereg": str(PREREG.relative_to(ROOT))}) + "\n")
+             "prereg": str(_prereg_for(dataset).relative_to(ROOT))}) + "\n")
     _llm._keyless_post = b4.make_seeded_post(f"lang-pilot-v6|{split}")
     consent = _llm.set_public_llm_consent(True)  # synthetic benchmark fixtures only (as b4)
     try:
@@ -224,7 +240,7 @@ def _scores(split: str, arm: str, tag: str = "", dataset: str = "v7") -> dict:
     and foreign ids all fail — advisor review)."""
     bench = _bench_for(split, dataset)
     suffix = f"_{tag}" if tag else ""
-    p = OUT / f"{split}_{arm}{suffix}.jsonl"
+    p = _out(dataset) / f"{split}_{arm}{suffix}.jsonl"
     lines = p.read_text(encoding="utf-8").splitlines()
     meta = json.loads(lines[0])
     n_declared = meta["cases"]
@@ -290,8 +306,12 @@ def score(tag: str = "", dataset: str = "v7") -> dict:
                           "provider_error_share": round(n_err / max(2 * n_cases, 1), 4),
                           "inconclusive_by_errors": n_err > 0.10 * 2 * n_cases}
     else:
-        # v8 (PREREGISTRATION_V8 §6): المقارنة الأساسية v4r مقابل v4 (ذراع الضبط)،
-        # مع v2 مرجعًا تاريخيًا متزامنًا. B1 يشترط التفوق على الضبط وعلى التراجع الأصلي.
+        # v8 (PREREGISTRATION_V8 §6 + تصحيح مؤرخ 2026-10-28 قبل أي نتيجة v8):
+        # المقارنة الأساسية v4r مقابل v4 (ذراع الضبط)، مع v2 مرجعًا تاريخيًا
+        # متزامنًا. شرط التاريخ الأصلي في التسجيل (v2_only − v4r_only ≥ 2) كان
+        # متناقضًا رياضيًا مع v4r > v2 (لا يجتمعان) — صُحح الاتجاه إلى
+        # v4r_only − v2_only ≥ 2 (تفوق v4r بهامش حالتين) دون تغيير الهوامش،
+        # والتصحيح موثق مؤرخًا في التسجيل §6 مع حفظ النص الأصلي.
         c = res["comparisons"]["grounded-v4-lang (a) vs grounded-v4r-lang (b)"]
         car, cen, cps = c["language_match_ar"], c["language_match_en"], c["pass"]
         h = res["comparisons"]["grounded-v2 (a) vs grounded-v4r-lang (b)"]
@@ -301,16 +321,18 @@ def score(tag: str = "", dataset: str = "v7") -> dict:
         res["criteria"] = {
             "B1": (car["b"] > car["a"] and car["b_only"] - car["a_only"] >= 3
                    and car["a_only"] <= 1 and har["b"] > har["a"]
-                   and har["a_only"] - har["b_only"] >= 2),
+                   and har["b_only"] - har["a_only"] >= 2),
             "B2": cen["a_only"] - cen["b_only"] <= 1,
             "B3": cps["a_only"] - cps["b_only"] <= 2 and hps["a_only"] - hps["b_only"] <= 2,
             "provider_error_share": round(n_err8 / max(3 * n_cases, 1), 4),
             "inconclusive_by_errors": n_err8 > 0.10 * 3 * n_cases}
-        res["criteria"]["decision"] = ("candidate promising" if (res["criteria"]["B1"]
-                                 and res["criteria"]["B2"] and res["criteria"]["B3"]
-                                 and not res["criteria"]["inconclusive_by_errors"])
-                                else "not proven")
-    (OUT / f"holdout_score{'_' + tag if tag else ''}.json").write_text(
+        # قرار ثلاثي الحالات — عدم الحسم له الأولوية (مراجعة مستقلة):
+        # أخطاء المزود > 10% ⇒ «غير حاسم» لا «لم يثبت».
+        cr = res["criteria"]
+        res["criteria"]["decision"] = ("inconclusive" if cr["inconclusive_by_errors"] else
+                                 ("candidate promising" if (cr["B1"] and cr["B2"] and cr["B3"])
+                                  else "not proven"))
+    (_out(dataset) / f"holdout_score{'_' + tag if tag else ''}.json").write_text(
         json.dumps(res, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return res
 

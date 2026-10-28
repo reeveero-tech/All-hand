@@ -410,6 +410,18 @@ def reset_llm_lang_retry(token: _contextvars.Token) -> None:
     _lang_retry_ctx.reset(token)
 
 
+_lang_retry_last: "_contextvars.ContextVar[dict | None]" = _contextvars.ContextVar(
+    "llm_lang_retry_last", default=None)
+
+
+def get_last_lang_retry() -> dict | None:
+    """آخر metadata لغة من آخر استدعاء في هذا السياق — قراءة تستهلك (تعيد
+    الضبط إلى None) حتى لا تتسرب بيانات استدعاء إلى ما بعده."""
+    v = _lang_retry_last.get()
+    _lang_retry_last.set(None)
+    return v
+
+
 def llm_lang_retry_enabled() -> bool:
     """contextvar إن ضُبط، وإلا فالمتغير البيئي (الافتراضي معطل — يُقرأ عند
     كل استدعاء لا لقطة عند الاستيراد)."""
@@ -421,6 +433,16 @@ def llm_lang_retry_enabled() -> bool:
 
 async def _keyless_maybe_lang_retry(system: str, prompt: str, max_tokens: int,
                                     max_wait_s: float | None = None) -> dict:
+    """الفرع المجاني مع سياسة اللغة — يخزن آخر metadata لغة في سياق الاستدعاء
+    (يستهلكها مسجل التجربة عبر get_last_lang_retry لأن v5run._one لا يمرر
+    metadata الطبقة الدنيا إلى الصف)."""
+    out = await _keyless_maybe_lang_retry_impl(system, prompt, max_tokens, max_wait_s)
+    _lang_retry_last.set(out.get("lang_retry"))
+    return out
+
+
+async def _keyless_maybe_lang_retry_impl(system: str, prompt: str, max_tokens: int,
+                                        max_wait_s: float | None = None) -> dict:
     """الفرع المجاني مع سياسة اللغة: محاولة واحدة؛ فإن كان لغة الرد لا تطابق
     لغة السؤال (قاعدة الكاشف المستقلة) أُعيد التوليد **مرة واحدة** من المدخل
     نفسه مع نص تصحيح مُلحق بالموجّه. سياسة حتمية: نجحت الثانية ⇒ هي المقبولة،
