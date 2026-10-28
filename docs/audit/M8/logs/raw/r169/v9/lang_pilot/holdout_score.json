@@ -1,0 +1,160 @@
+{
+ "runs": {
+  "grounded-v2": {
+   "n": 46,
+   "provider_errors": 0,
+   "language_match_none": 15
+  },
+  "grounded-v4-lang": {
+   "n": 46,
+   "provider_errors": 0,
+   "language_match_none": 10
+  },
+  "grounded-v4r-lang": {
+   "n": 46,
+   "provider_errors": 0,
+   "language_match_none": 11
+  }
+ },
+ "comparisons": {
+  "grounded-v2 (a) vs grounded-v4-lang (b)": {
+   "language_match_ar": {
+    "n": 16,
+    "a": 10,
+    "b": 14,
+    "a_only": 1,
+    "b_only": 5,
+    "mcnemar_exact_p": 0.21875
+   },
+   "language_match_en": {
+    "n": 14,
+    "a": 14,
+    "b": 14,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 46,
+    "a": 44,
+    "b": 45,
+    "a_only": 0,
+    "b_only": 1,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass_ar": {
+    "n": 23,
+    "a": 22,
+    "b": 23,
+    "a_only": 0,
+    "b_only": 1,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass_en": {
+    "n": 23,
+    "a": 22,
+    "b": 22,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   }
+  },
+  "grounded-v4-lang (a) vs grounded-v4r-lang (b)": {
+   "language_match_ar": {
+    "n": 16,
+    "a": 15,
+    "b": 16,
+    "a_only": 0,
+    "b_only": 1,
+    "mcnemar_exact_p": 1.0
+   },
+   "language_match_en": {
+    "n": 19,
+    "a": 19,
+    "b": 19,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 46,
+    "a": 45,
+    "b": 45,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass_ar": {
+    "n": 23,
+    "a": 23,
+    "b": 23,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass_en": {
+    "n": 23,
+    "a": 22,
+    "b": 22,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   }
+  },
+  "grounded-v2 (a) vs grounded-v4r-lang (b)": {
+   "language_match_ar": {
+    "n": 15,
+    "a": 10,
+    "b": 15,
+    "a_only": 0,
+    "b_only": 5,
+    "mcnemar_exact_p": 0.0625
+   },
+   "language_match_en": {
+    "n": 14,
+    "a": 14,
+    "b": 14,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 46,
+    "a": 44,
+    "b": 45,
+    "a_only": 0,
+    "b_only": 1,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass_ar": {
+    "n": 23,
+    "a": 22,
+    "b": 23,
+    "a_only": 0,
+    "b_only": 1,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass_en": {
+    "n": 23,
+    "a": 22,
+    "b": 22,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   }
+  }
+ },
+ "criteria": {
+  "B1": false,
+  "B2": true,
+  "B3": true,
+  "provider_error_share": 0.0,
+  "per_arm_provider_errors": {
+   "grounded-v2": 0,
+   "grounded-v4-lang": 0,
+   "grounded-v4r-lang": 0
+  },
+  "inconclusive_by_errors": false,
+  "decision": "not proven"
+ }
+}
