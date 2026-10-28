@@ -1,0 +1,16 @@
+{
+  "changes_from_v5": "new vocabulary (disjoint from v1-v5), new seed and canary salt, new code tasks and closed_book fact; single holdout split; graded by the frozen v5 grader (via the r169_bench_v6 thin wrapper)",
+  "dataset_sha256": "d95c42adc2427f3a0eb1eae8ed7422e220cf421fd2d9d6ef148f8295e6684dd6",
+  "dataset_version": "r169-v6",
+  "files": {
+    "holdout.jsonl": {
+      "cases": 46,
+      "sha256": "f858d85a1ed4c69d60d493bdf9fe5f0b5c0463745c3260d7e6167d302fc97032"
+    }
+  },
+  "generator": "scripts/r169_build_dataset_v6.py",
+  "licence": "synthetic cases CC0-1.0; closed_book case restates a short fact from the cited official page",
+  "seed": 1696,
+  "split_rule": "single holdout split (all 23 groups); mirrors the spent v5 validation family composition",
+  "total_cases": 46
+}
