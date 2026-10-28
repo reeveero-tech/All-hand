@@ -202,8 +202,8 @@ def test_router_plan_tool_stage_without_evidence_fails_when_gate_on(monkeypatch)
 
 
 def test_char_router_plan_gate_off_is_unchanged(monkeypatch):
-    """CHAR: العلم معطل — المتطلبات المعلنة لا أثر لها (السلوك التاريخي)."""
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    """CHAR: التعطيل الصريح (0): المتطلبات المعلنة لا أثر لها (السلوك التاريخي)."""
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     _patch_dispatch(monkeypatch, _evidence_free)
     rep = asyncio.run(dag.run_plan(route(PROMPTS["code"]), _civ()))
     assert all(s["status"] == dag.SUCCEEDED for s in rep["stages"])

@@ -142,8 +142,8 @@ def test_unverified_success_is_visible_not_proven(impl, monkeypatch):
 
 @pytest.mark.parametrize("impl", ["real", "specialists"])
 def test_flag_off_preserves_current_behavior(impl, monkeypatch):
-    """العلم معطل (الافتراضي): السلوك الحالي كما هو — لا بوابة ولا تسجيل."""
-    monkeypatch.delenv("AGOS_OUTPUT_VALIDATORS", raising=False)
+    """التعطيل الصريح (0) بعد دفعة 15: السلوك التاريخي كما هو — لا بوابة ولا تسجيل."""
+    monkeypatch.setenv("AGOS_OUTPUT_VALIDATORS", "0")
     real, spc = _install(monkeypatch, _forged_handler)
     agent = real if impl == "real" else spc
     out = _run(agent, {"prompt": "demo", "verification": {"tool_output": True}})
