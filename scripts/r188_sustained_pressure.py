@@ -626,7 +626,6 @@ def main():
         # observation gap that INVALIDATES the measurement
         verification_mopup = 0
         non_terminal = 0
-        status_counts = Counter()
         for tid, info in accepted.items():
             if tid in recorded:
                 continue
@@ -640,23 +639,8 @@ def main():
                         "tid": tid, "phase": info["phase"], "send_t": info["send_t"],
                         "observed_t": time.monotonic(), "status": gbody.get("status")})
                 recorded.add(tid)
-                status_counts[gbody.get("status")] += 1
             else:
                 non_terminal += 1
-        for c in m.snapshot()["completions"]:
-            status_counts[c["status"]] += 1
-
-        # recipient sends by correlation id (identity match to accepted tasks)
-        import re as _re
-        corr_by_tid = {tid: info["corr"] for tid, info in accepted.items()}
-        sends_by_corr = Counter()
-        keys_seen = []
-        for r in recipient_state.requests:
-            keys_seen.append(r["key"])
-            prompt = r["prompt"] or ""
-            mm = _re.search(r"r188sp-(?:warmup-)?\d+|r188sp-f\d+|r188sp-w\d+-\d+", prompt)
-            corr = mm.group(0) if mm else prompt[:40]
-            sends_by_corr[corr] += 1
 
         # live count back to zero?
         live_now = None
@@ -686,6 +670,20 @@ def main():
                 rec_first = next((c for c in m.snapshot()["completions"]
                                   if c["tid"] == rec_tid), None)
             rec_terminal = rec_first["status"] if rec_first else None
+
+        # recipient sends by correlation id (identity match to accepted tasks) —
+        # computed AFTER the recovery task so the identity check covers EVERY
+        # accepted task including recovery (v2 run-2 bookkeeping fix)
+        import re as _re
+        corr_by_tid = {tid: info["corr"] for tid, info in accepted.items()}
+        sends_by_corr = Counter()
+        keys_seen = []
+        for r in recipient_state.requests:
+            keys_seen.append(r["key"])
+            prompt = r["prompt"] or ""
+            mm = _re.search(r"r188sp-(?:warmup-)?\d+|r188sp-f\d+|r188sp-w\d+-\d+", prompt)
+            corr = mm.group(0) if mm else prompt[:40]
+            sends_by_corr[corr] += 1
 
         # ---- aggregate (pure functions above) + verdict
         snap = m.snapshot()
@@ -756,6 +754,7 @@ def main():
                       "still_pending_at_timeout": non_terminal},
             "verification_this_run": verdict,
             "verification_mopup_tasks": verification_mopup,
+            "idempotency_key_present_on_volatile_external_path": any(keys_seen),
         }
 
         with open(args.out, "w") as f:
