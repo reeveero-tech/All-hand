@@ -58,3 +58,10 @@ not tested: production behavior change - none intended; product code untouched
             (only tests/conftest.py and a new test file). No skip/xfail/deselect added.
 Side effect: each test session leaves one empty-ish temp dir agos_pytest_state_* in $TMPDIR
              (runtime files, not project files; not cleaned to avoid any deletion logic).
+
+## CI round 1 on 76dc05e1 (run 40782253612): quality FAILED
+ruff F401: tests/test_session_private_runtime_stores.py — unused `import pytest`
+("Found 1 error. [*] 1 fixable"). My local gate list did not include ruff; mistake, not environmental.
+Fix: removed the unused import. Local, exact CI command (ruff 0.17.0):
+  ruff check --select F,E722 server.py agent_civilization agos_kernel tests -> All checks passed!
+  tests/test_session_private_runtime_stores.py -> 3 passed

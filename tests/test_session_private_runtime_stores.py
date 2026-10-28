@@ -17,7 +17,6 @@ import tempfile
 import time
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 from agent_civilization.core import rate_limit_store, sse_admission
