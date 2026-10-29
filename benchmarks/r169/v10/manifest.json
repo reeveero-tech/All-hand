@@ -1,0 +1,16 @@
+{
+  "changes_from_v5": "v10 POWERED replication judgment package (PREREGISTRATION_V10 §0/§2): fourth vocabulary set (disjoint from v1-v9), new seed (1710) and canary salt, 12 new code tasks and 3 new closed_book facts; 90 groups (180 cases) sized by the committed power calculation (scripts/r169_power_v10.py) so the B1 margin criterion is testable; single holdout split; graded by the frozen v5 grader (via the r169_bench_v10 thin wrapper); candidate unchanged (frozen e41101c5)",
+  "dataset_sha256": "af964c917e9ecfc14fbba2c313289fc3606fccdc2ef432603aa964b7d06d04c6",
+  "dataset_version": "r169-v10",
+  "files": {
+    "holdout.jsonl": {
+      "cases": 180,
+      "sha256": "34320f8816a7dafbf649ebf152ef416bbd2528d4bdc4f97bef79d63499d98271"
+    }
+  },
+  "generator": "scripts/r169_build_dataset_v10.py",
+  "licence": "synthetic cases CC0-1.0; closed_book case restates a short fact from the cited official page",
+  "seed": 1710,
+  "split_rule": "single holdout split (all 90 groups); family proportions mirror the spent v5 validation composition, scaled ~3.9x per the registered power analysis",
+  "total_cases": 180
+}

@@ -131,6 +131,7 @@ def _synthetic_score(monkeypatch, tmp_path, v4_ar_wrong, v2_ar_wrong,
     بذرعة الحزمة المطلوبة (v8 أوv9 — معرفاتها مختلفة)."""
     monkeypatch.setattr(pilot, "OUT_V8", tmp_path)
     monkeypatch.setattr(pilot, "OUT_V9", tmp_path)
+    monkeypatch.setattr(pilot, "OUT_V10", tmp_path)
     cases = {c["id"]: c for c in pilot._bench_for("holdout", dataset).load_split("holdout")}
     ar_ids = [i for i, c in cases.items() if c["lang"] == "ar"]
     en_ids = [i for i, c in cases.items() if c["lang"] == "en"]
@@ -252,3 +253,89 @@ def test_v9_criteria_end_to_end_synthetic(monkeypatch, tmp_path):
     res = pilot.score(dataset="v9")
     assert res["criteria"]["B1"] and res["criteria"]["B2"] and res["criteria"]["B3"]
     assert res["criteria"]["decision"] == "candidate promising"
+
+
+# ---------------------------------------------------------------------------#
+# v10 (دفعة 18 — PREREGISTRATION_V10): حزمة الحكم المُكرَّرة بقوة كافية.
+# المعايير حرفيًا كما في v9، مع قاعدة التغطية الدنيا الجديدة (§4).
+# ---------------------------------------------------------------------------#
+
+def test_v10_criteria_end_to_end_synthetic(monkeypatch, tmp_path):
+    """تقييم v10 من طرف إلى طرف ببيانات اصطناعية مستوفية عبر بذرعة v10
+    الحقيقي (180 حالة) — التغطية كافية (90 قابلة للتصنيف ≥ 50) والقرار
+    «candidate promising» كما في v9."""
+    _synthetic_score(monkeypatch, tmp_path, v4_ar_wrong=5, v2_ar_wrong=4,
+                     provider_errors=(0, 0, 0), dataset="v10")
+    res = pilot.score(dataset="v10")
+    assert res["criteria"]["B1"] and res["criteria"]["B2"] and res["criteria"]["B3"]
+    assert res["criteria"]["decision"] == "candidate promising"
+    cov = res["criteria"]["coverage"]
+    assert cov["ar_paired_classifiable_min"] >= 50 and cov["en_paired_classifiable"] >= 45
+    assert not res["criteria"]["coverage_insufficient"]
+
+
+def test_v10_coverage_below_minimum_is_inconclusive(monkeypatch, tmp_path):
+    """PREREGISTRATION_V10 §4: عربية قابلة للتصنيف دون 50 ⇒ القرار «غير حاسم
+    (تغطية)» مهما بدت المعايير — لا «لم يثبت» ولا نجاحًا."""
+    _synthetic_score_with_tokenonly(monkeypatch, tmp_path,
+                                    v4_ar_wrong=5, v2_ar_wrong=4,
+                                    ar_tokenonly_per_arm=60)
+    res = pilot.score(dataset="v10")
+    assert res["criteria"]["coverage_insufficient"]
+    assert res["criteria"]["coverage"]["ar_paired_classifiable_min"] < 50
+    # المعايير قد تبدو مستوفية (هامش 5) — التغطية تمنع الحكم، وهذا هو المطلوب
+    assert res["criteria"]["decision"] == "inconclusive (coverage)"
+
+
+def test_v10_provider_errors_take_priority_over_coverage(monkeypatch, tmp_path):
+    """سلم القرار §5: أخطاء المزود > 10% في أي ذراع لها الأولوية حتى مع
+    تغطية غير كافية."""
+    _synthetic_score_with_tokenonly(monkeypatch, tmp_path,
+                                    v4_ar_wrong=5, v2_ar_wrong=4,
+                                    ar_tokenonly_per_arm=60,
+                                    provider_errors=(19, 19, 19))
+    res = pilot.score(dataset="v10")
+    assert res["criteria"]["inconclusive_by_errors"]
+    assert res["criteria"]["decision"] == "inconclusive"
+
+
+def test_v10_margin_failure_still_not_proven(monkeypatch, tmp_path):
+    """بلا تفوق (ذراع الضبط يخطئ حالة واحدة فقط) ⇒ B1 فاشل والقرار «لم يثبت»
+    — المعايير لم تتغير عن v9؛ ما تغير هو قابلية الاختبار (تغطية كافية)."""
+    _synthetic_score(monkeypatch, tmp_path, v4_ar_wrong=1, v2_ar_wrong=0,
+                     provider_errors=(0, 0, 0), dataset="v10")
+    res = pilot.score(dataset="v10")
+    assert not res["criteria"]["B1"]
+    assert res["criteria"]["decision"] == "not proven"
+    assert not res["criteria"]["coverage_insufficient"]
+
+
+def _synthetic_score_with_tokenonly(monkeypatch, tmp_path, v4_ar_wrong, v2_ar_wrong,
+                                    ar_tokenonly_per_arm, provider_errors=(0, 0, 0)):
+    """مثل _synthetic_score لكن مع ar_tokenonly_per_arm حالة عربية token-only
+    (language_match=None) في كل ذراع — لمحاكاة تغطية دون الحد المسجل (§4)."""
+    monkeypatch.setattr(pilot, "OUT_V10", tmp_path)
+    cases = {c["id"]: c for c in pilot._bench_for("holdout", "v10").load_split("holdout")}
+    ar_ids = [i for i, c in cases.items() if c["lang"] == "ar"]
+
+    def arm_rows(wrong_ar, n_err):
+        rows = {}
+        for i in cases:
+            r = {"language_match": True, "pass": True, "provider_error": None}
+            if i in ar_ids and i in wrong_ar:
+                r["language_match"] = False
+            rows[i] = r
+        for i in ar_ids[:ar_tokenonly_per_arm]:
+            rows[i]["language_match"] = None
+        for i in list(rows)[:n_err]:
+            rows[i]["provider_error"] = "synthetic"
+        return rows
+
+    v4_wrong = set(ar_ids[:v4_ar_wrong])
+    v2_wrong = set(ar_ids[:v2_ar_wrong])
+    monkeypatch.setattr(pilot, "_scores",
+                        lambda split, arm, tag="", dataset="v7": {
+                            "grounded-v2": arm_rows(v2_wrong, provider_errors[0]),
+                            "grounded-v4-lang": arm_rows(v4_wrong, provider_errors[1]),
+                            "grounded-v4r-lang": arm_rows(set(), provider_errors[2]),
+                        }[arm])

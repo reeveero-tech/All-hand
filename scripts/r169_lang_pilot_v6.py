@@ -46,20 +46,24 @@ PREREG_V8 = ROOT / "docs/audit/M8/logs/raw/r169/v8/lang_pilot/PREREGISTRATION_V8
 OUT_V8 = PREREG_V8.parent
 PREREG_V9 = ROOT / "docs/audit/M8/logs/raw/r169/v9/lang_pilot/PREREGISTRATION_V9.md"
 OUT_V9 = PREREG_V9.parent
+PREREG_V10 = ROOT / "docs/audit/M8/logs/raw/r169/v10/lang_pilot/PREREGISTRATION_V10.md"
+OUT_V10 = PREREG_V10.parent
 
 
 def _out(dataset: str) -> Path:
-    """مسار المخرجات لكل حزمة — تشغيل/تقييم v8/v9 يكتب في دليله حصرًا،
+    """مسار المخرجات لكل حزمة — تشغيل/تقييم v8/v9/v10 يكتب في دليله حصرًا،
     فلا يمكنه استبدال أدلة الأحكام التاريخية في دليل v6 (مراجعة مستقلة)."""
     if dataset == "v8":
         return OUT_V8
     if dataset == "v9":
         return OUT_V9
+    if dataset == "v10":
+        return OUT_V10
     return OUT
 
 
 def _prereg_for(dataset: str) -> Path:
-    return {"v8": PREREG_V8, "v9": PREREG_V9}.get(dataset, PREREG)
+    return {"v8": PREREG_V8, "v9": PREREG_V9, "v10": PREREG_V10}.get(dataset, PREREG)
 
 
 ATTEMPT_TIMEOUT_S = 600
@@ -94,14 +98,15 @@ def _bench_for(split: str, dataset: str = "v7"):
     """dev uses the v5 bench (the tuning surface); holdout uses the judgment
     bench of the batch: v7 = دفعة 14؛ v8 = دفعة 16 (انحراف ترتيب موثق —
     PREREGISTRATION_V9 §0، لا تُستخدم للحكم)؛ v9 = حزمة الحكم المطابقة
-    (PREREGISTRATION_V9 §4)."""
+    (PREREGISTRATION_V9 §4). v10 = حزمة الحكم المُكرَّرة بقوة كافية
+    (PREREGISTRATION_V10 §2/§3 — دفعة 18)."""
     if split == "dev":
         from agent_civilization.eval import r169_bench_v5 as b
         return b
     if split == "holdout":
         import importlib
         mod = {"v7": "r169_bench_v7", "v8": "r169_bench_v8",
-               "v9": "r169_bench_v9"}[dataset]
+               "v9": "r169_bench_v9", "v10": "r169_bench_v10"}[dataset]
         return importlib.import_module(f"agent_civilization.eval.{mod}")
     raise SystemExit(f"refusing: split {split!r} is not dev or holdout")
 
@@ -111,12 +116,12 @@ def _prereg_committed() -> bool:
     merely being tracked is not enough (advisor review: `git ls-files` only
     proves tracking, not that the on-disk content is what was frozen).
 
-    All three preregistrations are guarded: V6 (the original pilot prereg),
+    All four preregistrations are guarded: V6 (the original pilot prereg),
     V8 (kept with its documented order deviation — never used for judgment)
     and V9 (the compliant judgment package — PREREGISTRATION_V9 governs the
     v9 judgment). A run must not start if ANY file was edited after commit."""
     ok = True
-    for prereg in (PREREG, PREREG_V8, PREREG_V9):
+    for prereg in (PREREG, PREREG_V8, PREREG_V9, PREREG_V10):
         if not prereg.exists():
             ok = False
             continue
@@ -195,7 +200,8 @@ async def _one_arm_case(bench, arm: str, case: dict) -> dict:
 # baseline)؛ v8 = دفعة 16 (v2 + v4 ضبط + v4r المرشح — prereg v8 §3).
 JUDGMENT_ARMS = {"v7": ("grounded-v2", "grounded-v4-lang", "baseline"),
                  "v8": ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang"),
-                 "v9": ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang")}
+                 "v9": ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang"),
+                 "v10": ("grounded-v2", "grounded-v4-lang", "grounded-v4r-lang")}
 
 
 async def run(split: str, arms: list[str], tag: str = "",
@@ -354,6 +360,44 @@ def score(tag: str = "", dataset: str = "v7") -> dict:
         res["criteria"]["decision"] = ("inconclusive" if cr["inconclusive_by_errors"] else
                                  ("candidate promising" if (cr["B1"] and cr["B2"] and cr["B3"])
                                   else "not proven"))
+        if dataset == "v10":
+            # PREREGISTRATION_V10 §4 — قاعدة التغطية الدنيا (مراجعة مستقلة على
+            # صلاحية مقامات v9): B1/B2 لا يُحسمان إلا على مقام مزدوج كافٍ.
+            # استبعاد token-only معتمد على الناتج وقد يستبعد استبعادًا اختياريًا
+            # لصالح ذراع، فالحد الأدنى يمنع الحكم على مقامات واهية.
+            def _paired_class(a_cfg, c_cfg, lang_pred):
+                a, c = runs[a_cfg], runs[c_cfg]
+                return sum(1 for k in a if k in c and lang_pred(k)
+                           and not a[k].get("provider_error") and not c[k].get("provider_error")
+                           and a[k].get("language_match") is not None
+                           and c[k].get("language_match") is not None)
+            _is_ar = lambda k: cases[k]["lang"] == "ar"  # noqa: E731
+            _is_en = lambda k: cases[k]["lang"] == "en"  # noqa: E731
+            ar_cov = min(_paired_class("grounded-v4-lang", "grounded-v4r-lang", _is_ar),
+                         _paired_class("grounded-v2", "grounded-v4r-lang", _is_ar))
+            en_cov = _paired_class("grounded-v4-lang", "grounded-v4r-lang", _is_en)
+
+            def _arm_exclusive_tokenonly(arm, other):
+                r, o = runs[arm], runs[other]
+                return sum(1 for k in r if k in o and _is_ar(k)
+                           and r[k].get("language_match") is None
+                           and o[k].get("language_match") is not None)
+            cr["coverage"] = {
+                "ar_paired_classifiable_min": ar_cov, "ar_minimum": 50,
+                "en_paired_classifiable": en_cov, "en_minimum": 45,
+                "tokenonly_by_arm_lang": {
+                    arm: {"ar": sum(1 for k in r if _is_ar(k) and r[k].get("language_match") is None),
+                          "en": sum(1 for k in r if _is_en(k) and r[k].get("language_match") is None)}
+                    for arm, r in runs.items()},
+                "ar_tokenonly_exclusive_vs_v4r": {
+                    "v4": _arm_exclusive_tokenonly("grounded-v4-lang", "grounded-v4r-lang"),
+                    "v4r": _arm_exclusive_tokenonly("grounded-v4r-lang", "grounded-v4-lang"),
+                    "v2": _arm_exclusive_tokenonly("grounded-v2", "grounded-v4r-lang")}}
+            cr["coverage_insufficient"] = ar_cov < 50 or en_cov < 45
+            # سلم القرار المسجل §5: أخطاء ⇒ غير حاسم؛ تغطية دون الحد ⇒ غير
+            # حاسم (تغطية)؛ وإلا ثلاثي الحالات كما هو.
+            if not cr["inconclusive_by_errors"] and cr["coverage_insufficient"]:
+                cr["decision"] = "inconclusive (coverage)"
     (_out(dataset) / f"holdout_score{'_' + tag if tag else ''}.json").write_text(
         json.dumps(res, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return res
@@ -366,10 +410,10 @@ def main(argv=None) -> int:
     r.add_argument("--split", required=True, choices=["dev", "holdout"])
     r.add_argument("--arms", default="v2,v4,baseline")
     r.add_argument("--tag", default="")
-    r.add_argument("--dataset", default="v7", choices=["v7", "v8", "v9"])
+    r.add_argument("--dataset", default="v7", choices=["v7", "v8", "v9", "v10"])
     sc = sub.add_parser("score")  # noqa: F841  (kept for symmetry with run)
     sc.add_argument("--tag", default="")
-    sc.add_argument("--dataset", default="v7", choices=["v7", "v8", "v9"])
+    sc.add_argument("--dataset", default="v7", choices=["v7", "v8", "v9", "v10"])
     a = ap.parse_args(argv)
     if a.cmd == "run":
         arms = {"v2": "grounded-v2", "v4": "grounded-v4-lang",
