@@ -235,6 +235,14 @@ class ExternalAgentAdapter:
         prompt = str(task.get("prompt") or task.get("description") or "")
         started = time.time()
         self.status = "working"
+        # R-170 (batch 17): the completion gate covers the external path too.
+        # Requirements are captured BEFORE the remote call (the caller cannot
+        # relax them mid-flight); "external" has no default policy, so with no
+        # declared requirement the gate still rejects forged success (a
+        # success claim in the text with no machine evidence).
+        from agent_civilization.core.output_validators import (
+            apply_output_verification, requirements_for)
+        _verification = requirements_for("external", task)
         headers = {"Content-Type": "application/json"}
         # R-188 criterion (b): the durable queue's redelivery is at-least-once
         # — an external side effect must still be applied exactly once. The
@@ -269,8 +277,10 @@ class ExternalAgentAdapter:
             # failure with a FIXED reason (it used to be ok=True, answer=None).
             from agent_civilization.core.llm import completion_content
             content = completion_content(data)
-            self.stats["tasks_completed"] += 1
             ok, result = True, {"answer": content, "external_agent": self.name}
+            # R-170 (batch 17): the gate decides BEFORE success is counted.
+            ok, result = apply_output_verification(_verification, ok, result)
+            self.stats["tasks_completed" if ok else "tasks_failed"] += 1
         except Exception as e:
             # R-149 (Security QA, review round 4): only a fixed safe reason is
             # reported. Trusted as-is: the backend's STATUS, UnsafeURLError's

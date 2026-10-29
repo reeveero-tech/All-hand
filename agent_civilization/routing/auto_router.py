@@ -27,7 +27,8 @@ from typing import Any, Dict, List, Optional, Tuple
 #: requirement would only produce false rejections. Since batch 6 the
 #: researcher also declares ``citations`` (validate_citations looks inside
 #: ``tool_output`` too); an instant answer without a source URL is rejected.
-#: Requirements only act when AGOS_OUTPUT_VALIDATORS=1 (see OPERATIONS.md).
+#: Requirements act while the gate is ON — the default since PR #280; only
+#: AGOS_OUTPUT_VALIDATORS=0 disables it (rollback, see OPERATIONS.md).
 # R-170 (batch 7): single source of truth — the core default policy (the
 # router copies it per stage in _verification_for, never shares it).
 from agent_civilization.core.output_validators import DEFAULT_REQUIREMENTS as STAGE_VERIFICATION  # noqa: E402
