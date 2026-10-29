@@ -1,0 +1,34 @@
+# R-170 batch 17 acceptance (لاحق 79) — PR #284 merged; CI on tested head and on main
+date: 2026-10-29
+
+PR #284  m8/r170-batch17-external-gate
+  tested_sha (head): d1a1436bcc309109c669e3e91f7652a95700a7ac
+  merge: gh pr merge 284 --merge --match-head-commit d1a1436b...  -> MERGED
+  merge_sha: 9eaea02a65b9808c7efa41ee354a15044604fb1a  (mergeStateStatus before merge: CLEAN)
+
+CI on tested head d1a1436b
+  AGOS Kernel CI/CD run 40819714949: success
+    3.11 live suite : 3642 passed, 8 skipped, 17 deselected, 9 xfailed (621.43s)
+    3.12            : 3642 passed, 8 skipped, 17 deselected, 9 xfailed (581.82s)
+    3.12 specialists: 3642 passed, 8 skipped, 17 deselected, 9 xfailed (611.61s)
+    quality, network, docker, storage, audit, build: success; publish: skipped (not main push)
+  Governance Gate run 40819714905: success (governance, push-scope-docs)
+  Governance Gate run 40819709252 (push event): push-scope-docs success; governance job skipped
+    (PR-only job on a push event — same pattern as PR #283)
+
+CI on main after merge, head 9eaea02a
+  Governance Gate run 40822769215: success
+  AGOS Kernel CI/CD run 40822769264: success
+    3.11 live suite : 3642 passed, 8 skipped, 17 deselected, 9 xfailed (625.57s)
+    3.12            : 3642 passed, 8 skipped, 17 deselected, 9 xfailed (586.89s)
+    3.12 specialists: 3642 passed, 8 skipped, 17 deselected, 9 xfailed (593.65s)
+    test, quality, network, docker, storage, audit, build: success; publish: skipped
+
+Note: local polling hit a GitHub API 403 rate-limit once (run/jobs endpoint, 05:45Z); retried
+after stopping the loop; no CI result depended on it.
+
+Status: R-170 stays in_progress. Remaining (see ROADMAP R-170 status line, لاحق 79 correction):
+ (a) language regression — 3 candidates "not proven"; P4 criterion "no benchmark regression
+     without approval/explanation" needs a passing pre-registered candidate OR explicit owner
+     approval of the documented regression; (b) Q-028 human review open (D-102).
+Not tested: live external agent; production; no deploy, no production config change.
