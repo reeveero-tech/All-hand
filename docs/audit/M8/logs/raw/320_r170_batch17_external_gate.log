@@ -1,0 +1,62 @@
+# R-170 batch 17 (لاحق 78) — completion gate on the external-agent path
+date: 2026-10-29T04:46:43Z   branch: m8/r170-batch17-external-gate
+base (main) sha: db4cebc3770058c5cc316a5331f21c6b4a1d13cc
+python: Python 3.11.17   pytest: pytest 9.1.1   ruff: ruff 0.17.0
+
+## Takeover audit facts (verified 2026-10-29)
+- main head db4cebc3 (PR #283 merge); open PRs: none; PR #281/#282/#283 merged.
+- PR #281 original failure: run 40745368233, tests/test_r169_v8_judgment.py::test_v4r_retry_metadata_reaches_saved_row KeyError 'attempts' (1 failed, 3628 passed) — real recorder defect on 3.11, fixed in لاحق 75 (CI 40769398189 success on tested head 42c95dea).
+- AGOS_OUTPUT_VALIDATORS default: output_validators.py:636  os.getenv('AGOS_OUTPUT_VALIDATORS','1') != '0'  (ON by default).
+- AGOS_LLM_LANG_RETRY default: llm.py:458  == '1'  (OFF by default) — not enabled by this batch.
+- Q-028 phase A packet sha256 re-verified (match R170_REVIEW_PACKAGE.md):
+    059fa6c140ebdfa718e1c1761f6d55d5f312b195cf055b1619aaa1a84910cb99  PROTOCOL.md
+    36287f1fa4c30384270acb5eb38495d36789986d8b9d0a4feb0170d1becbbc47  CASES.md
+    1f650aff64cd74150448e4ed4eb7c760732ccef977310c0e22c57f1e4bd25e10  reviewer_form.json
+    c299caeaba6c257569ab90cc44f0703394ba88e121a53eed78c752d983806469  r170_phase_a_packet.zip
+- /tmp/.gh_tok: not present in this sandbox (checked with ls only; content never read). Presence elsewhere / validity on GitHub NOT verifiable from here.
+
+## Main baseline, full suite (python -m pytest tests/ -q), main db4cebc3
+    ==== 3634 passed, 8 skipped, 17 deselected, 9 xfailed in 598.44s (0:09:58) =====
+    exit=0
+
+## Gap: ExternalAgentAdapter._execute returned ok=True for any non-empty completion and
+## counted tasks_completed WITHOUT apply_output_verification (all other completion paths are gated).
+
+## RED: tests/test_r170_external_gate.py on main code (fix not applied)
+    E   assert True is False
+    E   assert True is False
+    E   assert True is False
+    E   assert True is False
+    E   AssertionError: {'id': 'r170extforged1', 'specialization': 'external', 'prompt': 'p', 'status': 'completed', ...}
+    E   assert 'completed' == 'failed'
+    E     
+    E     - failed
+    E     + completed
+    FAILED tests/test_r170_external_gate.py::test_forged_success_from_external_agent_is_rejected
+    FAILED tests/test_r170_external_gate.py::test_arabic_forged_success_is_rejected
+    FAILED tests/test_r170_external_gate.py::test_declared_requirement_is_enforced
+    FAILED tests/test_r170_external_gate.py::test_requirements_captured_before_the_call
+    FAILED tests/test_r170_external_gate.py::test_server_run_task_marks_forged_external_task_failed
+    ========================= 5 failed, 3 passed in 10.05s =========================
+    exit=1
+
+## Fix: external_adapter.py — requirements_for('external', task) captured before the call;
+## apply_output_verification before counting; counter follows the gated decision.
+
+## GREEN: new file
+    ============================== 8 passed in 10.19s ==============================
+
+## Related files (every test file mentioning ExternalAgentAdapter/external_adapter/output_validators/AGOS_OUTPUT_VALIDATORS): 805 passed, 13 deselected
+
+## Full suite on branch
+    ==== 3642 passed, 8 skipped, 17 deselected, 9 xfailed in 594.72s (0:09:54) =====
+    exit=0
+    delta vs main: +8 passed = the 8 new tests; 0 failed; no new skip/xfail/deselect.
+
+## ruff (CI command): ruff check --select F,E722 server.py agent_civilization agos_kernel tests
+    All checks passed!
+
+## Proven / inferred / not tested
+proven: forged success from an external agent became a completed task with the gate ON (red, end to end via _run_task); after fix it is failed with output_verification_failed; honest answers accepted; rollback flag restores old behaviour; transport failures untouched.
+inferred: no other completion path bypasses the gate (grep of execute()/ok=True sites in server.py and agents; not an exhaustive proof).
+not tested: a live external agent; false-rejection rate on real external traffic; production config (none changed, no deploy).
