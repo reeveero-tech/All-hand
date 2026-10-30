@@ -68,6 +68,19 @@ class CoordinateRequest(BaseModel):
     allow_public_llm: bool = Field(False, strict=True)
 
 
+def record_status(result) -> str:
+    """R-170 batch 19 (G-160-3, D-104): task-record status for a DAG report.
+
+    ``completed`` iff the run's aggregate status is exactly ``"completed"``
+    (every stage succeeded — dag._aggregate); failed / timed_out /
+    budget_exhausted / cancelled / awaiting_approval / missing → ``failed``.
+    The record vocabulary {running, completed, failed} is unchanged; the
+    precise run state stays in ``result["status"]``."""
+    if isinstance(result, dict) and result.get("status") == "completed":
+        return "completed"
+    return "failed"
+
+
 def register_civilization_routes(app, civilization, tasks_store, prune_tasks, verify_api_key=None,
                                  require_principal=None, rate_limiter=None, admit=None):
     """Attach civilization routes to an existing FastAPI app.
@@ -180,9 +193,13 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
             raise
         finally:
             reset_public_llm_consent(token)
+        # R-170 batch 19 (G-160-3, D-104): the record says "completed" only
+        # when the DAG run did; any other outcome is "failed" (exact state in
+        # result["status"]) — never a forged success in GET /api/tasks.
         _finish(task_id, {"id": task_id, "message": req.message, "plan": plan,
                           "created_at": time.time(), "tenant_id": principal.tenant_id},
-                status="completed", result=result, run_id=result["run_id"])
+                status=record_status(result), result=result, run_id=result["run_id"],
+                finished_at=time.time())
         return {"task_id": task_id, **result}
 
     def _principal(api_key):
@@ -223,6 +240,7 @@ def register_civilization_routes(app, civilization, tasks_store, prune_tasks, ve
         rec = tasks_store.get(run.task_id) if run.task_id else None
         if rec is not None and rec.get("tenant_id") == principal.tenant_id:
             rec["result"] = result
+            rec["status"] = record_status(result)      # R-170 batch 19 (D-104)
             rec["finished_at"] = time.time()
         return {"task_id": run.task_id, **result}
 

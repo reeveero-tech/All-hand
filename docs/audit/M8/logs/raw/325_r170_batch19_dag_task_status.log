@@ -1,0 +1,41 @@
+# 325 — R-170 دفعة 19 (لاحق 84): إغلاق G-160-3 — سجل مهمة /civilization/execute يتبع حالة تشغيل DAG
+# التاريخ: 2026-10-30 | الفرع: m8/r170-batch19-dag-task-status | القرار: D-104
+
+[اختيار المهمة] بعد D-103 الأعمال المسموحة دون Q-028/تفعيل اللغة/v11: نطاق R-170 «بوابة جودة
+الناتج عبر كل المسارات». فُحصت مسارات كتابة الحالة: server.py (المهام 1074، 1163، المحادثة 2796)
+تشتق الحالة من ok. الاستثناء الوحيد: agent_civilization/civilization_routes.py::execute يكتب
+status="completed" دون النظر إلى result["status"] — الفجوة المفتوحة G-160-3 (EVIDENCE.md، D-084 §8).
+قاعدة التجميع متاحة منذ R-165: dag._aggregate (completed = كل المراحل SUCCEEDED).
+R-171 وما بعده: ينتظر R-170 (ترتيب الخارطة) — لم يُلمس.
+
+[الأحمر أولًا — الشيفرة المدموجة (main 0a5e1f4d + D-103 توثيق فقط) مع ملف الاختبار الجديد]
+$ python3 -m pytest tests/test_r170_dag_task_status.py -q
+9 failed
+  - failed/timed_out/budget_exhausted/cancelled/awaiting_approval -> السجل "completed" (متوقع failed)
+  - غياب status -> "completed" (متوقع failed)
+  - تشغيل حقيقي ينتظر موافقة (fetch ... ) -> السجل "completed"
+  - /resume بتشغيل فشل -> السجل لا يتحدث
+  - completed -> completed لكن finished_at مفقود
+
+[الإصلاح]
+agent_civilization/civilization_routes.py: record_status(result) جديد؛ مطبق في execute وresume؛ finished_at.
+agent_civilization/core/contracts.py: وصف ExecuteRecord فقط (لا تغيير بنية).
+scripts/export_contract_schemas.py: --check قبل = DRIFT ADDITIVE non-structural ×2 (execute_record، task_list)
+  -> أعيد التوليد -> contracts=31 problems=0. لا رفع نسخة.
+docs/governance/contracts/examples/task_list.memory.json: إضافة finished_at (اختياري في المخطط) لتطابق الشكل الحي
+  (فشل test_r160_contracts::test_shared_examples_validate_and_match_live_shapes قبلها — الشكل الحي صار يحمله).
+tests/test_sec08_civilization_admission.py: التقرير المزيف في test_record_lost_mid_run أصبح يحمل status="completed"
+  (موضوع الاختبار الإخلاء لا الحالة؛ بدونه يُصنف failed وفق القاعدة الجديدة — سلوك مقصود).
+
+[الأخضر]
+$ python3 -m pytest tests/test_r170_dag_task_status.py -q            -> 9 passed
+$ مجموعة المسارات المتأثرة (r165_dag، sec08، civilization_routes، r170_router_requirements، r160_contracts) -> passed
+$ الحزمة الكاملة محليًا (Python 3.14):
+==== 3662 passed, 8 skipped, 17 deselected, 9 xfailed in 634.16s (0:10:34) =====
+  (خط الأساس على main: 3653 passed؛ +9 = الاختبارات الجديدة؛ لا فشل ولا تخطٍ جديد)
+
+[تغيير سلوكي معلن] تشغيل awaiting_approval يظهر في /api/tasks "failed" (result.status=awaiting_approval) حتى
+استئنافه؛ بعد استئناف مكتمل -> "completed". الواجهة web/ تعرض failed؛ لا حالة جديدة.
+
+[الحدود] سجل المهام في ذاكرة العملية؛ لا تحقق إنتاجي؛ نجاح CI ≠ اكتمال R-170. R-170 يبقى in_progress
+(المتبقي: مراجعة Q-028 البشرية). لا حذف/نقل/إعادة تسمية. لا تفعيل لسياسة اللغة.

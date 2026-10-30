@@ -85,7 +85,7 @@
     },
     "ExecuteRecord": {
       "additionalProperties": false,
-      "description": "A /civilization/execute record in the same memory store (another\nvariant of /api/tasks items). Status is \"completed\" when the plan ran,\nwhatever its stages' ok (no aggregate ok exists — gap G-160-3).",
+      "description": "A /civilization/execute record in the same memory store (another\nvariant of /api/tasks items). Status is \"completed\" only when the DAG\nrun's aggregate status is \"completed\"; any other run outcome is \"failed\"\nwith the exact state in ``result.status`` (G-160-3 closed — D-104).",
       "properties": {
         "created_at": {
           "title": "Created At",
