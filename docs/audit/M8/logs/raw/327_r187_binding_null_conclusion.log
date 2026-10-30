@@ -17,3 +17,15 @@ $ python3 -m pytest tests/test_r187_push_scope_docs.py -q
 
 [الأخضر] 34 passed.
 [الحزمة الكاملة محليًا] 3669 passed, 8 skipped, 17 deselected, 9 xfailed (main 3662 + 7 حالات جديدة).
+
+# ---- إضافة (2026-10-30، لاحق 87 — توثيق فقط): قبول PR #291 على main ----
+[PR #291] head b0dc6454؛ دُمج --merge -> bccfc2ce (الفرع محفوظ)؛ CLEAN، صفر تعليقات/مراجعات.
+  قبل الدمج: كل الفحوص success على الرأس؛ push-scope-docs على مسار PR نجح من المحاولة الأولى
+  (لم يتكرر الأحمر الكاذب — ملاحظة واحدة، لا إثبات إحصائي على زوال السباق، لكن الحالة الآن انتظار لا أحمر).
+[main bccfc2ce بعد الدمج]
+  Governance Gate run 41111329506: push-scope-docs success، governance skipped.
+  AGOS Kernel CI/CD run 41111329513: success —
+    test ×3: 3669 passed, 8 skipped, 17 deselected, 9 xfailed (مطابق المحلي 3669 = 3662 + 7 حالات جديدة)
+    quality/docker/build/storage/audit success، publish skipped (R-030)
+    network success: 17 passed, 3686 deselected
+[الحالة] R-187 done بلا تغيير. R-170 in_progress (المتبقي: مراجعة Q-028 البشرية).

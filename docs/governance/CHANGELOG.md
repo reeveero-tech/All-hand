@@ -1,3 +1,10 @@
+## 2026-10-30 — لاحق 87: قبول PR #290 و#291 على main — كل الفحوص خضراء بما فيها network (توثيق فقط)
+
+- **#290** (قبول D-103 ودفعة 19) → `8f53ce23`: main run 41104960959 success — test ‏3662 passed ×3، network ‏17 passed، Governance Gate 41104960904 ناجحة. قبل الدمج: أحمر كاذب واحد في push-scope-docs (نتيجة مهمة الدفع `None` لحظة القراءة)، أُعيد تشغيله فنجح، وأُصلح سببه في #291.
+- **#291** (ربط R-187) → `bccfc2ce`: main run 41111329513 success — test ‏**3669 passed ×3** (8 skipped، 17 deselected، 9 xfailed)، network ‏17 passed، Governance Gate 41111329506 ناجحة؛ push-scope-docs على مسار PR نجح من الأولى.
+- **ملاحظة أمانة**: عودة network للخضرة تؤيد تشخيص «مصدر خارجي متقطع» ولا تُزيل الخطر (RISK-019).
+- الأدلة: إضافات في السجلين [`326`](../audit/M8/logs/raw/326_r170_batch19_acceptance_main_ci.log) و[`327`](../audit/M8/logs/raw/327_r187_binding_null_conclusion.log) — بلا حذف. R-170 يبقى `in_progress`.
+
 ## 2026-10-30 — لاحق 86: R-187 — ربط الدمج لا يحكم أحمر على مهمة دفع لم تُثبَّت نتيجتها بعد
 
 - **المشكلة (حية)**: PR #290 — `push-scope-docs` على مسار PR فشل بـ«RED on the head SHA (run 41096397431: None)» بينما مهمة الدفع انتهت success بعد 4 ثوانٍ؛ إعادة التشغيل نجحت.

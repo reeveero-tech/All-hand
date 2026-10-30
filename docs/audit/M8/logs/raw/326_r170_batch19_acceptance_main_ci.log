@@ -30,3 +30,17 @@ main 4528b598: Governance Gate run 41090911706 success؛ AGOS Kernel CI/CD run 4
 لا إجراء شيفرة. يبقى الفشل مسجلًا كما هو. خطر قائم: اعتماد البحث الحي على نقطة DDG HTML بلا مفتاح (RISK-019).
 
 [الحالة] R-170 in_progress. المتبقي: مراجعة Q-028 البشرية. لا تفعيل لسياسة اللغة (D-103). لا v11.
+
+# ---- إضافة (2026-10-30، لاحق 87 — توثيق فقط): قبول PR #290 نفسه على main ----
+[PR #290] head a37c4321؛ دُمج --merge -> 8f53ce23 (الفرع محفوظ)؛ CLEAN، صفر تعليقات/مراجعات.
+  قبل الدمج: كل الفحوص success على الرأس، باستثناء موثق: push-scope-docs (مسار PR، run 41096405507،
+  job 124203205413) فشل أولًا بأحمر كاذب "RED on the head SHA (run 41096397431: None)" — مهمة الدفع نفسها
+  نجحت بعد 4 ثوانٍ؛ أعيد تشغيل المهمة وحدها -> pass. السبب عيب في أداة الربط، أُصلح في PR #291 (السجل 327).
+[main 8f53ce23 بعد الدمج]
+  Governance Gate run 41104960904: push-scope-docs success، governance skipped (حدث push).
+  AGOS Kernel CI/CD run 41104960959: success —
+    test ×3: 3662 passed, 8 skipped, 17 deselected, 9 xfailed (في كل مصفوفة)
+    quality/docker/audit/storage/build success، publish skipped (R-030)
+    network success: 17 passed, 3679 deselected
+  => انحراف network الموثق أعلاه (33b9ebae، 4528b598) لم يتكرر هنا: المصدر الخارجي عاد يجيب؛ هذا يؤيد
+     تشخيص «مصدر خارجي متقطع» ولا يثبت زوال الخطر (RISK-019 قائم). لا تعديل للاختبار.
