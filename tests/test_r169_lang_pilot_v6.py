@@ -276,3 +276,57 @@ def test_prereg_guard_covers_v9_prereg(tmp_path):
         assert pilot._prereg_committed() is False
     finally:
         monkey.undo()
+
+
+def test_prereg_guard_covers_v10_prereg(tmp_path):
+    """حارس التسجيلات يشمل V10 (حزمة الحكم المُكرَّرة بقوة كافية — دفعة 18):
+    تعديله بعد التسجيل يمنع أي تشغيل."""
+    assert pilot._prereg_committed() is True
+    tampered = tmp_path / "PREREGISTRATION_V10.md"
+    tampered.write_text("criteria edited after registration\n", encoding="utf-8")
+    monkey = pytest.MonkeyPatch()
+    monkey.setattr(pilot, "PREREG_V10", tampered)
+    try:
+        assert pilot._prereg_committed() is False
+    finally:
+        monkey.undo()
+
+
+def test_v10_holdout_composition():
+    """حزمة v10 المجمدة: 90 مجموعة = 180 حالة (90 عربي + 90 إنجليزي) بتركيبة
+    العائلات المسجلة في PREREGISTRATION_V10 §2."""
+    from agent_civilization.eval import r169_bench_v10 as b10
+    cases = b10.load_split("holdout")
+    assert len(cases) == 180
+    langs = [c["lang"] for c in cases]
+    assert langs.count("ar") == 90 and langs.count("en") == 90
+    assert all(c["split"] == "holdout" and c["version"] == "r169-v10" for c in cases)
+    fam = {}
+    for c in cases:
+        fam[c["task_type"]] = fam.get(c["task_type"], 0) + 1
+    assert fam == {"grounded_qa": 28, "abstain_missing": 26, "false_premise": 14,
+                  "conflicting_sources": 14, "stale_sources": 14, "prompt_injection": 14,
+                  "adversarial_user": 14, "tool_poisoning": 26, "code_task": 24,
+                  "closed_book": 6}
+
+
+def test_v10_generator_is_deterministic():
+    import subprocess
+    r = subprocess.run([sys.executable, str(ROOT / "scripts/r169_build_dataset_v10.py"), "--check"],
+                       capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_v10_bench_reexports_frozen_v5_grader():
+    from agent_civilization.eval import r169_bench_v5 as b5
+    from agent_civilization.eval import r169_bench_v10 as b10
+    assert b10.GROUNDED_V2_SYSTEM == b5.GROUNDED_V2_SYSTEM
+    assert b10.grounded_v2_messages is b5.grounded_v2_messages
+    assert b10.score_case is b5.score_case
+    assert b10.run_code_tests is b5.run_code_tests
+
+
+def test_v10_outputs_are_isolated():
+    """تشغيل/تقييم v10 يكتب في دليل v10 حصرًا — أدلة v6/v8/v9 التاريخية لا تُمس."""
+    assert pilot._out("v10") == pilot.OUT_V10
+    assert pilot.OUT_V10 != pilot.OUT and pilot.OUT_V10 != pilot.OUT_V8 and pilot.OUT_V10 != pilot.OUT_V9

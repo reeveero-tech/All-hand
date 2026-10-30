@@ -121,3 +121,52 @@ def test_v9_composition_and_manifest():
     man = json.loads((BENCH / "v9" / "manifest.json").read_text())
     assert man["dataset_sha256"] and man["dataset_version"] == "r169-v9"
     assert man["generator"] == "scripts/r169_build_dataset_v9.py"
+
+
+def test_v10_questions_differ_from_all_previous_versions():
+    """استقلال محتوى v10 (حزمة الحكم المُكرَّرة بقوة كافية — دفعة 18) مقابل
+    v1–v9 كلها: نص الأسئلة عبر جميع المعرفات وجميع الشرائح + مهام الشيفرة
+    والحقائق والكاناريات. إضافة: لا أسئلة متطابقة داخل v10 نفسها (180/180)."""
+    rows = [json.loads(x) for x in (BENCH / "v10" / "holdout.jsonl").read_text().splitlines() if x.strip()]
+    v10_questions = [r["question"] for r in rows]
+    assert len(v10_questions) == len(set(v10_questions)) == 180, "v10 has duplicate question text"
+    v10_set = set(v10_questions)
+    v10_code = {r["question"] for r in rows if "code_task" in r["id"]}
+    v10_cb = {r["question"] for r in rows if "closed_book" in r["id"]}
+    v10_canaries = {x for r in rows for x in (r["reference"] or {}).get("canaries", ())
+                    if x.startswith(("CANARY-", "SYNTH-TOKEN"))}
+    for ver in ("v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9"):
+        d = BENCH / ver
+        for f in d.glob("*.jsonl"):
+            if f.name in ("grader_corpus_v3.jsonl",):
+                continue
+            orows = [r for r in
+                     (json.loads(x) for x in f.read_text().splitlines() if x.strip())
+                     if isinstance(r, dict) and "question" in r]
+            old_questions = {r["question"] for r in orows}
+            assert not (v10_set & old_questions), f"v10 reused question text from {ver}/{f.name}"
+            old_code = {r["question"] for r in orows
+                        if str(r.get("task_type", "")).startswith("code")
+                        or str(r.get("expected_behavior")) == "pass_tests"}
+            assert not (v10_code & old_code), f"v10 reused a code task from {ver}/{f.name}"
+            old_cb = {r["question"] for r in orows if "closed_book" in str(r.get("group", ""))}
+            assert not (v10_cb & old_cb), f"v10 reused the closed_book fact from {ver}/{f.name}"
+            old_can = {x for r in orows for x in (r.get("reference") or {}).get("canaries", ())
+                       if x.startswith(("CANARY-", "SYNTH-TOKEN"))}
+            assert not (v10_canaries & old_can), f"v10 reused a canary from {ver}/{f.name}"
+
+
+def test_v10_composition_and_manifest():
+    rows = [json.loads(x) for x in (BENCH / "v10" / "holdout.jsonl").read_text().splitlines() if x.strip()]
+    assert len(rows) == 180
+    langs = [r["lang"] for r in rows]
+    assert langs.count("ar") == 90 and langs.count("en") == 90
+    fams = {r["id"].replace("r169-v10-", "").rsplit("-", 2)[0] for r in rows}
+    assert fams == {"grounded_qa", "abstain_missing", "false_premise", "conflicting_sources",
+                   "stale_sources", "prompt_injection", "adversarial_user", "tool_poisoning",
+                   "code_task", "closed_book"}
+    man = json.loads((BENCH / "v10" / "manifest.json").read_text())
+    assert man["dataset_sha256"] and man["dataset_version"] == "r169-v10"
+    assert man["generator"] == "scripts/r169_build_dataset_v10.py"
+    assert man["seed"] == 1710
+    assert man["total_cases"] == 180
