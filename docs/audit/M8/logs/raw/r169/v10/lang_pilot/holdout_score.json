@@ -1,0 +1,186 @@
+{
+ "runs": {
+  "grounded-v2": {
+   "n": 180,
+   "provider_errors": 0,
+   "language_match_none": 48
+  },
+  "grounded-v4-lang": {
+   "n": 180,
+   "provider_errors": 0,
+   "language_match_none": 42
+  },
+  "grounded-v4r-lang": {
+   "n": 180,
+   "provider_errors": 0,
+   "language_match_none": 40
+  }
+ },
+ "comparisons": {
+  "grounded-v2 (a) vs grounded-v4-lang (b)": {
+   "language_match_ar": {
+    "n": 63,
+    "a": 46,
+    "b": 51,
+    "a_only": 3,
+    "b_only": 8,
+    "mcnemar_exact_p": 0.22656
+   },
+   "language_match_en": {
+    "n": 65,
+    "a": 65,
+    "b": 65,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 180,
+    "a": 175,
+    "b": 171,
+    "a_only": 8,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.3877
+   },
+   "pass_ar": {
+    "n": 90,
+    "a": 90,
+    "b": 88,
+    "a_only": 2,
+    "b_only": 0,
+    "mcnemar_exact_p": 0.5
+   },
+   "pass_en": {
+    "n": 90,
+    "a": 85,
+    "b": 83,
+    "a_only": 6,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.75391
+   }
+  },
+  "grounded-v4-lang (a) vs grounded-v4r-lang (b)": {
+   "language_match_ar": {
+    "n": 68,
+    "a": 52,
+    "b": 67,
+    "a_only": 0,
+    "b_only": 15,
+    "mcnemar_exact_p": 6e-05
+   },
+   "language_match_en": {
+    "n": 67,
+    "a": 67,
+    "b": 67,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 180,
+    "a": 171,
+    "b": 168,
+    "a_only": 5,
+    "b_only": 2,
+    "mcnemar_exact_p": 0.45312
+   },
+   "pass_ar": {
+    "n": 90,
+    "a": 88,
+    "b": 85,
+    "a_only": 3,
+    "b_only": 0,
+    "mcnemar_exact_p": 0.25
+   },
+   "pass_en": {
+    "n": 90,
+    "a": 83,
+    "b": 83,
+    "a_only": 2,
+    "b_only": 2,
+    "mcnemar_exact_p": 1.0
+   }
+  },
+  "grounded-v2 (a) vs grounded-v4r-lang (b)": {
+   "language_match_ar": {
+    "n": 62,
+    "a": 45,
+    "b": 61,
+    "a_only": 1,
+    "b_only": 17,
+    "mcnemar_exact_p": 0.00014
+   },
+   "language_match_en": {
+    "n": 65,
+    "a": 65,
+    "b": 65,
+    "a_only": 0,
+    "b_only": 0,
+    "mcnemar_exact_p": 1.0
+   },
+   "pass": {
+    "n": 180,
+    "a": 175,
+    "b": 168,
+    "a_only": 11,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.11847
+   },
+   "pass_ar": {
+    "n": 90,
+    "a": 90,
+    "b": 85,
+    "a_only": 5,
+    "b_only": 0,
+    "mcnemar_exact_p": 0.0625
+   },
+   "pass_en": {
+    "n": 90,
+    "a": 85,
+    "b": 83,
+    "a_only": 6,
+    "b_only": 4,
+    "mcnemar_exact_p": 0.75391
+   }
+  }
+ },
+ "criteria": {
+  "B1": true,
+  "B2": true,
+  "B3": false,
+  "provider_error_share": 0.0,
+  "per_arm_provider_errors": {
+   "grounded-v2": 0,
+   "grounded-v4-lang": 0,
+   "grounded-v4r-lang": 0
+  },
+  "inconclusive_by_errors": false,
+  "decision": "not proven",
+  "coverage": {
+   "ar_paired_classifiable_min": 62,
+   "ar_minimum": 50,
+   "en_paired_classifiable": 67,
+   "en_minimum": 45,
+   "tokenonly_by_arm_lang": {
+    "grounded-v2": {
+     "ar": 25,
+     "en": 23
+    },
+    "grounded-v4-lang": {
+     "ar": 19,
+     "en": 23
+    },
+    "grounded-v4r-lang": {
+     "ar": 20,
+     "en": 20
+    }
+   },
+   "ar_tokenonly_exclusive_vs_v4r": {
+    "v4": 2,
+    "v4r": 3,
+    "v2": 8
+   }
+  },
+  "coverage_insufficient": false
+ }
+}
