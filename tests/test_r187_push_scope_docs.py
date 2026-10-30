@@ -401,3 +401,28 @@ def test_main_fails_after_timeout_when_run_never_appears(monkeypatch):
     monkeypatch.setattr(vps.time, "sleep", lambda s: None)
     rc = vps.main(["x", "r/x", "a" * 40, "b"])
     assert rc == 1
+
+
+# ---- red round 4 (2026-10-30, لاحق 86, log 327): a job not yet finalized ------
+# PR #290: the PR-path check ran 17:10:02–17:10:10 while the push job finished
+# 17:10:06; the API reported the job with conclusion None and the binding
+# answered RED ("run 41096397431: None") — the push run itself was green.
+
+def test_verdict_job_without_conclusion_is_a_wait_not_red():
+    run = {"id": 7, "status": "completed", "conclusion": None}
+    jobs = [{"name": "push-scope-docs", "status": "in_progress", "conclusion": None}]
+    rc, why = vps.bind_verdict(run, jobs)
+    assert rc == 3 and "waiting" in why       # never 0 (pass), never 1 (false red)
+
+
+def test_verdict_job_completed_without_conclusion_is_still_a_wait():
+    run = {"id": 7, "status": "completed", "conclusion": "success"}
+    jobs = [{"name": "push-scope-docs", "status": "completed", "conclusion": None}]
+    assert vps.bind_verdict(run, jobs)[0] == 3
+
+
+@pytest.mark.parametrize("bad", ["failure", "cancelled", "skipped", "timed_out", "neutral"])
+def test_verdict_any_final_non_success_is_still_red(bad):
+    run = {"id": 7, "status": "completed", "conclusion": bad}
+    jobs = [{"name": "push-scope-docs", "status": "completed", "conclusion": bad}]
+    assert vps.bind_verdict(run, jobs)[0] == 1

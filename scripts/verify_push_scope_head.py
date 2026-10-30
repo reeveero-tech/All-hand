@@ -72,6 +72,12 @@ def bind_verdict(run: dict | None, jobs: list[dict]) -> tuple[int, str]:
     job = next((j for j in jobs if j.get("name") == JOB), None)
     if job is None:
         return 1, f"job {JOB} missing from push run {run['id']}"
+    if job.get("conclusion") is None:
+        # log 327 (PR #290): the run can read "completed" a moment before its
+        # job's conclusion is persisted — not yet final = keep waiting (bounded
+        # by WAIT_TIMEOUT_SECONDS), never a pass and never a false red.
+        return 3, (f"job {JOB} in push run {run['id']} has no conclusion yet "
+                   f"({job.get('status')}) — waiting")
     if job.get("conclusion") != "success":
         return 1, (f"job {JOB} RED on the head SHA "
                    f"(run {run['id']}: {job.get('conclusion')}) — the docs "
