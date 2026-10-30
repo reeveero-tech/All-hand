@@ -1,0 +1,19 @@
+# 327 — R-187 (صيانة بعد done): ربط الدمج يعامل «لا نتيجة بعد» كانتظار لا كأحمر كاذب (لاحق 86) — 2026-10-30
+# الفرع: m9/r187-binding-null-conclusion
+
+[الملاحظة الحية] PR #290 (head a37c4321): فحص push-scope-docs على مسار pull_request (run 41096405507،
+job 124203205413) فشل: "R-187 merge binding: job push-scope-docs RED on the head SHA (run 41096397431: None)".
+توقيتات من API: مهمة الربط 17:10:02–17:10:10؛ مهمة الدفع push-scope-docs في run 41096397431 انتهت 17:10:06
+بـ success. أي أن الربط قرأ conclusion=None (لم تُثبَّت بعد) وحكم أحمر. إعادة تشغيل المهمة وحدها -> pass.
+السبب في scripts/verify_push_scope_head.py::bind_verdict: `conclusion != "success"` -> 1 (أحمر) حتى لو None.
+
+[الأحمر أولًا] 3 حالات اختبار جديدة في tests/test_r187_push_scope_docs.py (+5 مُعلمة):
+$ python3 -m pytest tests/test_r187_push_scope_docs.py -q
+2 failed, 32 passed   (الفاشلان: conclusion None مع run completed -> كان 1 والمتوقع 3)
+
+[الإصلاح] conclusion is None -> 3 (انتظار محدود بـ WAIT_TIMEOUT_SECONDS=300، ثم فشل عند المهلة كما كان).
+لا تخفيف: النجاح ما زال يتطلب conclusion == "success" حرفيًا؛ failure/cancelled/skipped/timed_out/neutral -> 1
+(مثبت باختبار مُعلم). الغياب الدائم للنتيجة -> فشل بالمهلة (الاختبار القائم test_main_fails_after_timeout...).
+
+[الأخضر] 34 passed.
+[الحزمة الكاملة] انظر أدناه.
