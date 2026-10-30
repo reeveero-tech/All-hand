@@ -16,4 +16,4 @@ $ python3 -m pytest tests/test_r187_push_scope_docs.py -q
 (مثبت باختبار مُعلم). الغياب الدائم للنتيجة -> فشل بالمهلة (الاختبار القائم test_main_fails_after_timeout...).
 
 [الأخضر] 34 passed.
-[الحزمة الكاملة] انظر أدناه.
+[الحزمة الكاملة محليًا] 3669 passed, 8 skipped, 17 deselected, 9 xfailed (main 3662 + 7 حالات جديدة).
