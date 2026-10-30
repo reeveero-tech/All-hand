@@ -131,8 +131,9 @@ class TaskRecord(_Strict):
 
 class ExecuteRecord(_Strict):
     """A /civilization/execute record in the same memory store (another
-    variant of /api/tasks items). Status is "completed" when the plan ran,
-    whatever its stages' ok (no aggregate ok exists — gap G-160-3)."""
+    variant of /api/tasks items). Status is "completed" only when the DAG
+    run's aggregate status is "completed"; any other run outcome is "failed"
+    with the exact state in ``result.status`` (G-160-3 closed — D-104)."""
     id: str = Field(pattern=_EXEC_ID)
     message: str
     plan: Dict[str, Any]

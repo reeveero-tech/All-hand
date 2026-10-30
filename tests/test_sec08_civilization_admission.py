@@ -128,7 +128,9 @@ def test_record_lost_mid_run_does_not_turn_into_500(srv, client, monkeypatch):
 
     async def fake(plan, civ, **kw):
         srv.TASKS.pop(kw["task_id"], None)     # evicted while running
-        return {"run_id": "r-x", "ok": True}
+        # R-170 batch 19 (D-104): a report without an aggregate status is
+        # "failed"; this test is about eviction, so the fake reports a full run.
+        return {"run_id": "r-x", "ok": True, "status": "completed"}
 
     monkeypatch.setattr(cr, "execute_plan", fake)
     r = client.post("/civilization/execute", json={"message": "hello"})
