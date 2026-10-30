@@ -1,0 +1,32 @@
+# 326 — قبول D-103 (PR #288) ودفعة 19 (PR #289) — التحقق بعد الدمج على main (لاحق 85) — 2026-10-30
+# نوع الدفعة: توثيق فقط
+
+[PR #288 — توثيق D-103] head c0d14e09؛ كل الفحوص success على head (test ×3، quality، storage، audit،
+docker، build، network، governance، push-scope-docs)؛ CLEAN؛ صفر تعليقات/مراجعات؛ دُمج --merge -> 33b9ebae.
+main 33b9ebae: Governance Gate run 41085120952 success؛ AGOS Kernel CI/CD run 41085121094:
+  test success، quality/audit/docker/storage/build success، publish skipped (R-030)،
+  network FAILURE (غير إلزامي بالتصميم R-072/RISK-019):
+  FAILED test_r170_live_tool_evidence.py::test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-specialists]
+  AssertionError: {'ok': False, 'error': 'search: no sources found'} — 1 failed, 16 passed.
+
+[PR #289 — دفعة 19] head b6ea3949؛ كل الفحوص success على head (بما فيها network)؛ CLEAN؛ صفر تعليقات؛
+دُمج --merge -> 4528b598 (الفروع محفوظة).
+main 4528b598: Governance Gate run 41090911706 success؛ AGOS Kernel CI/CD run 41090911699:
+  test success ×3 — 3662 passed, 8 skipped, 17 deselected, 9 xfailed (في كل مصفوفة؛ مطابق المحلي 3662)
+  quality/audit/docker/storage/build success، publish skipped
+  network FAILURE: نفس الاختبار، المتغير specialists — 1 failed, 16 passed
+  إعادة تشغيل network فقط (job 124201564640): FAILURE — نفس الاختبار لكن المتغير real هذه المرة
+  (specialists نجح) — عدم حتمية خارجية.
+
+[التشخيص]
+- المسار: real_dispatcher._researcher -> DuckDuckGo Instant Answer فارغ -> _web_search (DDG HTML) -> لا نتائج ->
+  ok=False "search: no sources found" — سلوك صحيح مقصود (R-116: لا نجاح أجوف بلا مصادر).
+- محليًا (صندوق العمل): curl POST html.duckduckgo.com/html/ -> HTTP 502 ×3 (حجب/حد خارجي).
+- محليًا على 0a5e1f4d (قبل دفعتي اليوم) الملف نفسه: 6 failed, 4 passed — مطابق للرأس الحالي (6 failed, 4 passed ×3)
+  => لا علاقة للفشل بتغييرات D-103 (توثيق) أو D-104 (civilization_routes).
+- على CI يتناوب المتغير الفاشل بين التشغيلات => مزود بحث خارجي متقطع.
+
+[القرار] لا تعديل على الاختبار ولا تخفيف (إخفاق المصدر الخارجي يجب أن يظهر أحمر). الفحص غير إلزامي.
+لا إجراء شيفرة. يبقى الفشل مسجلًا كما هو. خطر قائم: اعتماد البحث الحي على نقطة DDG HTML بلا مفتاح (RISK-019).
+
+[الحالة] R-170 in_progress. المتبقي: مراجعة Q-028 البشرية. لا تفعيل لسياسة اللغة (D-103). لا v11.

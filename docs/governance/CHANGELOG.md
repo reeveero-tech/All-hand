@@ -1,3 +1,10 @@
+## 2026-10-30 — لاحق 85: قبول PR #288 (D-103) وPR #289 (دفعة 19) — الفحوص الإلزامية على main خضراء (3662 ×3) — وانحراف موثق: network أحمر بمصدر بحث خارجي
+
+- **الدمج**: #288 → `33b9ebae`؛ #289 → `4528b598`؛ كل الفحوص success على رأسي الـPR؛ الفروع محفوظة.
+- **main بعد الدمج**: test ‏3662 passed ×3 (8 skipped، 17 deselected، 9 xfailed)، quality/storage/audit/docker/build وGovernance Gate ناجحة.
+- **الانحراف كما هو**: network (غير إلزامي R-072/RISK-019) فشل على `33b9ebae` و`4528b598` وفي إعادة التشغيل — `test_live_researcher_passes_router_requirements[…web-search-*]` ‏«search: no sources found» بمتغير متناوب؛ DDG HTML ترد 502 محليًا ×3؛ الفشل نفسه على `0a5e1f4d` قبل الدفعتين ⇒ مصدر خارجي؛ لا تخفيف للاختبار.
+- السجل [`326`](../audit/M8/logs/raw/326_r170_batch19_acceptance_main_ci.log). R-170 يبقى `in_progress`.
+
 ## 2026-10-30 — لاحق 84: R-170 دفعة 19 — إغلاق G-160-3: سجل مهمة `/civilization/execute` لم يعد يدّعي `completed` لتشغيل لم يكتمل (D-104)
 
 - **المشكلة**: `civilization_routes.execute` كتب `status="completed"` لكل تشغيل DAG عاد، أيًا كانت حالته الإجمالية؛ و`resume_run` لم يحدّث الحالة — نجاح مزوّر مرئي في `GET /api/tasks`.
