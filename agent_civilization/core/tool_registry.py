@@ -14,8 +14,10 @@ Scope (what this module IS):
   ``tool_id``), a lifecycle graph, and an append-only audit trail whose
   entries carry the SHA-256 of the canonical record (auditable results).
 
-What it is NOT (honest limits): an in-process store (no persistence, no
-multi-process sharing — that is storage work); no execution, sandboxing or
+What it is NOT (honest limits): this class is an in-process store (no
+persistence, no multi-process sharing) — the durable host-shared variant is
+``tool_registry_store.PersistentToolRegistry`` (R-171 batch 3, D-113), which
+inherits every rule below unchanged; no execution, sandboxing or
 permission enforcement (R-172); no importers (R-173); no routing (R-174);
 ``input_schema`` is checked structurally, not as a full JSON-Schema
 meta-validation (no ``jsonschema`` dependency). A valid record proves

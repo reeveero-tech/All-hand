@@ -33,6 +33,7 @@ import ipaddress
 import json
 import os
 import socket
+import sys
 import urllib.parse
 import urllib.request
 from email.message import Message
@@ -66,6 +67,33 @@ os.environ.setdefault(
 os.environ.setdefault(
     "AGOS_SSE_ADMISSION_DB",
     os.path.join(_SESSION_STATE_DIR, "sse_admission.sqlite3"))
+
+# R-171 batch 3 (D-113): the tool registry is durable and host-shared. A
+# test that disables a tool must not leak that state into the next test, so
+# EVERY test gets its own store file (created only if the test touches the
+# registry; removed after the test). Subprocesses started by a test inherit
+# the env, so multi-process tests still share one store within the test.
+import itertools as _itertools
+
+_TOOL_DB_SEQ = _itertools.count()
+
+
+@pytest.fixture(autouse=True)
+def _isolated_tool_registry(monkeypatch):
+    path = os.path.join(_SESSION_STATE_DIR, f"tool_registry_{next(_TOOL_DB_SEQ)}.sqlite3")
+    monkeypatch.setenv("AGOS_TOOL_REGISTRY_DB", path)
+    mod = sys.modules.get("agent_civilization.core.tool_runtime")
+    if mod is not None:
+        mod.reset_runtime_registry()
+    yield
+    mod = sys.modules.get("agent_civilization.core.tool_runtime")
+    if mod is not None:
+        mod.reset_runtime_registry()
+    for suffix in ("", "-wal", "-shm"):
+        try:
+            os.remove(path + suffix)
+        except OSError:
+            pass
 
 _LOOPBACK_NAMES = {"localhost", "127.0.0.1", "::1", "testserver"}
 _ORIG_URLOPEN = urllib.request.urlopen

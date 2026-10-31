@@ -93,7 +93,8 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_SSE_OPEN_RATE` / `AGOS_SSE_OPEN_WINDOW` (R-144) | core/sse.py | 10 فتحات خلال 60 ث لكل عميل [1–10000] / [1–3600] |
 | `AGOS_SSE_MAX_LIFETIME` (R-144) | core/sse.py | 3600 ث [10–86400] |
 | `AGOS_SSE_HEARTBEAT` (R-144) | core/sse.py | 30 ث [1–300] (كما كان ثابتاً) |
-| `AGOS_DISABLED_TOOLS` (R-171، D-112) | core/tool_runtime.py | فارغ = لا تعطيل؛ قائمة مفصولة بفواصل من معرّفات الأدوات (`agos.internal.analyst`) أو أسماء التخصصات (`analyst`) تُعطَّل عند بذر السجل (أول استخدام في العملية، يلزم إعادة تشغيل للتغيير)؛ الأسماء المجهولة تُتجاهل مع تحذير |
+| `AGOS_TOOL_REGISTRY_DB` (R-171، D-113) | core/tool_registry_store.py | ملف مؤقت للمضيف (`agos_tool_registry.sqlite3`) — سجل الأدوات الدائم المشترك بين عمال المضيف (حالة + تدقيق). تعذره ⇒ رفض كل تنفيذ أداة (fail-closed). الإدارة: `python scripts/tool_registry_admin.py list|disable|enable|audit` (`--actor` إلزامي للتغيير) |
+| `AGOS_DISABLED_TOOLS` (R-171، D-112) | core/tool_runtime.py | فارغ = لا تعطيل؛ **دائم منذ D-113**: إزالة الاسم لا تعيد التفعيل (`tool_registry_admin.py enable`)؛ قائمة مفصولة بفواصل من معرّفات الأدوات (`agos.internal.analyst`) أو أسماء التخصصات (`analyst`) تُعطَّل عند بذر السجل (أول استخدام في العملية، يلزم إعادة تشغيل للتغيير)؛ الأسماء المجهولة تُتجاهل مع تحذير |
 | `AGOS_ALLOW_CODE_EXEC` (R-100، D-044) | core/safety.py | غير مضبوط = تنفيذ `test_runner` فقط إن ضُبط `AGOS_API_KEY`؛ `1` يسمح؛ `0` يرفض دائماً |
 | `AGOS_MEMORY` (R-103، D-046) | core/experience.py | غير مضبوط/`1` = الذاكرة والتعلم مفعّلان؛ `0` يعطّلهما (لا حقل `experience`) |
 | `AGOS_MEMORY_MAX` (R-103) | core/experience.py | 2000 مدخلاً (حد أدنى 10)؛ الأقل أهمية/الأقدم يُحذف |

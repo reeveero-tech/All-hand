@@ -23,6 +23,10 @@ LOG_METHODS = {"debug", "info", "warning", "warn", "error", "exception", "critic
 
 # (path, substring of the flagged source line) -> why it is safe
 REVIEWED = {
+    ("agent_civilization/core/tool_runtime.py", 'getattr(e, "reason", "unknown")'):
+        "RegistryStoreError.reason is one of a closed set of fixed strings set in "
+        "tool_registry_store.py (cannot open/cannot lock/read failed/write failed/"
+        "integrity) — never exception text or a path (R-171 batch 3, D-113)",
     ("server.py", "e.reason, e.retry_after"):
         "sse.StreamLimit.reason is one of a closed set of fixed strings set in sse.py "
         "(never exception text); retry_after is an int",
