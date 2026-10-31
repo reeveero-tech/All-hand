@@ -1,8 +1,8 @@
 ## 2026-10-31 — لاحق 88: R-170 دفعة 20 — لا بيانات اعتماد في نتائج الفشل المرئية للمستأجر (G-160-1 جزئيًا، D-105)
 
 - **المشكلة**: نص الأخطاء الملتقطة داخل المعالجات وعميل النموذج يصل حرفيًا إلى `/api/tasks`؛ ثُبّت أن مفتاح المزود المضبوط وuserinfo وBearer وJWT تظهر كما هي.
-- **الإصلاح**: `agent_civilization/core/public_text.py` (`redact`، `public_failure_result`) مطبق على ناتج الوكيل الفاشل في `real_agents` و`specialist_runtime` وعلى خطأ `LLMClient.complete`. النص التشخيصي باقٍ؛ النتائج الناجحة بلا تغيير.
-- **الاختبارات**: `tests/test_g160_1_secret_redaction.py` — أحمر أولًا (حدود التشغيل والنموذج: 4 failed؛ الملف كاملًا 12 failed قبل وجود الوحدة) ثم أخضر؛ اختبارات التكافؤ R-157 وSEC-06 خضراء.
+- **الإصلاح**: `agent_civilization/core/public_text.py` (`redact`، `public_failure_result`) مطبق على ناتج الوكيل الفاشل في `real_agents` و`specialist_runtime` (يشمل خطأ النموذج المضمّن). `llm.py` بلا تغيير: محاولة أولى عدّلته فكسرت 7 اختبارات تجميد R-169، فأُرجعت بدل إضافة قيد انحراف. النص التشخيصي باقٍ؛ النتائج الناجحة بلا تغيير.
+- **الاختبارات**: `tests/test_g160_1_secret_redaction.py` — أحمر أولًا (قبل الوحدة: 12 failed؛ ثم بنزع خطاف الحد وحده: 6 failed — 2 معالج + 4 خطأ نموذج) ثم 19 passed؛ اختبارات التكافؤ R-157 وSEC-06 خضراء.
 - **الحدود**: G-160-1 مغلق جزئيًا فقط (انظر D-105).
 - **قبول PR #292**: دمج `def96abf`؛ main run 41120304432 ناجح كاملًا — test ‏3669 passed ×3، network ناجح، Governance Gate 41120304514 ناجحة.
 - السجل [`328`](../audit/M8/logs/raw/328_r170_batch20_secret_redaction.log). R-170 يبقى `in_progress`.
