@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -371,7 +372,10 @@ def test_full_queue_drops_oldest_reports_gap_and_never_blocks_publisher(tenant_a
         return fast_seen, chunks, slow_sub
     fast_seen, chunks, slow_sub = asyncio.run(go())
     assert fast_seen == [f"t{i}" for i in range(10)]            # other listener unaffected
-    events = [json.loads(c[len("data: "):]) for c in chunks]
+    # G-160-5 (D-109): bus events carry an ``id:`` line; the synthetic gap does not.
+    assert not chunks[0].startswith("id: ")
+    assert all(re.match(r"^id: [0-9a-f]{8}-\d+-\d+\ndata: ", c) for c in chunks[1:]), chunks
+    events = [json.loads(c.split("data: ", 1)[1]) for c in chunks]
     assert events[0] == {"type": "stream_gap", "missed": 7, "recover": ["/api/tasks", "/api/events"]}
     assert events[1:] == [{"type": "task_created", "task_id": f"t{i}"} for i in (7, 8, 9)]  # newest kept
     assert slow_sub.dropped == 7 and b.stats["dropped"] == 7
@@ -479,7 +483,9 @@ def test_admin_stream_is_own_tenant_only(tenant_auth, bus):
         chunk = await asyncio.wait_for(resp.body_iterator.__anext__(), timeout=2)
         await resp.body_iterator.aclose()
         return chunk
-    assert json.loads(asyncio.run(go())[6:]) == {"type": "admin-own"}
+    chunk = asyncio.run(go())
+    assert re.match(r"^id: [0-9a-f]{8}-\d+-\d+\ndata: ", chunk), chunk   # G-160-5 (D-109)
+    assert json.loads(chunk.split("data: ", 1)[1]) == {"type": "admin-own"}
     assert b.stats["no_subscriber"] == 1
 
 

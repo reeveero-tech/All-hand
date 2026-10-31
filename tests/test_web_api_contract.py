@@ -161,7 +161,10 @@ async def test_sse_stream_yields_event(tenant_auth):
     await server._publish(tenant_auth.tenant, {"type": tag})
     aiter = response.body_iterator
     chunk = await asyncio.wait_for(aiter.__anext__(), timeout=3)
-    assert chunk.startswith("data: ")
-    assert tag in chunk
+    # G-160-5 (D-109): a bus event frame starts with its SSE id line.
+    head, _, rest = chunk.partition("\n")
+    assert head.startswith("id: ") and len(head) > 4, chunk
+    assert rest.startswith("data: ")
+    assert tag in rest
     await aiter.aclose()
     assert server.EVENT_BUS.subscribers(tenant_auth.tenant) == 0

@@ -29,8 +29,9 @@ export default function App() {
     let es
     try {
       es = openEventStream((data) => {
-        if (data.type === 'stream_gap') {
-          // SEC-04: events were dropped for this slow listener — re-read state
+        if (data.type === 'stream_gap' || data.type === 'stream_reset') {
+          // SEC-04: events were dropped for this slow listener — re-read state;
+          // G-160-5: stream_reset = the server could not resume from our last id
           refreshStatus()
         } else if (data.type !== 'heartbeat') {
           setLiveEvent(data)

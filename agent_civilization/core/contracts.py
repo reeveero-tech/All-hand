@@ -342,13 +342,24 @@ class StreamGapEvent(_Strict):
     recover: List[str]
 
 
+class StreamResetEvent(_Strict):
+    """G-160-5 (D-109): the Last-Event-ID of a reconnect cannot be placed by
+    this server process (other worker, restart, evicted tenant log,
+    malformed) — the number of missed events is unknown; re-read state."""
+    type: Literal["stream_reset"]
+    reason: Literal["unknown_last_event_id"]
+    recover: List[str]
+
+
 class SSEFrame(BaseModel):
-    """One ``data: <json>\\n\\n`` frame of /api/events/stream. No ``id:`` and
-    no ``event:`` field are sent: a reconnect is a NEW subscription with no
-    replay (Last-Event-ID is not supported); missed events are signalled by
-    stream_gap and recovered from GET /api/tasks and /api/events."""
+    """The ``data:`` JSON of one /api/events/stream frame. Since G-160-5
+    (D-109) bus events are preceded by an ``id: <epoch>-<generation>-<seq>``
+    line; heartbeat/stream_gap/stream_reset frames carry no id. A reconnect
+    sending ``Last-Event-ID`` gets the missed events replayed from a bounded
+    per-tenant, per-process ring (exact ``stream_gap`` if some were evicted;
+    ``stream_reset`` if the id is unknown here). No ``event:`` field."""
     event: Union[TaskCreatedEvent, TaskStartedEvent, TaskCompletedEvent,
-                 HeartbeatEvent, StreamGapEvent] = Field(discriminator="type")
+                 HeartbeatEvent, StreamGapEvent, StreamResetEvent] = Field(discriminator="type")
 
 
 # -------------------------------------------------------- status / health

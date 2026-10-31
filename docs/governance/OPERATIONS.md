@@ -86,6 +86,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_SECRETS_DB` (R-189، لاحق 64) | server.py | غير مضبوط = متجر الأسرار معطّل ولا تغيير سلوك (بيئة الاعتمادات هي المصدر). مسار ملف = تفعيل اختياري: مفاتيح مستأجر من المتجر تُعتمد بجانب بيانات الاعتمادات (`authenticate_key` بفك تشفير ومقارنة زمنية ثابتة — هوية المستأجر من قرار الخادم فقط)؛ متجر مضبوط ومعطوب (مفتاح غير مقروء/بطول خاطئ) = الخادم لا يقلع بصوت عالٍ — لا تخفيض مصادقة صامت |
 | `AGOS_SECRETS_MASTER_KEY_FILE` (R-189) | core/secret_store.py | غير مضبوط = `<tmp>/agos_secrets_master_key` — ملف المفتاح الرئيسي 32 بايت 0600 خارج شجرة المصدر (المسار إعداد غير سري؛ القيمة تُنشأ عشوائيًا عبر `initialize()` الصريحة ولا تُجدد لقاعدة موجودة أبدًا) |
 | `AGOS_SSE_QUEUE_SIZE` (R-144) | core/sse.py | 100 أحداث لكل اتصال SSE [1–10000] |
+| `AGOS_SSE_REPLAY_SIZE` (G-160-5، D-109) | core/sse.py | 100 حدث لكل مستأجر في حلقة الاستئناف (`Last-Event-ID`) [0–10000]؛ 0 = بلا إعادة (المعرّفات تبقى، والفجوة تُعدّ بدقة)؛ ذاكرة العملية × حتى 1000 مستأجر |
 | `AGOS_SSE_MAX_CONNECTIONS` (R-144) | core/sse.py | 100 اتصال SSE متزامن للعملية [1–10000] |
 | `AGOS_SSE_MAX_PER_TENANT` (R-144) | core/sse.py | 10 [1–10000، ≤ الإجمالي] |
 | `AGOS_SSE_MAX_PER_CLIENT` (R-144) | core/sse.py | 5 لكل `request.client.host` [1–10000، ≤ الإجمالي] |
