@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from agent_civilization.agents.real.runtime_contract import failure_result
 from agent_civilization.core import experience as _experience
+from agent_civilization.core import public_text as _public_text
 from agent_civilization.core import telemetry as _telemetry
 from agent_civilization.core.output_validators import apply_output_verification
 from agent_civilization.core.agents.real_dispatcher import (
@@ -112,6 +113,9 @@ class RealSpecialistAgent:
             # R-170 (batch 3): completion gate (opt-in AGOS_OUTPUT_VALIDATORS=1)
             # applied BEFORE adopting success or its side effects (stats below).
             ok, result = apply_output_verification(_verification, ok, result)
+            if not ok:
+                # G-160-1 (D-105): no credential in a tenant-visible failure
+                result = _public_text.public_failure_result(result)
             if ok:
                 self.stats["tasks_completed"] += 1
             else:
