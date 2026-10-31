@@ -344,6 +344,14 @@ class SupabaseStorage:
         self.guarded, self.allow_private = guarded, allow_private
         self._session: Optional[aiohttp.ClientSession] = None
 
+    def persists(self) -> bool:
+        """G-160-2 / R-188 (batch 21): whether a write through this store can
+        land at all. False when no storage is configured — every write
+        primitive then returns its failure value at once, and a caller's
+        retry/deferral loop must not treat that as an outage (it used to
+        spend the whole retry budget, log CRITICAL and defer forever)."""
+        return is_configured()
+
     async def _get_session(self) -> aiohttp.ClientSession:
         # R-164: refuse at once while the storage breaker is open (every
         # caller is inside its operation's try/except, so this is recorded
