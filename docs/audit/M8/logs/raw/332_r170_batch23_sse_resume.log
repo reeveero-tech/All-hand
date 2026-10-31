@@ -31,3 +31,4 @@
 [بعد الالتزام] test_r156 + test_web_api_contract + r187 + r154 + r155: 151 passed
 
 [CI quality على PR #297 (run 41189113606)] فشل: ruff F401 — `typing.List`/`typing.Tuple` غير مستخدمين في core/sse.py. أُصلح بحذفهما من الاستيراد؛ ruff check --select F,E722 نظيف محليًا؛ اختبارات SSE تنجح.
+[R-187 على دفع ed460c74] push-scope-docs فشل (run 41189182513): R0 وثائق إلزامية غير محدثة، R5 تغيير بايثون بلا tests/. التصحيح: التزام وثائق تالٍ (CHANGELOG/ROADMAP/PROJECT_STATE) — لم يُعد كتابة التاريخ ولم يُتجاوز الفحص.
