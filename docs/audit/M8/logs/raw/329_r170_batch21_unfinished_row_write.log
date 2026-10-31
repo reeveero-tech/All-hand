@@ -1,0 +1,48 @@
+# 329 — R-170 دفعة 21 (لاحق 89): G-160-2 — صف التخزين لمهمة متطايرة انتهت دون اكتمال لا يبقى running
+# التاريخ: 2026-10-31 | الفرع: m8/r170-batch21-unfinished-row-write | القرار: D-106
+
+[قبول PR #293 — ما قبل الدفعة] head a27a7017؛ كل الفحوص success على الرأس (test/quality/network/storage/audit/build/docker،
+  governance، push-scope-docs ×2؛ publish وgovernance الثاني skipped بالتصميم)؛ CLEAN؛ صفر تعليقات وصفر مراجعات؛ دُمج --merge -> 26db687b.
+  تشغيل الـPR 41173999667: test ×3: 3688 passed, 8 skipped, 17 deselected, 9 xfailed.
+main 26db687b: Governance Gate run 41176600531 success؛ AGOS Kernel CI/CD run 41176600525 success —
+  test ×3: 3688 passed, 8 skipped, 17 deselected, 9 xfailed (597.92s/557.89s/585.32s)؛ quality/network/storage/audit/build/docker success؛ publish skipped.
+
+[اختيار المهمة] كما في 328: بنود ما بعد R-170 تعتمد عليه آليًا (STATUS_DEFINITIONS §10/§10b)؛ G-160-2 ثغرة موثقة مفتوحة داخل النطاق.
+
+[التحقق من وجود الثغرة] server.py::_end_unfinished — docstring نفسه: "a storage row already written as running is not rewritten
+  here (no await during cancellation) — documented gap G-160-2". المسارات: _run_task (CancelledError، Exception)،
+  _stop_registry_worker (يتامى الإيقاف). API.md و OPERATIONS.md يوثقان الثغرة. مسار الإلغاء عبر /cancel يكتب الصف بانتقال مشروط أصلًا.
+
+[الأحمر أولًا — 1] tests/test_g160_2_unfinished_row_write.py (7 حالات أول الأمر) على شيفرة main:
+  6 failed, 1 passed (الضابط test_record_already_terminal_writes_nothing ينجح قبل وبعد بالتصميم).
+[اكتشاف أثناء الدفعة — R-188] تجربة مباشرة بلا تخزين مهيأ على main: _write_task_terminal("x","failed") -> False بعد ~9 ث،
+  CRITICAL "NOT persisted after 5 attempts — DEFERRED" وخريطة التأجيل تحتفظ بالمدخل لمصرف لا يهبط أبدًا.
+  أُضيف اختبار ثامن test_no_storage_configured_is_not_an_outage.
+[الأحمر أولًا — 2] الملف كاملًا (8 حالات) على شيفرة main (git stash لملفي الإنتاج): 7 failed, 1 passed.
+[طفرة] persist=True لكل يتامى الإيقاف (إلغاء استثناء الدائم): test_shutdown_orphan_rewrites_volatile_row_never_a_durable_one -> 1 failed.
+
+[الإصلاح]
+~ server.py: _end_unfinished(..., persist=True) يجدول _persist_unfinished (مهمة حلقة، مرجع قوي في _UNFINISHED_WRITES)؛
+  _write_task_terminal(guard_from=...) -> _guarded_terminal_write = transition_task(("queued","running") -> "failed",
+  result, finished_at=now(), agent_name, elapsed_s): True هبط، False مستقر (لا كتابة فوق، لا تأجيل)، None إعادة محاولة ثم تأجيل
+  بالحقل guard فيكتب المصرف بالشرط نفسه؛ _stop_registry_worker يمرر persist=False لما في _QUEUE_STATE/_RUNNING_RUNS؛
+  lifespan: await _flush_unfinished_writes(AGOS_TASK_SHUTDOWN_WRITE_FLUSH_S=15) قبل get_storage().close()؛
+  _storage_persists(): بلا تخزين مهيأ -> _write_task_terminal يعود True فورًا.
+~ agent_civilization/storage/supabase_store.py: SupabaseStorage.persists() = is_configured() (بلا I/O).
+~ tests/test_r188_terminal_write_retry.py: المخزن البديل _TerminalFlaky (يجيب الكتابة النهائية بنفسه ويمرر الباقي لمخزن
+  حقيقي غير مهيأ) يعلن persists()=True — دونه يرث «لا شيء يُحفظ» فلا تُجرب كتابته أصلًا. لا تأكيد خُفف.
+
+[الأخضر] الملف الجديد: 8 passed in 2.07s؛ test_r188_terminal_write_retry.py: 9 passed.
+[الحزمة الكاملة — تشغيل 1] (جُمعت قبل تعديل البديل) 1 failed, 3695 passed — الفشل الوحيد هو test_completion_site_routes_...
+  للسبب أعلاه (terminal writes=0)؛ أُصلح بالبديل.
+[الحزمة الكاملة — تشغيل 2 على c6f82e11] 3696 passed, 8 skipped, 17 deselected, 9 xfailed in 587.83s (main 3688 + 8 جديدة).
+[ملاحظة جانبية — قائمة على main، خارج النطاق] تشغيل r188_terminal_write_retry ثم r162 ثم r160_contracts بهذا الترتيب يُفشل
+  3 اختبارات r160 (سجلات TASKS من _FastAgent تخالف عقد task_record) — مستنسخ على origin/main نفسه (3 failed, 149 passed)؛
+  الترتيب الأبجدي الافتراضي لا يتأثر. تلوث حالة بين ملفات اختبار، لم يُعالج هنا.
+[بوابات محلية] check_no_delete (0 حذف/نقل/إعادة تسمية)، conflict_markers، atomic_batch (بعد DATA_MODEL.md)، status_evidence،
+  export_contract_schemas --check (31 problems=0)، scan_raw_exception_logs (unreviewed=0).
+
+[الحدود] G-160-2 أُغلقت بحدود الوضع المتطاير المعلنة: التأجيل في الذاكرة يُفقد بإعادة التشغيل؛ كتابة تتجاوز حد التصريف عند
+  الإيقاف تُسجَّل CRITICAL بالعدد ولا تُضمن؛ تشغيل تُلغيه حلقة الأحداث بعد انتهاء lifespan لا يجدول شيئًا؛ نافذة ضيقة: يتيم
+  يُكتب failed قبل أن تهبط كتابة running الوسيطة غير المشروطة قد يعود running (لم تُستنسخ، لم تُغلق)؛ الإثبات بمخزن زائف داخل
+  العملية (transition_task نفسه مغطى في فحص التخزين الحي). R-170 in_progress. لا حذف/نقل/إعادة تسمية؛ لا نشر؛ لا تفعيل لسياسة اللغة.

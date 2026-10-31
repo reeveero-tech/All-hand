@@ -39,7 +39,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 from collections import defaultdict
 
 from fastapi import FastAPI, HTTPException, Request, Security
@@ -201,6 +201,9 @@ async def _lifespan(_app):
     yield
     _stop_queue_loops()  # R-163: no lease renewal after shutdown
     _stop_registry_worker()  # R-162: no lease outlives the worker
+    # G-160-2: the shutdown orphans' guarded row writes land (bounded)
+    # BEFORE the storage session closes — otherwise they die with it
+    await _flush_unfinished_writes(TASK_SHUTDOWN_WRITE_FLUSH_S)
     await experience.persist()  # R-103: no-op unless AGOS_MEMORY_FILE is set
     await get_storage().close()
 
@@ -471,7 +474,12 @@ def _stop_registry_worker() -> None:
         return
     for tid in orphans.task_ids:
         rec = TASKS.get(tid) or {}
-        _end_unfinished(tid, rec.get("specialization", "?"), "task cancelled before completion: worker stopped")
+        # G-160-2: a DURABLE run's row belongs to the lease/reaper recovery
+        # (R-163) — writing `failed` there would defeat the no-loss
+        # guarantee; only a volatile run's row is finished here
+        durable = tid in _QUEUE_STATE or tid in _RUNNING_RUNS
+        _end_unfinished(tid, rec.get("specialization", "?"), "task cancelled before completion: worker stopped",
+                        persist=not durable)
 # SEC-04 (R-144): live events are broadcast in process — every SSE connection
 # of a tenant has its own bounded queue and receives its own copy; nothing is
 # kept for a tenant with no connection (SEC-02: a stream only ever subscribes
@@ -760,15 +768,17 @@ _QUEUE_LOOPS: List[asyncio.Task] = []
 _QUEUE_STOP = False
 
 
-def _end_unfinished(task_id: str, specialization: str, reason: str) -> None:
+def _end_unfinished(task_id: str, specialization: str, reason: str, *, persist: bool = True) -> None:
     """R-160: a task record never stays queued/running after its run exits —
     on cancellation (shutdown) or an unexpected error it ends ``failed`` with a
     FIXED reason (no exception text). R-163: when the record was already moved
     to ``cancelled`` by the cancel endpoint, the outcome says "cancelled".
     Synchronous on purpose: it must also work
-    while the loop is cancelling. Only the memory record and the in-process SSE
-    bus are updated; a storage row already written as ``running`` is not
-    rewritten here (no await during cancellation) — documented gap G-160-2."""
+    while the loop is cancelling. G-160-2 (R-170 batch 21): the storage row is
+    no longer left ``running`` — with ``persist`` (a VOLATILE run; the
+    shutdown path passes False for a durable one) a GUARDED row write is
+    scheduled as its own loop task (no await here) — see
+    ``_persist_unfinished``."""
     rec = TASKS.get(task_id)
     if rec is None or rec.get("status") in TERMINAL_TASK_STATES:
         return
@@ -778,11 +788,57 @@ def _end_unfinished(task_id: str, specialization: str, reason: str) -> None:
     outcome = prior if cancelled else {"ok": False, "agent": rec.get("agent"), "specialization": specialization,
                                       "elapsed_s": 0, "result": {"error": reason}}
     rec.update(status="failed", result=outcome, finished_at=time.time())
+    if persist:
+        _persist_unfinished(task_id, outcome)
     tenant_id = rec.get("tenant_id")
     if tenant_id is not None:
         EVENT_BUS.publish(tenant_id, {"type": "task_completed", "task_id": task_id,
                                       "agent": rec.get("agent"), "specialization": specialization,
                                       "ok": False, "elapsed_s": 0})
+
+
+# G-160-2 (R-170 batch 21): the row write of a volatile task that ended
+# unfinished. GUARDED: ``transition_task`` from the volatile live statuses
+# only — a row someone else already finished or cancelled is never
+# overwritten (the unconditional ``update_task`` is never used here). It
+# runs as its own loop task because ``_end_unfinished`` is synchronous and
+# may be called while its own task is being cancelled. Strong references
+# are kept so the lifespan can await them before closing storage.
+VOLATILE_LIVE_ROW_STATUSES = ("queued", "running")
+_UNFINISHED_WRITES: Set[asyncio.Task] = set()
+TASK_SHUTDOWN_WRITE_FLUSH_S = max(0.0, float(os.getenv(
+    "AGOS_TASK_SHUTDOWN_WRITE_FLUSH_S", "15")))
+
+
+def _persist_unfinished(task_id: str, outcome: Dict[str, Any]) -> None:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # no running loop (called outside the server's loop): nothing can
+        # be scheduled — loud, never silent
+        logger.critical("task %s ended unfinished with no running loop: its storage "
+                        "row was NOT rewritten (G-160-2 bound)", task_id)
+        return
+    t = loop.create_task(_write_task_terminal(
+        task_id, "failed", agent_name=outcome.get("agent"), result=outcome,
+        elapsed_s=0, guard_from=VOLATILE_LIVE_ROW_STATUSES))
+    _UNFINISHED_WRITES.add(t)
+    t.add_done_callback(_UNFINISHED_WRITES.discard)
+
+
+async def _flush_unfinished_writes(timeout_s: float) -> None:
+    """Shutdown: await the scheduled unfinished-row writes, bounded. A write
+    still pending past the bound is CRITICAL-logged (count only), never
+    hidden — the in-memory deferral is lost with the process."""
+    loop = asyncio.get_running_loop()
+    pending = {t for t in _UNFINISHED_WRITES if not t.done() and t.get_loop() is loop}
+    if not pending:
+        return
+    _, not_done = await asyncio.wait(pending, timeout=timeout_s)
+    if not_done:
+        logger.critical("%d unfinished-task row write(s) still pending after the %.1fs "
+                        "shutdown flush — those rows may stay non-terminal (G-160-2 bound)",
+                        len(not_done), timeout_s)
 
 
 # R-188 (log 302): ``update_task`` FAILS SOFT — it catches every storage
@@ -859,8 +915,16 @@ async def _drain_terminal_writes() -> None:
 
                 async def _one(task_id: str, payload: Dict[str, Any]) -> bool:
                     try:
-                        landed = await get_storage().update_task(
-                            task_id, payload["status"], **payload["kw"])
+                        if payload.get("guard"):
+                            # G-160-2: the GUARDED write keeps its guard —
+                            # False (row finished elsewhere) is settled,
+                            # only a failed request (None) stays pending
+                            landed = await _guarded_terminal_write(
+                                task_id, payload["status"], payload["guard"],
+                                **payload["kw"]) is not None
+                        else:
+                            landed = await get_storage().update_task(
+                                task_id, payload["status"], **payload["kw"])
                     except asyncio.CancelledError:
                         raise
                     except Exception as e:
@@ -928,20 +992,62 @@ def _ensure_terminal_write_drainer() -> None:
     _TERMINAL_WRITE_DRAIN_TASK = loop.create_task(_drain_terminal_writes())
 
 
+async def _guarded_terminal_write(task_id: str, status: str, guard_from, *,
+                                 agent_name=None, result=None, elapsed_s=None):
+    """G-160-2: one conditional transition — True landed, False the row is
+    no longer in ``guard_from`` (finished elsewhere: settled, never
+    overwritten), None the request itself failed."""
+    fields: Dict[str, Any] = {"finished_at": "now()"}
+    if agent_name:
+        fields["agent_name"] = agent_name
+    if result is not None:
+        fields["result"] = result
+    if elapsed_s is not None:
+        fields["elapsed_s"] = elapsed_s
+    return await get_storage().transition_task(task_id, tuple(guard_from), status, **fields)
+
+
+def _storage_persists() -> bool:
+    """R-188 (batch 21 finding): with NO storage configured every write
+    primitive fails at once — that is not an outage to retry/defer. A store
+    without ``persists`` (a test double) is treated as persisting."""
+    check = getattr(get_storage(), "persists", None)
+    return True if check is None else bool(check())
+
+
 async def _write_task_terminal(task_id: str, status: str, *, agent_name=None,
-                               result=None, elapsed_s=None) -> bool:
+                               result=None, elapsed_s=None, guard_from=None) -> bool:
     """Persist a task's TERMINAL state with a bounded, jittered retry (see
     the block comment above for why). Returns True when the row is written;
     False means the budget was exhausted — the write is then DEFERRED to the
     background drainer (retried until it lands or the server restarts),
     CRITICAL-logged by name: visible, never silent, never orphaned while
-    the server lives."""
+    the server lives.
+
+    ``guard_from`` (G-160-2): a GUARDED write — the row moves only from
+    those statuses; a row already elsewhere is settled (True, logged, never
+    overwritten nor deferred). No storage configured: nothing to persist —
+    True at once (R-188 batch 21 finding: it used to spend the whole budget,
+    log CRITICAL and defer forever)."""
+    if not _storage_persists():
+        return True
     delay = 0.5
     for attempt in range(1, TASK_TERMINAL_WRITE_ATTEMPTS + 1):
         try:
-            if await get_storage().update_task(
+            if guard_from is not None:
+                moved = await _guarded_terminal_write(
+                    task_id, status, guard_from, agent_name=agent_name,
+                    result=result, elapsed_s=elapsed_s)
+                if moved is False:
+                    logger.info("task %s unfinished-row write skipped: the row was "
+                                "already finished elsewhere (not overwritten)", task_id)
+                    return True
+                landed = moved is True
+            else:
+                landed = await get_storage().update_task(
                     task_id, status, agent_name=agent_name, result=result,
-                    elapsed_s=elapsed_s):
+                    elapsed_s=elapsed_s)
+            if landed:
                 if attempt > 1:
                     logger.info("task %s terminal write (%s) succeeded on attempt %d",
                                 task_id, status, attempt)
@@ -971,6 +1077,8 @@ async def _write_task_terminal(task_id: str, status: str, *, agent_name=None,
         "kw": {"agent_name": agent_name, "result": result,
                "elapsed_s": elapsed_s},
     }
+    if guard_from is not None:
+        TERMINAL_WRITE_PENDING[task_id]["guard"] = tuple(guard_from)
     _ensure_terminal_write_drainer()
     logger.critical(
         "task %s terminal state %s was NOT persisted after %d attempts — "

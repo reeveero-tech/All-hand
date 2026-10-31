@@ -241,7 +241,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 - `/health`: رسالة المكوّن الفاشل صارت `Error: <نوع الاستثناء>` (كانت نص الاستثناء). التشخيص التفصيلي من سجلات الخادم بنوع الخطأ و`/metrics`، لا من جسم `/health`.
 - سجلات الطابور تطبع هدف Redis بصيغة `scheme://host:port` فقط (كان العنوان كاملاً، وقد يحمل كلمة مرور، عند كل `/health`).
 - سجلات الاستثناءات في القوالب والوكلاء والطابور بنوع الاستثناء فقط. فحص محلي: `python3 scripts/scan_raw_exception_logs.py` (rc=1 عند موقع جديد غير مراجَع).
-- إيقاف الخادم أثناء مهام جارية: سجلاتها في الذاكرة تنتهي `failed` بسبب «task cancelled before completion»؛ صفوف التخزين المقابلة قد تبقى `running` (G-160-2).
+- إيقاف الخادم أثناء مهام جارية: سجلاتها في الذاكرة تنتهي `failed` بسبب «task cancelled before completion»؛ صفوف التخزين المتطايرة تُكتب `failed` بانتقال مشروط قبل إغلاق التخزين، بحد `AGOS_TASK_SHUTDOWN_WRITE_FLUSH_S` (افتراضي 15 ث؛ ما يتجاوزه يُسجَّل CRITICAL بالعدد ويُفقد مع العملية — D-106). صفوف الطابور الدائم تبقى لاسترداد العقد/الحاصد. كانت تبقى `running` (G-160-2، أُغلقت بحدود معلنة).
 - فحص العقود محلياً: `python3 scripts/export_contract_schemas.py --check`؛ بعد تغيير مقصود: `python3 scripts/export_contract_schemas.py` ثم مراجعة الفرق ورفع الإصدار إن كان BREAKING.
 
 ## R-161 — التكامل الاختياري: محلي وحي (D-073، 2026-10-17)
