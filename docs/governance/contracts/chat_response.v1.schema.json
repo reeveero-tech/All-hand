@@ -157,6 +157,18 @@
       "title": "Agent",
       "type": "string"
     },
+    "duplicate": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Duplicate"
+    },
     "outcome": {
       "$ref": "#/$defs/AgentOutcome"
     },
