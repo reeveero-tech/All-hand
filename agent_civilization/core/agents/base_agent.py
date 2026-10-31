@@ -62,7 +62,7 @@ def _wrap_process_task(fn: Callable[..., Awaitable[Any]]):
     async def wrapper(self, work: Dict[str, Any]):
         # Import lazily to avoid circular imports at module load.
         try:
-            from agent_civilization.core.agents.real_dispatcher import dispatch
+            from agent_civilization.core.tool_runtime import dispatch  # R-171 (D-112): registry gate
         except Exception:  # pragma: no cover
             dispatch = None  # type: ignore
         spec = getattr(self, "specialization", None)
