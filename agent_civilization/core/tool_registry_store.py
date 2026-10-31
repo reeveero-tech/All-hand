@@ -79,7 +79,13 @@ CREATE TABLE IF NOT EXISTS tool_meta (
 class RegistryStoreError(RegistryError):
     """The shared registry store is unavailable or inconsistent. Callers that
     execute tools must refuse (fail-closed). The message never carries the
-    local file path."""
+    local file path. ``reason`` is a fixed vocabulary safe to log:
+    ``cannot open`` / ``cannot lock`` / ``read failed`` / ``write failed`` /
+    ``integrity``."""
+
+    def __init__(self, message: str, reason: str = "integrity"):
+        super().__init__(message)
+        self.reason = reason
 
 
 def default_db_path() -> str:
@@ -93,7 +99,8 @@ def _immutable(rec: ToolRecord) -> Dict[str, Any]:
 
 
 def _store_error(what: str, exc: BaseException) -> RegistryStoreError:
-    return RegistryStoreError(f"tool registry store unavailable: {what} ({type(exc).__name__})")
+    return RegistryStoreError(f"tool registry store unavailable: {what} ({type(exc).__name__})",
+                              reason=what)
 
 
 def _write_changes(conn: sqlite3.Connection,

@@ -175,7 +175,7 @@ def _evaluate(spec: str) -> Tuple[bool, str, str]:
                                f"tool — {reason2}"), key
         return True, "", key
     except RegistryStoreError as e:     # fail-closed: never run on stale/empty state
-        logger.warning("tool registry store error: %s", e)
+        logger.warning("tool registry store error: %s", getattr(e, "reason", "unknown"))
         return False, f"tool {tool_id_for(spec)} refused: {STORE_UNAVAILABLE}", tool_id_for(spec)
 
 
