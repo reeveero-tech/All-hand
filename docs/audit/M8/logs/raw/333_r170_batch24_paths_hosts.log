@@ -1,0 +1,49 @@
+# 333 — R-170 دفعة 24 (لاحق 93، D-110): إغلاق G-160-1 — مسارات محلية ومضيفو خدمات داخلية في نتائج الفشل
+# التاريخ: 2026-10-31 — الفرع m8/g160-1-public-text-paths (مكدس فوق m8/g160-5-sse-resume، PR #297)
+
+## المشكلة
+D-105 (دفعة 20) حجب بيانات الاعتماد فقط وأعلن: "internal host names and paths are NOT treated as secrets".
+نتيجة فشل تحمل str(e) قد تكشف جذر المستودع/بيئة بايثون/المؤقت/المنزل أو مضيف Supabase/Postgres/Redis المضبوط.
+
+## الاختبار أولًا (أحمر)
+$ AGOS_ENV=development python3 -m pytest -q -p no:cacheprovider tests/test_g160_1_paths_hosts.py
+FAILED test_repo_root_path_is_redacted_keeping_relative_tail
+FAILED test_runtime_prefixes_are_redacted[sys.prefix|tmp|home]  (3)
+FAILED test_internal_service_hosts_are_redacted
+FAILED test_failure_result_walk_redacts_paths_and_hosts
+FAILED test_credentials_still_redacted_alongside
+========================= 7 failed, 3 passed =========================
+(الثلاثة الناجحة: اختبارات الإبقاء — مضيف/URL المستخدم، تطابق التسمية الكاملة، مسار URL ليس مسارًا محليًا — تنجح قبل الإصلاح وبعده، وهي حراسة ضد الإفراط.)
+
+## الإصلاح
+agent_civilization/core/public_text.py: بعد خطوات D-105 —
+- INTERNAL_SERVICE_ENV = (SUPABASE_URL, DATABASE_URL, REDIS_URL): hostname ⇒ <internal-host> (تطابق تسمية كاملة، غير حساس لحالة الأحرف، المنفذ يبقى).
+- بادئات: جذر المستودع، sys.prefix، sys.base_prefix، tempfile.gettempdir()، ~ (وrealpath، طول ≥ 4) ⇒ <path>
+  فقط في بداية رمز مسار: (?<![\w/.:~-]) ... (?=[/\\\s'",:;)\]]|$).
+- ذاكرة مؤقتة لكل لقطة بيئة؛ reset_cache يمسحها.
+لا ملف مجمد مُسّ (llm.py، real_dispatcher.py، data_worker.py).
+
+## بعد الإصلاح
+$ pytest tests/test_g160_1_paths_hosts.py tests/test_g160_1_secret_redaction.py
+29 passed
+$ AGOS_ENV=development python3 -m pytest -q -p no:cacheprovider   (المجموعة الكاملة محليًا، قبل الالتزام)
+==== 3759 passed, 8 skipped, 17 deselected, 9 xfailed in 539.08s ====
+$ ruff check --select F,E722 agent_civilization/core/public_text.py tests/test_g160_1_paths_hosts.py
+All checks passed!
+
+## الحدود المعلنة
+سر بصيغة مجهولة؛ مضيفو خدمات غير مدرجة ومسارات خارج البادئات تبقى؛ URL مستخدم بمضيف يطابق مضيفًا داخليًا يُحجب أيضًا؛
+OSError عند تسجيل وكيل خارجي يصل المشرف لا المستأجر؛ النتائج الناجحة لا تُعاد كتابتها.
+
+## قبول دفعات سابقة على main
+- PR #295 (دفعة 22، G-160-2): دُمجت merge=314239075ae0733493830e543dc19e85b7216630.
+  PR run 41186868692: quality/test(3699 passed, 8 skipped, 9 xfailed)/build/docker/storage/audit pass؛
+  network فشل (غير مطلوب): test_live_researcher_passes_router_requirements[...pagination-web-search-real] — 'search: no sources found'
+  — نفس تذبذب DDG الموثق في 326 (RISK-019)؛ الاختبار لم يُعدّل.
+- PR #296 (R-171 دفعة 1): دُمجت merge=e22e3a61c961c563e6e42ed154f1e7fa094bc507؛ PR run 41187047224 كل الفحوص pass بما فيها network.
+  الشجرة المختبرة طابقت نتيجة الدمج (diff بين main بعد #295 وقاعدة #296 فارغ).
+- PR #297 (دفعة 23): أول تشغيل quality فشل بـruff F401 (typing.List/Tuple في core/sse.py) — أُصلح في ed460c74؛ انظر 332.
+  درس: ruff أضيف إلى البوابات المحلية قبل الدفع.
+- تحقق main بعد الدمج:
+  31423907 (#295): AGOS Kernel CI/CD run 41189058135 success — test ×3: 3699 passed, 8 skipped, 17 deselected, 9 xfailed؛ Governance Gate 41189058131 success.
+  e22e3a61 (#296): AGOS Kernel CI/CD run 41189097755 success — test ×3: 3730 passed, 8 skipped, 17 deselected, 9 xfailed (+31 = اختبارات R-171)؛ Governance Gate 41189097767 success.
