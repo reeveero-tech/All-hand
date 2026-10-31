@@ -1,0 +1,36 @@
+# 330 — R-170 دفعة 22 (لاحق 90): G-160-2 المتبقي — الكتابة الوسيطة running لا تكتب فوق صف نهائي
+# التاريخ: 2026-10-31 | الفرع: m8/r170-batch22-running-write-race | القرار: D-107
+
+[قبول PR #294 — ما قبل الدفعة] head 31952a8d؛ تشغيل الـPR 41180966019: test ×3: 3696 passed, 8 skipped, 17 deselected, 9 xfailed؛
+  دُمج --merge -> 24a5577d. main 24a5577d: AGOS Kernel CI/CD run 41182821326 success (كل الوظائف؛ test ×3 = 3696 passed)؛
+  Governance Gate run 41182821269 success. لا PR مفتوح عند بدء الدفعة.
+
+[فحص نقطة البدء — فروع غير مدموجة، محفوظة دون تعديل]
+  origin/ai-agent-civilization-framework و origin/master (1 commit لكل، 2026-07-08، التنفيذ الأولي التاريخي)؛
+  origin/m8/probe-conflict-markers-negative (مسبار سلبي «do not merge» بالتصميم)؛
+  origin/m8/r170-batch13-prst3-lang-validation (عمل دفعة 13 قديم، المسار اللغوي مجمد بقرار D-103)؛
+  origin/m8/rate-limit-multiprocess (إعادة إنتاج حمراء — عولجت في لاحق 61). لا حذف ولا دمج.
+
+[المشكلة] D-106 أعلن حدًا ضيقًا: server.py::_run_task_traced يكتب update_task(task_id, "running") غير مشروط؛
+  إن كان طلبه في الطريق عند الإلغاء هبط بعد failed المشروط فيبقى الصف running للأبد.
+[التصنيف] مهم محدود (نافذة ضيقة) لا مانع؛ يُغلق لأن الإصلاح سطر واحد بلا تغيير مخطط.
+
+[الأحمر أولًا] tests/test_g160_2_running_write_race.py (3 حالات؛ تخزين مزيف يُهبط طلب running المرسل بعد إلغاء المستدعي):
+  على الشيفرة قبل الإصلاح:
+  E     + running
+  =========================== short test summary info ============================
+  FAILED tests/test_g160_2_running_write_race.py::test_late_running_write_never_overwrites_failed
+  ========================= 1 failed, 2 passed in 0.49s ==========================
+  الضابطان (running ثم failed؛ المسار العادي running->completed) ينجحان قبل وبعد بالتصميم.
+
+[الإصلاح] server.py: await storage.transition_task(task_id, ("queued",), "running", agent_name=agent.name)
+  ترتيبا الوصول: failed ثم running => لا تطابق والصف يبقى failed؛ running ثم failed => شرط failed (queued|running) يطابق.
+[الأخضر]
+  ============================== 3 passed in 0.53s ===============================
+[الحزمة الكاملة محليًا] 3699 passed, 8 skipped, 17 deselected, 9 xfailed in 540.77s (0:09:00) 
+[ملاحظة جانبية قائمة على main] تشغيل r188 ثم r163 ثم r160 بهذا الترتيب يُفشل 3 اختبارات r160 (تلوث TASKS من _FastAgent)؛
+  r160 وحده 84 passed؛ الترتيب الافتراضي غير متأثر — موثقة سابقًا، لم تُصلح هنا.
+
+[الوثائق] DECISIONS D-107؛ API.md (السطر 197)؛ DATA_MODEL.md؛ OPERATIONS.md (تصويب سطر قديم عن الإلغاء المتطاير)؛
+  EVIDENCE.md (G-160-2)؛ ROADMAP/PROJECT_STATE/CHANGELOG لاحق 90.
+[الحدود] تخزين مزيف فقط؛ بدائية الانتقال المشروط على PostgREST مغطاة بوظيفة storage (R-163)؛ حدود D-106 الأخرى قائمة.
