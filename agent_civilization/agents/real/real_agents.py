@@ -19,7 +19,8 @@ from agent_civilization.core import experience as _experience
 from agent_civilization.core import public_text as _public_text
 from agent_civilization.core import telemetry as _telemetry
 from agent_civilization.core.output_validators import apply_output_verification
-from agent_civilization.core.agents.real_dispatcher import (
+# R-171 (D-112): handlers run through the registry gate, never directly.
+from agent_civilization.core.tool_runtime import (
     coverage as _coverage,
     dispatch as _dispatch,
 )

@@ -1,0 +1,50 @@
+# 335 — R-171 batch 2: tool registry governs the real execution path (D-112, لاحق 95)
+branch: m8/r171-batch2-registry-enforcement   base: main 094455f7 (PR #299 merge)
+
+## problem (evidence on main 094455f7)
+AST scan: modules importing `dispatch` from agent_civilization.core.agents.real_dispatcher = 22
+  agent_civilization/agents/real/real_agents.py:22
+  agent_civilization/core/agents/base_agent.py:65
+  agent_civilization/agents/specialists/_templates/*_base.py:24  (20 files)
+=> the batch-1 registry was descriptive only; a disabled/failed/unregistered tool still executed.
+
+## red
+pytest tests/test_r171_tool_gate.py  -> collection ERROR (ModuleNotFoundError: agent_civilization.core.tool_runtime)
+
+## fix
+new agent_civilization/core/tool_runtime.py (runtime_registry, check, dispatch, stats, coverage)
+22 call sites: one import line each -> agent_civilization.core.tool_runtime (no delete/move/rename)
+frozen files untouched: core/llm.py, core/agents/real_dispatcher.py, agents/executors/data_worker.py
+
+## green
+pytest tests/test_r171_tool_gate.py -> 14 passed
+  (first run: 1 failed — the test assumed audit op "update_status"; the registry's op is "update"; name corrected, assertion unchanged)
+
+## mutations (each restored; file cmp-identical afterwards)
+remove implementation-match check        -> 1 failed, 13 passed
+remove self_developer reach check        -> 1 failed, 13 passed
+remove lifecycle check                   -> 6 failed, 8 passed
+revert base_agent.py import to direct    -> 2 failed, 12 passed
+
+## related
+pytest tests/test_r171_tool_gate.py tests/test_r171*.py tests/test_r122*.py -> 57 passed
+ruff check --select F,E722 server.py agent_civilization agos_kernel tests -> All checks passed!
+
+## full suite (local, before side-effect fix)
+1 failed, 3783 passed, 8 skipped, 17 deselected, 9 xfailed in 577.22s
+FAILED tests/test_r159_telemetry.py::test_tool_exception_is_typed_and_not_leaked
+  cause: the test swapped only rd._HANDLERS["test_runner"]; the gate now refuses it as "not the registered
+  implementation" (intended side effect of the integrity check). Telemetry saw ('fail', None, 'refused').
+  adaptation: the test also patches rd._test_runner (what implementation_ref resolves to) — it now models the
+  registered implementation raising; its assertion is unchanged.
+  re-run: tests/test_r159_telemetry.py tests/test_r171_tool_gate.py tests/test_r125_self_developer_cycle.py -> all passed
+
+## declared limits
+integrity check is against accidental divergence, not an in-process adversary: code that replaces both the module
+attribute and the _HANDLERS entry passes it (same process = same trust domain).
+per-process registry (no persistence/sharing across workers); AGOS_DISABLED_TOOLS read at seeding (restart to change);
+no API to change state; health_status has no checker yet; not a sandbox/permission system (R-172);
+templates are inactive in production but are wired too.
+
+## prior acceptance on main
+PR #299 -> 094455f7; PR run 41199505192: 3770 x3; main Kernel 41201700621 success 3770 x3; Governance 41201700552 success.

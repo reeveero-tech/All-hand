@@ -595,6 +595,10 @@ def test_tool_exception_is_typed_and_not_leaked(auth, monkeypatch, all_logs):
 
     async def boom(work):
         raise RuntimeError(BACKEND_SECRET)
+    # R-171 (D-112): the registry gate refuses a handler that is not the
+    # registered implementation, so the failing tool is modelled as the
+    # registered implementation itself raising (the reference resolves to it).
+    monkeypatch.setattr(rd, "_test_runner", boom)
     monkeypatch.setitem(rd._HANDLERS, "test_runner", boom)
     with TestClient(server.app) as c:
         c.post("/api/chat", json={"message": "run unit tests"}, headers=auth)

@@ -21,7 +21,7 @@ class ValidatorAgentBaseAgent(BaseAgent):
         logger.info(f"Agent {name} started")
 
     async def _process_task(self, work):
-        from agent_civilization.core.agents.real_dispatcher import dispatch
+        from agent_civilization.core.tool_runtime import dispatch  # R-171 (D-112): registry gate
         payload = work if isinstance(work, dict) else {"prompt": str(work)}
         result = await dispatch(self.specialization, payload)
         if result is None:

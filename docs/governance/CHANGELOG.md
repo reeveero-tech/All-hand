@@ -1,3 +1,11 @@
+## 2026-10-31 — لاحق 95: R-171 دفعة 2 — ربط سجل الأدوات بمسار التنفيذ الفعلي (D-112)
+
+- **المشكلة**: سجل الدفعة 1 كان وصفيًا فقط: 22 موضع استدعاء (`agents/real/real_agents.py`، غلاف `core/agents/base_agent.py`، 20 قالبًا في `agents/specialists/_templates/`) تستدعي `real_dispatcher.dispatch` مباشرة، فأداة `disabled` أو `failed` أو غير مسجلة كانت تُنفَّذ كأن السجل غير موجود.
+- **الإصلاح**: وحدة جديدة `core/tool_runtime.py` (سجل لكل عملية مبذور كسولًا، `check`، `dispatch`، `stats`)؛ الـ22 موضعًا تستورد `tool_runtime.dispatch` (سطر استيراد واحد في كل ملف، بلا حذف ولا نقل)؛ رفض fail-closed قبل تشغيل المعالج؛ `AGOS_DISABLED_TOOLS` عند البذر بتدقيق `env:AGOS_DISABLED_TOOLS`. الملفات المجمدة (`llm.py`، `real_dispatcher.py`، `data_worker.py`) لم تُمس — البوابة تستدعي `real_dispatcher.dispatch` كما هو.
+- **الاختبارات**: `tests/test_r171_tool_gate.py` 14 (أحمر: خطأ تجميع — الوحدة غير موجودة؛ وعلى main يجد فحص AST 22 تجاوزًا). طفرات: إزالة فحص المطابقة ⇒ 1 failed؛ إزالة فحص الوصول ⇒ 1 failed؛ إزالة فحص الحالة ⇒ 6 failed؛ إرجاع استيراد `base_agent` ⇒ 2 failed.
+- **قبول سابق على main**: PR #299 → `094455f7` (PR run 41199505192: 3770 ×3؛ main Kernel 41201700621 ✓ 3770 ×3، Governance 41201700552 ✓).
+- السجل [`335`](../audit/M8/logs/raw/335_r171_batch2_registry_enforcement.log).
+
 ## 2026-10-31 — لاحق 94: R-170 دفعة 25 — `idempotency_key` في `/api/chat` (إغلاق G-160-4، D-111)
 
 - **المشكلة**: `/api/chat` كان يتجاهل `idempotency_key` بصمت (الحقول غير المعروفة تُسقط): عميل يعيد المحاولة بعد انقطاع ينفذ الوكيل مرتين — معرّفان وأثران جانبيان.
