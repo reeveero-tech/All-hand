@@ -44,6 +44,36 @@
       "title": "StreamGapEvent",
       "type": "object"
     },
+    "StreamResetEvent": {
+      "additionalProperties": false,
+      "description": "G-160-5 (D-109): the Last-Event-ID of a reconnect cannot be placed by\nthis server process (other worker, restart, evicted tenant log,\nmalformed) — the number of missed events is unknown; re-read state.",
+      "properties": {
+        "reason": {
+          "const": "unknown_last_event_id",
+          "title": "Reason",
+          "type": "string"
+        },
+        "recover": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Recover",
+          "type": "array"
+        },
+        "type": {
+          "const": "stream_reset",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "reason",
+        "recover"
+      ],
+      "title": "StreamResetEvent",
+      "type": "object"
+    },
     "TaskCompletedEvent": {
       "additionalProperties": false,
       "properties": {
@@ -149,13 +179,14 @@
     }
   },
   "$id": "agos://contracts/sse_frame/v1",
-  "description": "One ``data: <json>\\n\\n`` frame of /api/events/stream. No ``id:`` and\nno ``event:`` field are sent: a reconnect is a NEW subscription with no\nreplay (Last-Event-ID is not supported); missed events are signalled by\nstream_gap and recovered from GET /api/tasks and /api/events.",
+  "description": "The ``data:`` JSON of one /api/events/stream frame. Since G-160-5\n(D-109) bus events are preceded by an ``id: <epoch>-<generation>-<seq>``\nline; heartbeat/stream_gap/stream_reset frames carry no id. A reconnect\nsending ``Last-Event-ID`` gets the missed events replayed from a bounded\nper-tenant, per-process ring (exact ``stream_gap`` if some were evicted;\n``stream_reset`` if the id is unknown here). No ``event:`` field.",
   "properties": {
     "event": {
       "discriminator": {
         "mapping": {
           "heartbeat": "#/$defs/HeartbeatEvent",
           "stream_gap": "#/$defs/StreamGapEvent",
+          "stream_reset": "#/$defs/StreamResetEvent",
           "task_completed": "#/$defs/TaskCompletedEvent",
           "task_created": "#/$defs/TaskCreatedEvent",
           "task_started": "#/$defs/TaskStartedEvent"
@@ -177,6 +208,9 @@
         },
         {
           "$ref": "#/$defs/StreamGapEvent"
+        },
+        {
+          "$ref": "#/$defs/StreamResetEvent"
         }
       ],
       "title": "Event"

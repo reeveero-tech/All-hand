@@ -108,6 +108,10 @@ export const removeExternalAgent = (name) =>
 //    lifetime — reconnects after `retryMs` and resets the backoff.
 // The server may send {"type": "stream_gap", "missed": n} when this listener
 // fell behind: events were dropped; re-read state from /api/tasks, /api/events.
+// G-160-5 (D-109): bus events carry an SSE `id:`; the last one seen is sent
+// back as `Last-Event-ID` on every reconnect (fetch does not do it for us,
+// EventSource would), so the server replays what was missed. When the server
+// cannot place that id it sends {"type": "stream_reset"}: re-read state.
 const MAX_RETRY_AFTER_MS = 3600 * 1000;
 
 function retryAfterMs(res) {
@@ -126,6 +130,7 @@ export function openEventStream(onEvent, {
   let controller = null;
   let timer = null;
   let failures = 0; // consecutive attempts that were not accepted
+  let lastEventId = null; // G-160-5: the last bus event id seen on any connection
 
   const backoff = () => Math.min(retryMs * 2 ** failures, maxRetryMs);
 
@@ -135,8 +140,10 @@ export function openEventStream(onEvent, {
     controller = new AbortController();
     let delay;
     try {
+      const headers = { 'X-API-Key': key, Accept: 'text/event-stream' };
+      if (lastEventId) headers['Last-Event-ID'] = lastEventId;
       const res = await fetch(`${API_BASE}/api/events/stream`, {
-        headers: { 'X-API-Key': key, Accept: 'text/event-stream' },
+        headers,
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
@@ -157,7 +164,10 @@ export function openEventStream(onEvent, {
         while ((idx = buf.indexOf('\n\n')) >= 0) {
           const block = buf.slice(0, idx);
           buf = buf.slice(idx + 2);
-          const data = block.split('\n').filter((l) => l.startsWith('data: ')).map((l) => l.slice(6)).join('\n');
+          const lines = block.split('\n');
+          const data = lines.filter((l) => l.startsWith('data: ')).map((l) => l.slice(6)).join('\n');
+          const idLine = lines.find((l) => l.startsWith('id: '));
+          if (idLine) lastEventId = idLine.slice(4);
           if (!data) continue;
           try { onEvent(JSON.parse(data)); } catch { /* ignore malformed event */ }
         }

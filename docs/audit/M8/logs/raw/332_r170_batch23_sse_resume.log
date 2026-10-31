@@ -1,0 +1,34 @@
+# 332 — R-170 دفعة 23 (لاحق 92): G-160-5 — استئناف SSE بـLast-Event-ID
+# التاريخ: 2026-10-31 | الفرع: m8/g160-5-sse-resume (فوق m8/r171-batch1-tool-registry — PR #296، فوق PR #295) | القرار: D-109
+
+[المشكلة] إطارات /api/events/stream بلا id:؛ إعادة الاتصال اشتراك جديد بلا إعادة — ما نُشر أثناء الانقطاع وما بقي في
+  طابور الاتصال المغلق يضيع بصمت. اكتشاف أثناء الدفعة: عميل الويب يقرأ بـfetch (لا EventSource) فلا يرسل Last-Event-ID
+  أصلًا، وCORS لا يسمح بالرأس — إصلاح الخادم وحده كان سيبقى بلا أثر للواجهة.
+[التصنيف] مهم محدود (فقد أحداث حية، الحالة من REST سليمة).
+
+[الأحمر أولًا] tests/test_g160_5_sse_resume.py منسوخًا إلى نسخة عمل مؤقتة على origin/main:
+  17 failed, 1 passed in 2.95s    (الناجح الوحيد: «بلا Last-Event-ID يبقى السلوك الحي فقط» — ضابط بالتصميم)
+  اختبار CORS مع server.py القديم: 1 failed.
+  web/tests/api.test.mjs مع api.js القديم: not ok «G-160-5: the last SSE id is sent back…» (pass 21 / fail 1).
+
+[الإصلاح]
+  core/sse.py: SSEEvent(dict) يحمل sse_id خارج الحمولة؛ id = <epoch>-<generation>-<seq>؛ حلقة لكل مستأجر (AGOS_SSE_REPLAY_SIZE،
+    100، [0-10000]) تُملأ حتى بلا مستمع؛ MAX_REPLAY_TENANTS=1000 (LRU، المُخرج يعود بجيل جديد)؛ _resume في الخطوة المتزامنة نفسها
+    لتسجيل الاشتراك؛ stream_gap بعدد دقيق عند الإخراج؛ stream_reset لمعرّف لا يُوضع (عملية أخرى، مشوّه، > 64 حرفًا، مستقبلي، مستأجر آخر).
+  server.py: قراءة last-event-id؛ سطر id: قبل data: لأحداث الناقل فقط؛ CORS allow_headers + Last-Event-ID.
+  contracts.py: StreamResetEvent ضمن SSEFrame (sse_frame v1، فرق جمعي — المخطط أُعيد توليده).
+  web/src/api.js: حفظ آخر id وإرساله؛ web/src/App.jsx: stream_reset -> refreshStatus مثل stream_gap.
+[الأخضر] tests/test_g160_5_sse_resume.py: 19 passed in 1.45s 
+  web: node --test tests/api.test.mjs -> pass 22 / fail 0. (ui_consent.test.mjs يفشل محليًا لغياب حزمة jsdom — قائم قبل التغيير أيضًا.)
+[اختبارات قائمة عُدّلت — تنسيق الإطار الجديد، تشديد لا تخفيف] test_sec04_sse_broadcast_bounds.py (موضعان)، test_sse_subscription_race.py،
+  test_web_api_contract.py::test_sse_stream_yields_event — كانت تفترض أن الإطار يبدأ بـ"data: "؛ صارت تشترط سطر id: بصيغته ثم data:.
+  تصميم أول رُفض: مفتاح داخلي _sse_id داخل dict الحدث — كسر اختبارات العقد (extra_forbidden) لأن المستهلكين يرونه -> SSEEvent.
+[الحزمة الكاملة محليًا قبل الالتزام] 2 failed, 3747 passed, 8 skipped, 17 deselected, 9 xfailed:
+  test_r156 ...every_env_var_read_at_runtime_is_in_the_map (الخريطة من git HEAD — المتغير الجديد غير ملتزم بعد) و
+  test_web_api_contract::test_sse_stream_yields_event (تنسيق الإطار — عُدّل أعلاه). بعد الالتزام: انظر أدناه.
+[الحدود المعلنة] ذاكرة العملية فقط — إعادة تشغيل أو عامل آخر => stream_reset؛ إسقاطات المستمع البطيء داخل الاتصال تبقى stream_gap؛
+  الذاكرة القصوى ≈ 100 × 1000 حدث؛ لا متصفح حقيقي (عميل fetch مختبر بـnode، المسار بطلبات Starlette).
+[بعد الالتزام] test_r156 + test_web_api_contract + r187 + r154 + r155: 151 passed
+
+[CI quality على PR #297 (run 41189113606)] فشل: ruff F401 — `typing.List`/`typing.Tuple` غير مستخدمين في core/sse.py. أُصلح بحذفهما من الاستيراد؛ ruff check --select F,E722 نظيف محليًا؛ اختبارات SSE تنجح.
+[R-187 على دفع ed460c74] push-scope-docs فشل (run 41189182513): R0 وثائق إلزامية غير محدثة، R5 تغيير بايثون بلا tests/. التصحيح: التزام وثائق تالٍ (CHANGELOG/ROADMAP/PROJECT_STATE) — لم يُعد كتابة التاريخ ولم يُتجاوز الفحص.

@@ -232,7 +232,8 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=not _IS_WILDCARD,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-API-Key"],
+    # G-160-5 (D-109): the web client resends Last-Event-ID on reconnect.
+    allow_headers=["Authorization", "Content-Type", "X-API-Key", "Last-Event-ID"],
 )
 if _IS_WILDCARD:
     logger.warning("CORS allows all origins; credentials header disabled until AGOS_ALLOWED_ORIGINS is set.")
@@ -2741,6 +2742,10 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
     + Retry-After with a fixed message; the stream ends at AGOS_SSE_MAX_LIFETIME."""
     tenant = require_principal(api_key).tenant_id
     client = request.client.host if request.client else "unknown"
+    # G-160-5 (D-109): EventSource resends the last id it saw on reconnect.
+    # Untrusted input: the bus only matches it against its own id format.
+    headers = getattr(request, "headers", None)
+    last_event_id = headers.get("last-event-id") if headers is not None else None
     try:
         # SPLIT (advisor review, round 2): with a SHARED admission store the
         # transaction runs OFF the loop (it can wait on the shared write
@@ -2773,9 +2778,9 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
                         pass
                 asyncio.create_task(_release_late_acquisition())
                 raise
-            sub = EVENT_BUS.open(tenant, client, lease=lease)
+            sub = EVENT_BUS.open(tenant, client, lease=lease, last_event_id=last_event_id)
         else:
-            sub = EVENT_BUS.open(tenant, client)
+            sub = EVENT_BUS.open(tenant, client, last_event_id=last_event_id)
     except StreamLimit as e:
         logger.warning("sse: connection refused (%s), retry after %ss", e.reason, e.retry_after)
         raise HTTPException(429, SSE_LIMIT_DETAIL, headers={"Retry-After": str(e.retry_after)})
@@ -2827,7 +2832,14 @@ async def event_stream(request: Request, api_key: Optional[str] = Security(api_k
                         return
                     yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
                 else:
-                    yield f"data: {json.dumps(event)}\n\n"
+                    # G-160-5 (D-109): bus events carry their SSE id; synthetic
+                    # frames (stream_gap/stream_reset) carry none, so the
+                    # client's Last-Event-ID stays on the last REAL event.
+                    eid = getattr(event, "sse_id", None)
+                    if eid is not None:
+                        yield f"id: {eid}\ndata: {json.dumps(event)}\n\n"
+                    else:
+                        yield f"data: {json.dumps(event)}\n\n"
         finally:
             if keeper is not None:
                 keeper.stop()        # the response is done; no on_loss

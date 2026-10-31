@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import socket
 import threading
 import time
@@ -251,4 +252,7 @@ def test_event_published_before_first_anext_is_delivered(tenant_auth, bus):
         chunk = await asyncio.wait_for(it.__anext__(), timeout=3)
         await it.aclose()
         return chunk
-    assert asyncio.run(go()) == f"data: {json.dumps(probe)}\n\n"
+    chunk = asyncio.run(go())
+    # G-160-5 (D-109): a bus event is framed with its SSE id line first.
+    assert re.fullmatch(r"id: [0-9a-f]{8}-\d+-\d+\n" + re.escape(f"data: {json.dumps(probe)}\n\n"),
+                        chunk), chunk

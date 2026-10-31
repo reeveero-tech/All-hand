@@ -8,8 +8,22 @@ Model now:
   * ``EventBus.publish(tenant, event)`` hands a copy of the event to every
     current subscription of that tenant only — synchronously, it never awaits,
     so a slow listener cannot block the publisher (task execution) or others.
-  * No subscriber -> the event is not kept anywhere (persistence is storage's
-    job; clients recover state from ``/api/tasks`` and ``/api/events``).
+  * No subscriber -> the event is not DELIVERED anywhere; since G-160-5
+    (D-109) it is still kept in a small per-tenant REPLAY RING (below).
+  * RESUME (G-160-5, D-109): every published event gets an SSE ``id``
+    ``<epoch>-<generation>-<seq>`` — ``epoch`` is random per bus (per
+    process), ``generation`` is unique per tenant log (a tenant log evicted
+    from the bounded LRU comes back with a new generation), ``seq`` is
+    contiguous per tenant log. A reconnect carrying ``Last-Event-ID``
+    replays, before any live event, exactly the ring events with a larger
+    ``seq`` — no loss and no duplicate while the ring still holds them. If
+    older events after that id were evicted from the ring, a ``stream_gap``
+    with the EXACT number missing precedes the replay. An id this bus cannot
+    place (other process/worker, restart, evicted tenant log, malformed,
+    future) yields one ``stream_reset`` event: recover from the REST routes.
+    Bounds: ``replay_size`` events per tenant (``AGOS_SSE_REPLAY_SIZE``,
+    0 = no replay, ids still sent) x ``MAX_REPLAY_TENANTS`` tenant logs.
+    Process memory only: nothing survives a restart or crosses workers.
   * Each subscription (= one SSE connection) has its own bounded queue
     (``queue_size``). Full queue -> the OLDEST event is dropped to make room
     for the newest; the drop is counted (per subscription and globally) and
@@ -42,6 +56,8 @@ import os
 import time
 from collections import OrderedDict, deque
 from dataclasses import dataclass
+import re
+import secrets
 from typing import Any, Callable, Deque, Dict, Optional, Set
 
 from agent_civilization.core.sse_admission import (
@@ -53,6 +69,22 @@ logger = logging.getLogger("agos.sse")
 
 GAP_RECOVER = ["/api/tasks", "/api/events"]
 MAX_TRACKED_CLIENTS = 10_000      # hard bound of the open-rate tracking map
+MAX_REPLAY_TENANTS = 1_000        # hard bound of the per-tenant replay logs (LRU)
+MAX_LAST_EVENT_ID_LEN = 64
+
+
+class SSEEvent(dict):
+    """A delivered bus event: the payload is the dict itself (unchanged
+    contract), the SSE id travels OUT OF BAND in ``sse_id`` so no consumer
+    ever sees an extra key. ``dict(ev)`` drops the id (a plain copy)."""
+    __slots__ = ("sse_id",)
+
+    def __init__(self, payload: Dict[str, Any], sse_id: str):
+        super().__init__(payload)
+        self.sse_id = sse_id
+
+
+_EVENT_ID_RE = re.compile(r"^([0-9a-f]{8})-([1-9][0-9]{0,11})-([1-9][0-9]{0,14})$")
 CAPACITY_RETRY_AFTER = 30         # seconds; when a slot frees is unknown
 
 # name: (env var, default, min, max)
@@ -67,6 +99,7 @@ _LIMITS = {
     "heartbeat_s":     ("AGOS_SSE_HEARTBEAT", 30, 1, 300),
     "lease_ttl_s":     ("AGOS_SSE_LEASE_TTL", 90, 1, 86_400),
     "lease_renewal_s": ("AGOS_SSE_LEASE_RENEWAL", 30, 1, 3_600),
+    "replay_size":     ("AGOS_SSE_REPLAY_SIZE", 100, 0, 10_000),
 }
 
 
@@ -82,6 +115,7 @@ class SSELimits:
     heartbeat_s: int = 30
     lease_ttl_s: int = 90
     lease_renewal_s: int = 30
+    replay_size: int = 100
 
     def __post_init__(self):
         for name, (var, _d, lo, hi) in _LIMITS.items():
@@ -137,6 +171,7 @@ class Subscription:
         self.lease_expires_at = None      # last CONFIRMED expiry (renewal deadline)
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=bus.limits.queue_size)
         self.dropped = 0          # total dropped for this connection
+        self._preload: Deque[Dict[str, Any]] = deque()   # resume frames, before live
         self._gap = 0             # dropped since the last stream_gap was delivered
         self.closed = False
 
@@ -154,7 +189,10 @@ class Subscription:
 
     async def next(self, timeout: float) -> Optional[Dict[str, Any]]:
         """The next event, a ``stream_gap`` first if events were dropped, or
-        None on timeout (heartbeat)."""
+        None on timeout (heartbeat). Resume frames (stream_reset /
+        stream_gap / replayed events) come first, in order."""
+        if self._preload:
+            return self._preload.popleft()
         if self._gap:
             n, self._gap = self._gap, 0
             return {"type": "stream_gap", "missed": n, "recover": list(GAP_RECOVER)}
@@ -179,7 +217,12 @@ class EventBus:
         self._per_client: Dict[str, int] = {}
         self._opens: "OrderedDict[str, Deque[float]]" = OrderedDict()
         self.stats = {"published": 0, "delivered": 0, "dropped": 0, "no_subscriber": 0,
-                      "opened": 0, "closed": 0, "refused_rate": 0, "refused_capacity": 0}
+                      "opened": 0, "closed": 0, "refused_rate": 0, "refused_capacity": 0,
+                      "resumed": 0, "replayed": 0, "resume_gap": 0, "resume_reset": 0}
+        self.epoch = secrets.token_hex(4)
+        self._generation = 0
+        # tenant -> [generation, next_seq, ring of (seq, event)]
+        self._logs: "OrderedDict[str, list]" = OrderedDict()
 
     # ------------------------------------------------------------ metrics
     def _metric(self, name: str, value: float = 1) -> None:
@@ -209,17 +252,37 @@ class EventBus:
                 "clients": len(self._per_client), "tracked_clients": len(self._opens)}
 
     # ------------------------------------------------------------ publish
+    def _tenant_log(self, tenant: str) -> list:
+        log = self._logs.get(tenant)
+        if log is None:
+            while len(self._logs) >= MAX_REPLAY_TENANTS:
+                self._logs.popitem(last=False)      # its ids now resolve to stream_reset
+            self._generation += 1
+            log = self._logs[tenant] = [self._generation, 1,
+                                        deque(maxlen=self.limits.replay_size)]
+        else:
+            self._logs.move_to_end(tenant)
+        return log
+
     def publish(self, tenant: Optional[str], event: Dict[str, Any]) -> int:
-        """Copy ``event`` to every subscription of ``tenant``; returns the count."""
+        """Copy ``event`` to every subscription of ``tenant``; returns the count.
+        The event gets its SSE id and is kept in the tenant's replay ring."""
         if tenant is None:
             return 0
         self.stats["published"] += 1
+        log = self._tenant_log(tenant)
+        seq = log[1]
+        log[1] += 1
+        clean = dict(event)
+        if self.limits.replay_size:
+            log[2].append((seq, clean))
+        eid = f"{self.epoch}-{log[0]}-{seq}"
         subs = self._subs.get(tenant)
         if not subs:
             self.stats["no_subscriber"] += 1
             return 0
         for sub in list(subs):
-            sub.offer(dict(event))
+            sub.offer(SSEEvent(clean, eid))
         self.stats["delivered"] += len(subs)
         return len(subs)
 
@@ -287,7 +350,8 @@ class EventBus:
             raise StreamLimit(e.reason, e.retry_after_s) from None
 
     def open(self, tenant: str, client: str,
-             lease: Optional[tuple] = None) -> Subscription:
+             lease: Optional[tuple] = None,
+             last_event_id: Optional[str] = None) -> Subscription:
         """Admit one connection (counts toward the open-rate even if then
         refused for capacity) and register its subscription.
 
@@ -300,7 +364,9 @@ class EventBus:
         (the route's to_thread split: store I/O off-loop, registry
         mutation on-loop). ``None`` acquires here (sync, tests/local)."""
         if self._admission is not None:
-            return self._open_shared(tenant, client, lease=lease)
+            sub = self._open_shared(tenant, client, lease=lease)
+            self._resume(sub, last_event_id)
+            return sub
         now = self.clock()
         self._check_rate(client, now)
         lim = self.limits
@@ -315,6 +381,7 @@ class EventBus:
         self.stats["opened"] += 1
         self._metric("sse_connections_opened_total")
         self._metric("sse_connections", self.total)
+        self._resume(sub, last_event_id)
         return sub
 
     def _open_shared(self, tenant: str, client: str,
@@ -335,6 +402,35 @@ class EventBus:
         self._metric("sse_connections_opened_total")
         self._metric("sse_connections", self.total)
         return sub
+
+    def _resume(self, sub: Subscription, last_event_id: Optional[str]) -> None:
+        """Queue the resume frames for ``sub`` (called in the SAME synchronous
+        step that registered it, so no publish can fall between the replay
+        snapshot and live delivery — no loss, no duplicate)."""
+        if last_event_id is None:
+            return
+        self.stats["resumed"] += 1
+        m = _EVENT_ID_RE.match(last_event_id) if len(last_event_id) <= MAX_LAST_EVENT_ID_LEN \
+            else None
+        log = self._logs.get(sub.tenant)
+        if (m is None or m.group(1) != self.epoch or log is None
+                or int(m.group(2)) != log[0] or int(m.group(3)) >= log[1]):
+            self.stats["resume_reset"] += 1
+            sub._preload.append({"type": "stream_reset", "reason": "unknown_last_event_id",
+                                 "recover": list(GAP_RECOVER)})
+            return
+        last = int(m.group(3))
+        gen, next_seq, ring = log
+        oldest = ring[0][0] if ring else next_seq
+        missed = max(0, oldest - last - 1)
+        if missed:
+            self.stats["resume_gap"] += 1
+            sub._preload.append({"type": "stream_gap", "missed": missed,
+                                 "recover": list(GAP_RECOVER)})
+        for seq, ev in ring:
+            if seq > last:
+                sub._preload.append(SSEEvent(ev, f"{self.epoch}-{gen}-{seq}"))
+                self.stats["replayed"] += 1
 
     def detach(self, sub: Subscription) -> bool:
         """Remove the subscription from the delivery registry (ON-LOOP:

@@ -275,6 +275,26 @@ test('SEC-04: stream_gap is delivered like any event; close() cancels the pendin
   h.restore();
 });
 
+test('G-160-5: the last SSE id is sent back as Last-Event-ID on reconnect', async () => {
+  api.setApiKey('k');
+  const h = streamHarness([
+    { status: 200, chunks: ['id: 0a1b2c3d-1-1\ndata: {"type":"task_created","task_id":"t1"}\n\n',
+      'data: {"type":"heartbeat"}\n\n',
+      'id: 0a1b2c3d-1-2\ndata: {"type":"task_created","task_id":"t2"}\n\n'] },
+    { status: 200, chunks: ['data: {"type":"stream_reset","reason":"unknown_last_event_id","recover":["/api/tasks","/api/events"]}\n\n'] },
+    { status: 200, chunks: [] }]);
+  const got = [];
+  const s = h.track(api.openEventStream((e) => got.push(e), { retryMs: 1000, schedule: h.schedule, cancel: h.cancel }));
+  await h.tick();
+  assert.equal(calls[0].init.headers['Last-Event-ID'], undefined); // first connect: none
+  await h.runNext();
+  assert.equal(calls[1].init.headers['Last-Event-ID'], '0a1b2c3d-1-2'); // heartbeat did not move it
+  await h.runNext();
+  assert.equal(calls[2].init.headers['Last-Event-ID'], '0a1b2c3d-1-2'); // reset frame has no id
+  assert.deepEqual(got.map((e) => e.type), ['task_created', 'heartbeat', 'task_created', 'stream_reset']);
+  s.close(); h.restore();
+});
+
 test('other errors keep the server detail', async () => {
   nextResponse = { status: 400, body: { detail: 'Unknown specialization: nope' } };
   await assert.rejects(api.createTask('nope', 'x'), (e) => e.status === 400 && e.message === 'Unknown specialization: nope');
