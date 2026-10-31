@@ -503,6 +503,12 @@ def test_completion_site_routes_the_terminal_write_through_the_retry(
         def __getattr__(self, name):
             return getattr(self._real, name)
 
+        def persists(self):
+            # G-160-2 batch 21: this double's terminal write CAN land (it
+            # answers it itself) — it must not inherit the unconfigured
+            # real store's "nothing to persist" short-circuit
+            return True
+
         async def update_task(self, task_id, status, **kw):
             if status == "completed":
                 terminal_calls["n"] += 1
