@@ -29,3 +29,5 @@
 [الحدود المعلنة] ذاكرة العملية فقط — إعادة تشغيل أو عامل آخر => stream_reset؛ إسقاطات المستمع البطيء داخل الاتصال تبقى stream_gap؛
   الذاكرة القصوى ≈ 100 × 1000 حدث؛ لا متصفح حقيقي (عميل fetch مختبر بـnode، المسار بطلبات Starlette).
 [بعد الالتزام] test_r156 + test_web_api_contract + r187 + r154 + r155: 151 passed
+
+[CI quality على PR #297 (run 41189113606)] فشل: ruff F401 — `typing.List`/`typing.Tuple` غير مستخدمين في core/sse.py. أُصلح بحذفهما من الاستيراد؛ ruff check --select F,E722 نظيف محليًا؛ اختبارات SSE تنجح.
