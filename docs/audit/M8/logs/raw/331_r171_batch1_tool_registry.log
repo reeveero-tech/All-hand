@@ -1,0 +1,31 @@
+# 331 — R-171 دفعة 1 (لاحق 91): سجل الأدوات الموحد — عقد + سجل داخل العملية + بذر المعالجات الداخلية
+# التاريخ: 2026-10-31 | الفرع: m8/r171-batch1-tool-registry (فوق m8/r170-batch22-running-write-race — PR #295) | القرار: D-108
+
+[اختيار المسار] تكليف المالك: مسارات لا تعتمد على R-170 تبدأ بالتوازي. فحص ROADMAP: R-171..R-184 وR-190..R-193 تتسلسل كلها
+  عبر R-171 (الاعتمادية النثرية «كل P4»). قاعدة 10b لا تقرأ النثر؛ قاعدة 10 لا تمنع (R-170 in_progress). متبقي R-170 يخص
+  تفعيل سياسة اللغة فقط -> D-108: بدء R-171 بسطر اعتماديات صارم R-167، R-168، R-169 (done كلها).
+[ملاحظة تسمية] docs/audit/M8/logs/raw/r171_local/ (السجل 294) قياس حمل محلي S0 من خطة التوسع — ليس هذا البند؛ لم يُمس.
+
+[القبول المرجعي] P5_TOOL_ECOSYSTEM_AR.md §R-171: CRUD/lookup/search contract، uniqueness، schema validation، versioning، نتائج قابلة للتدقيق.
+[المنجز]
++ agent_civilization/core/tool_registry.py: ToolRecord (pydantic، extra=forbid، كل حقول المسودة وتعداداتها) + تغييرات D-108؛
+  ToolRegistry: register/get(latest|version)/versions/search/update_status(حقول تشغيلية فقط)/remove(شاهد يمنع الاستبدال الصامت)؛
+  تفرد (tool_id, version)؛ إصدارات ثابتة ومتزايدة رقميًا؛ رفض الاسم المستعار (implementation_ref واحد = tool_id واحد)؛
+  رسم دورة حياة — certified من validated فقط وبشرط test_status=certified، ولا سجل جديد يصل certified/validated؛
+  سجل تدقيق إلحاقي (seq, ts, op, actor, tool_id, version, digest=SHA-256 للسجل القانوني)، والرفض يُسجَّل أيضًا؛ قفل للخيوط.
++ agent_civilization/core/internal_tools.py: 20 مدخلًا من real_dispatcher._HANDLERS (الملف المجمد يُقرأ فقط)، كلها
+  registered / not_tested / unknown.
++ tests/test_r171_tool_registry.py: 31 حالة — العقد مقابل المسودة؛ 14 سجلًا غير صالح مرفوضًا ومدققًا؛ CRUD؛ تفرد؛ 16 خيطًا
+  على المفتاح نفسه = فائز واحد؛ الإصدارات؛ الاسم المستعار؛ دورة الحياة؛ الشاهد؛ البحث (حتمي ودقيق)؛ التدقيق والبصمات؛
+  البذر مطابق لمجموعة _HANDLERS وكل implementation_ref يحل إلى المعالج نفسه؛ إعلانات الشبكة/النموذج/التنفيذ مطابقة
+  للوصول الثابت (AST، إغلاق متعدٍ عبر دوال الوحدة) إلى safety.safe_urlopen / _llm_text|get_llm / safety.run_sandboxed_python.
+[اكتشاف أثناء الكتابة] أول تشغيل: 1 failed / 30 passed — code_generator يستدعي get_llm مباشرة لا _llm_text؛ الإعلان كان صحيحًا
+  والفحص ناقصًا -> صُحح الفحص (لا الإعلان).
+[الطفرات] (1) حذف إعلان الشبكة للباحث -> 1 failed, 30 passed؛ (2) تعطيل رفض الاسم المستعار -> 1 failed, 30 passed. أُعيدا.
+[الأخضر] 31 passed in 0.29s 
+[قياس محلي واحد — ليس معيار قبول] one local run, 2 vCPU sandbox: register 10000 synthetic: 0.33s; search(capability) over 10000 -> 100 hits in 18.8ms (linear filter); get latest: 0.015ms
+  قبل فهرس الإصدارات لكل أداة: تسجيل 10000 = 3.67 ث (مسح خطي لكل إدخال O(n²)) -> أُضيف الفهرس.
+
+[الحدود المعلنة] داخل العملية فقط (لا حفظ دائم ولا مشاركة بين العمليات/المضيفات)؛ لا واجهة API ولا مخطط تخزين؛ لا تنفيذ ولا
+  عزل ولا فرض صلاحيات (R-172)؛ لا مستوردون (R-173)؛ لا ترتيب/توجيه (R-174)؛ لا اعتماد (R-175)؛ فحص مخططات الإدخال/الإخراج
+  بنيوي (type) لا تحقق JSON Schema كامل؛ القدرات والمهلات وrisk يدوية — المُتحقق آليًا: الشبكة والنموذج والتنفيذ ومجموعة المعالجات.
