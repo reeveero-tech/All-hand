@@ -47,3 +47,4 @@ OSError عند تسجيل وكيل خارجي يصل المشرف لا المس�
 - تحقق main بعد الدمج:
   31423907 (#295): AGOS Kernel CI/CD run 41189058135 success — test ×3: 3699 passed, 8 skipped, 17 deselected, 9 xfailed؛ Governance Gate 41189058131 success.
   e22e3a61 (#296): AGOS Kernel CI/CD run 41189097755 success — test ×3: 3730 passed, 8 skipped, 17 deselected, 9 xfailed (+31 = اختبارات R-171)؛ Governance Gate 41189097767 success.
+[بعد الالتزام] ruff نظيف؛ البوابات السبع (no-delete، conflict markers، atomic batch، status evidence، contract schemas، raw exception logs، push docs) تنجح؛ r156+r187+r154+r155+r158+g160_1: 213 passed
