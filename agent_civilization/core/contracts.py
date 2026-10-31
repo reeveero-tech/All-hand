@@ -215,6 +215,9 @@ class ChatResponse(_Strict):
     routing: Routing
     agent: str
     outcome: AgentOutcome
+    #: G-160-4 (D-111): additive — present (``true``) only on an idempotent
+    #: replay (same ``idempotency_key``); a first execution keeps the v1 shape.
+    duplicate: Optional[bool] = None
 
 
 class Stage(_Open):

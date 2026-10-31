@@ -20,6 +20,7 @@ Security Features:
 """
 
 import asyncio
+import collections
 import hashlib
 import hmac
 import json
@@ -763,6 +764,19 @@ _RUNNING_RUNS: Dict[str, asyncio.Task] = {}
 # R-163: idempotency for the volatile mode (no storage): (tenant, key) -> id.
 # Durable mode relies on the storage unique index instead.
 _VOLATILE_IDEMPOTENT: Dict[tuple, str] = {}
+
+# G-160-4 (D-111): /api/chat idempotency. (tenant, key) -> the first response
+# (bounded, oldest out; the durable mode also finds it in the stored row), and
+# (tenant, key) -> the Future of a chat still executing (a concurrent duplicate
+# joins it instead of running the agent again).
+_CHAT_RESPONSES: "collections.OrderedDict[tuple, Dict[str, Any]]" = collections.OrderedDict()
+_CHAT_INFLIGHT: Dict[tuple, "asyncio.Future"] = {}
+_CHAT_PAYLOAD_KEY = "_agos_chat"      # reserved payload key marking a chat row
+KEY_OTHER_ENDPOINT = ("idempotency_key already used by a different endpoint for this tenant "
+                      "(POST /api/tasks and POST /api/chat share one key namespace)")
+CHAT_KEY_NOT_COMPLETED = ("the original chat request with this idempotency_key did not complete; "
+                          "retry with the same key")
+CHAT_KEY_IN_PROGRESS = "a chat request with this idempotency_key is still in progress; retry later"
 
 # R-163: dispatcher/reaper loops (durable mode only) and their stop flag.
 _QUEUE_LOOPS: List[asyncio.Task] = []
@@ -2060,6 +2074,11 @@ class ChatRequest(BaseModel):
     # SEC-06 (R-145): same explicit per-request consent as TaskRequest.
     allow_public_llm: bool = Field(False, strict=True,
                                   description="Consent to send this message's text to the external public LLM provider")
+    # G-160-4 (D-111): optional idempotency key, the same contract as
+    # TaskRequest — a duplicate chat with the same (tenant, key) replays the
+    # first response (``duplicate: true``) without a second execution.
+    idempotency_key: Optional[str] = Field(None, max_length=128,
+                                           description="Idempotency key: a duplicate chat replays the first response")
 
 
 class ExternalAgentRequest(BaseModel):
@@ -2362,6 +2381,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
         idem = (req.idempotency_key or "").strip() or None
         if idem is not None:
             existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
+            if _is_chat_row(existing):
+                raise HTTPException(409, KEY_OTHER_ENDPOINT)   # G-160-4 (D-111)
             if existing is not None:
                 # idempotent replay: the SAME task, its CURRENT public status,
                 # and no second run or side effect. R-159: the replay is
@@ -2395,6 +2416,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
                 # (a replay consumes no quota — the finally gives it back)
                 if idem is not None:
                     existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
+                    if _is_chat_row(existing):
+                        raise HTTPException(409, KEY_OTHER_ENDPOINT)   # G-160-4 (D-111)
                     if existing is not None:
                         _rebuild_task_record(existing)
                         return {"task_id": str(existing.get("task_id")),
@@ -2430,6 +2453,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
     # possible (documented limit, OPERATIONS.md). Idempotency is in-memory.
     idem = (req.idempotency_key or "").strip() or None
     if idem is not None:
+        if (principal.tenant_id, idem) in _CHAT_RESPONSES or (principal.tenant_id, idem) in _CHAT_INFLIGHT:
+            raise HTTPException(409, KEY_OTHER_ENDPOINT)       # G-160-4 (D-111)
         replay = _VOLATILE_IDEMPOTENT.get((principal.tenant_id, idem))
         if replay is not None and replay in TASKS:
             return {"task_id": replay, "status": TASKS[replay]["status"], "duplicate": True}
@@ -2882,9 +2907,100 @@ ROUTER_SYSTEM = (
 @app.post("/api/chat")
 @rate_limit
 async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Security(api_key_header)):
+    """Natural-language command: route to the best specialist and execute.
+
+    G-160-4 (D-111): with an ``idempotency_key`` a duplicate (same tenant,
+    same key) replays the first response plus ``duplicate: true`` — after it
+    finished (memory cache; in the durable mode also the stored row, so the
+    replay survives a restart) or while it still runs (the duplicate joins the
+    in-flight execution). Without a key nothing changes (v1)."""
     # SEC-02: identity first; memory recall/storage below runs as this tenant.
     principal = require_principal(api_key)
-    """Natural-language command: route to the best specialist and execute."""
+    idem = (req.idempotency_key or "").strip() or None
+    if idem is None:
+        return await _chat_run(principal, req, None, False)
+    key = (principal.tenant_id, idem)
+    # Everything up to the Future registration is synchronous (no await), so
+    # two duplicates on this event loop can never both decide to execute.
+    cached = _CHAT_RESPONSES.get(key)
+    if cached is not None:
+        _CHAT_RESPONSES.move_to_end(key)
+        return {**cached, "duplicate": True}
+    if key in _VOLATILE_IDEMPOTENT:
+        raise HTTPException(409, KEY_OTHER_ENDPOINT)
+    inflight = _CHAT_INFLIGHT.get(key)
+    if inflight is not None:
+        try:
+            first = await asyncio.shield(inflight)
+        except asyncio.CancelledError:
+            if inflight.cancelled():           # the FIRST request was cancelled
+                raise HTTPException(409, CHAT_KEY_NOT_COMPLETED)
+            raise                              # THIS request was cancelled
+        except HTTPException as e:
+            if e.status_code == 409:
+                raise
+            raise HTTPException(409, CHAT_KEY_NOT_COMPLETED)
+        except Exception:
+            raise HTTPException(409, CHAT_KEY_NOT_COMPLETED)
+        return {**first, "duplicate": True}
+    fut = asyncio.get_running_loop().create_future()
+    fut.add_done_callback(lambda f: f.cancelled() or f.exception())   # never "unretrieved"
+    _CHAT_INFLIGHT[key] = fut
+    try:
+        durable = supabase_configured() and _queue_enabled()
+        replay = await _chat_stored_replay(principal, idem) if durable else None
+        response = replay if replay is not None else await _chat_run(principal, req, idem, durable)
+        first = {k: v for k, v in response.items() if k != "duplicate"}
+        _remember_chat(key, first)
+        fut.set_result(first)
+        return response
+    except asyncio.CancelledError:
+        fut.cancel()
+        raise
+    except BaseException as e:
+        if not fut.done():
+            fut.set_exception(e)
+        raise
+    finally:
+        if _CHAT_INFLIGHT.get(key) is fut:
+            _CHAT_INFLIGHT.pop(key, None)
+
+
+def _is_chat_row(row: Optional[Dict[str, Any]]) -> bool:
+    return isinstance(row, dict) and isinstance(row.get("payload"), dict) \
+        and isinstance(row["payload"].get(_CHAT_PAYLOAD_KEY), dict)
+
+
+def _remember_chat(key: tuple, response: Dict[str, Any]) -> None:
+    _CHAT_RESPONSES[key] = response
+    _CHAT_RESPONSES.move_to_end(key)
+    while len(_CHAT_RESPONSES) > MAX_TASKS_KEPT:
+        _CHAT_RESPONSES.popitem(last=False)
+
+
+def _chat_response_from_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """The first chat response rebuilt from its stored row (D-111); 409 while
+    the row is not finished yet (another process is still executing it)."""
+    if not _is_chat_row(row):
+        raise HTTPException(409, KEY_OTHER_ENDPOINT)
+    if row.get("status") not in ("completed", "failed") or not isinstance(row.get("result"), dict) \
+            or not row.get("agent_name"):
+        raise HTTPException(409, CHAT_KEY_IN_PROGRESS)
+    return {"task_id": str(row.get("task_id")), "routed_to": row.get("specialization"),
+            "routing": row["payload"][_CHAT_PAYLOAD_KEY].get("routing"),
+            "agent": row.get("agent_name"), "outcome": row.get("result"), "duplicate": True}
+
+
+async def _chat_stored_replay(principal, idem: str) -> Optional[Dict[str, Any]]:
+    existing = await get_storage().find_task_by_idempotency_key(idem, scope=principal.tenant_id)
+    if existing is None:
+        return None
+    telemetry.bind_task(str(existing.get("task_id")))
+    return _chat_response_from_row(existing)
+
+
+async def _chat_run(principal, req: ChatRequest, idem: Optional[str], durable: bool) -> Dict[str, Any]:
+    """Route + execute one chat (the pre-D-111 body of ``chat``)."""
     # R-106: the LLM picks the specialist when configured; otherwise (or when
     # its answer names no specialization) the deterministic keyword router
     # decides.  Before R-106 every message went to "communicator" without an LLM.
@@ -2941,7 +3057,23 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
     telemetry.event("task", "recorded", outcome="ok" if outcome["ok"] else "fail", specialization=spec)
 
     storage = get_storage()
-    await storage.insert_task(task_id, spec, req.message, chat_status, tenant_id=principal.tenant_id)
+    routing = {"method": method, "reason": reason}
+    keyed = idem is not None and durable
+    if keyed:
+        # D-111: the key and the routing travel in the row, so a replay after a
+        # restart rebuilds the same response. Without a key the write is the
+        # unchanged v1 call (no payload, no key).
+        inserted = await storage.insert_task(task_id, spec, req.message, chat_status,
+                                             tenant_id=principal.tenant_id, idempotency_key=idem,
+                                             payload={_CHAT_PAYLOAD_KEY: {"routing": routing}})
+    else:
+        inserted = await storage.insert_task(task_id, spec, req.message, chat_status, tenant_id=principal.tenant_id)
+    if keyed and inserted is False:
+        # another process stored this key first (cross-process race): this
+        # execution already happened (declared limit) — answer with the stored one.
+        existing = await storage.find_task_by_idempotency_key(idem, scope=principal.tenant_id)
+        if existing is not None and str(existing.get("task_id")) != task_id:
+            return _chat_response_from_row(existing)
     await storage.update_task(task_id, chat_status, agent_name=agent.name,
                               result=outcome, elapsed_s=outcome.get("elapsed_s", 0))
     await storage.upsert_agent_stats(
@@ -2959,7 +3091,7 @@ async def chat(request: Request, req: ChatRequest, api_key: Optional[str] = Secu
     return {
         "task_id": task_id,
         "routed_to": spec,
-        "routing": {"method": method, "reason": reason},
+        "routing": routing,
         "agent": agent.name,
         "outcome": outcome,
     }

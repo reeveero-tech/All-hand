@@ -1,0 +1,48 @@
+# 334 — R-170 دفعة 25 (لاحق 94، D-111): إغلاق G-160-4 — idempotency_key في POST /api/chat
+# التاريخ: 2026-10-31 — الفرع m8/g160-4-chat-idempotency (من main 1627d4b1)
+
+## المشكلة
+ChatRequest لم يعرّف idempotency_key، فالحقل يُسقط بصمت: إعادة محاولة العميل = تنفيذان، معرّفان، أثران جانبيان.
+/api/tasks يدعمه منذ R-163 (D-082). فهرس التخزين الفريد (tenant, idempotency_key) مساحة واحدة للمسارين.
+فحص قبل البناء: الحاصد يطابق lease_expires_at=lt.now (صف بلا إيجار لا يُحصد)، والمرسِل يطالب بـqueued فقط —
+فصف محادثة يُكتب منتهيًا بمفتاح لا يلمسه أي منهما.
+
+## الاختبار أولًا (أحمر، على main 1627d4b1)
+$ AGOS_ENV=development python3 -m pytest -q -p no:cacheprovider tests/test_g160_4_chat_idempotency.py
+FAILED test_same_key_replays_same_response_with_one_execution      (assert 2 == 1 — تنفيذان)
+FAILED test_failed_outcome_is_replayed_not_rerun                   (assert 2 == 1)
+FAILED test_concurrent_duplicate_joins_the_in_flight_execution     (assert 2 == 1)
+FAILED test_in_flight_error_gives_duplicate_409_and_is_not_cached  (500 == 409)
+FAILED test_task_and_chat_keys_share_one_namespace_volatile        (200 == 409)
+FAILED test_durable_replay_survives_lost_process_memory
+FAILED test_durable_task_key_refused_by_chat_and_back
+FAILED test_contract_schemas_carry_the_new_fields
+========================= 8 failed, 3 passed =========================
+(الثلاثة الناجحة حراسة: بلا مفتاح = v1، المفتاح لكل مستأجر، الدائم بلا مفتاح لا يكتب مفتاحًا ولا payload.)
+
+## الإصلاح
+server.py: ChatRequest.idempotency_key (≤128)؛ chat() → فحص متزامن (ذاكرة الاستجابات، مفتاح /api/tasks، Future جارٍ)
+ثم تسجيل Future دون await؛ الوضع الدائم (supabase_configured() and _queue_enabled()) يبحث في الصف أولًا؛
+_chat_run (جسم chat السابق) يكتب الصف بالمفتاح وpayload {"_agos_chat": {"routing": ...}} عند وجود المفتاح فقط؛
+خسارة سباق الفهرس ⇒ إجابة بالصف المخزن. /api/tasks (الوضعان، ومسار سباق الإدراج) يرفض مفتاح محادثة بـ409.
+contracts.py: ChatResponse.duplicate Optional[bool]. المخططان chat_request/chat_response v1 أُعيد توليدهما (ADDITIVE).
+
+## بعد الإصلاح
+tests/test_g160_4_chat_idempotency.py: 11 passed
+طفرة: حذف `_CHAT_INFLIGHT[key] = fut` ⇒ 2 failed, 9 passed (الانضمام + خطأ الجاري)
+طفرة: replay = None بدل البحث المخزن ⇒ 1 failed, 10 passed (الصمود الدائم)
+اختبارات مرتبطة (bug02، r163، web_api_contract، العقود، chat، sec06، r160، الموافقة): 350 passed
+(أول تشغيل: 1 failed — عدّاد السجلات في اختباري الجديد التقط سجلات اختبارات سابقة في TASKS؛ صُحح الاختبار ليعد ما أُنشئ داخله فقط، لا تخفيف للتأكيد.)
+ruff: أول فحص F811 (استيراد fixtures)؛ صُحح بنمط R-164 (db = r163.db) ⇒ All checks passed!
+$ AGOS_ENV=development python3 -m pytest -q -p no:cacheprovider   (المجموعة الكاملة)
+==== 3770 passed, 8 skipped, 17 deselected, 9 xfailed in 563.09s ====
+
+## الحدود المعلنة
+سباق بين عمليتين قبل تخزين الصف قد ينفذ مرتين؛ الذاكرة المتطائرة محدودة بـMAX_TASKS_KEPT ولا تصمد عبر إعادة التشغيل؛
+رسالة الإعادة لا تُقارن بالأصل (كـ/api/tasks)؛ عميل الويب لا يرسل المفتاح.
+
+## قبول دفعات سابقة على main
+- PR #297 (دفعة 23، G-160-5): merge ee17559bda077915195f83c573ae0652555d0341؛ PR run 41189515121 (head 0699d84a): 3749 ×3؛
+  main AGOS Kernel CI/CD 41191397500 success (3749 ×3)، Governance Gate 41191397487 success.
+- PR #298 (دفعة 24، G-160-1): merge 1627d4b117a601dd9e15e0a50a057b0249b5205e؛ PR run 41191403549: 3759؛
+  main AGOS Kernel CI/CD 41193345158 success (3759 ×3)، Governance Gate 41193345097 success.

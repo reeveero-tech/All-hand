@@ -7,6 +7,20 @@
       "title": "Allow Public Llm",
       "type": "boolean"
     },
+    "idempotency_key": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Idempotency key: a duplicate chat replays the first response",
+      "title": "Idempotency Key"
+    },
     "message": {
       "maxLength": 20000,
       "minLength": 1,
