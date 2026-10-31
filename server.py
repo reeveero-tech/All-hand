@@ -1166,7 +1166,13 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
     TASKS[task_id]["status"] = "running"
     TASKS[task_id]["agent"] = agent.name
     storage = get_storage()
-    await storage.update_task(task_id, "running", agent_name=agent.name)
+    # G-160-2 (batch 22, D-107): the intermediate write is GUARDED from
+    # ``queued`` only. Its request may already be on the wire when the run is
+    # cancelled; an unconditional write landing after the guarded ``failed``
+    # left the row ``running`` forever. Either arrival order now ends terminal.
+    # A soft failure (None/False) is not an error here: the terminal write
+    # (guarded from queued|running) is the one that must land.
+    await storage.transition_task(task_id, ("queued",), "running", agent_name=agent.name)
 
     await _publish(tenant_id, {"type": "task_started", "task_id": task_id, "agent": agent.name,
                                "specialization": specialization})
