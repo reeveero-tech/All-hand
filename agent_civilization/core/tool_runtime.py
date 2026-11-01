@@ -82,6 +82,17 @@ def tool_id_for(spec: str) -> str:
     return f"{TOOL_PREFIX}{spec}"
 
 
+class _HandlerRaisedTimeout(Exception):
+    """A ``TimeoutError`` raised BY the handler itself (an internal dependency
+    timing out — the R-149 deterministic case), NOT the gate's own budget
+    expiring. Since Python 3.11 ``asyncio.TimeoutError`` IS the builtin
+    ``TimeoutError``, the gate cannot tell them apart at the ``except`` site —
+    so the guarded call re-raises the handler's timeout as THIS distinct type,
+    and the gate re-raises the original untouched (the task layer sanitizes it
+    to the type only; the gate must never mislabel a handler failure as its
+    own budget, nor leak the handler's text)."""
+
+
 def _valid_approval(work: Any) -> bool:
     """R-172 batch 1 (D-115): the minimal honest approval contract — an
     explicit ``work['approval'] = {'actor': <non-empty str>}`` dict naming who
@@ -256,10 +267,22 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
             pass
     with _lock:
         _executed[key] += 1
+
+    async def _guarded() -> Any:
+        # a TimeoutError raised BY the handler (an internal dependency timing
+        # out) is re-raised as a distinct type so the gate's wait_for below
+        # cannot catch it as its own budget — the original propagates
+        # unchanged to the task layer (R-149: type only, no text leak).
+        try:
+            return await real_dispatcher.dispatch(specialization, work)
+        except TimeoutError as e:
+            raise _HandlerRaisedTimeout() from e
+
     try:
-        return await asyncio.wait_for(
-            real_dispatcher.dispatch(specialization, work),
-            timeout=rec.timeout_ms / 1000.0)
+        return await asyncio.wait_for(_guarded(),
+                                     timeout=rec.timeout_ms / 1000.0)
+    except _HandlerRaisedTimeout as e:
+        raise e.__cause__          # the handler's own timeout, untouched
     except asyncio.TimeoutError:
         with _lock:
             _timed_out[key] += 1

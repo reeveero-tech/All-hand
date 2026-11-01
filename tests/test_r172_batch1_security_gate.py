@@ -122,6 +122,27 @@ def test_timeout_refusal_is_a_failure_not_a_hang(db, monkeypatch):
     assert wall < 5.0          # refused fast, not after the handler's own budget
 
 
+def test_a_handler_raised_timeout_error_is_not_the_gates_timeout(db, monkeypatch):
+    """R-149 regression (found by CI on this batch): a ``TimeoutError`` raised
+    BY the handler (an internal dependency timing out) must propagate to the
+    caller UNTOUCHED — the gate must not catch it as its own budget expiry
+    (``asyncio.TimeoutError`` IS the builtin ``TimeoutError`` since 3.11, so
+    the gate guards the call to tell them apart). The gate's refusal text
+    never replaces the handler's own failure, and the marker stays the
+    caller's business (the task layer sanitizes it to the type only)."""
+    from agent_civilization.core.agents import real_dispatcher
+
+    async def timing_out(specialization, work):
+        raise TimeoutError("internal dependency timed out: SECRET-MARKER")
+
+    before = tool_runtime.stats()["timed_out"].get("analyst", 0)
+    monkeypatch.setattr(real_dispatcher, "dispatch", timing_out)
+    with pytest.raises(TimeoutError, match="SECRET-MARKER"):
+        run(tool_runtime.dispatch("analyst", dict(PROBE)))
+    # the gate did NOT count it as its own timeout
+    assert tool_runtime.stats()["timed_out"].get("analyst", 0) == before
+
+
 # -- the default seeds are unchanged -------------------------------------------
 
 def test_no_internal_seed_demands_approval_yet(db):
