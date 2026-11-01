@@ -172,8 +172,10 @@ def _cli(argv: Optional[List[str]] = None) -> int:
     args = ap.parse_args(argv)
     try:
         report = asyncio.run(run_health_check())
-    except RegistryStoreError as e:
-        print(f"tool registry store unavailable: {getattr(e, 'reason', e)}")
+    except RegistryStoreError:
+        # G-159-1: no raw exception text in operator-visible output.
+        print("tool registry store unavailable: run_health_check refused "
+              "(fail-closed); see the server log for the store error")
         return 3
     if args.json:
         print(_json.dumps(report, indent=2, ensure_ascii=False))

@@ -36,7 +36,6 @@ from fastapi.testclient import TestClient
 from agent_civilization.core import tool_runtime
 from agent_civilization.core import tool_health
 from agent_civilization.core.agents import real_dispatcher
-from agent_civilization.core.tool_registry_store import RegistryStoreError
 
 TID = "agos.internal.analyst"
 PROBEABLE = {"surgeon", "validator", "analyst", "data_processor", "architect",
