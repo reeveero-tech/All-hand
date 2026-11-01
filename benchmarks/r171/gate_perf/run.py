@@ -95,7 +95,7 @@ async def _measure_health() -> Dict[str, Any]:
 
 
 async def main_async() -> Dict[str, Any]:
-    from agent_civilization.core import tool_health, tool_runtime
+    from agent_civilization.core import tool_runtime
     checks = await _measure_checks()
     dispatch = await _measure_dispatch()
     health = await _measure_health()
