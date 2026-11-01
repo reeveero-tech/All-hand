@@ -38,11 +38,14 @@ from agent_civilization.core import tool_health
 from agent_civilization.core.agents import real_dispatcher
 
 TID = "agos.internal.analyst"
-PROBEABLE = {"surgeon", "validator", "analyst", "data_processor", "architect",
+# R-172 batch 2 (log 337 fix): data_processor's corrected record (2.0.0)
+# declares the MODEL side effect — a health probe must not invoke a model
+# provider, so it moved to STATIC_ONLY. Its legacy 1.0.0 row still seeds.
+PROBEABLE = {"surgeon", "validator", "analyst", "architect",
              "strategist", "reviewer", "designer", "builder"}
 STATIC_ONLY = {"code_generator", "test_runner", "researcher", "network_client",
                "api_integrator", "educator", "communicator", "db_manager",
-               "monitor", "modifier", "self_developer"}
+               "monitor", "modifier", "self_developer", "data_processor"}
 
 
 def run(coro):
@@ -110,7 +113,10 @@ def test_health_check_executes_safe_tools_and_marks_them_healthy(db):
 def test_side_effect_tools_are_static_only_and_degraded(db):
     report = run(tool_health.run_health_check())
     for spec in STATIC_ONLY:
-        key = f"agos.internal.{spec}@1.0.0"
+        # the record's CURRENT version (data_processor is 2.0.0 since the
+        # R-172 log-337 fix; the rest are 1.0.0)
+        cur = tool_runtime.runtime_registry().get(f"agos.internal.{spec}")
+        key = f"agos.internal.{spec}@{cur.version}"
         assert report["tools"][key]["probe"] == "static", (key, report["tools"][key])
         assert report["tools"][key]["status"] == "degraded", (key, report["tools"][key])
     rec = tool_runtime.runtime_registry().get("agos.internal.code_generator")

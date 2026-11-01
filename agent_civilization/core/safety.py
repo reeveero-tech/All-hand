@@ -108,6 +108,16 @@ _lim("RLIMIT_AS", {address_space_bytes})
 _lim("RLIMIT_FSIZE", {file_size_bytes})
 _lim("RLIMIT_NOFILE", {open_files})
 _lim("RLIMIT_CORE", 0)
+# R-172 batch 2: the child is network-free. An audit hook blocks every
+# socket.* event (construction, connect, DNS, bind) before the user code
+# runs, closing the residual documented in SECURITY.md ("the child can open
+# network connections"). Unconditional: the sandbox declares no network
+# side effect, so no code inside it may rely on sockets.
+def _net_block(event, args):
+    if event.startswith("socket."):
+        raise RuntimeError("network use blocked in the code sandbox "
+                           "(no network side effect declared)")
+sys.addaudithook(_net_block)
 _src = sys.stdin.read()
 del resource, _lim
 exec(compile(_src, "<agos-task>", "exec"), {{"__name__": "__main__"}})
@@ -168,9 +178,10 @@ def run_sandboxed_python(code: str, timeout_s: Optional[float] = None,
         so the child cannot read the server's ``/proc/<pid>/environ``.
 
     Residual (documented in SECURITY.md): the child runs as the same OS user as
-    the server, so it can still read files that user can read and open network
-    connections.  That is why execution itself is gated by
-    ``code_execution_policy``.
+    the server, so it can still read files that user can read. It can NOT
+    open network connections since R-172 batch 2: an audit hook installed
+    before the user code runs blocks every socket operation (fail-closed).
+    That is why execution itself is gated by ``code_execution_policy``.
     """
     harden_server_process()
     timeout_s = SANDBOX_WALL_TIMEOUT_S if timeout_s is None else timeout_s

@@ -89,7 +89,12 @@ def test_the_gate_calls_the_frozen_dispatch_by_module_attribute():
 
 def test_runtime_registry_is_seeded_with_every_handler_and_all_are_executable():
     reg = tool_runtime.runtime_registry()
-    assert len(reg) == len(real_dispatcher._HANDLERS) == 20
+    # R-172 batch 2 (log 337): + data_processor's legacy 1.0.0 row; the
+    # latest version of every handler is executable.
+    from agent_civilization.core import internal_tools
+    assert len(reg) == (len(real_dispatcher._HANDLERS)
+                        + len(internal_tools._LEGACY_ROWS))
+    assert len(reg.search(limit=100)) == len(real_dispatcher._HANDLERS) == 20
     for spec in real_dispatcher._HANDLERS:
         ok, reason = tool_runtime.check(spec)
         assert ok, (spec, reason)
