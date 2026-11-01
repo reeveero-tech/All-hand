@@ -1,0 +1,109 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/user/workspace/all-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.1, ddtrace-4.16.1, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 20 items
+
+tests/test_r172_batch2_security_limits.py FFFFFFFFF.FFFF.FFF.F           [100%]
+
+=================================== FAILURES ===================================
+____________ test_a_declared_output_cap_refuses_an_oversized_result ____________
+tests/test_r172_batch2_security_limits.py:116: in test_a_declared_output_cap_refuses_an_oversized_result
+    assert result["ok"] is False
+E   assert True is False
+------------------------------ Captured log call -------------------------------
+WARNING  agos.infrastructure.redis:redis_queue.py:30 Redis not available. Using in-memory fallback.
+_______________ test_the_default_cap_protects_undeclared_budgets _______________
+tests/test_r172_batch2_security_limits.py:130: in test_the_default_cap_protects_undeclared_budgets
+    assert "max_output_bytes=1000000" in result["error"]
+E   AssertionError: assert 'max_output_bytes=1000000' in 'tool agos.internal.builder@1.1.0 refused: the handler to run is not the registered implementation (tests.test_r172_batch2_security_limits:huge)'
+___________________ test_the_default_cap_is_operator_tunable ___________________
+tests/test_r172_batch2_security_limits.py:139: in test_the_default_cap_is_operator_tunable
+    assert result["ok"] is False
+E   assert True is False
+_______________ test_a_capped_refusal_never_contains_the_payload _______________
+tests/test_r172_batch2_security_limits.py:147: in test_a_capped_refusal_never_contains_the_payload
+    assert result["ok"] is False
+E   assert True is False
+________________ test_a_pure_local_tool_cannot_use_the_network _________________
+tests/test_r172_batch2_security_limits.py:163: in test_a_pure_local_tool_cannot_use_the_network
+    assert result["ok"] is False
+E   assert True is False
+_____________ test_dns_resolution_is_blocked_for_pure_local_tools ______________
+tests/test_r172_batch2_security_limits.py:173: in test_dns_resolution_is_blocked_for_pure_local_tools
+    assert result["ok"] is False
+E   assert True is False
+___________ test_a_network_declaring_tool_can_still_use_the_network ____________
+tests/test_r172_batch2_security_limits.py:186: in test_a_network_declaring_tool_can_still_use_the_network
+    st = tool_runtime.stats()["net_blocked"]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'net_blocked'
+_______ test_the_policy_reads_the_side_effect_constants_of_the_contract ________
+tests/test_r172_batch2_security_limits.py:191: in test_the_policy_reads_the_side_effect_constants_of_the_contract
+    assert tool_runtime._NETWORK_SIDE_EFFECTS == frozenset(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_runtime' has no attribute '_NETWORK_SIDE_EFFECTS'
+_________ test_a_declared_auth_scope_must_be_granted_in_the_work_item __________
+tests/test_r172_batch2_security_limits.py:200: in test_a_declared_auth_scope_must_be_granted_in_the_work_item
+    assert result["ok"] is False
+E   assert True is False
+_______________ test_non_list_scope_grants_are_refused[ops:demo] _______________
+tests/test_r172_batch2_security_limits.py:219: in test_non_list_scope_grants_are_refused
+    assert result["ok"] is False
+E   assert True is False
+_________________ test_non_list_scope_grants_are_refused[bad1] _________________
+tests/test_r172_batch2_security_limits.py:219: in test_non_list_scope_grants_are_refused
+    assert result["ok"] is False
+E   assert True is False
+__________________ test_non_list_scope_grants_are_refused[1] ___________________
+tests/test_r172_batch2_security_limits.py:219: in test_non_list_scope_grants_are_refused
+    assert result["ok"] is False
+E   assert True is False
+_________________ test_non_list_scope_grants_are_refused[None] _________________
+tests/test_r172_batch2_security_limits.py:219: in test_non_list_scope_grants_are_refused
+    assert result["ok"] is False
+E   assert True is False
+__________________ test_the_sandbox_blocks_socket_connections __________________
+tests/test_r172_batch2_security_limits.py:254: in test_the_sandbox_blocks_socket_connections
+    assert "network use blocked" in out["stderr"]
+E   assert 'network use blocked' in 'Traceback (most recent call last):\n  File "<string>", line 18, in <module>\n    exec(compile(_src, "<agos-task>", "e...reate_connection\n    sock.connect(sa)\n    ~~~~~~~~~~~~^^^^\nConnectionRefusedError: [Errno 111] Connection refused\n'
+____________________ test_the_sandbox_blocks_dns_resolution ____________________
+tests/test_r172_batch2_security_limits.py:261: in test_the_sandbox_blocks_dns_resolution
+    assert out["returncode"] != 0
+E   assert 0 != 0
+_____________ test_data_processor_declares_its_model_call_honestly _____________
+tests/test_r172_batch2_security_limits.py:270: in test_data_processor_declares_its_model_call_honestly
+    assert rec.version == "2.0.0"
+E   AssertionError: assert '1.0.0' == '2.0.0'
+E     
+E     - 2.0.0
+E     ? ^
+E     + 1.0.0
+E     ? ^
+______________ test_data_processor_is_no_longer_health_probeable _______________
+tests/test_r172_batch2_security_limits.py:296: in test_data_processor_is_no_longer_health_probeable
+    assert tool_health.is_probeable(rec) is False
+E   AssertionError: assert True is False
+E    +  where True = <function is_probeable at 0x7ff4cc8e6a30>(ToolRecord(tool_id='agos.internal.data_processor', name='data_processor', version='1.0.0', source=ToolSource(kind='int...er:_data_processor', fallback_policy=None, telemetry_name='tool.internal.data_processor', lifecycle_state='registered'))
+E    +    where <function is_probeable at 0x7ff4cc8e6a30> = <module 'agent_civilization.core.tool_health' from '/home/user/workspace/all-hand/agent_civilization/core/tool_health.py'>.is_probeable
+=========================== short test summary info ============================
+FAILED tests/test_r172_batch2_security_limits.py::test_a_declared_output_cap_refuses_an_oversized_result
+FAILED tests/test_r172_batch2_security_limits.py::test_the_default_cap_protects_undeclared_budgets
+FAILED tests/test_r172_batch2_security_limits.py::test_the_default_cap_is_operator_tunable
+FAILED tests/test_r172_batch2_security_limits.py::test_a_capped_refusal_never_contains_the_payload
+FAILED tests/test_r172_batch2_security_limits.py::test_a_pure_local_tool_cannot_use_the_network
+FAILED tests/test_r172_batch2_security_limits.py::test_dns_resolution_is_blocked_for_pure_local_tools
+FAILED tests/test_r172_batch2_security_limits.py::test_a_network_declaring_tool_can_still_use_the_network
+FAILED tests/test_r172_batch2_security_limits.py::test_the_policy_reads_the_side_effect_constants_of_the_contract
+FAILED tests/test_r172_batch2_security_limits.py::test_a_declared_auth_scope_must_be_granted_in_the_work_item
+FAILED tests/test_r172_batch2_security_limits.py::test_non_list_scope_grants_are_refused[ops:demo]
+FAILED tests/test_r172_batch2_security_limits.py::test_non_list_scope_grants_are_refused[bad1]
+FAILED tests/test_r172_batch2_security_limits.py::test_non_list_scope_grants_are_refused[1]
+FAILED tests/test_r172_batch2_security_limits.py::test_non_list_scope_grants_are_refused[None]
+FAILED tests/test_r172_batch2_security_limits.py::test_the_sandbox_blocks_socket_connections
+FAILED tests/test_r172_batch2_security_limits.py::test_the_sandbox_blocks_dns_resolution
+FAILED tests/test_r172_batch2_security_limits.py::test_data_processor_declares_its_model_call_honestly
+FAILED tests/test_r172_batch2_security_limits.py::test_data_processor_is_no_longer_health_probeable
+========================= 17 failed, 3 passed in 0.55s =========================

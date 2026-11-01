@@ -22,6 +22,13 @@ Real agent tools are dangerous if exposed anonymously, so the defaults are safe:
   disables it even with a key. When allowed, code runs in an isolated interpreter
   with an empty environment, a temporary directory and CPU/memory/file limits, and
   the server process is non-dumpable so the child cannot read its `/proc/<pid>/environ`.
+  Since R-172 (D-116) the sandbox child is also **network-free**: an audit hook
+  installed before the user code runs blocks every socket operation (connect,
+  DNS, bind, construction) — the sandbox declares no network side effect.
+- **Per-tool network policy (R-172, D-116):** a tool whose registry record declares
+  no network side effect (`model_provider_call`/`external_http_read`) and no
+  allowlist cannot use sockets while it runs — the dispatch gate blocks the
+  attempt per task (fail-closed, counted in `stats()['net_blocked']`).
 - **Outbound URLs** (`api_integrator`, `network_client`, external agents) must resolve to
   public addresses; loopback, private, link-local/cloud-metadata ranges are blocked,
   including on redirects. `AGOS_ALLOW_PRIVATE_NETWORK=1` lifts this deliberately.
