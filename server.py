@@ -59,6 +59,8 @@ from agent_civilization.agents.external_adapter import (
 from agent_civilization.core import experience, safety, telemetry, tenancy
 from agent_civilization.core import agent_registry
 from agent_civilization.core import task_queue
+from agent_civilization.core import tool_health, tool_runtime  # R-171 batch 4 (D-114)
+from agent_civilization.core.tool_registry_store import RegistryStoreError
 from agent_civilization.core import backpressure, pools
 from agent_civilization.core.tenancy import ALL_TENANTS, Principal
 from agent_civilization.core.sse import EventBus, SSELimits, StreamLimit
@@ -3153,6 +3155,114 @@ async def remove_external_agent(
             logger.warning(f"External agent removed: {name}")
             return {"removed": name}
     raise HTTPException(404, "external agent not found")
+
+
+# ---------------------------------------------------------------------------
+# R-171 batch 4 (D-114): admin API for the shared tool registry.
+# The operator CLI (scripts/tool_registry_admin.py) needs shell access to the
+# host; these endpoints give the SAME operations to an authenticated admin
+# principal over HTTP: read the registry, run the REAL health check, disable
+# and enable tools. Every change is audited in the shared store and reaches
+# every worker's gate on its next check — no restart. The registry remains
+# an availability/lifecycle control, NOT an authorization system (R-172).
+
+class ToolAdminAction(BaseModel):
+    actor: str = Field(..., min_length=1, max_length=128)
+
+
+@app.get("/api/admin/tools")
+@rate_limit
+async def admin_list_tools(
+    request: Request,
+    api_key: Optional[str] = Security(api_key_header)
+):
+    """The shared registry's records (admin role required)."""
+    require_admin(api_key)
+    try:
+        reg = tool_runtime.runtime_registry()
+        tools = [
+            {"tool_id": r.tool_id, "version": r.version, "name": r.name,
+             "lifecycle_state": r.lifecycle_state, "health_status": r.health_status,
+             "test_status": r.test_status, "last_verified_at": r.last_verified_at,
+             "risk_class": r.risk_class, "read_only": r.read_only,
+             "side_effects": r.side_effects, "probeable": tool_health.is_probeable(r)}
+            for r in reg.search(include_disabled=True, limit=10_000)
+        ]
+        return {"count": len(tools), "tools": tools, "gate_stats": tool_runtime.stats()}
+    except RegistryStoreError:
+        raise HTTPException(503, "tool registry store unavailable")
+
+
+@app.post("/api/admin/tools/health-check")
+@rate_limit
+async def admin_health_check_tools(
+    request: Request,
+    api_key: Optional[str] = Security(api_key_header)
+):
+    """Run the real health check (admin role required): static availability
+    for every tool plus a real execution probe for the safe (read-only, low
+    risk, side-effect-free) ones. Health results are written to the shared
+    registry and audited."""
+    require_admin(api_key)
+    try:
+        report = await tool_health.run_health_check()
+    except RegistryStoreError:
+        raise HTTPException(503, "tool registry store unavailable")
+    return report
+
+
+@app.post("/api/admin/tools/{name}/disable")
+@rate_limit
+async def admin_disable_tool(
+    request: Request,
+    name: str,
+    action: ToolAdminAction,
+    api_key: Optional[str] = Security(api_key_header)
+):
+    """Disable a tool (admin role required). Durable in the shared store:
+    every worker's gate refuses it on the next check, and it survives
+    restarts. Re-enable with the enable endpoint or the operator CLI."""
+    require_admin(api_key)
+    return await _admin_tool_lifecycle(name, action, "disable")
+
+
+@app.post("/api/admin/tools/{name}/enable")
+@rate_limit
+async def admin_enable_tool(
+    request: Request,
+    name: str,
+    action: ToolAdminAction,
+    api_key: Optional[str] = Security(api_key_header)
+):
+    """Enable a disabled/failed tool (admin role required): moves it back to
+    ``registered`` through the registry's lifecycle graph, audited."""
+    require_admin(api_key)
+    return await _admin_tool_lifecycle(name, action, "enable")
+
+
+async def _admin_tool_lifecycle(name: str, action: ToolAdminAction, cmd: str) -> Dict[str, Any]:
+    tool_id = name if name.startswith(tool_runtime.TOOL_PREFIX) \
+        else tool_runtime.tool_id_for(name)
+    try:
+        reg = tool_runtime.runtime_registry()
+        rec = reg.get(tool_id)
+    except RegistryStoreError:
+        raise HTTPException(503, "tool registry store unavailable")
+    except Exception:
+        raise HTTPException(404, f"unknown tool: {name}")
+    try:
+        target = "disabled" if cmd == "disable" else "registered"
+        if rec.lifecycle_state == target:
+            return {"tool_id": rec.tool_id, "version": rec.version,
+                    "lifecycle_state": rec.lifecycle_state, "unchanged": True}
+        updated = reg.update_status(rec.tool_id, rec.version, actor=action.actor,
+                                    lifecycle_state=target)
+        return {"tool_id": updated.tool_id, "version": updated.version,
+                "lifecycle_state": updated.lifecycle_state}
+    except RegistryStoreError:
+        raise HTTPException(503, "tool registry store unavailable")
+    except Exception as e:
+        raise HTTPException(400, f"refused: {e}")
 
 
 # ---------------------------------------------------------------------------
