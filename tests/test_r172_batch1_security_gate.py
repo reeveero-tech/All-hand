@@ -25,7 +25,6 @@ import asyncio
 import pytest
 
 from agent_civilization.core import tool_runtime
-from agent_civilization.core.tool_registry_store import RegistryStoreError
 
 PROBE = {"prompt": "security gate probe", "goal": "security gate probe"}
 
