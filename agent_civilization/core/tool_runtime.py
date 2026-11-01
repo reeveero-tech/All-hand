@@ -38,11 +38,15 @@ DURABLE: removing a name from the env does not re-enable it — use
 ``stats()["unknown_disabled"]`` and logged.
 
 Limits (declared): host-local store (multi-host is a deployment decision); a
-check is not a sandbox or a permission system (R-172); ``health_status`` is
-only as current as whoever sets it (no health checker yet).
+check is not a sandbox or a permission system (R-172 — batch 1, D-115, adds
+GATE-level enforcement of the record's own ``requires_approval`` and
+``timeout_ms``; execution isolation, network policy per tool and output caps
+are later R-172 batches); ``health_status`` is set by the R-171 batch-4
+health checker (``core/tool_health``), on demand — not continuously.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import threading
@@ -68,6 +72,7 @@ _lock = threading.Lock()
 _registry: Optional[ToolRegistry] = None
 _executed: Counter = Counter()
 _refused: Counter = Counter()
+_timed_out: Counter = Counter()
 _unknown_disabled: List[str] = []
 _seed_drift: List[str] = []
 STORE_UNAVAILABLE = "tool registry store unavailable"
@@ -75,6 +80,32 @@ STORE_UNAVAILABLE = "tool registry store unavailable"
 
 def tool_id_for(spec: str) -> str:
     return f"{TOOL_PREFIX}{spec}"
+
+
+class _HandlerRaisedTimeout(Exception):
+    """A ``TimeoutError`` raised BY the handler itself (an internal dependency
+    timing out — the R-149 deterministic case), NOT the gate's own budget
+    expiring. Since Python 3.11 ``asyncio.TimeoutError`` IS the builtin
+    ``TimeoutError``, the gate cannot tell them apart at the ``except`` site —
+    so the guarded call re-raises the handler's timeout as THIS distinct type,
+    and the gate re-raises the original untouched (the task layer sanitizes it
+    to the type only; the gate must never mislabel a handler failure as its
+    own budget, nor leak the handler's text)."""
+
+
+def _valid_approval(work: Any) -> bool:
+    """R-172 batch 1 (D-115): the minimal honest approval contract — an
+    explicit ``work['approval'] = {'actor': <non-empty str>}`` dict naming who
+    approved. Anything else (missing, not a dict, empty/blank actor) is NOT an
+    approval. This says nothing about WHO may approve or for how long — that
+    surface (approver identity, TTL, scope) is a later R-172 batch; here the
+    gate only refuses to run an approval-demanding tool without one."""
+    if not isinstance(work, dict):
+        return False
+    ap = work.get("approval")
+    return (isinstance(ap, dict)
+            and isinstance(ap.get("actor"), str)
+            and bool(ap["actor"].strip()))
 
 
 def _seed() -> ToolRegistry:
@@ -186,7 +217,12 @@ def check(spec: str) -> Tuple[bool, str]:
 
 
 async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Gate, then run the frozen dispatcher (see the module docstring)."""
+    """Gate, then run the frozen dispatcher (see the module docstring).
+
+    R-172 batch 1 (D-115): the record's own SECURITY metadata is ENFORCED
+    here, not just stored — an approval-demanding tool (``requires_approval``)
+    does not run without a valid approval in the work item, and NO tool may
+    outlive its registered ``timeout_ms`` (fail-closed on both)."""
     if specialization not in real_dispatcher._HANDLERS:
         try:
             runtime_registry().get(tool_id_for(specialization))
@@ -203,14 +239,68 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
             pass
         logger.info("tool refused: %s", reason)
         return {"ok": False, "error": reason}
+    # re-fetch the record (the gate already proved it exists and is executable)
+    try:
+        rec = runtime_registry().get(tool_id_for(specialization))
+    except (ToolNotFound, RegistryStoreError):
+        with _lock:
+            _refused[key] += 1
+        return {"ok": False, "error": f"tool {key} refused: {STORE_UNAVAILABLE}"}
+    if rec.requires_approval and not _valid_approval(work):
+        with _lock:
+            _refused[key] += 1
+        try:
+            from agent_civilization.core import telemetry
+            telemetry.event("tool", "refused", outcome="fail", tool=specialization)
+        except Exception:  # noqa: BLE001 — telemetry never blocks the refusal
+            pass
+        logger.info("tool refused: %s requires an approval (none in the work item)",
+                    key)
+        return {"ok": False, "error": (
+            f"tool {key} refused: requires_approval is set — provide "
+            "work['approval'] = {'actor': <who approved>}")}
+    if rec.requires_approval:
+        try:
+            from agent_civilization.core import telemetry
+            telemetry.event("tool", "approved_run", outcome="ok", tool=specialization)
+        except Exception:  # noqa: BLE001 — telemetry never blocks the run
+            pass
     with _lock:
         _executed[key] += 1
-    return await real_dispatcher.dispatch(specialization, work)
+
+    async def _guarded() -> Any:
+        # a TimeoutError raised BY the handler (an internal dependency timing
+        # out) is re-raised as a distinct type so the gate's wait_for below
+        # cannot catch it as its own budget — the original propagates
+        # unchanged to the task layer (R-149: type only, no text leak).
+        try:
+            return await real_dispatcher.dispatch(specialization, work)
+        except TimeoutError as e:
+            raise _HandlerRaisedTimeout() from e
+
+    try:
+        return await asyncio.wait_for(_guarded(),
+                                     timeout=rec.timeout_ms / 1000.0)
+    except _HandlerRaisedTimeout as e:
+        raise e.__cause__          # the handler's own timeout, untouched
+    except asyncio.TimeoutError:
+        with _lock:
+            _timed_out[key] += 1
+        try:
+            from agent_civilization.core import telemetry
+            telemetry.event("tool", "timeout", outcome="fail", tool=specialization)
+        except Exception:  # noqa: BLE001 — telemetry never blocks the refusal
+            pass
+        logger.warning("tool timed out: %s exceeded timeout_ms=%d", key,
+                       rec.timeout_ms)
+        return {"ok": False, "error": (
+            f"tool {key} exceeded its registered timeout_ms={rec.timeout_ms}")}
 
 
 def stats() -> Dict[str, Any]:
     with _lock:
         return {"executed": dict(_executed), "refused": dict(_refused),
+                "timed_out": dict(_timed_out),
                 "unknown_disabled": list(_unknown_disabled), "seed_drift": list(_seed_drift),
                 "store": "sqlite-host-shared"}
 
