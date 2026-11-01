@@ -50,3 +50,25 @@
 - فحص R-154 محليًا أمسك غياب حقل `branch` لحالة in_progress — أُضيف. ملاحظة صريحة: دفعة إصلاح
   الحقل (9fcd2d00) لمست ROADMAP فقط، فأحمرّ شرط R0 من R-187 (الثلاثة معًا في كل push) — عولج
   بدفعة التوثيق المرافقة هذه (ROADMAP + PROJECT_STATE + CHANGELOG + السجل). الرأس الأخضر واحد.
+
+## حادثة CI على PR #304 وإصلاحها (داخل نفس الدفعة — commit 154026f2)
+- الحادثة: CI على PR #304 (run 41347958117، job AGOS Kernel CI/CD، مصفوفة specialists) فشل في
+  `tests/test_r149_security_qa_gaps.py::test_internal_dependency_timeout_ends_failed_without_leak`:
+  بدل تممرير `TimeoutError` الأصلي كنوع فقط (تعقيم R-149)، ظهرت رسالة بوابة الدفعة
+  «tool agos.internal.test_runner@1.0.0 exceeded its registered timeout_ms=60000».
+- السبب الجذري: منذ Python 3.11 يصبح `asyncio.TimeoutError` هو `TimeoutError` المدمج نفسه — فبوسطة
+  `asyncio.wait_for` الجديدة في البوابة كانت تحمل خطأ مهلة الداخلية (تبعية داخلية انتهت مهلتها) وتصنفه
+  على أنه انتهاء ميزانية البوابة، فتستبدل رسالة المهمة الأصلية. الافتراضي (default) لم يكشفه لأن ذلك
+  الاختبار يستخدم مصفوفة specialists فقط.
+- الإصلاح: استدعاء المُرسِل يُغلَّف بكوروتين `_guarded` يعيد رفع `TimeoutError` الواردة من المُعالِج
+  كنوع حارس مميز (`_HandlerRaisedTimeout`)، فتفصل البوابة ميزانيتها عن مهلة المُعالِج وتمرر الأصلية
+  دون تغيير (التعقيم يبقى مسؤولية طبقة المهمة كما في R-149).
+- إثبات أحمر أولًا محليًا: `AGOS_AGENT_IMPL=specialists pytest tests/test_r149_security_qa_gaps.py` فشل
+  على رأس الدفعة (4bc1e09a) ونجح بعد الإصلاح (23 passed). اختبار انحدار صريح أُضيف:
+  `test_a_handler_raised_timeout_error_is_not_the_gates_timeout` (يستخدم مُرسِلًا وهميًا يرفع
+  TimeoutError بوسم SECRET-MARKER ويطالب بتممريرها كما هي وعدم عدّها timed_out) — 16 اختبارًا في
+  ملف الدفعة الآن (كان 15).
+- الحزمة الكاملة على رأس الإصلاح (154026f2): **3827 passed، 8 skipped، 17 deselected، 9 xfailed in 577.45s**
+  (3826 السابقة + اختبار الانحدار) — لا فشل، لا skips/xfails جديدة، لا اختبار أُضعف. ruff نظيف.
+- الملف المعدل: `core/tool_runtime.py` (فصل مهلة البوابة عن مهلة المُعالِج) + ملف اختبارات الدفعة
+  (اختبار الانحدار). لا تغيير في سياسة البوابة: رفض بلا موافقة صالحة وحد timeout_ms كما هما.
