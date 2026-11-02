@@ -311,10 +311,16 @@ class ToolRegistry:
     def search(self, *, capability: Optional[str] = None, text: Optional[str] = None,
                max_risk: Optional[str] = None, read_only: Optional[bool] = None,
                lifecycle: Optional[Tuple[str, ...]] = None, latest_only: bool = True,
-               include_disabled: bool = False, limit: int = 50) -> List[ToolRecord]:
+               include_disabled: bool = False,
+               limit: Optional[int] = 50) -> List[ToolRecord]:
         """Deterministic filter search (ordered by tool_id, then version).
         Exact capability match; ``text`` is a case-insensitive substring of
-        name/description/capabilities. Not ranking (R-174)."""
+        name/description/capabilities. Not ranking (R-174).
+
+        R-174 batch 2 (D-122): ``limit=None`` means NO truncation — selection
+        must see the complete candidate set (a 10K catalog must be fully
+        visible to selection; the default 50 still caps for ordinary
+        callers)."""
         if max_risk is not None and max_risk not in RISK_ORDER:
             raise InvalidRecord(f"unknown risk class {max_risk!r}")
         needle = text.lower() if text else None
@@ -343,7 +349,7 @@ class ToolRegistry:
                     [r.name, r.description, *r.capabilities]).lower():
                 continue
             out.append(r)
-            if len(out) >= max(0, limit):
+            if limit is not None and len(out) >= max(0, limit):
                 break
         return out
 

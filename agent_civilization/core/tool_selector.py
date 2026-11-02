@@ -161,9 +161,15 @@ def select_tools(registry: Any, task: TaskSpec) -> Selection:
     that every constraint violation is visible in ``excluded`` — the registry
     search's own filters are not used for risk/lifecycle, this module owns
     the decision and its audit trail.
+
+    R-174 batch 2 (D-122): retrieval is COMPLETE (``limit=None``) — the old
+    ``limit=1000`` made every tool beyond the first 1000 tool_ids of a
+    capability INVISIBLE to selection (red proof: a 1500-tool capability
+    whose only eligible champion sorted last yielded an empty selection). A
+    10K-tool catalog (R-175) must be fully visible to selection.
     """
     candidates = registry.search(capability=task.capability,
-                                 include_disabled=True, limit=1000)
+                                 include_disabled=True, limit=None)
     excluded: List[Tuple[str, str]] = []
     eligible: List[ToolRecord] = []
     for rec in candidates:

@@ -1,0 +1,14 @@
+# السجل الخام — R-174 دفعة 2 أحمر أولًا على main (d94b313)
+# التشغيل: pytest tests/test_r174_batch2_wide_goldset.py (قبل أي إصلاح) — 2026-11-02
+
+FAILED tests/test_r174_batch2_wide_goldset.py::test_search_limit_none_and_default_still_caps
+FAILED tests/test_r174_batch2_wide_goldset.py::test_scale_candidate_retrieval_is_complete_beyond_1000
+FAILED tests/test_r174_batch2_wide_goldset.py::test_scale_end_to_end_through_persistent_store_and_gate
+FAILED tests/test_r174_batch2_wide_goldset.py::test_scale_selection_latency
+========================= 4 failed, 16 passed in 1.56s =========================
+
+# مقتطف أسباب الفشل:
+E   AssertionError: assert [] == ['agos.internal.wg_scale_bulk_1199']
+FAILED tests/test_r174_batch2_wide_goldset.py::test_search_limit_none_and_default_still_caps - TypeError: '>' not supported between instances of 'NoneType' and 'int'
+FAILED tests/test_r174_batch2_wide_goldset.py::test_scale_candidate_retrieval_is_complete_beyond_1000 - AssertionError: assert [] == ['agos.internal.wg_scale_bulk_1499']
+FAILED tests/test_r174_batch2_wide_goldset.py::test_scale_end_to_end_through_persistent_store_and_gate - AssertionError: assert [] == ['agos.internal.wg_scale_bulk_1199']
