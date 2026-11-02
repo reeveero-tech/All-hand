@@ -137,6 +137,13 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 - **التحقق على أي commit**: `python scripts/run_r100_safety_probe.py` (rc=0 فقط إذا كانت كل المتجهات آمنة) و`GET /api/system/status` → `security.tool_policy`.
 - **قياس معيار D-035 الأول**: `AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r051_audit.py` (20/20)؛ وR-053: `AGOS_ALLOW_CODE_EXEC=1 python scripts/run_r053_scale_audit.py` (1000/1000). بالوضع الافتراضي تظهر مهام `test_runner` كمرفوضة بالسياسة (R-051: `refused_by_policy`؛ R-053: `فشل: test_runner ×50 — code execution is disabled…`).
 
+## بوابة أدوات التنفيذ: العزل وسياسة الموافقات (R-172، D-117)
+
+- **عزل التنفيذ (opt-in بإعلان الأداة)**: أداة يسجل صفها `resource_budget['isolation']=='process'` تُنفَّذ في عملية spawn منفصلة — الطفل يفرض إعلانات الأداة نفسها: حجب الشبكة على مستوى العملية كلها (يشمل الخيوط التي تطلقها المعالجات)، `RLIMIT_AS` بمقدار `max_memory_bytes` المسجل (الافتراضي 512MB)، قتل عند تجاوز `timeout_ms` المسجلة، واحتواء الانهيار (انهيار المعالج لا يقتل المشغّل — عدّاد `isolated_crashed`). لا أداة من البذر الحالي تعلنه؛ ربط أداة قرار تسجيل لاحق عبر السجل.
+- **سياسة الموافقات (المعلنة على الصف)**: `requires_approval=True` مع `approval_ttl_s` (1–86400 ثانية) و`approval_scopes` (نطاقات المعتمِذ). الموافقة تُرسل في عنصر العمل `work['approval']` (أو حقل `approval` في طلب الـAPI — request-scoped، لا يُخزن في سجل المهمة) وتجب أن تحمل: `actor` غير فارغ، `tool` مطابقًا للمعرّف، `granted_at` ISO-8601 طازجًا داخل الـTTL، و`scopes` ⊆ نطاقات المعتمِذ المسجلة. أي نقص ⇒ رفض صريح (عداد `refused`). `modifier` يسافر 1.1.0 بالسياسة كاملة (TTL 600 ثانية، نطاق `ops:approve-exec`).
+- **قناة الفشل المنقّحة**: نصوص الأخطاء العابرة للبوابة تُمرر عبر `public_text.redact` (أسرار مثل JWT/sk- تُحجب)؛ «network use blocked» يبقى مقروءًا.
+- **حدود معلنة**: عزل بذر reviewer مؤجل؛ التعقيم الدلالي للحمولات خارج النطاق؛ حقلا السياسة (approval_ttl_s/approval_scopes) خارج بصمة الصف حتى رفع مخطط البصمة.
+
 ## الفحوصات
 
 `/health`, `/health/live`, `/health/ready`, `/metrics`, `/api/system/status`. **`/health/ready` يعيد 503 عند أي حالة `not_ready`** (حضارة غير مهيأة، صفر وكلاء، استثناء أثناء الفحص — يُسجَّل `readiness check failed: <نوع الاستثناء>`) و200 فقط عند `ready` (R-142، BUG-03؛ كان 200 دائماً)؛ `/health/live` 200 ما دامت العملية حية (لا يتبع الجاهزية). فحص صحة Render يبقى `/api/system/status` (`render.yaml`) وفحص CI docker يبقى `/health` — لم يتغير أيهما. `/health` يعيد 503 عند `unhealthy` و200 عند `healthy`/`degraded` (أُصلح في R-004؛ اختباران منذ R-068 — صُحح هنا في R-078، كان يقول "200 دائماً"). **R-078**: فحص `storage` يصير `degraded` إذا كان مفتاح Supabase عاماً، و`/api/system/status` يعرض `supabase_key: {kind, source}` (لا القيمة).

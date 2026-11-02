@@ -53,6 +53,16 @@ def _all_specs():
 
 
 ALL_SPECS = _all_specs()
+def _w(spec, base):
+    """R-172 batch 3 (D-117): modifier 1.1.0 demands a real approval — the
+    parametrized loops grant one so the specialization still executes (the
+    new contract is exercised, not bypassed)."""
+    import datetime as dt
+    if spec == "modifier":
+        return dict(base, approval={
+            "actor": "test:approver", "scopes": ["ops:approve-exec"],
+            "granted_at": dt.datetime.now(dt.timezone.utc).isoformat()})
+    return dict(base)
 # batch 12: the four deterministic text handlers now need evidence of task fit
 TASK_FIT_SPECS = {"strategist", "architect", "designer", "reviewer"}
 TEXT_SPECS = [s for s in ALL_SPECS if s not in TOOL_SPECS | TASK_FIT_SPECS]
@@ -97,7 +107,7 @@ def test_char_forged_success_rejected_for_every_specialization(spec, impl, monke
     والعداد ``tasks_failed`` لا ``tasks_completed``."""
     _patch(monkeypatch, _forged)
     a = _agent(impl, spec)
-    out = asyncio.run(a.execute({"prompt": "x"}))
+    out = asyncio.run(a.execute(_w(spec, {"prompt": "x"})))
     assert out["ok"] is False and out["result"]["error"] == "output_verification_failed"
     assert a.stats["tasks_completed"] == 0 and a.stats["tasks_failed"] == 1
 
@@ -108,7 +118,7 @@ def test_tool_specs_require_evidence_by_default(spec, impl, monkeypatch, gate_on
     """RED: عمل بلا ``verification`` (شكل ``/api/tasks``) لتخصص أداة ونجاح بلا
     مخرج أداة ⇒ مرفوض بالمتطلب الافتراضي (كان مقبولًا ``unverified``)."""
     _patch(monkeypatch, _evidence_free)
-    out = asyncio.run(_agent(impl, spec).execute({"prompt": "x"}))
+    out = asyncio.run(_agent(impl, spec).execute(_w(spec, {"prompt": "x"})))
     assert out["ok"] is False, out["result"]
     assert out["result"]["error"] == "output_verification_failed"
 
@@ -119,7 +129,7 @@ def test_char_text_specs_without_evidence_are_unverified_not_rejected(spec, impl
     """CHAR: التخصصات النصية الباقية (10 منذ الدفعة 12) بلا متطلبات افتراضية ⇒
     قبول ``unverified`` (لا دليل آلي لها — رفضها يكون رفضًا كاذبًا)."""
     _patch(monkeypatch, _evidence_free)
-    out = asyncio.run(_agent(impl, spec).execute({"prompt": "x"}))
+    out = asyncio.run(_agent(impl, spec).execute(_w(spec, {"prompt": "x"})))
     assert out["ok"] is True and out["result"]["verification"]["unverified"] is True
 
 
@@ -130,7 +140,7 @@ def test_task_fit_specs_reject_evidence_free_success(spec, impl, monkeypatch, ga
     rejected by the default task_fit requirement (was accepted unverified)."""
     _patch(monkeypatch, _evidence_free)
     a = _agent(impl, spec)
-    out = asyncio.run(a.execute({"prompt": "x"}))
+    out = asyncio.run(a.execute(_w(spec, {"prompt": "x"})))
     assert out["ok"] is False and out["result"]["error"] == "output_verification_failed"
     assert any(r.startswith("task_fit:") for r in out["result"]["verification"]["reasons"])
     assert a.stats["tasks_failed"] == 1
@@ -277,7 +287,7 @@ def test_hub_path_forged_success_rejected_when_gate_on(spec, monkeypatch, gate_o
     بنتيجة ``ok=True`` ويُعدّ مكتملًا."""
     _patch(monkeypatch, _forged)
     a = _template_agent(spec)
-    content = _hub_run(a, {"task_id": "t1", "prompt": "x"})
+    content = _hub_run(a, _w(spec, {"task_id": "t1", "prompt": "x"}))
     assert content["result"]["ok"] is False
     assert content["result"]["error"] == "output_verification_failed"
     assert a.performance_metrics["tasks_failed"] == 1

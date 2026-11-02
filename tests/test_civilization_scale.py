@@ -35,6 +35,19 @@ def test_creation_time_within_bounds():
     assert elapsed < 5.0
 
 
+
+def _policy_work(spec, payload):
+    """R-172 batch 3 (D-117): modifier 1.1.0 demands a real approval — the
+    generic all-specialization loops grant one so the specialization still
+    executes (the new contract is exercised, not bypassed)."""
+    import datetime as dt
+    if spec == "modifier":
+        return dict(payload, approval={
+            "actor": "test:approver", "scopes": ["ops:approve-exec"],
+            "granted_at": dt.datetime.now(dt.timezone.utc).isoformat()})
+    return payload
+
+
 @pytest.mark.code_exec  # R-100: proves real test_runner execution (operator opt-in)
 def test_agents_execute_real_dispatch():
     """كل تخصص لديه وكيل قابل للتنفيذ عبر الموزّع الحقيقي (نموذج لكل تخصص)."""
@@ -66,7 +79,7 @@ def test_agents_execute_real_dispatch():
     async def run():
         results = []
         for spec, agents in civ.items():
-            payload = PAYLOADS.get(spec, {"prompt": "demo"})
+            payload = _policy_work(spec, PAYLOADS.get(spec, {"prompt": "demo"}))
             a = agents[0]
             r = await a.execute(payload)
             results.append((spec, r))

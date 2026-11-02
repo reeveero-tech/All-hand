@@ -45,7 +45,12 @@ def _rec(**over):
 def test_contract_matches_the_draft_plus_declared_changes():
     draft = json.loads(DRAFT.read_text(encoding="utf-8"))
     fields = set(tr.ToolRecord.model_fields)
-    assert fields == set(draft["properties"]), fields ^ set(draft["properties"])
+    # R-172 batch 3 (D-117): approval_ttl_s and approval_scopes are ADDED to
+    # the contract (optional; absent on every record stored before it) —
+    # the approval POLICY fields, declared here like every other change.
+    declared_additions = {"approval_ttl_s", "approval_scopes"}
+    assert fields == set(draft["properties"]) | declared_additions, \
+        fields ^ set(draft["properties"])
     required = {n for n, f in tr.ToolRecord.model_fields.items() if f.is_required()}
     # D-108: implementation_ref becomes required; nothing else changes.
     assert required == set(draft["required"]) | {"implementation_ref"}
@@ -263,8 +268,12 @@ def test_audit_trail_is_ordered_and_digests_are_reproducible():
     assert [(e["op"], e["actor"]) for e in log] == [
         ("register", "alice"), ("register_refused", "mallory"), ("update", "bob"),
         ("remove", "carol")]
-    canonical = json.dumps(rec.model_dump(mode="json"), sort_keys=True, ensure_ascii=False,
-                           separators=(",", ":"))
+    # R-172 batch 3 (D-117): the digest excludes the additive approval-policy
+    # fields (see ToolRecord.DIGEST_EXCLUDE) — reproducible means: the SAME
+    # canonical form the registry digests, not a naive full dump.
+    canonical = json.dumps(
+        rec.model_dump(mode="json", exclude=tr.ToolRecord.DIGEST_EXCLUDE),
+        sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     assert log[0]["digest"] == hashlib.sha256(canonical.encode()).hexdigest() == rec.digest()
     assert log[2]["prev_digest"] == rec.digest() and log[2]["digest"] == upd.digest()
     assert log[3]["digest"] == upd.digest()
@@ -391,14 +400,15 @@ def test_seed_declarations_match_static_reach_of_the_frozen_code():
 
 def test_seeded_entries_claim_nothing_about_quality():
     reg = internal_tools.seeded_registry()
-    # R-172 batch 2 (log 337): the store holds one record per handler PLUS
-    # data_processor's legacy 1.0.0 row (the correction ships as 2.0.0);
-    # latest_only search still maps 1:1 onto the handlers.
+    # R-172 batches 2-3: the store holds one record per handler PLUS the
+    # legacy rows (data_processor 1.0.0 and modifier 1.0.0 — their
+    # corrections ship as newer versions); latest_only search still maps
+    # 1:1 onto the handlers.
     assert len(reg) == (len(real_dispatcher._HANDLERS)
-                        + len(internal_tools._LEGACY_ROWS)) == 21
+                        + len(internal_tools._LEGACY_ROWS)) == 22
     assert len(reg.search(limit=100)) == len(real_dispatcher._HANDLERS) == 20
     for r in reg.search(include_disabled=True, limit=100):
         assert (r.lifecycle_state, r.test_status, r.health_status) == \
             ("registered", "not_tested", "unknown"), r.tool_id
-    assert [e["op"] for e in reg.audit()] == ["register"] * 21
+    assert [e["op"] for e in reg.audit()] == ["register"] * 22
     assert [r.name for r in reg.search(capability="code.execute")] == ["test_runner"]

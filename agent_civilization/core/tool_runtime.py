@@ -51,7 +51,38 @@ output caps (a result larger than the record's
 ``stats()['output_capped']``). The network block is per-TASK (an audit hook
 gated by a ``contextvars`` flag), so concurrent tasks are untouched; threads
 spawned by a handler get a fresh context and are NOT covered (declared
-residual). ``health_status`` is set by the R-171 batch-4 health checker
+residual).
+
+R-172 batch 3 (D-117) closes those declared residuals where the record asks
+for it, and sanitizes the failure channel:
+
+* **Execution isolation** — a record whose ``resource_budget['isolation']``
+  is ``"process"`` runs in a SPAWNED WORKER (fresh interpreter, ``spawn``
+  context), not in this process. The worker enforces the tool's own
+  declarations with real teeth: the network policy is installed
+  PROCESS-WIDE in the worker (so threads the handler spawns ARE covered —
+  the batch-2 residual), the address space is capped
+  (``resource_budget['max_memory_bytes']``, default 512MB, via
+  ``RLIMIT_AS``), the registered ``timeout_ms`` kills the worker, and a
+  crashing handler (``os._exit``, segfault, OOM-kill) cannot take the host
+  down (counted in ``stats()['isolated_crashed']``). Runs are counted in
+  ``stats()['isolated']``. Fail-closed: a worker that cannot start or that
+  dies before answering returns an honest error dict, never a hang.
+* **Approval policy** — ``requires_approval`` is no longer just "someone
+  typed a name": the record can demand ``approval_ttl_s`` (the work item's
+  ``approval['granted_at']`` must be ISO-8601 and fresh — an old or missing
+  timestamp is refused), ``approval_scopes`` (the APPROVER must hold them in
+  ``approval['scopes']`` — distinct from ``work['scopes']`` which is what
+  the TOOL may touch) and honors tool binding (``approval['tool']``, when
+  present, must name THIS tool — an approval granted for another tool
+  cannot be replayed here). Malformed values are refused, not ignored.
+* **Sanitized failure channel** — every ``error`` text that crosses this
+  gate (handler results and isolated-worker failures alike) passes through
+  ``public_text.redact``: credentials inside a failure message (bearer
+  tokens, JWTs, key formats, URL userinfo) are replaced by ``<redacted>``
+  before the result moves on. Non-secret diagnostics are preserved.
+
+``health_status`` is set by the R-171 batch-4 health checker
 (``core/tool_health``), on demand — not continuously.
 """
 from __future__ import annotations
@@ -60,10 +91,14 @@ import asyncio
 import contextvars
 import json
 import logging
+import multiprocessing
 import os
+import resource
 import sys
 import threading
+import importlib
 from collections import Counter
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from agent_civilization.core.agents import real_dispatcher
@@ -88,6 +123,8 @@ _refused: Counter = Counter()
 _timed_out: Counter = Counter()
 _net_blocked: Counter = Counter()
 _output_capped: Counter = Counter()
+_isolated: Counter = Counter()
+_isolated_crashed: Counter = Counter()
 _unknown_disabled: List[str] = []
 _seed_drift: List[str] = []
 STORE_UNAVAILABLE = "tool registry store unavailable"
@@ -108,19 +145,57 @@ class _HandlerRaisedTimeout(Exception):
     own budget, nor leak the handler's text)."""
 
 
-def _valid_approval(work: Any) -> bool:
-    """R-172 batch 1 (D-115): the minimal honest approval contract — an
-    explicit ``work['approval'] = {'actor': <non-empty str>}`` dict naming who
-    approved. Anything else (missing, not a dict, empty/blank actor) is NOT an
-    approval. This says nothing about WHO may approve or for how long — that
-    surface (approver identity, TTL, scope) is a later R-172 batch; here the
-    gate only refuses to run an approval-demanding tool without one."""
+def _valid_approval(rec: Any, work: Any) -> Tuple[bool, str]:
+    """R-172 batch 1 (D-115) established the minimal honest approval contract
+    — ``work['approval'] = {'actor': <non-empty str>}``. Batch 3 (D-117)
+    makes the RECORD decide the policy: ``approval_ttl_s`` demands a fresh
+    ISO-8601 ``approval['granted_at']``; ``approval_scopes`` demands the
+    APPROVER hold them in ``approval['scopes']`` (the approver's authority —
+    distinct from ``work['scopes']``, what the TOOL may touch); and an
+    approval that names a ``tool`` binds to that tool (no replay across
+    tools). Malformed values are refused, not ignored (fail-closed).
+
+    Returns ``(ok, reason)``; the reason is for the refusal message (tool id
+    and policy facts only — never the work payload)."""
     if not isinstance(work, dict):
-        return False
+        return False, "no approval in the work item"
     ap = work.get("approval")
-    return (isinstance(ap, dict)
-            and isinstance(ap.get("actor"), str)
-            and bool(ap["actor"].strip()))
+    if not isinstance(ap, dict):
+        return False, "no approval in the work item"
+    actor = ap.get("actor")
+    if not (isinstance(actor, str) and actor.strip()):
+        return False, "approval.actor (who approved) is required"
+    bound = ap.get("tool")
+    if bound is not None and bound != getattr(rec, "tool_id", None):
+        return False, f"approval is bound to tool {bound}, not this tool"
+    ttl = getattr(rec, "approval_ttl_s", None)
+    if ttl is not None:
+        granted = ap.get("granted_at")
+        if not isinstance(granted, str) or not granted.strip():
+            return False, (f"approval_ttl_s={ttl} is set — "
+                           "approval.granted_at (ISO-8601) is required")
+        try:
+            ts = datetime.fromisoformat(granted.replace("Z", "+00:00"))
+        except ValueError:
+            return False, "approval.granted_at is not a valid ISO-8601 timestamp"
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - ts).total_seconds()
+        if age < 0 or age > ttl:
+            return False, (f"approval is stale — older than the registered "
+                           f"approval_ttl_s={ttl}s")
+    need = list(getattr(rec, "approval_scopes", None) or ())
+    if need:
+        have = ap.get("scopes")
+        if not (isinstance(have, list)
+                and all(isinstance(s, str) for s in have)):
+            return False, ("approval_scopes set — approval.scopes (list of "
+                           "strings held by the approver) is required")
+        missing = [s for s in need if s not in have]
+        if missing:
+            return False, (f"approver lacks required approval scopes: "
+                           f"{', '.join(missing)}")
+    return True, ""
 
 
 # -- R-172 batch 2 (D-116): the rest of the declared metadata -----------------
@@ -216,6 +291,188 @@ def _missing_scopes(rec: Any, work: Any) -> List[str]:
     return sorted(required - _granted_scopes(work))
 
 
+# -- R-172 batch 3 (D-117): process isolation, approval policy, redaction ---
+
+# default address-space cap for an isolated worker whose record does not
+# declare one (resource_budget['max_memory_bytes']).
+_ISOLATION_DEFAULT_MEMORY_BYTES = 512 * 1024 * 1024
+
+
+def _wants_isolation(rec: Any) -> bool:
+    """The record opts into execution isolation via
+    ``resource_budget['isolation'] == 'process'`` — a per-tool declaration,
+    never a global default."""
+    budget = getattr(rec, "resource_budget", None)
+    return isinstance(budget, dict) and budget.get("isolation") == "process"
+
+
+def _isolation_memory(rec: Any) -> int:
+    budget = getattr(rec, "resource_budget", None)
+    if (isinstance(budget, dict)
+            and isinstance(budget.get("max_memory_bytes"), int)
+            and budget["max_memory_bytes"] > 0):
+        return budget["max_memory_bytes"]
+    return _ISOLATION_DEFAULT_MEMORY_BYTES
+
+
+def _sanitize_result(result: Any) -> Any:
+    """R-172 batch 3: the failure channel is sanitized AT THE GATE — any
+    ``error`` text crossing back from a handler (or an isolated worker) is
+    passed through ``public_text.redact``: credentials inside a failure
+    message are replaced by ``<redacted>``; non-secret diagnostics are
+    preserved. Applied to the error TEXT only — result payloads are the
+    tool's own contract (sanitizing them needs semantic knowledge the gate
+    does not have; declared limit)."""
+    if isinstance(result, dict) and isinstance(result.get("error"), str):
+        try:
+            from agent_civilization.core import public_text
+            result["error"] = public_text.redact(result["error"])
+        except Exception:  # noqa: BLE001 — never break the result contract
+            pass
+    return result
+
+
+def _isolated_child(handler_ref: str, work: Dict[str, Any],
+                    net_block: bool, mem_bytes: int, conn: Any) -> None:
+    """The spawned worker's entry point (must be module-level: ``spawn``
+    pickles the target by reference). Runs in a FRESH interpreter:
+
+    * the network policy, when the record declares no network, is installed
+      PROCESS-WIDE here (``sys.addaudithook`` fires in every thread of this
+      process — closing the batch-2 residual where a handler-spawned thread
+      escaped the parent's per-task ContextVar gate);
+    * the address space is capped (``RLIMIT_AS``) BEFORE the handler runs;
+    * the handler is resolved by its dotted reference (``module:qualname``)
+      so the worker runs exactly the handler the gate resolved — the same
+      object identity the record's ``implementation_ref`` names;
+    * the result (or the failure text) goes back over the pipe; a worker
+      that dies before answering is the parent's crash-containment case."""
+    if net_block:
+        def _hook(event: str, args: object) -> None:
+            if event in _BLOCKED_NET_EVENTS:
+                raise RuntimeError(
+                    "network use blocked in the isolated worker: the tool's "
+                    "record declares no network side effect")
+        sys.addaudithook(_hook)
+    try:
+        resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
+    except (ValueError, OSError):
+        pass                      # no cap on this platform: run uncapped
+    module, _, qual = handler_ref.partition(":")
+    try:
+        fn = getattr(importlib.import_module(module), qual)
+    except Exception as e:  # noqa: BLE001 — surfaced honestly to the parent
+        conn.send(("error", f"handler resolution failed: {type(e).__name__}: {e}"))
+        return
+    try:
+        res = asyncio.run(fn(work))
+        conn.send(("ok", res))
+    except Exception as e:  # noqa: BLE001 — the worker's honest failure text
+        conn.send(("error", f"{type(e).__name__}: {e}"))
+
+
+async def _run_isolated(key: str, specialization: str, rec: Any,
+                        work: Dict[str, Any]) -> Any:
+    """Run a record-declared ``isolation: 'process'`` tool in a spawned
+    worker. The parent stays responsive (``to_thread``), owns the timeout
+    (kill + join on the registered ``timeout_ms``), and contains crashes: a
+    dead worker becomes an honest error dict here, never a hang and never
+    a dead host."""
+    fn = real_dispatcher._HANDLERS.get(specialization)
+    if fn is None:
+        return {"ok": False,
+                "error": f"tool {key} refused: no handler to isolate"}
+    handler_ref = f"{getattr(fn, '__module__', '')}:{getattr(fn, '__qualname__', '')}"
+    with _lock:
+        _isolated[key] += 1
+    net_block = not _network_allowed(rec)
+    mem_bytes = _isolation_memory(rec)
+    ctx = multiprocessing.get_context("spawn")
+    parent_conn, child_conn = ctx.Pipe()
+    try:
+        proc = ctx.Process(target=_isolated_child,
+                           args=(handler_ref, work, net_block, mem_bytes,
+                                 child_conn))
+        proc.start()
+        # the parent must drop its own copy of the child's pipe end —
+        # otherwise the child's death can never surface as EOFError on
+        # recv (the pipe would still have a writer) and a crash would be
+        # misreported as the timeout.
+        try:
+            child_conn.close()
+        except OSError:
+            pass
+    except Exception as e:  # noqa: BLE001 — spawn/pickle failure: fail closed
+        try:
+            parent_conn.close()
+            child_conn.close()
+        except OSError:
+            pass
+        with _lock:
+            _isolated_crashed[key] += 1
+        return {"ok": False, "error": (
+            f"tool {key} isolated worker could not start: "
+            f"{type(e).__name__}: {e}")}
+    try:
+        payload = await asyncio.wait_for(
+            asyncio.to_thread(parent_conn.recv), timeout=rec.timeout_ms / 1000.0)
+    except asyncio.TimeoutError:
+        proc.kill()
+        proc.join(5)
+        with _lock:
+            _timed_out[key] += 1
+        try:
+            from agent_civilization.core import telemetry
+            telemetry.event("tool", "timeout", outcome="fail",
+                            tool=specialization)
+        except Exception:  # noqa: BLE001
+            pass
+        logger.warning("tool timed out: %s exceeded timeout_ms=%d (isolated)",
+                       key, rec.timeout_ms)
+        return {"ok": False, "error": (
+            f"tool {key} exceeded its registered timeout_ms={rec.timeout_ms} "
+            "(the isolated worker was killed)")}
+    except EOFError:
+        with _lock:
+            _isolated_crashed[key] += 1
+        try:
+            from agent_civilization.core import telemetry
+            telemetry.event("tool", "isolated_crash", outcome="fail",
+                            tool=specialization)
+        except Exception:  # noqa: BLE001
+            pass
+        logger.warning("isolated worker crashed for tool %s (exit=%s)",
+                       key, proc.exitcode)
+        proc.join(5)
+        return {"ok": False, "error": (
+            f"tool {key} isolated worker crashed before answering "
+            f"(exit={proc.exitcode}) — the host is unaffected")}
+    finally:
+        proc.join(5)
+        try:
+            parent_conn.close()
+        except OSError:
+            pass
+    kind, payload_result = payload
+    if kind == "error":
+        with _lock:
+            _isolated_crashed[key] += 0        # failed run, host contained
+        try:
+            from agent_civilization.core import telemetry
+            telemetry.event("tool", "isolated_run", outcome="fail",
+                            tool=specialization)
+        except Exception:  # noqa: BLE001
+            pass
+        return _sanitize_result({"ok": False, "error": payload_result})
+    try:
+        from agent_civilization.core import telemetry
+        telemetry.event("tool", "isolated_run", outcome="ok",
+                        tool=specialization)
+    except Exception:  # noqa: BLE001
+        pass
+    return payload_result
+
+
 def _seed() -> ToolRegistry:
     from agent_civilization.core import internal_tools
     reg = PersistentToolRegistry(default_db_path())
@@ -270,6 +527,10 @@ def reset_runtime_registry() -> None:
         _executed.clear()
         _refused.clear()
         _timed_out.clear()
+        _net_blocked.clear()
+        _output_capped.clear()
+        _isolated.clear()
+        _isolated_crashed.clear()
         _unknown_disabled.clear()
 
 
@@ -355,19 +616,23 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
         with _lock:
             _refused[key] += 1
         return {"ok": False, "error": f"tool {key} refused: {STORE_UNAVAILABLE}"}
-    if rec.requires_approval and not _valid_approval(work):
-        with _lock:
-            _refused[key] += 1
-        try:
-            from agent_civilization.core import telemetry
-            telemetry.event("tool", "refused", outcome="fail", tool=specialization)
-        except Exception:  # noqa: BLE001 — telemetry never blocks the refusal
-            pass
-        logger.info("tool refused: %s requires an approval (none in the work item)",
-                    key)
-        return {"ok": False, "error": (
-            f"tool {key} refused: requires_approval is set — provide "
-            "work['approval'] = {'actor': <who approved>}")}
+    if rec.requires_approval:
+        ok_ap, ap_reason = _valid_approval(rec, work)
+        if not ok_ap:
+            with _lock:
+                _refused[key] += 1
+            try:
+                from agent_civilization.core import telemetry
+                telemetry.event("tool", "refused", outcome="fail",
+                                tool=specialization)
+            except Exception:  # noqa: BLE001 — telemetry never blocks the refusal
+                pass
+            logger.info("tool refused: %s approval policy: %s", key, ap_reason)
+            return {"ok": False, "error": (
+                f"tool {key} refused: requires_approval is set — {ap_reason} "
+                "(work['approval'] = {'actor': <who approved>, "
+                "'granted_at': <ISO-8601 when>, 'scopes': [<approver scopes>], "
+                "'tool': <tool id binding>} as the record's policy demands)")}
     if rec.requires_approval:
         try:
             from agent_civilization.core import telemetry
@@ -398,9 +663,10 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
     # while it runs (an audit hook gated per task context, so concurrent
     # tasks are untouched).
     net_ok = _network_allowed(rec)
-    if not net_ok:
+    isolated = _wants_isolation(rec)
+    if not net_ok and not isolated:
         _install_network_audit_hook()
-    token = _net_forbidden.set(key) if not net_ok else None
+    token = _net_forbidden.set(key) if (not net_ok and not isolated) else None
     try:
         async def _guarded() -> Any:
             # a TimeoutError raised BY the handler (an internal dependency
@@ -409,13 +675,27 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
             # original propagates unchanged to the task layer (R-149: type
             # only, no text leak).
             try:
+                if isolated:
+                    # R-172 batch 3: the record opted into a spawned worker —
+                    # the worker owns its own network policy (process-wide,
+                    # thread-covering) and memory cap, so the parent's
+                    # per-task hook is not armed for it.
+                    return await _run_isolated(key, specialization, rec, work)
                 return await real_dispatcher.dispatch(specialization, work)
             except TimeoutError as e:
                 raise _HandlerRaisedTimeout() from e
 
         try:
-            result = await asyncio.wait_for(_guarded(),
-                                           timeout=rec.timeout_ms / 1000.0)
+            if isolated:
+                # the isolation path OWNS its timeout: _run_isolated kills
+                # and joins the worker on the registered timeout_ms itself
+                # (a wait_for HERE would race it, cancel the runner, and
+                # leave the worker's recv thread unjoinable at loop
+                # shutdown).
+                result = await _guarded()
+            else:
+                result = await asyncio.wait_for(_guarded(),
+                                                timeout=rec.timeout_ms / 1000.0)
         except _HandlerRaisedTimeout as e:
             raise e.__cause__      # the handler's own timeout, untouched
         except asyncio.TimeoutError:
@@ -453,6 +733,11 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
     finally:
         if token is not None:
             _net_forbidden.reset(token)
+    # R-172 batch 3: the failure channel is sanitized at the gate — any
+    # credential inside an error text is redacted before the result moves on
+    # (non-secret diagnostics are preserved; payloads are the tool's own
+    # contract — declared limit).
+    result = _sanitize_result(result)
     # the network block normally surfaces INSIDE the frozen dispatcher (it
     # shapes handler exceptions into error dicts) — count it from the result
     # text; the raw-exception path above is the same decision, kept for
@@ -498,6 +783,8 @@ def stats() -> Dict[str, Any]:
                 "timed_out": dict(_timed_out),
                 "net_blocked": dict(_net_blocked),
                 "output_capped": dict(_output_capped),
+                "isolated": dict(_isolated),
+                "isolated_crashed": dict(_isolated_crashed),
                 "unknown_disabled": list(_unknown_disabled), "seed_drift": list(_seed_drift),
                 "store": "sqlite-host-shared"}
 
