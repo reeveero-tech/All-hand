@@ -1,0 +1,33 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/user/workspace/all-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.1, ddtrace-4.16.1, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 17 items
+
+tests/test_r174_batch1_tool_selection.py FFFFFFFFFFFFFFFFF               [100%]
+
+=================================== FAILURES ===================================
+_________________ test_gold_set_ranking_and_measured_accuracy __________________
+tests/test_r174_batch1_tool_selection.py:210: in test_gold_set_ranking_and_measured_accuracy
+    from agent_civilization.core import tool_selector
+E   ImportError: cannot import name 'tool_selector' from 'agent_civilization.core' (/home/user/workspace/all-hand/agent_civilization/core/__init__.py)
+__________________ test_exclusions_are_recorded_with_reasons ___________________
+tests/test_r174_batch1_tool_selection.py:241: in test_exclusions_are_recorded_with_reasons
+    sel = _select()
+          ^^^^^^^^^
+tests/test_r174_batch1_tool_selection.py:194: in _select
+    from agent_civilization.core import tool_selector
+E   ImportError: cannot import name 'tool_selector' from 'agent_civilization.core' (/home/user/workspace/all-hand/agent_civilization/core/__init__.py)
+________________ test_scoped_tool_selected_when_scopes_granted _________________
+tests/test_r174_batch1_tool_selection.py:254: in test_scoped_tool_selected_when_scopes_granted
+    sel = _select(_scoped_task())
+                  ^^^^^^^^^^^^^^
+tests/test_r174_batch1_tool_selection.py:259: in _scoped_task
+    from agent_civilization.core import tool_selector
+E   ImportError: cannot import name 'tool_selector' from 'agent_civilization.core' (/home/user/workspace/all-hand/agent_civilization/core/__init__.py)
+________________ test_timeout_budget_excludes_over_budget_tool _________________
+FAILED tests/test_r174_batch1_tool_selection.py::test_verification_failure_triggers_safe_fallback
+FAILED tests/test_r174_batch1_tool_selection.py::test_exhausted_selection_reports_failure
+============================== 17 failed in 0.84s ==============================
