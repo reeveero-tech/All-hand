@@ -245,8 +245,8 @@ def _own_check_imported(tool_id: str, rec: Any) -> Tuple[bool, str]:
         return False, f"tool {key} is not executable: health_status=disabled"
     if not tool_id.startswith("mcp."):
         return False, (f"tool {key} refused: only MCP imports are bound to "
-                       "an execution adapter (openapi imports are "
-                       "records-only by decision D-119)")
+                       "an execution adapter (openapi/cli/sdk imports are "
+                       "records-only by decisions D-119/D-120)")
     src = getattr(rec, "source", None)
     uri = getattr(src, "uri", None) if src is not None else None
     if getattr(src, "kind", None) != "mcp" or not uri:
