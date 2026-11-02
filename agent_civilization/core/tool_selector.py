@@ -24,8 +24,10 @@ Scope (what this module IS):
 
 Honest limits (what it is NOT):
 
-* prior-result quality is OPERATOR-SUPPLIED (a callable over the record —
-  e.g. fed from telemetry exports); this batch wires no automatic feed;
+* prior-result quality is OPERATOR-SUPPLIED (a callable over the record);
+  the automatic telemetry feed (batch 4, D-124) lives one layer up in
+  ``task_contract`` (``quality_source: "telemetry"`` builds the callable from
+  the runtime's operational counters); ``TaskSpec`` itself stays agnostic;
 * selections are not persisted and not counted beyond best-effort telemetry;
 * the executed-counter delta is the "did it run" signal — under concurrent
   selections a refusal may be mis-attributed as a run, which only ever
