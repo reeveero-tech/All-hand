@@ -1108,13 +1108,14 @@ async def _write_task_terminal(task_id: str, status: str, *, agent_name=None,
     return False
 
 
-async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
+async def _run_task(task_id: str, specialization: str, prompt: str, data: Any,
+                    approval: Optional[Dict[str, Any]] = None):
     # R-159: the background run keeps the trace of the request that created it
     # (asyncio copies the context) and is one `task` span bound to task_id.
     telemetry.bind_task(task_id)
     try:
         with telemetry.span("task", "run", specialization=specialization) as sp:
-            await _run_task_traced(sp, task_id, specialization, prompt, data)
+            await _run_task_traced(sp, task_id, specialization, prompt, data, approval)
     except asyncio.CancelledError:
         _end_unfinished(task_id, specialization, "task cancelled before completion")
         raise
@@ -1128,7 +1129,8 @@ async def _run_task(task_id: str, specialization: str, prompt: str, data: Any):
         _registry_metrics()
 
 
-async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, data: Any):
+async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, data: Any,
+                           approval: Optional[Dict[str, Any]] = None):
     # SEC-02: the background task runs as the tenant that owns the record
     # (explicit, not only inherited), so memory and events stay in that tenant.
     tenant_id = TASKS[task_id]["tenant_id"]
@@ -1194,7 +1196,13 @@ async def _run_task_traced(sp, task_id: str, specialization: str, prompt: str, d
     await _publish(tenant_id, {"type": "task_started", "task_id": task_id, "agent": agent.name,
                                "specialization": specialization})
 
-    outcome = await _execute_bounded(agent, {"prompt": prompt, "data": data})   # R-164: deadline
+    # R-172 batch 3 (D-117): the accept request's approval travels into the
+    # work item (request-scoped, like the SEC-06 consent — never persisted to
+    # the task record or events); the GATE validates it against the record's
+    # own approval policy.
+    outcome = await _execute_bounded(agent, {"prompt": prompt, "data": data,
+                                            **({"approval": approval}
+                                               if isinstance(approval, dict) else {})})   # R-164: deadline
     if TASKS[task_id].get("status") in TERMINAL_TASK_STATES or AGENT_REGISTRY.lease(task_id) is None:
         # R-162: the lease ended while the agent ran (worker stopped/removed):
         # the record was already ended as an orphan; a late result never
@@ -1401,7 +1409,8 @@ async def _defer_capacity(task_id: str, claim_token: str, sp, storage, rec) -> N
 
 async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt: str,
                                   data: Any, claim_token: str,
-                                  row_payload: Any = None) -> None:
+                                  row_payload: Any = None,
+                                  row_approval: Optional[Dict[str, Any]] = None) -> None:
     """The durable execution path (R-163). Differences from the volatile path:
 
     - SEC-06: the dispatcher's context carries NO request consent — the
@@ -1544,8 +1553,14 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
     # redelivery honors the pin (same recipient, same key — the effect is
     # not re-applied there). A recipient that ignores the key stays
     # at-least-once (contract limit — unchanged).
+    # R-172 batch 3 (D-117): the approval the accept request persisted with
+    # the row travels into the work item — the GATE validates it against the
+    # record's own policy (a stale approval is refused honestly here, at run
+    # time: fail-closed, never a bypass).
     outcome = await _execute_bounded(agent, {"prompt": prompt, "data": data,
-                                            "task_id": task_id})   # R-164: deadline
+                                            "task_id": task_id,
+                                            **({"approval": row_approval}
+                                               if isinstance(row_approval, dict) else {})})   # R-164: deadline
     if (TASKS.get(task_id) or {}).get("status") in TERMINAL_TASK_STATES \
             or AGENT_REGISTRY.lease(task_id) is None:
         logger.warning("Task %s late result discarded: its lease had ended", task_id)
@@ -1557,7 +1572,8 @@ async def _run_task_durable_traced(sp, task_id: str, specialization: str, prompt
 async def _run_task_durable(task_id: str, specialization: str, prompt: str,
                            data: Any, claim_token: str,
                            trace_id: Optional[str] = None,
-                           row_payload: Any = None) -> None:
+                           row_payload: Any = None,
+                           row_approval: Optional[Dict[str, Any]] = None) -> None:
     if trace_id:
         # R-159/R-188: the run CONTINUES the accept request's trace (stored
         # in the row's payload) — the request and the run are ONE trace.
@@ -1572,7 +1588,8 @@ async def _run_task_durable(task_id: str, specialization: str, prompt: str,
     try:
         with telemetry.span("task", "run", specialization=specialization) as sp:
             await _run_task_durable_traced(sp, task_id, specialization, prompt, data,
-                                           claim_token, row_payload=row_payload)
+                                           claim_token, row_payload=row_payload,
+                                           row_approval=row_approval)
     except asyncio.CancelledError:
         # the run was cancelled (endpoint or shutdown): the caller already
         # moved the record and the row to cancelled — only release the lease
@@ -1595,7 +1612,8 @@ async def _run_task_durable(task_id: str, specialization: str, prompt: str,
         _registry_metrics()
 
 
-def _durable_payload(prompt: str, data: Any) -> Dict[str, Any]:
+def _durable_payload(prompt: str, data: Any,
+                     approval: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """R-163: the durable row is the execution source of truth, and
     insert_task stores only ``prompt[:500]`` — so the FULL prompt travels
     inside the payload under the reserved ``_agos_prompt`` key (the dispatcher
@@ -1608,6 +1626,12 @@ def _durable_payload(prompt: str, data: Any) -> Dict[str, Any]:
     (``_durable_trace_id``), so the request and the run stay ONE trace
     across the queue boundary."""
     payload: Dict[str, Any] = {"_agos_prompt": prompt, "data": data}
+    # R-172 batch 3 (D-117): the approval travels inside the payload too, so
+    # a recovered/retried durable task can still satisfy the tool gate's
+    # approval policy (a task whose approval expired is refused honestly at
+    # run time — fail-closed, never a bypass).
+    if isinstance(approval, dict):
+        payload["approval"] = approval
     ctx = telemetry.current()
     if ctx is not None:
         payload["_agos_trace_id"] = ctx.trace_id
@@ -1835,15 +1859,18 @@ def _durable_recipient(payload: Any) -> tuple:
 
 
 def _unwrap_durable_payload(row: Dict[str, Any]) -> tuple:
-    """-> (full prompt, data). Rows written before this wrapping (or by the
-    storage tests) carry the raw data as payload — they fall back to the
-    stored (truncated) prompt."""
+    """-> (full prompt, data, approval). Rows written before this wrapping
+    (or by the storage tests) carry the raw data as payload — they fall back
+    to the stored (truncated) prompt. The approval (R-172 batch 3) is absent
+    on rows written before it existed — None, and the tool gate refuses an
+    approval-demanding tool honestly (fail-closed)."""
     payload = row.get("payload")
     if isinstance(payload, dict) and "_agos_prompt" in payload:
         wrapped = dict(payload)
         prompt = str(wrapped.pop("_agos_prompt"))
-        return prompt, wrapped.get("data")
-    return str(row.get("prompt") or ""), payload
+        approval = wrapped.get("approval")
+        return prompt, wrapped.get("data"), (approval if isinstance(approval, dict) else None)
+    return str(row.get("prompt") or ""), payload, None
 
 
 async def _queue_dispatcher() -> None:
@@ -1895,9 +1922,9 @@ async def _queue_dispatcher() -> None:
                 "max_attempts": int(claimed.get("max_attempts") or TASK_MAX_ATTEMPTS),
             }
             _rebuild_task_record(claimed)
-            full_prompt, data = _unwrap_durable_payload(claimed)
+            full_prompt, data, approval = _unwrap_durable_payload(claimed)
             run = asyncio.create_task(_run_task_durable(tid, str(claimed.get("specialization")),
-                                                        full_prompt, data, token,
+                                                        full_prompt, data, token, row_approval=approval,
                                                         trace_id=_durable_trace_id(claimed),
                                                         row_payload=claimed.get("payload")))
             _RUNNING_RUNS[tid] = run
@@ -2069,6 +2096,14 @@ class TaskRequest(BaseModel):
     # run, no second side effect). Max 128 chars; ignored when empty.
     idempotency_key: Optional[str] = Field(None, max_length=128,
                                            description="Idempotency key: a duplicate request replays the same task")
+    # R-172 batch 3 (D-117): optional per-request approval for tools whose
+    # record declares a policy (requires_approval). Request-scoped — the gate
+    # validates it against the record's OWN declarations (actor, tool binding,
+    # TTL via approval_ttl_s + granted_at, approver scopes via approval_scopes).
+    # Never persisted to the task record/events or logs; a missing/stale/invalid
+    # approval is refused honestly (fail-closed).
+    approval: Optional[Dict[str, Any]] = Field(None,
+                                               description="Per-request approval for tools that declare requires_approval (R-172)")
 
 
 class ChatRequest(BaseModel):
@@ -2411,7 +2446,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
             await _durable_admission(storage, principal.tenant_id)
             persisted = await storage.insert_task(
                 task_id, req.specialization, req.prompt, "queued",
-                tenant_id=principal.tenant_id, payload=_durable_payload(req.prompt, req.data),
+                tenant_id=principal.tenant_id,
+                payload=_durable_payload(req.prompt, req.data, req.approval),
                 idempotency_key=idem, max_attempts=TASK_MAX_ATTEMPTS)
             if not persisted:
                 # the unique (tenant, key) index may have raced us: replay it
@@ -2494,7 +2530,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
     # task record, the event or storage, and it does not outlive the request.
     token = set_public_llm_consent(req.allow_public_llm)
     try:
-        run = asyncio.create_task(_run_task(task_id, req.specialization, req.prompt, req.data))
+        run = asyncio.create_task(_run_task(task_id, req.specialization, req.prompt,
+                                            req.data, req.approval))
         _BACKGROUND_TASKS.add(run)              # R-160: keep a strong reference
         run.add_done_callback(_BACKGROUND_TASKS.discard)
         _VOLATILE_RUNS[task_id] = run           # R-164: cancellable while running

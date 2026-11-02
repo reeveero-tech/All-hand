@@ -100,9 +100,32 @@ _LEGACY_ROWS: Dict[str, Dict[str, Any]] = {
         "version": "1.0.0", "risk_class": "low", "side_effects": [],
         "network_allowlist": [], "description":
             "Transforms/aggregates the given data locally.",
-    }
+    },
+    # R-172 batch 3 (D-117): modifier opts into the approval POLICY as 1.1.0
+    # — its 1.0.0 row below is byte-identical to what hosts already store
+    # (no drift warning; the same upgrade pattern as data_processor's log-337
+    # fix). NO seeded tool opts into process isolation yet: the capability is
+    # enforced and adversarially tested (batch 3), but binding a seeded tool
+    # to it changes the seams of the generic all-specialization test loops
+    # (they patch the frozen dispatcher's dispatch function, which a spawned
+    # worker legitimately bypasses) — a declared, deliberate deferral, not a
+    # gap in the gate.
+    "modifier": {
+        "version": "1.0.0", "requires_approval": False,
+    },
 }
-_SEED_VERSIONS: Dict[str, str] = {"data_processor": "2.0.0"}
+_SEED_VERSIONS: Dict[str, str] = {"data_processor": "2.0.0", "modifier": "1.1.0"}
+
+# R-172 batch 3 (D-117): the per-record policy fields that only the NEW
+# versions carry (legacy rows stay byte-identical to what is stored).
+# modifier 1.1.0 opts into the approval POLICY — a real internal tool now
+# demands a real approval: an approver holding ops:approve-exec, granted
+# within the last 600s. (Process isolation stays test-proven only — see
+# the deferral note above.)
+_V2_ROWS: Dict[str, Dict[str, Any]] = {
+    "modifier": {"requires_approval": True, "approval_ttl_s": 600,
+                 "approval_scopes": ["ops:approve-exec"]},
+}
 
 
 def internal_tool_records() -> List[ToolRecord]:
@@ -142,7 +165,7 @@ def internal_tool_records() -> List[ToolRecord]:
         out.append(ToolRecord.model_validate(data))
     for spec in sorted(_TABLE):
         caps, risk, effects, allow, timeout, desc = _TABLE[spec]
-        out.append(ToolRecord.model_validate({
+        data = {
             "tool_id": f"agos.internal.{spec}",
             "name": spec,
             "version": _SEED_VERSIONS.get(spec, SEED_VERSION),
@@ -165,7 +188,13 @@ def internal_tool_records() -> List[ToolRecord]:
             "implementation_ref": f"{DISPATCHER}:_{spec}",
             "lifecycle_state": "registered",
             "telemetry_name": f"tool.internal.{spec}",
-        }))
+        }
+        # R-172 batch 3 (D-117): the new-version policy/opt-in fields
+        # (isolation, approval TTL/scopes) — only the seeded-latest rows
+        # carry them; legacy rows above stay byte-identical to what hosts
+        # already store.
+        data.update(_V2_ROWS.get(spec, {}))
+        out.append(ToolRecord.model_validate(data))
     return out
 
 

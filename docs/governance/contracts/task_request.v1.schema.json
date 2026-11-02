@@ -7,6 +7,20 @@
       "title": "Allow Public Llm",
       "type": "boolean"
     },
+    "approval": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Per-request approval for tools that declare requires_approval (R-172)",
+      "title": "Approval"
+    },
     "data": {
       "anyOf": [
         {},

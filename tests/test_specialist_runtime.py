@@ -18,6 +18,18 @@ from agent_civilization.core.agents.base_agent import BaseAgent
 from agent_civilization.pipeline.orchestrator import execute_plan
 from agent_civilization.routing.auto_router import route
 
+def _policy_work(spec, payload):
+    """R-172 batch 3 (D-117): modifier 1.1.0 demands a real approval — the
+    generic all-specialization loops grant one so the specialization still
+    executes (the new contract is exercised, not bypassed)."""
+    import datetime as dt
+    if spec == "modifier":
+        return dict(payload, approval={
+            "actor": "test:approver", "scopes": ["ops:approve-exec"],
+            "granted_at": dt.datetime.now(dt.timezone.utc).isoformat()})
+    return payload
+
+
 PAYLOADS = {
     # R-116: educator needs material (>=2 sentences) offline; "demo" is refused honestly.
     "educator": {"prompt": "Recursion is when a function calls itself. Every recursion needs a base case."},
@@ -75,8 +87,9 @@ def test_every_specialization_executes_through_specialist_class():
     civ = create_civilization(1, impl="specialists")
 
     async def run():
-        return [(s, await civ[s][0].execute(PAYLOADS.get(s, {"prompt": "demo"})))
-                for s in SPECIALIZATIONS]
+        return [(s, await civ[s][0].execute(
+            _policy_work(s, PAYLOADS.get(s, {"prompt": "demo"}))))
+            for s in SPECIALIZATIONS]
 
     for spec, r in asyncio.run(run()):
         assert r["ok"], f"{spec}: {r['result']}"
@@ -195,7 +208,7 @@ def test_r105_specialists_impl_still_builds_1000(monkeypatch):
         tasks = []
         for spec, agents in civ.items():
             for a in agents:
-                payload = PAYLOADS.get(spec, {"prompt": "demo"})
+                payload = _policy_work(spec, PAYLOADS.get(spec, {"prompt": "demo"}))
                 tasks.append(a.execute(payload))
         return await asyncio.gather(*tasks)
 

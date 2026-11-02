@@ -31,7 +31,7 @@ import json
 import re
 import threading
 import time
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -87,6 +87,13 @@ class ToolRecord(BaseModel):
     read_only: bool
     idempotent: bool
     requires_approval: bool
+    # R-172 batch 3 (D-117): the approval POLICY — optional, additive, and
+    # absent on every record stored before it (old rows validate unchanged).
+    # ``approval_ttl_s`` demands a fresh ISO-8601 granted_at in the work
+    # item's approval; ``approval_scopes`` are scopes the APPROVER must hold
+    # (in approval['scopes'], distinct from work['scopes']).
+    approval_ttl_s: Optional[int] = Field(default=None, ge=1, le=86_400)
+    approval_scopes: List[str] = Field(default_factory=list)
     timeout_ms: int = Field(ge=1, le=3_600_000)
     rate_limit: Optional[Dict[str, Any]] = None
     resource_budget: Optional[Dict[str, Any]] = None
@@ -132,9 +139,25 @@ class ToolRecord(BaseModel):
             raise ValueError("schema must declare 'type' (structural check only)")
         return v
 
+    # R-172 batch 3 (D-117): the approval-policy fields are ADDITIVE optional
+    # fields, and they are deliberately NOT part of the digest: a digest
+    # computed over them would invalidate every row stored before they
+    # existed (the store's integrity check compares the stored digest against
+    # a freshly computed one — hosts would see "store unavailable" for every
+    # tool). They are still schema-validated on load and covered by the
+    # audit trail. Declared limit: they are not digest-protected until a
+    # future digest-scheme version bump.
+    # R-172 batch 3 (D-117): additive approval-policy fields are excluded from
+    # the digest on purpose — adding them must NOT invalidate every stored
+    # row's digest (backward compatibility with existing host databases).
+    # Declared limit: these two fields are not digest-protected until a
+    # future digest-scheme bump declares them in.
+    DIGEST_EXCLUDE: ClassVar[frozenset] = frozenset({"approval_ttl_s", "approval_scopes"})
+
     def digest(self) -> str:
-        canonical = json.dumps(self.model_dump(mode="json"), sort_keys=True,
-                               ensure_ascii=False, separators=(",", ":"))
+        canonical = json.dumps(
+            self.model_dump(mode="json", exclude=self.DIGEST_EXCLUDE),
+            sort_keys=True, ensure_ascii=False, separators=(",", ":"))
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 

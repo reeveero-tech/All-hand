@@ -28,8 +28,21 @@ def client(tenant_auth):
         yield c
 
 
+def _policy_extra(spec):
+    """R-172 batch 3 (D-117): modifier 1.1.0 demands a real approval — the
+    helper grants one so the task still executes (contract exercised)."""
+    import datetime as dt
+    if spec == "modifier":
+        return {"approval": {
+            "actor": "test:approver", "scopes": ["ops:approve-exec"],
+            "granted_at": dt.datetime.now(dt.timezone.utc).isoformat()}}
+    return {}
+
+
 def _task(c, spec, prompt, data=None):
-    tid = c.post("/api/tasks", json={"specialization": spec, "prompt": prompt, "data": data}).json()["task_id"]
+    tid = c.post("/api/tasks", json={
+        "specialization": spec, "prompt": prompt, "data": data,
+        **_policy_extra(spec)}).json()["task_id"]
     for _ in range(400):
         t = c.get(f"/api/tasks/{tid}").json()
         if t["status"] in ("completed", "failed"):

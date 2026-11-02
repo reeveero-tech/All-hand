@@ -97,8 +97,11 @@ def H(key):
 
 def test_health_check_executes_safe_tools_and_marks_them_healthy(db):
     report = run(tool_health.run_health_check())
+    reg = tool_runtime.runtime_registry()
     for spec in PROBEABLE:
-        key = f"agos.internal.{spec}@1.0.0"
+        # R-172 batch 3: reviewer's latest is 1.1.0 (it opted into process
+        # isolation) — the key follows the record's CURRENT version.
+        key = f"agos.internal.{spec}@{reg.get(f'agos.internal.{spec}').version}"
         assert report["tools"][key]["probe"] == "execution", (key, report["tools"][key])
         assert report["tools"][key]["status"] == "healthy", (key, report["tools"][key])
     # the record itself was updated and audited

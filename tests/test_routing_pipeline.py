@@ -116,6 +116,18 @@ async def test_execute_plan_missing_specialization_fails_gracefully():
 # RealSpecialistAgent لكل تخصص من الـ20
 # ---------------------------------------------------------------------------
 
+def _policy_work(spec, payload):
+    """R-172 batch 3 (D-117): modifier 1.1.0 demands a real approval — the
+    generic all-specialization loops grant one so the specialization still
+    executes (the new contract is exercised, not bypassed)."""
+    import datetime as dt
+    if spec == "modifier":
+        return dict(payload, approval={
+            "actor": "test:approver", "scopes": ["ops:approve-exec"],
+            "granted_at": dt.datetime.now(dt.timezone.utc).isoformat()})
+    return payload
+
+
 REPRESENTATIVE_TASKS = {
     "analyst": {"data": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
     "api_integrator": {"prompt": "GET https://example.com"},
@@ -146,8 +158,9 @@ REPRESENTATIVE_TASKS = {
 @pytest.mark.parametrize("spec", sorted(SPECIALIZATIONS))
 async def test_real_specialist_agent_per_specialization(spec):
     agent = RealSpecialistAgent(name=f"{spec}_test", specialization=spec, agent_id=0)
-    result = await agent.execute({"prompt": REPRESENTATIVE_TASKS[spec].get("prompt", "task"),
-                                  "data": REPRESENTATIVE_TASKS[spec].get("data")})
+    result = await agent.execute(_policy_work(spec, {
+        "prompt": REPRESENTATIVE_TASKS[spec].get("prompt", "task"),
+        "data": REPRESENTATIVE_TASKS[spec].get("data")}))
     assert result["ok"], f"{spec} فشل: {result}"
     # المخرجات محسوبة فعلاً (مفتاح tool_output أو answer موجود)
     inner = result["result"]

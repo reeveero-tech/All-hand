@@ -145,10 +145,17 @@ def test_a_handler_raised_timeout_error_is_not_the_gates_timeout(db, monkeypatch
 
 # -- the default seeds are unchanged -------------------------------------------
 
-def test_no_internal_seed_demands_approval_yet(db):
+def test_which_internal_seed_demands_approval(db):
+    """R-172 batch 3 (D-117): the policy exists and a REAL tool now demands it
+    — modifier 1.1.0 requires an approval with TTL and approver scopes (the
+    batch-1 state of "no seed demands approval yet" is superseded; the
+    assertion is now STRONGER: exactly modifier, with the full policy)."""
     reg = tool_runtime.runtime_registry()
     demanding = [r.tool_id for r in reg.search(limit=10_000) if r.requires_approval]
-    assert demanding == []     # the enforcement exists; policy (who demands) is a later batch
+    assert demanding == ["agos.internal.modifier"]
+    rec = reg.get("agos.internal.modifier")
+    assert rec.approval_ttl_s == 600
+    assert rec.approval_scopes == ["ops:approve-exec"]
 
 
 def test_registered_budgets_match_the_seed_table(db):
