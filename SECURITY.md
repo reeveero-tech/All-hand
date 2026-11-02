@@ -29,6 +29,27 @@ Real agent tools are dangerous if exposed anonymously, so the defaults are safe:
   no network side effect (`model_provider_call`/`external_http_read`) and no
   allowlist cannot use sockets while it runs — the dispatch gate blocks the
   attempt per task (fail-closed, counted in `stats()['net_blocked']`).
+- **Process isolation (R-172, D-117):** a tool whose record opts in with
+  `resource_budget['isolation']=='process'` runs in a **separate spawned
+  process**. The child enforces the tool's own declarations process-wide: an
+  audit hook blocks socket use everywhere (including threads the handler
+  spawns — closing the D-116 limitation), `RLIMIT_AS` caps the address space at
+  the record's `max_memory_bytes` (default 512MB), exceeding the registered
+  `timeout_ms` kills the child, and a crashing handler (`os._exit`) is contained
+  (counter `isolated_crashed` — the runner survives). No seeded tool opts in
+  yet; binding a tool is a registration decision.
+- **Approval policy (R-172, D-117):** a record declaring `requires_approval`
+  with `approval_ttl_s`/`approval_scopes` demands a valid approval in the work
+  item (or `POST /api/tasks` `approval` field — request-scoped, never
+  persisted): non-empty `actor`, bound to the named `tool`, a fresh ISO-8601
+  `granted_at` inside the TTL, and approver scopes within the registered
+  `approval_scopes` (distinct from execution scopes). Any gap is an explicit
+  refusal (fail-closed, counter `refused`); an expired approval is refused
+  honestly at run time.
+- **Sanitized failure channel (R-172, D-117):** error text crossing the gate is
+  passed through `public_text.redact` (JWTs/sk- keys hidden; "network use
+  blocked" stays readable). Payload-level redaction is a declared out-of-scope
+  limit (the payload is the tool's own contract).
 - **Outbound URLs** (`api_integrator`, `network_client`, external agents) must resolve to
   public addresses; loopback, private, link-local/cloud-metadata ranges are blocked,
   including on redirects. `AGOS_ALLOW_PRIVATE_NETWORK=1` lifts this deliberately.

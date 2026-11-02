@@ -1,0 +1,12 @@
+# R-172 دفعة 3 (D-117) — إثبات أحمر أولًا: الخام قبل أي تنفيذ
+# الطريقة: git stash لكل تغييرات الدفعة (الاختبارات + الكود) ثم تشغيل ملف الدفعة
+# على main (5615aafc). النتيجة: 9 اختبارات فشلت (FFFFFFFFF) ثم قُتل مشغّل pytest
+# نفسه أثناء التشغيل — الاختبار adversarial (os._exit) يقتل العملية بأكملها،
+# وهذا هو الثقب نفسه الذي تثبته الدفعة: أداة معزولة تحمي المشغّل من الانهيار.
+# لا يوجد سطر ملخص لأن المشغّل مات قبل طباعته — الدليل الحي على الثغرة.
+configfile: pytest.ini
+plugins: asyncio-1.4.1, ddtrace-4.16.1, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 16 items
+
+tests/test_r172_batch3_isolation_policy.py FFFFFFFFF
