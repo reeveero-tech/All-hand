@@ -130,17 +130,19 @@ def test_mcp_tool_without_an_input_schema_is_refused(db):
 
 def test_an_imported_tool_is_not_executable_at_the_real_gate(db):
     """THE sensitive-endpoint guarantee: import alone can never make an
-    external tool callable. Two independent walls hold in batch 1:
-    (a) the frozen dispatcher cannot even ADDRESS a tool outside its
-        internal handlers — dispatch answers None (the frozen
-        unknown-specialization contract), because batch 1 creates no
-        execution binding at all;
+    external tool callable. Two independent walls hold (batch-2 form,
+    D-119): (a) the tool is now ADDRESSABLE through the gate (the
+    execution binding exists) — but the gate answers an explicit REFUSAL,
+    never a run, never a silent None (a record-carrying address must not
+    be indistinguishable from an unknown specialization);
     (b) the record itself is non-executable by lifecycle ("discovered" is
-        not in the gate's EXECUTABLE_LIFECYCLES) — the gate's own rule."""
+    not in the gate's EXECUTABLE_LIFECYCLES) — the gate's own rule."""
     ti.import_mcp_manifest(MCP_MANIFEST, registry=_registry(),
                            allowlist=["weather_lookup"], actor="test:r173")
     result = run(tool_runtime.dispatch("mcp.weather_lookup", dict(PROBE)))
-    assert result is None                            # not addressable at all
+    assert result is not None                       # addressed — not ignored
+    assert result["ok"] is False                     # refused, never run
+    assert "discovered" in result["error"]
     rec = _registry().get("mcp.weather_lookup")
     assert rec.lifecycle_state == "discovered"
     assert rec.lifecycle_state not in tool_runtime.EXECUTABLE_LIFECYCLES
@@ -265,9 +267,10 @@ def test_promotion_to_executable_requires_an_explicit_lifecycle_move(db):
     ti.import_mcp_manifest(MCP_MANIFEST, registry=_registry(),
                            allowlist=["weather_lookup"], actor="test:r173")
     reg = _registry()
-    # the dispatcher still cannot address the imported tool (no binding)
-    assert run(tool_runtime.dispatch("mcp.weather_lookup",
-                                     dict(PROBE))) is None
+    # before promotion: addressed but refused (batch-2 form — the refusal is
+    # explicit, never a silent None and never a run)
+    result = run(tool_runtime.dispatch("mcp.weather_lookup", dict(PROBE)))
+    assert result["ok"] is False and "discovered" in result["error"]
     reg.update_status("mcp.weather_lookup", ti.IMPORTED_RECORD_VERSION,
                       actor="reviewer:alice", lifecycle_state="registered")
     rec = reg.get("mcp.weather_lookup")

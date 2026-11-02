@@ -5,16 +5,25 @@ R-171 registry as honest, non-executable records — the review pipeline's
 front door.
 
 What it deliberately is NOT (declared limits):
-- It does NOT fetch manifests from the network (batch 1 parses data handed
-  to it; live fetching with SSRF-checked URLs is a later batch).
-- It does NOT make anything callable: imported records land in lifecycle
-  ``discovered`` + test_status ``not_tested`` — the R-171/R-172 execution
-  gate refuses non-executable lifecycles, so a sensitive endpoint can never
-  become an automatically available function. Promotion to ``registered``
-  is an explicit lifecycle move with an actor (human review).
-- It does NOT bind an implementation: ``implementation_ref`` is an honest
-  unresolvable placeholder (``import_<adapter>:<name>``) — the execution
-  binding for imported tools is a later batch.
+- Batch 1 declared "no live fetch, no execution binding" — batch 2
+  (``core/mcp_client.py``, D-119) closed both for MCP: manifests are
+  fetched live through an SSRF-checked client, and PROMOTED imported MCP
+  tools execute through the runtime gate. This module remains the pure
+  metadata contract: it never opens a socket itself.
+- It does NOT make anything callable by itself: imported records land in
+  lifecycle ``discovered`` + test_status ``not_tested`` — the R-171/R-172
+  execution gate refuses non-executable lifecycles, so a sensitive
+  endpoint can never become an automatically available function.
+  Promotion to ``registered`` is an explicit lifecycle move with an actor
+  (human review).
+- It does NOT bind a Python implementation: ``implementation_ref`` is an
+  honest unresolvable placeholder (``import_<adapter>:<name>``) — the
+  batch-2 execution binding is STRUCTURAL (record content protected by
+  the digest: the ``mcp.`` id prefix, ``source.uri`` and the server
+  origin inside ``network_allowlist``), never a shared executor
+  reference (the registry's alias rule forbids one ref for many tools).
+- OpenAPI imports stay records-only (owner directive, D-119): no
+  execution adapter exists for them.
 
 Contracts (roadmap P5_TOOL_ECOSYSTEM_AR.md, R-173):
 - Separate adapters with version pinning: this module pins the spec/protocol
@@ -130,6 +139,29 @@ class ImportReport:
 # Shared record-building helpers
 # --------------------------------------------------------------------------
 
+def origin(uri: str) -> str:
+    """The normalized origin of a URL (scheme://host[:port], defaults
+    folded). Used for the import binding: a live-imported record's
+    ``network_allowlist`` carries the server origin, and the execution
+    adapter (``mcp_client``) refuses any destination not covered by it.
+    Raises ``ValueError`` for a URL without scheme/host (the import path
+    reports it as a refusal — never a guess)."""
+    from urllib.parse import urlsplit
+    parts = urlsplit(uri)
+    if not parts.scheme or not parts.hostname:
+        raise ValueError(f"not an absolute http(s) URL: {uri!r}")
+    host = parts.hostname.lower()
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"                      # bare IPv6 literal
+    try:
+        port = parts.port
+    except ValueError:
+        raise ValueError(f"bad port in URL: {uri!r}") from None
+    default = 443 if parts.scheme == "https" else 80
+    netloc = host if port in (None, default) else f"{host}:{port}"
+    return f"{parts.scheme}://{netloc}"
+
+
 def _sanitize_tool_id(prefix: str, name: str) -> Optional[str]:
     """Build a registry-legal tool_id from an external name (or None)."""
     cleaned = "".join(c if (c.isalnum() or c in "_.-") else "_" for c in name)
@@ -233,6 +265,15 @@ def import_mcp_manifest(manifest: Dict[str, Any], *, registry: ToolRegistry,
     protocol revision, when the manifest carries one (``protocolVersion``),
     must be a known stable revision; unknown revisions are refused with an
     explicit reason rather than guessed at.
+
+    Batch 2 (D-119) — the binding of intent: when ``server_uri`` names the
+    server the manifest came from (a LIVE import via ``mcp_client``), the
+    imported records carry that server's ORIGIN in their
+    ``network_allowlist`` (and the full URL in ``source.uri``). This is
+    what later makes the tool executable after an explicit lifecycle
+    promotion — the execution adapter refuses any destination not covered
+    by the record's own allowlist. An invalid ``server_uri`` refuses the
+    import (fail-closed, reported) — never a guessed binding.
     """
     revision = str(manifest.get("protocolVersion") or LATEST_MCP_REVISION)
     report = ImportReport(adapter="mcp", protocol_revision=revision)
@@ -250,6 +291,16 @@ def import_mcp_manifest(manifest: Dict[str, Any], *, registry: ToolRegistry,
         report.add("", "refused_invalid",
                    f"manifest too large ({len(tools)} > {MAX_IMPORT_ITEMS})")
         return report
+
+    # batch 2 (D-119): a named server binds the records to its origin (an
+    # invalid URL refuses the import — never a guessed binding)
+    network_allowlist: List[str] = []
+    if server_uri is not None:
+        try:
+            network_allowlist = [origin(server_uri)]
+        except ValueError as e:
+            report.add("", "refused_invalid", f"server_uri invalid: {e}")
+            return report
 
     allowed = set(allowlist)
     for tool in tools:
@@ -282,7 +333,9 @@ def import_mcp_manifest(manifest: Dict[str, Any], *, registry: ToolRegistry,
             requires_approval=True,  # fail-closed until reviewed
             risk_class="medium",
             implementation_ref=f"import_mcp:{name}",
-            network_allowlist=[],  # no network intent declared at import
+            # batch 2 (D-119): the named server's origin when the import
+            # is live, else no network intent declared
+            network_allowlist=network_allowlist,
             approval_scopes=[],
         )
         if _register(registry, record, actor=actor, report=report):
@@ -406,7 +459,8 @@ def import_openapi_spec(spec: Dict[str, Any], *, registry: ToolRegistry,
 # --------------------------------------------------------------------------
 
 def drift_check(registry: ToolRegistry, manifest: Dict[str, Any],
-                allowlist: Sequence[str]) -> List[Dict[str, str]]:
+                allowlist: Sequence[str],
+                server_uri: Optional[str] = None) -> List[Dict[str, str]]:
     """Report imported tools whose CURRENT manifest payload differs from
     the stored record's import fingerprint.
 
@@ -418,9 +472,15 @@ def drift_check(registry: ToolRegistry, manifest: Dict[str, Any],
     any difference in a mapped field is drift. The record itself deliberately
     stores no fingerprint (descriptions are untrusted text — no trust is
     placed in anything the source could rewrite).
+
+    Batch 2 (D-119): pass the SAME ``server_uri`` the live import used —
+    the derived ``network_allowlist`` depends on it, and comparing a
+    live-imported record against a derivation without it would report a
+    spurious drift on that field.
     """
     drifts: List[Dict[str, str]] = []
-    candidates = _candidate_records(manifest, allowlist)
+    candidates = _candidate_records(manifest, allowlist,
+                                     server_uri=server_uri)
     for tool_id, record in candidates.items():
         try:
             stored = registry.get(tool_id, IMPORTED_RECORD_VERSION)
@@ -442,9 +502,19 @@ def drift_check(registry: ToolRegistry, manifest: Dict[str, Any],
 
 
 def _candidate_records(manifest: Dict[str, Any],
-                       allowlist: Sequence[str]) -> Dict[str, Dict[str, Any]]:
+                       allowlist: Sequence[str],
+                       server_uri: Optional[str] = None
+                       ) -> Dict[str, Dict[str, Any]]:
     """Re-derive the records a manifest WOULD produce (no registration)."""
     out: Dict[str, Dict[str, Any]] = {}
+    network_allowlist: List[str] = []
+    if server_uri is not None:
+        try:
+            network_allowlist = [origin(server_uri)]
+        except ValueError:
+            return out                # not derivable from this input — no
+            # candidates, so drift_check reports nothing (a refusal to
+            # guess, not a claim of no drift)
     if "tools" in manifest and isinstance(manifest.get("tools"), list):
         for tool in manifest["tools"]:
             if not isinstance(tool, dict):
@@ -469,6 +539,6 @@ def _candidate_records(manifest: Dict[str, Any],
                 timeout_ms=DEFAULT_TIMEOUT_MS,
                 side_effects=[], read_only=False, requires_approval=True,
                 risk_class="medium", implementation_ref=f"import_mcp:{name}",
-                network_allowlist=[], approval_scopes=[],
+                network_allowlist=network_allowlist, approval_scopes=[],
             )
     return out
