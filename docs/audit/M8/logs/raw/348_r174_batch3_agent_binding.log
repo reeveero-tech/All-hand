@@ -46,4 +46,4 @@
 ## التالي
 - تغذية الجودة من telemetry (آخر جزء معلن من R-174)، ثم إغلاق R-174 وفتح R-175 (منظومة الاعتماد المرحلي للأدوات 100→1,000→10,000).
 ## أدلة الدمج (R-154) — استُكملت بعد الدمج
-- pr=#313 | tested_sha=4257f208f51e5f65934970225087d3b237549fe6 (رأس الفرع المختبر — CI على الـPR أخضر، فحص network غير الإلزامي فشل مرة بتقلب بحث حي ثم نجح بالإعادة) | merge_sha=cb7ae59f6a7a7b3b61c11616d4ace0c0edca96ed (2026-11-02T19:47Z) | Governance Gate على main (41512291793) = success | AGOS Kernel CI/CD على main (41512291792) = (يُستكمل أدناه) | tests: 3967 passed / 8 skipped / 17 deselected / 9 xfailed (على رأس الفرع محليًا بتوثيق CI على الـPR).
+- pr=#313 | tested_sha=4257f208f51e5f65934970225087d3b237549fe6 (رأس الفرع المختبر — CI على الـPR أخضر، فحص network غير الإلزامي فشل مرة بتقلب بحث حي ثم نجح بالإعادة) | merge_sha=cb7ae59f6a7a7b3b61c11616d4ace0c0edca96ed (2026-11-02T19:47Z) | Governance Gate على main (41512291793) = success | AGOS Kernel CI/CD على main (41512291792) = success (اكتمل 21:11Z؛ سجل القبول [`350`](350_r174_acceptance_main_ci.log)) | tests: 3967 passed / 8 skipped / 17 deselected / 9 xfailed (على رأس الفرع محليًا بتوثيق CI على الـPR).
