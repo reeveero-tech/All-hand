@@ -1,0 +1,6 @@
+# Raw — R-175 دفعة 1: المجموعة الكاملة على رأس الفرع m8/r175-batch1-phased-certification
+# التاريخ: 2026-11-03 (بتوقيت الرياض) | الأمر: /tmp/ahvenv/bin/python -m pytest -q -p no:cacheprovider
+# النتيجة: 3994 passed, 8 skipped, 17 deselected, 9 xfailed in 601.43s (0:10:01)
+# (3977 السابقة على main 801a3eff + 17 الجديدة في tests/test_r175_batch1_phased_certification.py)
+
+============================== 3994 passed, 8 skipped, 17 deselected, 9 xfailed in 601.43s (0:10:01) ==============================
