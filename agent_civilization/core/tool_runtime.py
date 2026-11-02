@@ -84,6 +84,18 @@ for it, and sanitizes the failure channel:
 
 ``health_status`` is set by the R-171 batch-4 health checker
 (``core/tool_health``), on demand — not continuously.
+
+R-173 batch 2 (D-119): imported tools are ADDRESSABLE through this gate by
+their registry tool_id (``mcp.<name>``). An imported tool found in the
+registry never runs on import alone — the same walls apply (lifecycle,
+health, approval, scopes, network, timeout, output cap, redaction) and the
+refusal is an explicit error dict, never a silent None (the frozen
+unknown-specialization None contract still holds for addresses with no
+record at all). The binding is structural, in digest-protected record
+content: the ``mcp.`` prefix, ``source.uri`` and the server origin inside
+``network_allowlist`` — OpenAPI imports are records-only (owner directive).
+The executor is the live MCP client (``core/mcp_client.py``); this gate
+owns the timeout for imported runs too.
 """
 from __future__ import annotations
 
@@ -196,6 +208,129 @@ def _valid_approval(rec: Any, work: Any) -> Tuple[bool, str]:
             return False, (f"approver lacks required approval scopes: "
                            f"{', '.join(missing)}")
     return True, ""
+
+
+# -- R-173 batch 2 (D-119): imported-tool execution path ----------------------
+
+def _refused_result(key: str, reason: str) -> Dict[str, Any]:
+    """Count a refusal, emit telemetry, and shape the honest error dict."""
+    with _lock:
+        _refused[key] += 1
+    try:
+        from agent_civilization.core import telemetry
+        telemetry.event("tool", "refused", outcome="fail", tool=key)
+    except Exception:  # noqa: BLE001 — telemetry never blocks the refusal
+        pass
+    logger.info("tool refused: %s", reason)
+    return {"ok": False, "error": reason}
+
+
+def _own_check_imported(tool_id: str, rec: Any) -> Tuple[bool, str]:
+    """(ok, reason) for an IMPORTED tool — the batch-2 binding rules.
+
+    The internal-tool rule "the handler to run is the registered
+    implementation" cannot apply here: ``implementation_ref`` is the batch-1
+    honest placeholder (the registry's alias rule binds one ref to one
+    tool_id, so a shared executor ref is illegal). The binding for imported
+    tools is therefore STRUCTURAL and lives in digest-protected record
+    content: the tool_id prefix (``mcp.`` — MCP only; OpenAPI is
+    records-only by owner directive), ``source.kind == 'mcp'`` with a bound
+    ``source.uri``, and that server's origin covered by the record's own
+    ``network_allowlist``. Swapping any of it demands a new audited
+    version."""
+    key = f"{tool_id}@{rec.version}"
+    if rec.lifecycle_state not in EXECUTABLE_LIFECYCLES:
+        return False, f"tool {key} is not executable: lifecycle_state={rec.lifecycle_state}"
+    if rec.health_status == "disabled":
+        return False, f"tool {key} is not executable: health_status=disabled"
+    if not tool_id.startswith("mcp."):
+        return False, (f"tool {key} refused: only MCP imports are bound to "
+                       "an execution adapter (openapi imports are "
+                       "records-only by decision D-119)")
+    src = getattr(rec, "source", None)
+    uri = getattr(src, "uri", None) if src is not None else None
+    if getattr(src, "kind", None) != "mcp" or not uri:
+        return False, f"tool {key} refused: no MCP server is bound to this record"
+    from agent_civilization.core import mcp_client
+    try:
+        srv = mcp_client.origin(str(uri))
+    except ValueError:
+        return False, f"tool {key} refused: its bound server URL is invalid"
+    if srv not in set(rec.network_allowlist or ()):
+        return False, (f"tool {key} refused: the record's network allowlist "
+                       f"does not cover its own server origin {srv}")
+    return True, ""
+
+
+async def _dispatch_imported(tool_id: str, rec: Any,
+                              work: Dict[str, Any]) -> Dict[str, Any]:
+    """The imported-tool execution path — the SAME gate walls as internal
+    tools (lifecycle, health, approval policy, scopes, network policy,
+    timeout, output caps, redaction) around the live MCP client. The
+    client call is blocking (stdlib http) so it runs in the event loop's
+    thread pool; the registered ``timeout_ms`` is owned HERE (wait_for)."""
+    from agent_civilization.core import mcp_client
+    key = f"{tool_id}@{rec.version}"
+    ok, reason = _own_check_imported(tool_id, rec)
+    if not ok:
+        return _refused_result(key, reason)
+    if rec.requires_approval:
+        ok_ap, ap_reason = _valid_approval(rec, work)
+        if not ok_ap:
+            return _refused_result(
+                key, f"tool {key} refused: requires_approval is set — "
+                     f"{ap_reason} (work['approval'] = {{'actor': <who "
+                     "approved>, 'granted_at': <ISO-8601 when>, 'scopes': "
+                     "[<approver scopes>], 'tool': <tool id binding>} as the "
+                     "record's policy demands)")
+    missing = _missing_scopes(rec, work)
+    if missing:
+        return _refused_result(
+            key, f"tool {key} refused: missing required auth scopes: "
+                 f"{', '.join(missing)} — grant them in work['scopes']")
+    # an imported MCP tool is USEFUL only through its server: a record
+    # declaring no network allowance (batch-1 manifest import, no server)
+    # is refused here rather than armed with the socket block below
+    if not _network_allowed(rec):
+        return _refused_result(
+            key, f"tool {key} refused: the record declares no network "
+                 "allowance — an imported tool without its server origin "
+                 "in its network_allowlist is not runnable")
+    with _lock:
+        _executed[key] += 1
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(mcp_client.call_imported, rec, work),
+            timeout=rec.timeout_ms / 1000.0)
+    except asyncio.TimeoutError:
+        with _lock:
+            _timed_out[key] += 1
+        try:
+            from agent_civilization.core import telemetry
+            telemetry.event("tool", "timeout", outcome="fail", tool=tool_id)
+        except Exception:  # noqa: BLE001
+            pass
+        logger.warning("tool timed out: %s exceeded timeout_ms=%d (imported)",
+                       key, rec.timeout_ms)
+        return {"ok": False, "error": (
+            f"tool {key} exceeded its registered timeout_ms={rec.timeout_ms}")}
+    result = _sanitize_result(result)
+    cap = _output_cap(rec)
+    if _result_size(result) > cap:
+        with _lock:
+            _output_capped[key] += 1
+        try:
+            from agent_civilization.core import telemetry
+            telemetry.event("tool", "output_capped", outcome="fail",
+                            tool=tool_id)
+        except Exception:  # noqa: BLE001
+            pass
+        logger.warning("tool result capped: %s exceeded max_output_bytes=%d",
+                       key, cap)
+        return {"ok": False, "error": (
+            f"tool {key} exceeded its output cap max_output_bytes={cap} "
+            "(the result is withheld)")}
+    return result
 
 
 # -- R-172 batch 2 (D-116): the rest of the declared metadata -----------------
@@ -592,8 +727,25 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
     R-172 batch 1 (D-115): the record's own SECURITY metadata is ENFORCED
     here, not just stored — an approval-demanding tool (``requires_approval``)
     does not run without a valid approval in the work item, and NO tool may
-    outlive its registered ``timeout_ms`` (fail-closed on both)."""
+    outlive its registered ``timeout_ms`` (fail-closed on both).
+
+    R-173 batch 2 (D-119): imported tools are ADDRESSABLE here by their
+    registry tool_id (``mcp.<name>``) — the unknown-specialization None
+    contract still holds for anything without a record. An imported tool
+    found in the registry goes through ``_dispatch_imported``: the same
+    gate walls (lifecycle, health, approval, scopes, timeout, output cap,
+    redaction) around the live MCP client. OpenAPI imports stay
+    records-only (explicit refusal, never a run)."""
     if specialization not in real_dispatcher._HANDLERS:
+        imported = None
+        try:
+            imported = runtime_registry().get(specialization)
+        except ToolNotFound:
+            imported = None
+        except RegistryStoreError:
+            imported = None
+        if imported is not None:
+            return await _dispatch_imported(specialization, imported, work)
         try:
             runtime_registry().get(tool_id_for(specialization))
         except (ToolNotFound, RegistryStoreError):
