@@ -3225,7 +3225,12 @@ async def admin_list_tools(
              "side_effects": r.side_effects, "probeable": tool_health.is_probeable(r)}
             for r in reg.search(include_disabled=True, limit=10_000)
         ]
-        return {"count": len(tools), "tools": tools, "gate_stats": tool_runtime.stats()}
+        # R-175 batch 1 (D-125): the phase counts declared separately — the
+        # spec's «يعلن النظام كل رقم منفصلًا» (unique tool_ids, never aliases).
+        from agent_civilization.core import tool_certification as r175
+        return {"count": len(tools), "tools": tools,
+                "certification_counts": r175.state_counts(reg),
+                "gate_stats": tool_runtime.stats()}
     except RegistryStoreError:
         raise HTTPException(503, "tool registry store unavailable")
 
