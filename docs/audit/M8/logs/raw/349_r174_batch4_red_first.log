@@ -1,0 +1,77 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 10 items
+
+tests/test_r174_batch4_quality_feed.py F..FFFFFFF                        [100%]
+
+=================================== FAILURES ===================================
+__________ test_contract_quality_source_telemetry_builds_the_callable __________
+tests/test_r174_batch4_quality_feed.py:137: in test_contract_quality_source_telemetry_builds_the_callable
+    spec = derive_task_spec(_contract(quality_source="telemetry"))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent_civilization/core/task_contract.py:67: in derive_task_spec
+    raise ValueError(f"{CONTRACT_KEY} has unknown fields: {sorted(unknown)}")
+E   ValueError: tool_contract has unknown fields: ['quality_source']
+__________ test_runtime_quality_is_the_operational_reliability_ratio ___________
+tests/test_r174_batch4_quality_feed.py:159: in test_runtime_quality_is_the_operational_reliability_ratio
+    assert _quality_of(flaky_rec) == pytest.approx(0.5)
+           ^^^^^^^^^^^^^^^^^^^^^^
+tests/test_r174_batch4_quality_feed.py:129: in _quality_of
+    from agent_civilization.core.tool_quality import runtime_quality
+E   ModuleNotFoundError: No module named 'agent_civilization.core.tool_quality'
+------------------------------ Captured log call -------------------------------
+WARNING  agos.infrastructure.redis:redis_queue.py:30 Redis not available. Using in-memory fallback.
+WARNING  agos.tool_runtime:tool_runtime.py:861 tool timed out: agos.internal.q.aflaky@1.0.0 exceeded timeout_ms=150
+________________ test_runtime_quality_no_signal_is_neutral_zero ________________
+tests/test_r174_batch4_quality_feed.py:169: in test_runtime_quality_no_signal_is_neutral_zero
+    assert _quality_of(rec) == 0.0
+           ^^^^^^^^^^^^^^^^
+tests/test_r174_batch4_quality_feed.py:129: in _quality_of
+    from agent_civilization.core.tool_quality import runtime_quality
+E   ModuleNotFoundError: No module named 'agent_civilization.core.tool_quality'
+_________________ test_runtime_quality_excludes_gate_refusals __________________
+tests/test_r174_batch4_quality_feed.py:182: in test_runtime_quality_excludes_gate_refusals
+    assert _quality_of(rec) == pytest.approx(1.0)
+           ^^^^^^^^^^^^^^^^
+tests/test_r174_batch4_quality_feed.py:129: in _quality_of
+    from agent_civilization.core.tool_quality import runtime_quality
+E   ModuleNotFoundError: No module named 'agent_civilization.core.tool_quality'
+_____________ test_quality_feed_reorders_equal_profile_candidates ______________
+tests/test_r174_batch4_quality_feed.py:195: in test_quality_feed_reorders_equal_profile_candidates
+    fed = select_tools(_reg(), derive_task_spec(_contract(quality_source="telemetry")))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent_civilization/core/task_contract.py:67: in derive_task_spec
+    raise ValueError(f"{CONTRACT_KEY} has unknown fields: {sorted(unknown)}")
+E   ValueError: tool_contract has unknown fields: ['quality_source']
+_______________ test_quality_never_overrides_health_or_lifecycle _______________
+tests/test_r174_batch4_quality_feed.py:211: in test_quality_never_overrides_health_or_lifecycle
+    fed = select_tools(_reg(), derive_task_spec(_contract(quality_source="telemetry")))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent_civilization/core/task_contract.py:67: in derive_task_spec
+    raise ValueError(f"{CONTRACT_KEY} has unknown fields: {sorted(unknown)}")
+E   ValueError: tool_contract has unknown fields: ['quality_source']
+___________ test_agent_path_selects_the_reliable_tool_via_telemetry ____________
+tests/test_r174_batch4_quality_feed.py:227: in test_agent_path_selects_the_reliable_tool_via_telemetry
+    assert out["ok"] is True
+E   assert False is True
+__________________ test_quality_snapshot_taken_at_derive_time __________________
+tests/test_r174_batch4_quality_feed.py:237: in test_quality_snapshot_taken_at_derive_time
+    spec = derive_task_spec(_contract(quality_source="telemetry"))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+agent_civilization/core/task_contract.py:67: in derive_task_spec
+    raise ValueError(f"{CONTRACT_KEY} has unknown fields: {sorted(unknown)}")
+E   ValueError: tool_contract has unknown fields: ['quality_source']
+=========================== short test summary info ============================
+FAILED tests/test_r174_batch4_quality_feed.py::test_contract_quality_source_telemetry_builds_the_callable
+FAILED tests/test_r174_batch4_quality_feed.py::test_runtime_quality_is_the_operational_reliability_ratio
+FAILED tests/test_r174_batch4_quality_feed.py::test_runtime_quality_no_signal_is_neutral_zero
+FAILED tests/test_r174_batch4_quality_feed.py::test_runtime_quality_excludes_gate_refusals
+FAILED tests/test_r174_batch4_quality_feed.py::test_quality_feed_reorders_equal_profile_candidates
+FAILED tests/test_r174_batch4_quality_feed.py::test_quality_never_overrides_health_or_lifecycle
+FAILED tests/test_r174_batch4_quality_feed.py::test_agent_path_selects_the_reliable_tool_via_telemetry
+FAILED tests/test_r174_batch4_quality_feed.py::test_quality_snapshot_taken_at_derive_time
+========================= 8 failed, 2 passed in 0.89s ==========================

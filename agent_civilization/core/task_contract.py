@@ -23,8 +23,10 @@ Scope (what this module IS):
 
 Honest limits (what it is NOT):
 
-* the contract carries no ``quality`` callable — the operator-supplied
-  telemetry feed is a later batch; ranking quality stays 0.0 for all;
+* the automatic quality feed is opt-in by declaring
+  ``quality_source: "telemetry"`` (batch 4, D-124) — without it ranking
+  quality stays 0.0 for all candidates (the operator-supplied callable on
+  ``TaskSpec`` itself remains available to programmatic callers);
 * the verification plan stays the batch-1 shape (``verify=None`` — the
   runtime's R-170 output-verification gate still applies AROUND this
   outcome, both runtimes);
@@ -41,6 +43,10 @@ CONTRACT_KEY = "tool_contract"
 
 #: contract fields copied verbatim (validated by TaskSpec itself)
 _LIST_FIELDS = ("granted_scopes", "allowed_tenant_scopes")
+
+#: the only supported automatic quality source (R-174 batch 4, D-124): the
+#: TaskSpec quality callable built from the runtime's operational counters.
+_QUALITY_SOURCES = ("telemetry",)
 
 
 def derive_task_spec(work: Dict[str, Any]) -> Optional[TaskSpec]:
@@ -61,10 +67,23 @@ def derive_task_spec(work: Dict[str, Any]) -> Optional[TaskSpec]:
     # explicit contract fields only — anything unknown is a caller error, not
     # silently ignored permissions
     allowed = {"capability", "top_k", "max_risk", "read_only", "granted_scopes",
-               "timeout_budget_ms", "allow_side_effects", "allowed_tenant_scopes"}
+               "timeout_budget_ms", "allow_side_effects", "allowed_tenant_scopes",
+               "quality_source"}
     unknown = set(data) - allowed
     if unknown:
         raise ValueError(f"{CONTRACT_KEY} has unknown fields: {sorted(unknown)}")
+    # R-174 (batch 4, D-124): the automatic quality feed — the caller declares
+    # the SOURCE, the callable itself is built from the runtime's operational
+    # counters (a snapshot taken now; the operator-supplied callable on
+    # TaskSpec stays available to programmatic callers).
+    quality_source = data.pop("quality_source", None)
+    if quality_source is not None:
+        if quality_source not in _QUALITY_SOURCES:
+            raise ValueError(
+                f"{CONTRACT_KEY}.quality_source must be one of {_QUALITY_SOURCES}, "
+                f"got {quality_source!r}")
+        from agent_civilization.core.tool_quality import runtime_quality
+        data["quality"] = runtime_quality()
     return TaskSpec(**data)
 
 
