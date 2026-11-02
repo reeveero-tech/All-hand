@@ -1,3 +1,16 @@
+## 2026-11-02 — لاحق 106: R-173 دفعة 3 — محولات CLI/SDK + تدفق اعتماد محكوم (D-120)
+
+- **محول CLI** (`import_cli_manifest`): عقد manifest خاص بنا مثبت (`CLI_MANIFEST_VERSION="1.0.0"` — تثبيت ذاتي صادق)؛ الأمر = العنوان التنفيذي (`source.uri`/argv[0])؛ إصدار مجهول يُرفض صراحة.
+- **محول SDK/connector** (`import_sdk_manifest`): `SDK_MANIFEST_VERSION="1.0.0"`؛ الربط `module:qualname` يُفحص شكلًا فقط (متسق مع قاعدة implementation_ref وalias rule) ولا يُحل عند الاستيراد؛ `kind` sdk/connector يحدد البادئة.
+- **سجلات فقط للاثنين** (قرار أمني معلن D-120): تنفيذ أوامر/ربط SDK يتطلب توجيه مالك صريحًا؛ البوابة ترفض `cli.`/`sdk.`/`connector.` صراحة برسالة تعلن D-119/D-120.
+- **auth لكل محول**: `authScope` = طلب نطاقات (يُرسم إلى `auth_scope`) لا بيانات اعتماد أبدًا؛ وصف يُنقى عند الحدود؛ وفي جهة التنفيذ أداة MCP طالبة نطاقًا لا تعمل إلا بمنحه في `work['scopes']` (اختبار إثبات).
+- **تدفق اعتماد محكوم** `record_test_outcome`: رسم انتقال test_status قانوني + **إثبات إلزامي لكل انتقال** + **certified يشترط أنواع الإثبات الثلاثة** (smoke/contract/security — مواصفة 10K حرفيًا)؛ كل رفض داخل مسار التدقيق (`test_outcome_refused` بالسبب)؛ التكامل مع قاعدة السجل (certified دورة حياتية تتطلب test_status certified) — المسار المحكوم يفتح الترقية الكاملة discovered ← registered ← validated ← certified.
+- **كشف انحراف لكل المحولات** (MCP/CLI/SDK)؛ manifest مختلط الأشكال يشتق لا شيء (رفض تخمين).
+- **الإثبات**: أحمر أولًا 16 فشل (AttributeError — السجل الخام 345)؛ ملف الدفعة 17 اختبارًا؛ الحزمة الكاملة **3913 passed / 8 skipped / 17 deselected / 9 xfailed** (3896+17)؛ ruff (F,E722) نظيف؛ الملفات المجمدة لم تُمس؛ لا تغيير في server.py (لا وجهة API).
+- **اكتشافات موثقة داخل الدفعة**: رسم الدورة الحياتية يفرض المسار الكامل (قفزة الاختبار كُشفت وصُحح الاختبار)؛ نمط `sk-` في redact يشترط 16+ حرفًا (سري أقصر أفلت فكشفه الاختبار)؛ alias rule يمنع النقاط في الجزء الثانوي من الربط.
+- **الحدود المعلنة**: CLI/SDK بلا ربط تنفيذ (توجيه مالك)؛ لا مصادقة تُرسل (Q-024)؛ مفاتيح قصيرة الأجل/حدود الاستخدام خارج الدفعة؛ إثباتات test_outcome تُؤكد عند البوابة ولا تُخزن نصوصها.
+- السجل [`345`](../audit/M8/logs/raw/345_r173_batch3_cli_sdk_cert.log) (+ الأحمر الخام `345_r173_batch3_red_first.log`).
+
 ## 2026-11-02 — لاحق 105: R-173 دفعة 2 — عميل MCP حي مفحوص SSRF + ربط التنفيذ (D-119)
 
 - **عميل MCP حي** (`core/mcp_client.py` جديد، stdlib فقط): معيار streamable-HTTP بمصافحة كاملة (initialize ← notifications/initialized ← tools/list / tools/call)، JSON أو SSE، صد `mcp-session-id`.

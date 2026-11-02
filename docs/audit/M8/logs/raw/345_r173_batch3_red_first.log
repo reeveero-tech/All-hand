@@ -1,0 +1,109 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/user/workspace/all-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.1, ddtrace-4.16.1, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 17 items
+
+tests/test_r173_batch3_cli_sdk_cert.py FFFFFFFFFF.FFFFFF                 [100%]
+
+=================================== FAILURES ===================================
+__________ test_cli_allowlisted_tool_imported_as_a_discovered_record ___________
+tests/test_r173_batch3_cli_sdk_cert.py:88: in test_cli_allowlisted_tool_imported_as_a_discovered_record
+    report = ti.import_cli_manifest(CLI_MANIFEST, registry=_registry(),
+             ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+_________________ test_cli_unknown_manifest_version_is_refused _________________
+tests/test_r173_batch3_cli_sdk_cert.py:105: in test_cli_unknown_manifest_version_is_refused
+    report = ti.import_cli_manifest(manifest, registry=_registry(),
+             ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+__________ test_cli_tool_outside_the_allowlist_is_refused_and_counted __________
+tests/test_r173_batch3_cli_sdk_cert.py:113: in test_cli_tool_outside_the_allowlist_is_refused_and_counted
+    report = ti.import_cli_manifest(CLI_MANIFEST, registry=_registry(),
+             ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+__________________ test_cli_tool_without_a_command_is_refused __________________
+tests/test_r173_batch3_cli_sdk_cert.py:123: in test_cli_tool_without_a_command_is_refused
+    report = ti.import_cli_manifest(manifest, registry=_registry(),
+             ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+_______________ test_cli_auth_scope_is_a_demand_not_a_credential _______________
+tests/test_r173_batch3_cli_sdk_cert.py:136: in test_cli_auth_scope_is_a_demand_not_a_credential
+    ti.import_cli_manifest(manifest, registry=_registry(), allowlist=["grep_files"],
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+_________ test_sdk_allowlisted_tool_imported_with_its_binding_address __________
+tests/test_r173_batch3_cli_sdk_cert.py:146: in test_sdk_allowlisted_tool_imported_with_its_binding_address
+    report = ti.import_sdk_manifest(SDK_MANIFEST, registry=_registry(),
+             ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_sdk_manifest'. Did you mean: 'import_mcp_manifest'?
+______________ test_sdk_connector_kind_gets_the_connector_prefix _______________
+tests/test_r173_batch3_cli_sdk_cert.py:158: in test_sdk_connector_kind_gets_the_connector_prefix
+    report = ti.import_sdk_manifest(SDK_MANIFEST, registry=_registry(),
+             ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_sdk_manifest'. Did you mean: 'import_mcp_manifest'?
+__________________ test_sdk_invalid_binding_shape_is_refused ___________________
+tests/test_r173_batch3_cli_sdk_cert.py:169: in test_sdk_invalid_binding_shape_is_refused
+    report = ti.import_sdk_manifest(manifest, registry=_registry(),
+             ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_sdk_manifest'. Did you mean: 'import_mcp_manifest'?
+_________________ test_sdk_unknown_manifest_version_is_refused _________________
+tests/test_r173_batch3_cli_sdk_cert.py:177: in test_sdk_unknown_manifest_version_is_refused
+    report = ti.import_sdk_manifest(manifest, registry=_registry(),
+             ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_sdk_manifest'. Did you mean: 'import_mcp_manifest'?
+__________________ test_cli_and_sdk_imports_are_records_only ___________________
+tests/test_r173_batch3_cli_sdk_cert.py:185: in test_cli_and_sdk_imports_are_records_only
+    ti.import_cli_manifest(CLI_MANIFEST, registry=_registry(),
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+____________ test_test_status_transitions_follow_the_governed_graph ____________
+tests/test_r173_batch3_cli_sdk_cert.py:234: in test_test_status_transitions_follow_the_governed_graph
+    ti.import_cli_manifest(CLI_MANIFEST, registry=reg, allowlist=["grep_files"],
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+__________________ test_a_jump_skipping_the_graph_is_refused ___________________
+tests/test_r173_batch3_cli_sdk_cert.py:256: in test_a_jump_skipping_the_graph_is_refused
+    ti.import_cli_manifest(CLI_MANIFEST, registry=reg, allowlist=["grep_files"],
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+________________ test_certified_requires_all_three_proof_kinds _________________
+tests/test_r173_batch3_cli_sdk_cert.py:266: in test_certified_requires_all_three_proof_kinds
+    ti.import_cli_manifest(CLI_MANIFEST, registry=reg, allowlist=["grep_files"],
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+____________________ test_every_transition_demands_evidence ____________________
+tests/test_r173_batch3_cli_sdk_cert.py:282: in test_every_transition_demands_evidence
+    ti.import_cli_manifest(CLI_MANIFEST, registry=reg, allowlist=["grep_files"],
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+________ test_the_certified_lifecycle_integrates_with_the_governed_path ________
+tests/test_r173_batch3_cli_sdk_cert.py:291: in test_the_certified_lifecycle_integrates_with_the_governed_path
+    ti.import_cli_manifest(CLI_MANIFEST, registry=reg, allowlist=["grep_files"],
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+________________ test_drift_check_covers_cli_and_sdk_manifests _________________
+tests/test_r173_batch3_cli_sdk_cert.py:320: in test_drift_check_covers_cli_and_sdk_manifests
+    ti.import_cli_manifest(CLI_MANIFEST, registry=reg, allowlist=["grep_files"],
+    ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'agent_civilization.core.tool_import' has no attribute 'import_cli_manifest'. Did you mean: 'import_mcp_manifest'?
+=========================== short test summary info ============================
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_cli_allowlisted_tool_imported_as_a_discovered_record
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_cli_unknown_manifest_version_is_refused
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_cli_tool_outside_the_allowlist_is_refused_and_counted
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_cli_tool_without_a_command_is_refused
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_cli_auth_scope_is_a_demand_not_a_credential
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_sdk_allowlisted_tool_imported_with_its_binding_address
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_sdk_connector_kind_gets_the_connector_prefix
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_sdk_invalid_binding_shape_is_refused
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_sdk_unknown_manifest_version_is_refused
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_cli_and_sdk_imports_are_records_only
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_test_status_transitions_follow_the_governed_graph
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_a_jump_skipping_the_graph_is_refused
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_certified_requires_all_three_proof_kinds
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_every_transition_demands_evidence
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_the_certified_lifecycle_integrates_with_the_governed_path
+FAILED tests/test_r173_batch3_cli_sdk_cert.py::test_drift_check_covers_cli_and_sdk_manifests
+========================= 16 failed, 1 passed in 0.96s =========================

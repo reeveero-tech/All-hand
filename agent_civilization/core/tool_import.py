@@ -24,6 +24,14 @@ What it deliberately is NOT (declared limits):
   reference (the registry's alias rule forbids one ref for many tools).
 - OpenAPI imports stay records-only (owner directive, D-119): no
   execution adapter exists for them.
+- Batch 3 (D-120) added the CLI and SDK/connector adapters (records-only
+  by declared limit — executing arbitrary commands or SDK bindings is a
+  security decision requiring an explicit owner directive), the
+  ``authScope``-as-demand mapping (per-adapter auth contracts), drift
+  coverage for the new shapes, and the governed certification-flow entry
+  point lives in ``tool_registry.record_test_outcome`` (test-status
+  transitions with proof requirements — the 10K spec's
+  smoke/contract/security rule).
 
 Contracts (roadmap P5_TOOL_ECOSYSTEM_AR.md, R-173):
 - Separate adapters with version pinning: this module pins the spec/protocol
@@ -53,6 +61,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -83,7 +92,9 @@ OPENAPI_SUPPORTED_MAJORS: Tuple[str, ...] = ("3.0", "3.1", "3.2")
 LATEST_OPENAPI_VERSION = "3.2.1"
 
 #: This module's own contract version (bump on adapter behavior change).
-IMPORT_ADAPTER_VERSION = "1.0.0"
+#: 1.1.0 (batch 3, D-120): CLI and SDK/connector adapters + authScope-as-
+#: demand mapping + drift coverage for the new shapes.
+IMPORT_ADAPTER_VERSION = "1.1.0"
 
 #: The version an imported, unreviewed record gets. Pre-release semantics:
 #: the external source declared no version for the tool; the first reviewed
@@ -455,6 +466,229 @@ def import_openapi_spec(spec: Dict[str, Any], *, registry: ToolRegistry,
 
 
 # --------------------------------------------------------------------------
+# CLI adapter (batch 3, D-120)
+# --------------------------------------------------------------------------
+
+#: OUR manifest contract (unlike MCP/OpenAPI this is not an external
+#: protocol — the pin is this module's own contract version; a manifest
+#: naming an unknown version is refused with an explicit reason).
+CLI_MANIFEST_VERSION = "1.0.0"
+
+
+def _manifest_tools(manifest: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """The manifest's ``tools`` entries that are objects (others ignored)."""
+    tools = manifest.get("tools")
+    if not isinstance(tools, list):
+        return []
+    return [t for t in tools if isinstance(t, dict)]
+
+
+def _validated_auth_scope(tool: Dict[str, Any]) -> Optional[List[str]]:
+    """The manifest's ``authScope`` — a DEMAND (scopes the tool requires),
+    never a credential. Missing/invalid ⇒ None (the caller refuses the
+    tool); an empty list is a valid "demands nothing" declaration."""
+    raw = tool.get("authScope")
+    if raw is None:
+        return []
+    if (not isinstance(raw, list)
+            or not all(isinstance(s, str) and s.strip() for s in raw)):
+        return None
+    return list(raw)
+
+
+def import_cli_manifest(manifest: Dict[str, Any], *, registry: ToolRegistry,
+                         allowlist: Sequence[str], actor: str,
+                         timeout_ms: int = DEFAULT_TIMEOUT_MS
+                         ) -> ImportReport:
+    """Import allowlisted CLI tools from OUR pinned CLI manifest contract.
+
+    Shape: ``{"cliManifestVersion": "1.0.0", "tools": [{"name",
+    "description", "command", "argsSchema"?, "authScope"?, "readOnly"?}]}``.
+    The manifest is operator/CI material, but its TEXT is untrusted boundary
+    material exactly like MCP/OpenAPI manifests: descriptions pass through
+    ``public_text.redact``; ``authScope`` is a scope DEMAND (mapped to the
+    record's ``auth_scope``), never a credential; the command is stored as
+    the tool's executable identity (``source.uri`` — argv[0], the tool's
+    "address" in the CLI world).
+
+    RECORDS-ONLY (D-120, declared limit): executing arbitrary commands is a
+    security decision that requires an explicit owner directive (sandbox,
+    argv validation, injection review). Records land ``discovered`` +
+    ``not_tested`` with fail-closed defaults; promotion is an explicit,
+    actor-audited lifecycle move; and the runtime gate answers an explicit
+    records-only refusal for ``cli.`` addresses."""
+    version = str(manifest.get("cliManifestVersion") or "")
+    report = ImportReport(adapter="cli", protocol_revision=version)
+    if version != CLI_MANIFEST_VERSION:
+        report.add("", "refused_unsupported_protocol",
+                   f"unsupported CLI manifest version {version!r} "
+                   f"(this adapter's pinned contract: {CLI_MANIFEST_VERSION})")
+        return report
+
+    tools = manifest.get("tools")
+    if not isinstance(tools, list):
+        report.add("", "refused_invalid", "manifest has no 'tools' list")
+        return report
+    if len(tools) > MAX_IMPORT_ITEMS:
+        report.add("", "refused_invalid",
+                   f"manifest too large ({len(tools)} > {MAX_IMPORT_ITEMS})")
+        return report
+
+    allowed = set(allowlist)
+    for tool in tools:
+        if not isinstance(tool, dict):
+            continue
+        name = str(tool.get("name") or "")
+        tool_id = _sanitize_tool_id("cli", name) if name else None
+        if tool_id is None:
+            report.add(str(name or "?")[:64], "refused_invalid",
+                       "tool name missing or not representable")
+            continue
+        if name not in allowed:
+            report.add(tool_id, "refused_not_in_allowlist",
+                       f"{name!r} is not in the import allowlist")
+            continue
+        command = tool.get("command")
+        if not (isinstance(command, str) and command.strip()):
+            report.add(tool_id, "refused_invalid",
+                      "tool has no command (the executable identity)")
+            continue
+        auth_scope = _validated_auth_scope(tool)
+        if auth_scope is None:
+            report.add(tool_id, "refused_invalid",
+                       "authScope must be a list of non-empty scope strings")
+            continue
+        input_schema = tool.get("argsSchema")
+        if not isinstance(input_schema, dict):
+            input_schema = {"type": "object"}   # documented placeholder
+        record = _base_record(
+            tool_id=tool_id, name=name,
+            source={"kind": "cli", "uri": command.strip(),
+                    "revision": CLI_MANIFEST_VERSION},
+            description=str(tool.get("description") or ""),
+            input_schema=input_schema,
+            capabilities=["import:cli"],
+            timeout_ms=timeout_ms,
+            side_effects=[],
+            read_only=bool(tool.get("readOnly")),  # default: assume writes
+            requires_approval=True,                 # fail-closed regardless
+            risk_class="medium",
+            implementation_ref=f"import_cli:{name}",
+            network_allowlist=[],
+            approval_scopes=[],
+        )
+        record["auth_scope"] = auth_scope         # a DEMAND, not a credential
+        if _register(registry, record, actor=actor, report=report):
+            report.add(tool_id, "imported")
+    return report
+
+
+# --------------------------------------------------------------------------
+# SDK/connector adapter (batch 3, D-120)
+# --------------------------------------------------------------------------
+
+#: OUR manifest contract (same pinning rationale as the CLI adapter).
+SDK_MANIFEST_VERSION = "1.0.0"
+
+#: the binding shape this adapter accepts: module:qualname (the same shape
+#: the registry's implementation_ref uses — validated as a SHAPE only; the
+#: binding is untrusted manifest text, never resolved at import time).
+_SDK_BINDING_RE = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def import_sdk_manifest(manifest: Dict[str, Any], *, registry: ToolRegistry,
+                        allowlist: Sequence[str], actor: str,
+                        timeout_ms: int = DEFAULT_TIMEOUT_MS
+                        ) -> ImportReport:
+    """Import allowlisted SDK/connector bindings from OUR pinned manifest
+    contract.
+
+    Shape: ``{"sdkManifestVersion": "1.0.0", "tools": [{"name",
+    "description", "binding", "inputSchema"?, "authScope"?, "kind"?}]}``.
+    ``binding`` (``module:qualname`` — where the tool lives in the SDK
+    world) is stored as the record's address (``source.uri``), validated as
+    a SHAPE only and never resolved at import. ``kind`` selects ``sdk``
+    (default) or ``connector`` — both are the same adapter, and the tool_id
+    prefix follows the kind (``sdk.`` / ``connector.``). ``authScope`` is a
+    scope DEMAND; descriptions are redacted at the boundary.
+
+    RECORDS-ONLY (D-120, declared limit): binding arbitrary SDK code is a
+    security decision that requires an explicit owner directive. The
+    runtime gate answers an explicit records-only refusal for both
+    prefixes."""
+    version = str(manifest.get("sdkManifestVersion") or "")
+    report = ImportReport(adapter="sdk", protocol_revision=version)
+    if version != SDK_MANIFEST_VERSION:
+        report.add("", "refused_unsupported_protocol",
+                   f"unsupported SDK manifest version {version!r} "
+                   f"(this adapter's pinned contract: {SDK_MANIFEST_VERSION})")
+        return report
+
+    tools = manifest.get("tools")
+    if not isinstance(tools, list):
+        report.add("", "refused_invalid", "manifest has no 'tools' list")
+        return report
+    if len(tools) > MAX_IMPORT_ITEMS:
+        report.add("", "refused_invalid",
+                   f"manifest too large ({len(tools)} > {MAX_IMPORT_ITEMS})")
+        return report
+
+    allowed = set(allowlist)
+    for tool in tools:
+        if not isinstance(tool, dict):
+            continue
+        name = str(tool.get("name") or "")
+        kind = str(tool.get("kind") or "sdk")
+        if kind not in ("sdk", "connector"):
+            report.add(str(name or "?")[:64], "refused_invalid",
+                       f"unknown sdk kind {kind!r} (sdk/connector)")
+            continue
+        tool_id = _sanitize_tool_id(kind, name) if name else None
+        if tool_id is None:
+            report.add(str(name or "?")[:64], "refused_invalid",
+                       "tool name missing or not representable")
+            continue
+        if name not in allowed:
+            report.add(tool_id, "refused_not_in_allowlist",
+                       f"{name!r} is not in the import allowlist")
+            continue
+        binding = tool.get("binding")
+        if not (isinstance(binding, str) and _SDK_BINDING_RE.match(binding)):
+            report.add(tool_id, "refused_invalid",
+                       "binding must be a module:qualname reference")
+            continue
+        auth_scope = _validated_auth_scope(tool)
+        if auth_scope is None:
+            report.add(tool_id, "refused_invalid",
+                       "authScope must be a list of non-empty scope strings")
+            continue
+        input_schema = tool.get("inputSchema")
+        if not isinstance(input_schema, dict):
+            input_schema = {"type": "object"}   # documented placeholder
+        record = _base_record(
+            tool_id=tool_id, name=name,
+            source={"kind": kind, "uri": binding,
+                    "revision": SDK_MANIFEST_VERSION},
+            description=str(tool.get("description") or ""),
+            input_schema=input_schema,
+            capabilities=[f"import:{kind}"],
+            timeout_ms=timeout_ms,
+            side_effects=[],
+            read_only=False,                    # unknown → assume writes
+            requires_approval=True,             # fail-closed regardless
+            risk_class="medium",
+            implementation_ref=f"import_{kind}:{name}",
+            network_allowlist=[],
+            approval_scopes=[],
+        )
+        record["auth_scope"] = auth_scope         # a DEMAND, not a credential
+        if _register(registry, record, actor=actor, report=report):
+            report.add(tool_id, "imported")
+    return report
+
+
+# --------------------------------------------------------------------------
 # Drift detection (pure — no registry writes)
 # --------------------------------------------------------------------------
 
@@ -505,8 +739,75 @@ def _candidate_records(manifest: Dict[str, Any],
                        allowlist: Sequence[str],
                        server_uri: Optional[str] = None
                        ) -> Dict[str, Dict[str, Any]]:
-    """Re-derive the records a manifest WOULD produce (no registration)."""
+    """Re-derive the records a manifest WOULD produce (no registration) —
+    for every adapter shape: MCP (``protocolVersion``), CLI
+    (``cliManifestVersion``) and SDK/connector (``sdkManifestVersion``).
+    A manifest mixing the shape keys derives nothing (a refusal to guess,
+    not a claim of no drift)."""
     out: Dict[str, Dict[str, Any]] = {}
+    allowed = set(allowlist)
+    shape_keys = [k for k in ("protocolVersion", "cliManifestVersion",
+                             "sdkManifestVersion") if k in manifest]
+    if len(shape_keys) != 1:
+        return out
+    shape = shape_keys[0]
+    if shape == "cliManifestVersion":
+        for tool in _manifest_tools(manifest):
+            name = str(tool.get("name") or "")
+            command = tool.get("command")
+            if (name not in allowed
+                    or not (isinstance(command, str) and command.strip())
+                    or _validated_auth_scope(tool) is None):
+                continue
+            tool_id = _sanitize_tool_id("cli", name)
+            if tool_id is None:
+                continue
+            input_schema = tool.get("argsSchema")
+            record = _base_record(
+                tool_id=tool_id, name=name,
+                source={"kind": "cli", "uri": command.strip(),
+                        "revision": CLI_MANIFEST_VERSION},
+                description=str(tool.get("description") or ""),
+                input_schema=input_schema if isinstance(input_schema, dict)
+                else {"type": "object"},
+                capabilities=["import:cli"], timeout_ms=DEFAULT_TIMEOUT_MS,
+                side_effects=[], read_only=bool(tool.get("readOnly")),
+                requires_approval=True, risk_class="medium",
+                implementation_ref=f"import_cli:{name}",
+                network_allowlist=[], approval_scopes=[])
+            record["auth_scope"] = _validated_auth_scope(tool) or []
+            out[tool_id] = record
+        return out
+    if shape == "sdkManifestVersion":
+        for tool in _manifest_tools(manifest):
+            name = str(tool.get("name") or "")
+            kind = str(tool.get("kind") or "sdk")
+            binding = tool.get("binding")
+            if (name not in allowed or kind not in ("sdk", "connector")
+                    or not (isinstance(binding, str)
+                            and _SDK_BINDING_RE.match(binding))
+                    or _validated_auth_scope(tool) is None):
+                continue
+            tool_id = _sanitize_tool_id(kind, name)
+            if tool_id is None:
+                continue
+            input_schema = tool.get("inputSchema")
+            record = _base_record(
+                tool_id=tool_id, name=name,
+                source={"kind": kind, "uri": binding,
+                        "revision": SDK_MANIFEST_VERSION},
+                description=str(tool.get("description") or ""),
+                input_schema=input_schema if isinstance(input_schema, dict)
+                else {"type": "object"},
+                capabilities=[f"import:{kind}"],
+                timeout_ms=DEFAULT_TIMEOUT_MS, side_effects=[],
+                read_only=False, requires_approval=True, risk_class="medium",
+                implementation_ref=f"import_{kind}:{name}",
+                network_allowlist=[], approval_scopes=[])
+            record["auth_scope"] = _validated_auth_scope(tool) or []
+            out[tool_id] = record
+        return out
+    # the MCP shape (batch 1/2 derivation, unchanged)
     network_allowlist: List[str] = []
     if server_uri is not None:
         try:

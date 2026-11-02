@@ -61,6 +61,23 @@ LIFECYCLE_MOVES: Dict[str, Tuple[str, ...]] = {
 INITIAL_STATES = ("discovered", "registered")
 MUTABLE_FIELDS = ("health_status", "test_status", "lifecycle_state", "last_verified_at")
 
+# Governed test-status moves (R-173 batch 3, D-120): the certification flow
+# walks a tool not_tested -> contract_pass -> integration_pass -> certified;
+# failure and blockage are always reachable from any live state, and a
+# regression out of ``certified`` is a failure (never a quiet downgrade).
+# ``certified`` additionally demands ALL THREE proof kinds the 10K tools
+# spec requires (smoke/contract/security) — asserted at the governed entry
+# point (``record_test_outcome``), never guessed.
+TEST_STATUS_MOVES: Dict[str, Tuple[str, ...]] = {
+    "not_tested": ("contract_pass", "failed", "blocked"),
+    "contract_pass": ("integration_pass", "failed", "blocked"),
+    "integration_pass": ("certified", "failed", "blocked"),
+    "failed": ("not_tested", "blocked", "contract_pass"),
+    "blocked": ("not_tested", "failed"),
+    "certified": ("failed",),
+}
+CERTIFIED_PROOF_MARKERS: Tuple[str, ...] = ("smoke", "contract", "security")
+
 
 class ToolSource(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -360,6 +377,58 @@ class ToolRegistry:
             self._log("update", actor, tool_id, version, updated.digest(),
                       prev_digest=rec.digest(), changed=sorted(changes))
             return updated
+
+    def record_test_outcome(self, tool_id: str, version: str, *, actor: str,
+                            to: str, evidence: str) -> ToolRecord:
+        """A governed test-status transition — the certification flow's front
+        door (R-173 batch 3, D-120; the 10K spec's «كل certified لديها
+        smoke/contract/security test»).
+
+        Rules (fail-closed, never guessed):
+        - ``to`` must be a known test status, and the transition must follow
+          ``TEST_STATUS_MOVES`` (re-recording the CURRENT status is allowed —
+          a repeated run of the same outcome is a fact, not a jump);
+        - evidence is REQUIRED (non-empty text: what ran, where the proof
+          lives). The evidence text itself is deliberately NOT stored in the
+          registry (operator material — proofs live in the operator's audit
+          logs); the registry records the transition, its actor, and that a
+          proof was asserted at this gate;
+        - ``to='certified'`` additionally requires the evidence to carry all
+          three proof kinds: smoke, contract and security (case-insensitive
+          markers). A missing kind is refused with the kind named.
+
+        The audit trail gets a ``test_outcome_refused`` entry for every
+        refusal (with the reason), and the accepted transition flows through
+        ``update_status`` (audited actor + changed fields)."""
+        if not actor:
+            raise InvalidRecord("actor is required (audit)")
+        if to not in TEST_STATUS_MOVES:
+            raise InvalidRecord(f"unknown test_status {to!r} "
+                                f"(known: {', '.join(TEST_STATUS_MOVES)})")
+        with self._lock:
+            rec = self.get(tool_id, version)
+            if to != rec.test_status and to not in TEST_STATUS_MOVES[rec.test_status]:
+                self._log("test_outcome_refused", actor, tool_id, version,
+                          rec.digest(), reason="test_status_graph",
+                          frm=rec.test_status, to=to)
+                raise TransitionRefused(f"{rec.test_status} -> {to}")
+            if not (isinstance(evidence, str) and evidence.strip()):
+                self._log("test_outcome_refused", actor, tool_id, version,
+                          rec.digest(), reason="evidence_required")
+                raise InvalidRecord("evidence is required (what was run, "
+                                    "where the proof lives)")
+            if to == "certified" and to != rec.test_status:
+                low = evidence.lower()
+                missing = [m for m in CERTIFIED_PROOF_MARKERS if m not in low]
+                if missing:
+                    self._log("test_outcome_refused", actor, tool_id, version,
+                              rec.digest(), reason="certified_proof_missing",
+                              missing=missing)
+                    raise TransitionRefused(
+                        "certified requires all three proof kinds (smoke, "
+                        f"contract, security); missing: {', '.join(missing)}")
+            return self.update_status(tool_id, version, actor=actor,
+                                      test_status=to)
 
     # -- delete ------------------------------------------------------------
     def remove(self, tool_id: str, version: str, *, actor: str) -> None:
