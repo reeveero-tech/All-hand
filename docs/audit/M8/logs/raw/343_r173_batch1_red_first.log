@@ -1,0 +1,11 @@
+# R-173 دفعة 1 (D-118) — إثبات أحمر أولًا: الوحدة غير موجودة على main
+# الطريقة: ملف اختبارات الدفعة (15 اختبارًا) على main (71200239) مع إبعاد
+# agent_civilization/core/tool_import.py مؤقتًا (mv) — النتيجة: فشل الجمع
+# نفسه (ImportError: cannot import name 'tool_import') — القدرة غير موجودة
+# إطلاقًا على main. هذا هو الأحمر الصادق لدفعة تُنشئ وحدة جديدة.
+=========================== short test summary info ============================
+ERROR tests/test_r173_batch1_tool_import.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 0.15s ===============================
+ImportError while importing test module '/home/user/workspace/all-hand/tests/test_r173_batch1_tool_import.py'.
+E   ImportError: cannot import name 'tool_import' from 'agent_civilization.core' (/home/user/workspace/all-hand/agent_civilization/core/__init__.py)
