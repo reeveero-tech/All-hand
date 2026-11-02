@@ -1,0 +1,100 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 17 items
+
+tests/test_r174_batch3_agent_binding.py FFFFFFFFF.FFFFFFF                [100%]
+
+=================================== FAILURES ===================================
+_________ test_contracted_work_selects_and_runs_the_chosen_tool[real] __________
+tests/test_r174_batch3_agent_binding.py:147: in test_contracted_work_selects_and_runs_the_chosen_tool
+    assert out["result"]["tool"] == healthy.tool_id
+           ^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tool'
+------------------------------ Captured log call -------------------------------
+WARNING  agos.infrastructure.redis:redis_queue.py:30 Redis not available. Using in-memory fallback.
+______ test_contracted_work_selects_and_runs_the_chosen_tool[specialists] ______
+tests/test_r174_batch3_agent_binding.py:147: in test_contracted_work_selects_and_runs_the_chosen_tool
+    assert out["result"]["tool"] == healthy.tool_id
+           ^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tool'
+____________ test_contracted_work_carries_the_selection_audit[real] ____________
+tests/test_r174_batch3_agent_binding.py:159: in test_contracted_work_carries_the_selection_audit
+    excluded = out["result"]["selection_excluded"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'selection_excluded'
+________ test_contracted_work_carries_the_selection_audit[specialists] _________
+tests/test_r174_batch3_agent_binding.py:159: in test_contracted_work_carries_the_selection_audit
+    excluded = out["result"]["selection_excluded"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'selection_excluded'
+______ test_contracted_task_never_falls_back_to_the_legacy_handler[real] _______
+tests/test_r174_batch3_agent_binding.py:176: in test_contracted_task_never_falls_back_to_the_legacy_handler
+    assert out["ok"] is False
+E   assert True is False
+___ test_contracted_task_never_falls_back_to_the_legacy_handler[specialists] ___
+tests/test_r174_batch3_agent_binding.py:176: in test_contracted_task_never_falls_back_to_the_legacy_handler
+    assert out["ok"] is False
+E   assert True is False
+________ test_malformed_contract_fails_loudly_not_silently_legacy[real] ________
+tests/test_r174_batch3_agent_binding.py:191: in test_malformed_contract_fails_loudly_not_silently_legacy
+    assert out["ok"] is False
+E   assert True is False
+____ test_malformed_contract_fails_loudly_not_silently_legacy[specialists] _____
+tests/test_r174_batch3_agent_binding.py:191: in test_malformed_contract_fails_loudly_not_silently_legacy
+    assert out["ok"] is False
+E   assert True is False
+__________________ test_fallback_runs_through_the_agent_path ___________________
+tests/test_r174_batch3_agent_binding.py:205: in test_fallback_runs_through_the_agent_path
+    assert out["result"]["tool"] == ok_one.tool_id
+           ^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tool'
+_______ test_contracted_outcome_keeps_the_canonical_agent_envelope[real] _______
+tests/test_r174_batch3_agent_binding.py:234: in test_contracted_outcome_keeps_the_canonical_agent_envelope
+    assert "selection_excluded" in out["result"]
+E   AssertionError: assert 'selection_excluded' in {'ok': True, 'answer': 'text: 2 words, 1 sentence(s), language=en, top terms: binding, test (no numeric samples to ana...ntences': 1, ...}, 'verification': {'ok': True, 'reasons': [], 'checks_run': ['no-requirements'], 'unverified': False}}
+___ test_contracted_outcome_keeps_the_canonical_agent_envelope[specialists] ____
+tests/test_r174_batch3_agent_binding.py:234: in test_contracted_outcome_keeps_the_canonical_agent_envelope
+    assert "selection_excluded" in out["result"]
+E   AssertionError: assert 'selection_excluded' in {'ok': True, 'answer': 'text: 2 words, 1 sentence(s), language=en, top terms: binding, test (no numeric samples to ana...ntences': 1, ...}, 'verification': {'ok': True, 'reasons': [], 'checks_run': ['no-requirements'], 'unverified': False}}
+_________ test_empty_registry_contracted_task_fails_with_reason[real] __________
+tests/test_r174_batch3_agent_binding.py:243: in test_empty_registry_contracted_task_fails_with_reason
+    assert out["ok"] is False
+E   assert True is False
+______ test_empty_registry_contracted_task_fails_with_reason[specialists] ______
+tests/test_r174_batch3_agent_binding.py:243: in test_empty_registry_contracted_task_fails_with_reason
+    assert out["ok"] is False
+E   assert True is False
+____________ test_derive_task_spec_rejects_unknown_contract_fields _____________
+tests/test_r174_batch3_agent_binding.py:249: in test_derive_task_spec_rejects_unknown_contract_fields
+    from agent_civilization.core.task_contract import derive_task_spec
+E   ModuleNotFoundError: No module named 'agent_civilization.core.task_contract'
+__________________ test_derive_task_spec_no_contract_is_none ___________________
+tests/test_r174_batch3_agent_binding.py:255: in test_derive_task_spec_no_contract_is_none
+    from agent_civilization.core.task_contract import derive_task_spec
+E   ModuleNotFoundError: No module named 'agent_civilization.core.task_contract'
+_________________ test_derive_task_spec_reads_the_declaration __________________
+tests/test_r174_batch3_agent_binding.py:261: in test_derive_task_spec_reads_the_declaration
+    from agent_civilization.core.task_contract import derive_task_spec
+E   ModuleNotFoundError: No module named 'agent_civilization.core.task_contract'
+=========================== short test summary info ============================
+FAILED tests/test_r174_batch3_agent_binding.py::test_contracted_work_selects_and_runs_the_chosen_tool[real]
+FAILED tests/test_r174_batch3_agent_binding.py::test_contracted_work_selects_and_runs_the_chosen_tool[specialists]
+FAILED tests/test_r174_batch3_agent_binding.py::test_contracted_work_carries_the_selection_audit[real]
+FAILED tests/test_r174_batch3_agent_binding.py::test_contracted_work_carries_the_selection_audit[specialists]
+FAILED tests/test_r174_batch3_agent_binding.py::test_contracted_task_never_falls_back_to_the_legacy_handler[real]
+FAILED tests/test_r174_batch3_agent_binding.py::test_contracted_task_never_falls_back_to_the_legacy_handler[specialists]
+FAILED tests/test_r174_batch3_agent_binding.py::test_malformed_contract_fails_loudly_not_silently_legacy[real]
+FAILED tests/test_r174_batch3_agent_binding.py::test_malformed_contract_fails_loudly_not_silently_legacy[specialists]
+FAILED tests/test_r174_batch3_agent_binding.py::test_fallback_runs_through_the_agent_path
+FAILED tests/test_r174_batch3_agent_binding.py::test_contracted_outcome_keeps_the_canonical_agent_envelope[real]
+FAILED tests/test_r174_batch3_agent_binding.py::test_contracted_outcome_keeps_the_canonical_agent_envelope[specialists]
+FAILED tests/test_r174_batch3_agent_binding.py::test_empty_registry_contracted_task_fails_with_reason[real]
+FAILED tests/test_r174_batch3_agent_binding.py::test_empty_registry_contracted_task_fails_with_reason[specialists]
+FAILED tests/test_r174_batch3_agent_binding.py::test_derive_task_spec_rejects_unknown_contract_fields
+FAILED tests/test_r174_batch3_agent_binding.py::test_derive_task_spec_no_contract_is_none
+FAILED tests/test_r174_batch3_agent_binding.py::test_derive_task_spec_reads_the_declaration
+========================= 16 failed, 1 passed in 0.52s =========================

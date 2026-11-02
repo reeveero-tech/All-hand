@@ -75,6 +75,14 @@ class SpecialistBackedAgent:
             _verification = requirements_for(self.specialization, work)
 
             async def call():
+                # R-174 (batch 3, D-123): same binding as the real runtime —
+                # a contracted work item selects its tools; the rest is the
+                # legacy specialist path, unchanged.
+                from agent_civilization.core.task_contract import (
+                    derive_task_spec, run_with_selection)
+                _spec = derive_task_spec(work)
+                if _spec is not None:
+                    return await run_with_selection(_spec, work)
                 out = await self._run_inner(work)
                 r = out.get("result")
                 if not isinstance(r, dict):

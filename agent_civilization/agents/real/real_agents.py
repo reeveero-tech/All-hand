@@ -105,6 +105,15 @@ class RealSpecialistAgent:
             _verification = requirements_for(self.specialization, work)
 
             async def call():
+                # R-174 (batch 3, D-123): a work item that carries a tool
+                # contract runs through the selection layer (TaskSpec derived
+                # from the contract — the model never decides permissions);
+                # without a contract the legacy dispatch path is unchanged.
+                from agent_civilization.core.task_contract import (
+                    derive_task_spec, run_with_selection)
+                _spec = derive_task_spec(work)
+                if _spec is not None:
+                    return await run_with_selection(_spec, work)
                 r = await _dispatch(self.specialization, work)
                 return r if r is not None else {"ok": False, "error": f"no handler for {self.specialization}"}
 
