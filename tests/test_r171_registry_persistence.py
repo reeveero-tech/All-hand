@@ -34,7 +34,7 @@ from pathlib import Path
 
 import pytest
 
-from agent_civilization.core import tool_runtime
+from agent_civilization.core import internal_tools, tool_runtime
 from agent_civilization.core.agents import real_dispatcher
 from agent_civilization.core.tool_registry import ToolNotFound, TransitionRefused, VersionConflict
 from agent_civilization.core.tool_registry_store import PersistentToolRegistry, RegistryStoreError
@@ -89,9 +89,12 @@ def test_reseeding_is_idempotent(db):
     tool_runtime.runtime_registry()
     tool_runtime.reset_runtime_registry()
     reg = tool_runtime.runtime_registry()
-    assert len(reg) == len(real_dispatcher._HANDLERS)
+    # R-172 batch 2 (log 337): the store holds one record per handler PLUS
+    # data_processor's legacy 1.0.0 row (the correction ships as 2.0.0).
+    expected = len(real_dispatcher._HANDLERS) + len(internal_tools._LEGACY_ROWS)
+    assert len(reg) == expected
     registers = [e for e in reg.audit() if e["op"] == "register"]
-    assert len(registers) == len(real_dispatcher._HANDLERS)    # not 2x
+    assert len(registers) == expected    # not 2x
 
 
 def test_tombstone_survives_a_restart(db):
@@ -175,8 +178,14 @@ def test_concurrent_seeding_and_updates_from_many_processes(db):
     seqs = [e["seq"] for e in audit]
     assert seqs == list(range(1, len(audit) + 1))              # unique, gap-free
     registers = [e["tool_id"] for e in audit if e["op"] == "register"]
-    assert sorted(registers) == sorted(set(registers))         # each seed once
-    assert len(registers) == len(real_dispatcher._HANDLERS)
+    # R-172 batch 2: data_processor registers TWICE by design (legacy 1.0.0 +
+    # corrected 2.0.0 — log 337), so uniqueness is per (tool_id, version).
+    pairs = [(e["tool_id"], e.get("version")) for e in audit
+             if e["op"] == "register"]
+    assert sorted(pairs) == sorted(set(pairs))               # each seed once
+    # R-172 batch 2: + data_processor's legacy 1.0.0 row (see reseeding test)
+    assert len(registers) == (len(real_dispatcher._HANDLERS)
+                              + len(internal_tools._LEGACY_ROWS))
 
 
 # -- fail-closed -----------------------------------------------------------------

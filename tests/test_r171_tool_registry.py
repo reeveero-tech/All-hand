@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import importlib
+import inspect
 import json
 import pathlib
 import threading
@@ -272,6 +274,48 @@ def test_audit_trail_is_ordered_and_digests_are_reproducible():
 
 # -- seeded internal tools vs the frozen dispatcher ---------------------------
 
+def _live_import_reach(module, func_name: str, seen: set) -> set:
+    """R-172 batch 2: the reach of a function imported INSIDE a handler body
+    (a dynamic import the old cross-check could not see — the exact hole that
+    let data_processor's model call drift from its record, log 337). Follows
+    the imported function's own names, its same-module closures, and ITS
+    dynamic imports, so a handler cannot hide a network/model call one import
+    away from the frozen dispatcher."""
+    key = (getattr(module, "__name__", "?"), func_name)
+    if key in seen:
+        return set()
+    seen.add(key)
+    try:
+        src = inspect.getsource(module)
+    except (OSError, TypeError):
+        return set()
+    tree = ast.parse(src)
+    funcs = {n.name: n for n in tree.body
+             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    node = funcs.get(func_name)
+    if node is None:
+        return set()
+    names = set()
+    imports = []
+    for x in ast.walk(node):
+        if isinstance(x, ast.Name):
+            names.add(x.id)
+        elif isinstance(x, ast.Attribute):
+            names.add(x.attr)
+        elif isinstance(x, ast.ImportFrom) and isinstance(x.module, str):
+            imports.append(x)
+    for imp in imports:
+        try:
+            mod = importlib.import_module(imp.module)
+        except Exception:  # noqa: BLE001 — an unresolvable import adds nothing
+            continue
+        for alias in imp.names:
+            names |= _live_import_reach(mod, alias.name, seen)
+    for n in sorted(names & set(funcs)):
+        names |= _live_import_reach(module, n, seen)
+    return names
+
+
 def _dispatcher_reach():
     src = pathlib.Path(real_dispatcher.__file__).read_text(encoding="utf-8")
     tree = ast.parse(src)
@@ -280,11 +324,21 @@ def _dispatcher_reach():
     refs = {}
     for name, node in funcs.items():
         names = set()
+        live_imports = []
         for x in ast.walk(node):
             if isinstance(x, ast.Name):
                 names.add(x.id)
             elif isinstance(x, ast.Attribute):
                 names.add(x.attr)
+            elif isinstance(x, ast.ImportFrom) and isinstance(x.module, str):
+                live_imports.append(x)
+        for imp in live_imports:
+            try:
+                mod = importlib.import_module(imp.module)
+            except Exception:  # noqa: BLE001 — unresolvable imports add nothing
+                continue
+            for alias in imp.names:
+                names |= _live_import_reach(mod, alias.name, set())
         refs[name] = names
 
     def closure(name, seen):
@@ -312,7 +366,15 @@ def test_seed_covers_exactly_the_dispatcher_handlers():
 
 def test_seed_declarations_match_static_reach_of_the_frozen_code():
     reach = _dispatcher_reach()
+    # only the LATEST version of each tool is a live declaration — the
+    # legacy rows preserved by R-172 (log 337) are history, kept byte-exact
+    # on purpose, and are not re-asserted here.
+    latest: dict = {}
     for r in internal_tools.internal_tool_records():
+        cur = latest.get(r.name)
+        if cur is None or tr._vkey(r.version) > tr._vkey(cur.version):
+            latest[r.name] = r
+    for r in latest.values():
         names = reach[r.name]
         net = "safe_urlopen" in names
         model = bool({"_llm_text", "get_llm"} & names)
@@ -329,9 +391,14 @@ def test_seed_declarations_match_static_reach_of_the_frozen_code():
 
 def test_seeded_entries_claim_nothing_about_quality():
     reg = internal_tools.seeded_registry()
-    assert len(reg) == len(real_dispatcher._HANDLERS) == 20
+    # R-172 batch 2 (log 337): the store holds one record per handler PLUS
+    # data_processor's legacy 1.0.0 row (the correction ships as 2.0.0);
+    # latest_only search still maps 1:1 onto the handlers.
+    assert len(reg) == (len(real_dispatcher._HANDLERS)
+                        + len(internal_tools._LEGACY_ROWS)) == 21
+    assert len(reg.search(limit=100)) == len(real_dispatcher._HANDLERS) == 20
     for r in reg.search(include_disabled=True, limit=100):
         assert (r.lifecycle_state, r.test_status, r.health_status) == \
             ("registered", "not_tested", "unknown"), r.tool_id
-    assert [e["op"] for e in reg.audit()] == ["register"] * 20
+    assert [e["op"] for e in reg.audit()] == ["register"] * 21
     assert [r.name for r in reg.search(capability="code.execute")] == ["test_runner"]

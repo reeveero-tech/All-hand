@@ -53,8 +53,10 @@ _TABLE: Dict[str, tuple] = {
                   "Validates data/code structure locally."),
     "analyst": (["analysis.numeric", "analysis.text"], "low", [], [], 30_000,
                 "Deterministic numeric/text analysis of the given input."),
-    "data_processor": (["data.transform"], "low", [], [], 30_000,
-                       "Transforms/aggregates the given data locally."),
+    "data_processor": (["data.transform"], "medium", [MODEL], [], 30_000,
+                       "Transforms/aggregates the given data locally; text-only "
+                       "input is summarized by the model provider (R-172: the "
+                       "drift in log 337 fixed — the call is now DECLARED)."),
     "db_manager": (["db.schema_design", "db.migration_rehearsal"], "medium",
                    [MODEL, "in_memory_sqlite"], [], 60_000,
                    "Designs a schema (model provider or heuristic) and rehearses it on in-memory SQLite."),
@@ -85,14 +87,65 @@ _TABLE: Dict[str, tuple] = {
 }
 
 
+# R-172 (log 337): data_processor's text-only path reaches the model provider
+# through a dynamic import (``executors.data_worker.process_text``) that the
+# static cross-check could not see — the record claimed a local-only
+# transform. Fixed HONESTLY: the corrected declaration ships as a NEW VERSION
+# (2.0.0 — versions are immutable history), and the legacy 1.0.0 row below is
+# byte-identical to what hosts already store, so seeding it raises no drift
+# warning; hosts are upgraded to 2.0.0 by the seed's own missing-version
+# rule, with the full audit trail.
+_LEGACY_ROWS: Dict[str, Dict[str, Any]] = {
+    "data_processor": {
+        "version": "1.0.0", "risk_class": "low", "side_effects": [],
+        "network_allowlist": [], "description":
+            "Transforms/aggregates the given data locally.",
+    }
+}
+_SEED_VERSIONS: Dict[str, str] = {"data_processor": "2.0.0"}
+
+
 def internal_tool_records() -> List[ToolRecord]:
     out = []
+    # the legacy rows ship FIRST: the registry refuses a version that is not
+    # newer than the stored latest, so the corrected 2.0.0 must come after
+    # its own 1.0.0. On an existing host the legacy row matches what is
+    # stored (no drift); on a fresh host both are registered, identical to
+    # an upgraded host, and ``get`` resolves the correction (2.0.0).
+    for spec in sorted(_LEGACY_ROWS):
+        caps, risk, effects, allow, timeout, desc = _TABLE[spec]
+        data = {
+            "tool_id": f"agos.internal.{spec}",
+            "name": spec,
+            "version": SEED_VERSION,
+            "source": {"kind": "internal", "uri": DISPATCHER},
+            "description": desc,
+            "capabilities": caps,
+            "input_schema": WORK_INPUT_SCHEMA,
+            "output_schema": RESULT_OUTPUT_SCHEMA,
+            "auth_scope": [],
+            "tenant_scope": "request_tenant",
+            "risk_class": risk,
+            "side_effects": effects,
+            "read_only": True,
+            "idempotent": True,
+            "requires_approval": False,
+            "timeout_ms": timeout,
+            "network_allowlist": allow,
+            "health_status": "unknown",
+            "test_status": "not_tested",
+            "implementation_ref": f"{DISPATCHER}:_{spec}",
+            "lifecycle_state": "registered",
+            "telemetry_name": f"tool.internal.{spec}",
+        }
+        data.update(_LEGACY_ROWS[spec])
+        out.append(ToolRecord.model_validate(data))
     for spec in sorted(_TABLE):
         caps, risk, effects, allow, timeout, desc = _TABLE[spec]
         out.append(ToolRecord.model_validate({
             "tool_id": f"agos.internal.{spec}",
             "name": spec,
-            "version": SEED_VERSION,
+            "version": _SEED_VERSIONS.get(spec, SEED_VERSION),
             "source": {"kind": "internal", "uri": DISPATCHER},
             "description": desc,
             "capabilities": caps,
