@@ -51,3 +51,6 @@
 ## التالي
 - R-175 (اعتماد 10,000 أداة): منظومة الاعتماد المرحلي بفصل الحالات (discovered/registered/validated/tested/certified/disabled/failed) وعدادات منفصلة ومسار 100 ← 1000 ← 10000 — الباب مفتوح عبر `record_test_outcome` و`seed` المجمّع.
 - الربط بمسار الوكلاء (المتخصصون يشتقون TaskSpec) + تغذية الجودة من telemetry — دفعة لاحقة من R-174.
+
+## أدلة الدمج (R-154) — استُكملت بعد الدمج
+- pr=#312 | tested_sha=6ecb8a99662c40750338692c54b4c50c88e6226c (رأس الفرع المختبر — CI على الـPR أخضر) | merge_sha=2b95dbf79a4c05ee71c111c345c213dcb59af4ff (2026-11-02T18:40:56Z) | ci_run=41502882665 (AGOS Kernel CI/CD على main على commit الدمج نفسه) = **success** (اكتمل 19:09:47Z) | Governance Gate على main (41502882546) = success | tests (على رأس الفرع، محليًا بتوثيق CI على الـPR): 3950 passed / 8 skipped / 17 deselected / 9 xfailed.

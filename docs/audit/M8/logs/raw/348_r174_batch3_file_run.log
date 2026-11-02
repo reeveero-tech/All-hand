@@ -1,0 +1,28 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0 -- /tmp/ahvenv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: cov-7.1.0, anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 17 items
+
+tests/test_r174_batch3_agent_binding.py::test_contracted_work_selects_and_runs_the_chosen_tool[real] PASSED [  5%]
+tests/test_r174_batch3_agent_binding.py::test_contracted_work_selects_and_runs_the_chosen_tool[specialists] PASSED [ 11%]
+tests/test_r174_batch3_agent_binding.py::test_contracted_work_carries_the_selection_audit[real] PASSED [ 17%]
+tests/test_r174_batch3_agent_binding.py::test_contracted_work_carries_the_selection_audit[specialists] PASSED [ 23%]
+tests/test_r174_batch3_agent_binding.py::test_contracted_task_never_falls_back_to_the_legacy_handler[real] PASSED [ 29%]
+tests/test_r174_batch3_agent_binding.py::test_contracted_task_never_falls_back_to_the_legacy_handler[specialists] PASSED [ 35%]
+tests/test_r174_batch3_agent_binding.py::test_malformed_contract_fails_loudly_not_silently_legacy[real] PASSED [ 41%]
+tests/test_r174_batch3_agent_binding.py::test_malformed_contract_fails_loudly_not_silently_legacy[specialists] PASSED [ 47%]
+tests/test_r174_batch3_agent_binding.py::test_fallback_runs_through_the_agent_path PASSED [ 52%]
+tests/test_r174_batch3_agent_binding.py::test_no_contract_means_legacy_path_unchanged PASSED [ 58%]
+tests/test_r174_batch3_agent_binding.py::test_contracted_outcome_keeps_the_canonical_agent_envelope[real] PASSED [ 64%]
+tests/test_r174_batch3_agent_binding.py::test_contracted_outcome_keeps_the_canonical_agent_envelope[specialists] PASSED [ 70%]
+tests/test_r174_batch3_agent_binding.py::test_empty_registry_contracted_task_fails_with_reason[real] PASSED [ 76%]
+tests/test_r174_batch3_agent_binding.py::test_empty_registry_contracted_task_fails_with_reason[specialists] PASSED [ 82%]
+tests/test_r174_batch3_agent_binding.py::test_derive_task_spec_rejects_unknown_contract_fields PASSED [ 88%]
+tests/test_r174_batch3_agent_binding.py::test_derive_task_spec_no_contract_is_none PASSED [ 94%]
+tests/test_r174_batch3_agent_binding.py::test_derive_task_spec_reads_the_declaration PASSED [100%]
+
+============================== 17 passed in 0.44s ==============================
