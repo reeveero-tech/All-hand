@@ -12,7 +12,7 @@ The score is an OPERATIONAL RELIABILITY ratio, honestly defined:
 * ``executed`` counts every run that passed the gate (incremented before the
   handler runs, so it includes runs that later failed);
 * the failures that ARE the tool's own operational quality are ``timed_out``,
-  ``output_capped`` and ``isolated_crashed`` — the tool exceeded its own
+  ``output_capped``, ``output_malformed`` and ``isolated_crashed`` — the tool exceeded its own
   registered budget, blew its output cap, or crashed its isolated worker;
 * ``refused`` (gate refusals: lifecycle/health/approval/scopes policy) and
   ``net_blocked`` (network policy) are NOT quality failures — they are
@@ -50,6 +50,7 @@ def runtime_quality() -> Callable[[ToolRecord], float]:
     executed = snapshot.get("executed", {})
     timed_out = snapshot.get("timed_out", {})
     output_capped = snapshot.get("output_capped", {})
+    output_malformed = snapshot.get("output_malformed", {})
     isolated_crashed = snapshot.get("isolated_crashed", {})
 
     def quality(rec: ToolRecord) -> float:
@@ -58,6 +59,7 @@ def runtime_quality() -> Callable[[ToolRecord], float]:
         if ran <= 0:
             return 0.0                     # no run signal: neutral, never negative
         failures = (float(timed_out.get(key, 0)) + float(output_capped.get(key, 0))
+                    + float(output_malformed.get(key, 0))
                     + float(isolated_crashed.get(key, 0)))
         return max(0.0, (ran - failures) / ran)
 

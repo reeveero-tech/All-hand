@@ -114,7 +114,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from agent_civilization.core.agents import real_dispatcher
-from agent_civilization.core.tool_registry import ToolNotFound, ToolRegistry, resolve_implementation
+from agent_civilization.core.tool_registry import (ToolNotFound, ToolRecord,
+                                                  ToolRegistry,
+                                                  resolve_implementation)
 from agent_civilization.core.tool_registry_store import (
     PersistentToolRegistry,
     RegistryStoreError,
@@ -135,6 +137,7 @@ _refused: Counter = Counter()
 _timed_out: Counter = Counter()
 _net_blocked: Counter = Counter()
 _output_capped: Counter = Counter()
+_output_malformed: Counter = Counter()
 _isolated: Counter = Counter()
 _isolated_crashed: Counter = Counter()
 _unknown_disabled: List[str] = []
@@ -315,6 +318,13 @@ async def _dispatch_imported(tool_id: str, rec: Any,
         return {"ok": False, "error": (
             f"tool {key} exceeded its registered timeout_ms={rec.timeout_ms}")}
     result = _sanitize_result(result)
+    # R-175 batch 3 (D-127): the same mechanical declared-type check on the
+    # imported (provider) path — a provider's response that violates the
+    # record's declared output type is counted, withheld and failed.
+    declared = _declared_type(result, rec)
+    if declared is not None:
+        return _malformed_refusal(key, rec, declared, type(result).__name__,
+                                  rec.tool_id)
     cap = _output_cap(rec)
     if _result_size(result) > cap:
         with _lock:
@@ -465,6 +475,61 @@ def _sanitize_result(result: Any) -> Any:
         except Exception:  # noqa: BLE001 — never break the result contract
             pass
     return result
+
+
+# R-175 batch 3 (D-127): MALFORMED OUTPUT — a mechanical, declared-type
+# conformance check at the gate. It deliberately does NOT interpret the
+# payload (the R-172 batch-3 declared limit stands: content semantics are the
+# tool's own contract); it checks ONLY the top-level type the record
+# DECLARED (output_schema.type) against the type the handler RETURNED. A
+# record that declares no type (or a non-dict schema) declares nothing
+# mechanically checkable — no check, no refusal.
+_OUTPUT_PY_TYPES = {"object": (dict,), "array": (list,), "string": (str,),
+                   "number": (int, float), "integer": (int,),
+                   "boolean": (bool,), "null": (type(None),)}
+
+
+def _declared_type(result: Any, rec: ToolRecord) -> Optional[str]:
+    """The declared output type the result violates, or None if it conforms
+    (or nothing was declared). bool is NOT a number/integer (Python quirk).
+    None is NOT a payload: it is the documented 'no handler' sentinel that
+    the caller layer interprets (real_agents) — the check does not touch it."""
+    if result is None:
+        return None
+    schema = getattr(rec, "output_schema", None)
+    if not isinstance(schema, dict):
+        return None
+    declared = schema.get("type")
+    if not declared:
+        return None
+    declared_list = declared if isinstance(declared, list) else [declared]
+    for kind in declared_list:
+        py = _OUTPUT_PY_TYPES.get(kind)
+        if py is None:                     # unknown schema keyword: no check
+            return None
+        if isinstance(result, py) and not (
+                isinstance(result, bool) and kind in ("number", "integer")):
+            return None                    # conforms to this declared option
+    return str(declared)
+
+
+def _malformed_refusal(key: str, rec: ToolRecord, declared: str,
+                       result_type: str, tool_id: str,
+                       specialization: str = "") -> Dict[str, Any]:
+    with _lock:
+        _output_malformed[key] += 1
+    try:
+        from agent_civilization.core import telemetry
+        telemetry.event("tool", "output_malformed", outcome="fail",
+                        tool=tool_id)
+    except Exception:  # noqa: BLE001 — telemetry never blocks the refusal
+        pass
+    logger.warning("tool result malformed: %s declared output type %s but "
+                   "returned %s (the result is withheld)", key, declared,
+                   result_type)
+    return {"ok": False, "error": (
+        f"tool {key} violated its declared output_schema type {declared} "
+        f"(returned {result_type}) — the result is withheld")}
 
 
 def _isolated_child(handler_ref: str, work: Dict[str, Any],
@@ -664,6 +729,7 @@ def reset_runtime_registry() -> None:
         _timed_out.clear()
         _net_blocked.clear()
         _output_capped.clear()
+        _output_malformed.clear()
         _isolated.clear()
         _isolated_crashed.clear()
         _unknown_disabled.clear()
@@ -890,6 +956,14 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
     # (non-secret diagnostics are preserved; payloads are the tool's own
     # contract — declared limit).
     result = _sanitize_result(result)
+    # R-175 batch 3 (D-127): MALFORMED OUTPUT — a mechanical declared-type
+    # check (the payload's CONTENT is still the tool's own contract; only
+    # the top-level declared type is enforced). A violated declaration is
+    # counted, withheld and failed — never silently passed through.
+    declared = _declared_type(result, rec)
+    if declared is not None:
+        return _malformed_refusal(key, rec, declared, type(result).__name__,
+                                  rec.tool_id)
     # the network block normally surfaces INSIDE the frozen dispatcher (it
     # shapes handler exceptions into error dicts) — count it from the result
     # text; the raw-exception path above is the same decision, kept for
@@ -935,6 +1009,7 @@ def stats() -> Dict[str, Any]:
                 "timed_out": dict(_timed_out),
                 "net_blocked": dict(_net_blocked),
                 "output_capped": dict(_output_capped),
+                "output_malformed": dict(_output_malformed),
                 "isolated": dict(_isolated),
                 "isolated_crashed": dict(_isolated_crashed),
                 "unknown_disabled": list(_unknown_disabled), "seed_drift": list(_seed_drift),
