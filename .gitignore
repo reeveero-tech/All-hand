@@ -18,3 +18,7 @@ src/routeTree.gen.ts
 
 # SEC-06 UI tests: transpiled component temp files (removed by the cleanup test)
 web/tests/.ui-tmp-*/
+
+# R-175 batch 2: local coverage artifacts never travel with the push
+.coverage
+coverage.xml
