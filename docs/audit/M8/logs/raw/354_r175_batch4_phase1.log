@@ -1,0 +1,652 @@
+R-175 المرحلة الأولى — اعتماد 100 أداة (الدفعة الرابعة)
+
+التاريخ: 2026-11-03
+الفرع: m8/r175-phase1-core-tools (عن main da00f370)
+القاعدة: main عند da00f37007ce70ea291c4c6a785d1b7f39b8c95f (دمج PR #318)
+الالتزام: aa041c81b65578aec6adb9ca15af559edeaac8cd
+
+تشغيل حقيقي لدفتر تشغيل المرحلة الأولى (scripts/certify_phase1.py) على الالتزام أعلاه:
+
+- إجمالي الأدوات في السجل: 100 (سقف المرحلة الأولى = 100، D-125)
+- نتائج التشغيل الحقيقي: 100 أداة دخلت الاختبار الحي؛ منها 100 أداة معتمدة، 0 غير معتمدة
+- حالة السجل بعد التشغيل: {"discovered": 0, "registered": 0, "validated": 0, "certified": 100, "deprecated-compatible": 0, "disabled": 0, "failed": 0}
+- الاختبار المتكامل (Integration) ممرّر + عقد الأداة ممرّر لكل أداة → certified عبر record_test_outcome بأدلة smoke/contract/security
+- السقف مُحتَرم: محاولة إضافة الأداة رقم 101 مرفوضة (PhaseCeilingRefused) — قرار المالك حصرًا
+- تقرير JSON الكامل مُصدَّر بالدفعة (هذا مقتطف الأرقام الحية منه)
+
+الأدلة الخام (السجل الكامل للتشغيل الحقيقي، تقرير JSON كما أنتجه الدفتر):
+
+Redis not available. Using in-memory fallback.
+{
+ "phase": 1,
+ "run_at": "2026-11-03T20:42:14.525978+00:00",
+ "actor": "owner:phase1-runbook",
+ "db": "/tmp/phase1-runbook.sqlite3",
+ "tools_total": 100,
+ "smoked": [
+  {
+   "spec": "analyst",
+   "tool_id": "agos.internal.analyst",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "api_integrator",
+   "tool_id": "agos.internal.api_integrator",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "architect",
+   "tool_id": "agos.internal.architect",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "base64_decode",
+   "tool_id": "agos.internal.base64_decode",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "base64_encode",
+   "tool_id": "agos.internal.base64_encode",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "base_convert",
+   "tool_id": "agos.internal.base_convert",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "builder",
+   "tool_id": "agos.internal.builder",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "code_generator",
+   "tool_id": "agos.internal.code_generator",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "communicator",
+   "tool_id": "agos.internal.communicator",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "crc32_text",
+   "tool_id": "agos.internal.crc32_text",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "csv_parse",
+   "tool_id": "agos.internal.csv_parse",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "data_processor",
+   "tool_id": "agos.internal.data_processor",
+   "version": "2.0.0",
+   "certified": true
+  },
+  {
+   "spec": "db_manager",
+   "tool_id": "agos.internal.db_manager",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "designer",
+   "tool_id": "agos.internal.designer",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "educator",
+   "tool_id": "agos.internal.educator",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "gcd_lcm",
+   "tool_id": "agos.internal.gcd_lcm",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "hex_decode",
+   "tool_id": "agos.internal.hex_decode",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "hex_encode",
+   "tool_id": "agos.internal.hex_encode",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "html_escape",
+   "tool_id": "agos.internal.html_escape",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "html_unescape",
+   "tool_id": "agos.internal.html_unescape",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "int_to_roman",
+   "tool_id": "agos.internal.int_to_roman",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "json_format",
+   "tool_id": "agos.internal.json_format",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "json_lines_parse",
+   "tool_id": "agos.internal.json_lines_parse",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "json_merge",
+   "tool_id": "agos.internal.json_merge",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "json_minify",
+   "tool_id": "agos.internal.json_minify",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "json_path_get",
+   "tool_id": "agos.internal.json_path_get",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "json_validate",
+   "tool_id": "agos.internal.json_validate",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "kv_parse",
+   "tool_id": "agos.internal.kv_parse",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_chunk",
+   "tool_id": "agos.internal.list_chunk",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_count_by",
+   "tool_id": "agos.internal.list_count_by",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_flatten",
+   "tool_id": "agos.internal.list_flatten",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_group_by",
+   "tool_id": "agos.internal.list_group_by",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_index_of",
+   "tool_id": "agos.internal.list_index_of",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_minmax",
+   "tool_id": "agos.internal.list_minmax",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_reverse",
+   "tool_id": "agos.internal.list_reverse",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_slice",
+   "tool_id": "agos.internal.list_slice",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_sort",
+   "tool_id": "agos.internal.list_sort",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_sum",
+   "tool_id": "agos.internal.list_sum",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_unique",
+   "tool_id": "agos.internal.list_unique",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "list_zip",
+   "tool_id": "agos.internal.list_zip",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "math_clamp",
+   "tool_id": "agos.internal.math_clamp",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "math_mean",
+   "tool_id": "agos.internal.math_mean",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "math_percentage",
+   "tool_id": "agos.internal.math_percentage",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "math_round",
+   "tool_id": "agos.internal.math_round",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "md5_text",
+   "tool_id": "agos.internal.md5_text",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "modifier",
+   "tool_id": "agos.internal.modifier",
+   "version": "1.1.0",
+   "certified": true
+  },
+  {
+   "spec": "monitor",
+   "tool_id": "agos.internal.monitor",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "network_client",
+   "tool_id": "agos.internal.network_client",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "percentile",
+   "tool_id": "agos.internal.percentile",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "regex_extract",
+   "tool_id": "agos.internal.regex_extract",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "regex_replace",
+   "tool_id": "agos.internal.regex_replace",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "researcher",
+   "tool_id": "agos.internal.researcher",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "reviewer",
+   "tool_id": "agos.internal.reviewer",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "roman_to_int",
+   "tool_id": "agos.internal.roman_to_int",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "self_developer",
+   "tool_id": "agos.internal.self_developer",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "sha256_text",
+   "tool_id": "agos.internal.sha256_text",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "stats_summary",
+   "tool_id": "agos.internal.stats_summary",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "strategist",
+   "tool_id": "agos.internal.strategist",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "surgeon",
+   "tool_id": "agos.internal.surgeon",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "test_runner",
+   "tool_id": "agos.internal.test_runner",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_camel",
+   "tool_id": "agos.internal.text_camel",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_center",
+   "tool_id": "agos.internal.text_center",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_dedent",
+   "tool_id": "agos.internal.text_dedent",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_indent",
+   "tool_id": "agos.internal.text_indent",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_join",
+   "tool_id": "agos.internal.text_join",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_kebab",
+   "tool_id": "agos.internal.text_kebab",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_levenshtein",
+   "tool_id": "agos.internal.text_levenshtein",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_lower",
+   "tool_id": "agos.internal.text_lower",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_pad_left",
+   "tool_id": "agos.internal.text_pad_left",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_pad_right",
+   "tool_id": "agos.internal.text_pad_right",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_replace",
+   "tool_id": "agos.internal.text_replace",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_reverse",
+   "tool_id": "agos.internal.text_reverse",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_similarity",
+   "tool_id": "agos.internal.text_similarity",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_slugify",
+   "tool_id": "agos.internal.text_slugify",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_snake",
+   "tool_id": "agos.internal.text_snake",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_split",
+   "tool_id": "agos.internal.text_split",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_stats",
+   "tool_id": "agos.internal.text_stats",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_strip",
+   "tool_id": "agos.internal.text_strip",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_strip_prefix",
+   "tool_id": "agos.internal.text_strip_prefix",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_strip_suffix",
+   "tool_id": "agos.internal.text_strip_suffix",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_swapcase",
+   "tool_id": "agos.internal.text_swapcase",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_title",
+   "tool_id": "agos.internal.text_title",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_truncate",
+   "tool_id": "agos.internal.text_truncate",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_upper",
+   "tool_id": "agos.internal.text_upper",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "text_wrap",
+   "tool_id": "agos.internal.text_wrap",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "tsv_parse",
+   "tool_id": "agos.internal.tsv_parse",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "url_decode",
+   "tool_id": "agos.internal.url_decode",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "url_encode",
+   "tool_id": "agos.internal.url_encode",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "uuid4_generate",
+   "tool_id": "agos.internal.uuid4_generate",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validate_email",
+   "tool_id": "agos.internal.validate_email",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validate_ipv4",
+   "tool_id": "agos.internal.validate_ipv4",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validate_iso_date",
+   "tool_id": "agos.internal.validate_iso_date",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validate_luhn",
+   "tool_id": "agos.internal.validate_luhn",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validate_number",
+   "tool_id": "agos.internal.validate_number",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validate_regex",
+   "tool_id": "agos.internal.validate_regex",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validate_url",
+   "tool_id": "agos.internal.validate_url",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validate_uuid",
+   "tool_id": "agos.internal.validate_uuid",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "validator",
+   "tool_id": "agos.internal.validator",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "xml_escape",
+   "tool_id": "agos.internal.xml_escape",
+   "version": "1.0.0",
+   "certified": true
+  },
+  {
+   "spec": "xml_unescape",
+   "tool_id": "agos.internal.xml_unescape",
+   "version": "1.0.0",
+   "certified": true
+  }
+ ],
+ "not_certified": [],
+ "state_counts": {
+  "lifecycle": {
+   "discovered": 0,
+   "registered": 0,
+   "validated": 0,
+   "certified": 100,
+   "deprecated-compatible": 0,
+   "disabled": 0,
+   "failed": 0
+  },
+  "test_status": {
+   "not_tested": 0,
+   "contract_pass": 0,
+   "integration_pass": 0,
+   "certified": 100,
+   "failed": 0,
+   "blocked": 0
+  },
+  "unique_tools": 100
+ },
+ "certified_count": 100,
+ "ceiling": 100,
+ "declaration": "phase 1: 100/100 certified with real evidence; not_certified=0 (each with its real error); advancing to phase 2 (1,000 connector packs) is an owner decision — never automatic"
+}

@@ -1712,6 +1712,16 @@ _HANDLERS: Dict[str, Callable[[Dict[str, Any]], Any]] = {
 }
 
 
+# R-175 phase 1 (D-128): the core tool library (tools_stdlib — 80 deterministic
+# hermetic tools) extends the executable surface to the spec's phase-1 target
+# of 100 tools. The 20 specialist handlers above are untouched; the merge is
+# a documented FREEZE_DRIFT ledger entry (the freeze guards reproducibility,
+# it does not forbid evolving the product). tools_stdlib never imports this
+# module (the no-bypass rule holds: only the gate calls dispatch).
+from agent_civilization.core import tools_stdlib as _tools_stdlib  # noqa: E402
+_HANDLERS.update(_tools_stdlib.HANDLERS)
+
+
 async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Run the real handler for a specialization, or return None if unmapped."""
     fn = _HANDLERS.get(specialization)

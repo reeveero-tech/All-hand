@@ -674,10 +674,13 @@ async def _run_isolated(key: str, specialization: str, rec: Any,
 
 
 def _seed() -> ToolRegistry:
-    from agent_civilization.core import internal_tools
+    from agent_civilization.core import internal_tools, tools_stdlib
     reg = PersistentToolRegistry(default_db_path())
     try:
         drift = reg.seed(internal_tools.internal_tool_records(), actor="seed:internal_tools")
+        # R-175 phase 1 (D-128): the core tool library (80 deterministic
+        # hermetic tools) seeds alongside the 20 specialists — 100 total.
+        drift += reg.seed(tools_stdlib.stdlib_tool_records(), actor="seed:tools_stdlib")
     except BaseException:
         reg.close()
         raise

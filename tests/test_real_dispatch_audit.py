@@ -10,10 +10,12 @@ from agent_civilization.core.agents import real_dispatcher as rd
 
 
 @pytest.mark.asyncio
-async def test_all_20_specializations_have_real_handlers():
+async def test_all_specializations_have_real_handlers():
+    # R-175 phase 1 (D-128): the executable surface is 100 handlers — the 20
+    # frozen specialists + the 80 stdlib core tools (tools_stdlib).
     cov = rd.coverage()
-    assert cov["count"] == 20
-    assert len(cov["real_specializations"]) == 20
+    assert cov["count"] == 100
+    assert len(cov["real_specializations"]) == 100
 
 
 @pytest.mark.asyncio
