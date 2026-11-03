@@ -1,0 +1,6 @@
+# Raw — R-175 دفعة 2: المجموعة الكاملة على رأس الفرع m8/r175-batch2-throughput-hardening
+# التاريخ: 2026-11-03 (بتوقيت الرياض) | الأمر: /tmp/ahvenv/bin/python -m pytest -q -p no:cacheprovider
+# النتيجة: 4008 passed, 8 skipped, 17 deselected, 9 xfailed in 591.32s (0:09:51)
+# (3994 السابقة على main 2c032416 + 14 الجديدة في ملفي الدفعة)
+
+============================== 4008 passed, 8 skipped, 17 deselected, 9 xfailed in 591.32s (0:09:51) ==============================

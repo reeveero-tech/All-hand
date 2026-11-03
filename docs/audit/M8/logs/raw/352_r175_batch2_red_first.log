@@ -1,0 +1,8 @@
+tests/test_r175_batch2_poisoning_drift.py:24: in <module>
+    from agent_civilization.core.tool_catalog_bench import make_record, make_records
+E   ModuleNotFoundError: No module named 'agent_civilization.core.tool_catalog_bench'
+=========================== short test summary info ============================
+ERROR tests/test_r175_batch2_throughput.py
+ERROR tests/test_r175_batch2_poisoning_drift.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+============================== 2 errors in 0.16s ===============================
