@@ -1,0 +1,13 @@
+________________ test_malformed_output_lowers_the_quality_score ________________
+tests/test_r175_batch3_adversarial.py:186: in test_malformed_output_lowers_the_quality_score
+    assert quality == 0.0            # 2 executed, 2 malformed -> 0.0
+    ^^^^^^^^^^^^^^^^^^^^^
+E   assert 1.0 == 0.0
+=========================== short test summary info ============================
+FAILED tests/test_r175_batch3_adversarial.py::test_malformed_output_is_refused_counted_and_withheld
+FAILED tests/test_r175_batch3_adversarial.py::test_conforming_output_passes_unchanged
+FAILED tests/test_r175_batch3_adversarial.py::test_undeclared_type_is_never_checked
+FAILED tests/test_r175_batch3_adversarial.py::test_boolean_is_not_a_number - ...
+FAILED tests/test_r175_batch3_adversarial.py::test_malformed_output_lowers_the_quality_score
+========================= 5 failed, 6 passed in 0.85s ==========================
+========================= 5 failed, 6 passed in 0.83s ==========================
