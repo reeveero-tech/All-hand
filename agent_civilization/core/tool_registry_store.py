@@ -44,6 +44,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 from agent_civilization.core.tool_registry import (
     MUTABLE_FIELDS,
+    PHASE_CEILINGS,
     RegistryError,
     ToolRecord,
     ToolRegistry,
@@ -182,13 +183,16 @@ class PersistentToolRegistry(ToolRegistry):
             self._conn = None
 
     def _invalidate(self) -> None:
-        """Drop the in-memory copy: the next read reloads from the store."""
+        """Drop the in-memory copy: the next read reloads from the store.
+        The declared phase resets to the fail-closed default (1) — a stale
+        HIGHER phase must never survive a lost read and keep certifying."""
         self._records.clear()
         self._removed.clear()
         self._impl_owner.clear()
         self._versions.clear()
         self._audit = []
         self._rev = None
+        self._phase = 1
 
     # -- load --------------------------------------------------------------
     @staticmethod
@@ -227,6 +231,22 @@ class PersistentToolRegistry(ToolRegistry):
             self._impl_owner[rec.implementation_ref] = tool_id
         self._audit = audit
         self._rev = rev
+        # R-175 batch 5 (D-129): the declared phase is store state — every
+        # reload re-reads it (a phase change bumps the revision, so an
+        # unchanged revision implies an unchanged phase).
+        row = conn.execute("SELECT v FROM tool_meta WHERE k = 'phase'").fetchone()
+        if row is None:
+            self._phase = 1
+        else:
+            try:
+                v = int(row[0])
+                if not 1 <= v <= len(PHASE_CEILINGS):
+                    raise ValueError
+            except (TypeError, ValueError) as e:
+                raise RegistryStoreError(
+                    "tool registry store integrity: declared phase is not a "
+                    "known phase") from e
+            self._phase = v
 
     def _sync(self) -> None:
         if self._in_tx:
@@ -255,6 +275,7 @@ class PersistentToolRegistry(ToolRegistry):
             try:
                 self._load(conn)
                 old_records, old_removed = dict(self._records), dict(self._removed)
+                old_phase = self._phase
                 n_audit = len(self._audit)
                 refused: Optional[RegistryError] = None
                 result: Any = None
@@ -268,9 +289,18 @@ class PersistentToolRegistry(ToolRegistry):
                 finally:
                     self._in_tx = False
                 new_audit = self._audit[n_audit:]
-                if new_audit or old_records != self._records or old_removed != self._removed:
+                if (new_audit or old_records != self._records
+                        or old_removed != self._removed
+                        or self._phase != old_phase):
                     _write_changes(conn, old_records, self._records, old_removed,
                                    self._removed, new_audit)
+                    # R-175 batch 5 (D-129): a declared-phase change is store
+                    # state — written atomically with the rest of the change.
+                    if self._phase != old_phase:
+                        conn.execute(
+                            "INSERT INTO tool_meta (k, v) VALUES ('phase', ?) "
+                            "ON CONFLICT(k) DO UPDATE SET v = excluded.v",
+                            (self._phase,))
                     conn.execute("INSERT INTO tool_meta (k, v) VALUES ('revision', 1) "
                                  "ON CONFLICT(k) DO UPDATE SET v = v + 1")
                     rev = self._revision(conn)
@@ -315,7 +345,22 @@ class PersistentToolRegistry(ToolRegistry):
         self._sync()
         return super().search(**kwargs)
 
+    def phase(self) -> int:
+        self._sync()
+        return super().phase()
+
     # -- mutations: one transaction each -----------------------------------
+    def declare_phase(self, phase: int, *, actor: str) -> int:
+        # validation happens OUTSIDE the transaction: a ValueError raised
+        # inside _tx's body would be mislabeled as a store failure.
+        if (not isinstance(phase, int) or isinstance(phase, bool)
+                or not 1 <= phase <= len(PHASE_CEILINGS)):
+            raise ValueError(f"phase must be 1..{len(PHASE_CEILINGS)}, got {phase!r}")
+        if not actor:
+            from agent_civilization.core.tool_registry import InvalidRecord
+            raise InvalidRecord("actor is required (audit)")
+        return self._tx(lambda: ToolRegistry.declare_phase(self, phase, actor=actor))
+
     def register(self, data: Dict[str, Any], *, actor: str) -> ToolRecord:
         return self._tx(lambda: ToolRegistry.register(self, data, actor=actor))
 
