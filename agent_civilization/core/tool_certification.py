@@ -25,11 +25,13 @@ Scope (what this module IS — the 10K_TOOLS_SPEC_AR.md phased gates):
   (reported honestly), later items are untouched, and nothing escapes as an
   exception. No silent continuation past a failure.
 
-What it is NOT (honest limits): the phase gate is a pre-check in this module
-(the registry itself is not phase-aware — a direct ``update_status`` call
-bypasses it; the governed path is ``certify()``); no throughput benchmark yet
-(the spec's phase-2 «benchmark البحث واختيار الأداة» — a later batch); no
-automatic phase advancement; no execution — certification proves the recorded
+What it is NOT (honest limits): the ceiling pre-check here is now the SECOND
+line of defense — the registry itself is phase-aware (R-175 batch 5, D-129)
+and enforces the declared phase's ceiling on EVERY path to lifecycle
+``certified`` (the D-125 declared bypass — a direct ``update_status`` walk —
+is closed; a reproduction on main certified #101 past the ceiling); no
+throughput benchmark here (see ``tool_catalog_bench``, D-126); no automatic
+phase advancement; no execution — certification proves the recorded
 evidence chain, not that the tool works right now (that is the health
 checker's job).
 """
@@ -38,10 +40,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable, List
 
 from agent_civilization.core.tool_registry import (
-    InvalidRecord, RegistryError, ToolRecord)
-
-#: the spec's phased milestones: 100 -> 1,000 -> 10,000 certified tools.
-PHASE_CEILINGS = (100, 1000, 10_000)
+    InvalidRecord, PHASE_CEILINGS, PhaseCeilingRefused, ToolRecord)
 
 #: the governed test-status walk (D-120's graph; 'certified' demands the
 #: smoke/contract/security markers in the evidence — enforced by the registry).
@@ -51,11 +50,6 @@ _WALK = ("contract_pass", "integration_pass", "certified")
 #: an executable tool; failed/disabled tools need an explicit operator
 #: recovery first — never a silent re-certification).
 _CERTIFIABLE_FROM = ("registered", "validated")
-
-
-class PhaseCeilingRefused(RegistryError):
-    """Certifying one more tool would exceed the declared phase's ceiling."""
-    code = "phase_ceiling"
 
 
 def _latest_versions(registry: Any) -> List[str]:
@@ -104,6 +98,13 @@ def certify(registry: Any, tool_id: str, version: str, *, actor: str,
     A refusal never leaves the tool half-walked."""
     if not isinstance(phase, int) or not (1 <= phase <= len(PHASE_CEILINGS)):
         raise ValueError(f"phase must be 1..{len(PHASE_CEILINGS)}, got {phase!r}")
+    # R-175 batch 5 (D-129): the operator's explicit phase declaration at the
+    # call RAISES the registry's declared phase (audited) — the registry then
+    # enforces the ceiling on EVERY path to ``certified`` (a direct
+    # ``update_status`` can no longer bypass it). certify() never LOWERS the
+    # declared phase; lowering is declare_phase() only (grandfathering).
+    if phase > registry.phase():
+        registry.declare_phase(phase, actor=actor)
     rec = registry.get(tool_id, version)
     # idempotent: an already-certified tool re-certifies as itself and does
     # not consume a new phase slot (batch re-runs are safe).

@@ -1,0 +1,13 @@
+R-175 دفعة 5 — إعادة إنتاج الفجوة الحية على main b71abead (قبل الإصلاح)
+
+الهدف: إثبات أن سقف الاعتماد المرحلي (D-125: المرحلة 1 = 100) قابل للتجاوز عبر الأبواب الأمامية المباشرة دون المرور بـ certify().
+
+الطريقة: سجل أدوات حقيقي (PersistentToolRegistry على قاعدة مؤقتة)؛ اعتماد 100 أداة عبر certify() المشروع، ثم محاولة اعتماد الأداة 101 عبر المسير المحكوم نفسه الذي تستخدمه certify() داخليًا: update_status(validated) + record_test_outcome ×3 (contract_pass/integration_pass/certified) + update_status(lifecycle_state=certified).
+
+النتيجة على main (قبل الإصلاح):
+  certified: 100
+  BYPASS CONFIRMED: tool 101 certified via direct update_status; count = 101
+
+الدلالة: البوابة المرحلية كانت فحصًا مسبقًا داخل certify() فقط (كما أعلن D-125 في حدوده الصادقة) — السجل نفسه لم يكن واعيًا للمرحلة، فأي مسار بديل إلى lifecycle_state=certified يتجاوز السقف دون رفض أو تدوين.
+
+هذا السجل هو الأحمر الخام المرجعي للدفعة؛ الاختبارات الحمراء المعتمدة في tests/test_r175_batch5_ceiling_enforcement.py (فشل الاستيراد على main قبل الإصلاح، والفشل الوظيفي المثبت أعلاه).

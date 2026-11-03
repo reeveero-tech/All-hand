@@ -1,0 +1,57 @@
+R-175 دفعة 5 (D-129) — إعادة إثبات المرحلة الأولى حيًا + الصمود عبر عملية جديدة + إغلاق تجاوز السقف
+
+التاريخ: 2026-11-04 | الفرع: m8/r175-batch5-ceiling-enforcement | القاعدة: main عند b71abead (دمج PR #319)
+
+== التشغيل الحي A: دفتر المرحلة الأولى (scripts/certify_phase1.py) على قاعدة نظيفة ==
+
+الأمر: AGOS_TOOL_REGISTRY_DB=/tmp/phase1_reproof.sqlite3 AGOS_LLM_KEYLESS=1 AGOS_ALLOW_CODE_EXEC=1 python scripts/certify_phase1.py
+
+Redis not available. Using in-memory fallback.
+{
+ "run_at": "2026-11-03T22:34:45.481205+00:00",
+ "actor": "owner:phase1-runbook",
+ "db": "/tmp/phase1_reproof.sqlite3",
+ "tools_total": 100,
+ "smoked": 100,
+ "not_certified": 0,
+ "certified_count": 100,
+ "state_counts": {
+  "lifecycle": {
+   "discovered": 0,
+   "registered": 0,
+   "validated": 0,
+   "certified": 100,
+   "deprecated-compatible": 0,
+   "disabled": 0,
+   "failed": 0
+  },
+  "test_status": {
+   "not_tested": 0,
+   "contract_pass": 0,
+   "integration_pass": 0,
+   "certified": 100,
+   "failed": 0,
+   "blocked": 0
+  },
+  "unique_tools": 100
+ },
+ "ceiling": 100,
+ "declaration": "phase 1: 100/100 certified with real evidence; not_certified=0 (each with its real error); advancing to phase 2 (1,000 connector packs) is an owner decision — never automatic"
+}
+
+ملاحظة تشغيلية: المحاولة الأولى بلا إعداد بيئي أعطت 98/100 (educator بلا مزود LLM؛ test_runner بلا AGOS_ALLOW_CODE_EXEC) — خطأ إعدادي بيئي لا كودي؛ المحاولة الثانية بالإعداد الصحيح أعطت 100/100 وexit=0. لا يوجد مفتاح مدفوع: المزود keyless (نموذج مجاني على OpenRouter) وAGOS_ALLOW_CODE_EXEC علم تشغيل محلي.
+
+== العملية الجديدة B: الصمود والاستمرارية على نفس القاعدة ==
+
+الأمر: عملية python جديدة بAGOS_TOOL_REGISTRY_DB نفسها
+
+[B] certified after restart (new process): 100
+[B] unique_tools: 100
+[B] declared phase: 1
+[B] audit entries: 602
+[B] bypass refused: PhaseCeilingRefused phase 1 ceiling is 100 certified tools (now 100); advancing the phase is an owner decision (declare_phase / certify phase=) — never automatic
+[B] certified still: 100
+[B2] certified via fresh instance: 100
+[B2] phase: 1
+
+الدلالة: (1) سجل الأدوات (SQLite عبر PersistentToolRegistry) يصمد عبر عملية جديدة وإعادة تشغيل حقيقية — الحالة 100/100 المعتمدة والمرحلة المعلنة 1 وسجل التدقيق الكامل (602 مدخلة) كلها مستعادة من المخزن. (2) تجاوز السقف عبر الأبواب الأمامية المباشرة مغلق على المخزن الحي نفسه: الأداة 101 مرفوضة بPhaseCeilingRefused في طبقة السجل. (3) رسالة «Redis not available. Using in-memory fallback.» التي ظهرت في سجل 354 مصدرها agos_kernel/infrastructure/redis_queue.py (طبقة طابور المهام في agos_kernel — تُستورد عبر telemetry/experience وتسجل التحذير عند غياب حزمة redis) ولا علاقة لها بسجل الأدوات إطلاقًا: سجل الأدوات يستخدم SQLite حصرًا (PersistentToolRegistry على AGOS_TOOL_REGISTRY_DB) — لا مكون تخزين مؤقت Redis في مسار سجل الأدوات.

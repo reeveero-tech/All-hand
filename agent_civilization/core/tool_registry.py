@@ -36,6 +36,13 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+
+# R-175 batch 5 (D-129): the spec's phased milestones (100K_TOOLS_SPEC_AR.md)
+# declared in ONE place, at the LOWEST layer — the registry itself. The phase
+# gate is a REGISTRY rule: every path to lifecycle ``certified`` enforces the
+# declared phase's ceiling (a direct ``update_status`` can no longer bypass
+# what ``certify()`` checks — the D-125 declared gap, closed here).
+PHASE_CEILINGS = (100, 1000, 10_000)
 IMPL_REF = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_]*$")
 
 RiskClass = Literal["low", "medium", "high", "critical"]
@@ -202,6 +209,16 @@ class ToolNotFound(RegistryError):
     code = "not_found"
 
 
+class PhaseCeilingRefused(RegistryError):
+    """R-175 batch 5 (D-129): certifying one more tool would exceed the
+    registry's DECLARED phase ceiling. Enforced inside ``update_status`` —
+    the lowest layer where a lifecycle transition to ``certified`` can
+    happen — so EVERY path (``certify()``, the governed walk, a direct
+    front-door call) is subject to it. Advancing the phase is an owner
+    decision (``declare_phase`` / ``certify(..., phase=)``), never automatic."""
+    code = "phase_ceiling"
+
+
 class TransitionRefused(RegistryError):
     code = "transition_refused"
 
@@ -228,7 +245,48 @@ class ToolRegistry:
         self._impl_owner: Dict[str, str] = {}             # implementation_ref -> tool_id
         self._versions: Dict[str, List[str]] = {}         # tool_id -> versions (index)
         self._audit: List[Dict[str, Any]] = []
+        # R-175 batch 5 (D-129): the registry's DECLARED phase (default 1).
+        # The persistent store carries it in tool_meta; a fresh store starts
+        # at phase 1. Advancing it is an owner decision (declare_phase / a
+        # certify(phase=) declaration) — audited, never automatic.
+        self._phase: int = 1
         self._clock = clock
+
+    # -- phase (R-175 batch 5, D-129) ---------------------------------------
+
+    def phase(self) -> int:
+        """The registry's currently declared phase (1..3; default 1)."""
+        with self._lock:
+            return self._phase
+
+    def declare_phase(self, phase: int, *, actor: str) -> int:
+        """The audited owner decision front door for the phased ceiling.
+
+        Sets the registry's declared phase (1..3). Lowering is allowed and
+        GRANDFATHERS already-certified tools (never silently decertifies):
+        new certifications are simply refused until the count fits. The
+        declaration is audited (``phase_declared``) even when it re-declares
+        the current phase (an explicit operator fact worth recording)."""
+        if (not isinstance(phase, int) or isinstance(phase, bool)
+                or not 1 <= phase <= len(PHASE_CEILINGS)):
+            raise ValueError(f"phase must be 1..{len(PHASE_CEILINGS)}, got {phase!r}")
+        if not actor:
+            raise InvalidRecord("actor is required (audit)")
+        with self._lock:
+            self._phase = phase
+            self._log("phase_declared", actor, None, None, None, phase=phase)
+            return self._phase
+
+    def _certified_count(self) -> int:
+        """Unique tool_ids whose LATEST version is lifecycle ``certified``
+        (the same rule ``state_counts`` applies — a tool's state is its
+        latest version's state)."""
+        latest: Dict[str, ToolRecord] = {}
+        for rec in self._records.values():
+            cur = latest.get(rec.tool_id)
+            if cur is None or _vkey(rec.version) >= _vkey(cur.version):
+                latest[rec.tool_id] = rec
+        return sum(1 for r in latest.values() if r.lifecycle_state == "certified")
 
     # -- audit -------------------------------------------------------------
     def _log(self, op: str, actor: str, tool_id: str, version: Optional[str],
@@ -374,6 +432,22 @@ class ToolRegistry:
                 self._log("update_refused", actor, tool_id, version, rec.digest(),
                           reason="certified_without_certified_test")
                 raise TransitionRefused("certified requires test_status 'certified'")
+            # R-175 batch 5 (D-129): the PHASE CEILING is a registry rule —
+            # enforced on EVERY path to lifecycle ``certified`` (fail-closed
+            # before any mutation), not just inside certify(). An idempotent
+            # no-op (already certified) consumes no slot and is not refused.
+            if new_state == "certified" and rec.lifecycle_state != "certified":
+                ceiling = PHASE_CEILINGS[self._phase - 1]
+                now = self._certified_count()
+                if now + 1 > ceiling:
+                    self._log("update_refused", actor, tool_id, version,
+                              rec.digest(), reason="phase_ceiling",
+                              phase=self._phase, ceiling=ceiling, now=now)
+                    raise PhaseCeilingRefused(
+                        f"phase {self._phase} ceiling is {ceiling} certified "
+                        f"tools (now {now}); advancing the phase is an owner "
+                        f"decision (declare_phase / certify phase=) — never "
+                        f"automatic")
             try:
                 updated = ToolRecord.model_validate({**rec.model_dump(), **changes})
             except ValidationError as e:
