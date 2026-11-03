@@ -1,0 +1,56 @@
+R-175 batch 3 — الاختبارات العدائية المتبقية (malformed output, name collisions, slow tool, rate limiting, provider compromise)
+
+التاريخ: 2026-11-03
+الفرع: m8/r175-batch3-adversarial (عن main faa38201)
+القاعدة: main عند faa3820158fe6efc0fd707758233b13a4dfe97d0
+
+المنشور في هذه الدفعة:
+- فرض جديد (D-127): فحص ميكانيكي للنوع المُعلن في output_schema عند البوابة (tool_runtime.py)
+  في المسارين (الداخلي والمستورد) — النتيجة المخالفة تُحجب وتُعدّ (output_malformed)
+  وتُفشل، ولا تُمرَّر صامتة. bool ليست number/integer. النوع غير المعلن/الاتحادي: لا فحص.
+- إضافة output_malformed إلى صيغة الجودة (tool_quality.py) امتدادًا لـ D-124.
+- 11 اختبارًا عدائيًا (tests/test_r175_batch3_adversarial.py).
+
+الدليل الأحمر أولاً (red-first) — الاختبارات الجديدة على main بدون فرض الدفعة:
+(command: /tmp/ahvenv/bin/python -m pytest tests/test_r175_batch3_adversarial.py -q
+ بعد git checkout origin/main -- agent_civilization/core/tool_runtime.py agent_civilization/core/tool_quality.py)
+
+النتيجة: 5 failed, 6 passed — الإخفاقات الخمسة هي اختبارات فرض malformed output
+(النتيجة المخالفة كانت تمر بلا فحص على main: quality == 1.0 بدل 0.0، ولا يوجد
+عداد output_malformed، والنتيجة النصية تعود كما هي). الاختبارات الستة الناجحة
+هي توصيف سلوك قائم (تسميات/تصادم أسماء/بطء/حد معدل/مزود معادٍ) — بقيت خضراء
+قبل وبعد، وهذا مقصود: التوصيف يثبت أن السلوك الموجود مغطى باختبارات.
+
+مقتطف من الفشل على main:
+--------------------------- test_malformed_output_lowers_the_quality_score ------------------------------
+tests/test_r175_batch3_adversarial.py:186: in test_malformed_output_lowers_the_quality_score
+    assert quality == 0.0            # 2 executed, 2 malformed -> 0.0
+E   assert 1.0 == 0.0
+=========================== short test summary ============================
+FAILED tests/test_r175_batch3_adversarial.py::test_malformed_output_is_refused_counted_and_withheld
+FAILED tests/test_r175_batch3_adversarial.py::test_conforming_output_passes_unchanged
+FAILED tests/test_r175_batch3_adversarial.py::test_undeclared_type_is_never_checked
+FAILED tests/test_r175_batch3_adversarial.py::test_boolean_is_not_a_number
+FAILED tests/test_r175_batch3_adversarial.py::test_malformed_output_lowers_the_quality_score
+------------------------- 5 failed, 6 passed in 0.85s -------------------------
+
+بعد إعادة تطبيق كود الدفعة (الأخضر) — نفس الأمر على كود الدفعة:
+11 passed in 0.81s
+(كلا التشغيلين محفوظان في هذا الملف من مخرجات الطرفية الفعلية)
+
+الحزمة الكاملة على كود الدفعة (الخضر النهائي):
+4019 passed, 8 skipped, 17 deselected, 9 xfailed in 569.11s
+(command: /tmp/ahvenv/bin/python -m pytest -q -p no:cacheprovider)
+ruff check --select F,E722 على الملفات الثلاثة: All checks passed.
+
+اكتشاف أثناء الحزمة الكاملة (موثق بأمانة): الفحص الأول للدفعة كسر اختبار
+التكافؤ الموثق test_c1_no_handler_is_the_documented_intended_difference —
+لأن None (حارس "لا معالج" الموثق في real_agents.py:118 — r يُعاد كما هو إلا إذا
+كان None) أصبح يُرفض كـ "malformed" لأن النوع المعلن object. القرار: None ليس
+حمولة — إنه حارس مسار "لا معالج" الذي يفسره طبقة الاستدعاء، والفحص الميكانيكي
+لا يمسه. عولج باستثناء صريح موثق في _declared_type، وعاد الاختبار أخضر دون
+أي تعديل على اختبار R-157 (لم يُضعف أي اختبار).
+
+ملاحظة حدود: هذا توصيف وفرض على مستوى البوابة مع أدوات داخلية اصطناعية —
+ليس تشغيلًا حيًا لأدوات حقيقية، ولا ادعاء بأن الأدوات العشر آلاف آمنة؛
+مراحل 100/1000/10000 الحقيقية (R-175) لم تبدأ بعد.
