@@ -90,11 +90,12 @@ def test_the_gate_calls_the_frozen_dispatch_by_module_attribute():
 def test_runtime_registry_is_seeded_with_every_handler_and_all_are_executable():
     reg = tool_runtime.runtime_registry()
     # R-172 batch 2 (log 337): + data_processor's legacy 1.0.0 row; the
-    # latest version of every handler is executable.
+    # latest version of every handler is executable. R-175 phase 1 (D-128):
+    # the core tool library adds 80 deterministic tools — 20 + 80 = 100.
     from agent_civilization.core import internal_tools
     assert len(reg) == (len(real_dispatcher._HANDLERS)
                         + len(internal_tools._LEGACY_ROWS))
-    assert len(reg.search(limit=100)) == len(real_dispatcher._HANDLERS) == 20
+    assert len(reg.search(limit=200)) == len(real_dispatcher._HANDLERS) == 100
     for spec in real_dispatcher._HANDLERS:
         ok, reason = tool_runtime.check(spec)
         assert ok, (spec, reason)

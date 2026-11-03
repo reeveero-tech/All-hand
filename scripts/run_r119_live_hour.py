@@ -113,6 +113,14 @@ EXPECTED_PRIMARY = {
 
 
 
+def _handler_count() -> int:
+    """R-175 phase 1 (D-128): the executable surface is live — 20 frozen
+    specialists + the stdlib core library; the truth check asserts the
+    output states the REAL count, never a frozen 20."""
+    from agent_civilization.core.agents import real_dispatcher
+    return len(real_dispatcher._HANDLERS)
+
+
 def _out(stages, name):
     for s in stages:
         if s.get("name") == name:
@@ -194,7 +202,7 @@ TRUTH = {
         # either retested (with a count) or explicitly none
         ("self-development cycle: probes all healthy + remembered failures retested",
          lambda st: bool(re.search(r"probes (\d+)/\1 healthy", _out(st, "execute")))
-         and "20 specializations backed by real handlers" in _out(st, "execute")
+         and f"{_handler_count()} specializations backed by real handlers" in _out(st, "execute")
          and ("no remembered failures to retest" in _out(st, "execute")
               or bool(re.search(r"retested \d+ remembered failure\(s\): \d+ fixed and retired", _out(st, "execute"))))),
 }

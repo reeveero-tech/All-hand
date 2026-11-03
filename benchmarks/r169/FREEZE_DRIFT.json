@@ -75,6 +75,21 @@
    "change": "R-172 batch 2 (D-116): the code-sandbox child is now network-free — an audit hook installed in the sandbox bootstrap before the user code runs blocks every socket.* event (connect, DNS, bind, construction), closing the residual documented in SECURITY.md. run_sandboxed_python's docstring updated to match.",
    "consequence": "All R-169 results stay attributable to the frozen code; the runners' check_freeze is NOT relaxed — new held-out runs of v2-v5 are still refused on drift (the ledger documents it, the guard keeps refusing). The sandbox behavior change is covered by tests/test_r172_batch2_security_limits.py (socket and DNS attempts fail closed inside the sandbox).",
    "recorded": "2026-11-02"
+  },
+  {
+   "benchmarks": [
+    "v2",
+    "v3",
+    "v4",
+    "v5"
+   ],
+   "key": "baseline_dependency_sha256",
+   "file": "agent_civilization/core/agents/real_dispatcher.py",
+   "frozen": "d3f8d2eceabf4ce6",
+   "current": "54d223c79d3450d6",
+   "change": "R-175 phase 1 (D-128): a documented 6-line merge at the bottom of _HANDLERS — the core tool library (core/tools_stdlib.py, 80 deterministic hermetic tools) is merged into the executable surface to reach the spec's phase-1 target of 100 tools. The 20 specialist handlers are byte-untouched; tools_stdlib never imports this module (the no-bypass rule holds).",
+   "consequence": "All R-169 results (v1-v5, b1-b3, b4s) stay attributable to the frozen code; new held-out runs of v2-v5 are refused by check_freeze exactly as before (the ledger chain now leads to this sha). The 20 specialist handler behaviors are unchanged; the 80 new tools are additive dispatch entries (their gate enforcement is the same runtime gate).",
+   "recorded": "2026-11-03"
   }
  ]
 }

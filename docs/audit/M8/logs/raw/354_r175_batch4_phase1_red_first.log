@@ -1,0 +1,11 @@
+RED-FIRST: tests/test_r175_batch4_phase1.py على main بدون كود الدفعة
+command: /tmp/ahvenv/bin/python -m pytest tests/test_r175_batch4_phase1.py -q
+collected 0 items / 1 error
+ImportError while importing test module '/home/user/workspace/All-hand/tests/test_r175_batch4_phase1.py'.
+E   ImportError: cannot import name 'tools_stdlib' from 'agent_civilization.core' (/home/user/workspace/All-hand/agent_civilization/core/__init__.py)
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 0.20s ===============================
+
+=== واختبار العدد على main (كود main): test_r171_tool_gate count ===
+ImportError while importing test module '/home/user/workspace/All-hand/tests/test_r175_batch4_phase1.py'.
+E   ImportError: cannot import name 'tools_stdlib' from 'agent_civilization.core' (/home/user/workspace/All-hand/agent_civilization/core/__init__.py)

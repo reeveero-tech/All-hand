@@ -360,13 +360,23 @@ def _dispatcher_reach():
                 out |= closure(r, seen)
             if r == "_HANDLERS":
                 for h in real_dispatcher._HANDLERS.values():
-                    out |= closure(h.__name__, seen)
+                    if h.__name__ in refs:
+                        out |= closure(h.__name__, seen)
         return out
-    return {spec: closure(fn.__name__, set()) for spec, fn in real_dispatcher._HANDLERS.items()}
+    # R-175 phase 1 (D-128): only the handlers DEFINED in this file (the 20
+    # specialists) are reachable-walked here; the 80 stdlib tools live in
+    # core/tools_stdlib.py and get their own AST cross-check there.
+    return {spec: closure(fn.__name__, set()) for spec, fn in real_dispatcher._HANDLERS.items()
+            if fn.__name__ in refs}
 
 
 def test_seed_covers_exactly_the_dispatcher_handlers():
-    recs = internal_tools.internal_tool_records()
+    # R-175 phase 1 (D-128): the executable surface is the 20 specialists
+    # (internal_tools) + the 80 stdlib tools (tools_stdlib) — together they
+    # cover EXACTLY the dispatcher handlers, and every record's ref resolves
+    # to the very handler object the gate will run.
+    from agent_civilization.core import tools_stdlib
+    recs = internal_tools.internal_tool_records() + tools_stdlib.stdlib_tool_records()
     assert {r.name for r in recs} == set(real_dispatcher._HANDLERS)
     for r in recs:
         assert tr.resolve_implementation(r.implementation_ref) is \
@@ -404,9 +414,13 @@ def test_seeded_entries_claim_nothing_about_quality():
     # legacy rows (data_processor 1.0.0 and modifier 1.0.0 — their
     # corrections ship as newer versions); latest_only search still maps
     # 1:1 onto the handlers.
-    assert len(reg) == (len(real_dispatcher._HANDLERS)
+    # R-175 phase 1: this registry seeds ONLY the 20 specialists (+ legacy
+    # rows); the stdlib tools seed via the runtime store (test_r171_tool_gate
+    # asserts the full 100-handler surface there).
+    specialists = len({r.name for r in internal_tools.internal_tool_records()})
+    assert len(reg) == (specialists
                         + len(internal_tools._LEGACY_ROWS)) == 22
-    assert len(reg.search(limit=100)) == len(real_dispatcher._HANDLERS) == 20
+    assert len(reg.search(limit=100)) == specialists == 20
     for r in reg.search(include_disabled=True, limit=100):
         assert (r.lifecycle_state, r.test_status, r.health_status) == \
             ("registered", "not_tested", "unknown"), r.tool_id

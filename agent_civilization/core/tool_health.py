@@ -73,6 +73,12 @@ PROBE_WORK: Dict[str, Dict[str, Any]] = {
 
 
 def probe_work_for(spec: str) -> Dict[str, Any]:
+    # R-175 phase 1 (D-128): the stdlib core tools carry their own probe
+    # inputs (a generic text prompt is not valid input for tools that parse
+    # structured data — and a contract refusal is not a health failure):
+    from agent_civilization.core import tools_stdlib
+    if spec in tools_stdlib.PROBE_WORK:
+        return dict(tools_stdlib.PROBE_WORK[spec])
     return dict(PROBE_WORK.get(spec, GENERIC_PROBE_WORK))
 
 def _spec_of(rec) -> str:

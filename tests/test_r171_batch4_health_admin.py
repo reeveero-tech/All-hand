@@ -163,7 +163,10 @@ def test_health_check_is_idempotent_and_audited_once(db):
 def test_probeable_predicate_matches_the_seed_table(db):
     reg = tool_runtime.runtime_registry()
     probeable = {r.name for r in reg.search(limit=10_000) if tool_health.is_probeable(r)}
-    assert probeable == PROBEABLE
+    # R-175 phase 1 (D-128): the 80 stdlib core tools are hermetic (read-only,
+    # low risk, no side effects) — every one of them is execution-probeable:
+    from agent_civilization.core import tools_stdlib
+    assert probeable == (PROBEABLE | set(tools_stdlib.HANDLERS))
 
 
 # -- the admin API -----------------------------------------------------------
@@ -181,7 +184,8 @@ def test_admin_list_returns_the_shared_registry(client, keys):
     r = client.get("/api/admin/tools", headers=H(keys["ADM"]))
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["count"] == 20
+    # R-175 phase 1 (D-128): 20 specialists + 80 stdlib core tools:
+    assert body["count"] == 100
     assert "gate_stats" in body
     row = next(t for t in body["tools"] if t["tool_id"] == "agos.internal.analyst")
     assert row["lifecycle_state"] == "registered"
@@ -194,7 +198,9 @@ def test_admin_health_check_runs_the_real_check(client, keys):
     r = client.post("/api/admin/tools/health-check", headers=H(keys["ADM"]))
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["summary"]["healthy"] == len(PROBEABLE)
+    # R-175 phase 1: the 80 stdlib tools all probe healthy with their own
+    # probe inputs (tools_stdlib.PROBE_WORK) — 8 + 80:
+    assert body["summary"]["healthy"] == len(PROBEABLE) + 80
     assert body["summary"]["degraded"] == len(STATIC_ONLY)
     assert body["tools"]["agos.internal.analyst@1.0.0"]["probe"] == "execution"
 
