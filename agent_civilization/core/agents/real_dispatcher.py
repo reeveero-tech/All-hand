@@ -1726,6 +1726,17 @@ async def dispatch(specialization: str, work: Dict[str, Any]) -> Optional[Dict[s
     """Run the real handler for a specialization, or return None if unmapped."""
     fn = _HANDLERS.get(specialization)
     if fn is None:
+        # R-191: the connectors framework's tools live in their OWN handler
+        # map (connectors.handler_for), NOT in _HANDLERS — the frozen map
+        # and its ==100 invariant (tests/test_r171_tool_gate.py) are
+        # untouched; this fallback is the same documented FREEZE_DRIFT
+        # pattern as the tools_stdlib merge at the bottom of this file.
+        try:
+            from agent_civilization import connectors as _connectors
+            fn = _connectors.handler_for(specialization)
+        except Exception:  # noqa: BLE001 — a missing framework is None below
+            fn = None
+    if fn is None:
         return None
     # R-159: one `tool` span per handler run (the handler is the tool layer;
     # its name, not its input, is recorded). Result contract unchanged.

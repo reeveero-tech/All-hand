@@ -1,0 +1,139 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/user/workspace/all-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.1.post1, ddtrace-4.16.1, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 13 items
+
+tests/test_r191_connectors.py FEEEEEEEEEFE.                              [100%]
+
+==================================== ERRORS ====================================
+______ ERROR at setup of test_r191_happy_path_runs_through_the_real_gate _______
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+__________ ERROR at setup of test_r191_timeout_is_bounded_and_honest ___________
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+_ ERROR at setup of test_r191_transport_interrupted_retried_only_with_stable_identity _
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+_ ERROR at setup of test_r191_transport_interrupted_without_identity_is_not_retried _
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+___________ ERROR at setup of test_r191_permission_refused_is_honest ___________
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+_____ ERROR at setup of test_r191_auth_invalidation_revokes_and_fails_fast _____
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+__________ ERROR at setup of test_r191_duplicate_request_applies_once __________
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+______________ ERROR at setup of test_r191_tenant_isolation_sec02 ______________
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+_____________ ERROR at setup of test_r191_no_secret_echo_in_errors _____________
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+__________ ERROR at setup of test_r191_gate_refusal_without_approval ___________
+tests/test_r191_connectors.py:150: in secret_store
+    store.put_secret("test_tenant", SECRET_NAME, GITHUB_TOKEN, actor="r191-test")
+E   TypeError: SecretStore.put_secret() got an unexpected keyword argument 'actor'
+=================================== FAILURES ===================================
+____________________ test_r191_policy_bounds_are_validated _____________________
+tests/test_r191_connectors.py:207: in test_r191_policy_bounds_are_validated
+    from agent_civilization.connectors import ConnectorPolicy
+E   ModuleNotFoundError: No module named 'agent_civilization.connectors'
+__________________ test_r191_tool_records_declare_their_truth __________________
+tests/test_r191_connectors.py:431: in test_r191_tool_records_declare_their_truth
+    from agent_civilization.connectors import github as github_mod
+E   ModuleNotFoundError: No module named 'agent_civilization.connectors'
+=========================== short test summary info ============================
+FAILED tests/test_r191_connectors.py::test_r191_policy_bounds_are_validated
+FAILED tests/test_r191_connectors.py::test_r191_tool_records_declare_their_truth
+ERROR tests/test_r191_connectors.py::test_r191_happy_path_runs_through_the_real_gate
+ERROR tests/test_r191_connectors.py::test_r191_timeout_is_bounded_and_honest
+ERROR tests/test_r191_connectors.py::test_r191_transport_interrupted_retried_only_with_stable_identity
+ERROR tests/test_r191_connectors.py::test_r191_transport_interrupted_without_identity_is_not_retried
+ERROR tests/test_r191_connectors.py::test_r191_permission_refused_is_honest
+ERROR tests/test_r191_connectors.py::test_r191_auth_invalidation_revokes_and_fails_fast
+ERROR tests/test_r191_connectors.py::test_r191_duplicate_request_applies_once
+ERROR tests/test_r191_connectors.py::test_r191_tenant_isolation_sec02 - TypeE...
+ERROR tests/test_r191_connectors.py::test_r191_no_secret_echo_in_errors - Typ...
+ERROR tests/test_r191_connectors.py::test_r191_gate_refusal_without_approval
+==================== 2 failed, 1 passed, 10 errors in 5.81s ====================
+
+================================================================================
+R-191 — GREEN RUN (after the implementation; the same suite, the same machine)
+================================================================================
+$ python3 -m pytest tests/test_r191_connectors.py -q
+13 passed in 6.06s
+
+10x stability (the whole file, back to back): 10x "13 passed" (~6.0s each)
+— no flake, no ordering effect.
+
+Full suite on the implementation head (after the freeze-ledger entry):
+$ python3 -m pytest tests/ -q
+1 failed, 4053 passed, 8 skipped, 17 deselected, 9 xfailed in 627.20s (0:10:27)
+
+The single failure is the KNOWN environmental runbook flake (documented in
+R-190's evidence log 357): tests/test_r175_batch4_phase1.py certifies all
+100 tools; two of them (educator, researcher) need OUTBOUND network
+(LLM consent / live web search) — this sandbox blocks it intermittently.
+Proof it is NOT this batch: the same test fails IDENTICALLY on clean main
+(13f8c764, worktree check): "1 failed in 27.56s". It passes in CI (network
+job); see R-190's PR #322 for the same pattern (CI green).
+
+Governance invariants re-verified on the batch head:
+  * tests/test_r171_tool_gate.py — the ==100 dispatcher map invariant: PASS
+  * tests/test_r170_freeze_drift_ledger.py — the new dispatcher change is a
+    documented ledger entry (54d223c79d3450d6 -> dbd7c19c57e66d61): PASS
+  * tests/test_r190_task_journey_integration.py — the R-190 journey: PASS
+  * ruff check --select F,E722 server.py agent_civilization agos_kernel tests
+    (the exact CI quality command): All checks passed
+
+What the 13 tests prove (R-191's acceptance: one real terminal connector,
+task-organized, with documented credential invalidation and negative tests):
+  1. policy bounds validated (timeout 0<x<=120, attempts 1..5)
+  2. happy path THROUGH THE REAL GATE (credential from the R-189 store,
+     Idempotency-Key {task_id}:{op}, gate+framework counters move)
+  3. timeout bounded and honest (the connector's own budget, never retried)
+  4. transport interruption retried ONLY with a stable task identity
+  5. transport interruption WITHOUT identity NOT retried (fail-closed)
+  6. permission refusal honest (403 -> fixed reason, no retry)
+  7. auth invalidation: 401 -> secret REVOKED -> fail-fast (no terminal hit)
+     -> recovery when a new secret is put (no restart)
+  8. duplicate request applies ONCE (the terminal's idempotency store)
+  9. tenant isolation SEC-02 (tenant B never uses tenant A's secret;
+     fail-closed before any request)
+ 10. no secret echo in any error (401/403/timeout/interrupted checked)
+ 11. the tool records declare their truth (allowlist, github:write,
+     read_only=False, idempotent, requires_approval, bounded timeout)
+ 12. the gate refuses without an approval (the terminal is never hit)
+ 13. registry invariants hold (==100 map; the connector record is NOT
+     auto-seeded — the D-129 ceiling and the certify runbook stay at 100)
+
+Design notes (the honest limits):
+  * the task API's specialization routing covers the 20 civilization
+    specialists (a "github" specialization would need a 21st pool and break
+    the 1000-agent invariants — multiple tests assert them); the connector
+    tool therefore runs through the REAL gate with the task CONTRACT
+    (task identity, approval, ambient tenant) — the same gate every task's
+    tools go through. Making any registered tool a task-API specialization
+    is a separate owner decision, deliberately not taken here.
+  * the R-191 negative tests run against a loopback fake GitHub (R-163
+    evidence class: real HTTP wire, fake service) — no production terminal
+    was touched; production registration (base_url + allowlist + secret) is
+    an operator action.
+  * CI green on the PR is the merge condition (R-187); this local run is
+    the evidence of the implementation, not of production readiness.

@@ -90,6 +90,21 @@
    "change": "R-175 phase 1 (D-128): a documented 6-line merge at the bottom of _HANDLERS — the core tool library (core/tools_stdlib.py, 80 deterministic hermetic tools) is merged into the executable surface to reach the spec's phase-1 target of 100 tools. The 20 specialist handlers are byte-untouched; tools_stdlib never imports this module (the no-bypass rule holds).",
    "consequence": "All R-169 results (v1-v5, b1-b3, b4s) stay attributable to the frozen code; new held-out runs of v2-v5 are refused by check_freeze exactly as before (the ledger chain now leads to this sha). The 20 specialist handler behaviors are unchanged; the 80 new tools are additive dispatch entries (their gate enforcement is the same runtime gate).",
    "recorded": "2026-11-03"
+  },
+  {
+   "benchmarks": [
+    "v2",
+    "v3",
+    "v4",
+    "v5"
+   ],
+   "key": "baseline_dependency_sha256",
+   "file": "agent_civilization/core/agents/real_dispatcher.py",
+   "frozen": "54d223c79d3450d6",
+   "current": "dbd7c19c57e66d61",
+   "change": "R-191: dispatch() falls back to connectors.handler_for(spec) when the frozen _HANDLERS map misses — the connectors framework's tools live in their own handler map (the same documented FREEZE_DRIFT pattern as the tools_stdlib merge). No specialist handler, no _HANDLERS entry, and no ==100 invariant changes.",
+   "consequence": "All R-169 results stay attributable to the frozen code; new held-out runs of v2-v5 are still refused by check_freeze (the guard is not relaxed). The 20 specialist paths are untouched: the fallback only fires for a spec absent from _HANDLERS (None before, a connector tool handler now).",
+   "recorded": "2026-11-04"
   }
  ]
 }

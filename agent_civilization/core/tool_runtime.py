@@ -751,6 +751,15 @@ def _own_check(reg: ToolRegistry, spec: str) -> Tuple[bool, str, str]:
     if rec.health_status == "disabled":
         return False, f"tool {key} is not executable: health_status=disabled", key
     handler = real_dispatcher._HANDLERS.get(spec)
+    if handler is None:
+        # R-191: a connector tool's handler lives in the connectors
+        # framework's own map — the SAME object identity check below applies
+        # (the D-127 anti-swap discipline holds for connector tools too).
+        try:
+            from agent_civilization import connectors as _connectors
+            handler = _connectors.handler_for(spec)
+        except Exception:  # noqa: BLE001 — a missing framework is None below
+            handler = None
     try:
         expected = resolve_implementation(rec.implementation_ref)
     except Exception:  # noqa: BLE001 — an unresolvable reference is a refusal
