@@ -1,0 +1,61 @@
+# السجل 364 — R-176/R-193: إغلاق رفض بوابة R-187 وإصلاح فشل CI الحقيقي (R-158)
+
+التاريخ: 2026-11-04 — الفرع: m9/r193-r176-load-framework — البند: R-176 (أول دفعة من R-193، D-133)
+
+## الأحمر (موثق من رشش CI الفعلية — لا إعادة بناء محلي)
+
+1. **رفض بوابة الحوكمة الأول (R-187 R4)** — الدفعة 1e80c2fd غيّرت `.github/workflows/ci.yml`
+   (خطوة تثبيت k6) دون تحديث `docs/governance/QUALITY.md` في الدفعة نفسها:
+   - run 41837117292 (push) + 41837162442 (pull_request) — فشل push-scope-docs.
+2. **رفض ثانٍ (R-187 R0)** — دفعة التوثيق b8b95c2d (QUALITY.md فقط) لم ترافقها
+   ثلاثية الحوكمة في الدفعة نفسها: run 41837558181 —
+   «R0 mandatory governance docs not updated: ROADMAP, PROJECT_STATE, CHANGELOG».
+   أُغلقت بدفعة f341d7b9 (الثلاثية مع QUALITY.md مرجعية) — بوابة الحوكمة أخضر
+   (push 41838064059 + pull_request 41838071414 = success).
+3. **فشل Kernel CI/CD الحقيقي (run 41838071449، الرأس f341d7b9)** — اختبار الأساس:
+   ```
+   FAILED tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned
+   AssertionError: assert ['benchmarks/r176/load.js'] == []
+   = 2 failed, 4068 passed, 8 skipped, 17 deselected, 9 xfailed in 658.27s =
+   ```
+   الفشل الثاني في نفس الرش (test_r175_batch4_phase1 — «Redis not available») هو
+   الفشل البيئي المعروف (يعتمد على شبكة خارجية) — ليس من هذه الدفعة.
+   كذلك فشل job الـnetwork: اختباران حيّان للبحث (r170) «search: no sources found» —
+   تقلب بيئي معروف للبحث الحي، لا علاقة له بالدفعة.
+
+## السبب الجذري والفشل الحقيقي من هذه الدفعة
+
+- الملف الجديد `benchmarks/r176/load.js` (سكربت حمل k6) أصبح ملفًا متتبعًا في HEAD
+  دون أن يقع في أي مجموعة من مجموعات أساس الاختبار (scripts/build_test_baseline.py) —
+  قواعد المجموعات تغطي `benchmarks/*.py` (py-scripts) و`benchmarks/*.json|jsonl`
+  (benchmark-data) فقط؛ لا قاعدة لملفات `.js` تحت benchmarks/.
+- اختبار R-158 يمنع صمت هذا النوع من الفجوات: كل ملف متتبع في HEAD يجب أن ينتمي
+  لمجموعة (الحد الذاتي للمولد). البوابة أدت عملها بالضبط.
+
+## الإصلاح (دفعة واحدة — code+test+docs معًا)
+
+- `scripts/build_test_baseline.py`: قاعدة جديدة في مجموعة py-scripts:
+  `^benchmarks/.*\.js$` + توثيق المبرر في rationale (السكربت ينفَّذ بـk6، لا يُعمل
+  lint هنا: الدخان داخل الحزمة عبر tests/test_r176_load_framework.py، والأحمال
+  الأكبر عند الطلب — Q-023).
+- `tests/test_r158_test_baseline.py`: مثال تعيين صريح
+  `("benchmarks/r176/load.js", "py-scripts")` — عينة الانحدار للقاعدة الجديدة.
+
+## الأخضر (أرقام موثقة)
+
+- `python3 -m pytest tests/test_r176_load_framework.py tests/test_r158_test_baseline.py -q`:
+  **48 passed in 42.13s** (6 لـR-176 + 42 لـR-158 بعد إضافة المثال).
+- فحص التعيين الذاتي على كامل HEAD: `unassigned: []` —
+  `benchmarks/r176/load.js -> py-scripts`.
+- الحزمة الكاملة (نفس أمر CI المحلي):
+  `AGOS_LLM_KEYLESS=1 AGOS_ALLOW_CODE_EXEC=1 AGOS_API_KEY=test:phase1 python3 -m pytest tests/ -q`:
+  **4071 passed, 8 skipped, 17 deselected, 9 xfailed in 652.67s (0:10:52)**
+  — صفر فشل (الفشل البيئي المعروف test_r175_batch4_phase1 مرّ هذه المرة؛ يظل
+  موثقًا كتقلب بيئي للشبكة الخارجية وليس من الشيفرة).
+
+## الحدود الصادقة
+
+- الأخضر أعلاه محلي؛ بوابة الدمج الفعلية هي CI على رأس الدفعة (Kernel CI/CD
+  على الرأس الجديد بعد الدفع) — نجاحها شرط الدمج، لا هذا السجل.
+- فشلا الـnetwork الحيّان (r170) وفشل الدفتر (r175) بيئيان متقلبان — يُعاد
+  تشغيل الرش إن تكررا (السابقة الموثقة: رشش قبول R-192).

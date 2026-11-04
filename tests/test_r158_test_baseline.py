@@ -107,6 +107,7 @@ def test_schema_subset_check():
     ("docs/sql/001_init.sql", "sql-storage"),
     ("scripts/r042/kong_prefix_proxy.py", "sql-storage"),
     ("scripts/check_no_delete.py", "py-scripts"),
+    ("benchmarks/r176/load.js", "py-scripts"),
     ("docs/audit/M3/logs/gate_test_harness.sh", "shell"),
     ("web/src/api.js", "frontend-web"),
     ("src/lib/api.ts", "frontend-root"),
