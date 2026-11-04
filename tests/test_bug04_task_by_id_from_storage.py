@@ -388,7 +388,18 @@ def test_exact_query_by_id_independent_of_list_limit_and_order(tenants, db):
         _PostgREST.gets = []
         r = c.get("/api/tasks/t_oldest", headers=tenants.headers)
     assert r.status_code == 200 and r.json()["task_id"] == "t_oldest"
-    assert _task_gets() == [{"task_id": "eq.t_oldest", "tenant_id": "eq.test_tenant", "limit": "1"}]
+    # R-190 (flake fix, same convention as the sibling tests above): the raw
+    # capture also carries the app's OWN background queue traffic (the durable
+    # queue is on by default with storage configured — dispatcher claim scan
+    # every pass, reaper lease scan every TASK_REAP_S; proven by
+    # tests/test_zz_debug_reaper measurement: 13 background GETs in 1.2s). The
+    # asserted property is unchanged: the by-id read itself is EXACTLY one
+    # filtered query (task_id + tenant_id + limit=1), no order, and everything
+    # else in the capture is a known background scan — nothing else.
+    assert all(_is_background_scan(g) for g in _task_gets()
+               if g != {"task_id": "eq.t_oldest", "tenant_id": "eq.test_tenant", "limit": "1"})
+    scoped = [g for g in _task_gets() if not _is_background_scan(g)]
+    assert scoped == [{"task_id": "eq.t_oldest", "tenant_id": "eq.test_tenant", "limit": "1"}]
 
 
 def test_storage_get_task_refuses_without_scope_and_bad_ids(db):
