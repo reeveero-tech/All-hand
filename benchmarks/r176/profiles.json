@@ -1,0 +1,90 @@
+{
+  "framework": "k6",
+  "k6_version": "v0.57.0",
+  "k6_tarball_sha256": "49b1072c29d3682a1ea2ec98df9d17f2bd1cfabb27c1c5e01050766848925c74",
+  "k6_download_url": "https://github.com/grafana/k6/releases/download/v0.57.0/k6-v0.57.0-linux-amd64.tar.gz",
+  "notes": "R-176 (M8 P6, أول دفعة من R-193): إطار حمل قابل للتكرار — config/version/workload profile/raw results/SHA. المولد (k6) والخدمة (SUT) عمليتان منفصلتان؛ الحمل يصيب HTTP الحقيقي فقط. الأحمال الصغيرة (smoke/baseline/normal) تعمل على البيئة الموثقة (Q-023 افتراضيًا: تشغيلات محدودة بلا موارد مدفوعة)؛ الأحمال الكبيرة (stress/spike/soak) محجوزة للبيئة المعزولة — قرار المالك (Q-023) — ولا تُشغَّل في CI أبدًا.",
+  "profiles": {
+    "smoke": {
+      "purpose": "CI smoke — صغير بالتصميم، يعمل على العدّاد المشترك",
+      "duration_s": 20,
+      "arrival_rate": 5,
+      "max_vus": 8,
+      "chat_share": 0.5,
+      "requires_dedicated_env": false,
+      "thresholds": {
+        "http_req_failed": "rate<0.01",
+        "checks": "rate>0.99",
+        "http_req_duration": "p(95)<2000"
+      }
+    },
+    "baseline": {
+      "purpose": "خط أساس على البيئة الموثقة (Q-023 افتراضيًا)",
+      "duration_s": 60,
+      "arrival_rate": 20,
+      "max_vus": 25,
+      "chat_share": 0.5,
+      "requires_dedicated_env": false,
+      "thresholds": {
+        "http_req_failed": "rate<0.01",
+        "checks": "rate>0.99",
+        "http_req_duration": "p(95)<2000"
+      }
+    },
+    "normal": {
+      "purpose": "حمل اعتيادي على البيئة الموثقة (Q-023 افتراضيًا)",
+      "duration_s": 120,
+      "arrival_rate": 50,
+      "max_vus": 60,
+      "chat_share": 0.5,
+      "requires_dedicated_env": false,
+      "thresholds": {
+        "http_req_failed": "rate<0.01",
+        "checks": "rate>0.99",
+        "http_req_duration": "p(95)<3000"
+      }
+    },
+    "stress": {
+      "purpose": "ضغط حتى قرب التشبع — بيئة معزولة حصرًا",
+      "duration_s": 300,
+      "arrival_rate": 200,
+      "max_vus": 220,
+      "chat_share": 0.5,
+      "requires_dedicated_env": true,
+      "blocked_on": "Q-023",
+      "thresholds": {
+        "http_req_failed": "rate<0.05",
+        "checks": "rate>0.95",
+        "http_req_duration": "p(95)<8000"
+      }
+    },
+    "spike": {
+      "purpose": "ذروة مفاجئة — بيئة معزولة حصرًا",
+      "duration_s": 120,
+      "arrival_rate": 400,
+      "max_vus": 400,
+      "chat_share": 0.5,
+      "requires_dedicated_env": true,
+      "blocked_on": "Q-023",
+      "thresholds": {
+        "http_req_failed": "rate<0.10",
+        "checks": "rate>0.90",
+        "http_req_duration": "p(95)<15000"
+      }
+    },
+    "soak": {
+      "purpose": "تحمل مستمر ساعاتًا — بيئة معزولة حصرًا (قياس التسرب بالفرق بين البداية والنهاية)",
+      "duration_s": 1800,
+      "arrival_rate": 20,
+      "max_vus": 30,
+      "chat_share": 0.5,
+      "requires_dedicated_env": true,
+      "blocked_on": "Q-023",
+      "thresholds": {
+        "http_req_failed": "rate<0.01",
+        "checks": "rate>0.99",
+        "http_req_duration": "p(95)<3000"
+      }
+    }
+  }
+}

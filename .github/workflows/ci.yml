@@ -49,6 +49,14 @@ jobs:
           pip install --require-hashes -r requirements.lock
           pip install --require-hashes -r requirements-dev.lock
       
+      # R-176 (M8 P6, D-133): pinned k6 for the load framework — the runner
+      # installs the exact pinned version (SHA256-verified). The SMOKE profile
+      # is small by design and runs inside the test suite below; the big-load
+      # profiles (stress/spike/soak) are Q-023-gated (dedicated environment,
+      # owner decision) and are NEVER run in CI.
+      - name: Install k6 (R-176, pinned v0.57.0)
+        run: python scripts/r176_load_framework.py --ensure-k6
+
       - name: Run tests (live test suite)
         run: pytest tests/ -v --cov=agent_civilization --cov=agos_kernel --cov-report=xml
 
