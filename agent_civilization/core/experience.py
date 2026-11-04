@@ -281,21 +281,47 @@ async def _researcher_fallback(work: Dict[str, Any], result: Dict[str, Any],
     return None
 
 
+def _record_skill_outcome(skill_invocation: Dict[str, Any], result: Dict[str, Any]) -> None:
+    """R-192: تسجيل مخرج استدعاء المهارة (عدادات + تتبع) — بلا كسر للمهمة
+    أبدًا (أي فشل هنا يُبتلع ويُسجل نوعه فقط)."""
+    try:
+        from agent_civilization.core import skills as _skills
+        _skills.note_invocation(skill_invocation)
+        _skills.record_outcome(skill_invocation, result)
+    except Exception as exc:  # noqa: BLE001 — the skill layer must never break a task
+        logger.warning("skill outcome recording failed: %s", type(exc).__name__)
+
+
 async def _store(specialization: str, agent: str, work: Dict[str, Any], result: Dict[str, Any],
-                 kind: str, elapsed_ms: float, tenant_id: str) -> str:
+                 kind: str, elapsed_ms: float, tenant_id: str,
+                 skill_invocation: Optional[Dict[str, Any]] = None) -> str:
     global _stores_since_persist
     tenancy.check_scope(tenant_id)
     ok = bool(result.get("ok"))
     text = _work_text(work)
     prompt = str(work.get("prompt") or text)[:_TEXT_LIMIT]
+    if skill_invocation is not None:
+        # R-192: الدخلة توثق نص المستخدم الأصلي (لا النسخة المحولة) —
+        # المصدر قابل للتتبع: المهارة المساعدة + معرفات دخلاتها.
+        prompt = str(skill_invocation.get("original_prompt") or prompt)[:_TEXT_LIMIT]
     answer = _answer_of(result)
     metadata: Dict[str, Any] = {
         "layer": "experience", "tenant_id": tenant_id, "specialization": specialization, "agent": agent,
         "prompt": prompt, "answer": answer, "ok": ok, "input_kind": kind,
         "elapsed_ms": round(elapsed_ms, 1), "words": sorted(words(text))[:200],
     }
+    if skill_invocation is not None:
+        metadata["skill_invoked"] = str(skill_invocation.get("skill_id") or "")[:_TEXT_LIMIT]
+        metadata["skill_source_count"] = len(skill_invocation.get("source_memory_ids") or [])
     if work.get("goal"):  # R-125: the user request this stage served (self_developer retests it)
         metadata["goal"] = str(work["goal"])[:_TEXT_LIMIT]
+    if work.get("data") is not None:  # R-192: the task data (bounded) — the acquisition
+        # layer (skills) recognizes documented patterns from it (provenance stays
+        # traceable: the source entry id is carried on the acquired skill).
+        try:
+            metadata["data"] = _work_text({"data": work["data"]})[:_TEXT_LIMIT]
+        except Exception:  # noqa: BLE001 — metadata enrichment only, never blocks storage
+            logger.debug("experience entry data enrichment failed")
     if specialization == "researcher" and ok and not result.get("degraded"):
         blob = json.dumps(result.get("tool_output") or {}, ensure_ascii=False, default=str)
         if len(blob) <= _TOOL_OUTPUT_LIMIT:
@@ -315,8 +341,14 @@ async def _store(specialization: str, agent: str, work: Dict[str, Any], result: 
 # ---------------------------------------------------------------- entry point
 
 async def run_with_experience(specialization: str, agent: str, work: Dict[str, Any],
-                              call: Callable[[], Awaitable[Dict[str, Any]]]):
+                              call: Callable[[], Awaitable[Dict[str, Any]]],
+                              skill_invocation: Optional[Dict[str, Any]] = None):
     """Run ``call`` (the real handler) with memory and learning around it.
+
+    R-192: ``skill_invocation`` (اختياري) هو أثر مهارة إجرائية مطبقة على
+    نسخة العمل قبل المعالج (الطبقة الجديدة فوق هذه الطبقة) — يُسجل
+    مخرجه على عدادات المهارة ويُوثق في دخلة الخبرة (المصدر قابل للتتبع)،
+    ومدخل الدخلة يبقى نص طلب المستخدم الأصلي.
 
     Returns ``(result, experience)``; ``experience`` is None when disabled or if
     the layer itself failed (the task result is never lost because of it)."""
@@ -325,7 +357,10 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
         # SEC-02: no authenticated tenant -> no memory (nothing recalled, nothing stored)
         telemetry.event("memory", "recall", outcome="skipped",
                         reason="disabled" if not enabled() else "no_tenant")
-        return await call(), None
+        result = await call()
+        if skill_invocation is not None:
+            _record_skill_outcome(skill_invocation, result)
+        return result, None
     try:
         # R-159: `memory` spans hold counts/flags only — never the recalled text
         with telemetry.span("memory", "recall") as msp:
@@ -337,10 +372,16 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
     except Exception as exc:  # noqa: BLE001 — memory must never break a task
         # R-159: exception TYPE only (its text may carry paths/contents)
         logger.warning("experience recall failed: %s", type(exc).__name__)
-        return await call(), None
+        result = await call()
+        if skill_invocation is not None:
+            _record_skill_outcome(skill_invocation, result)
+        return result, None
     started = time.perf_counter()
     result = await call()
     elapsed_ms = (time.perf_counter() - started) * 1000.0
+    if skill_invocation is not None:
+        # R-192: مخرج الاستدعاء يُسجل على عدادات المهارة (القياس شرط الادعاء)
+        _record_skill_outcome(skill_invocation, result)
     try:
         fallback = None
         if specialization == "researcher" and isinstance(result, dict):
@@ -350,7 +391,7 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
             result = fallback
         with telemetry.span("memory", "record") as msp:
             mid = await _store(specialization, agent, work, live_result if isinstance(live_result, dict) else {},
-                               kind, elapsed_ms, tid)
+                               kind, elapsed_ms, tid, skill_invocation=skill_invocation)
             msp.set(stored=mid is not None)
         learning(tid).record_task(agent_id=agent, task_type=specialization, approach=kind,
                                success=bool(isinstance(live_result, dict) and live_result.get("ok")),
@@ -358,7 +399,8 @@ async def run_with_experience(specialization: str, agent: str, work: Dict[str, A
         experience = {"memory": {"recalled": recalled, "stored_id": mid,
                                  "fallback_used": fallback["memory_id"] if fallback else None},
                       "learning": {"prior": prior,
-                                   "after": prior_learning(specialization, kind, tid)}}
+                                   "after": prior_learning(specialization, kind, tid)},
+                      "skill": dict(skill_invocation) if skill_invocation else None}
         return result, experience
     except Exception as exc:  # noqa: BLE001
         logger.warning("experience store failed: %s", type(exc).__name__)

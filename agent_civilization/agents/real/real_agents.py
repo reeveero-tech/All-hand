@@ -117,8 +117,18 @@ class RealSpecialistAgent:
                 r = await _dispatch(self.specialization, work)
                 return r if r is not None else {"ok": False, "error": f"no handler for {self.specialization}"}
 
+            # R-192: the procedural-skill layer — an active matching skill of
+            # the ambient tenant transforms a COPY of the work (its steps)
+            # before the handler runs. The handler itself never changes
+            # (D-046 holds); the invocation is recorded with its outcome and
+            # travels with the experience envelope (its source is traceable).
+            from agent_civilization.core import skills as _skills
+            work, _skill_inv = await _skills.maybe_apply(self.specialization, work)
+
             # R-103: memory + learning around the real handler (D-046)
-            result, exp = await _experience.run_with_experience(self.specialization, self.name, work, call)
+            result, exp = await _experience.run_with_experience(
+                self.specialization, self.name, work, call,
+                skill_invocation=_skill_inv)
             ok = bool(result.get("ok"))
             # R-170 (batch 3): completion gate (opt-in AGOS_OUTPUT_VALIDATORS=1)
             # applied BEFORE adopting success or its side effects (stats below).
