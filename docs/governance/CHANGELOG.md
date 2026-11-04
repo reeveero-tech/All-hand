@@ -2,6 +2,7 @@
 
 - PR #320 مدموجة على main (merge_sha=`3f08c2a265e6a673792691c669e6b08a70ab5438`) وCI على SHA الدمج نفسه أخضر بالكامل: Kernel CI/CD success (التشغيل 41737917649 — test/quality/network/storage/audit/build/docker كلها نجحت) + Governance Gate success (41737917519). أدلة الحالة الكاملة (R-154): pr=#320 | tested_sha=38703ab7 | merge_sha=3f08c2a2 | ci_run=41737917649=success | الحزمة الكاملة 4036 passed.
 - R-175 يبقى `in_progress` بحدوده المعلنة: المرحلة 2 (1,000 أداة) لم تبدأ ولم تُعلن — قرار مالك صريح (D-125/D-129). — سجل القبول [`356`](docs/audit/M8/logs/raw/356_r175_batch5_acceptance_main_ci.log).
+- سطر حالة R-175 في ROADMAP يسجل قبول دمج دفعة 5 (merge 3f08c2a2 + CI أخضر على الدمج) بصيغة in_progress المتوافقة مع D-066 — الوثائق الثلاث تسافر مع الدفعة نفسها (R-187).
 
 ## 2026-11-04 — لاحق 116: R-175 دفعة 5 — سقف الاعتماد المرحلي قاعدة سجل: إغلاق تجاوز update_status + إعادة إثبات حي 100/100 (D-129)
 
