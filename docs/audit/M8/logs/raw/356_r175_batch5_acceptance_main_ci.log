@@ -1,0 +1,27 @@
+# R-175 batch 5 — acceptance record on main (raw, D-129)
+# date: 2026-11-03T23:47Z | branch: m8/r175-batch5-ceiling-enforcement | PR #320
+
+## PR merge state
+state=MERGED mergedAt=2026-11-03T23:17:07Z mergeCommit=3f08c2a265e6a673792691c669e6b08a70ab5438
+
+## main HEAD
+3f08c2a265e6a673792691c669e6b08a70ab5438 | Merge pull request #320 from reeveero-tech/m8/r175-batch5-ceiling-enforcement
+
+## check-runs on merge SHA 3f08c2a2 (all completed)
+publish | completed | skipped
+build | completed | success
+docker | completed | success
+storage | completed | success
+audit | completed | success
+network | completed | success
+governance | completed | skipped
+test | completed | success
+quality | completed | success
+push-scope-docs | completed | success
+
+## workflow runs on main for the merge
+completed	success	Merge pull request #320 from reeveero-tech/m8/r175-batch5-ceiling-enf…	Governance Gate	main	push	41737917519	11s	2026-11-03T23:17:10Z
+completed	success	Merge pull request #320 from reeveero-tech/m8/r175-batch5-ceiling-enf…	AGOS Kernel CI/CD	main	push	41737917649	30m19s	2026-11-03T23:17:10Z
+
+## full test-suite line from the PR-head run (job test, run 41733685156)
+run=41733685156 AGOS Kernel CI/CD | pull_request | m8/r175-batch5-ceiling-enforcement | completed | success
