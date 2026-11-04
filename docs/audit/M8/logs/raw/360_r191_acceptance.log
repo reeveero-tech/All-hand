@@ -1,0 +1,78 @@
+R-191 — ACCEPTANCE RECORD (دفعة القبول وإغلاق البند)
+=====================================================
+What was merged, with the raw evidence (D-066: the full field set).
+
+merge_sha   : 7d700938006961b73d7987498fc526deef89128f  (PR #324 merge on main)
+tested_sha  : d8eb4cd8ea51a821892d3d23a91b0e8b07cb9733  (the PR head CI tested)
+ci_run      : 41789444866 (AGOS Kernel CI/CD on the merge SHA 7d700938)
+ci_conclusion: success
+Governance Gate on the merge SHA: run 41789444851 = success
+Governance Gate on the PR (pull_request context): run 41785513778 = success
+Governance Gate on the push (R-187 R1: the head's own green push): run 41785486336 = success
+
+THE TEST EVIDENCE (all three CI legs of run 41789444866, the merge SHA):
+  Run tests (live test suite)        : 4054 passed, 8 skipped, 17 deselected, 9 xfailed (0:09:53)
+  Run tests on Python 3.12           : 4054 passed, 8 skipped, 17 deselected, 9 xfailed (0:09:12)
+  Run tests on Python 3.12 specialists: 4054 passed, 8 skipped, 17 deselected, 9 xfailed (0:09:20)
+  network job: 17 passed (the deselected live-network mark — ran and passed)
+  storage job: R-042 storage verification 26/26 checks passed; 4+2+1 passed
+
+The local full suite on the same code head (this sandbox, no outbound network):
+4053 passed / 1 failed (the KNOWN environmental runbook flake — educator +
+researcher need outbound network; PROVEN unrelated: the same test fails
+IDENTICALLY on clean main 13f8c764 in this box; CI with network passes it —
+see the three 4054-passed legs above). 10x stability of the new file: 13/13.
+
+WHAT R-191 DELIVERED (the acceptance criterion, verbatim from the ROADMAP:
+«موصل واحد طرفي حقيقي منظم بالمهام مع إبطال اعتماد موثق واختبارات سالبة
+(انقطاع، مهلة، رفض صلاحية، تكرار طلب) — أحمر أولًا»):
+  * ONE real terminal connector (GitHub issues: list/get/create + add_comment)
+    organized by the task contract — dispatched through the REAL tool gate
+    (tool_runtime.dispatch) with the task identity, approval, and ambient
+    tenant; the gate's own counters move (the same evidence class as R-190).
+  * documented credential invalidation: 401 → the per-tenant secret is
+    REVOKED at the R-189 store → the next call fails FAST (no terminal hit)
+    → recovery by putting a new secret (no restart).
+  * the negative tests, all red-first (the raw red run is in log 359):
+      - انقطاع (interruption): retried ONLY with a stable task identity
+        (Idempotency-Key {task_id}:{op}); WITHOUT an identity it surfaces
+        honestly and is NOT retried (fail-closed — never guess the effect).
+      - مهلة (timeout): the connector's own bounded budget (0<x≤120s by
+        construction), honest error, never retried.
+      - رفض صلاحية (403): honest fixed reason, never retried.
+      - تكرار طلب (duplicate): the effect applies ONCE (R-188-b).
+  * the reusable framework on top of external_adapter.py (the point
+    integrations stay documented, not replaced): fixed-reason error family
+    (R-149), bounded ConnectorPolicy, per-tenant credentials, SEC-02 tenant
+    isolation (fail-closed before any request), observability (per-connector
+    stats + spans), and a host allowlist the connector enforces on itself.
+
+THE FROZEN-SURFACE DISCIPLINE (why nothing drifted):
+  * real_dispatcher._HANDLERS stays exactly 100 (the R-171 invariant test is
+    green on the merge SHA); the connector handlers live in their OWN map
+    with a documented fallback in dispatch() — the same FREEZE_DRIFT pattern
+    as the tools_stdlib merge, recorded in benchmarks/r169/FREEZE_DRIFT.json
+    (54d223c79d3450d6 → dbd7c19c57e66d61).
+  * tool_runtime._own_check extended to verify the connector handler by the
+    SAME object identity the record's implementation_ref names (D-127
+    anti-swap discipline holds for connector tools too).
+  * the registry record agos.internal.github is NOT auto-seeded — an operator
+    action; the D-129 ceiling and the certify runbook stay at exactly 100.
+
+THE HONEST LIMITS THE ITEM STAYS BOUND BY (untested scope):
+  * the terminal in the tests is a loopback fake (real HTTP wire, fake
+    service — the R-163 evidence class); no production terminal was touched,
+    and production registration (base_url + allowlist + a per-tenant secret)
+    is an operator action. CI green is a merge condition, NOT production
+    readiness (the owner's call).
+  * task-API routing covers the 20 civilization specializations; a "github"
+    specialization would need a 21st pool and break the 1000-agent
+    invariants (multiple tests assert them) — routing tasks directly to
+    connector tools is a separate owner decision, deliberately not taken.
+  * recovery-without-restart is proven on the shared-file store (rotation
+    and revocation apply immediately across processes sharing the file); no
+    claim of distributed consistency beyond that.
+  * the timeout/retry behavior is proven against a cooperative fake; split
+    networks and partial writes at the terminal are out of scope here.
+
+R-191 → done. Next: R-192 (deps R-167, R-191 — now satisfied).
