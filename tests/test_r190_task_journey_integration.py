@@ -219,7 +219,7 @@ def test_r190_journey_recovers_a_task_from_a_dead_worker(tenants, db, monkeypatc
                               attempts=1, claim_token="r190-dead-token",
                               lease_expires_at="2020-01-01T00:00:00+00:00"))
 
-    with DQ._client() as c:
+    with DQ._client():
         # the reaper + dispatcher loops run inside the app's startup: the row
         # is recovered (expired lease → requeued → re-claimed) and the task
         # completes on the retry.
