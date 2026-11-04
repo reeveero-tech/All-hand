@@ -1,0 +1,41 @@
+# R-190 — التحقق التكاملي من سجل الأدوات وبواباته عبر رحلة المهمة الحقيقية (raw evidence)
+# date: 2026-11-04T00:24Z | branch: m8/r190-task-journey-integration | main base: 3f08c2a2
+
+## المنهجية (أحمر أولًا — D-112)
+الاختبارات الخمسة كُتبت قبل النظر إلى نتيجتها، والدليل الأحمر بطريقتين:
+(1) التحكم السلبي الدائم داخل المجموعة (test 3): مهمة لأداة سُحبت من السجل (disabled)
+    يجب أن تُرفض — لو تجاوزت الرحلة السجل لنجحت المهمة ولَفشل الاختبار (يرصد الاختبار التجاوز).
+(2) طفرة حمراء موثقة هنا (ليست اختبارًا دائمًا): تعطيل فحص سياسة الموافقة
+    (حالة ما قبل D-117) يجعل اختبار الرفض يفشل وحده — أي أن الاختبار مربوط فعليًا بالبوابة.
+
+## RED PROOF (raw): mutation — approval check disabled (pre-D-117 state)
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/user/workspace/all-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.1.post1, ddtrace-4.16.1, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 5 items
+
+tests/test_r190_red_proof_tmp.py .F...                                   [100%]
+
+=================================== FAILURES ===================================
+_________ test_r190_journey_permission_refusal_fails_the_task_honestly _________
+tests/test_r190_red_proof_tmp.py:183: in test_r190_journey_permission_refusal_fails_the_task_honestly
+    assert "refused" in reason, reason          # the fixed honest refusal
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: {'ok': False, 'agent': 'modifier_0500', 'elapsed_s': 0.002, 'result': {'ok': False, 'error': 'no code to modify'}, 'experience': {'memory': {'recalled': [], 'stored_id': 'mem_20261104002431949803_92c9473f', 'fallback_used': None}, 'learning': {'prior': {'specialization': 'modifier', 'input_kind': 'object', 'samples': 0}, 'after': {'specialization': 'modifier', 'input_kind': 'object', 'samples': 1, 'success_rate': 0.0, 'avg_duration_ms': 1.0}}}}
+E   assert 'refused' in "{'ok': False, 'agent': 'modifier_0500', 'elapsed_s': 0.002, 'result': {'ok': False, 'error': 'no code to modify'}, 'e...: {'specialization': 'modifier', 'input_kind': 'object', 'samples': 1, 'success_rate': 0.0, 'avg_duration_ms': 1.0}}}}"
+------------------------------ Captured log call -------------------------------
+WARNING  storage:supabase_store.py:102 Supabase key format not recognised (from none) — cannot tell whether writes will pass RLS; run scripts/run_r042_storage_verify.py after deploy.
+=========================== short test summary info ============================
+FAILED tests/test_r190_red_proof_tmp.py::test_r190_journey_permission_refusal_fails_the_task_honestly
+========================= 1 failed, 4 passed in 2.93s ==========================
+
+## stability: 10 consecutive full-file runs (raw tail of the last)
+(تشغيلات سابقة: 7/7 ثم 3/3 — راجع السجل الرئيسي أدناه)
+tests/test_r190_task_journey_integration.py .....                        [100%]
+
+============================== 5 passed in 2.75s ===============================
+
+## الحزمة الكاملة (تُلحق عند اكتمالها)
