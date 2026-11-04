@@ -75,11 +75,14 @@ GROUPS: List[Dict] = [
                   "(scripts/r042/run_local_stack.sh, the script CI's job 'storage' runs) applies all 4 SQL files "
                   "with ON_ERROR_STOP=1 and runs tests/test_r042_live_storage.py over HTTP."},
     {"id": "py-scripts", "title": "CLI and probe scripts", "category": "compile/lint/smoke",
-     "rules": [r"^scripts/.*\.py$", r"^benchmarks/.*\.py$"],
+     "rules": [r"^scripts/.*\.py$", r"^benchmarks/.*\.py$", r"^benchmarks/.*\.js$"],
      "rationale": "Compile + ruff (fatal set; not in CI's lint scope) + coverage from the suite (governance/inventory/"
                   "map CLIs are exercised by tests/test_r152..r156). Probes needing a live server are not executed here. "
                   "Benchmark runner scripts (benchmarks/**/*.py — R-171 gate_perf) compile and lint here; they are "
-                  "executed on demand (audit evidence), not by the suite."},
+                  "executed on demand (audit evidence), not by the suite. The k6 load script "
+                  "(benchmarks/r176/load.js — R-176) is JavaScript, not linted here: it is executed by k6 "
+                  "(smoke load inside the suite via tests/test_r176_load_framework.py; larger profiles on demand, "
+                  "Q-023)."},
     {"id": "shell", "title": "Shell scripts", "category": "syntax",
      "rules": [r"\.sh$"],
      "rationale": "bash -n syntax check; run_local_stack.sh is additionally executed by sql-storage."},

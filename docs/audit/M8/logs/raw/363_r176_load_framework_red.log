@@ -1,0 +1,140 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/user/workspace/all-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.1.post1, ddtrace-4.16.1, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 6 items
+
+tests/test_r176_load_framework.py FFFFEE                                 [100%]
+
+==================================== ERRORS ====================================
+___________ ERROR at setup of test_r176_smoke_load_real_and_reported ___________
+tests/test_r176_load_framework.py:106: in sut_server
+    fw = _framework()
+         ^^^^^^^^^^^^
+tests/test_r176_load_framework.py:34: in _framework
+    import r176_load_framework as fw  # noqa: PLC0415
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'r176_load_framework'
+___________ ERROR at setup of test_r176_threshold_breach_is_detected ___________
+tests/test_r176_load_framework.py:106: in sut_server
+    fw = _framework()
+         ^^^^^^^^^^^^
+tests/test_r176_load_framework.py:34: in _framework
+    import r176_load_framework as fw  # noqa: PLC0415
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'r176_load_framework'
+=================================== FAILURES ===================================
+__________________ test_r176_profiles_config_exists_and_valid __________________
+tests/test_r176_load_framework.py:41: in test_r176_profiles_config_exists_and_valid
+    assert PROFILES.exists(), "benchmarks/r176/profiles.json is missing"
+E   AssertionError: benchmarks/r176/profiles.json is missing
+E   assert False
+E    +  where False = exists()
+E    +    where exists = PosixPath('/home/user/workspace/all-hand/benchmarks/r176/profiles.json').exists
+_______________________ test_r176_load_script_open_model _______________________
+tests/test_r176_load_framework.py:68: in test_r176_load_script_open_model
+    assert LOAD_JS.exists(), "benchmarks/r176/load.js is missing"
+E   AssertionError: benchmarks/r176/load.js is missing
+E   assert False
+E    +  where False = exists()
+E    +    where exists = PosixPath('/home/user/workspace/all-hand/benchmarks/r176/load.js').exists
+_______________________ test_r176_k6_pinned_and_verified _______________________
+tests/test_r176_load_framework.py:81: in test_r176_k6_pinned_and_verified
+    fw = _framework()
+         ^^^^^^^^^^^^
+tests/test_r176_load_framework.py:34: in _framework
+    import r176_load_framework as fw  # noqa: PLC0415
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'r176_load_framework'
+_________________________ test_r176_config_sha_stable __________________________
+tests/test_r176_load_framework.py:93: in test_r176_config_sha_stable
+    fw = _framework()
+         ^^^^^^^^^^^^
+tests/test_r176_load_framework.py:34: in _framework
+    import r176_load_framework as fw  # noqa: PLC0415
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'r176_load_framework'
+=========================== short test summary info ============================
+FAILED tests/test_r176_load_framework.py::test_r176_profiles_config_exists_and_valid
+FAILED tests/test_r176_load_framework.py::test_r176_load_script_open_model - ...
+FAILED tests/test_r176_load_framework.py::test_r176_k6_pinned_and_verified - ...
+FAILED tests/test_r176_load_framework.py::test_r176_config_sha_stable - Modul...
+ERROR tests/test_r176_load_framework.py::test_r176_smoke_load_real_and_reported
+ERROR tests/test_r176_load_framework.py::test_r176_threshold_breach_is_detected
+========================= 4 failed, 2 errors in 0.19s ==========================
+
+===============================================================================
+R-176 — GREEN RUN (after the implementation; the same suite, the same machine)
+===============================================================================
+$ AGOS_ENV=test AGOS_LLM_KEYLESS=1 AGOS_ALLOW_CODE_EXEC=1 AGOS_API_KEY=test:phase1 \
+    python3 -m pytest tests/test_r176_load_framework.py -q
+
+tests/test_r176_load_framework.py ......                                 [100%]
+
+============================== 6 passed in 41.77s ==============================
+
+10x stability (the whole file, back to back): 10x "6 passed" (~41.7s each —
+the file starts a REAL uvicorn SUT and runs TWO real k6 loads per run)
+
+===============================================================================
+Full suite (regression gate — the same env as CI's test legs):
+===============================================================================
+$ AGOS_LLM_KEYLESS=1 AGOS_ALLOW_CODE_EXEC=1 AGOS_API_KEY=test:phase1 \
+    python3 -m pytest tests/ -q
+
+1 failed, 4069 passed, 8 skipped, 17 deselected, 9 xfailed in 655.71s (0:10:55)
+
+The single failure is the KNOWN environmental runbook test
+(tests/test_r175_batch4_phase1.py — the educator/researcher need outbound
+network; fails identically on CLEAN main in this sandbox (R-191/R-192
+evidence) and passes in CI). 4069 = 4063 (R-192 state) + the 6 new R-176
+tests.
+
+===============================================================================
+Quality gate (the exact CI command):
+===============================================================================
+$ ruff check --select F,E722 server.py agent_civilization agos_kernel tests
+All checks passed!
+
+===============================================================================
+The measured framework (the acceptance criterion, with numbers):
+===============================================================================
+Criterion (M8 P6 roadmap): config/version/workload profile/raw results/SHA؛
+لا يختلط ضغط generator مع ضغط SUT.
+
+  * config: benchmarks/r176/profiles.json — ستة ملفات تعريف (smoke/baseline/
+    normal/stress/spike/soak) كل منها بعتبات معلنة قبل التشغيل. الدخان صغير
+    بالتصميم (20s × 5 RPS × 8 VUs — يعمل في CI)؛ الكبيرة (stress/spike/soak)
+    موسومة requires_dedicated_env + blocked_on=Q-023 — حرس آلي في الإطار
+    يرفض تشغيلها بلا تجاوز مزدوج صريح (--allow-dedicated-env +
+    AGOS_ALLOW_BIG_LOAD=1 — قرار المالك).
+  * version: k6 v0.57.0 مثبت (التنزيل يتحقق بـSHA256 قبل الاستخدام — تثبيت
+    قابل لإعادة الإنتاج بروح R-148)؛ المؤكد: k6 v0.57.0 (commit/50afd82c18).
+  * workload profile: النموذج المفتوح (constant-arrival-rate) — الوصول بمعدل
+    مستقل عن زمن استجابة الخدمة (benchmarks/r176/load.js).
+  * raw results: ملخص k6 الخام (JSON) + سجل stdout لكل تشغيل — مسارهما في
+    كل تقرير.
+  * SHA: بصمة الإعداد (profiles.json + load.js) حتمية — config_sha256
+    مستقر داخل نفس الشيفرة (مثبت بالاختبار).
+  * الفصل: المولد (k6) والخدمة (uvicorn) عمليتا OS منفصلتان — الحمل يصيب
+    HTTP الحقيقي فقط؛ TARGET_URL قابل للتوجيه لعقدة مستقلة (مسار البيئة
+    المعزولة). موثق في كل تقرير (generator_sut_separated).
+
+القياس الحقيقي (تشغيل دخان موثق ضد SUT حي — 127.0.0.1، مولد منفصل):
+  * 101 طلبًا عبر HTTP الحقيقي، صفر فشل (requests_failed=0)، p95=5.58ms —
+    العتبات الثلاث تحققت صراحة من ملخص k6 الخام.
+  * السلبي: عتبة مستحيلة (p95 < 1µs) ⇒ القياس يفشل صراحة (exit 99، العتبة
+    مخروقة في التقرير) — النجاح الجوفاء ممنوع (مثبت بالاختبار).
+  * دلالة صيغة summary-export القديمة ({"expr": bool} حيث true = مخروقة)
+    مثبتة تجريبيًا على عتبات تُحقق وتُخترق معًا — مذكورة في الكود.
+
+ما لم يُثبت (حدود صادقة):
+  * الأحمال الكبيرة (stress/spike/soak) لم تُشغَّل إطلاقًا — محجوزة للبيئة
+    المعزولة (Q-023 — قرار المالك)؛ ملفات تعريفها معرفة وموسومة فقط.
+  * الدخان هنا على عدّاد مشترك (المولد والخدمة عمليتان منفصلتان على نفس
+    العتاد) — الفصل الكامل (عقد مستقلة) جزء من متطلبات البيئة المعزولة.
+  * SLO لكل خدمة/عنصر (R-177) لم يُحدد بعد — ملفات التعريف تحمل عتبات
+    أولية قابلة للتعديل؛ تحديدها مع المالك شرط قبل أحمال R-177.
+  * نجاح CI شرط دمج لا دليل جاهزية إنتاجية.
