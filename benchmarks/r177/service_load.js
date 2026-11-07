@@ -5,7 +5,8 @@
 // تُحقن من الإطار — النجاح/الفشل صريح لا جوفاء.
 //
 // SERVICE يحدد شكل الطلب (جرد الخدمات في benchmarks/r177/services.json).
-// عتبات كل خدمة مسودة صريحة بانتظار قرار المالك (SLO/stop limits).
+// الدفعة 3 (D-134): العتبات معتمدة بقرار المالك وتُحقن من العدّاء (لا تُرخى)؛
+// حدود الإيقاف تُقيَّم حيًا في العدّاء من مخرجات --out json لهذا المولد.
 
 import http from 'k6/http';
 import { check, sleep } from 'k6';
@@ -91,7 +92,8 @@ function tasksReadReq() {
     if (first && first.id) {
       const det = http.get(`${TARGET_URL}/api/tasks/${first.id}`,
         { headers: AUTH, tags: { profile: PROFILE, endpoint: 'task-detail' } });
-      check(det, { 'task detail 200/404': (r) => r.status === 200 || r.status === 404 });
+      // الدفعة 3: مهمة أُدرجت لمستأجرها يجب أن تُقرأ — 200 فقط (كان يقبل 404)
+      check(det, { 'task detail 200': (r) => r.status === 200 });
     }
   }
 }
@@ -153,11 +155,20 @@ function authReq() {
   check(res, { 'auth rejected 401/403': (r) => r.status === 401 || r.status === 403 });
 }
 
+// الدفعة 3: مسارات الواجهة الحقيقية من web/dist المبني (يمررها العدّاء) —
+// 200 فقط. بلا بناء لا يُشغَّل هذا المولد أصلًا (التصنيف not_measured في العدّاء):
+// الرد 404 ليس قياس واجهة (تصحيح الدفعة 2 التي قبلت 404).
+const FRONTEND_PATHS = JSON.parse(__ENV.FRONTEND_PATHS || '["/"]');
+
 function frontendReq() {
-  const res = http.get(`${TARGET_URL}/`,
-    { tags: { profile: PROFILE, endpoint: 'frontend-root' } });
-  // 200 = أصول مبنية؛ 404 = الواجهة غير مبنية (مسار البيئة الموثقة) — كلاهما مسار صالح
-  check(res, { 'frontend root 200/404': (r) => r.status === 200 || r.status === 404 });
+  const path = FRONTEND_PATHS[(n++) % FRONTEND_PATHS.length];
+  const res = http.get(`${TARGET_URL}${path}`,
+    { tags: { profile: PROFILE, endpoint: path === '/' ? 'frontend-root'
+      : (path.startsWith('/assets/') ? 'frontend-asset' : 'frontend-spa') } });
+  check(res, {
+    'frontend 200': (r) => r.status === 200,
+    'frontend body non-empty': (r) => r.status === 200 && r.body && r.body.length > 0,
+  });
 }
 
 const OPS = {
@@ -176,11 +187,10 @@ const OPS = {
 
 // حالات الاستجابة المتوقعة لكل خدمة: خارجها يُعد فشلًا (http_req_failed).
 // الإلغاء يقبل 409 (انتهت المهمة قبل الإلغاء)؛ المصادقة تتوقع 401/403؛
-// الواجهة 404 محليًا (غير مبنية). تيار SSE لا يُقاس هنا إطلاقًا (مسبار العدّاء).
+// الواجهة 200 فقط (الدفعة 3). تيار SSE لا يُقاس هنا إطلاقًا (مسبار العدّاء).
 const EXPECTED = {
   'api-auth': [401, 403],
   'api-task-lifecycle': [200, 202, 409],
-  'frontend': [200, 404],
 };
 
 if (EXPECTED[SERVICE]) {

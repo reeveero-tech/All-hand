@@ -1,0 +1,78 @@
+{
+ "scenario": "crash",
+ "storage": "volatile",
+ "service": "api-tasks-submit",
+ "fault_at_s": 10.0,
+ "cold_start_s": 0.613,
+ "load_report_ok": false,
+ "fault_fired_at_s": 10.101,
+ "stop_decision": {
+  "stopped": true,
+  "rule": "health_failure",
+  "rule_id": "S5",
+  "reason": "health_failure: immediate stop (S5)",
+  "at_s": 10.109,
+  "measurements": {
+   "probe": "health_failure",
+   "detail": {
+    "status": null
+   }
+  }
+ },
+ "detection_latency_s": 0.008,
+ "probe_failures_first": [
+  {
+   "kind": "health_failure",
+   "t_s": 10.109,
+   "detail": {
+    "status": null
+   }
+  },
+  {
+   "kind": "readiness_failure",
+   "t_s": 10.109,
+   "detail": {
+    "status": null,
+    "reason": null
+   }
+  }
+ ],
+ "metrics_during": {
+  "http_reqs": 101,
+  "requests_failed": 0,
+  "duration_avg_ms": 3.5405769801980194,
+  "duration_med_ms": 2.87554,
+  "duration_p90_ms": 3.135879,
+  "duration_p95_ms": 4.357179,
+  "duration_p99_ms": 19.816838,
+  "duration_max_ms": 37.902813,
+  "dropped_iterations": 0
+ },
+ "tracked_before_fault": {
+  "submitted": 6,
+  "accepted": 6,
+  "completed": 6,
+  "failed": 0,
+  "timeout": 0,
+  "e2e_p50_ms": 6.241,
+  "e2e_p95_ms": 19.359,
+  "e2e_max_ms": 19.359,
+  "all_completed": true
+ },
+ "restart_to_health_s": 0.605,
+ "restart_to_ready_s": 0.001,
+ "pre_fault_tasks": {
+  "checked": 7,
+  "lost": 7,
+  "completed": 0,
+  "failed": 0,
+  "still_pending": 0,
+  "settle_s": 0.0
+ },
+ "post_recovery_baseline": {
+  "ok": true,
+  "brief": "ok=True class=measured p95=3.791665ms reqs=101 failed=0 stopped=False tracked=11/11 e2e_p95=19.107ms",
+  "elapsed_s": 20.2
+ },
+ "ok": true
+}

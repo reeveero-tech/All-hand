@@ -1,0 +1,709 @@
+{
+ "run": "live-local_normal",
+ "counts": {
+  "measured": 11,
+  "not_measured": 0,
+  "stopped": 0,
+  "failed": 0
+ },
+ "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+ "coverage_evidence": {
+  "tools_executed_during_run": {
+   "agos.internal.analyst@1.0.0": 151,
+   "agos.internal.designer@1.0.0": 150,
+   "agos.internal.surgeon@1.0.0": 150,
+   "agos.internal.validator@1.0.0": 829
+  },
+  "tools_refused_during_run": {},
+  "tool_count": 100,
+  "llm_breaker_metrics_after": [
+   "agos_breaker_state{service=\"llm\"} 0",
+   "agos_breaker_opened{service=\"llm\"} 0",
+   "agos_breaker_rejected{service=\"llm\"} 0",
+   "agos_breaker_stale_outcomes{service=\"llm\"} 0"
+  ]
+ },
+ "skipped": {
+  "api-agents-external": "طفرات إدارية ذات أثر جانبي (إنشاء/حذف وكيل خارجي) — ليست هدف حمل؛ تحتاج قرار مالك إن أريد قياسها",
+  "api-admin-tools-mutations": "طفرات إدارية ذات أثر جانبي (تعطيل/تمكين/فحص أداة) — ليست هدف حمل",
+  "api-memory-delete": "تدميرية (تمسح ذاكرة المستأجر) — ليست هدف حمل"
+ },
+ "services": {
+  "api-admin-tools": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 20,
+    "max_vus": 24
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 1201,
+    "requests_failed": 0,
+    "duration_avg_ms": 5.075,
+    "duration_med_ms": 4.564,
+    "duration_p90_ms": 5.107,
+    "duration_p95_ms": 6.323,
+    "duration_p99_ms": 19.001,
+    "duration_max_ms": 61.703,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 1201,
+    "p50_ms": 4.564,
+    "p95_ms": 6.323,
+    "p99_ms": 19.001,
+    "max_ms": 61.703
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-agents": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 20,
+    "max_vus": 24
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 1200,
+    "requests_failed": 0,
+    "duration_avg_ms": 9.967,
+    "duration_med_ms": 14.241,
+    "duration_p90_ms": 15.544,
+    "duration_p95_ms": 16.64,
+    "duration_p99_ms": 51.381,
+    "duration_max_ms": 141.01,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 1200,
+    "p50_ms": 14.238,
+    "p95_ms": 16.634,
+    "p99_ms": 51.379,
+    "max_ms": 141.01
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-auth": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 200,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 20,
+    "max_vus": 24
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 1200,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.099,
+    "duration_med_ms": 2.616,
+    "duration_p90_ms": 3.055,
+    "duration_p95_ms": 3.804,
+    "duration_p99_ms": 15.742,
+    "duration_max_ms": 105.824,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 1200,
+    "p50_ms": 2.615,
+    "p95_ms": 3.804,
+    "p99_ms": 15.739,
+    "max_ms": 105.824
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-chat": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 2000,
+   "slo_p99_ms": 1000,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 10,
+    "max_vus": 16
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 601,
+    "requests_failed": 0,
+    "duration_avg_ms": 16.687,
+    "duration_med_ms": 15.036,
+    "duration_p90_ms": 17.319,
+    "duration_p95_ms": 19.495,
+    "duration_p99_ms": 59.141,
+    "duration_max_ms": 149.018,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 601,
+    "p50_ms": 15.036,
+    "p95_ms": 19.495,
+    "p99_ms": 59.141,
+    "max_ms": 149.018
+   },
+   "p99_assessment": {
+    "quantile": 0.99,
+    "threshold_ms": 1000.0,
+    "n": 601,
+    "n_min_required": 299,
+    "confidence": 0.95,
+    "point_ms": 59.141,
+    "upper_bound_ms": 66.659,
+    "sufficient": true,
+    "verdict": "pass",
+    "passed": true,
+    "rule": "pass ⇔ n >= n_min AND point < threshold AND distribution-free 95% upper bound < threshold"
+   },
+   "tail_review": {
+    "n": 601,
+    "max_ms": 149.018,
+    "med_ms": 15.036,
+    "max_over_med": 9.91,
+    "over_threshold": 0,
+    "over_half_threshold": 0,
+    "top": [
+     {
+      "ms": 149.018,
+      "t_s": 5.279,
+      "endpoint": "chat",
+      "seq": 51
+     },
+     {
+      "ms": 66.659,
+      "t_s": 32.193,
+      "endpoint": "chat",
+      "seq": 321
+     },
+     {
+      "ms": 63.62,
+      "t_s": 45.703,
+      "endpoint": "chat",
+      "seq": 456
+     },
+     {
+      "ms": 60.183,
+      "t_s": 14.201,
+      "endpoint": "chat",
+      "seq": 141
+     },
+     {
+      "ms": 59.871,
+      "t_s": 36.889,
+      "endpoint": "chat",
+      "seq": 368
+     }
+    ]
+   },
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-health": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 200,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 40,
+    "max_vus": 48
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 2398,
+    "requests_failed": 0,
+    "duration_avg_ms": 7.873,
+    "duration_med_ms": 1.518,
+    "duration_p90_ms": 25.717,
+    "duration_p95_ms": 28.361,
+    "duration_p99_ms": 69.76,
+    "duration_max_ms": 164.876,
+    "dropped_iterations": 3
+   },
+   "raw_quantiles": {
+    "n": 2398,
+    "p50_ms": 1.516,
+    "p95_ms": 28.438,
+    "p99_ms": 72.194,
+    "max_ms": 164.876
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-memory": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 20,
+    "max_vus": 24
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 1200,
+    "requests_failed": 0,
+    "duration_avg_ms": 4.418,
+    "duration_med_ms": 4.146,
+    "duration_p90_ms": 5.006,
+    "duration_p95_ms": 5.91,
+    "duration_p99_ms": 23.811,
+    "duration_max_ms": 87.723,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 1200,
+    "p50_ms": 4.144,
+    "p95_ms": 5.908,
+    "p99_ms": 23.795,
+    "max_ms": 87.723
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-sse": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 0.2,
+    "max_vus": 2
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 12,
+    "requests_failed": 0,
+    "duration_avg_ms": 7.854,
+    "duration_med_ms": 7.382,
+    "duration_p90_ms": 8.959,
+    "duration_p95_ms": 9.579,
+    "duration_p99_ms": 10.184,
+    "duration_max_ms": 10.335,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 12,
+    "p50_ms": 7.119,
+    "p95_ms": 10.335,
+    "p99_ms": 10.335,
+    "max_ms": 10.335
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 12,
+   "stalled_windows": 0,
+   "stall_detection_applicable": false,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-task-lifecycle": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 4,
+    "max_vus": 8
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 480,
+    "requests_failed": 0,
+    "duration_avg_ms": 12.922,
+    "duration_med_ms": 13.906,
+    "duration_p90_ms": 17.471,
+    "duration_p95_ms": 21.387,
+    "duration_p99_ms": 61.317,
+    "duration_max_ms": 88.143,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 480,
+    "p50_ms": 13.823,
+    "p95_ms": 21.382,
+    "p99_ms": 62.06,
+    "max_ms": 88.143
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": {
+    "submitted": 31,
+    "accepted": 31,
+    "completed": 31,
+    "failed": 0,
+    "timeout": 0,
+    "e2e_p50_ms": 178.551,
+    "e2e_p95_ms": 238.841,
+    "e2e_max_ms": 273.529,
+    "all_completed": true
+   },
+   "probe_counts": {
+    "health": 59,
+    "ready": 59,
+    "isolation": 20,
+    "integrity": 20
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 12,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-tasks-read": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 20,
+    "max_vus": 24
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 1201,
+    "requests_failed": 0,
+    "duration_avg_ms": 15.12,
+    "duration_med_ms": 13.899,
+    "duration_p90_ms": 15.364,
+    "duration_p95_ms": 18.048,
+    "duration_p99_ms": 46.111,
+    "duration_max_ms": 144.463,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 1201,
+    "p50_ms": 13.899,
+    "p95_ms": 18.048,
+    "p99_ms": 46.111,
+    "max_ms": 144.463
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-tasks-submit": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 10,
+    "max_vus": 16
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 601,
+    "requests_failed": 0,
+    "duration_avg_ms": 17.758,
+    "duration_med_ms": 14.97,
+    "duration_p90_ms": 24.187,
+    "duration_p95_ms": 29.832,
+    "duration_p99_ms": 60.205,
+    "duration_max_ms": 148.024,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 601,
+    "p50_ms": 14.97,
+    "p95_ms": 29.832,
+    "p99_ms": 60.205,
+    "max_ms": 148.024
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": {
+    "submitted": 31,
+    "accepted": 31,
+    "completed": 31,
+    "failed": 0,
+    "timeout": 0,
+    "e2e_p50_ms": 132.576,
+    "e2e_p95_ms": 247.967,
+    "e2e_max_ms": 255.319,
+    "all_completed": true
+   },
+   "probe_counts": {
+    "health": 59,
+    "ready": 59,
+    "isolation": 20,
+    "integrity": 20
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "frontend": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 20,
+    "max_vus": 24
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 1200,
+    "requests_failed": 0,
+    "duration_avg_ms": 1.852,
+    "duration_med_ms": 1.461,
+    "duration_p90_ms": 2.111,
+    "duration_p95_ms": 2.716,
+    "duration_p99_ms": 13.785,
+    "duration_max_ms": 48.472,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 1200,
+    "p50_ms": 1.461,
+    "p95_ms": 2.715,
+    "p99_ms": 13.783,
+    "max_ms": 48.472
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  }
+ }
+}

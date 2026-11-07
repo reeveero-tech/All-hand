@@ -1,0 +1,709 @@
+{
+ "run": "live-local_baseline",
+ "counts": {
+  "measured": 11,
+  "not_measured": 0,
+  "stopped": 0,
+  "failed": 0
+ },
+ "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+ "coverage_evidence": {
+  "tools_executed_during_run": {
+   "agos.internal.analyst@1.0.0": 76,
+   "agos.internal.designer@1.0.0": 75,
+   "agos.internal.surgeon@1.0.0": 75,
+   "agos.internal.validator@1.0.0": 209
+  },
+  "tools_refused_during_run": {},
+  "tool_count": 100,
+  "llm_breaker_metrics_after": [
+   "agos_breaker_state{service=\"llm\"} 0",
+   "agos_breaker_opened{service=\"llm\"} 0",
+   "agos_breaker_rejected{service=\"llm\"} 0",
+   "agos_breaker_stale_outcomes{service=\"llm\"} 0"
+  ]
+ },
+ "skipped": {
+  "api-agents-external": "طفرات إدارية ذات أثر جانبي (إنشاء/حذف وكيل خارجي) — ليست هدف حمل؛ تحتاج قرار مالك إن أريد قياسها",
+  "api-admin-tools-mutations": "طفرات إدارية ذات أثر جانبي (تعطيل/تمكين/فحص أداة) — ليست هدف حمل",
+  "api-memory-delete": "تدميرية (تمسح ذاكرة المستأجر) — ليست هدف حمل"
+ },
+ "services": {
+  "api-admin-tools": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 10,
+    "max_vus": 12
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 201,
+    "requests_failed": 0,
+    "duration_avg_ms": 4.923,
+    "duration_med_ms": 4.493,
+    "duration_p90_ms": 4.811,
+    "duration_p95_ms": 5.878,
+    "duration_p99_ms": 18.228,
+    "duration_max_ms": 25.691,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 201,
+    "p50_ms": 4.493,
+    "p95_ms": 5.878,
+    "p99_ms": 18.228,
+    "max_ms": 25.691
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 21,
+    "ready": 21,
+    "isolation": 8,
+    "integrity": 8
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 5,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-agents": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 10,
+    "max_vus": 12
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 201,
+    "requests_failed": 0,
+    "duration_avg_ms": 10.242,
+    "duration_med_ms": 14.569,
+    "duration_p90_ms": 15.62,
+    "duration_p95_ms": 17.265,
+    "duration_p99_ms": 51.607,
+    "duration_max_ms": 73.841,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 201,
+    "p50_ms": 14.569,
+    "p95_ms": 17.265,
+    "p99_ms": 51.607,
+    "max_ms": 73.841
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 20,
+    "ready": 20,
+    "isolation": 7,
+    "integrity": 7
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 5,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-auth": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 200,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 10,
+    "max_vus": 12
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 194,
+    "requests_failed": 0,
+    "duration_avg_ms": 54.882,
+    "duration_med_ms": 2.639,
+    "duration_p90_ms": 4.558,
+    "duration_p95_ms": 42.649,
+    "duration_p99_ms": 1436.157,
+    "duration_max_ms": 1732.84,
+    "dropped_iterations": 6
+   },
+   "raw_quantiles": {
+    "n": 194,
+    "p50_ms": 2.639,
+    "p95_ms": 90.871,
+    "p99_ms": 1486.882,
+    "max_ms": 1732.84
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 20,
+    "ready": 20,
+    "isolation": 7,
+    "integrity": 7
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 4,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-chat": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 2000,
+   "slo_p99_ms": 1000,
+   "params": {
+    "duration_s": 60,
+    "arrival_rate": 5,
+    "max_vus": 8
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 301,
+    "requests_failed": 0,
+    "duration_avg_ms": 15.344,
+    "duration_med_ms": 14.095,
+    "duration_p90_ms": 16.102,
+    "duration_p95_ms": 17.744,
+    "duration_p99_ms": 57.87,
+    "duration_max_ms": 74.525,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 301,
+    "p50_ms": 14.095,
+    "p95_ms": 17.744,
+    "p99_ms": 57.87,
+    "max_ms": 74.525
+   },
+   "p99_assessment": {
+    "quantile": 0.99,
+    "threshold_ms": 1000.0,
+    "n": 301,
+    "n_min_required": 299,
+    "confidence": 0.95,
+    "point_ms": 57.87,
+    "upper_bound_ms": 74.525,
+    "sufficient": true,
+    "verdict": "pass",
+    "passed": true,
+    "rule": "pass ⇔ n >= n_min AND point < threshold AND distribution-free 95% upper bound < threshold"
+   },
+   "tail_review": {
+    "n": 301,
+    "max_ms": 74.525,
+    "med_ms": 14.095,
+    "max_over_med": 5.29,
+    "over_threshold": 0,
+    "over_half_threshold": 0,
+    "top": [
+     {
+      "ms": 74.525,
+      "t_s": 25.099,
+      "endpoint": "chat",
+      "seq": 125
+     },
+     {
+      "ms": 67.484,
+      "t_s": 2.693,
+      "endpoint": "chat",
+      "seq": 13
+     },
+     {
+      "ms": 60.15,
+      "t_s": 43.086,
+      "endpoint": "chat",
+      "seq": 215
+     },
+     {
+      "ms": 57.87,
+      "t_s": 34.083,
+      "endpoint": "chat",
+      "seq": 170
+     },
+     {
+      "ms": 51.629,
+      "t_s": 52.081,
+      "endpoint": "chat",
+      "seq": 260
+     }
+    ]
+   },
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 13,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-health": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 200,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 20,
+    "max_vus": 24
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 401,
+    "requests_failed": 0,
+    "duration_avg_ms": 6.884,
+    "duration_med_ms": 1.52,
+    "duration_p90_ms": 24.376,
+    "duration_p95_ms": 25.12,
+    "duration_p99_ms": 36.11,
+    "duration_max_ms": 131.268,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 401,
+    "p50_ms": 1.52,
+    "p95_ms": 25.12,
+    "p99_ms": 36.11,
+    "max_ms": 131.268
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 20,
+    "ready": 20,
+    "isolation": 7,
+    "integrity": 7
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 5,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-memory": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 10,
+    "max_vus": 12
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 201,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.688,
+    "duration_med_ms": 3.099,
+    "duration_p90_ms": 3.881,
+    "duration_p95_ms": 5.381,
+    "duration_p99_ms": 16.829,
+    "duration_max_ms": 45.718,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 201,
+    "p50_ms": 3.099,
+    "p95_ms": 5.381,
+    "p99_ms": 16.829,
+    "max_ms": 45.718
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 21,
+    "ready": 21,
+    "isolation": 8,
+    "integrity": 8
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 5,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-sse": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 40,
+    "arrival_rate": 0.1,
+    "max_vus": 2
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 5,
+    "requests_failed": 0,
+    "duration_avg_ms": 23.155,
+    "duration_med_ms": 7.593,
+    "duration_p90_ms": 54.528,
+    "duration_p95_ms": 69.873,
+    "duration_p99_ms": 82.15,
+    "duration_max_ms": 85.219,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 5,
+    "p50_ms": 7.593,
+    "p95_ms": 85.219,
+    "p99_ms": 85.219,
+    "max_ms": 85.219
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 39,
+    "ready": 39,
+    "isolation": 14,
+    "integrity": 14
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 9,
+   "stalled_windows": 0,
+   "stall_detection_applicable": false,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-task-lifecycle": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 2,
+    "max_vus": 4
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 82,
+    "requests_failed": 0,
+    "duration_avg_ms": 10.506,
+    "duration_med_ms": 11.915,
+    "duration_p90_ms": 14.691,
+    "duration_p95_ms": 15.415,
+    "duration_p99_ms": 18.196,
+    "duration_max_ms": 18.714,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 82,
+    "p50_ms": 11.813,
+    "p95_ms": 15.431,
+    "p99_ms": 18.714,
+    "max_ms": 18.714
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": {
+    "submitted": 11,
+    "accepted": 11,
+    "completed": 11,
+    "failed": 0,
+    "timeout": 0,
+    "e2e_p50_ms": 127.632,
+    "e2e_p95_ms": 255.14,
+    "e2e_max_ms": 255.14,
+    "all_completed": true
+   },
+   "probe_counts": {
+    "health": 20,
+    "ready": 20,
+    "isolation": 7,
+    "integrity": 7
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 5,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-tasks-read": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 10,
+    "max_vus": 12
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 200,
+    "requests_failed": 0,
+    "duration_avg_ms": 13.992,
+    "duration_med_ms": 13.079,
+    "duration_p90_ms": 14.104,
+    "duration_p95_ms": 16.372,
+    "duration_p99_ms": 38.537,
+    "duration_max_ms": 59.917,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 200,
+    "p50_ms": 13.077,
+    "p95_ms": 16.348,
+    "p99_ms": 38.448,
+    "max_ms": 59.917
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 20,
+    "ready": 20,
+    "isolation": 7,
+    "integrity": 7
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 4,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "api-tasks-submit": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 5,
+    "max_vus": 8
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 101,
+    "requests_failed": 0,
+    "duration_avg_ms": 16.034,
+    "duration_med_ms": 14.469,
+    "duration_p90_ms": 17.63,
+    "duration_p95_ms": 19.355,
+    "duration_p99_ms": 53.39,
+    "duration_max_ms": 92.71,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 101,
+    "p50_ms": 14.469,
+    "p95_ms": 19.355,
+    "p99_ms": 53.39,
+    "max_ms": 92.71
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": {
+    "submitted": 11,
+    "accepted": 11,
+    "completed": 11,
+    "failed": 0,
+    "timeout": 0,
+    "e2e_p50_ms": 177.42,
+    "e2e_p95_ms": 228.424,
+    "e2e_max_ms": 228.424,
+    "all_completed": true
+   },
+   "probe_counts": {
+    "health": 20,
+    "ready": 20,
+    "isolation": 7,
+    "integrity": 7
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 5,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  },
+  "frontend": {
+   "classification": "measured",
+   "ok": true,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 20,
+    "arrival_rate": 10,
+    "max_vus": 12
+   },
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "metrics": {
+    "http_reqs": 200,
+    "requests_failed": 0,
+    "duration_avg_ms": 1.798,
+    "duration_med_ms": 1.536,
+    "duration_p90_ms": 1.855,
+    "duration_p95_ms": 2.744,
+    "duration_p99_ms": 9.934,
+    "duration_max_ms": 13.713,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 200,
+    "p50_ms": 1.534,
+    "p95_ms": 2.74,
+    "p99_ms": 9.907,
+    "max_ms": 13.713
+   },
+   "p99_assessment": null,
+   "tail_review": null,
+   "tracked_tasks": null,
+   "probe_counts": {
+    "health": 19,
+    "ready": 19,
+    "isolation": 7,
+    "integrity": 7
+   },
+   "probe_failures": [],
+   "retention_evictions": 0,
+   "windows": 4,
+   "stalled_windows": 0,
+   "stall_detection_applicable": true,
+   "k6_exit_code": 0,
+   "k6_version": "v0.57.0",
+   "config_sha256": "604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea",
+   "storage": "live-local"
+  }
+ }
+}

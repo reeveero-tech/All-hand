@@ -1,294 +1,489 @@
 {
- "framework": "k6 (R-176) — نفس النسخة المثبتة والتنزيل المتحقق بـSHA256",
- "k6_version": "v0.57.0",
- "notes": "R-177 (M8 P6 — ثاني دفعة من R-193، D-133): جرد الخدمات وخط أساس لكل خدمة على البيئة الموثقة. عتبات كل خدمة هنا مسودة صريحة (slo_status=draft) — الخارطة تشترط: يحدد مالك الاختبار SLO وstop limits قبل التشغيل؛ لا تُعتمد أي عتبة ولا يُشغل أي حمل stress/spike/soak لكل خدمة إلا بعد قرار المالك. الأحمال هنا كلها خط أساس صغير على العدّاد المشترك؛ الأحمال الكبيرة Q-023.",
- "slo_status": "draft_pending_owner_decision",
- "services": {
-  "api-health": {
-   "title": "الصحة والمقاييس وحالة النظام",
-   "measured": true,
-   "routes": [
-    "/api",
-    "/health",
-    "/health/live",
-    "/health/ready",
-    "/metrics",
-    "/api/system/status"
-   ],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 20,
-    "max_vus": 24,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<200"
-    }
-   },
-   "slo_proposal_p95_ms": 200,
-   "slo_status": "draft",
-   "ops": "تدوير GET على /health و/health/ready و/metrics و/api/system/status و/api"
+  "framework": "k6 (R-176) — نفس النسخة المثبتة والتنزيل المتحقق بـSHA256",
+  "k6_version": "v0.57.0",
+  "notes": "R-177 (M8 P6 — R-193، D-133 + D-134). الدفعة 3: العتبات معتمدة بقرار المالك (2026-11-07) — p95 لكل خدمة كما اقتُرحت في الدفعة 2 دون تغيير، http_req_failed < 1%، checks > 99%، وp99 مستقل للدردشة (1000ms) بشرط كفاية العينات؛ وحدود إيقاف محددة مسبقًا تُقيَّم أثناء الحمل (scripts/r177_stop_limits.py). الأحمال baseline/normal صغيرة على البيئة الموثقة؛ stress/spike/soak حرس Q-023 (heavy_profiles) لا تعمل بلا تجاوز المالك المزدوج. تاريخ الدفعة 2: slo_proposal_p95_ms محفوظة كما هي.",
+  "slo_status": "approved",
+  "slo_decision": {
+    "by": "owner",
+    "date": "2026-11-07",
+    "decision": "D-134",
+    "text": "اعتماد عتبات p95 المقترحة، وميزانية أخطاء أقل من 1%، ونجاح فحوص أعلى من 99%، وإضافة عتبة p99 للدردشة، وتحديد حدود الإيقاف.",
+    "previous_status": "draft_pending_owner_decision"
   },
-  "api-agents": {
-   "title": "جرد الوكلاء والتخصصات",
-   "measured": true,
-   "routes": [
-    "/api/agents",
-    "/api/specializations"
-   ],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 10,
-    "max_vus": 12,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<300"
-    }
-   },
-   "slo_proposal_p95_ms": 300,
-   "slo_status": "draft",
-   "ops": "تناوب GET /api/agents وGET /api/specializations"
+  "error_policy": {
+    "http_req_failed": "rate<0.01",
+    "checks": "rate>0.99"
   },
-  "api-tasks-read": {
-   "title": "قراءة قائمة المهام (طابور/تخزين)",
-   "measured": true,
-   "routes": [
-    "/api/tasks",
-    "/api/tasks/{task_id}"
-   ],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 10,
-    "max_vus": 12,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<300"
-    }
-   },
-   "slo_proposal_p95_ms": 300,
-   "slo_status": "draft",
-   "ops": "GET /api/tasks?limit=50 وكل تكرار رابع: GET /api/tasks/{id} لأول مهمة من القائمة (إن وُجدت)"
+  "stop_limits": {
+    "error_rate_max": 0.01,
+    "checks_rate_min": 0.99,
+    "latency_multiplier": 2.0,
+    "consecutive_windows": 2,
+    "window_s": 5,
+    "min_window_samples": 10,
+    "min_requests_for_rate": 100,
+    "immediate": [
+      "health_failure",
+      "readiness_failure",
+      "tenant_isolation_violation",
+      "data_integrity_violation"
+    ],
+    "rules": {
+      "S1": "http_req_failed > 1% (تراكمي بعد 100 طلب، ولكل نافذة بلغت 100 طلب) ⇒ إيقاف الحمل",
+      "S2": "checks < 99% (بالشرط نفسه) ⇒ إيقاف الحمل",
+      "S3": "p95 النافذة > 2× SLO الخدمة لنافذتين متتاليتين (نافذة 5s، ≥10 عينات) ⇒ إيقاف",
+      "S4": "p99 النافذة للدردشة > 2× عتبة p99 (2000ms) لنافذتين متتاليتين ⇒ إيقاف",
+      "S5": "فشل /health أو /health/ready، أو قراءة مستأجر B لمهمة A، أو فقدان/تبدل مهمة مخزنة ⇒ إيقاف فوري"
+    },
+    "not_the_slo": "عتبة SLO حكم نجاح/فشل على تشغيل اكتمل؛ حد الإيقاف صمام أمان يقطع الحمل أثناءه — p99 العتبة 1000ms، وحد إيقافه 2000ms لنافذتين.",
+    "floor": "الأرضية OWNER_FLOOR في scripts/r177_stop_limits.py ثابتة في الكود: قيمة أضعف هنا تُرفض قبل التشغيل (PolicyError)."
   },
-  "api-tasks-submit": {
-   "title": "إرسال مهمة (طابور + تنفيذ فعلي بالمزيف keyless)",
-   "measured": true,
-   "routes": [],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 5,
-    "max_vus": 8,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<500"
-    }
-   },
-   "slo_proposal_p95_ms": 500,
-   "slo_status": "draft",
-   "ops": "POST /api/tasks {specialization: validator} — الإرسال 202 مع تنفيذ حقيقي خلفه (المزيج keyless بلا اعتماد خارجي)"
+  "p99_policy": {
+    "applies_to": [
+      "api-chat"
+    ],
+    "threshold_ms": 1000,
+    "confidence": 0.95,
+    "n_min": 299,
+    "rule": "نجاح p99 ⇔ n ≥ 299 و p99 (الرتبة الأقرب) < 1000 و الحد الأعلى التوزيعي-الحر بثقة 95% < 1000؛ وإلا insufficient_samples أو fail — لا نجاح مع عينات ناقصة.",
+    "tail_review": "السجل 366: max=750.8ms مع med=4.75ms — يُراجع الذيل بأعلى 5 عينات وموضعها الزمني في كل تشغيل (tail_review)."
   },
-  "api-task-lifecycle": {
-   "title": "دورة حياة مهمة: إنشاء ثم إلغاء (cancellation)",
-   "measured": true,
-   "routes": [
-    "/api/tasks/{task_id}/cancel"
-   ],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 2,
-    "max_vus": 4,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<500"
+  "heavy_profiles": {
+    "stress": {
+      "duration_s": 300,
+      "rate_multiplier_of_normal": 5,
+      "requires_dedicated_env": true,
+      "blocked_on": "Q-023"
+    },
+    "spike": {
+      "duration_s": 120,
+      "rate_multiplier_of_normal": 10,
+      "requires_dedicated_env": true,
+      "blocked_on": "Q-023"
+    },
+    "soak": {
+      "duration_s": 7200,
+      "rate_multiplier_of_normal": 1,
+      "requires_dedicated_env": true,
+      "blocked_on": "Q-023"
     }
-   },
-   "slo_proposal_p95_ms": 500,
-   "slo_status": "draft",
-   "ops": "كل تكرار: POST /api/tasks ثم POST /api/tasks/{id}/cancel — يقيس مسار الإلغاء صراحة (طلب الخارطة)"
   },
-  "api-memory": {
-   "title": "خدمة الذاكرة والتعلم (R-103)",
-   "measured": true,
-   "routes": [
-    "/api/memory",
-    "/api/learning"
-   ],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 10,
-    "max_vus": 12,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<300"
+  "services": {
+    "api-health": {
+      "title": "الصحة والمقاييس وحالة النظام",
+      "measured": true,
+      "routes": [
+        "/api",
+        "/health",
+        "/health/live",
+        "/health/ready",
+        "/metrics",
+        "/api/system/status"
+      ],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 20,
+        "max_vus": 24,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<200"
+        }
+      },
+      "slo_proposal_p95_ms": 200,
+      "slo_status": "approved",
+      "ops": "تدوير GET على /health و/health/ready و/metrics و/api/system/status و/api",
+      "slo_p95_ms": 200,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 40,
+        "max_vus": 48
+      }
+    },
+    "api-agents": {
+      "title": "جرد الوكلاء والتخصصات",
+      "measured": true,
+      "routes": [
+        "/api/agents",
+        "/api/specializations"
+      ],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 10,
+        "max_vus": 12,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<300"
+        }
+      },
+      "slo_proposal_p95_ms": 300,
+      "slo_status": "approved",
+      "ops": "تناوب GET /api/agents وGET /api/specializations",
+      "slo_p95_ms": 300,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 20,
+        "max_vus": 24
+      }
+    },
+    "api-tasks-read": {
+      "title": "قراءة قائمة المهام (طابور/تخزين)",
+      "measured": true,
+      "routes": [
+        "/api/tasks",
+        "/api/tasks/{task_id}"
+      ],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 10,
+        "max_vus": 12,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<300"
+        }
+      },
+      "slo_proposal_p95_ms": 300,
+      "slo_status": "approved",
+      "ops": "GET /api/tasks?limit=50 وكل تكرار رابع: GET /api/tasks/{id} لأول مهمة من القائمة — 200 فقط (الدفعة 2 قبلت 404 للتفاصيل — مصحح: المهمة المدرجة لمستأجرها يجب أن تُقرأ).",
+      "slo_p95_ms": 300,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 20,
+        "max_vus": 24
+      }
+    },
+    "api-tasks-submit": {
+      "title": "إرسال مهمة (طابور + عامل + تنفيذ فعلي محلي — متتبع حتى الاكتمال)",
+      "measured": true,
+      "routes": [],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 5,
+        "max_vus": 8,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<500"
+        }
+      },
+      "slo_proposal_p95_ms": 500,
+      "slo_status": "approved",
+      "ops": "POST /api/tasks {specialization: validator} — الإرسال 202؛ والدفعة 3 تضيف مهام متتبعة (مستأجر A كل 2s) من الإرسال حتى completed (زمن طرف-لطرف عبر الطابور والعامل) — التنفيذ محلي (أداة التحقق من JSON) بلا مزود LLM.",
+      "slo_p95_ms": 500,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 10,
+        "max_vus": 16
+      },
+      "track_tasks": true
+    },
+    "api-task-lifecycle": {
+      "title": "دورة حياة مهمة: إنشاء ثم إلغاء (cancellation)",
+      "measured": true,
+      "routes": [
+        "/api/tasks/{task_id}/cancel"
+      ],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 2,
+        "max_vus": 4,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<500"
+        }
+      },
+      "slo_proposal_p95_ms": 500,
+      "slo_status": "approved",
+      "ops": "كل تكرار: POST /api/tasks ثم POST /api/tasks/{id}/cancel — يقيس مسار الإلغاء صراحة (طلب الخارطة)",
+      "slo_p95_ms": 500,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 4,
+        "max_vus": 8
+      },
+      "track_tasks": true
+    },
+    "api-memory": {
+      "title": "خدمة الذاكرة والتعلم (R-103)",
+      "measured": true,
+      "routes": [
+        "/api/memory",
+        "/api/learning"
+      ],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 10,
+        "max_vus": 12,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<300"
+        }
+      },
+      "slo_proposal_p95_ms": 300,
+      "slo_status": "approved",
+      "ops": "تناوب GET /api/memory?limit=20 وGET /api/learning",
+      "slo_p95_ms": 300,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 20,
+        "max_vus": 24
+      }
+    },
+    "api-chat": {
+      "title": "المحادثة (توجيه المنسق بالكلمات المفتاحية + أدوات محلية — بلا استدعاء LLM)",
+      "measured": true,
+      "routes": [
+        "/api/chat"
+      ],
+      "baseline": {
+        "duration_s": 60,
+        "arrival_rate": 5,
+        "max_vus": 8,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": [
+            "p(95)<2000",
+            "p(99)<1000"
+          ]
+        }
+      },
+      "slo_proposal_p95_ms": 2000,
+      "slo_status": "approved",
+      "ops": "POST /api/chat — مزيج رسائل R-131 (نفس مزيج R-176). تصحيح الدفعة 3: هذا المزيج يُوجَّه بالكلمات المفتاحية ويُجاب بأدوات محلية؛ لا يستدعي أي مزود LLM (بلا allow_public_llm؛ عدادات قاطع llm صفر) — مهايئ LLM يُقاس منفصلًا (scripts/r177_llm_adapter_bench.py).",
+      "slo_p95_ms": 2000,
+      "slo_p99_ms": 1000,
+      "baseline_duration_note": "رُفعت من 30s إلى 60s (5/ث ⇒ ~300 عينة ≥ n_min=299) لكفاية عينات p99 — العتبات دون تغيير",
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 10,
+        "max_vus": 16
+      }
+    },
+    "api-admin-tools": {
+      "title": "قراءة سجل الأدوات (tool registry)",
+      "measured": true,
+      "routes": [
+        "/api/admin/tools"
+      ],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 10,
+        "max_vus": 12,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<500"
+        }
+      },
+      "slo_proposal_p95_ms": 500,
+      "slo_status": "approved",
+      "ops": "GET /api/admin/tools — قراءة فقط (الطفرات الإدارية موثقة تخطيها أدناه)",
+      "slo_p95_ms": 500,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 20,
+        "max_vus": 24
+      }
+    },
+    "api-sse": {
+      "title": "أحداث SSE: استطلاع + اتصال تيار",
+      "measured": true,
+      "routes": [
+        "/api/events",
+        "/api/events/stream"
+      ],
+      "baseline": {
+        "duration_s": 40,
+        "arrival_rate": 0.1,
+        "max_vus": 2,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<500"
+        }
+      },
+      "slo_proposal_p95_ms": 500,
+      "slo_status": "approved",
+      "ops": "k6 يقيس استطلاع GET /api/events (حمل صغير)؛ وزمن اتصال تيار /api/events/stream حتى الرؤوس يقيسه مسبار TTFB منفصل في العدّاء (k6 ينتظر جسم الرد كاملًا — مثبت تجريبيًا)؛ عينات المسبار قليلة بالتصميم (قيود قبول SSE: max_per_client=5)",
+      "slo_p95_ms": 500,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 0.2,
+        "max_vus": 2
+      }
+    },
+    "api-auth": {
+      "title": "بوابة المصادقة (المسار السالب: مفتاح مفقود/خاطئ)",
+      "measured": true,
+      "routes": [],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 10,
+        "max_vus": 12,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<200"
+        }
+      },
+      "slo_proposal_p95_ms": 200,
+      "slo_status": "approved",
+      "ops": "POST /api/chat بلا مفتاح — يتوقع 401/403 (expectedStatuses) — يقيس بوابة الرفض السريعة نفسها",
+      "slo_p95_ms": 200,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 20,
+        "max_vus": 24
+      }
+    },
+    "frontend": {
+      "title": "الواجهة المبنية (index + الأصول + رابط SPA عميق)",
+      "measured": true,
+      "routes": [
+        "/{full_path:path}"
+      ],
+      "baseline": {
+        "duration_s": 20,
+        "arrival_rate": 10,
+        "max_vus": 12,
+        "thresholds": {
+          "http_req_failed": "rate<0.01",
+          "checks": "rate>0.99",
+          "http_req_duration": "p(95)<300"
+        }
+      },
+      "slo_proposal_p95_ms": 300,
+      "slo_status": "approved",
+      "ops": "تدوير GET على / و/assets/<كل ملف مبني> و/agents (SPA ⇒ index.html) — 200 فقط. بلا web/dist مبني: not_measured (الدفعة 2 قاست مسار 404 وعدّته نجاحًا — مصحح).",
+      "slo_p95_ms": 300,
+      "normal": {
+        "duration_s": 60,
+        "arrival_rate": 20,
+        "max_vus": 24
+      },
+      "requires_web_dist": true
     }
-   },
-   "slo_proposal_p95_ms": 300,
-   "slo_status": "draft",
-   "ops": "تناوب GET /api/memory?limit=20 وGET /api/learning"
   },
-  "api-chat": {
-   "title": "المحادثة (توجيه المنسق + مزود LLM keyless)",
-   "measured": true,
-   "routes": [
-    "/api/chat"
-   ],
-   "baseline": {
-    "duration_s": 30,
-    "arrival_rate": 5,
-    "max_vus": 8,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<2000"
+  "skipped": {
+    "api-agents-external": {
+      "routes": [
+        "/api/agents/external",
+        "/api/agents/external/{name}"
+      ],
+      "reason": "طفرات إدارية ذات أثر جانبي (إنشاء/حذف وكيل خارجي) — ليست هدف حمل؛ تحتاج قرار مالك إن أريد قياسها"
+    },
+    "api-admin-tools-mutations": {
+      "routes": [
+        "/api/admin/tools/health-check",
+        "/api/admin/tools/{name}/disable",
+        "/api/admin/tools/{name}/enable"
+      ],
+      "reason": "طفرات إدارية ذات أثر جانبي (تعطيل/تمكين/فحص أداة) — ليست هدف حمل"
+    },
+    "api-memory-delete": {
+      "routes": [
+        "/api/memory"
+      ],
+      "reason": "تدميرية (تمسح ذاكرة المستأجر) — ليست هدف حمل"
     }
-   },
-   "slo_proposal_p95_ms": 2000,
-   "slo_status": "draft",
-   "ops": "POST /api/chat — مزيج رسائل R-131 (نفس مزيج R-176)؛ العتبة كسابقة R-176 المقبولة"
   },
-  "api-admin-tools": {
-   "title": "قراءة سجل الأدوات (tool registry)",
-   "measured": true,
-   "routes": [
-    "/api/admin/tools"
-   ],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 10,
-    "max_vus": 12,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<500"
+  "indirect": {
+    "task-queue-workers": {
+      "routes": [
+        "/api/tasks"
+      ],
+      "covered_via": "مقيس مباشرة طرفًا-لطرف: مهام متتبعة في api-tasks-submit/api-task-lifecycle حتى completed، على الطابور الذاكري (volatile) والطابور المتين (live-local: PostgreSQL+PostgREST محلي — R-163)؛ سلالم العدد R-178/R-179."
+    },
+    "orchestrator": {
+      "routes": [
+        "/api/chat"
+      ],
+      "covered_via": "api-chat — التوجيه (keywords) والتنفيذ عبر المنسق في كل طلب لأربعة تخصصات من مزيج R-131؛ مسار التوجيه بـLLM غير مقيس (لا مزود)."
+    },
+    "llm-provider-adapter": {
+      "routes": [
+        "/api/chat"
+      ],
+      "covered_via": "تصحيح الدفعة 3: لا يُغطى عبر api-chat (صفر استدعاءات LLM — توجيه بالكلمات المفتاحية وأدوات محلية). يُقاس مباشرة في العملية ضد مزود وهمي محلي (scripts/r177_llm_adapter_bench.py — ليس مزودًا حيًا)؛ المزود الحي يتطلب مفتاحًا وميزانية (R-182، Q-023)."
+    },
+    "tool-adapter-families": {
+      "routes": [
+        "/api/tasks"
+      ],
+      "covered_via": "ضمنيًا: تنفيذ المهام والدردشة يمر ببوابة الأدوات الحقيقية (tool_runtime.dispatch) — لقطة gate_stats.executed قبل/بعد في كل تشغيل --all تثبت الأدوات المنفذة فعلًا؛ أدوات الشبكة (بحث/ترجمة) مستثناة (شبكة خارجية — job network)؛ سجل 10k أداة R-180."
+    },
+    "storage-fallback": {
+      "routes": [
+        "/api/tasks"
+      ],
+      "covered_via": "مقيس مباشرة بالوضعين: volatile (المسار الذاكري، Supabase غير مهيأ) وlive-local (PostgreSQL 18 + PostgREST v12.2.3 محليان بنفس مخطط docs/sql — ليس Supabase المستضاف؛ ذلك R-182)."
+    },
+    "memory-service": {
+      "routes": [
+        "/api/memory"
+      ],
+      "covered_via": "api-memory — بحث/إحصاءات الذاكرة على كل طلب"
     }
-   },
-   "slo_proposal_p95_ms": 500,
-   "slo_status": "draft",
-   "ops": "GET /api/admin/tools — قراءة فقط (الطفرات الإدارية موثقة تخطيها أدناه)"
   },
-  "api-sse": {
-   "title": "أحداث SSE: استطلاع + اتصال تيار",
-   "measured": true,
-   "routes": [
-    "/api/events",
-    "/api/events/stream"
-   ],
-   "baseline": {
-    "duration_s": 40,
-    "arrival_rate": 0.1,
-    "max_vus": 2,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<500"
+  "coverage": {
+    "api_auth": {
+      "status": "measured_direct",
+      "how": "11 خدمة HTTP؛ بوابة الرفض (api-auth)؛ ومسابير عزل المستأجرين (S5) أثناء كل تشغيل بمستأجرين حقيقيين (AGOS_TENANT_KEYS بمفاتيح عشوائية للجلسة)",
+      "evidence": "السجل 368 §baseline/normal",
+      "not_covered": "تدوير المفاتيح تحت الحمل؛ أدوار متعددة الإدارة"
+    },
+    "task_queue_workers": {
+      "status": "measured_direct",
+      "how": "مهام متتبعة من الإرسال حتى completed (طرف-لطرف) على الطابور الذاكري والطابور المتين المحلي؛ عطل SIGKILL أثناء الحمل ثم استكمال اليتيمة بعد إعادة التشغيل",
+      "evidence": "السجل 368 §normal/§failure-recovery",
+      "not_covered": "سلالم 10k وكيل و1M مهمة (R-178/R-179 — Q-023)"
+    },
+    "orchestrator_agent_paths": {
+      "status": "measured_direct",
+      "how": "api-chat: التوجيه بالكلمات المفتاحية + تنفيذ تخصصات المزيج (analyst/validator/...)؛ api-tasks-submit: وكيل validator",
+      "evidence": "السجل 368",
+      "not_covered": "التوجيه بـLLM؛ مسارات وكلاء تحتاج شبكة/مزودًا؛ تعدد الوكلاء المتزامن الكبير (R-178)"
+    },
+    "memory_storage": {
+      "status": "measured_direct",
+      "how": "api-memory (قراءة الذاكرة/التعلم) + كتابة ذاكرة لكل مهمة منفذة؛ التخزين بالوضعين volatile وlive-local (PostgreSQL+PostgREST محلي)",
+      "evidence": "السجل 368 §live-local",
+      "not_covered": "Supabase المستضاف (R-182)؛ حجم بيانات كبير (R-179/R-180)"
+    },
+    "llm_adapters": {
+      "status": "measured_direct_mock",
+      "how": "LLMClient المفتاحي (الشيفرة الحقيقية) ضد مزود وهمي محلي في عملية منفصلة: baseline/normal/failure-recovery (قاطع llm، Retry-After)",
+      "evidence": "السجل 368 §llm-adapter",
+      "not_covered": "أي مزود حي (OpenRouter مفتاحي أو keyless العام) — يتطلب مفتاحًا/موافقة/ميزانية (R-182، Q-023)؛ api-chat لا يستدعي LLM إطلاقًا"
+    },
+    "tool_families": {
+      "status": "measured_indirect",
+      "how": "الأدوات المنفذة فعلًا عبر بوابة الأدوات أثناء الأحمال (لقطة gate_stats.executed)، وقراءة السجل api-admin-tools",
+      "evidence": "السجل 368 §tools",
+      "not_covered": "أدوات الشبكة الخارجية؛ الطفرات الإدارية (skipped)؛ ضغط عائلات الأدوات وسجل 10k (R-180)"
+    },
+    "sse": {
+      "status": "measured_direct",
+      "how": "استطلاع /api/events (k6) + زمن اتصال التيار حتى الرؤوس (مسبار TTFB)",
+      "evidence": "السجل 368",
+      "not_covered": "اتصالات طويلة متزامنة كثيرة/معدل البث (قيود قبول SSE max_per_client=5) — R-180/R-181 في البيئة المعزولة"
+    },
+    "frontend": {
+      "status": "measured_direct",
+      "how": "web/dist مبني (vite) ويُقدَّم من FastAPI: index والأصول والرابط العميق — 200 فقط",
+      "evidence": "السجل 368",
+      "not_covered": "العرض في متصفح وتنفيذ JS (لا حمل متصفح)؛ CDN/استضافة الإنتاج"
     }
-   },
-   "slo_proposal_p95_ms": 500,
-   "slo_status": "draft",
-   "ops": "k6 يقيس استطلاع GET /api/events (حمل صغير)؛ وزمن اتصال تيار /api/events/stream حتى الرؤوس يقيسه مسبار TTFB منفصل في العدّاء (k6 ينتظر جسم الرد كاملًا — مثبت تجريبيًا)؛ عينات المسبار قليلة بالتصميم (قيود قبول SSE: max_per_client=5)"
   },
-  "api-auth": {
-   "title": "بوابة المصادقة (المسار السالب: مفتاح مفقود/خاطئ)",
-   "measured": true,
-   "routes": [],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 10,
-    "max_vus": 12,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<200"
-    }
-   },
-   "slo_proposal_p95_ms": 200,
-   "slo_status": "draft",
-   "ops": "POST /api/chat بلا مفتاح — يتوقع 401/403 (expectedStatuses) — يقيس بوابة الرفض السريعة نفسها"
-  },
-  "frontend": {
-   "title": "مسارات الواجهة (catch-all)",
-   "measured": true,
-   "routes": [
-    "/{full_path:path}"
-   ],
-   "baseline": {
-    "duration_s": 20,
-    "arrival_rate": 10,
-    "max_vus": 12,
-    "thresholds": {
-     "http_req_failed": "rate<0.01",
-     "checks": "rate>0.99",
-     "http_req_duration": "p(95)<300"
-    }
-   },
-   "slo_proposal_p95_ms": 300,
-   "slo_status": "draft",
-   "ops": "GET / — محليًا يقيس مسار الرد 404 (الواجهة غير مبنية في البيئة الموثقة؛ تقديم الأصول الحقيقية يتطلب web/dist مبنيًا — متوفر في بيئة البناء)"
+  "profiles_on_this_env": {
+    "baseline": "مقيس",
+    "normal": "مقيس (≈2× خط الأساس، 60s)",
+    "failure_recovery": "مقيس (تعطل SUT، انقطاع التخزين المحلي، أعطال مزود وهمي)",
+    "stress/spike/soak": "blocked — Q-023 (بيئة معزولة وميزانية بقرار المالك)"
   }
- },
- "skipped": {
-  "api-agents-external": {
-   "routes": [
-    "/api/agents/external",
-    "/api/agents/external/{name}"
-   ],
-   "reason": "طفرات إدارية ذات أثر جانبي (إنشاء/حذف وكيل خارجي) — ليست هدف حمل؛ تحتاج قرار مالك إن أريد قياسها"
-  },
-  "api-admin-tools-mutations": {
-   "routes": [
-    "/api/admin/tools/health-check",
-    "/api/admin/tools/{name}/disable",
-    "/api/admin/tools/{name}/enable"
-   ],
-   "reason": "طفرات إدارية ذات أثر جانبي (تعطيل/تمكين/فحص أداة) — ليست هدف حمل"
-  },
-  "api-memory-delete": {
-   "routes": [
-    "/api/memory"
-   ],
-   "reason": "تدميرية (تمسح ذاكرة المستأجر) — ليست هدف حمل"
-  }
- },
- "indirect": {
-  "task-queue-workers": {
-   "routes": [
-    "/api/tasks"
-   ],
-   "covered_via": "api-tasks-submit (الإدخال) وapi-task-lifecycle (الإلغاء) — والتنفيذ يُراقب عبر قراءات /api/tasks؛ الضغط المباشر للطابور بسلالم عددية هو نطاق R-178/R-179"
-  },
-  "orchestrator": {
-   "routes": [
-    "/api/chat"
-   ],
-   "covered_via": "api-chat — التوجيه والتنفيذ عبر المنسق في كل طلب"
-  },
-  "llm-provider-adapter": {
-   "routes": [
-    "/api/chat"
-   ],
-   "covered_via": "api-chat — المسار keyless (مزود مزيف بلا اعتماد خارجي)؛ المزود الحي خاضع لقيود مزود خارجي (قرار مالك)"
-  },
-  "tool-adapter-families": {
-   "routes": [
-    "/api/tasks"
-   ],
-   "covered_via": "تنفيذ المهام (validator محليًا) يستدعي عائلات الأدوات؛ الضغط المباشر لسجل 10k أدوات هو نطاق R-180"
-  },
-  "storage-fallback": {
-   "routes": [
-    "/api/tasks"
-   ],
-   "covered_via": "قراءات /api/tasks على المسار الذاكري المحلي (Supabase غير مهيأ محليًا) — التخزين الحي يُختبر في job ‏storage بـCI"
-  },
-  "memory-service": {
-   "routes": [
-    "/api/memory"
-   ],
-   "covered_via": "api-memory — بحث/إحصاءات الذاكرة على كل طلب"
-  }
- }
 }

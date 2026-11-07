@@ -1,0 +1,104 @@
+# R-177 batch 3 (D-134) — RED FIRST: the batch's new/evolved tests run against origin/main d6d096d5eff606b6ee39e06c25f04659e78bb7b6
+# date: 2026-11-07T05:58:46Z; env: agent sandbox (shared, 2 CPU); python Python 3.14.8
+# files: tests/test_r177_per_service.py tests/test_r177_stop_limits.py tests/test_sec09_frontend_path_traversal.py
+
+FAILED tests/test_r177_per_service.py::test_services_file_exists_and_parses
+FAILED tests/test_r177_per_service.py::test_p95_adopted_unchanged_from_batch2
+FAILED tests/test_r177_per_service.py::test_chat_p99_separate_threshold_and_sufficient_samples
+FAILED tests/test_r177_per_service.py::test_stop_limits_distinct_from_p99_threshold
+FAILED tests/test_r177_per_service.py::test_heavy_profiles_guarded_by_q023 - ...
+FAILED tests/test_r177_per_service.py::test_coverage_matrix_covers_every_component_honestly
+FAILED tests/test_r177_per_service.py::test_frontend_never_accepts_404 - asse...
+FAILED tests/test_r177_per_service.py::test_frontend_unbuilt_is_not_measured
+FAILED tests/test_r177_per_service.py::test_thresholds_can_only_be_tightened
+FAILED tests/test_r177_per_service.py::test_tampered_declared_threshold_refused
+FAILED tests/test_r177_per_service.py::test_all_measured_services_defined - A...
+FAILED tests/test_r177_per_service.py::test_baseline_thresholds_format - KeyE...
+FAILED tests/test_r177_per_service.py::test_real_stop_s5_sut_crash_immediate
+FAILED tests/test_r177_stop_limits.py::test_configured_policy_matches_owner_decision_exactly
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[error_rate_max-0.02]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[error_rate_max-0.5]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[checks_rate_min-0.98]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[checks_rate_min-0.5]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[latency_multiplier-2.5]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[latency_multiplier-100]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[consecutive_windows-3]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[consecutive_windows-1000]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[min_requests_for_rate-10000]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[min_window_samples-10000]
+FAILED tests/test_r177_stop_limits.py::test_weaker_than_owner_floor_is_refused[window_s-3600]
+FAILED tests/test_r177_stop_limits.py::test_immediate_rules_cannot_be_removed[health_failure]
+FAILED tests/test_r177_stop_limits.py::test_immediate_rules_cannot_be_removed[readiness_failure]
+FAILED tests/test_r177_stop_limits.py::test_immediate_rules_cannot_be_removed[tenant_isolation_violation]
+FAILED tests/test_r177_stop_limits.py::test_immediate_rules_cannot_be_removed[data_integrity_violation]
+FAILED tests/test_r177_stop_limits.py::test_missing_or_empty_policy_refused_and_slo_required
+FAILED tests/test_r177_stop_limits.py::test_stricter_policy_is_allowed - KeyE...
+FAILED tests/test_r177_stop_limits.py::test_s1_error_rate_positive_stops_with_measurements
+FAILED tests/test_r177_stop_limits.py::test_s1_error_rate_negative_at_one_percent_does_not_stop
+FAILED tests/test_r177_stop_limits.py::test_s1_late_burst_not_diluted_by_cumulative
+FAILED tests/test_r177_stop_limits.py::test_s2_checks_positive_and_negative
+FAILED tests/test_r177_stop_limits.py::test_s3_p95_two_consecutive_windows_positive
+FAILED tests/test_r177_stop_limits.py::test_s3_single_window_or_non_consecutive_does_not_stop
+FAILED tests/test_r177_stop_limits.py::test_s3_exactly_2x_is_not_over - FileN...
+FAILED tests/test_r177_stop_limits.py::test_s3_insufficient_window_cannot_reset_streak
+FAILED tests/test_r177_stop_limits.py::test_s4_chat_p99_positive_independent_of_p95
+FAILED tests/test_r177_stop_limits.py::test_s4_p99_over_slo_but_under_stop_limit_does_not_stop
+FAILED tests/test_r177_stop_limits.py::test_s4_not_applied_to_services_without_p99
+FAILED tests/test_r177_stop_limits.py::test_s5_immediate_positive[health_failure]
+FAILED tests/test_r177_stop_limits.py::test_s5_immediate_positive[readiness_failure]
+FAILED tests/test_r177_stop_limits.py::test_s5_immediate_positive[tenant_isolation_violation]
+FAILED tests/test_r177_stop_limits.py::test_s5_immediate_positive[data_integrity_violation]
+FAILED tests/test_r177_stop_limits.py::test_s5_negative_passing_probes_never_stop
+FAILED tests/test_r177_stop_limits.py::test_unknown_probe_kind_is_an_error_not_ignored
+FAILED tests/test_r177_stop_limits.py::test_decision_is_sticky_and_all_breaches_logged
+FAILED tests/test_r177_stop_limits.py::test_p99_sample_sufficiency_math - Fil...
+FAILED tests/test_r177_stop_limits.py::test_quantile_upper_bound_is_conservative
+FAILED tests/test_r177_stop_limits.py::test_tail_review_reports_top_samples
+FAILED tests/test_r177_stop_limits.py::test_parse_k6_time_nanoseconds - FileN...
+FAILED tests/test_r177_stop_limits.py::test_isolation_probe_detects_cross_tenant_read_and_stops
+FAILED tests/test_r177_stop_limits.py::test_isolation_probe_negative_on_correct_404
+FAILED tests/test_r177_stop_limits.py::test_integrity_probe_detects_loss_and_tampering[lost-lost]
+FAILED tests/test_r177_stop_limits.py::test_integrity_probe_detects_loss_and_tampering[tamper-fields changed]
+FAILED tests/test_r177_stop_limits.py::test_integrity_probe_detects_terminal_regression
+FAILED tests/test_r177_stop_limits.py::test_volatile_eviction_of_observed_terminal_task_is_reported_not_stop
+FAILED tests/test_r177_stop_limits.py::test_volatile_loss_of_never_terminal_task_still_stops
+FAILED tests/test_r177_stop_limits.py::test_durable_storage_never_tolerates_404
+FAILED tests/test_r177_stop_limits.py::test_volatile_retention_read_from_server_source
+FAILED tests/test_r177_stop_limits.py::test_stall_two_censored_windows_stop_s3
+FAILED tests/test_r177_stop_limits.py::test_stall_then_late_slow_completions_still_stop
+FAILED tests/test_r177_stop_limits.py::test_single_stalled_window_does_not_stop
+FAILED tests/test_r177_stop_limits.py::test_half_completion_is_not_a_stall - ...
+FAILED tests/test_r177_stop_limits.py::test_stall_not_inferred_for_low_rate_or_without_rate
+FAILED tests/test_r177_stop_limits.py::test_final_partial_window_and_first_window_not_stall
+FAILED tests/test_r177_stop_limits.py::test_stall_also_counts_for_chat_p99_rule
+FAILED tests/test_r177_stop_limits.py::test_expected_rate_must_be_positive - ...
+FAILED tests/test_sec09_frontend_path_traversal.py::test_files_inside_dist_are_served
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[../server.py]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[../../server.py]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[../secret.py]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[assets/../../secret.py]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[/etc/passwd]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[//etc/passwd]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[..]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[../]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_traversal_and_absolute_paths_are_refused[assets/../../../server.py]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_symlink_escaping_dist_is_refused
+FAILED tests/test_sec09_frontend_path_traversal.py::test_missing_file_is_none_so_spa_fallback_applies
+FAILED tests/test_sec09_frontend_path_traversal.py::test_route_uses_the_guard_not_raw_join
+FAILED tests/test_sec09_frontend_path_traversal.py::test_escape_detection[../server.py-True]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_escape_detection[/etc/passwd-True]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_escape_detection[assets/../../x-True]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_escape_detection[dashboard/tasks-False]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_escape_detection[assets/../index.html-False]
+FAILED tests/test_sec09_frontend_path_traversal.py::test_escape_detection[-False]
+ERROR tests/test_r177_per_service.py::test_real_baseline_health - AttributeEr...
+ERROR tests/test_r177_per_service.py::test_real_stop_s1_error_rate_cuts_the_load
+ERROR tests/test_r177_per_service.py::test_real_stop_s3_p95_two_windows - Att...
+ERROR tests/test_r177_per_service.py::test_negative_threshold_breach_detected
+==================== 89 failed, 7 passed, 4 errors in 1.95s ====================
+
+# LIVE EXPLOIT ON MAIN (SEC-09): unauthenticated GET via the frontend catch-all, web/dist built
+BEFORE(main) /..%2f..%2fserver.py 200 170484B '#!/usr/bin/env python3 """ AGOS Agent Ci'
+BEFORE(main) /%2e%2e/%2e%2e/server.py 200 170484B '#!/usr/bin/env python3 """ AGOS Agent Ci'
+BEFORE(main) //etc/passwd 200 1343B 'root:x:0:0:root:/root:/bin/bash daemon:x'
+BEFORE(main) /index.html 200 771B '<!DOCTYPE html> <html lang="ar" dir="rtl'
