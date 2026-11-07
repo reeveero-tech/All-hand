@@ -24,6 +24,7 @@ import argparse
 import asyncio
 import importlib.util
 import json
+import math
 import os
 import pathlib
 import statistics
@@ -112,7 +113,7 @@ def _pct(xs, p):
     if not xs:
         return None
     xs = sorted(xs)
-    k = max(0, min(len(xs) - 1, int(round(p / 100 * len(xs) + 0.5)) - 1))
+    k = max(0, min(len(xs) - 1, math.ceil(p / 100 * len(xs)) - 1))  # nearest-rank (no banker's rounding)
     return round(xs[k], 3)
 
 

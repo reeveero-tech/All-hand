@@ -169,6 +169,8 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 
 **SEC-10 (D-135) — جاهزية التخزين**: `/health/ready` يرد 503 أيضًا حين التخزين المهيأ (PostgREST/Supabase) غير صالح للخدمة: `storage unavailable|unreachable|timeout|credentials rejected|credentials cannot write|schema missing|check failed`. الوضع المتطاير (بلا تخزين) لا يُفحص. الضبط: `AGOS_READY_STORAGE_TIMEOUT_S` (1.0ث، 0.1–10) و`AGOS_READY_STORAGE_CACHE_S` (1.0ث، 0–60) — قيمة خارج المدى توقف الإقلاع. الكلفة: مسبار `HEAD` واحد على الأكثر لكل نافذة تخزين مؤقت لكل عملية مهما كان معدل طلبات الجاهزية (single-flight)؛ الأرقام المقيسة في السجل 372. انتقالات الحالة تُسجَّل بسطر واحد يحمل الرمز فقط (`storage readiness: not ready (<code>)` / `recovered`). فحص صحة Render (`/api/system/status`) لم يتغير؛ لجعل المنصة تسحب الحركة عند تعطل التخزين يجب توجيه فحص الموازن إلى `/health/ready` — قرار نشر للمالك، لا يغيره هذا البند.
 
+**SEC-09 — البحث عن أدلة استغلال في سجلات الوصول** (لأي نسخة شُغلت بـ`web/dist` بين 2026-07-10 و2026-11-07): uvicorn يسجل المسار بعد فك الترميز، فـ`/..%2f..%2fserver.py` يظهر `"GET /../../server.py HTTP/1.1" 200`. البحث: `rg '"GET (//|/[^"]*\.\./)[^"]*" 200' access.log` — أي سطر مطابق بـ200 قبل الإصلاح = قراءة ملف ناجحة؛ اذكر المسارات المقروءة لتحديد ما يُدوَّر (SECURITY.md §SEC-09 تحقيق الانكشاف).
+
 ## الفجوات
 
 1. لا `docker-compose.yml` ولا `Makefile`.

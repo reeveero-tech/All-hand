@@ -1,0 +1,36 @@
+# R-177 local gap (D-136) — every registered tool family through the REAL runtime gate (tool_runtime.dispatch)
+# 2026-11-07T14:04:08Z; python 3.14.8; code: m9/r177-local-gaps-prep on 3e6b0899 (SEC-10 PR #332); shared 2-CPU agent sandbox; ONE process (not HTTP, no SUT/generator split — declared)
+# command: python3 benchmarks/r177/tool_families_bench.py --json docs/audit/M8/logs/raw/r177_b3/tool_families_bench.json  (n=200/tool, concurrency 8; heavy tools fewer: test_runner 20, self_developer 20, modifier 40)
+# percentiles: nearest-rank (after the log-375 fix; the first run used the off-by-one helper — re-run, numbers below are the re-run)
+# BEFORE this bench: the HTTP mixes reached 4 of 100 registered tools (log 368 §tools). No red phase: this is a NEW measurement, not a fix — stated, not hidden.
+
+registered=100 benched=95 n_per_tool=200 concurrency=8
+skipped (declared, not failed): api_integrator (external network tool — not loaded from the shared sandbox (R-180/R-182)), communicator (external network tool — not loaded from the shared sandbox (R-180/R-182)), educator (external network tool — not loaded from the shared sandbox (R-180/R-182)), network_client (external network tool — not loaded from the shared sandbox (R-180/R-182)), researcher (external network tool — not loaded from the shared sandbox (R-180/R-182))
+total dispatches=18480 ok=18480 refused=0 raised=0
+gate stats after: refused={} timed_out={} net_blocked={} output_capped={} output_malformed={} isolated_crashed={} store=sqlite-host-shared
+rss_max_mb: {'start': 40.2, 'after_pass1': 57.8, 'after_stdlib_pass2': 58.0}  (ru_maxrss is monotonic: growth 40.2→57.8 is the import/warm-up of 95 tools; +0.2MB on a second full stdlib pass = weak no-leak indicator only)
+
+## per family
+  specialist     tools= 15 calls= 2480 ok= 2480 refused=0 raised=0 p95_median=0.231ms p95_max=66.915ms
+  encoding_hash  tools= 12 calls= 2400 ok= 2400 refused=0 raised=0 p95_median=0.066ms p95_max=0.119ms
+  math_stats     tools= 10 calls= 2000 ok= 2000 refused=0 raised=0 p95_median=0.065ms p95_max=0.123ms
+  data_formats   tools= 13 calls= 2600 ok= 2600 refused=0 raised=0 p95_median=0.065ms p95_max=0.118ms
+  collections    tools= 10 calls= 2000 ok= 2000 refused=0 raised=0 p95_median=0.064ms p95_max=0.075ms
+  validation     tools= 10 calls= 2000 ok= 2000 refused=0 raised=0 p95_median=0.065ms p95_max=0.134ms
+  text           tools= 25 calls= 5000 ok= 5000 refused=0 raised=0 p95_median=0.065ms p95_max=0.145ms
+
+## per tool (slowest 10 by p95)
+  test_runner                                   fam=specialist   n=  20 ok=  20 p50=52.276ms p95=66.915ms p99=69.584ms thr=132.2/s
+  builder                                       fam=specialist   n= 200 ok= 200 p50=5.177ms p95=8.772ms p99=11.109ms thr=1241.7/s
+  self_developer                                fam=specialist   n=  20 ok=  20 p50=3.584ms p95=7.127ms p99=12.125ms thr=855.9/s
+  db_manager                                    fam=specialist   n= 200 ok= 200 p50=2.877ms p95=5.01ms p99=7.106ms thr=1373.5/s
+  monitor                                       fam=specialist   n= 200 ok= 200 p50=1.902ms p95=2.981ms p99=3.351ms thr=3315.0/s
+  reviewer                                      fam=specialist   n= 200 ok= 200 p50=0.274ms p95=0.326ms p99=0.417ms thr=3448.7/s
+  code_generator                                fam=specialist   n= 200 ok= 200 p50=0.186ms p95=0.242ms p99=0.352ms thr=4882.6/s
+  designer                                      fam=specialist   n= 200 ok= 200 p50=0.206ms p95=0.231ms p99=0.258ms thr=4472.6/s
+  architect                                     fam=specialist   n= 200 ok= 200 p50=0.136ms p95=0.157ms p99=0.372ms thr=5832.5/s
+  data_processor                                fam=specialist   n= 200 ok= 200 p50=0.089ms p95=0.157ms p99=0.22ms thr=9497.2/s
+
+## reading
+- all 95 non-network tools answered through the real gate under concurrency 8 with 0 refusals/timeouts/net-blocks/malformed outputs; stdlib families p95 ≤ 0.145ms; slowest: test_runner (spawns a sandboxed runner) p95 66.9ms.
+- NOT covered: the 5 external-network tools (R-180/R-182), tools that need a live LLM (no key; none of the 95 refused for that reason in this build), stress concurrency, 10k-registry lookups under HTTP load (R-180).

@@ -1,0 +1,93 @@
+# SEC-09 exposure investigation — loopback reproduction with synthetic markers (no deployed host was probed for the flaw)
+# 2026-11-07T13:32:45Z; script: scripts/sec09_exposure_probe.sh
+## BEFORE: d6d096d5 (pre-fix main)
+rev=d6d096d5 port=18911 TMPDIR=/tmp/sec09tmp_18911
+tmp files present: agos_pin_fingerprint_key agos_rate_limit.sqlite3 agos_secrets_master_key agos_sse_admission.sqlite3 agos_tool_registry.sqlite3 agos_tool_registry.sqlite3-shm agos_tool_registry.sqlite3-wal etc_secrets secrets.sqlite3 uvicorn.log 
+/..%2f..%2fserver.py                                       200 170484B  AGOS Agent Civilization,
+//etc/passwd                                               200 1343B  root:x:0,
+//proc/self/environ                                        200 0B  
+//proc/self/cmdline                                        200 0B  
+/..%2f..%2f.env                                            200 26B  dotenv_marker,
+//proc/self/cwd/.env                                       200 26B  dotenv_marker,
+/..%2f..%2frender.yaml                                     200 4200B  
+//tmp/sec09tmp_18911/agos_secrets_master_key               200 32B  
+//tmp/sec09tmp_18911/secrets.sqlite3                       200 16384B  SQLite format 3,
+//tmp/sec09tmp_18911/agos_pin_fingerprint_key              200 32B  
+//tmp/sec09tmp_18911/agos_tool_registry.sqlite3            200 4096B  SQLite format 3,
+//tmp/sec09tmp_18911/agos_rate_limit.sqlite3               200 12288B  SQLite format 3,
+//tmp/sec09tmp_18911/agos_sse_admission.sqlite3            200 28672B  SQLite format 3,
+//tmp/sec09tmp_18911/etc_secrets/app.env                   200 26B  render_secret_file_marker,
+/index.html                                                200 771B (=index.html) 
+/dashboard/tasks                                           200 771B (=index.html) 
+-- access-log lines (what an operator would grep for):
+"GET /../../server.py HTTP/1.1" 200
+"GET //etc/passwd HTTP/1.1" 200
+"GET //proc/self/environ HTTP/1.1" 200
+"GET //proc/self/cmdline HTTP/1.1" 200
+"GET /../../.env HTTP/1.1" 200
+"GET //proc/self/cwd/.env HTTP/1.1" 200
+"GET /../../render.yaml HTTP/1.1" 200
+"GET //tmp/sec09tmp_18911/agos_secrets_master_key HTTP/1.1" 200
+## AFTER: ca0a7384 (main with SEC-09 fix)
+rev=ca0a7384 port=18912 TMPDIR=/tmp/sec09tmp_18912
+tmp files present: agos_pin_fingerprint_key agos_rate_limit.sqlite3 agos_secrets_master_key agos_sse_admission.sqlite3 agos_tool_registry.sqlite3 agos_tool_registry.sqlite3-shm agos_tool_registry.sqlite3-wal etc_secrets secrets.sqlite3 uvicorn.log 
+/..%2f..%2fserver.py                                       404 22B  
+//etc/passwd                                               404 22B  
+//proc/self/environ                                        404 22B  
+//proc/self/cmdline                                        404 22B  
+/..%2f..%2f.env                                            404 22B  
+//proc/self/cwd/.env                                       404 22B  
+/..%2f..%2frender.yaml                                     404 22B  
+//tmp/sec09tmp_18912/agos_secrets_master_key               404 22B  
+//tmp/sec09tmp_18912/secrets.sqlite3                       404 22B  
+//tmp/sec09tmp_18912/agos_pin_fingerprint_key              404 22B  
+//tmp/sec09tmp_18912/agos_tool_registry.sqlite3            404 22B  
+//tmp/sec09tmp_18912/agos_rate_limit.sqlite3               404 22B  
+//tmp/sec09tmp_18912/agos_sse_admission.sqlite3            404 22B  
+//tmp/sec09tmp_18912/etc_secrets/app.env                   404 22B  
+/index.html                                                200 771B (=index.html) 
+/dashboard/tasks                                           200 771B (=index.html) 
+-- access-log lines (what an operator would grep for):
+"GET /../../server.py HTTP/1.1" 404
+"GET //etc/passwd HTTP/1.1" 404
+"GET //proc/self/environ HTTP/1.1" 404
+"GET //proc/self/cmdline HTTP/1.1" 404
+"GET /../../.env HTTP/1.1" 404
+"GET //proc/self/cwd/.env HTTP/1.1" 404
+"GET /../../render.yaml HTTP/1.1" 404
+"GET //tmp/sec09tmp_18912/agos_secrets_master_key HTTP/1.1" 404
+## DEPLOYMENT EVIDENCE (collected 2026-11-07T13:36:59Z via GitHub API with the session token; read-only)
+-- repo visibility/created:
+public created=2026-06-30T06:25:01Z pushed=2026-11-07T07:04:16Z
+-- environments:
+r161-staging created=2026-10-17T23:48:31Z
+-- deployments (all):
+7151119901 env=r161-staging sha=ecbbf456 created=2026-10-18T06:49:45Z creator=reeveero-tech task=deploy
+7150845672 env=r161-staging sha=d8068b51 created=2026-10-18T06:19:03Z creator=reeveero-tech task=deploy
+7150692140 env=r161-staging sha=d8068b51 created=2026-10-18T06:01:38Z creator=reeveero-tech task=deploy
+7150672618 env=r161-staging sha=d8068b51 created=2026-10-18T05:59:40Z creator=reeveero-tech task=deploy
+7150657606 env=r161-staging sha=d8068b51 created=2026-10-18T05:57:42Z creator=reeveero-tech task=deploy
+7147704669 env=r161-staging sha=457a0c1c created=2026-10-18T00:17:00Z creator=reeveero-tech task=deploy
+-- environment secrets r161-staging:
+total=0
+-- hooks:
+0
+-- check-run apps on ca0a7384 and 3097716c:
+ca0a7384 github-actions
+3097716c github-actions
+-- commit statuses (non-actions, e.g. Render) on 3097716c, ca0a7384:
+3097716c n=0 contexts=
+ca0a7384 n=0 contexts=
+-- public URL from render.yaml name:
+3:    name: agos-civilization
+HTTP/2 404 
+x-render-routing: no-server
+-- what this does NOT show: Render/other host dashboards, deploy history and access logs are outside the repo token; absence in GitHub is not proof of no deployment.
+-- does the r161-staging workflow build/serve web/dist?
+grep 'web/dist|npm|vite|uvicorn' .github/workflows/live-integration.yml:
+47:      environment: ${{ steps.gate.outputs.environment }}
+65:    environment:
+-- vulnerable window: introducing commit of catch-all + fix merge:
+3097716c 2026-07-10T04:24:45+03:00 feat: new server.py with Supabase+SSE, frontend build, deploy config
+ca0a7384 2026-11-07T10:04:16+03:00 Merge pull request #331 from reeveero-tech/m9/r177-slo-stop-limits
+note: GitHub-hosted runners accept no inbound connections, so even a server started inside the r161 job was not reachable from the internet.
