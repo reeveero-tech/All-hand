@@ -3325,6 +3325,25 @@ except ImportError as e:
 # ---------------------------------------------------------------------------
 WEB_DIST = Path(__file__).parent / "web" / "dist"
 
+
+def _escapes_frontend_root(dist: Path, full_path: str) -> bool:
+    """SEC-09: True if ``full_path`` resolves outside ``dist`` (``..``, absolute
+    paths, symlinks). ``%2f`` reaches the handler already decoded to ``/``."""
+    root = dist.resolve()
+    target = (root / full_path.lstrip("/")).resolve() if not full_path.startswith("/") \
+        else Path(full_path).resolve()
+    return not (target == root or target.is_relative_to(root))
+
+
+def _safe_frontend_file(dist: Path, full_path: str):
+    """SEC-09: the file to serve for ``full_path`` only if it is a regular file
+    inside ``dist`` after resolution; otherwise None."""
+    if not full_path or _escapes_frontend_root(dist, full_path):
+        return None
+    target = (dist.resolve() / full_path).resolve()
+    return target if target.is_file() else None
+
+
 if WEB_DIST.exists():
     app.mount("/assets", StaticFiles(directory=str(WEB_DIST / "assets")), name="assets")
 
@@ -3332,8 +3351,11 @@ if WEB_DIST.exists():
     async def serve_frontend(full_path: str):
         if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("openapi"):
             raise HTTPException(404)
-        file_path = WEB_DIST / full_path
-        if file_path.is_file():
+        # SEC-09 (R-177): never join raw — `GET /..%2f..%2fserver.py` leaked source
+        if _escapes_frontend_root(WEB_DIST, full_path):
+            raise HTTPException(404)
+        file_path = _safe_frontend_file(WEB_DIST, full_path)
+        if file_path is not None:
             return FileResponse(str(file_path))
         index = WEB_DIST / "index.html"
         if index.exists():

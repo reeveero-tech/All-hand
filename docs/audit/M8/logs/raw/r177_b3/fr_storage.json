@@ -1,0 +1,85 @@
+{
+ "scenario": "storage-outage",
+ "storage": "live-local",
+ "service": "api-tasks-submit",
+ "fault_at_s": 10.0,
+ "cold_start_s": 0.623,
+ "load_report_ok": false,
+ "fault_fired_at_s": 10.131,
+ "stop_decision": {
+  "stopped": true,
+  "rule": "p95_window",
+  "rule_id": "S3",
+  "reason": "p95 > 2.0x SLO — censored windows [2, 3]: < 50% of scheduled iterations completed (stalled/in-flight) (1000.0ms) for 2 consecutive windows (S3)",
+  "at_s": 20.0,
+  "measurements": {
+   "windows": [
+    {
+     "window": 2,
+     "value_ms": null,
+     "samples": 1,
+     "censored": true,
+     "iters": 2,
+     "expected_iters": 50.0,
+     "dropped": 33,
+     "observed_p95_ms_of_completed": 20.940048
+    },
+    {
+     "window": 3,
+     "value_ms": null,
+     "samples": 0,
+     "censored": true,
+     "iters": 0,
+     "expected_iters": 50.0,
+     "dropped": 50,
+     "observed_p95_ms_of_completed": null
+    }
+   ],
+   "limit_ms": 1000.0,
+   "consecutive_required": 2,
+   "window_s": 5.0
+  }
+ },
+ "detection_latency_s": 9.869,
+ "probe_failures_first": [],
+ "metrics_during": {
+  "http_reqs": 101,
+  "requests_failed": 0,
+  "duration_avg_ms": 18.483280881188115,
+  "duration_med_ms": 16.128565,
+  "duration_p90_ms": 23.130023,
+  "duration_p95_ms": 27.967022,
+  "duration_p99_ms": 78.445588,
+  "duration_max_ms": 82.980328,
+  "dropped_iterations": 96
+ },
+ "tracked_before_fault": {
+  "submitted": 11,
+  "accepted": 11,
+  "completed": 11,
+  "failed": 0,
+  "timeout": 0,
+  "e2e_p50_ms": 235.056,
+  "e2e_p95_ms": 9572.597,
+  "e2e_max_ms": 9572.597,
+  "all_completed": true
+ },
+ "ready_statuses_during_outage": [
+  "200"
+ ],
+ "post_resume_to_ready_s": 0.007,
+ "pre_fault_tasks": {
+  "checked": 12,
+  "lost": 0,
+  "completed": 12,
+  "failed": 0,
+  "still_pending": 0,
+  "settle_s": 0.1
+ },
+ "post_recovery_baseline": {
+  "ok": true,
+  "brief": "ok=True class=measured p95=22.310487ms reqs=101 failed=0 stopped=False tracked=11/11 e2e_p95=245.142ms",
+  "elapsed_s": 20.3
+ },
+ "ok": true
+}

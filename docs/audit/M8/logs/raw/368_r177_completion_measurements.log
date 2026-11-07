@@ -1,0 +1,123 @@
+# R-177 batch 3 (D-134) — GREEN + completion measurements on this environment
+# base: origin/main d6d096d5eff606b6ee39e06c25f04659e78bb7b6 + branch m9/r177-slo-stop-limits (working tree measured = committed code)
+# env: agent sandbox, shared (nproc=2), Python 3.14.8, k6 v0.57.0 (SHA256-pinned, R-176); generator and SUT = separate OS processes on the SAME node (full node separation needs Q-023)
+# storage: volatile (in-process) and live-local = PostgreSQL 18 + PostgREST v12.2.3 on loopback (NOT managed Supabase); LLM: local MOCK provider (NOT live)
+# heavy profiles stress/spike/soak: NOT RUN (owner: not on the shared env; Q-023) — guarded, see tests
+# condensed per-run JSON (no raw k6 points): docs/audit/M8/logs/raw/r177_b3/*.json
+
+## 1. GREEN (same tests as RED log 367) — 3 consecutive runs (stability)
+## green run 1 05:58:59
+======================== 100 passed in 65.56s (0:01:05) ========================
+## green run 2 06:00:06
+======================== 100 passed in 65.47s (0:01:05) ========================
+## green run 3 06:01:13
+======================== 100 passed in 65.40s (0:01:05) ========================
+
+## 2. baseline + normal, all 11 services, both storage modes (stop limits live in every run)
+run | service | ok | stopped | reqs | failed | p50 | p95 | p99 | max (ms) | SLO p95 | p95/SLO | retention_evictions | stalled_windows
+# volatile_baseline: counts={"measured": 11, "not_measured": 0, "stopped": 0, "failed": 0} config_sha256=604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea
+volatile_baseline | api-admin-tools | True | False | 200 | 0 | 4.559 | 5.913 | 18.886 | 36.873 | 500 | 0.012 | 0 | 0
+volatile_baseline | api-agents | True | False | 201 | 0 | 14.467 | 16.383 | 22.029 | 45.872 | 300 | 0.055 | 0 | 0
+volatile_baseline | api-auth | True | False | 201 | 0 | 2.643 | 4.534 | 14.144 | 22.975 | 200 | 0.023 | 0 | 0
+volatile_baseline | api-chat | True | False | 301 | 0 | 4.55 | 7.034 | 21.468 | 50.847 | 2000 | 0.004 | 0 | 0
+volatile_baseline | api-health | True | False | 401 | 0 | 1.343 | 3.785 | 10.837 | 32.281 | 200 | 0.019 | 0 | 0
+volatile_baseline | api-memory | True | False | 201 | 0 | 3.183 | 4.781 | 10.308 | 16.249 | 300 | 0.016 | 0 | 0
+volatile_baseline | api-sse | True | False | 5 | 0 | 2.83 | 3.218 | 3.26 | 3.271 | 500 | 0.006 | 0 | 0
+volatile_baseline | api-task-lifecycle | True | False | 82 | 0 | 3.033 | 3.562 | 4.716 | 5.65 | 500 | 0.007 | 0 | 0
+volatile_baseline | api-tasks-read | True | False | 201 | 0 | 2.641 | 4.932 | 11.776 | 13.96 | 300 | 0.016 | 0 | 0
+volatile_baseline | api-tasks-submit | True | False | 101 | 0 | 2.978 | 3.653 | 8.332 | 14.186 | 500 | 0.007 | 0 | 0
+volatile_baseline | frontend | True | False | 201 | 0 | 1.536 | 2.979 | 5.86 | 11.636 | 300 | 0.010 | 0 | 0
+# volatile_normal: counts={"measured": 11, "not_measured": 0, "stopped": 0, "failed": 0} config_sha256=604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea
+volatile_normal | api-admin-tools | True | False | 1201 | 0 | 4.591 | 6.368 | 21.304 | 31.68 | 500 | 0.013 | 0 | 0
+volatile_normal | api-agents | True | False | 1201 | 0 | 14.362 | 17.188 | 46.214 | 108.712 | 300 | 0.057 | 0 | 0
+volatile_normal | api-auth | True | False | 1201 | 0 | 2.523 | 3.14 | 14.454 | 64.122 | 200 | 0.016 | 0 | 0
+volatile_normal | api-chat | True | False | 600 | 0 | 5.361 | 7.974 | 21.465 | 129.984 | 2000 | 0.004 | 1 | 0
+volatile_normal | api-health | True | False | 2400 | 0 | 1.305 | 3.746 | 12.776 | 55.222 | 200 | 0.019 | 0 | 0
+volatile_normal | api-memory | True | False | 1201 | 0 | 4.668 | 6.737 | 19.706 | 116.293 | 300 | 0.022 | 0 | 0
+volatile_normal | api-sse | True | False | 13 | 0 | 2.856 | 21.159 | 41.457 | 46.531 | 500 | 0.042 | 0 | 0
+volatile_normal | api-task-lifecycle | True | False | 482 | 0 | 4.518 | 6.994 | 28.428 | 92.333 | 500 | 0.014 | 0 | 0
+volatile_normal | api-tasks-read | True | False | 1201 | 0 | 2.567 | 3.179 | 17.974 | 52.213 | 300 | 0.011 | 0 | 0
+volatile_normal | api-tasks-submit | True | False | 601 | 0 | 3.058 | 4.199 | 15.541 | 36.716 | 500 | 0.008 | 8 | 0
+volatile_normal | frontend | True | False | 1201 | 0 | 1.496 | 2.078 | 10.671 | 34.551 | 300 | 0.007 | 0 | 0
+# live-local_baseline: counts={"measured": 11, "not_measured": 0, "stopped": 0, "failed": 0} config_sha256=604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea
+live-local_baseline | api-admin-tools | True | False | 201 | 0 | 4.493 | 5.878 | 18.228 | 25.691 | 500 | 0.012 | 0 | 0
+live-local_baseline | api-agents | True | False | 201 | 0 | 14.569 | 17.265 | 51.607 | 73.841 | 300 | 0.058 | 0 | 0
+live-local_baseline | api-auth | True | False | 194 | 0 | 2.639 | 42.649 | 1436.157 | 1732.84 | 200 | 0.213 | 0 | 0
+live-local_baseline | api-chat | True | False | 301 | 0 | 14.095 | 17.744 | 57.87 | 74.525 | 2000 | 0.009 | 0 | 0
+live-local_baseline | api-health | True | False | 401 | 0 | 1.52 | 25.12 | 36.11 | 131.268 | 200 | 0.126 | 0 | 0
+live-local_baseline | api-memory | True | False | 201 | 0 | 3.099 | 5.381 | 16.829 | 45.718 | 300 | 0.018 | 0 | 0
+live-local_baseline | api-sse | True | False | 5 | 0 | 7.593 | 69.873 | 82.15 | 85.219 | 500 | 0.140 | 0 | 0
+live-local_baseline | api-task-lifecycle | True | False | 82 | 0 | 11.915 | 15.415 | 18.196 | 18.714 | 500 | 0.031 | 0 | 0
+live-local_baseline | api-tasks-read | True | False | 200 | 0 | 13.079 | 16.372 | 38.537 | 59.917 | 300 | 0.055 | 0 | 0
+live-local_baseline | api-tasks-submit | True | False | 101 | 0 | 14.469 | 19.355 | 53.39 | 92.71 | 500 | 0.039 | 0 | 0
+live-local_baseline | frontend | True | False | 200 | 0 | 1.536 | 2.744 | 9.934 | 13.713 | 300 | 0.009 | 0 | 0
+# live-local_normal: counts={"measured": 11, "not_measured": 0, "stopped": 0, "failed": 0} config_sha256=604fade6d4247e55f8f502f7c5c739eee60401ba415e64f0e8b8f49a926071ea
+live-local_normal | api-admin-tools | True | False | 1201 | 0 | 4.564 | 6.323 | 19.001 | 61.703 | 500 | 0.013 | 0 | 0
+live-local_normal | api-agents | True | False | 1200 | 0 | 14.241 | 16.64 | 51.381 | 141.01 | 300 | 0.055 | 0 | 0
+live-local_normal | api-auth | True | False | 1200 | 0 | 2.616 | 3.804 | 15.742 | 105.824 | 200 | 0.019 | 0 | 0
+live-local_normal | api-chat | True | False | 601 | 0 | 15.036 | 19.495 | 59.141 | 149.018 | 2000 | 0.010 | 0 | 0
+live-local_normal | api-health | True | False | 2398 | 0 | 1.518 | 28.361 | 69.76 | 164.876 | 200 | 0.142 | 0 | 0
+live-local_normal | api-memory | True | False | 1200 | 0 | 4.146 | 5.91 | 23.811 | 87.723 | 300 | 0.020 | 0 | 0
+live-local_normal | api-sse | True | False | 12 | 0 | 7.382 | 9.579 | 10.184 | 10.335 | 500 | 0.019 | 0 | 0
+live-local_normal | api-task-lifecycle | True | False | 480 | 0 | 13.906 | 21.387 | 61.317 | 88.143 | 500 | 0.043 | 0 | 0
+live-local_normal | api-tasks-read | True | False | 1201 | 0 | 13.899 | 18.048 | 46.111 | 144.463 | 300 | 0.060 | 0 | 0
+live-local_normal | api-tasks-submit | True | False | 601 | 0 | 14.97 | 29.832 | 60.205 | 148.024 | 500 | 0.060 | 0 | 0
+live-local_normal | frontend | True | False | 1200 | 0 | 1.461 | 2.716 | 13.785 | 48.472 | 300 | 0.009 | 0 | 0
+
+## 3. api-chat p99 (owner: independent threshold 1000ms, statistical sufficiency, upper-tail review of log 366)
+log 366 (batch 2): 150 samples, max 750.8ms — n < 299 => p99 verdict impossible (insufficient), not a pass
+volatile_baseline: n=301 n_min=299 p99=21.468 UCB95=50.847 verdict=pass | tail: max=50.847 med=4.55 max/med=11.18 over_thr=0 over_half_thr=0 top3=[50.847, 31.088, 24.053]
+volatile_normal: n=600 n_min=299 p99=21.455 UCB95=60.32 verdict=pass | tail: max=129.984 med=5.359 max/med=24.26 over_thr=0 over_half_thr=0 top3=[129.984, 60.32, 36.928]
+live-local_baseline: n=301 n_min=299 p99=57.87 UCB95=74.525 verdict=pass | tail: max=74.525 med=14.095 max/med=5.29 over_thr=0 over_half_thr=0 top3=[74.525, 67.484, 60.15]
+live-local_normal: n=601 n_min=299 p99=59.141 UCB95=66.659 verdict=pass | tail: max=149.018 med=15.036 max/med=9.91 over_thr=0 over_half_thr=0 top3=[149.018, 66.659, 63.62]
+tail finding: the 750.8ms outlier of log 366 did NOT reproduce (max 26ms on main reproduction, <=130ms here); no sample above 500ms (half the p99 threshold) in 1803 chat samples (max 149.0ms). Single-node env => a tail from co-located processes cannot be excluded; re-check on the dedicated env (Q-023).
+
+## 4. failure / recovery (real faults during a normal load on api-tasks-submit)
+# fr_crash_volatile
+{"scenario": "crash", "storage": "volatile", "fault_fired_at_s": 10.101, "stop_decision": {"stopped": true, "rule": "health_failure", "rule_id": "S5", "reason": "health_failure: immediate stop (S5)", "at_s": 10.109, "measurements": {"probe": "health_failure", "detail": {"status": null}}}, "detection_latency_s": 0.008, "metrics_during": {"http_reqs": 101, "requests_failed": 0, "duration_avg_ms": 3.5405769801980194, "duration_med_ms": 2.87554, "duration_p90_ms": 3.135879, "duration_p95_ms": 4.357179, "duration_p99_ms": 19.816838, "duration_max_ms": 37.902813, "dropped_iterations": 0}, "tracked_before_fault": {"submitted": 6, "accepted": 6, "completed": 6, "failed": 0, "timeout": 0, "e2e_p50_ms": 6.241, "e2e_p95_ms": 19.359, "e2e_max_ms": 19.359, "all_completed": true}, "restart_to_health_s": 0.605, "restart_to_ready_s": 0.001, "ready_statuses_during_outage": null, "post_resume_to_ready_s": null, "pre_fault_tasks": {"checked": 7, "lost": 7, "completed": 0, "failed": 0, "still_pending": 0, "settle_s": 0.0}, "post_recovery_baseline": {"ok": true, "brief": "ok=True class=measured p95=3.791665ms reqs=101 failed=0 stopped=False tracked=11/11 e2e_p95=19.107ms", "elapsed_s": 20.2}, "ok": true}
+# fr_crash_live
+{"scenario": "crash", "storage": "live-local", "fault_fired_at_s": 10.125, "stop_decision": {"stopped": true, "rule": "health_failure", "rule_id": "S5", "reason": "health_failure: immediate stop (S5)", "at_s": 10.134, "measurements": {"probe": "health_failure", "detail": {"status": null}}}, "detection_latency_s": 0.009, "metrics_during": {"http_reqs": 101, "requests_failed": 0, "duration_avg_ms": 19.46573141584159, "duration_med_ms": 16.144672, "duration_p90_ms": 27.533976, "duration_p95_ms": 42.405604, "duration_p99_ms": 61.41272, "duration_max_ms": 74.9726, "dropped_iterations": 0}, "tracked_before_fault": {"submitted": 6, "accepted": 6, "completed": 5, "failed": 0, "timeout": 1, "e2e_p50_ms": 123.693, "e2e_p95_ms": 232.8, "e2e_max_ms": 232.8, "all_completed": false}, "restart_to_health_s": 0.806, "restart_to_ready_s": 0.001, "ready_statuses_during_outage": null, "post_resume_to_ready_s": null, "pre_fault_tasks": {"checked": 7, "lost": 0, "completed": 7, "failed": 0, "still_pending": 0, "settle_s": 0.0}, "post_recovery_baseline": {"ok": true, "brief": "ok=True class=measured p95=27.523253ms reqs=101 failed=0 stopped=False tracked=11/11 e2e_p95=229.514ms", "elapsed_s": 20.3}, "ok": true}
+# fr_storage
+{"scenario": "storage-outage", "storage": "live-local", "fault_fired_at_s": 10.131, "stop_decision": {"stopped": true, "rule": "p95_window", "rule_id": "S3", "reason": "p95 > 2.0x SLO — censored windows [2, 3]: < 50% of scheduled iterations completed (stalled/in-flight) (1000.0ms) for 2 consecutive windows (S3)", "at_s": 20.0, "measurements": {"windows": [{"window": 2, "value_ms": null, "samples": 1, "censored": true, "iters": 2, "expected_iters": 50.0, "dropped": 33, "observed_p95_ms_of_completed": 20.940048}, {"window": 3, "value_ms": null, "samples": 0, "censored": true, "iters": 0, "expected_iters": 50.0, "dropped": 50, "observed_p95_ms_of_completed": null}], "limit_ms": 1000.0, "consecutive_required": 2, "window_s": 5.0}}, "detection_latency_s": 9.869, "metrics_during": {"http_reqs": 101, "requests_failed": 0, "duration_avg_ms": 18.483280881188115, "duration_med_ms": 16.128565, "duration_p90_ms": 23.130023, "duration_p95_ms": 27.967022, "duration_p99_ms": 78.445588, "duration_max_ms": 82.980328, "dropped_iterations": 96}, "tracked_before_fault": {"submitted": 11, "accepted": 11, "completed": 11, "failed": 0, "timeout": 0, "e2e_p50_ms": 235.056, "e2e_p95_ms": 9572.597, "e2e_max_ms": 9572.597, "all_completed": true}, "restart_to_health_s": null, "restart_to_ready_s": null, "ready_statuses_during_outage": ["200"], "post_resume_to_ready_s": 0.007, "pre_fault_tasks": {"checked": 12, "lost": 0, "completed": 12, "failed": 0, "still_pending": 0, "settle_s": 0.1}, "post_recovery_baseline": {"ok": true, "brief": "ok=True class=measured p95=22.310487ms reqs=101 failed=0 stopped=False tracked=11/11 e2e_p95=245.142ms", "elapsed_s": 20.3}, "ok": true}
+BEFORE the stall fix (same scenario, first run of this batch): storage outage => requests hung up to 11196ms (p99 10619ms), 97 dropped iterations, http_req_failed=0, readiness stayed 200 => NO stop (ok=false). Fixed by the censored-window rule (D-134 4b); the run above stops by S3.
+finding (not fixed here, recorded): /health/ready does not check storage — stayed 200 during the outage.
+volatile crash: 7/7 pre-fault tasks lost after restart = documented volatile behaviour (no durable store), not a regression; live-local: 0 lost.
+
+## §tools — tool families actually executed through the tool gate during the runs (gate_stats.executed)
+volatile_baseline: executed={"agos.internal.analyst@1.0.0": 76, "agos.internal.designer@1.0.0": 75, "agos.internal.surgeon@1.0.0": 75, "agos.internal.validator@1.0.0": 250} refused={} registered=100 llm_breaker_after=['agos_breaker_state{service="llm"} 0', 'agos_breaker_opened{service="llm"} 0', 'agos_breaker_rejected{service="llm"} 0', 'agos_breaker_stale_outcomes{service="llm"} 0']
+volatile_normal: executed={"agos.internal.analyst@1.0.0": 150, "agos.internal.designer@1.0.0": 150, "agos.internal.surgeon@1.0.0": 150, "agos.internal.validator@1.0.0": 1065} refused={} registered=100 llm_breaker_after=['agos_breaker_state{service="llm"} 0', 'agos_breaker_opened{service="llm"} 0', 'agos_breaker_rejected{service="llm"} 0', 'agos_breaker_stale_outcomes{service="llm"} 0']
+live-local_baseline: executed={"agos.internal.analyst@1.0.0": 76, "agos.internal.designer@1.0.0": 75, "agos.internal.surgeon@1.0.0": 75, "agos.internal.validator@1.0.0": 209} refused={} registered=100 llm_breaker_after=['agos_breaker_state{service="llm"} 0', 'agos_breaker_opened{service="llm"} 0', 'agos_breaker_rejected{service="llm"} 0', 'agos_breaker_stale_outcomes{service="llm"} 0']
+live-local_normal: executed={"agos.internal.analyst@1.0.0": 151, "agos.internal.designer@1.0.0": 150, "agos.internal.surgeon@1.0.0": 150, "agos.internal.validator@1.0.0": 829} refused={} registered=100 llm_breaker_after=['agos_breaker_state{service="llm"} 0', 'agos_breaker_opened{service="llm"} 0', 'agos_breaker_rejected{service="llm"} 0', 'agos_breaker_stale_outcomes{service="llm"} 0']
+=> 4 of 100 registered tools exercised (internal analyst/designer/surgeon/validator); llm breaker counters 0 => the HTTP mixes (incl. api-chat) make NO LLM call — LLM is measured only by the mock bench below.
+
+## §llm-adapter — real LLMClient keyed path vs local MOCK provider (NOT a live provider)
+baseline: {"profile": "baseline", "requests": 200, "ok": 200, "failed": 0, "busy": 0, "p50_ms": 51.313, "p95_ms": 51.992, "p99_ms": 57.853, "max_ms": 62.993, "provider_delay_ms": 50, "adapter_overhead_p95_ms": 1.992, "provider_calls": 200, "ok_gate": true, "keyed_concurrency": 8}
+normal: {"profile": "normal", "requests": 1200, "ok": 1200, "failed": 0, "busy": 0, "p50_ms": 193.753, "p95_ms": 198.168, "p99_ms": 206.621, "max_ms": 230.892, "provider_delay_ms": 150, "adapter_overhead_p95_ms": 48.168, "provider_calls": 1200, "ok_gate": true, "keyed_concurrency": 8}
+failure-recovery: {"profile": "failure-recovery", "breaker_threshold_reset": ["5(default)", "3"], "outage_500": {"requests": 100, "failed": 100, "provider_calls_during_outage": 8, "fast_failed_without_provider_call": 92, "fast_fail_p95_ms": 0.257}, "recovery": {"first_success_after_provider_ok_s": 2.8, "ok_in_last_5s": 50, "requests_in_last_5s": 50}, "retry_after_hold": {"requests": 30, "provider_calls_during_hold": 2, "first_success_after_hold_s": 1.201}, "provider_calls_total": 1640, "calls_by_mode": {"ok": 1630, "error500": 8, "429": 2}, "phases": [{"at_s": 0.0, "mode": "ok", "provider_calls_before": 1400}, {"at_s": 5.0, "mode": "error500", "provider_calls_before": 1450}, {"at_s": 15.0, "mode": "ok", "provider_calls_before": 1458}, {"at_s": 30.0, "mode": "429", "provider_calls_before": 1580}, {"at_s": 33.0, "mode": "ok", "provider_calls_before": 1582}], "ok_gate": true}
+
+## 6. SEC-09 live check (after the fix; BEFORE on main is in log 367)
+AFTER /..%2f..%2fserver.py 404 22 '{"detail":"Not Found"}'
+AFTER /%2e%2e/%2e%2e/server.py 404 22 '{"detail":"Not Found"}'
+AFTER /..%2f..%2f.env 404 22 '{"detail":"Not Found"}'
+AFTER //etc/passwd 404 22 '{"detail":"Not Found"}'
+AFTER /%2fetc%2fpasswd 404 22 '{"detail":"Not Found"}'
+AFTER /../server.py 404 22 '{"detail":"Not Found"}'
+AFTER /index.html 200 771 '<!DOCTYPE html> <html lang="ar" dir="rtl'
+AFTER /dashboard/tasks 200 771 '<!DOCTYPE html> <html lang="ar" dir="rtl'
+AFTER /robots.txt 200 771 '<!DOCTYPE html> <html lang="ar" dir="rtl'
+
+## 7. full suite (tests/, local, Python 3.14; CI runs 3.11 — parse-checked on 3.11.17)
+# run 1 (working tree; the batch was committed DURING this run):
+FAILED tests/test_r175_batch4_phase1.py::test_the_phase1_runbook_certifies_all_100_with_real_evidence
+FAILED tests/test_sse_multiprocess.py::test_sigkill_recovery_lease_expiry_frees_capacity
+= 2 failed, 4169 passed, 8 skipped, 17 deselected, 9 xfailed in 694.54s (0:11:34) =
+EXIT 1
+# both failures re-run in isolation: 2 passed on this branch AND 2 passed on origin/main (same env) => not caused by this batch. Likely causes (NOT proven): sse sigkill test is load-sensitive (429 under full-suite contention); the phase1 runbook may read repo state that changed mid-run. Flaky-test risk recorded, not hidden
+# run 2 (clean committed tree, nothing else running):
+==== 4171 passed, 8 skipped, 17 deselected, 9 xfailed in 702.40s (0:11:42) =====
+EXIT 0
+
+## 8. not tested / not claimed
+- stress, spike, soak (Q-023); R-178..R-184 not started (R-178 blocked Q-023)
+- live LLM provider (mock only); managed Supabase (local PostgreSQL+PostgREST only); generator on a separate node
+- tool families beyond the 4 internal tools the mixes execute (96/100 registered tools not exercised; external-network tools not at all) — R-180

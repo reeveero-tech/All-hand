@@ -1,4 +1,4 @@
-"""R-177 (M8 P6 — ثاني دفعة من R-193، D-133): خط أساس لكل خدمة.
+"""R-177 (M8 P6 — R-193، D-133 + D-134): خط أساس لكل خدمة، ثم (الدفعة 3) عتبات معتمدة وحدود إيقاف حية.
 
 الخارطة: «يحدد مالك الاختبار SLO وstop limits قبل التشغيل» — لذلك هذه
 الدفعة تقيس خط الأساس الحالي لكل خدمة HTTP (بيانات قرار المالك)،
@@ -6,6 +6,10 @@
 لا تُعتمد إلا بقرار المالك. الأحمال الكبيرة لكل خدمة تُبنى بعد القرار.
 
 أحمر أولًا (السجل 366) ثم أخضر — الدفعة الكاملة بالأرقام هناك.
+
+الدفعة 3 (D-134، قرار المالك 2026-11-07): الحالة approved، p95 دون تغيير عن
+الدفعة 2، p99 للدردشة، حدود إيقاف تُقيَّم أثناء الحمل، والواجهة 200 فقط —
+أحمر أولًا (السجل 367) ثم أخضر (السجل 368).
 """
 from __future__ import annotations
 
@@ -44,10 +48,136 @@ def _server_routes() -> set:
 
 # ------------------------------------------------------------- الجرد والصلاحية
 
+# قيم p95 المقترحة في الدفعة 2 (السجل 366) — قرار المالك: تُعتمد كما هي
+BATCH2_P95 = {
+    "api-health": 200, "api-agents": 300, "api-tasks-read": 300,
+    "api-tasks-submit": 500, "api-task-lifecycle": 500, "api-memory": 300,
+    "api-chat": 2000, "api-admin-tools": 500, "api-sse": 500, "api-auth": 200,
+    "frontend": 300,
+}
+
+
 def test_services_file_exists_and_parses():
     data = _load_services()
-    assert data["slo_status"] == "draft_pending_owner_decision"
+    assert data["slo_status"] == "approved"
+    assert data["slo_decision"]["decision"] == "D-134"
+    assert data["slo_decision"]["previous_status"] == "draft_pending_owner_decision"
     assert data["k6_version"].startswith("v0.57.0")
+    assert data["error_policy"] == {"http_req_failed": "rate<0.01", "checks": "rate>0.99"}
+
+
+def test_p95_adopted_unchanged_from_batch2():
+    """قرار المالك: اعتماد p95 المقترحة كما هي — لا تغيير غير مبرر."""
+    data = _load_services()
+    for name, v in BATCH2_P95.items():
+        svc = data["services"][name]
+        assert svc["slo_p95_ms"] == v, name
+        assert svc["slo_proposal_p95_ms"] == v, name
+
+
+def test_chat_p99_separate_threshold_and_sufficient_samples():
+    data = _load_services()
+    chat = data["services"]["api-chat"]
+    assert chat["slo_p99_ms"] == 1000
+    assert "p(99)<1000" in chat["baseline"]["thresholds"]["http_req_duration"]
+    assert "p(95)<2000" in chat["baseline"]["thresholds"]["http_req_duration"]
+    # كفاية العينات: خط الأساس يجب أن ينتج n >= 299
+    b = chat["baseline"]
+    assert b["duration_s"] * b["arrival_rate"] >= data["p99_policy"]["n_min"]
+    n = chat["normal"]
+    assert n["duration_s"] * n["arrival_rate"] >= data["p99_policy"]["n_min"]
+    # p99 لغير الدردشة غير معلن (لا عتبة صامتة)
+    for name, svc in data["services"].items():
+        if name != "api-chat":
+            assert svc.get("slo_p99_ms") is None, name
+
+
+def test_stop_limits_distinct_from_p99_threshold():
+    data = _load_services()
+    sl = data["stop_limits"]
+    assert sl["latency_multiplier"] == 2.0 and sl["consecutive_windows"] == 2
+    assert "not_the_slo" in sl
+
+
+def test_heavy_profiles_guarded_by_q023():
+    r = _import_runner()
+    data = _load_services()
+    for prof in ("stress", "spike", "soak"):
+        h = data["heavy_profiles"][prof]
+        assert h["requires_dedicated_env"] is True and h["blocked_on"] == "Q-023"
+        with pytest.raises(SystemExit):
+            r.profile_params(data["services"]["api-health"], data, prof, False)
+        # --allow-dedicated-env وحده لا يكفي (تجاوز مزدوج)
+        with pytest.raises(SystemExit):
+            r.profile_params(data["services"]["api-health"], data, prof, True)
+
+
+def test_coverage_matrix_covers_every_component_honestly():
+    data = _load_services()
+    cov = data["coverage"]
+    assert set(cov) == {"api_auth", "task_queue_workers", "orchestrator_agent_paths",
+                        "memory_storage", "llm_adapters", "tool_families", "sse",
+                        "frontend"}
+    allowed = {"measured_direct", "measured_direct_mock", "measured_indirect",
+               "excluded", "not_measured"}
+    for k, v in cov.items():
+        assert v["status"] in allowed, k
+        assert v["how"] and v["evidence"] and v["not_covered"], k
+    # لا ادعاء مزود حي عند استخدام مزود وهمي
+    assert cov["llm_adapters"]["status"] == "measured_direct_mock"
+    llm = data["indirect"]["llm-provider-adapter"]["covered_via"]
+    assert "مزود مزيف بلا اعتماد خارجي" not in llm
+    assert "وهمي" in llm
+
+
+def test_frontend_never_accepts_404():
+    js = SERVICE_JS.read_text(encoding="utf-8")
+    assert "'frontend': [200, 404]" not in js
+    assert "r.status === 404" not in js.split("function frontendReq")[1].split("}")[0]
+    assert "'task detail 200/404'" not in js
+    data = _load_services()
+    assert data["services"]["frontend"]["requires_web_dist"] is True
+
+
+def test_frontend_unbuilt_is_not_measured(tmp_path, monkeypatch):
+    r = _import_runner()
+    monkeypatch.setattr(r, "WEB_DIST", tmp_path / "no-dist")
+    rep = r.run_service("frontend", sut_url="http://127.0.0.1:9", out_dir=tmp_path)
+    assert rep["classification"] == "not_measured" and rep["ok"] is False
+    assert "404 is not a frontend measurement" in rep["reason"]
+
+
+def test_thresholds_can_only_be_tightened():
+    r = _import_runner()
+    data = _load_services()
+    base = r.approved_thresholds(data["services"]["api-health"], data)
+    for loose in ({"http_req_duration": "p(95)<10000"}, {"http_req_failed": "rate<0.5"},
+                  {"checks": "rate>0.5"}, {"checks": "rate<1"},
+                  {"http_req_failed": "rate>0"}):
+        with pytest.raises(ValueError):
+            r.merge_tighten_only(base, loose)
+    tight = r.merge_tighten_only(base, {"http_req_duration": "p(95)<0.001"})
+    assert "p(95)<200" in tight["http_req_duration"]   # المعتمد باقٍ (اتحاد)
+    assert "p(95)<0.001" in tight["http_req_duration"]
+
+
+def test_tampered_declared_threshold_refused(monkeypatch, tmp_path):
+    r = _import_runner()
+    data = _load_services()
+    data["services"]["api-health"]["baseline"]["thresholds"]["http_req_duration"] = "p(95)<9999"
+    monkeypatch.setattr(r, "load_services", lambda: data)
+    with pytest.raises(SystemExit):
+        r.run_service("api-health", sut_url="http://127.0.0.1:9", out_dir=tmp_path)
+    data2 = _load_services()
+    data2["stop_limits"]["error_rate_max"] = 0.2
+    monkeypatch.setattr(r, "load_services", lambda: data2)
+    with pytest.raises(r.sl().PolicyError):
+        r.run_service("api-health", sut_url="http://127.0.0.1:9", out_dir=tmp_path)
+    data3 = _load_services()
+    data3["slo_status"] = "draft"
+    monkeypatch.setattr(r, "load_services", lambda: data3)
+    with pytest.raises(SystemExit):
+        r.run_service("api-health", sut_url="http://127.0.0.1:9", out_dir=tmp_path)
 
 
 def test_all_measured_services_defined():
@@ -58,9 +188,11 @@ def test_all_measured_services_defined():
         b = svc["baseline"]
         for k in ("duration_s", "arrival_rate", "max_vus", "thresholds"):
             assert k in b, (name, k)
-        # العتبات مسودة صريحة — لا SLO صامت
-        assert svc["slo_status"] == "draft"
-        assert svc["slo_proposal_p95_ms"] > 0
+        # الدفعة 3: معتمدة بقرار المالك (D-134) — وملمح normal معرّف
+        assert svc["slo_status"] == "approved"
+        assert svc["slo_p95_ms"] > 0
+        for k in ("duration_s", "arrival_rate", "max_vus"):
+            assert k in svc["normal"], (name, k)
 
 
 def test_every_server_route_is_claimed():
@@ -97,9 +229,11 @@ def test_baseline_thresholds_format():
     for name, svc in data["services"].items():
         th = svc["baseline"]["thresholds"]
         assert set(th) == {"http_req_failed", "checks", "http_req_duration"}, name
-        assert th["http_req_failed"].startswith("rate<")
-        assert th["checks"].startswith("rate>")
-        assert "p(95)<" in th["http_req_duration"], name
+        assert th["http_req_failed"] == "rate<0.01"
+        assert th["checks"] == "rate>0.99"
+        dur = th["http_req_duration"]
+        dur = dur if isinstance(dur, list) else [dur]
+        assert f"p(95)<{svc['slo_p95_ms']}" in dur, name
 
 
 # ------------------------------------------------------------------- المولد
@@ -150,21 +284,90 @@ def test_runner_report_shape_and_skip(tmp_path):
 
 
 @pytest.fixture(scope="module")
-def sut():
+def sut_proc():
     r = _import_runner()
-    with r.start_sut() as url:
-        yield url
+    with r.sut_process() as sut:
+        yield sut
 
 
-def test_real_baseline_health(sut):
-    """دخان حقيقي داخل الحزمة (CI-safe): خدمة واحدة، صغيرة بالتصميم."""
+@pytest.fixture(scope="module")
+def sut(sut_proc):
+    return sut_proc.url
+
+
+def test_real_baseline_health(sut_proc):
+    """دخان حقيقي داخل الحزمة (CI-safe) بالعتبات المعتمدة نفسها (لا إرخاء) —
+    والسلبي لحدود الإيقاف: تشغيل سليم لا يُوقف، والمسابير الأربعة عملت."""
     r = _import_runner()
-    rep = r.run_service_baseline(
-        "api-health", sut_url=sut,
-        extra_thresholds={"http_req_duration": "p(95)<10000"})
+    rep = r.run_service_baseline("api-health", sut_url=sut_proc.url,
+                                 tenants=sut_proc.tenants)
     assert rep["classification"] == "measured"
     assert rep["ok"] is True, rep
     assert rep["metrics"]["http_reqs"] > 0
+    assert rep["stopped"] is False and rep["stop"]["decision"]["stopped"] is False
+    assert all(rep["probe_counts"][k] > 0 for k in ("health", "ready", "isolation",
+                                                    "integrity"))
+    assert rep["sentinel_id"]
+    # الكمّيات من العينات الخام تطابق ملخص k6 (العدّاء لا يخترع أرقامًا)
+    assert rep["raw_quantiles"]["n"] == rep["metrics"]["http_reqs"]
+    assert abs(rep["raw_quantiles"]["p95_ms"] - rep["metrics"]["duration_p95_ms"]) < 0.01
+
+
+def _fast(data, name, rate=40, vus=48, duration=20):
+    data["services"][name]["baseline"].update(
+        {"arrival_rate": rate, "max_vus": vus, "duration_s": duration})
+    return data
+
+
+def test_real_stop_s1_error_rate_cuts_the_load(sut_proc, monkeypatch, tmp_path):
+    """إيجابي حقيقي S1: مفتاح خاطئ ⇒ 401 ⇒ أخطاء > 1% ⇒ يُقطع k6 قبل نهاية مدته."""
+    r = _import_runner()
+    data = _fast(_load_services(), "api-memory")
+    monkeypatch.setattr(r, "load_services", lambda: data)
+    t0 = __import__("time").monotonic()
+    rep = r.run_service("api-memory", sut_url=sut_proc.url, api_key="wrong-key",
+                        out_dir=tmp_path, tenants=sut_proc.tenants)
+    elapsed = __import__("time").monotonic() - t0
+    d = rep["stop"]["decision"]
+    assert rep["stopped"] is True and rep["ok"] is False
+    assert d["rule"] in ("error_rate", "checks_rate") and d["rule_id"] in ("S1", "S2")
+    assert d["measurements"]["total"] >= 100
+    assert elapsed < 20 + 10, elapsed  # قُطع ولم يكمل مدته
+
+
+def test_real_stop_s3_p95_two_windows(sut_proc, monkeypatch, tmp_path):
+    """إيجابي حقيقي S3: SLO اختباري 0.5ms (أي p95 حقيقي > 1ms) ⇒ إيقاف بعد نافذتين."""
+    r = _import_runner()
+    data = _fast(_load_services(), "api-health")
+    data["services"]["api-health"]["slo_p95_ms"] = 0.5
+    data["services"]["api-health"]["baseline"]["thresholds"]["http_req_duration"] = "p(95)<0.5"
+    monkeypatch.setattr(r, "load_services", lambda: data)
+    rep = r.run_service("api-health", sut_url=sut_proc.url, out_dir=tmp_path,
+                        tenants=sut_proc.tenants)
+    d = rep["stop"]["decision"]
+    assert rep["stopped"] is True and rep["ok"] is False, d
+    assert d["rule"] == "p95_window" and d["rule_id"] == "S3"
+    assert len(d["measurements"]["windows"]) == 2
+    assert all(w["value_ms"] > 1.0 for w in d["measurements"]["windows"])
+
+
+def test_real_stop_s5_sut_crash_immediate(tmp_path):
+    """إيجابي حقيقي S5: SIGKILL للخدمة أثناء الحمل ⇒ إيقاف فوري بفشل الصحة/الاستعداد."""
+    r = _import_runner()
+    with r.sut_process() as sut:
+        fired = {}
+
+        def inject(t):
+            if t >= 4 and not fired:
+                fired["at"] = t
+                sut.kill()
+        rep = r.run_service("api-health", sut_url=sut.url, out_dir=tmp_path,
+                            tenants=sut.tenants, inject=inject)
+    d = rep["stop"]["decision"]
+    assert fired and rep["stopped"] is True and rep["ok"] is False
+    assert d["rule"] in ("health_failure", "readiness_failure"), d
+    assert d["rule_id"] == "S5"
+    assert d["at_s"] - fired["at"] < 5.0  # كشف خلال ثوانٍ
 
 
 def test_negative_threshold_breach_detected(sut):
