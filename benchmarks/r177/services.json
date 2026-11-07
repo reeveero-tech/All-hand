@@ -462,16 +462,16 @@
       "not_covered": "أي مزود حي (OpenRouter مفتاحي أو keyless العام) — يتطلب مفتاحًا/موافقة/ميزانية (R-182، Q-023)؛ api-chat لا يستدعي LLM إطلاقًا"
     },
     "tool_families": {
-      "status": "measured_indirect",
-      "how": "الأدوات المنفذة فعلًا عبر بوابة الأدوات أثناء الأحمال (لقطة gate_stats.executed)، وقراءة السجل api-admin-tools",
-      "evidence": "السجل 368 §tools",
-      "not_covered": "أدوات الشبكة الخارجية؛ الطفرات الإدارية (skipped)؛ ضغط عائلات الأدوات وسجل 10k (R-180)"
+      "status": "measured_direct",
+      "how": "الأدوات المنفذة فعلًا عبر بوابة الأدوات أثناء الأحمال (لقطة gate_stats.executed)، وقراءة السجل api-admin-tools؛ ومقعد عائلات الأدوات (D-136): 95 من 100 أداة عبر tool_runtime.dispatch بتزامن 8 (benchmarks/r177/tool_families_bench.py)",
+      "evidence": "السجل 368 §tools؛ السجل 373",
+      "not_covered": "أدوات الشبكة الخارجية الخمس (لا تُحمَّل خدمات طرف ثالث من بيئة مشتركة)؛ الطفرات الإدارية (skipped)؛ أدوات تحتاج LLM حيًا؛ stress لعائلات الأدوات وسجل 10k تحت حمل (R-180)"
     },
     "sse": {
       "status": "measured_direct",
-      "how": "استطلاع /api/events (k6) + زمن اتصال التيار حتى الرؤوس (مسبار TTFB)",
-      "evidence": "السجل 368",
-      "not_covered": "اتصالات طويلة متزامنة كثيرة/معدل البث (قيود قبول SSE max_per_client=5) — R-180/R-181 في البيئة المعزولة"
+      "how": "استطلاع /api/events (k6) + زمن اتصال التيار حتى الرؤوس (مسبار TTFB)؛ ومقعد fan-out (D-136): 20 تيارًا طويلًا لمستأجرين بالحدود الافتراضية، زمن تسليم الأحداث n=800 لكل نوع، عزل، و429 عند الحدود (benchmarks/r177/sse_fanout_bench.py)",
+      "evidence": "السجل 368؛ السجل 374",
+      "not_covered": "مئات/آلاف التيارات المتزامنة (تتطلب رفع حدود القبول وبيئة معزولة) — R-180/R-181؛ سلوك EventSource في المتصفح والوكلاء العكسيين"
     },
     "frontend": {
       "status": "measured_direct",

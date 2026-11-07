@@ -1,0 +1,25 @@
+# R-177 local gap (D-136) — SSE fan-out: 20 long-lived streams within DEFAULT admission limits, delivery latency n=800/event type, tenant isolation, caps
+# code: m9/r177-local-gaps-prep on 3e6b0899; shared 2-CPU sandbox; SUT = real uvicorn in its own OS process; clients from distinct loopback source IPs 127.0.0.2..5; live-local = loopback PostgreSQL+PostgREST
+# command: python3 benchmarks/r177/sse_fanout_bench.py [--storage live-local] --json ...   (40 tasks/tenant at 2/s, 2 tenants × 2 IPs × 5 streams)
+# BEFORE: api-sse rows in log 368 had n=5..13 stream samples (below the D-134 floor n≥299 for p99). New measurement, not a fix — no red phase.
+# runs re-done after the log-375 percentile fix; ≥65s apart (the host-wide SQLite admission store shares the 10/60s open-rate window across processes — a rerun inside 60s gets a designed 429)
+
+### storage=volatile  at=2026-11-07T14:07:45Z  limits: defaults (max_per_client=5, max_per_tenant=10, max_connections=100, open_rate=10/60s)
+streams_opened=20 statuses=['200'] tasks_submitted={'A': 40, 'B': 40} cross_tenant_leaks=0 stream_gap_events=0 incomplete_streams=[]
+caps: {"6th_stream_same_ip": {"status": 429, "retry_after": "30"}, "11th_stream_same_tenant_new_ip": {"status": 429, "retry_after": "30"}}
+  task_created    n=800 p50=9.662ms p95=11.799ms p99=31.489ms max=32.782ms
+  task_started    n=800 p50=11.91ms p95=15.318ms p99=34.964ms max=36.33ms
+  task_completed  n=800 p50=11.99ms p95=15.397ms p99=35.05ms max=36.419ms
+
+### storage=live-local  at=2026-11-07T14:06:03Z  limits: defaults (max_per_client=5, max_per_tenant=10, max_connections=100, open_rate=10/60s)
+streams_opened=20 statuses=['200'] tasks_submitted={'A': 40, 'B': 40} cross_tenant_leaks=0 stream_gap_events=0 incomplete_streams=[]
+caps: {"6th_stream_same_ip": {"status": 429, "retry_after": "30"}, "11th_stream_same_tenant_new_ip": {"status": 429, "retry_after": "30"}}
+  task_created    n=800 p50=22.313ms p95=28.359ms p99=64.006ms max=64.306ms
+  task_started    n=800 p50=135.049ms p95=231.974ms p99=287.429ms max=287.688ms
+  task_completed  n=800 p50=143.764ms p95=241.626ms p99=299.144ms max=299.437ms
+
+## reading
+- isolation on the stream holds under fan-out: 0 events of the other tenant on any of 20 streams, every stream saw every task of its tenant, 0 gap events, both storage modes.
+- the caps answer at the edge: 6th stream from one IP → 429 Retry-After 30; 11th stream of one tenant from a new IP → 429 Retry-After 30.
+- live-local task_started/completed latency (~135–145ms p50, p95 ~232–242ms) is dominated by the task lifecycle writing through PostgREST on the same 2-CPU node, not by the SSE fan-out itself (task_created p95 28ms).
+- NOT measured: hundreds/thousands of concurrent streams (needs raised limits + isolated env: R-180/R-181, Q-023), browser EventSource, reverse proxies.

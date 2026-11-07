@@ -1,0 +1,52 @@
+{
+ "tool": "benchmarks/r177/sse_fanout_bench.py",
+ "at": "2026-11-07T14:07:45Z",
+ "limits": "defaults (max_per_client=5, max_per_tenant=10, max_connections=100, open_rate=10/60s)",
+ "storage": "volatile",
+ "tasks_per_tenant": 40,
+ "rate_per_tenant": 2.0,
+ "streams_opened": 20,
+ "stream_statuses": [
+  "200"
+ ],
+ "caps": {
+  "6th_stream_same_ip": {
+   "status": 429,
+   "retry_after": "30"
+  },
+  "11th_stream_same_tenant_new_ip": {
+   "status": 429,
+   "retry_after": "30"
+  }
+ },
+ "tasks_submitted": {
+  "A": 40,
+  "B": 40
+ },
+ "cross_tenant_leaks": 0,
+ "incomplete_streams": [],
+ "stream_gap_events": 0,
+ "delivery_latency_ms": {
+  "task_created": {
+   "n": 800,
+   "p50": 9.662,
+   "p95": 11.799,
+   "p99": 31.489,
+   "max": 32.782
+  },
+  "task_started": {
+   "n": 800,
+   "p50": 11.91,
+   "p95": 15.318,
+   "p99": 34.964,
+   "max": 36.33
+  },
+  "task_completed": {
+   "n": 800,
+   "p50": 11.99,
+   "p95": 15.397,
+   "p99": 35.05,
+   "max": 36.419
+  }
+ }
+}

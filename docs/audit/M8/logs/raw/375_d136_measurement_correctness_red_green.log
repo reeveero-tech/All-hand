@@ -1,0 +1,50 @@
+# D-136 — two measurement-correctness defects (B moved to PR #332) found while adding the R-177 local-gap benches (red first, then green)
+# 2026-11-07; code: m9/r177-local-gaps-prep on 3e6b0899; shared 2-CPU sandbox
+
+## A. nearest-rank percentile helper off by one (benchmarks/r177/sse_fanout_bench.py, tool_families_bench.py, benchmarks/sec10/ready_perf.py)
+cause: k = int(round(p/100*n + 0.5)) - 1 — Python's round() is banker's rounding, so when p/100*n is an integer the result
+rounds to EVEN: sometimes the correct rank, sometimes one above. Correct nearest-rank = ceil(p/100*n) (same as scripts/r177_stop_limits.nearest_rank).
+### RED (tests/test_r177_local_gap_benches.py::test_nearest_rank_percentile_is_exact_in_every_bench_tool + ::test_sse_bench_percentile_and_loopback_helpers, before the fix)
+=========================== short test summary info ============================
+FAILED tests/test_r177_local_gap_benches.py::test_sse_bench_percentile_and_loopback_helpers
+FAILED tests/test_r177_local_gap_benches.py::test_nearest_rank_percentile_is_exact_in_every_bench_tool
+========================= 2 failed, 3 passed in 0.81s ==========================
+
+### old vs new rank on 1..n
+  n=   20  p95 old=   20 new=   19   p99 old=   20 new=   20   p50 old=10 new=10
+  n=   40  p95 old=   38 new=   38   p99 old=   40 new=   40   p50 old=20 new=20
+  n=  100  p95 old=   96 new=   95   p99 old=  100 new=   99   p50 old=50 new=50
+  n=  150  p95 old=  143 new=  143   p99 old=  149 new=  149   p50 old=76 new=75
+  n=  200  p95 old=  190 new=  190   p99 old=  198 new=  198   p50 old=100 new=100
+  n=  800  p95 old=  760 new=  760   p99 old=  792 new=  792   p50 old=400 new=400
+  n= 1500  p95 old= 1426 new= 1425   p99 old= 1486 new= 1485   p50 old=750 new=750
+### effect on recorded numbers (disclosed, not hidden)
+- tool bench n=20 tools: run 1 reported p95 == max (one rank too high); re-run after the fix:
+  self_developer: run1 (old helper) p95=12.749 max=12.749  |  run2 (fixed) p95=7.127 max=12.125
+  test_runner: run1 (old helper) p95=77.846 max=77.846  |  run2 (fixed) p95=66.915 max=69.584
+- SSE bench n=800: old and new ranks coincide for p50/p95/p99 (even case) — the first run's numbers were not wrong; re-run anyway (log 374) after the fix.
+- log 372 (SEC-10 ready_perf, PR #332, n=1500): p95/p99 were the 1426th/1486th sample instead of the 1425th/1485th — one sample (0.07% of ranks) high; n=150 rows unaffected.
+  Not re-measured: the shift is bounded by one inter-sample gap and does not change any conclusion of log 372; the helper is fixed for future runs.
+### GREEN
+tests/test_r177_local_gap_benches.py: 5 passed (×3 runs below)
+
+## B. CI-only flaky assertion in tests/test_r177_per_service.py::test_real_baseline_health
+NOTE: found and fixed during this batch; the fix itself was MERGED WITH PR #332 (D-135 addendum, log 376) because it blocked that PR's CI.
+The red/green below was recorded on this branch before the move; log 376 carries the authoritative red/green for the merged fix.
+CI run 42379128155 (PR #332, attempt 1): `assert abs(raw nearest-rank p95 - k6 summary p95) < 0.01` → 0.0531 (4.106 vs 4.0529ms).
+cause: k6 Trend p(q) interpolates linearly at position q*(n-1); the runner reports nearest-rank. Two different definitions; they agree
+within 0.01ms only when neighbouring samples are close — a contract that never existed. Not related to SEC-10 (volatile CI, /health baseline).
+fix: scripts/r177_stop_limits.k6_trend_quantile (k6's formula) + raw_quantiles.p95_ms_k6_method in the runner; the test now compares like with like
+(k6 method vs k6 summary < 0.01ms). Reports still declare nearest-rank. No threshold relaxed.
+### RED (tests/test_r177_stop_limits.py::test_k6_trend_quantile_matches_k6_linear_interpolation, before the helper existed)
+E   AttributeError: module 'r177_stop_limits_t' has no attribute 'k6_trend_quantile'
+======================= 1 failed, 57 deselected in 0.24s =======================
+
+### GREEN
+============================== 63 passed in 5.16s ==============================
+============================== 63 passed in 5.17s ==============================
+============================== 63 passed in 5.17s ==============================
+test_real_baseline_health (real k6 + SUT, the CI test) ×3 after the fix:
+====================== 1 passed, 23 deselected in 21.12s =======================
+====================== 1 passed, 23 deselected in 21.18s =======================
+====================== 1 passed, 23 deselected in 21.16s =======================
