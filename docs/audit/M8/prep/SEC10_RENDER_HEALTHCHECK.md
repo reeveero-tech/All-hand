@@ -1,5 +1,7 @@
 # SEC-10: أي مسار يفحصه Render للصحة؟ (D-137، 2026-11-07)
 
+> **تحديث D-138**: التغيير المقترح (الخيار B) جاهز في فرع `sec10-render-healthcheck-ready`. PR محجوز بعلامة إيقاف، ولا يُدمج إلا بموافقة المالك وبعد ضبط `AGOS_PIN_FINGERPRINT_KEY`. اختباراته `tests/test_sec10_render_healthcheck_path.py` (أحمر على main ثم أخضر، السجل 382). **ما دام غير مدموج، يبقى `render.yaml` على main كما هو.**
+
 > **الحالة: تحليل جاهز للمراجعة، ولم يُطبَّق شيء.** لم يتغير `render.yaml` في هذه الدفعة، ولم يُرسل أي طلب إلى Render، ولم يحدث أي نشر. التغيير المقترح في PR منفصل عليه علامة «لا يُدمج» إلى أن يوافق المالك، لأن دمج `render.yaml` في `main` قد يطبقه Blueprint sync على الخدمة إن كانت موصولة.
 > الدليل الخام: السجل 378 و`docs/audit/M8/logs/raw/sec10_render/render_health_paths.json`، والأداة `benchmarks/sec10/render_health_paths.py`.
 
