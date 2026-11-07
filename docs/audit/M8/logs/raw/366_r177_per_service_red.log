@@ -1,0 +1,82 @@
+# السجل 366 — R-177: جرد الخدمات وخط أساس لكل خدمة (أحمر/أخضر + القياسات)
+
+التاريخ: 2026-11-07 — الفرع: m9/r177-per-service-baseline — البند: R-177 (ثاني دفعة من R-193، D-133)
+
+## الأحمر (أولًا — قبل كتابة التنفيذ)
+
+```
+FAILED tests/test_r177_per_service.py::test_services_file_exists_and_parses
+FAILED tests/test_r177_per_service.py::test_all_measured_services_defined
+FAILED tests/test_r177_per_service.py::test_every_server_route_is_claimed
+FAILED tests/test_r177_per_service.py::test_skip_entries_have_reasons
+FAILED tests/test_r177_per_service.py::test_indirect_entries_document_coverage
+FAILED tests/test_r177_per_service.py::test_baseline_thresholds_format
+FAILED tests/test_r177_per_service.py::test_service_js_routes_every_measured_service
+FAILED tests/test_r177_per_service.py::test_sse_stream_measured_by_ttfb_probe
+FAILED tests/test_r177_per_service.py::test_runner_config_sha_stable
+FAILED tests/test_r177_per_service.py::test_runner_report_shape_and_skip
+ERROR  tests/test_r177_per_service.py::test_real_baseline_health
+ERROR  tests/test_r177_per_service.py::test_negative_threshold_breach_detected
+================== 10 failed, 2 errors in 0.98s ==================
+```
+(الملفات غير موجودة — جرد الخدمات والمولد والعدّاء.)
+
+## أحمر ثانٍ موثق: قياس SSE بـk6 ينتظر الجسم كاملًا (نتيجة تجريبية)
+
+1. المحاولة الأولى بمعدل كسري (`arrival_rate: 0.1`) رفضها k6 صراحة:
+   `cannot unmarshal number 0.1 into Go struct field Options.scenarios of type int64`
+   — الحل: المعدلات دون 1/ث تُعبر بمضاعف لكل دقيقة (rate=6, timeUnit='60s').
+2. المحاولة الثانية (بعد إصلاح المعدل) كشفت الأهم: k6 انتظر جسم تيار SSE
+   كاملًا رغم `setResponseCallback(expectedStatuses(200))` — المتوسط 4003ms
+   على 5 طلبات ≈ (استطلاعان ~3ms + تيارا 10000ms حتى timeout)/5 — أي أن
+   رد الاستدعاء يصنّف الحالة ولا يقطع عند الرؤوس. الحل الأمين المعتمد:
+   k6 يقيس استطلاع `/api/events` فقط، وزمن اتصال التيار حتى الرؤوس (TTFB)
+   يقيسه مسبار مستقل في العدّاء (`_sse_ttfb_probe` — يكتمل عند الرؤوس بـ
+   `getresponse()` ويغلق فورًا؛ عينات قليلة بالتصميم لاحترام قيود قبول SSE:
+   max_per_client=5، open_rate=10/60s).
+
+## الأخضر
+
+- `python3 -m pytest tests/test_r177_per_service.py -q`: **12 passed in 41.72s**
+  (جرد كامل لكل مسارات server.py، صيغة العتبات، مسودة SLO موسومة، مولد لكل
+  خدمة، بصمة إعداد حتمية، تخطٍ مصنف بأسباب، دخان حقيقي داخل الحزمة، والسلبي:
+  عتبة مستحيلة ⇒ فشل مكتشف exit≠0).
+- استقرار 10x: **10/10 passed (~41.7s لكل تشغيل)**.
+- الحزمة الكاملة محليًا:
+  `AGOS_LLM_KEYLESS=1 AGOS_ALLOW_CODE_EXEC=1 AGOS_API_KEY=test:phase1 python3 -m pytest tests/ -q`:
+  **4083 passed, 8 skipped, 17 deselected, 9 xfailed in 755.14s (0:12:35)**
+  — صفر فشل (الفشل البيئي المتقلب المعروف test_r175_batch4_phase1 مرّ هذه المرة).
+
+## القياس: خط أساس كل خدمة على البيئة الموثقة (SUT واحد، عدّاد مشترك، مولد منفصل)
+
+`python3 scripts/r177_per_service.py --all` — 11 خدمة مقيسة / صفر فشل:
+كل العتبات المسودة تحققت، صفر طلب فاشل في كل الخدمات.
+
+| الخدمة | طلبات | med (ms) | p90 (ms) | p95 (ms) | max (ms) | ملاحظة |
+|---|---|---|---|---|---|---|
+| api-health | 401 | 1.29 | 3.59 | 4.02 | 37.7 | تدوير 5 مسارات |
+| api-agents | 200 | 13.78 | 16.93 | 21.01 | 52.1 | الأبطأ نسبيًا (جرد كامل) |
+| api-tasks-read | 200 | 2.66 | 3.36 | 3.92 | 89.4 | قائمة + تفاصيل |
+| api-tasks-submit | 101 | 2.96 | 3.32 | 4.77 | 45.5 | إرسال 202 + تنفيذ فعلي (validator keyless) |
+| api-task-lifecycle | 80 | 3.20 | 3.76 | 4.04 | 7.2 | إنشاء + إلغاء (طلب الخارطة) |
+| api-memory | 201 | 3.36 | 3.99 | 4.64 | 28.1 | ذاكرة + تعلم |
+| api-chat | 150 | 4.75 | 6.24 | 14.29 | 750.8 | مزيج R-131؛ الذيل الأعلى (750ms) يستحق مراقبة |
+| api-admin-tools | 201 | 4.89 | 6.69 | 7.27 | 55.9 | قراءة سجل الأدوات |
+| api-sse | 5 | 3.08 | 3.64 | 3.65 | 3.7 | استطلاع؛ + اتصال التيار TTFB: [23.4, 4.6, 4.3, 4.1]ms — العينة الأولى باردة |
+| api-auth | 200 | 2.64 | 3.00 | 3.27 | 19.6 | بوابة الرفض 401/403 |
+| frontend | 201 | 0.81 | 0.90 | 1.14 | 2.2 | مسار 404 (الواجهة غير مبنية محليًا) |
+
+- ملاحظة api-chat: med=4.75ms لكن max=750.8ms — ذيل علوي نادر يستحق
+  مراقبة في حمل أعلى (مرشح سؤال SLO للمالك: عتبة p99 أم p95 فقط؟).
+- api-agents: أبطأ الخدمات (med 13.8ms) — يعكس حجم جرد الوكلاء الكامل.
+
+## ما لم يُثبت (حدود صادقة)
+
+- هذه خطوط أساس على العدّاد المشترك بمعدلات صغيرة (5-20 RPS) — ليست أحمال
+  إجهاد؛ نقاط التشبع غير مقيسة (تحتاج أحمالًا أكبر — قرار المالك: Q-023/SLO).
+- عتبات كل خدمة في `benchmarks/r177/services.json` **مسودة** (slo_status=draft)
+  — الخارطة تشترط أن يحدد مالك الاختبار SLO وstop limits قبل التشغيل.
+- لا حمل stress/spike/soak لكل خدمة هنا البتة — يُبنى بعد قرار المالك.
+- frontend محليًا يقيس مسار 404 فقط (الأصول تتطلب web/dist مبنيًا).
+- Mزود LLM الحي والطفرات الإدارية والتخزين الحي: خارج هذه القياسات (موثقة
+  في services.json: skipped/indirect).
