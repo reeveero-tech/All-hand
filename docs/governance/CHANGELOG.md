@@ -1,3 +1,13 @@
+## 2026-11-07 — لاحق 130: SEC-09 إجراء انكشاف وأداة تدوير، تحليل فحص Render، مقارنة Q-023 النهائية، معايير R-178..R-184 القابلة للقياس (D-137)
+
+- **SEC-09**: الإجراء في `docs/audit/M8/prep/SEC09_EXPOSURE_RUNBOOK.md` (أدلة E1–E10 وقواعد الحكم وخطة التدوير 3.0–3.6). أداة `agent_civilization/core/secret_rekey.py` و`scripts/sec09_rekey_secret_store.py`: dry-run افتراضيًا، تتحقق قبل COMMIT، ومُرِّنت على بيانات اصطناعية (السجل 377). تصحيح دقة D-136 في SECURITY.md. لم يُدوَّر شيء.
+- **إصلاحان (أحمر ثم أخضر)**: الموصلات تقرأ `AGOS_SECRETS_MASTER_KEY_FILE` كالخادم، والتعارض مرفوض (`tests/test_sec09_rekey.py`). بصمة تقرير التدوير صارت HMAC وليس SHA-256 بلا مفتاح.
+- **SEC-10/Render** (`docs/audit/M8/prep/SEC10_RENDER_HEALTHCHECK.md`، `benchmarks/sec10/render_health_paths.py`، السجل 378): المسار الحالي يجيب «healthy» والتخزين معطل. `/health/ready` حاسم لكنه يسحب الحركة ويعيد التشغيل على نسخة Free الوحيدة. **`render.yaml` لم يتغير هنا.**
+- **Q-023** (§9 من التدقيق، السجل 381): مقارنة AWS/Hetzner/Oracle. Oracle = 2 vCPU arm64، والقفل لا يثبت على arm64 (`benchmarks/p6/arm64_lock_check.py`).
+- **R-178..R-184**: `benchmarks/p6/acceptance_criteria.json` (42 معيارًا) و`metrics.py` و`tests/test_p6_acceptance_criteria.py`. R-179 L0 صحيح ×3 (`benchmarks/p6/l0_task_correctness.py`، السجل 379).
+- **مراجعة الأدلة** (السجل 380): تسعة بنود بتصحيحات لاحقة، ولا يتغير أي حكم SLO.
+- لا حذف ولا نقل ولا نشر ولا تدوير ولا موارد. والحالات بلا تغيير.
+
 ## 2026-11-07 — لاحق 129: ما بعد R-177 الدفعة 3 — SEC-09 انكشاف، تدقيق Q-023، فجوات R-177 المحلية، خطة R-178..R-184 (D-136)
 
 - **SEC-09 تحقيق الانكشاف** (SECURITY.md، السجل 370، `scripts/sec09_exposure_probe.sh`): النافذة `3097716c` (2026-07-10) ← `ca0a7384`؛ ما كان مقروءًا: الشيفرة، `/etc/passwd`، `.env`، **مفتاح الأسرار الرئيسي مع `secrets.sqlite3`**، مفتاح بصمة PIN، قواعد sqlite؛ لا أسرار بيئة (`/proc/self/environ` ⇒ 0B محليًا). لا دليل نشر في المستودع/GitHub والغياب غير مثبت؛ لا سجلات وصول ⇒ لا دليل استغلال في أي اتجاه. التدوير مشروط بثبوت النشر وبموافقة المالك. نمط بحث السجلات في OPERATIONS.md.

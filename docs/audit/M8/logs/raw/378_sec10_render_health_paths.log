@@ -1,0 +1,44 @@
+# 378 — SEC-10 (D-137): which path should Render's health check probe? LOCAL emulation, NOT Render
+# tool: benchmarks/sec10/render_health_paths.py ; raw: sec10_render/render_health_paths.json ; 2026-11-07, shared 2-CPU sandbox
+# SUT: real uvicorn server:app, AGOS_ENV=production, default rate limit, checker sends NO api key (Render's checker does not)
+# store: live-local PostgREST; 'store_hung' = SIGSTOP of postgrest for 75 s (connections accepted, never answered)
+# Render rules applied to the samples (https://render.com/docs/health-checks): GET, 2xx/3xx within 5 s; >=15 s consecutive failure => stop routing; >=60 s => restart
+# sampler is SEQUENTIAL, 1 probe per path per round => n=33 per path during the outage (a 5 s timeout delays the round)
+
+/api/system/status   healthy     n= 10 codes={'200': 10} max_ms=42.4 longest_fail_s=0.0 stop_routing=False restart=False
+/api/system/status   store_hung  n= 33 codes={'0': 9, '200': 24} max_ms=5005.3 longest_fail_s=37.1 stop_routing=True restart=False
+/api/system/status   recovered   n= 15 codes={'200': 15} max_ms=75.9 longest_fail_s=0.0 stop_routing=False restart=False
+/health/ready        healthy     n= 10 codes={'200': 10} max_ms=5.3 longest_fail_s=0.0 stop_routing=False restart=False
+/health/ready        store_hung  n= 33 codes={'503': 33} max_ms=1005.1 longest_fail_s=73.2 stop_routing=True restart=True
+/health/ready        recovered   n= 15 codes={'503': 1, '200': 14} max_ms=50.6 longest_fail_s=1.0 stop_routing=False restart=False
+/health/live         healthy     n= 10 codes={'200': 10} max_ms=1.4 longest_fail_s=0.0 stop_routing=False restart=False
+/health/live         store_hung  n= 33 codes={'200': 33} max_ms=1.8 longest_fail_s=0.0 stop_routing=False restart=False
+/health/live         recovered   n= 15 codes={'200': 15} max_ms=1.0 longest_fail_s=0.0 stop_routing=False restart=False
+/health              healthy     n= 10 codes={'200': 10} max_ms=5.6 longest_fail_s=0.0 stop_routing=False restart=False
+/health              store_hung  n= 33 codes={'200': 33} max_ms=1.8 longest_fail_s=0.0 stop_routing=False restart=False
+/health              recovered   n= 15 codes={'200': 15} max_ms=1.3 longest_fail_s=0.0 stop_routing=False restart=False
+
+## /api/system/status sequence during store_hung (code, ms):
+[(0, 5005), (0, 5004), (0, 5004), (0, 5002), (0, 5002), (0, 5004), (0, 5003), (200, 4), (200, 4), (200, 4), (200, 4), (200, 4), (200, 6), (200, 3), (200, 4), (200, 7), (200, 4), (0, 5002), (200, 4), (200, 4), (200, 4), (200, 5), (200, 4), (200, 4), (200, 4), (200, 4), (200, 4), (200, 5), (200, 3), (200, 4), (200, 4), (200, 4), (0, 5003)]
+
+## interpretation (from code, server.py system_status + supabase_store.get_tasks)
+- system_status always returns {"status":"healthy"}; it calls storage.get_tasks(limit=500, scope=ALL_TENANTS).
+- get_tasks swallows every exception and returns [] (supabase_store.py ~L900). So when the store is DOWN the endpoint
+  either hangs until the client timeout (code 0 above) or answers 200 "healthy" with tasks_in_db=0 within ~4 ms once
+  the storage path fails fast. The fast-200 phase coincides with storage breaker (5 failures / 10 s reset) behaviour;
+  the exact mechanism of the fast failure was NOT instrumented — stated as consistent, not proven.
+- => current healthCheckPath gives a FALSE-HEALTHY signal for an unavailable store, plus intermittent 5 s timeouts.
+- /health/ready: 503 within <=1.0 s for the whole outage, 200 again 1 s after SIGCONT. Unambiguous.
+- /health/live and /health: 200 throughout (process liveness only).
+
+## Render consequence (rules applied to local samples; Render itself was NOT called)
+- current path: stop routing once (37.1 s consecutive), no restart; then routing resumes while store still down.
+- /health/ready: stop routing after 15 s AND restart after 60 s for an outage >= 60 s. On a single Free instance
+  'stop routing' = full outage; restart on Free = ephemeral FS lost (PIN key in TMPDIR regenerated if
+  AGOS_PIN_FINGERPRINT_KEY unset) and in-memory TASKS lost. Restart cannot fix an external store outage => restart loop risk.
+- extra costs of the CURRENT path, from code: it is @rate_limit (100/60 s per client IP) and reads up to 500 task rows per probe.
+
+## limits
+- not Render: proxy, IP aggregation, checker cadence and free-plan health-check support are NOT measured.
+- one outage shape (hang). A refused connection (process down) was not emulated.
+
