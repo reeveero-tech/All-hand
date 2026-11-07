@@ -585,3 +585,22 @@ def test_stall_also_counts_for_chat_p99_rule():
 def test_expected_rate_must_be_positive():
     with pytest.raises(_sl().PolicyError):
         _policy_rate(0)
+
+
+def test_k6_trend_quantile_matches_k6_linear_interpolation():
+    """D-135 (CI 42379128155): k6's Trend p(q) interpolates linearly at q*(n-1); the
+    runner reports nearest-rank. Comparing the two within 0.01ms was luck, not a
+    contract. The runner now also computes k6's method from the raw samples so the
+    "runner does not invent numbers" check compares like with like."""
+    sl = _sl()
+    k6q = sl.k6_trend_quantile
+    assert k6q([], 0.95) is None
+    assert k6q([5.0], 0.95) == 5.0
+    vals = [float(i) for i in range(1, 101)]
+    assert abs(k6q(vals, 0.95) - 95.05) < 1e-9      # 1 + 0.95*99
+    assert abs(k6q(vals, 0.5) - 50.5) < 1e-9
+    assert k6q(vals, 1.0) == 100.0 and k6q(vals, 0.0) == 1.0
+    # nearest-rank and k6 differ by up to one inter-sample gap — the CI case:
+    gap = [1.0] * 94 + [4.0529, 4.106] + [9.0] * 4
+    assert sl.nearest_rank(gap, 0.95) == 4.0529      # rank ceil(95) = 95th sample
+    assert 4.0529 < k6q(gap, 0.95) < 4.106            # position 94.05 → between 95th and 96th

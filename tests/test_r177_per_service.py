@@ -310,7 +310,11 @@ def test_real_baseline_health(sut_proc):
     assert rep["sentinel_id"]
     # الكمّيات من العينات الخام تطابق ملخص k6 (العدّاء لا يخترع أرقامًا)
     assert rep["raw_quantiles"]["n"] == rep["metrics"]["http_reqs"]
-    assert abs(rep["raw_quantiles"]["p95_ms"] - rep["metrics"]["duration_p95_ms"]) < 0.01
+    # k6 يستوفي خطيًا والتقرير يعلن الرتبة الأقرب: المقارنة الصارمة بطريقة k6 نفسها
+    # (لا ترتيب ثابت بين التعريفين؛ الفرق حتى فجوة عينة واحدة).
+    # (D-135: الصيغة السابقة قارنت تعريفين مختلفين بسماح 0.01ms ففشلت في CI 42379128155 مرتين بفرق 0.053ms ثم 0.102ms)
+    assert abs(rep["raw_quantiles"]["p95_ms_k6_method"] - rep["metrics"]["duration_p95_ms"]) < 0.01
+    assert rep["raw_quantiles"]["p95_ms"] is not None
 
 
 def _fast(data, name, rate=40, vus=48, duration=20):

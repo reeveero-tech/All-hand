@@ -841,7 +841,9 @@ def run_service(service_name: str, sut_url: Optional[str] = None,
     vals = sorted(s["ms"] for s in mon.samples)
     nr = sl().nearest_rank
     raw_q = {"n": len(vals), "p50_ms": nr(vals, 0.5), "p95_ms": nr(vals, 0.95),
-             "p99_ms": nr(vals, 0.99), "max_ms": vals[-1] if vals else None}
+             "p99_ms": nr(vals, 0.99), "max_ms": vals[-1] if vals else None,
+             # طريقة k6 نفسها (استيفاء خطي) — للتحقق من أن العدّاء لا يخترع أرقامًا (D-135)
+             "p95_ms_k6_method": sl().k6_trend_quantile(vals, 0.95)}
 
     stop_rep = ev.report()
     stopped = ev.decision.stopped
