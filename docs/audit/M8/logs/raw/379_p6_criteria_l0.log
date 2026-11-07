@@ -1,0 +1,32 @@
+# 379 — D-137: R-178..R-184 measurable acceptance criteria + R-179 L0 correctness (local)
+# base: origin/main 1a35ff48 + branch sec09-rotation-p6-criteria; 2026-11-07T17:51:29Z; shared 2-CPU sandbox
+
+## RED: plan document not yet linked to the machine-readable criteria (divergence guard)
+=========================== short test summary info ============================
+FAILED tests/test_p6_acceptance_criteria.py::test_plan_and_criteria_do_not_diverge
+========================= 1 failed, 59 passed in 0.21s =========================
+
+## GREEN after linking the plan (§D-137) — 3 consecutive runs
+============================== 60 passed in 0.18s ==============================
+============================== 60 passed in 0.18s ==============================
+============================== 60 passed in 0.19s ==============================
+
+## R-179 L0 correctness — 3 runs (live-local PostgreSQL 18 + PostgREST v12.2.3 on loopback; tool-only validator workload, NO LLM call)
+# command: R177_STORAGE_URL=http://127.0.0.1:54321 R177_STORAGE_KEY=<local throwaway> python3 benchmarks/p6/l0_task_correctness.py --json docs/audit/M8/logs/raw/p6_l0/r179_l0_runN.json
+run1 {'accepted': 100, 'submit_status_codes': ['202'], 'idempotency_mismatches': 0, 'db_rows_for_run_keys': 100, 'db_rows_for_ids': 100, 'task_completed_events': 100, 'keys_with_more_than_one_row': 0, 'final_states': {'completed': 100}, 'drain_s': 0.21, 'l0_correct': True}
+    r179.silent_loss pass 0 threshold=proposed (not acceptance)
+    r179.duplicate_side_effects pass 0 threshold=proposed (not acceptance)
+    r179.reconciliation_ratio pass 1.0 threshold=proposed (not acceptance)
+run2 {'accepted': 100, 'submit_status_codes': ['202'], 'idempotency_mismatches': 0, 'db_rows_for_run_keys': 100, 'db_rows_for_ids': 100, 'task_completed_events': 100, 'keys_with_more_than_one_row': 0, 'final_states': {'completed': 100}, 'drain_s': 0.22, 'l0_correct': True}
+    r179.silent_loss pass 0 threshold=proposed (not acceptance)
+    r179.duplicate_side_effects pass 0 threshold=proposed (not acceptance)
+    r179.reconciliation_ratio pass 1.0 threshold=proposed (not acceptance)
+run3 {'accepted': 100, 'submit_status_codes': ['202'], 'idempotency_mismatches': 0, 'db_rows_for_run_keys': 100, 'db_rows_for_ids': 100, 'task_completed_events': 100, 'keys_with_more_than_one_row': 0, 'final_states': {'completed': 100}, 'drain_s': 0.22, 'l0_correct': True}
+    r179.silent_loss pass 0 threshold=proposed (not acceptance)
+    r179.duplicate_side_effects pass 0 threshold=proposed (not acceptance)
+    r179.reconciliation_ratio pass 1.0 threshold=proposed (not acceptance)
+
+## what this is / is not
+- IS: correctness of idempotency (50 keys resubmitted CONCURRENTLY with the original, 50 after acceptance), no silent loss, API=DB=events reconciliation, on a real SUT process + real local store.
+- duplicate_side_effects here is a PROXY (task_completed events per task_id): L0 has no external recipient.
+- IS NOT: an R-179 ladder step, a capacity number, managed Supabase, a live provider, or node separation (generator and SUT share one 2-CPU node).

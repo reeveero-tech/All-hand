@@ -1,0 +1,106 @@
+# 377 — SEC-09 (D-137) RED: master-key path consistency (connectors) + rekey tool
+# base: origin/main 1a35ff48; connectors/__init__.py = main (fix NOT applied); 2026-11-07T17:51:00Z
+# rekey tool tests are NEW code (no prior behaviour to be red against) — they are shown green here and are NOT claimed as red-first
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE AuthInvalidated
+=========================== short test summary info ============================
+FAILED tests/test_sec09_rekey.py::test_connectors_honor_the_server_master_key_variable
+FAILED tests/test_sec09_rekey.py::test_connectors_refuse_conflicting_master_key_variables
+========================= 2 failed, 10 passed in 1.49s =========================
+
+## GREEN (fix applied) — 3 consecutive runs + neighbours
+============================== 12 passed in 1.44s ==============================
+============================== 12 passed in 1.44s ==============================
+============================== 12 passed in 1.43s ==============================
+============================= 33 passed in 10.97s ==============================
+
+## CLI drill (local throwaway DB, 20 SYNTHETIC secrets / 4 tenants, keys from os.urandom; no real secret involved)
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --verify-key <tmp>/old.key
+{"key_opens_store": true}
+exit=0
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --old-key <tmp>/old.key --new-key <tmp>/new.key
+{
+  "dry_run": true,
+  "rows_reencrypted": 20,
+  "tenants": 4,
+  "marker_reencrypted": true,
+  "verified_under_new_key": true,
+  "plaintext_set_digest": "8ea1719966552c4023a79a76c9842a852d8c0fb5224ace537e1481fa12957aba"
+}
+exit=0
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --old-key <tmp>/old.key --new-key <tmp>/new.key --apply
+{
+  "backup": "<tmp>/secrets.sqlite3.pre-rekey-20261107T175333Z.bak",
+  "dry_run": false,
+  "rows_reencrypted": 20,
+  "tenants": 4,
+  "marker_reencrypted": true,
+  "verified_under_new_key": true,
+  "plaintext_set_digest": "8ea1719966552c4023a79a76c9842a852d8c0fb5224ace537e1481fa12957aba",
+  "new_key_opens_store": true,
+  "old_key_opens_store": false
+}
+exit=0
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --verify-key <tmp>/old.key
+{"key_opens_store": false}
+exit=0
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --verify-key <tmp>/new.key
+{"key_opens_store": true}
+exit=0
+all 20 values decrypt under NEW key via SecretStore: True
+total 40
+-rw------- new.key
+-rw------- old.key
+-rw-r--r-- secrets.sqlite3
+-rw------- secrets.sqlite3.pre-rekey-20261107T175333Z.bak
+
+## RED (self-review finding): report exposed an UNKEYED sha256 of the plaintext set (offline-guessable for one low-entropy secret)
+FAILED tests/test_sec09_rekey.py::test_dry_run_and_apply_report_same_plaintext_set
+FAILED tests/test_sec09_rekey.py::test_report_fingerprint_is_keyed_not_a_guessable_hash
+========================= 2 failed, 11 passed in 1.55s =========================
+
+## GREEN after keyed fingerprint — 3 consecutive runs + neighbours
+============================== 13 passed in 1.48s ==============================
+============================== 13 passed in 1.46s ==============================
+============================== 13 passed in 1.46s ==============================
+============================= 33 passed in 11.65s ==============================
+
+## CLI drill repeated after the keyed-fingerprint fix (fresh throwaway DB, 20 synthetic secrets). The first drill above printed the old unkeyed field; superseded.
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --old-key <tmp>/old.key --new-key <tmp>/new.key
+{
+  "dry_run": true,
+  "rows_reencrypted": 20,
+  "tenants": 4,
+  "marker_reencrypted": true,
+  "verified_under_new_key": true,
+  "plaintext_set_hmac": "8371df7116357a1984ea49a5e5dcaa54fdd070f6e22580b39fdeb1e78334c95f"
+}
+exit=0
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --old-key <tmp>/old.key --new-key <tmp>/new.key --apply
+{
+  "backup": "<tmp>/secrets.sqlite3.pre-rekey-20261107T175437Z.bak",
+  "dry_run": false,
+  "rows_reencrypted": 20,
+  "tenants": 4,
+  "marker_reencrypted": true,
+  "verified_under_new_key": true,
+  "plaintext_set_hmac": "8371df7116357a1984ea49a5e5dcaa54fdd070f6e22580b39fdeb1e78334c95f",
+  "new_key_opens_store": true,
+  "old_key_opens_store": false
+}
+exit=0
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --verify-key <tmp>/old.key
+{"key_opens_store": false}
+exit=1
+$ sec09_rekey_secret_store.py --db <tmp>/secrets.sqlite3 --verify-key <tmp>/new.key
+{"key_opens_store": true}
+exit=0
+## second --apply with the now-wrong old key must refuse:
+{"refused": "old key does not match this store \u2014 refusing"}
+exit=1
+## file modes after drill:
+600 new.key
+600 old.key
+644 secrets.sqlite3
+600 secrets.sqlite3.pre-rekey-20261107T175437Z.bak
+FINDING (not fixed in this batch, existing R-189 behaviour): SecretStore creates secrets.sqlite3 with the process umask (0644 here). It holds ciphertext + tenant/name metadata only; the runbook requires a 0700 directory / umask 077. Backup written by the tool is 0600.

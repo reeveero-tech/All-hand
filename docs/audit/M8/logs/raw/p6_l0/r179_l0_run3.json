@@ -1,0 +1,46 @@
+{
+ "tool": "benchmarks/p6/l0_task_correctness.py",
+ "run": "l0-7de6ce34",
+ "n": 100,
+ "storage": "live-local PostgREST",
+ "workload": "validator + JSON (tool-only, no LLM)",
+ "not": "not a capacity measurement; not an R-179 ladder step (D-134)",
+ "startup_s": 0.62,
+ "submit_status_codes": [
+  "202"
+ ],
+ "idempotency_mismatches": 0,
+ "drain_s": 0.22,
+ "db_rows_for_run_keys": 100,
+ "db_rows_for_ids": 100,
+ "task_completed_events": 100,
+ "keys_with_more_than_one_row": 0,
+ "final_states": {
+  "completed": 100
+ },
+ "criteria": [
+  {
+   "id": "r179.silent_loss",
+   "value": 0,
+   "verdict": "pass",
+   "approved": false,
+   "why": ""
+  },
+  {
+   "id": "r179.duplicate_side_effects",
+   "value": 0,
+   "verdict": "pass",
+   "approved": false,
+   "why": ""
+  },
+  {
+   "id": "r179.reconciliation_ratio",
+   "value": 1.0,
+   "verdict": "pass",
+   "approved": false,
+   "why": ""
+  }
+ ],
+ "accepted": 100,
+ "l0_correct": true
+}

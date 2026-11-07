@@ -1,0 +1,2022 @@
+{
+ "tool": "benchmarks/sec10/render_health_paths.py",
+ "render_rules": {
+  "timeout_s": 5.0,
+  "stop_routing_after_s": 15.0,
+  "restart_after_s": 60.0,
+  "source": "https://render.com/docs/health-checks"
+ },
+ "env": {
+  "AGOS_ENV": "production",
+  "rate_limit": "default (100/60s per client)",
+  "storage": "live-local PostgREST (SIGSTOP = hung store)",
+  "checker_sends_api_key": false
+ },
+ "phases_s": {
+  "healthy": 10,
+  "store_hung": 75,
+  "recovered": 15
+ },
+ "summary": {
+  "/api/system/status": {
+   "healthy": {
+    "n": 10,
+    "codes": {
+     "200": 10
+    },
+    "max_ms": 42.4,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   },
+   "store_hung": {
+    "n": 33,
+    "codes": {
+     "0": 9,
+     "200": 24
+    },
+    "max_ms": 5005.3,
+    "ok_fraction": 0.727,
+    "longest_consecutive_fail_s": 37.1,
+    "render_would_stop_routing": true,
+    "render_would_restart": false
+   },
+   "recovered": {
+    "n": 15,
+    "codes": {
+     "200": 15
+    },
+    "max_ms": 75.9,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   }
+  },
+  "/health/ready": {
+   "healthy": {
+    "n": 10,
+    "codes": {
+     "200": 10
+    },
+    "max_ms": 5.3,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   },
+   "store_hung": {
+    "n": 33,
+    "codes": {
+     "503": 33
+    },
+    "max_ms": 1005.1,
+    "ok_fraction": 0.0,
+    "longest_consecutive_fail_s": 73.2,
+    "render_would_stop_routing": true,
+    "render_would_restart": true
+   },
+   "recovered": {
+    "n": 15,
+    "codes": {
+     "503": 1,
+     "200": 14
+    },
+    "max_ms": 50.6,
+    "ok_fraction": 0.933,
+    "longest_consecutive_fail_s": 1.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   }
+  },
+  "/health/live": {
+   "healthy": {
+    "n": 10,
+    "codes": {
+     "200": 10
+    },
+    "max_ms": 1.4,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   },
+   "store_hung": {
+    "n": 33,
+    "codes": {
+     "200": 33
+    },
+    "max_ms": 1.8,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   },
+   "recovered": {
+    "n": 15,
+    "codes": {
+     "200": 15
+    },
+    "max_ms": 1.0,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   }
+  },
+  "/health": {
+   "healthy": {
+    "n": 10,
+    "codes": {
+     "200": 10
+    },
+    "max_ms": 5.6,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   },
+   "store_hung": {
+    "n": 33,
+    "codes": {
+     "200": 33
+    },
+    "max_ms": 1.8,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   },
+   "recovered": {
+    "n": 15,
+    "codes": {
+     "200": 15
+    },
+    "max_ms": 1.3,
+    "ok_fraction": 1.0,
+    "longest_consecutive_fail_s": 0.0,
+    "render_would_stop_routing": false,
+    "render_would_restart": false
+   }
+  }
+ },
+ "samples": [
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 42.4,
+   "ok": true,
+   "t": 49295.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 5.3,
+   "ok": true,
+   "t": 49295.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49295.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49295.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 34.1,
+   "ok": true,
+   "t": 49296.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49296.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49296.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49296.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 34.2,
+   "ok": true,
+   "t": 49297.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 5.1,
+   "ok": true,
+   "t": 49297.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.4,
+   "ok": true,
+   "t": 49297.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 5.6,
+   "ok": true,
+   "t": 49297.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 31.7,
+   "ok": true,
+   "t": 49298.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49298.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49298.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49298.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 36.4,
+   "ok": true,
+   "t": 49299.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 5.1,
+   "ok": true,
+   "t": 49299.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49299.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49299.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 29.0,
+   "ok": true,
+   "t": 49300.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49300.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49300.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49300.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 27.9,
+   "ok": true,
+   "t": 49301.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 4.6,
+   "ok": true,
+   "t": 49301.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.8,
+   "ok": true,
+   "t": 49301.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49301.962
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 32.4,
+   "ok": true,
+   "t": 49302.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 4.9,
+   "ok": true,
+   "t": 49302.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.8,
+   "ok": true,
+   "t": 49302.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.3,
+   "ok": true,
+   "t": 49302.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 27.1,
+   "ok": true,
+   "t": 49303.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49303.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49303.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49303.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 26.5,
+   "ok": true,
+   "t": 49304.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 4.1,
+   "ok": true,
+   "t": 49304.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.8,
+   "ok": true,
+   "t": 49304.963
+  },
+  {
+   "phase": "healthy",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49304.963
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5005.3,
+   "ok": false,
+   "t": 49305.963
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.6,
+   "ok": false,
+   "t": 49305.963
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49305.963
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49305.963
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5004.2,
+   "ok": false,
+   "t": 49311.973
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.9,
+   "ok": false,
+   "t": 49311.973
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49311.973
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49311.973
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5004.5,
+   "ok": false,
+   "t": 49317.983
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1005.1,
+   "ok": false,
+   "t": 49317.983
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49317.983
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.3,
+   "ok": true,
+   "t": 49317.983
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5001.6,
+   "ok": false,
+   "t": 49323.995
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1003.4,
+   "ok": false,
+   "t": 49323.995
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49323.995
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.3,
+   "ok": true,
+   "t": 49323.995
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5002.0,
+   "ok": false,
+   "t": 49330.002
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.1,
+   "ok": false,
+   "t": 49330.002
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49330.002
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49330.002
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5004.0,
+   "ok": false,
+   "t": 49336.009
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1004.3,
+   "ok": false,
+   "t": 49336.009
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49336.009
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.6,
+   "ok": true,
+   "t": 49336.009
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5003.3,
+   "ok": false,
+   "t": 49342.02
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.1,
+   "ok": false,
+   "t": 49342.02
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49342.02
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49342.02
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.1,
+   "ok": true,
+   "t": 49348.027
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49348.027
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49348.027
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 0.9,
+   "ok": true,
+   "t": 49348.027
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.3,
+   "ok": true,
+   "t": 49349.027
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1001.7,
+   "ok": false,
+   "t": 49349.027
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49349.027
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49349.027
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 3.5,
+   "ok": true,
+   "t": 49350.036
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49350.036
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49350.036
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 0.9,
+   "ok": true,
+   "t": 49350.036
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.4,
+   "ok": true,
+   "t": 49351.036
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.9,
+   "ok": false,
+   "t": 49351.036
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49351.036
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49351.036
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 3.6,
+   "ok": true,
+   "t": 49352.045
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49352.045
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49352.045
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49352.045
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 5.9,
+   "ok": true,
+   "t": 49353.045
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.1,
+   "ok": false,
+   "t": 49353.045
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49353.045
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49353.045
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 3.4,
+   "ok": true,
+   "t": 49354.056
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49354.056
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49354.056
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49354.056
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.2,
+   "ok": true,
+   "t": 49355.056
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.1,
+   "ok": false,
+   "t": 49355.056
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.6,
+   "ok": true,
+   "t": 49355.056
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.4,
+   "ok": true,
+   "t": 49355.056
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 7.4,
+   "ok": true,
+   "t": 49356.065
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1.6,
+   "ok": false,
+   "t": 49356.065
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49356.065
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.6,
+   "ok": true,
+   "t": 49356.065
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.4,
+   "ok": true,
+   "t": 49357.065
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1001.9,
+   "ok": false,
+   "t": 49357.065
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49357.065
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49357.065
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5002.5,
+   "ok": false,
+   "t": 49358.074
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1003.7,
+   "ok": false,
+   "t": 49358.074
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49358.074
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.3,
+   "ok": true,
+   "t": 49358.074
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 3.9,
+   "ok": true,
+   "t": 49364.082
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.9,
+   "ok": false,
+   "t": 49364.082
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49364.082
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49364.082
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.3,
+   "ok": true,
+   "t": 49365.082
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1003.1,
+   "ok": false,
+   "t": 49365.082
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.8,
+   "ok": true,
+   "t": 49365.082
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.4,
+   "ok": true,
+   "t": 49365.082
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 3.9,
+   "ok": true,
+   "t": 49366.093
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.9,
+   "ok": false,
+   "t": 49366.093
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49366.093
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 0.9,
+   "ok": true,
+   "t": 49366.093
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.8,
+   "ok": true,
+   "t": 49367.093
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.2,
+   "ok": false,
+   "t": 49367.093
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.4,
+   "ok": true,
+   "t": 49367.093
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49367.093
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 3.8,
+   "ok": true,
+   "t": 49368.103
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49368.103
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49368.103
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49368.103
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.5,
+   "ok": true,
+   "t": 49369.103
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.8,
+   "ok": false,
+   "t": 49369.103
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49369.103
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49369.103
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.3,
+   "ok": true,
+   "t": 49370.112
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49370.112
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49370.112
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49370.112
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.1,
+   "ok": true,
+   "t": 49371.112
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1001.9,
+   "ok": false,
+   "t": 49371.112
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49371.112
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49371.112
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 3.6,
+   "ok": true,
+   "t": 49372.121
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49372.121
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49372.121
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 0.9,
+   "ok": true,
+   "t": 49372.121
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.8,
+   "ok": true,
+   "t": 49373.121
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.6,
+   "ok": false,
+   "t": 49373.121
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49373.121
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49373.121
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 3.4,
+   "ok": true,
+   "t": 49374.13
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49374.13
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49374.13
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49374.13
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.0,
+   "ok": true,
+   "t": 49375.13
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.5,
+   "ok": false,
+   "t": 49375.13
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.3,
+   "ok": true,
+   "t": 49375.13
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.8,
+   "ok": true,
+   "t": 49375.13
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.0,
+   "ok": true,
+   "t": 49376.14
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 0.8,
+   "ok": false,
+   "t": 49376.14
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.6,
+   "ok": true,
+   "t": 49376.14
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 0.9,
+   "ok": true,
+   "t": 49376.14
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 4.2,
+   "ok": true,
+   "t": 49377.14
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.8,
+   "ok": false,
+   "t": 49377.14
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.9,
+   "ok": true,
+   "t": 49377.14
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49377.14
+  },
+  {
+   "phase": "store_hung",
+   "path": "/api/system/status",
+   "code": 0,
+   "ms": 5002.9,
+   "ok": false,
+   "t": 49378.149
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 1002.7,
+   "ok": false,
+   "t": 49378.149
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49378.149
+  },
+  {
+   "phase": "store_hung",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49378.149
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 13.3,
+   "ok": true,
+   "t": 49384.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 503,
+   "ms": 50.6,
+   "ok": false,
+   "t": 49384.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49384.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49384.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 75.9,
+   "ok": true,
+   "t": 49385.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 6.7,
+   "ok": true,
+   "t": 49385.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49385.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49385.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 27.5,
+   "ok": true,
+   "t": 49386.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49386.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49386.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49386.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 37.6,
+   "ok": true,
+   "t": 49387.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 5.4,
+   "ok": true,
+   "t": 49387.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.9,
+   "ok": true,
+   "t": 49387.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.3,
+   "ok": true,
+   "t": 49387.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 29.6,
+   "ok": true,
+   "t": 49388.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.3,
+   "ok": true,
+   "t": 49388.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49388.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49388.157
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 32.7,
+   "ok": true,
+   "t": 49389.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 5.6,
+   "ok": true,
+   "t": 49389.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.8,
+   "ok": true,
+   "t": 49389.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49389.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 30.8,
+   "ok": true,
+   "t": 49390.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49390.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49390.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49390.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 34.9,
+   "ok": true,
+   "t": 49391.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 4.9,
+   "ok": true,
+   "t": 49391.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.9,
+   "ok": true,
+   "t": 49391.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49391.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 34.6,
+   "ok": true,
+   "t": 49392.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 4.4,
+   "ok": true,
+   "t": 49392.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49392.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49392.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 30.8,
+   "ok": true,
+   "t": 49393.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 4.3,
+   "ok": true,
+   "t": 49393.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.8,
+   "ok": true,
+   "t": 49393.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49393.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 31.1,
+   "ok": true,
+   "t": 49394.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49394.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49394.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49394.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 27.3,
+   "ok": true,
+   "t": 49395.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 4.2,
+   "ok": true,
+   "t": 49395.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.8,
+   "ok": true,
+   "t": 49395.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49395.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 27.7,
+   "ok": true,
+   "t": 49396.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49396.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49396.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49396.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 31.5,
+   "ok": true,
+   "t": 49397.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 4.5,
+   "ok": true,
+   "t": 49397.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.8,
+   "ok": true,
+   "t": 49397.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.1,
+   "ok": true,
+   "t": 49397.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/api/system/status",
+   "code": 200,
+   "ms": 30.3,
+   "ok": true,
+   "t": 49398.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/ready",
+   "code": 200,
+   "ms": 1.2,
+   "ok": true,
+   "t": 49398.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health/live",
+   "code": 200,
+   "ms": 0.7,
+   "ok": true,
+   "t": 49398.158
+  },
+  {
+   "phase": "recovered",
+   "path": "/health",
+   "code": 200,
+   "ms": 1.0,
+   "ok": true,
+   "t": 49398.158
+  }
+ ]
+}

@@ -187,17 +187,30 @@ _secret_store_key: Optional[tuple] = None
 
 
 def _secret_store():
-    """The process singleton over AGOS_SECRETS_DB / AGOS_MASTER_KEY_FILE.
+    """The process singleton over AGOS_SECRETS_DB + the master-key path
+    (AGOS_SECRETS_MASTER_KEY_FILE, legacy AGOS_MASTER_KEY_FILE — SEC-09).
     The store is file-backed and opens a connection per operation, so
     rotation and revocation from any process sharing the file apply
     immediately (no cache). The singleton is KEYED on the env pair: a changed
     configuration rebuilds it (tests point each test at its own db file)."""
     global _secret_store_instance, _secret_store_key
     db = (os.environ.get("AGOS_SECRETS_DB") or "").strip()
-    key = (os.environ.get("AGOS_MASTER_KEY_FILE") or "").strip()
-    if not db or not key:
+    # SEC-09 (D-137): ONE master-key path for every reader. The server reads
+    # AGOS_SECRETS_MASTER_KEY_FILE (default <tmp>/agos_secrets_master_key);
+    # connectors historically read only AGOS_MASTER_KEY_FILE — a rotation
+    # that updated one variable would desynchronize the two. The canonical
+    # variable wins, the legacy one is still honored, and two variables that
+    # point at DIFFERENT files are refused (fail-closed, never a guess).
+    canon = (os.environ.get("AGOS_SECRETS_MASTER_KEY_FILE") or "").strip()
+    legacy = (os.environ.get("AGOS_MASTER_KEY_FILE") or "").strip()
+    if canon and legacy and os.path.realpath(canon) != os.path.realpath(legacy):
         raise AuthInvalidated(
-            "no secret store is configured (AGOS_SECRETS_DB/AGOS_MASTER_KEY_FILE)")
+            "conflicting master-key paths (AGOS_SECRETS_MASTER_KEY_FILE != AGOS_MASTER_KEY_FILE)")
+    from agent_civilization.core.secret_store import default_master_key_file
+    key = canon or legacy or default_master_key_file()
+    if not db:
+        raise AuthInvalidated(
+            "no secret store is configured (AGOS_SECRETS_DB)")
     with _store_lock:
         if _secret_store_instance is not None and _secret_store_key == (db, key):
             return _secret_store_instance

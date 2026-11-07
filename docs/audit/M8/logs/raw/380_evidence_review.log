@@ -1,0 +1,41 @@
+# 380 — D-137: review of raw evidence vs published conclusions (logs 366–376, SECURITY.md D-136, R178..R184 plan)
+# method: recomputation from the raw JSON/k6 summaries already in docs/audit/M8/logs/raw (no re-measurement); code reading
+# 2026-11-07. Corrections are FORWARD (old logs are not edited — no-delete/no-rewrite rule).
+
+F1  SECURITY.md (D-136) overstated the on-disk exposure of SEC-09.
+    - The master key file + encrypted secrets DB exist ONLY if AGOS_SECRETS_DB is set; render.yaml does not set it.
+    - The PIN fingerprint key file is ALWAYS created (TMPDIR) unless AGOS_PIN_FINGERPRINT_KEY is set; render.yaml does not set it.
+    - Render Free FS is ephemeral (https://render.com/docs/free): such files are regenerated on restart/spin-down, but any
+      provider credential decrypted or copied while a vulnerable build was live stays valid until rotated at the provider.
+    -> correction: SECURITY.md §SEC-09 D-137; runbook docs/audit/M8/prep/SEC09_EXPOSURE_RUNBOOK.md.
+
+F2  Log 368 summary table reports k6's INTERPOLATED p95, while the declared method is nearest-rank on raw samples.
+      volatile_normal   api-sse   table 21.159 ms  raw nearest-rank 46.531 ms
+      live-local_base   api-auth  table 42.649 ms  raw nearest-rank 90.871 ms
+      live-local_base   api-sse   table 69.873 ms  raw nearest-rank 85.219 ms
+    No SLO verdict changes (max raw/SLO ratio 0.454). The numbers in the table are not the declared statistic.
+
+F3  Dropped iterations are not reported in the log 368 table:
+      live-local_baseline api-auth 6 ; live-local_normal api-health 3 ; fr_storage_sec10 3.
+    The open-model rate was therefore not fully delivered; small, but must be shown next to every throughput figure.
+
+F4  live-local_baseline api-auth tail: p99 1436 ms (raw nearest-rank 1486.9 ms), max 1732.8 ms against a p95 of ~91 ms.
+    No p99 SLO exists for auth, so no verdict — but the tail was never discussed. Cause not investigated (shared 2-CPU
+    sandbox with generator co-located is the leading, UNVERIFIED hypothesis). R-177 on separated nodes must report it.
+
+F5  Cost convention inconsistency in R178_R184_EXECUTION_PLAN.md: R-178 "$16.1" includes transfer; R-179 written
+    "$30.4 + <= $0.90 transfer" while the summary uses $31.3. Corrected to $31.3 (inclusive) — total ~$158 unchanged.
+
+F6  Log 373: 18,480 dispatches = 92 tools x 200 + 2 x 20 + 1 x 40. Arithmetic consistent; no contradiction.
+    Caveat: test_runner p95 is computed from n=20, below the 59-sample minimum now required (acceptance_criteria.json
+    min_samples). Descriptive only; must not be cited as a p95 verdict.
+
+F7  Logs 372 and 374 match their JSON (recomputed). No finding.
+
+F8  NEW (log 378): /api/system/status — the current Render healthCheckPath — answered 200 during the store hang (24/33
+    probes) and, from code, its body is always {"status":"healthy"} with tasks_in_db=len([])=0 because get_tasks swallows
+    errors and returns [] (body not captured by the sampler). It is not a health signal for
+    storage. -> docs/audit/M8/prep/SEC10_RENDER_HEALTHCHECK.md.
+
+F9  NEW (log 377): connectors read only AGOS_MASTER_KEY_FILE while the server secret store reads
+    AGOS_SECRETS_MASTER_KEY_FILE — two processes could use two different master keys for the same DB. Fixed (red→green).
