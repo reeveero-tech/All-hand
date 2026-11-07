@@ -9,7 +9,18 @@ services:
     # dependency definition; the lock is the installable artifact.
     buildCommand: pip install --require-hashes -r requirements.lock && cd web && npm ci --engine-strict --no-audit --no-fund && npm run build
     startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /api/system/status
+    # SEC-10 / D-138 (OWNER-GATED — merge only with the owner's approval):
+    # probe the storage-aware readiness endpoint. /api/system/status answered
+    # 200 "healthy" while the store was down, is rate limited and reads up to
+    # 500 rows per probe (docs/audit/M8/prep/SEC10_RENDER_HEALTHCHECK.md, log 378).
+    # Side effects on this single Free instance: a store outage >=15 s stops
+    # routing (full outage), >=60 s restarts the instance; a deploy whose store
+    # is unreachable or whose key cannot write never goes live (old one keeps serving).
+    # PRECONDITION: set AGOS_PIN_FINGERPRINT_KEY (secret) in the Render dashboard
+    # BEFORE this change — otherwise every probe-triggered restart regenerates
+    # the TMPDIR PIN key and pinned non-terminal tasks stop with
+    # recipient_pinned_conflict.
+    healthCheckPath: /health/ready
     envVars:
       - key: OPENROUTER_API_KEY
         sync: false

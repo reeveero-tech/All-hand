@@ -1,3 +1,9 @@
+## 2026-11-07 — لاحق 131: (محجوز لموافقة المالك) فحص صحة Render ← `/health/ready` (D-138)
+
+- `render.yaml`: `healthCheckPath` من `/api/system/status` إلى `/health/ready`، مع تعليق يذكر الآثار الجانبية (إيقاف التوجيه بعد 15 ثانية، وإعادة التشغيل بعد 60 ثانية على نسخة Free الوحيدة، ومنع النشر المعيب) والشرط المسبق `AGOS_PIN_FINGERPRINT_KEY`.
+- `tests/test_sec10_render_healthcheck_path.py`: 4 اختبارات، أحمر على main ثم أخضر ×3 (السجل 382).
+- لا نشر ولا نداء إلى Render. والـPR محجوز بعلامة إيقاف حتى موافقة المالك.
+
 ## 2026-11-07 — لاحق 130: SEC-09 إجراء انكشاف وأداة تدوير، تحليل فحص Render، مقارنة Q-023 النهائية، معايير R-178..R-184 القابلة للقياس (D-137)
 
 - **SEC-09**: الإجراء في `docs/audit/M8/prep/SEC09_EXPOSURE_RUNBOOK.md` (أدلة E1–E10 وقواعد الحكم وخطة التدوير 3.0–3.6). أداة `agent_civilization/core/secret_rekey.py` و`scripts/sec09_rekey_secret_store.py`: dry-run افتراضيًا، تتحقق قبل COMMIT، ومُرِّنت على بيانات اصطناعية (السجل 377). تصحيح دقة D-136 في SECURITY.md. لم يُدوَّر شيء.

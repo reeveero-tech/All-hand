@@ -1,0 +1,18 @@
+# 382 — SEC-10 / D-138 (OWNER-GATED): render.yaml healthCheckPath -> /health/ready
+# base: origin/main 80cb2f98; 2026-11-07T18:38:59Z; static tests only, no Render call, no deploy
+
+## RED on main (render.yaml unchanged)
+=========================== short test summary info ============================
+FAILED tests/test_sec10_render_healthcheck_path.py::test_render_probes_storage_aware_readiness
+FAILED tests/test_sec10_render_healthcheck_path.py::test_pin_key_precondition_is_documented_next_to_the_switch
+========================= 2 failed, 2 passed in 0.55s ==========================
+
+## GREEN with the change — 3 consecutive runs
+============================== 4 passed in 0.53s ===============================
+============================== 4 passed in 0.51s ===============================
+============================== 4 passed in 0.51s ===============================
+
+## neighbours (SEC-10 readiness + R-148 render/lock contract tests)
+======================= 179 passed, 1 skipped in 58.71s ========================
+
+## not tested: Render itself (no API call, no deploy, no Blueprint sync). Effects are from Render docs + local emulation (log 378).
