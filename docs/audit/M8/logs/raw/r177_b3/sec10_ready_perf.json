@@ -1,0 +1,159 @@
+{
+ "tool": "benchmarks/sec10/ready_perf.py",
+ "at": "2026-11-07T13:49:43Z",
+ "ready_rate_rps": 100.0,
+ "side_rate_rps": 10.0,
+ "duration_s": 15.0,
+ "cases": [
+  {
+   "storage": "volatile",
+   "ready_cache_s": null,
+   "health_live_same_rate": {
+    "requests": 1500,
+    "statuses": {
+     "200": 1500
+    },
+    "p50_ms": 0.505,
+    "p95_ms": 0.878,
+    "p99_ms": 1.075,
+    "max_ms": 1.35,
+    "mean_ms": 0.547
+   },
+   "health_ready_flood": {
+    "requests": 1500,
+    "statuses": {
+     "200": 1500
+    },
+    "p50_ms": 0.469,
+    "p95_ms": 0.856,
+    "p99_ms": 1.091,
+    "max_ms": 25.905,
+    "mean_ms": 0.548
+   },
+   "probes_reaching_store": 0,
+   "probes_per_s": 0.0,
+   "system_status_alone": {
+    "requests": 150,
+    "statuses": {
+     "200": 150
+    },
+    "p50_ms": 3.868,
+    "p95_ms": 5.597,
+    "p99_ms": 6.574,
+    "max_ms": 35.544,
+    "mean_ms": 4.222
+   },
+   "system_status_during_flood": {
+    "requests": 150,
+    "statuses": {
+     "200": 150
+    },
+    "p50_ms": 3.293,
+    "p95_ms": 4.098,
+    "p99_ms": 6.449,
+    "max_ms": 35.901,
+    "mean_ms": 3.6
+   }
+  },
+  {
+   "storage": "live-local",
+   "ready_cache_s": "1.0",
+   "health_live_same_rate": {
+    "requests": 1500,
+    "statuses": {
+     "200": 1500
+    },
+    "p50_ms": 0.483,
+    "p95_ms": 0.95,
+    "p99_ms": 1.267,
+    "max_ms": 1.99,
+    "mean_ms": 0.559
+   },
+   "health_ready_flood": {
+    "requests": 1500,
+    "statuses": {
+     "200": 1500
+    },
+    "p50_ms": 0.531,
+    "p95_ms": 6.321,
+    "p99_ms": 9.579,
+    "max_ms": 52.756,
+    "mean_ms": 1.325
+   },
+   "probes_reaching_store": 15,
+   "probes_per_s": 1.0,
+   "system_status_alone": {
+    "requests": 150,
+    "statuses": {
+     "200": 150
+    },
+    "p50_ms": 25.726,
+    "p95_ms": 34.823,
+    "p99_ms": 60.551,
+    "max_ms": 66.171,
+    "mean_ms": 27.233
+   },
+   "system_status_during_flood": {
+    "requests": 150,
+    "statuses": {
+     "200": 150
+    },
+    "p50_ms": 25.115,
+    "p95_ms": 29.579,
+    "p99_ms": 51.879,
+    "max_ms": 71.355,
+    "mean_ms": 25.985
+   }
+  },
+  {
+   "storage": "live-local",
+   "ready_cache_s": "0",
+   "health_live_same_rate": {
+    "requests": 1500,
+    "statuses": {
+     "200": 1500
+    },
+    "p50_ms": 0.648,
+    "p95_ms": 1.062,
+    "p99_ms": 1.342,
+    "max_ms": 3.511,
+    "mean_ms": 0.692
+   },
+   "health_ready_flood": {
+    "requests": 1500,
+    "statuses": {
+     "200": 1500
+    },
+    "p50_ms": 3.59,
+    "p95_ms": 12.221,
+    "p99_ms": 20.797,
+    "max_ms": 54.568,
+    "mean_ms": 5.046
+   },
+   "probes_reaching_store": 1396,
+   "probes_per_s": 93.07,
+   "system_status_alone": {
+    "requests": 150,
+    "statuses": {
+     "200": 150
+    },
+    "p50_ms": 25.904,
+    "p95_ms": 37.535,
+    "p99_ms": 54.939,
+    "max_ms": 72.043,
+    "mean_ms": 27.364
+   },
+   "system_status_during_flood": {
+    "requests": 150,
+    "statuses": {
+     "200": 150
+    },
+    "p50_ms": 26.801,
+    "p95_ms": 37.247,
+    "p99_ms": 58.208,
+    "max_ms": 81.964,
+    "mean_ms": 28.259
+   }
+  }
+ ]
+}

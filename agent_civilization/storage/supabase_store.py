@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import re
+import time
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -329,6 +330,135 @@ def _task_by_id_params(task_id: str, scope) -> Dict[str, str]:
 
 def is_configured() -> bool:
     return bool(SUPABASE_URL and SUPABASE_KEY)
+
+
+# ---------------------------------------------------------------------------
+# SEC-10 (D-135): storage readiness for GET /health/ready.
+#
+# Supported storage kinds (the only two the server has):
+#   * "volatile" — no SUPABASE_URL/key: tasks live in process memory. The
+#     service does not depend on any external store, so readiness never
+#     probes anything (no network call) and storage never makes it not-ready.
+#   * "supabase" — PostgREST (hosted Supabase or a local PostgREST stack):
+#     the service depends on it, so readiness answers 503 unless a probe
+#     shows the store reachable AND accepting the configured credentials.
+# Redis (agos_kernel.infrastructure.redis_queue) is not on the request path
+# of server.py; it stays an informational /health check only.
+#
+# The probe is a single read-only ``HEAD /rest/v1/tasks?select=task_id&limit=1``
+# (no body is read, no write of any kind), with its own short timeout, its own
+# throw-away session (no breaker trace: a probe neither opens nor closes the
+# ``storage`` breaker, nor touches storage_stats), redirects refused (the key
+# is never replayed to another host). Results are cached for READY_CACHE_S
+# and concurrent callers share one in-flight probe, so an unauthenticated
+# /health/ready flood is at most ~1 probe per READY_CACHE_S per process.
+# Reasons are fixed strings: no URL, host, key, status body or exception text.
+READY_TIMEOUT_S = backpressure._float_env("AGOS_READY_STORAGE_TIMEOUT_S", 1.0, 0.1, 10.0)
+READY_CACHE_S = backpressure._float_env("AGOS_READY_STORAGE_CACHE_S", 1.0, 0.0, 60.0)
+
+READY_REASONS = {
+    "public_key": "storage credentials cannot write",
+    "rejected": "storage credentials rejected",
+    "schema": "storage schema missing",
+    "unavailable": "storage unavailable",
+    "timeout": "storage timeout",
+    "unreachable": "storage unreachable",
+    "failed": "storage check failed",
+}
+
+_READY_STATE: Dict[str, Any] = {"result": None, "at": 0.0, "inflight": None, "last_ready": None,
+                                "probes": 0}
+
+
+def storage_kind() -> str:
+    """'supabase' when a store is configured (the service depends on it),
+    else 'volatile'."""
+    return "supabase" if is_configured() else "volatile"
+
+
+def reset_storage_readiness() -> None:
+    """Test helper: forget the cached readiness result."""
+    _READY_STATE.update({"result": None, "at": 0.0, "inflight": None, "last_ready": None, "probes": 0,
+                         "for": None})
+
+
+def _ready(ok: bool, code: Optional[str] = None, latency_ms: Optional[float] = None) -> Dict[str, Any]:
+    return {"kind": "supabase", "ready": ok, "code": code,
+            "reason": READY_REASONS[code] if code else None,
+            "latency_ms": latency_ms}
+
+
+async def _probe_storage() -> Dict[str, Any]:
+    if key_status()["kind"] == "public":
+        # RLS (D-039) rejects every write with a public key: a read probe
+        # would pass (empty rows) while nothing can be stored.
+        return _ready(False, "public_key")
+    _READY_STATE["probes"] += 1
+    t0 = time.monotonic()
+    try:
+        timeout = aiohttp.ClientTimeout(total=READY_TIMEOUT_S)
+        connector = aiohttp.TCPConnector(limit=1, force_close=True)
+        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+            async with session.head(
+                f"{SUPABASE_URL}/rest/v1/tasks",
+                params={"select": "task_id", "limit": "1"},
+                headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"},
+                allow_redirects=False,
+            ) as r:
+                status = r.status
+    except asyncio.TimeoutError:
+        return _ready(False, "timeout", round((time.monotonic() - t0) * 1000, 2))
+    except (aiohttp.ClientError, OSError):
+        return _ready(False, "unreachable", round((time.monotonic() - t0) * 1000, 2))
+    except Exception:  # noqa: BLE001 — any other failure: not ready, fixed reason
+        return _ready(False, "failed", round((time.monotonic() - t0) * 1000, 2))
+    ms = round((time.monotonic() - t0) * 1000, 2)
+    if status in (200, 206):
+        return _ready(True, None, ms)
+    if status in (401, 403):
+        return _ready(False, "rejected", ms)
+    if status == 404:
+        return _ready(False, "schema", ms)
+    if status >= 500:
+        return _ready(False, "unavailable", ms)
+    return _ready(False, "failed", ms)
+
+
+async def storage_readiness() -> Dict[str, Any]:
+    """SEC-10: ``{"kind", "ready", "code", "reason", "latency_ms"}``.
+
+    volatile -> always ready, no network. supabase -> cached (READY_CACHE_S)
+    result of one shared, bounded, read-only probe."""
+    if not is_configured():
+        return {"kind": "volatile", "ready": True, "code": None, "reason": None, "latency_ms": None}
+    now = time.monotonic()
+    ident = (SUPABASE_URL, hash(SUPABASE_KEY))  # a config change never reuses a stale answer
+    cached = _READY_STATE["result"]
+    if cached is not None and _READY_STATE.get("for") == ident and now - _READY_STATE["at"] < READY_CACHE_S:
+        return cached
+    loop = asyncio.get_running_loop()
+    inflight = _READY_STATE["inflight"]
+    if inflight is not None and not inflight.done() and inflight.get_loop() is loop:
+        return await asyncio.shield(inflight)
+    fut = loop.create_future()
+    _READY_STATE["inflight"] = fut
+    try:
+        result = await _probe_storage()
+    except BaseException as e:  # cancelled mid-probe: waiters get a fixed failure
+        result = _ready(False, "failed")
+        if not fut.done():
+            fut.set_result(result)
+        raise e
+    _READY_STATE.update({"result": result, "at": time.monotonic(), "for": ident})
+    if not fut.done():
+        fut.set_result(result)
+    if _READY_STATE["last_ready"] is not result["ready"]:
+        if result["ready"]:
+            logger.info("storage readiness: ready")
+        else:
+            logger.warning("storage readiness: not ready (%s)", result["code"])
+        _READY_STATE["last_ready"] = result["ready"]
+    return result
 
 
 class SupabaseStorage:

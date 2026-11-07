@@ -78,7 +78,7 @@ from agent_civilization.core.llm import (
 # R-100 (D-044): make /proc/<pid>/environ of the server unreadable to any child
 # (including test_runner code) before anything else runs.
 safety.harden_server_process()
-from agent_civilization.storage import get_storage, is_configured as supabase_configured, key_status, log_key_status, storage_stats
+from agent_civilization.storage import get_storage, is_configured as supabase_configured, key_status, log_key_status, storage_readiness, storage_stats
 
 # ============================================================================
 # CONFIGURATION
@@ -2217,6 +2217,8 @@ async def readiness_probe():
     ``status: not_ready``). Checks:
     - API is responsive
     - Civilization is initialized
+    - SEC-10: the configured storage (Supabase/PostgREST) is reachable and
+      accepts its credentials; volatile in-memory mode is not probed
     """
     def not_ready(reason: str) -> JSONResponse:
         return JSONResponse(status_code=503, content={"status": "not_ready", "reason": reason})
@@ -2227,6 +2229,14 @@ async def readiness_probe():
         st = civilization_status(CIVILIZATION)
         if not st["ready"]:
             return not_ready(st["reason"])
+
+        # SEC-10 (D-135): a configured store the service depends on must be
+        # reachable and accept its credentials (bounded, cached, read-only
+        # probe — see agent_civilization.storage.storage_readiness). The
+        # volatile in-memory mode has no external dependency: never probed.
+        sr = await storage_readiness()
+        if not sr["ready"]:
+            return not_ready(sr["reason"])
 
         return {
             "status": "ready",
