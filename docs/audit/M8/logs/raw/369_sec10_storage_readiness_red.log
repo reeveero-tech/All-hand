@@ -1,0 +1,67 @@
+# SEC-10 red-first — tests/test_sec10_storage_readiness.py against origin/main code (ca0a7384); fix stashed
+# 2026-11-07T13:29:34Z
+      Extra inputs are not permitted [type=extra_forbidden, input_value=1000, input_type=int]
+        For further information visit https://errors.pydantic.dev/2.14/v/extra_forbidden
+    specializations
+      Extra inputs are not permitted [type=extra_forbidden, input_value=20, input_type=int]
+        For further information visit https://errors.pydantic.dev/2.14/v/extra_forbidden
+/home/user/workspace/All-hand/tests/test_sec10_storage_readiness.py:386: pydantic_core._pydantic_core.ValidationError: 4 validation errors for NotReady
+E   AssertionError: dule>
+          from agent_civilization.storage import supabase_store as s;print(s.READY_TIMEOUT_S, s.READY_CACHE_S)
+                                                                           ^^^^^^^^^^^^^^^^^
+      AttributeError: module 'agent_civilization.storage.supabase_store' has no attribute 'READY_TIMEOUT_S'
+    assert (1 == 0) is True
+     +  where 1 = CompletedProcess(args=['/usr/local/bin/python3', '-c', 'from agent_civilization.storage import supabase_store as s;pri...^^^^^^^^\nAttributeError: module \'agent_civilization.storage.supabase_store\' has no attribute \'READY_TIMEOUT_S\'\n').returncode
+/home/user/workspace/All-hand/tests/test_sec10_storage_readiness.py:404: AssertionError: dule>
+E   AssertionError: dule>
+          from agent_civilization.storage import supabase_store as s;print(s.READY_TIMEOUT_S, s.READY_CACHE_S)
+                                                                           ^^^^^^^^^^^^^^^^^
+      AttributeError: module 'agent_civilization.storage.supabase_store' has no attribute 'READY_TIMEOUT_S'
+    assert (1 == 0) is True
+     +  where 1 = CompletedProcess(args=['/usr/local/bin/python3', '-c', 'from agent_civilization.storage import supabase_store as s;pri...^^^^^^^^\nAttributeError: module \'agent_civilization.storage.supabase_store\' has no attribute \'READY_TIMEOUT_S\'\n').returncode
+/home/user/workspace/All-hand/tests/test_sec10_storage_readiness.py:404: AssertionError: dule>
+E   AssertionError: dule>
+          from agent_civilization.storage import supabase_store as s;print(s.READY_TIMEOUT_S, s.READY_CACHE_S)
+                                                                           ^^^^^^^^^^^^^^^^^
+      AttributeError: module 'agent_civilization.storage.supabase_store' has no attribute 'READY_TIMEOUT_S'
+    assert [] == ['1.0', '1.0']
+      Right contains 2 more items, first extra item: '1.0'
+      Use -v to get more diff
+/home/user/workspace/All-hand/tests/test_sec10_storage_readiness.py:414: AssertionError: dule>
+=========================== short test summary info ============================
+FAILED tests/test_sec10_storage_readiness.py::test_volatile_mode_is_ready_without_any_probe
+FAILED tests/test_sec10_storage_readiness.py::test_volatile_readiness_result_shape
+FAILED tests/test_sec10_storage_readiness.py::test_reachable_store_is_ready
+FAILED tests/test_sec10_storage_readiness.py::test_probe_is_a_single_read_only_head
+FAILED tests/test_sec10_storage_readiness.py::test_bad_store_status_is_not_ready[401-storage credentials rejected]
+FAILED tests/test_sec10_storage_readiness.py::test_bad_store_status_is_not_ready[403-storage credentials rejected]
+FAILED tests/test_sec10_storage_readiness.py::test_bad_store_status_is_not_ready[404-storage schema missing]
+FAILED tests/test_sec10_storage_readiness.py::test_bad_store_status_is_not_ready[500-storage unavailable]
+FAILED tests/test_sec10_storage_readiness.py::test_bad_store_status_is_not_ready[502-storage unavailable]
+FAILED tests/test_sec10_storage_readiness.py::test_bad_store_status_is_not_ready[503-storage unavailable]
+FAILED tests/test_sec10_storage_readiness.py::test_bad_store_status_is_not_ready[418-storage check failed]
+FAILED tests/test_sec10_storage_readiness.py::test_unreachable_store_is_not_ready
+FAILED tests/test_sec10_storage_readiness.py::test_hanging_store_is_bounded_by_the_timeout
+FAILED tests/test_sec10_storage_readiness.py::test_redirect_is_refused_and_key_never_replayed
+FAILED tests/test_sec10_storage_readiness.py::test_public_key_is_not_ready_without_network
+FAILED tests/test_sec10_storage_readiness.py::test_no_secret_or_connection_detail_leaks[401]
+FAILED tests/test_sec10_storage_readiness.py::test_no_secret_or_connection_detail_leaks[500]
+FAILED tests/test_sec10_storage_readiness.py::test_no_secret_or_connection_detail_leaks[timeout]
+FAILED tests/test_sec10_storage_readiness.py::test_no_secret_or_connection_detail_leaks[unreachable]
+FAILED tests/test_sec10_storage_readiness.py::test_no_secret_or_connection_detail_leaks[redirect]
+FAILED tests/test_sec10_storage_readiness.py::test_outage_then_recovery - Ass...
+FAILED tests/test_sec10_storage_readiness.py::test_store_process_gone_then_back
+FAILED tests/test_sec10_storage_readiness.py::test_cache_bounds_probe_rate - ...
+FAILED tests/test_sec10_storage_readiness.py::test_cached_failure_also_bounded_and_expires
+FAILED tests/test_sec10_storage_readiness.py::test_concurrent_callers_share_one_probe
+FAILED tests/test_sec10_storage_readiness.py::test_config_change_never_reuses_stale_answer
+FAILED tests/test_sec10_storage_readiness.py::test_contract_shapes - pydantic...
+FAILED tests/test_sec10_storage_readiness.py::test_env_bounds_fail_fast[AGOS_READY_STORAGE_TIMEOUT_S-2.5-True]
+FAILED tests/test_sec10_storage_readiness.py::test_env_bounds_fail_fast[AGOS_READY_STORAGE_CACHE_S-0-True]
+FAILED tests/test_sec10_storage_readiness.py::test_defaults - AssertionError:...
+=================== 30 failed, 7 passed, 1 skipped in 16.32s ===================
+# live (AGOS_SEC10_LIVE=1, real PostgREST SIGSTOP on 127.0.0.1:54321):
+/home/user/workspace/All-hand/tests/test_sec10_storage_readiness.py:442: assert (200 == 503)
+=========================== short test summary info ============================
+FAILED tests/test_sec10_storage_readiness.py::test_live_postgrest_sigstop_and_recovery
+======================= 1 failed, 37 deselected in 0.51s =======================

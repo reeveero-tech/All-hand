@@ -154,6 +154,18 @@ def nearest_rank(sorted_vals: List[float], q: float) -> Optional[float]:
     return sorted_vals[k - 1]
 
 
+def k6_trend_quantile(sorted_vals: List[float], q: float) -> Optional[float]:
+    """المئين بطريقة k6 (Trend p(q)): استيفاء خطي عند الموضع q*(n-1) — للمطابقة مع ملخص k6
+    فقط؛ التقارير تعلن الرتبة الأقرب (nearest_rank). الفرق بينهما قد يبلغ فجوة عينة واحدة (D-135)."""
+    if not sorted_vals:
+        return None
+    if len(sorted_vals) == 1:
+        return sorted_vals[0]
+    i = q * (len(sorted_vals) - 1)
+    lo, hi = math.floor(i), math.ceil(i)
+    return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (i - lo)
+
+
 def min_samples_for_quantile(q: float, confidence: float = 0.95) -> int:
     """أصغر n تجعل أكبر عينة حدًا أعلى (توزيعيًا-حرًا) للمئين q بثقة confidence:
     1 - q^n >= confidence  ⇒  n >= ln(1-confidence)/ln(q). لـp99@95% = 299."""

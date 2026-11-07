@@ -286,3 +286,12 @@
 - **الإصلاح**: `_escapes_frontend_root` / `_safe_frontend_file` في `server.py` — حل المسار (بما فيه الروابط الرمزية) وقبول ملف عادي داخل `web/dist` فقط؛ الخروج ⇒ 404 لا `index.html`. سلوك SPA (مسار غير موجود داخل dist ⇒ `index.html`) بلا تغيير.
 - **الاختبارات**: `tests/test_sec09_frontend_path_traversal.py` (19) — تفشل كلها على main (السجل 367)؛ التحقق الحي بعد الإصلاح: كل المتغيرات 404 و`/index.html` و`/dashboard/tasks` 200 (السجل 368).
 - **حدود صادقة**: لم يُفحص سجل git لمعرفة ما إذا كانت أي بيئة منشورة عرضت هذا المسار؛ إن كانت هناك نسخة منشورة بـ`web/dist` فالأسرار المقروءة من بيئتها يجب أن تُعتبر مكشوفة وتُدوَّر — قرار تشغيلي للمالك (لا نشر ولا تدوير من الوكيل).
+
+
+## SEC-10 — `/health/ready` يعيد 200 والتخزين معطل (D-135، 2026-11-07)
+- **العيب (مقيس، السجل 368)**: أثناء إيقاف PostgREST بـSIGSTOP ظل `/health/ready` يعيد 200؛ المنسق/الموازن كان سيوجه حركة إلى نسخة لا تستطيع الحفظ. لم يكن الفحص يلمس التخزين.
+- **الإصلاح**: `storage_readiness()` في `agent_civilization/storage/supabase_store.py`، يستدعيها `readiness_probe` بعد فحص الحضارة. أنواع التخزين المدعومة: `volatile` (غير مهيأ — جاهز دائمًا بلا شبكة، سلوك مقصود للتطوير) و`supabase` (PostgREST مستضاف أو محلي — مطلوب). Redis ليس على مسار الطلب فيبقى معلوماتيًا في `/health`.
+- **الفحص آمن وغير مدمر**: طلب `HEAD /rest/v1/tasks?select=task_id&limit=1` واحد (قراءة فقط، بلا جسم)، بجلسة مستقلة، `allow_redirects=False` (لا يُعاد إرسال المفتاح لمضيف آخر)، مهلة محدودة `AGOS_READY_STORAGE_TIMEOUT_S` (افتراضي 1.0، المدى 0.1–10)، ونتيجة مخزنة مؤقتًا `AGOS_READY_STORAGE_CACHE_S` (افتراضي 1.0، المدى 0–60) مع single-flight — فيضان `/health/ready` ⇒ مسبار واحد كحد أقصى لكل نافذة لكل عملية. قيمة خارج المدى ⇒ رفض الإقلاع. لا يمس القاطع ولا `storage_stats`.
+- **لا كشف**: الرد 503 يحمل سببًا من قائمة ثابتة فقط (`storage unavailable|unreachable|timeout|credentials rejected|credentials cannot write|schema missing|check failed`) — لا URL ولا مضيف ولا مفتاح ولا نص استثناء؛ السجل يسجل الرمز وحده.
+- **تغيير سلوك**: نسخة مهيأة بمفتاح عام (anon) صارت 503 «storage credentials cannot write» بدل 200 — كانت أصلًا لا تستطيع الكتابة (D-084).
+- **الاختبارات**: `tests/test_sec10_storage_readiness.py` (37 + 1 حي) — أحمر على main (السجل 369: 30 فشل، والحي `200 == 503` أثناء SIGSTOP)، أخضر وثبات ×3 والحي (السجل 371)، وأثر الأداء والتعافي (السجل 372).

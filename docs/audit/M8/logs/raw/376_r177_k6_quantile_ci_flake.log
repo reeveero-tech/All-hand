@@ -1,0 +1,30 @@
+# D-135 addendum — CI-blocking flaky assertion in tests/test_r177_per_service.py::test_real_baseline_health (pre-existing on main, NOT caused by SEC-10)
+# 2026-11-07; branch m9/sec10-storage-readiness (PR #332), second commit on 3e6b0899; shared 2-CPU sandbox
+
+## the failure (CI, PR #332 head 3e6b0899, AGOS Kernel CI/CD run 42379128155)
+attempt 1, suite "live test suite" (Python 3.11):  assert abs(4.106 - 4.0529359) < 0.01  -> 0.0531  FAILED (4207 passed)
+attempt 2, suites 3.11 and 3.12 green (4208 passed each); suite "3.12 AGOS_AGENT_IMPL=specialists": assert abs(5.273 - 5.1705681) < 0.01 -> 0.1024 FAILED (4207 passed)
+=> the volatile CI /health baseline is unaffected by SEC-10 (no storage configured => no probe); the assertion is the defect.
+
+## cause
+raw_quantiles.p95_ms = nearest-rank (scripts/r177_stop_limits.nearest_rank, the method every report declares);
+k6 summary p(95) = linear interpolation at position 0.95*(n-1) (k6 TrendSink). Two different definitions: they agree within 0.01ms only
+when the two neighbouring samples are within ~0.01ms of each other — luck, not a contract. Rerunning until green would be brute force.
+
+## fix (no threshold relaxed, reports unchanged)
+- scripts/r177_stop_limits.py: k6_trend_quantile(sorted_vals, q) — k6's formula.
+- scripts/r177_per_service.py: raw_quantiles.p95_ms_k6_method computed from the same raw samples.
+- the test compares like with like: |p95_ms_k6_method - k6 duration_p95_ms| < 0.01ms (the original intent: "the runner does not invent numbers").
+
+## RED (tests/test_r177_stop_limits.py::test_k6_trend_quantile_matches_k6_linear_interpolation, before the helper existed)
+E   AttributeError: module 'r177_stop_limits_t' has no attribute 'k6_trend_quantile'
+======================= 1 failed, 57 deselected in 0.24s =======================
+
+## GREEN
+============================== 58 passed in 4.69s ==============================
+test_real_baseline_health (real k6 + real SUT, the CI test) ×5:
+====================== 1 passed, 23 deselected in 21.18s =======================
+====================== 1 passed, 23 deselected in 21.15s =======================
+====================== 1 passed, 23 deselected in 21.09s =======================
+====================== 1 passed, 23 deselected in 21.05s =======================
+====================== 1 passed, 23 deselected in 21.15s =======================

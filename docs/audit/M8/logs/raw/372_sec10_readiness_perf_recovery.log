@@ -1,0 +1,40 @@
+# SEC-10 (D-135) — readiness check: performance cost + storage-outage failure/recovery (re-run of the ONE scenario whose behaviour changed; no other R-177 measurement repeated)
+# 2026-11-07T13:52:21Z; code: WIP 3db87c8f on ca0a7384; shared 2-CPU agent sandbox; SUT, generator and local PostgreSQL+PostgREST on ONE node (process separation only)
+
+## 1. cost — benchmarks/sec10/ready_perf.py (open-model aiohttp generator in its own OS process; 100 rps /health/ready for 15s + 10 rps /api/system/status side load)
+# live-local cases go through a loopback COUNTING PROXY (Python ThreadingHTTPServer) in front of PostgREST — it adds per-probe latency, so live-local probe latencies here are an UPPER bound of the check's own cost
+### storage=volatile AGOS_READY_STORAGE_CACHE_S=(n/a: no probe)
+probes reaching the store during the 15s flood: 0 (0.0/s) for 1500 /health/ready requests
+  health_live_same_rate        n=1500 statuses={'200': 1500} p50=0.505ms p95=0.878ms p99=1.075ms max=1.35ms
+  health_ready_flood           n=1500 statuses={'200': 1500} p50=0.469ms p95=0.856ms p99=1.091ms max=25.905ms
+  system_status_alone          n=150 statuses={'200': 150} p50=3.868ms p95=5.597ms p99=6.574ms max=35.544ms
+  system_status_during_flood   n=150 statuses={'200': 150} p50=3.293ms p95=4.098ms p99=6.449ms max=35.901ms
+### storage=live-local AGOS_READY_STORAGE_CACHE_S=1.0
+probes reaching the store during the 15s flood: 15 (1.0/s) for 1500 /health/ready requests
+  health_live_same_rate        n=1500 statuses={'200': 1500} p50=0.483ms p95=0.95ms p99=1.267ms max=1.99ms
+  health_ready_flood           n=1500 statuses={'200': 1500} p50=0.531ms p95=6.321ms p99=9.579ms max=52.756ms
+  system_status_alone          n=150 statuses={'200': 150} p50=25.726ms p95=34.823ms p99=60.551ms max=66.171ms
+  system_status_during_flood   n=150 statuses={'200': 150} p50=25.115ms p95=29.579ms p99=51.879ms max=71.355ms
+### storage=live-local AGOS_READY_STORAGE_CACHE_S=0
+probes reaching the store during the 15s flood: 1396 (93.07/s) for 1500 /health/ready requests
+  health_live_same_rate        n=1500 statuses={'200': 1500} p50=0.648ms p95=1.062ms p99=1.342ms max=3.511ms
+  health_ready_flood           n=1500 statuses={'200': 1500} p50=3.59ms p95=12.221ms p99=20.797ms max=54.568ms
+  system_status_alone          n=150 statuses={'200': 150} p50=25.904ms p95=37.535ms p99=54.939ms max=72.043ms
+  system_status_during_flood   n=150 statuses={'200': 150} p50=26.801ms p95=37.247ms p99=58.208ms max=81.964ms
+
+## reading (stated, not over-claimed)
+- volatile: no probe at all (0 store requests); /health/ready p95 0.856ms ≈ /health/live 0.878ms — unchanged behaviour for dev/volatile.
+- live-local default cache 1.0s: 15 probes in 15s at 100 rps = exactly 1 probe/s (bounded by the cache + single-flight, independent of the request rate); /health/ready p95 6.3ms / p99 9.6ms (requests landing on a cache miss wait for the probe through the counting proxy); /api/system/status p95 34.8ms alone vs 29.6ms during the flood = no measurable degradation (noise-level).
+- live-local cache 0 (worst case, operator-configured): 1396 probes for 1500 requests (93/s; single-flight coalesced ~7%) => the store sees ~1 HEAD per readiness request; /health/ready p95 12.2ms; side endpoint p95 37.5 vs 37.2ms. Recommendation: keep the default; 0 only for debugging.
+- /health/live never touches storage (p95 ≤ 1.1ms in every mode).
+
+## 2. storage-outage failure/recovery — scripts/r177_per_service.py --failure-recovery storage-outage --storage live-local (SIGSTOP PostgREST at t≈10s)
+{"scenario": "storage-outage", "storage": "live-local", "service": "api-tasks-submit", "fault_at_s": 10.0, "cold_start_s": 0.614, "load_report_ok": false, "fault_fired_at_s": 10.148, "stop_decision": {"stopped": true, "rule": "readiness_failure", "rule_id": "S5", "reason": "readiness_failure: immediate stop (S5)", "at_s": 11.153, "measurements": {"probe": "readiness_failure", "detail": {"status": 503, "reason": "storage timeout"}}}, "detection_latency_s": 1.005, "probe_failures_first": [{"kind": "readiness_failure", "t_s": 11.153, "detail": {"status": 503, "reason": "storage timeout"}}], "metrics_during": {"http_reqs": 101, "requests_failed": 0, "duration_avg_ms": 17.490257841584164, "duration_med_ms": 16.530434, "duration_p90_ms": 21.471058, "duration_p95_ms": 24.697563, "duration_p99_ms": 29.806995, "duration_max_ms": 49.39778, "dropped_iterations": 3}, "tracked_before_fault": {"submitted": 6, "accepted": 6, "completed": 5, "failed": 0, "timeout": 1, "e2e_p50_ms": 124.011, "e2e_p95_ms": 234.185, "e2e_max_ms": 234.185, "all_completed": false}, "ready_statuses_during_outage": ["503"], "post_resume_to_ready_s": 0.036, "pre_fault_tasks": {"checked": 7, "lost": 0, "completed": 7, "failed": 0, "still_pending": 0, "settle_s": 0.1}, "post_recovery_baseline": {"ok": true, "brief": "ok=True class=measured p95=20.974442ms reqs=101 failed=0 stopped=False tracked=11/11 e2e_p95=186.927ms", "elapsed_s": 20.3}, "ok": true}
+
+## BEFORE vs AFTER (BEFORE = log 368 §fr_storage, same scenario, ca0a7384 code path without SEC-10)
+BEFORE: stop rule S3 (p95 censored windows) at 20.0s; detection_latency_s=9.869; ready_statuses_during_outage=['200']
+AFTER : stop rule S5 (readiness_failure, 503 'storage timeout') at 11.153s; detection_latency_s=1.005; ready_statuses_during_outage=['503']; post_resume_to_ready_s=0.036; pre-fault tasks lost=0
+=> detection 9.87s -> 1.005s (≈ AGOS_READY_STORAGE_TIMEOUT_S 1.0s + probe interval), and readiness now reports the outage the load balancer needs; recovery to 200 in 0.036s after SIGCONT; 0 tasks lost; post-recovery baseline ok.
+
+## not measured here
+- hosted Supabase latency/rate limits for the HEAD probe (R-182); multi-instance probe load on a shared store (N instances => N probes/s at the default); a platform load balancer actually acting on /health/ready (Render's health check is still /api/system/status — owner deploy decision).

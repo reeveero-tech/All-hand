@@ -1,0 +1,22 @@
+# SEC-10 green + stability — branch m9/sec10-storage-readiness (code = WIP commit 3db87c8f, on top of ca0a7384)
+# 2026-11-07T13:46:27Z; python 3.14.8; host: shared agent sandbox
+## run 1/3 (hermetic: fake HTTP stores on loopback)
+
+======================== 37 passed, 1 skipped in 17.15s ========================
+## run 2/3 (hermetic: fake HTTP stores on loopback)
+
+======================== 37 passed, 1 skipped in 17.16s ========================
+## run 3/3 (hermetic: fake HTTP stores on loopback)
+
+======================== 37 passed, 1 skipped in 17.14s ========================
+## live (AGOS_SEC10_LIVE=1): real PostgREST 127.0.0.1:54321 -> SIGSTOP (outage) -> SIGCONT (recovery)
+PASSED tests/test_sec10_storage_readiness.py::test_live_postgrest_sigstop_and_recovery
+======================= 1 passed, 37 deselected in 1.50s =======================
+PASSED tests/test_sec10_storage_readiness.py::test_live_postgrest_sigstop_and_recovery
+======================= 1 passed, 37 deselected in 1.49s =======================
+PASSED tests/test_sec10_storage_readiness.py::test_live_postgrest_sigstop_and_recovery
+======================= 1 passed, 37 deselected in 1.50s =======================
+## full suite on this branch (737.89s): 1 failed, 4207 passed, 9 skipped, 17 deselected, 9 xfailed
+## the 1 failure: tests/test_r175_batch4_phase1.py::test_the_phase1_runbook_certifies_all_100_with_real_evidence — live network smoke (educator: 'web search returned no snippets' from the public internet). Not SEC-10: the runbook is a subprocess that never calls /health/ready. Re-run on this branch:
+======================= 1 passed, 6 deselected in 1.70s ========================
+======================= 1 passed, 6 deselected in 1.65s ========================

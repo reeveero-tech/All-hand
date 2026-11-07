@@ -7,9 +7,13 @@ from agent_civilization.storage.supabase_store import (
     is_configured,
     key_status,
     log_key_status,
+    reset_storage_readiness,
     reset_storage_stats,
+    storage_kind,
+    storage_readiness,
     storage_stats,
 )
 
 __all__ = ["SupabaseStorage", "classify_key", "get_storage", "is_configured", "key_status", "log_key_status",
-           "reset_storage_stats", "storage_stats"]
+           "reset_storage_readiness", "reset_storage_stats", "storage_kind", "storage_readiness",
+           "storage_stats"]

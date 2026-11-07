@@ -167,6 +167,8 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 
 `/health`, `/health/live`, `/health/ready`, `/metrics`, `/api/system/status`. **`/health/ready` يعيد 503 عند أي حالة `not_ready`** (حضارة غير مهيأة، صفر وكلاء، استثناء أثناء الفحص — يُسجَّل `readiness check failed: <نوع الاستثناء>`) و200 فقط عند `ready` (R-142، BUG-03؛ كان 200 دائماً)؛ `/health/live` 200 ما دامت العملية حية (لا يتبع الجاهزية). فحص صحة Render يبقى `/api/system/status` (`render.yaml`) وفحص CI docker يبقى `/health` — لم يتغير أيهما. `/health` يعيد 503 عند `unhealthy` و200 عند `healthy`/`degraded` (أُصلح في R-004؛ اختباران منذ R-068 — صُحح هنا في R-078، كان يقول "200 دائماً"). **R-078**: فحص `storage` يصير `degraded` إذا كان مفتاح Supabase عاماً، و`/api/system/status` يعرض `supabase_key: {kind, source}` (لا القيمة).
 
+**SEC-10 (D-135) — جاهزية التخزين**: `/health/ready` يرد 503 أيضًا حين التخزين المهيأ (PostgREST/Supabase) غير صالح للخدمة: `storage unavailable|unreachable|timeout|credentials rejected|credentials cannot write|schema missing|check failed`. الوضع المتطاير (بلا تخزين) لا يُفحص. الضبط: `AGOS_READY_STORAGE_TIMEOUT_S` (1.0ث، 0.1–10) و`AGOS_READY_STORAGE_CACHE_S` (1.0ث، 0–60) — قيمة خارج المدى توقف الإقلاع. الكلفة: مسبار `HEAD` واحد على الأكثر لكل نافذة تخزين مؤقت لكل عملية مهما كان معدل طلبات الجاهزية (single-flight)؛ الأرقام المقيسة في السجل 372. انتقالات الحالة تُسجَّل بسطر واحد يحمل الرمز فقط (`storage readiness: not ready (<code>)` / `recovered`). فحص صحة Render (`/api/system/status`) لم يتغير؛ لجعل المنصة تسحب الحركة عند تعطل التخزين يجب توجيه فحص الموازن إلى `/health/ready` — قرار نشر للمالك، لا يغيره هذا البند.
+
 ## الفجوات
 
 1. لا `docker-compose.yml` ولا `Makefile`.
