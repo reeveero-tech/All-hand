@@ -44,7 +44,8 @@
 |---|---|---|---|---|---|---|---|
 | بيئة الوكيل (الحالية) | الأداة محليًا ([`q023_probe/sandbox.json`](../logs/raw/q023_probe/sandbox.json)) | 2 | 7.77 GiB | 1.33 من 2 | 0.10 (ضجيج ملحوظ) | 0.0 | `reduced_R177_only` بالموارد، لكن **محظور عليها الحمل الكبير بقرار المالك (D-134)** |
 | GitHub Codespaces لهذا الحساب | `GET /repos/reeveero-tech/All-hand/codespaces/machines` (قراءة فقط، بلا إنشاء) | أكبر نوع متاح: **4** (`standardLinux32gb`) | 16 GB | لم يُقس (الإنشاء يستهلك حصة الحساب — لم أفعله) | — | — | `reduced_R177_only` في أحسن حال |
-| عدّاءات GitHub العامة (x64 وarm64) | سير عمل `.github/workflows/q023-env-probe.yml`، 3 نسخ لكل نوع | انظر السجل 386 | | | | | انظر السجل 386 |
+| عدّاءات GitHub العامة x64 (`ubuntu-24.04`) | سير العمل `q023-env-probe.yml` على PR #337، [التشغيل 42459506764](https://github.com/reeveero-tech/All-hand/actions/runs/42459506764)، 3 نسخ ([السجل 386](../logs/raw/386_q023_probe_github_runners.log)) | 4 (**ثلاثة طرز معالج مختلفة في ثلاث وظائف**: EPYC 7763/9V74/9V45) | 15.6 GiB | **1.50–1.88 من 4** (يُرجح أنها خيوط SMT — غير متحقق) | 0.008–0.010، ونسخة واحدة 0.137 | 0.0 | `reduced_R177_only` ×3؛ آلة واحدة بلا فصل |
+| عدّاءات GitHub العامة arm64 (`ubuntu-24.04-arm`) | كما سبق، 3 نسخ | 4 | 15.6 GiB | 2.86–3.19 من 4 | ≤0.003 (ثابت) | 0.0 | `reduced_R177_only` ×3؛ وarm64 يصطدم بعائق القفل (السجل 381) |
 
 ## 4. الخيارات — مؤهلة وغير مؤهلة
 
@@ -52,7 +53,7 @@
 
 | الخيار | الموارد (مصدر رسمي) | الفصل بين العقد | المدة/القيود | التصنيف |
 |---|---|---|---|---|
-| عدّاءات GitHub العامة | 4 vCPU/16GB x64 وarm64، VM جديدة لكل وظيفة ([GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners))؛ مجانية في المستودعات العامة ([Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions)) | ❌ الوظائف لا تقبل اتصالات واردة من بعضها: المولد والخدمة والتخزين على الآلة نفسها | 6 ساعات لكل وظيفة، 20 وظيفة متزامنة ([Actions limits](https://docs.github.com/en/actions/reference/limits)) — soak ‏24 ساعة مستحيل | **غير مؤهل** للقياس المعتمد (مشتركة ومتلاصقة). صالح فقط لإعادة إنتاج L0 وفحوص الصحة |
+| عدّاءات GitHub العامة | 4 vCPU/16GB x64 وarm64، VM جديدة لكل وظيفة ([GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners))؛ مجانية في المستودعات العامة ([Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions)) | ❌ الوظائف لا تقبل اتصالات واردة من بعضها: المولد والخدمة والتخزين على الآلة نفسها. **قياسنا** (السجل 386): x64 يعطي 1.5–1.9 نواة فعلية من 4، وعتادًا مختلفًا من تشغيل لآخر (تكرارية ضعيفة) | 6 ساعات لكل وظيفة، 20 وظيفة متزامنة ([Actions limits](https://docs.github.com/en/actions/reference/limits)) — soak ‏24 ساعة مستحيل | **غير مؤهل** للقياس المعتمد (مشتركة ومتلاصقة). صالح فقط لإعادة إنتاج L0 وفحوص الصحة |
 | GitHub Codespaces | 120 ساعة حوسبة شهريًا، **مضروبة في عدد الأنوية** (4 أنوية ⇒ 30 ساعة)، و15GB-شهر ([Codespaces billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces))؛ أكبر نوع متاح لهذا الحساب 4 أنوية (قياس §3) | ⚠️ ممكن بثلاث codespaces، لكن الاتصال بينها عبر وسيط إعادة توجيه المنافذ في GitHub لا شبكة خاصة | ثلاث عقد ×4 أنوية ⇒ نحو 10 ساعات شهريًا. بلا وسيلة دفع **يُحجب الاستخدام** عند نفاد الحصة (لا فاتورة) | **مخفض فقط** (4 أنوية للخدمة مقابل 16 مطلوبة، والكمون عبر وسيط) |
 | Kaggle Notebooks | 4 أنوية / 30GB RAM، جلسة 12 ساعة ([Kaggle docs](https://www.kaggle.com/docs/notebooks)) | ❌ دفتر واحد؛ المكونات الثلاثة متلاصقة | 12 ساعة؛ خمول 20 دقيقة يُنهي الجلسة التفاعلية | **غير مؤهل** (بيئة دفاتر بلا فصل) |
 | Google Cloud Shell | 50 ساعة أسبوعيًا ([Cloud Shell quotas](https://docs.cloud.google.com/shell/docs/quotas-limits)) | ❌ آلة صغيرة واحدة لكل مستخدم | جلسة تفاعلية | **غير مؤهل** |
