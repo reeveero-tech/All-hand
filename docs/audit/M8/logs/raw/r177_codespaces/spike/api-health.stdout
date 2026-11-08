@@ -1,0 +1,81 @@
+{
+  "service": "api-health",
+  "classification": "measured",
+  "ok": true,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<200"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 200,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 47968,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.367837325508671,
+    "duration_med_ms": 1.2754604999999999,
+    "duration_p90_ms": 6.0179782,
+    "duration_p95_ms": 7.82999295,
+    "duration_p99_ms": 30.49236081000003,
+    "duration_max_ms": 335.919249,
+    "dropped_iterations": 32
+  },
+  "raw_quantiles": {
+    "n": 47968,
+    "p50_ms": 1.275,
+    "p95_ms": 7.83,
+    "p99_ms": 30.504,
+    "max_ms": 335.919,
+    "p95_ms_k6_method": 7.83
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 400,
+    "max_vus": 480
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 400,
+    "max_vus": 480
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "c7e0e891ea7d",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 113,
+    "ready": 113,
+    "isolation": 38,
+    "integrity": 38
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/spike/k6_summary_api-health_spike.json",
+  "stdout_log_path": "/tmp/r177cs/spike/k6_stdout_api-health_spike.log",
+  "stop_decision": {
+    "stopped": false,
+    "rule": null,
+    "rule_id": null,
+    "reason": null,
+    "at_s": null,
+    "measurements": {}
+  }
+}

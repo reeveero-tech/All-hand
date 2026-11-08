@@ -1,0 +1,384 @@
+{
+  "service": "api-tasks-submit",
+  "classification": "measured",
+  "ok": true,
+  "profile": "normal",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 601,
+    "requests_failed": 0,
+    "duration_avg_ms": 4.097443226289519,
+    "duration_med_ms": 3.750191,
+    "duration_p90_ms": 5.05738,
+    "duration_p95_ms": 5.999075,
+    "duration_p99_ms": 8.720256,
+    "duration_max_ms": 34.262174,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 601,
+    "p50_ms": 3.75,
+    "p95_ms": 5.999,
+    "p99_ms": 8.72,
+    "max_ms": 34.262,
+    "p95_ms_k6_method": 5.999
+  },
+  "params": {
+    "duration_s": 60,
+    "arrival_rate": 10,
+    "max_vus": 16
+  },
+  "baseline_params": {
+    "duration_s": 60,
+    "arrival_rate": 10,
+    "max_vus": 16
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 500.0,
+      "p95_stop_ms": 1000.0,
+      "p99_slo_ms": null,
+      "p99_stop_ms": null,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 10.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": false,
+      "rule": null,
+      "rule_id": null,
+      "reason": null,
+      "at_s": null,
+      "measurements": {}
+    },
+    "breaches": [],
+    "totals": {
+      "requests": 601,
+      "failed": 0,
+      "checks": 601,
+      "checks_passed": 601
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 4.492926,
+        "p99_ms": 7.206994,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 1,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 5.704961,
+        "p99_ms": 7.224177,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 2,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 5.737681,
+        "p99_ms": 7.147394,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 4.840054,
+        "p99_ms": 5.999075,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 6.612592,
+        "p99_ms": 8.248506,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 5,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 6.406064,
+        "p99_ms": 34.262174,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 6,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 5.354968,
+        "p99_ms": 8.720256,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 7,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 6.736939,
+        "p99_ms": 7.926428,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 8,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 9.747367,
+        "p99_ms": 14.082037,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 9,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 5.829433,
+        "p99_ms": 10.209473,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 10,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 5.875028,
+        "p99_ms": 7.514498,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 11,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 6.1229,
+        "p99_ms": 7.98744,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 12,
+        "samples": 1,
+        "sufficient": false,
+        "p95_ms": 2.913319,
+        "p99_ms": 2.913319,
+        "reqs": 1,
+        "failed": 0,
+        "checks": 1,
+        "checks_ok": 1,
+        "iters": 1,
+        "dropped": 0
+      }
+    ]
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "736f10c1c001",
+  "storage": "volatile",
+  "retention_evictions": [
+    {
+      "task": "736f10c1c001",
+      "at": 1794168686.28,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "a92a35f8c577",
+      "at": 1794168698.412,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "52e991a0870a",
+      "at": 1794168698.414,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "4bb936431e37",
+      "at": 1794168698.417,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "c2c3983cb509",
+      "at": 1794168698.419,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "2e0f1205da9c",
+      "at": 1794168698.422,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "8075fb1d4b47",
+      "at": 1794168698.424,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "a621460a359c",
+      "at": 1794168698.426,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    }
+  ],
+  "tracked_ids": [
+    "a92a35f8c577",
+    "52e991a0870a",
+    "4bb936431e37",
+    "c2c3983cb509",
+    "2e0f1205da9c",
+    "8075fb1d4b47",
+    "a621460a359c",
+    "d4fe172d22b1",
+    "b771e417d501",
+    "33f82e582828",
+    "2b5c672a3e2f",
+    "b7167d5294b7",
+    "92fc99ae4d3e",
+    "60f4e2865469",
+    "a6fedc01af0c",
+    "70409327b97b",
+    "b09a41065ca8",
+    "be80ac6b507a",
+    "e6acfdde69a6",
+    "edd7452f7892",
+    "5dafcee52ddd",
+    "747ddbe7b0a5",
+    "01a6834be969",
+    "c89a271f504b",
+    "13df2ce4e906",
+    "97bba27d9d12",
+    "45519cad72c7",
+    "7527362d26e5",
+    "e4f114a73d61",
+    "7a88c3945c04",
+    "44234d58df33"
+  ],
+  "probe_counts": {
+    "health": 59,
+    "ready": 59,
+    "isolation": 20,
+    "integrity": 20
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/normal/k6_summary_api-tasks-submit_normal.json",
+  "stdout_log_path": "/tmp/r177cs/normal/k6_stdout_api-tasks-submit_normal.log",
+  "tracked_tasks": {
+    "submitted": 31,
+    "accepted": 31,
+    "completed": 31,
+    "failed": 0,
+    "timeout": 0,
+    "e2e_p50_ms": 8.93,
+    "e2e_p95_ms": 11.35,
+    "e2e_max_ms": 12.017,
+    "all_completed": true
+  }
+}

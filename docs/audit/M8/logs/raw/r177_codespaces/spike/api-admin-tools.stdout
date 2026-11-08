@@ -1,0 +1,102 @@
+{
+  "service": "api-admin-tools",
+  "classification": "measured",
+  "ok": false,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 105,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 16665,
+    "requests_failed": 0,
+    "duration_avg_ms": 325.8526424552666,
+    "duration_med_ms": 43.466917,
+    "duration_p90_ms": 1135.1128348,
+    "duration_p95_ms": 1172.3823381999998,
+    "duration_p99_ms": 1467.9677560800055,
+    "duration_max_ms": 3199.436928,
+    "dropped_iterations": 304
+  },
+  "raw_quantiles": {
+    "n": 16665,
+    "p50_ms": 43.467,
+    "p95_ms": 1172.383,
+    "p99_ms": 1474.188,
+    "max_ms": 3199.437,
+    "p95_ms_k6_method": 1172.3826000000001
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "stopped": true,
+  "probe_failures": [],
+  "sentinel_id": "5ca701a2c14d",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 66,
+    "ready": 66,
+    "isolation": 22,
+    "integrity": 22
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/spike/k6_summary_api-admin-tools_spike.json",
+  "stdout_log_path": "/tmp/r177cs/spike/k6_stdout_api-admin-tools_spike.log",
+  "stop_decision": {
+    "stopped": true,
+    "rule": "p95_window",
+    "rule_id": "S3",
+    "reason": "p95 > 2.0x SLO — censored windows [16]: < 50% of scheduled iterations completed (stalled/in-flight) (1000.0ms) for 2 consecutive windows (S3)",
+    "at_s": 85.0,
+    "measurements": {
+      "windows": [
+        {
+          "window": 15,
+          "value_ms": 1159.208375,
+          "samples": 930
+        },
+        {
+          "window": 16,
+          "value_ms": null,
+          "samples": 455,
+          "censored": true,
+          "iters": 454,
+          "expected_iters": 1000.0,
+          "dropped": 32,
+          "observed_p95_ms_of_completed": 1210.479024
+        }
+      ],
+      "limit_ms": 1000.0,
+      "consecutive_required": 2,
+      "window_s": 5.0
+    }
+  }
+}

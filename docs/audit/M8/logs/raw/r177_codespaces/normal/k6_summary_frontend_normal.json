@@ -1,0 +1,152 @@
+{
+    "root_group": {
+        "checks": {
+            "frontend 200": {
+                "path": "::frontend 200",
+                "id": "e5625951010a2341d5f2ded2029a1f1f",
+                "passes": 1201,
+                "fails": 0,
+                "name": "frontend 200"
+            },
+            "frontend body non-empty": {
+                "id": "366db1c631f63e24e7019f61a870048c",
+                "passes": 1201,
+                "fails": 0,
+                "name": "frontend body non-empty",
+                "path": "::frontend body non-empty"
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {}
+    },
+    "metrics": {
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 1201,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "data_sent": {
+            "count": 113781,
+            "rate": 1894.6758109919717
+        },
+        "http_reqs": {
+            "count": 1201,
+            "rate": 19.998994990388184
+        },
+        "http_req_connecting": {
+            "avg": 0.0007552114904246462,
+            "min": 0,
+            "med": 0,
+            "max": 0.23686,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0
+        },
+        "data_received": {
+            "count": 56365629,
+            "rate": 938597.7785188002
+        },
+        "http_req_receiving": {
+            "avg": 0.4963898484596175,
+            "min": 0.282134,
+            "med": 0.382912,
+            "max": 3.472452,
+            "p(90)": 0.829648,
+            "p(95)": 0.897716,
+            "p(99)": 1.17477
+        },
+        "http_req_duration{expected_response:true}": {
+            "max": 15.377382,
+            "p(90)": 1.97908,
+            "p(95)": 2.07186,
+            "p(99)": 2.43747,
+            "avg": 1.719630910074939,
+            "min": 1.052117,
+            "med": 1.688499
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "http_req_blocked": {
+            "p(90)": 0.008015,
+            "p(95)": 0.01069,
+            "p(99)": 0.033473,
+            "avg": 0.007731965029142397,
+            "min": 0.003427,
+            "med": 0.00576,
+            "max": 0.303725
+        },
+        "iterations": {
+            "count": 1201,
+            "rate": 19.998994990388184
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0
+        },
+        "http_req_waiting": {
+            "avg": 1.1976010416319742,
+            "min": 0.702645,
+            "med": 1.147853,
+            "max": 14.062047,
+            "p(90)": 1.416957,
+            "p(95)": 1.477287,
+            "p(99)": 1.694246
+        },
+        "http_req_sending": {
+            "med": 0.024335,
+            "max": 0.103353,
+            "p(90)": 0.03193,
+            "p(95)": 0.036508,
+            "p(99)": 0.051716,
+            "avg": 0.025640019983347216,
+            "min": 0.013535
+        },
+        "vus_max": {
+            "min": 5,
+            "max": 5,
+            "value": 5
+        },
+        "iteration_duration": {
+            "min": 51.418212,
+            "med": 52.208206,
+            "max": 66.45006,
+            "p(90)": 53.132297,
+            "p(95)": 53.496507,
+            "p(99)": 54.424984,
+            "avg": 52.36746898584511
+        },
+        "http_req_duration": {
+            "p(99)": 2.43747,
+            "avg": 1.719630910074939,
+            "min": 1.052117,
+            "med": 1.688499,
+            "max": 15.377382,
+            "p(90)": 1.97908,
+            "p(95)": 2.07186,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "checks": {
+            "passes": 2402,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        }
+    }
+}

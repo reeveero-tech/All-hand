@@ -1,0 +1,466 @@
+{
+  "service": "api-admin-tools",
+  "classification": "measured",
+  "ok": false,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 105,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 16665,
+    "requests_failed": 0,
+    "duration_avg_ms": 325.8526424552666,
+    "duration_med_ms": 43.466917,
+    "duration_p90_ms": 1135.1128348,
+    "duration_p95_ms": 1172.3823381999998,
+    "duration_p99_ms": 1467.9677560800055,
+    "duration_max_ms": 3199.436928,
+    "dropped_iterations": 304
+  },
+  "raw_quantiles": {
+    "n": 16665,
+    "p50_ms": 43.467,
+    "p95_ms": 1172.383,
+    "p99_ms": 1474.188,
+    "max_ms": 3199.437,
+    "p95_ms_k6_method": 1172.3826000000001
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 500.0,
+      "p95_stop_ms": 1000.0,
+      "p99_slo_ms": null,
+      "p99_stop_ms": null,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 200.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": true,
+      "rule": "p95_window",
+      "rule_id": "S3",
+      "reason": "p95 > 2.0x SLO — censored windows [16]: < 50% of scheduled iterations completed (stalled/in-flight) (1000.0ms) for 2 consecutive windows (S3)",
+      "at_s": 85.0,
+      "measurements": {
+        "windows": [
+          {
+            "window": 15,
+            "value_ms": 1159.208375,
+            "samples": 930
+          },
+          {
+            "window": 16,
+            "value_ms": null,
+            "samples": 455,
+            "censored": true,
+            "iters": 454,
+            "expected_iters": 1000.0,
+            "dropped": 32,
+            "observed_p95_ms_of_completed": 1210.479024
+          }
+        ],
+        "limit_ms": 1000.0,
+        "consecutive_required": 2,
+        "window_s": 5.0
+      }
+    },
+    "breaches": [
+      {
+        "rule": "p95_window",
+        "rule_id": "S3",
+        "reason": "p95 > 2.0x SLO — censored windows [16]: < 50% of scheduled iterations completed (stalled/in-flight) (1000.0ms) for 2 consecutive windows (S3)",
+        "at_s": 85.0,
+        "measurements": {
+          "windows": [
+            {
+              "window": 15,
+              "value_ms": 1159.208375,
+              "samples": 930
+            },
+            {
+              "window": 16,
+              "value_ms": null,
+              "samples": 455,
+              "censored": true,
+              "iters": 454,
+              "expected_iters": 1000.0,
+              "dropped": 32,
+              "observed_p95_ms_of_completed": 1210.479024
+            }
+          ],
+          "limit_ms": 1000.0,
+          "consecutive_required": 2,
+          "window_s": 5.0
+        }
+      },
+      {
+        "rule": "error_rate",
+        "rule_id": "S1",
+        "reason": "window 17 error rate 0.0101 > 0.01 (S1)",
+        "at_s": 90.0,
+        "measurements": {
+          "window": 17,
+          "failed": 2,
+          "total": 199,
+          "rate": 0.01005,
+          "limit": 0.01,
+          "scope": "window"
+        }
+      },
+      {
+        "rule": "checks_rate",
+        "rule_id": "S2",
+        "reason": "window 17 checks rate 0.9899 < 0.99 (S2)",
+        "at_s": 90.0,
+        "measurements": {
+          "window": 17,
+          "passed": 197,
+          "total": 199,
+          "rate": 0.98995,
+          "limit": 0.99,
+          "scope": "window"
+        }
+      },
+      {
+        "rule": "p95_window",
+        "rule_id": "S3",
+        "reason": "p95 > 2.0x SLO — censored windows [16]: < 50% of scheduled iterations completed (stalled/in-flight) (1000.0ms) for 3 consecutive windows (S3)",
+        "at_s": 90.0,
+        "measurements": {
+          "windows": [
+            {
+              "window": 16,
+              "value_ms": null,
+              "samples": 455,
+              "censored": true,
+              "iters": 454,
+              "expected_iters": 1000.0,
+              "dropped": 32,
+              "observed_p95_ms_of_completed": 1210.479024
+            },
+            {
+              "window": 17,
+              "value_ms": 1344.30114,
+              "samples": 199
+            }
+          ],
+          "limit_ms": 1000.0,
+          "consecutive_required": 2,
+          "window_s": 5.0
+        }
+      }
+    ],
+    "totals": {
+      "requests": 16665,
+      "failed": 67,
+      "checks": 16665,
+      "checks_passed": 16598
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 983,
+        "sufficient": true,
+        "p95_ms": 14.596909,
+        "p99_ms": 63.383448,
+        "reqs": 983,
+        "failed": 0,
+        "checks": 983,
+        "checks_ok": 983,
+        "iters": 972,
+        "dropped": 10
+      },
+      {
+        "idx": 1,
+        "samples": 988,
+        "sufficient": true,
+        "p95_ms": 44.3134,
+        "p99_ms": 239.546114,
+        "reqs": 988,
+        "failed": 0,
+        "checks": 988,
+        "checks_ok": 988,
+        "iters": 991,
+        "dropped": 6
+      },
+      {
+        "idx": 2,
+        "samples": 1005,
+        "sufficient": true,
+        "p95_ms": 13.851595,
+        "p99_ms": 61.785519,
+        "reqs": 1005,
+        "failed": 0,
+        "checks": 1005,
+        "checks_ok": 1005,
+        "iters": 1003,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 1000,
+        "sufficient": true,
+        "p95_ms": 18.159125,
+        "p99_ms": 87.943832,
+        "reqs": 1000,
+        "failed": 0,
+        "checks": 1000,
+        "checks_ok": 1000,
+        "iters": 1000,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 1000,
+        "sufficient": true,
+        "p95_ms": 14.32572,
+        "p99_ms": 61.940855,
+        "reqs": 1000,
+        "failed": 0,
+        "checks": 1000,
+        "checks_ok": 1000,
+        "iters": 1000,
+        "dropped": 0
+      },
+      {
+        "idx": 5,
+        "samples": 993,
+        "sufficient": true,
+        "p95_ms": 63.29816,
+        "p99_ms": 658.010055,
+        "reqs": 993,
+        "failed": 1,
+        "checks": 993,
+        "checks_ok": 992,
+        "iters": 994,
+        "dropped": 3
+      },
+      {
+        "idx": 6,
+        "samples": 797,
+        "sufficient": true,
+        "p95_ms": 28.837105,
+        "p99_ms": 441.673566,
+        "reqs": 797,
+        "failed": 1,
+        "checks": 797,
+        "checks_ok": 796,
+        "iters": 796,
+        "dropped": 0
+      },
+      {
+        "idx": 7,
+        "samples": 994,
+        "sufficient": true,
+        "p95_ms": 114.9233,
+        "p99_ms": 737.339231,
+        "reqs": 994,
+        "failed": 0,
+        "checks": 994,
+        "checks_ok": 994,
+        "iters": 995,
+        "dropped": 0
+      },
+      {
+        "idx": 8,
+        "samples": 989,
+        "sufficient": true,
+        "p95_ms": 76.277904,
+        "p99_ms": 1658.73698,
+        "reqs": 989,
+        "failed": 6,
+        "checks": 989,
+        "checks_ok": 983,
+        "iters": 989,
+        "dropped": 6
+      },
+      {
+        "idx": 9,
+        "samples": 969,
+        "sufficient": true,
+        "p95_ms": 153.45299,
+        "p99_ms": 1777.360527,
+        "reqs": 969,
+        "failed": 5,
+        "checks": 969,
+        "checks_ok": 964,
+        "iters": 968,
+        "dropped": 15
+      },
+      {
+        "idx": 10,
+        "samples": 957,
+        "sufficient": true,
+        "p95_ms": 248.923662,
+        "p99_ms": 1853.499686,
+        "reqs": 957,
+        "failed": 7,
+        "checks": 957,
+        "checks_ok": 950,
+        "iters": 958,
+        "dropped": 22
+      },
+      {
+        "idx": 11,
+        "samples": 937,
+        "sufficient": true,
+        "p95_ms": 414.327753,
+        "p99_ms": 1592.195934,
+        "reqs": 937,
+        "failed": 6,
+        "checks": 937,
+        "checks_ok": 931,
+        "iters": 937,
+        "dropped": 31
+      },
+      {
+        "idx": 12,
+        "samples": 891,
+        "sufficient": true,
+        "p95_ms": 578.844913,
+        "p99_ms": 2260.474753,
+        "reqs": 891,
+        "failed": 7,
+        "checks": 891,
+        "checks_ok": 884,
+        "iters": 892,
+        "dropped": 31
+      },
+      {
+        "idx": 13,
+        "samples": 907,
+        "sufficient": true,
+        "p95_ms": 836.144763,
+        "p99_ms": 1888.420926,
+        "reqs": 907,
+        "failed": 6,
+        "checks": 907,
+        "checks_ok": 901,
+        "iters": 903,
+        "dropped": 46
+      },
+      {
+        "idx": 14,
+        "samples": 937,
+        "sufficient": true,
+        "p95_ms": 985.938303,
+        "p99_ms": 2381.673001,
+        "reqs": 937,
+        "failed": 8,
+        "checks": 937,
+        "checks_ok": 929,
+        "iters": 939,
+        "dropped": 31
+      },
+      {
+        "idx": 15,
+        "samples": 930,
+        "sufficient": true,
+        "p95_ms": 1159.208375,
+        "p99_ms": 2548.595407,
+        "reqs": 930,
+        "failed": 8,
+        "checks": 930,
+        "checks_ok": 922,
+        "iters": 929,
+        "dropped": 38
+      },
+      {
+        "idx": 16,
+        "samples": 455,
+        "sufficient": true,
+        "p95_ms": 1210.479024,
+        "p99_ms": 2480.265626,
+        "reqs": 455,
+        "failed": 3,
+        "checks": 455,
+        "checks_ok": 452,
+        "iters": 454,
+        "dropped": 32,
+        "stalled": true,
+        "expected_iters": 1000.0,
+        "completion_frac": 0.454
+      },
+      {
+        "idx": 17,
+        "samples": 199,
+        "sufficient": true,
+        "p95_ms": 1344.30114,
+        "p99_ms": 3167.137228,
+        "reqs": 199,
+        "failed": 2,
+        "checks": 199,
+        "checks_ok": 197,
+        "iters": 198,
+        "dropped": 6
+      }
+    ]
+  },
+  "stopped": true,
+  "probe_failures": [],
+  "sentinel_id": "5ca701a2c14d",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 66,
+    "ready": 66,
+    "isolation": 22,
+    "integrity": 22
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/spike/k6_summary_api-admin-tools_spike.json",
+  "stdout_log_path": "/tmp/r177cs/spike/k6_stdout_api-admin-tools_spike.log"
+}

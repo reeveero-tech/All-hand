@@ -1,0 +1,81 @@
+{
+  "service": "api-admin-tools",
+  "classification": "measured",
+  "ok": true,
+  "profile": "stress",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 29997,
+    "requests_failed": 0,
+    "duration_avg_ms": 6.448740808680861,
+    "duration_med_ms": 6.079748,
+    "duration_p90_ms": 7.790312000000003,
+    "duration_p95_ms": 8.6993216,
+    "duration_p99_ms": 11.669510080000013,
+    "duration_max_ms": 143.744545,
+    "dropped_iterations": 4
+  },
+  "raw_quantiles": {
+    "n": 29997,
+    "p50_ms": 6.08,
+    "p95_ms": 8.7,
+    "p99_ms": 11.682,
+    "max_ms": 143.745,
+    "p95_ms_k6_method": 8.699199999999998
+  },
+  "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+  },
+  "baseline_params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "943cb386a4f7",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 294,
+    "ready": 294,
+    "isolation": 99,
+    "integrity": 99
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/stress/k6_summary_api-admin-tools_stress.json",
+  "stdout_log_path": "/tmp/r177cs/stress/k6_stdout_api-admin-tools_stress.log",
+  "stop_decision": {
+    "stopped": false,
+    "rule": null,
+    "rule_id": null,
+    "reason": null,
+    "at_s": null,
+    "measurements": {}
+  }
+}

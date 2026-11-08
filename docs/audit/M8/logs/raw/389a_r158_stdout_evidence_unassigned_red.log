@@ -1,0 +1,25 @@
+# 389a — R-158 baseline gate: k6 *.stdout evidence unassigned (RED) — D-141
+# head=b42b0f8080d6cdb6b777bc8c164c9df61ff0fde4 (before fix), 2026-11-08T22:03:54Z, python3 -m pytest -q tests/test_r158_test_baseline.py
+# found by local full suite run #2 (1 failed, 4320 passed); the 28 r177_codespaces/*.stdout files fell outside every GROUPS rule
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.1.post1, anyio-4.15.1, ddtrace-4.16.3
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 42 items
+
+tests/test_r158_test_baseline.py ..................................F.... [ 92%]
+...                                                                      [100%]
+
+=================================== FAILURES ===================================
+_________________ test_every_tracked_file_at_head_is_assigned __________________
+tests/test_r158_test_baseline.py:138: in test_every_tracked_file_at_head_is_assigned
+    assert missing == []
+E   AssertionError: assert ['docs/audit/....stdout', ...] == []
+E     
+E     Left contains 28 more items, first extra item: 'docs/audit/M8/logs/raw/r177_codespaces/baseline.stdout'
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned
+========================= 1 failed, 41 passed in 0.38s =========================

@@ -1,0 +1,87 @@
+{
+  "service": "frontend",
+  "classification": "measured",
+  "ok": true,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<300"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 300,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 23993,
+    "requests_failed": 0,
+    "duration_avg_ms": 1.349642743925304,
+    "duration_med_ms": 1.306214,
+    "duration_p90_ms": 1.637981,
+    "duration_p95_ms": 1.7561723999999999,
+    "duration_p99_ms": 2.4984900399999903,
+    "duration_max_ms": 21.97777,
+    "dropped_iterations": 8
+  },
+  "raw_quantiles": {
+    "n": 23993,
+    "p50_ms": 1.306,
+    "p95_ms": 1.756,
+    "p99_ms": 2.503,
+    "max_ms": 21.978,
+    "p95_ms_k6_method": 1.756
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "4cf5a216caa9",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 117,
+    "ready": 117,
+    "isolation": 40,
+    "integrity": 40
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/spike/k6_summary_frontend_spike.json",
+  "stdout_log_path": "/tmp/r177cs/spike/k6_stdout_frontend_spike.log",
+  "frontend_paths": [
+    "/",
+    "/assets/index-8tYp6104.js",
+    "/assets/index-B6dOodBA.css",
+    "/agents"
+  ],
+  "stop_decision": {
+    "stopped": false,
+    "rule": null,
+    "rule_id": null,
+    "reason": null,
+    "at_s": null,
+    "measurements": {}
+  }
+}

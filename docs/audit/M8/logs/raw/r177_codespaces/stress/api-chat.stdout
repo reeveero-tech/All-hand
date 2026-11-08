@@ -1,0 +1,142 @@
+{
+  "service": "api-chat",
+  "classification": "measured",
+  "ok": true,
+  "profile": "stress",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<2000",
+      "p(99)<1000"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 2000,
+  "slo_p99_ms": 1000,
+  "metrics": {
+    "http_reqs": 14999,
+    "requests_failed": 0,
+    "duration_avg_ms": 8.226944715314339,
+    "duration_med_ms": 8.050767,
+    "duration_p90_ms": 9.9587424,
+    "duration_p95_ms": 10.6629411,
+    "duration_p99_ms": 12.658016740000006,
+    "duration_max_ms": 138.797103,
+    "dropped_iterations": 2
+  },
+  "raw_quantiles": {
+    "n": 14999,
+    "p50_ms": 8.051,
+    "p95_ms": 10.663,
+    "p99_ms": 12.673,
+    "max_ms": 138.797,
+    "p95_ms_k6_method": 10.663
+  },
+  "params": {
+    "duration_s": 300,
+    "arrival_rate": 50,
+    "max_vus": 80
+  },
+  "baseline_params": {
+    "duration_s": 300,
+    "arrival_rate": 50,
+    "max_vus": 80
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "9c115251d87c",
+  "storage": "volatile",
+  "retention_evictions": [
+    {
+      "task": "9c115251d87c",
+      "at": 1794170733.132,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    }
+  ],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 297,
+    "ready": 297,
+    "isolation": 100,
+    "integrity": 100
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/stress/k6_summary_api-chat_stress.json",
+  "stdout_log_path": "/tmp/r177cs/stress/k6_stdout_api-chat_stress.log",
+  "p99_assessment": {
+    "quantile": 0.99,
+    "threshold_ms": 1000.0,
+    "n": 14999,
+    "n_min_required": 299,
+    "confidence": 0.95,
+    "point_ms": 12.673,
+    "upper_bound_ms": 12.883,
+    "sufficient": true,
+    "verdict": "pass",
+    "passed": true,
+    "rule": "pass ⇔ n >= n_min AND point < threshold AND distribution-free 95% upper bound < threshold"
+  },
+  "tail_review": {
+    "n": 14999,
+    "max_ms": 138.797,
+    "med_ms": 8.051,
+    "max_over_med": 17.24,
+    "over_threshold": 0,
+    "over_half_threshold": 0,
+    "top": [
+      {
+        "ms": 138.797,
+        "t_s": 137.339,
+        "endpoint": "chat",
+        "seq": 6862
+      },
+      {
+        "ms": 115.741,
+        "t_s": 137.295,
+        "endpoint": "chat",
+        "seq": 6857
+      },
+      {
+        "ms": 89.312,
+        "t_s": 137.309,
+        "endpoint": "chat",
+        "seq": 6859
+      },
+      {
+        "ms": 85.149,
+        "t_s": 137.325,
+        "endpoint": "chat",
+        "seq": 6861
+      },
+      {
+        "ms": 44.38,
+        "t_s": 87.844,
+        "endpoint": "chat",
+        "seq": 4389
+      }
+    ]
+  },
+  "stop_decision": {
+    "stopped": false,
+    "rule": null,
+    "rule_id": null,
+    "reason": null,
+    "at_s": null,
+    "measurements": {}
+  }
+}

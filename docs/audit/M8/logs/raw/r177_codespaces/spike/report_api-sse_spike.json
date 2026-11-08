@@ -1,0 +1,464 @@
+{
+  "service": "api-sse",
+  "classification": "measured",
+  "ok": true,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 241,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.645299834024897,
+    "duration_med_ms": 3.41831,
+    "duration_p90_ms": 4.495668,
+    "duration_p95_ms": 4.978376,
+    "duration_p99_ms": 6.168956599999997,
+    "duration_max_ms": 12.27415,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 241,
+    "p50_ms": 3.418,
+    "p95_ms": 4.978,
+    "p99_ms": 6.397,
+    "max_ms": 12.274,
+    "p95_ms_k6_method": 4.978
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 2.0,
+    "max_vus": 20
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 2.0,
+    "max_vus": 20
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 500.0,
+      "p95_stop_ms": 1000.0,
+      "p99_slo_ms": null,
+      "p99_stop_ms": null,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 2.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": false,
+      "rule": null,
+      "rule_id": null,
+      "reason": null,
+      "at_s": null,
+      "measurements": {}
+    },
+    "breaches": [],
+    "totals": {
+      "requests": 241,
+      "failed": 0,
+      "checks": 241,
+      "checks_passed": 241
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 12.27415,
+        "p99_ms": 12.27415,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 1,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 5.63059,
+        "p99_ms": 5.63059,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 2,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 5.611634,
+        "p99_ms": 5.611634,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 4.92846,
+        "p99_ms": 4.92846,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 4.679876,
+        "p99_ms": 4.679876,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 5,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 5.82713,
+        "p99_ms": 5.82713,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 6,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 4.352524,
+        "p99_ms": 4.352524,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 7,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 5.6142,
+        "p99_ms": 5.6142,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 8,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 4.652818,
+        "p99_ms": 4.652818,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 9,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 3.794923,
+        "p99_ms": 3.794923,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 10,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 5.217255,
+        "p99_ms": 5.217255,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 11,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 3.838815,
+        "p99_ms": 3.838815,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 12,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 5.769226,
+        "p99_ms": 5.769226,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 13,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 3.648317,
+        "p99_ms": 3.648317,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 14,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 4.978376,
+        "p99_ms": 4.978376,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 15,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 5.133124,
+        "p99_ms": 5.133124,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 16,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 4.58046,
+        "p99_ms": 4.58046,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 17,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 7.531093,
+        "p99_ms": 7.531093,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 18,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 3.219773,
+        "p99_ms": 3.219773,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 19,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 3.110723,
+        "p99_ms": 3.110723,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 20,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 5.018327,
+        "p99_ms": 5.018327,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 21,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 3.942607,
+        "p99_ms": 3.942607,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 22,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 6.396841,
+        "p99_ms": 6.396841,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 23,
+        "samples": 10,
+        "sufficient": true,
+        "p95_ms": 3.486066,
+        "p99_ms": 3.486066,
+        "reqs": 10,
+        "failed": 0,
+        "checks": 10,
+        "checks_ok": 10,
+        "iters": 10,
+        "dropped": 0
+      },
+      {
+        "idx": 24,
+        "samples": 1,
+        "sufficient": false,
+        "p95_ms": 2.906462,
+        "p99_ms": 2.906462,
+        "reqs": 1,
+        "failed": 0,
+        "checks": 1,
+        "checks_ok": 1,
+        "iters": 1,
+        "dropped": 0
+      }
+    ]
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "7c478a647088",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 120,
+    "ready": 120,
+    "isolation": 41,
+    "integrity": 41
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/spike/k6_summary_api-sse_spike.json",
+  "stdout_log_path": "/tmp/r177cs/spike/k6_stdout_api-sse_spike.log",
+  "sse_stream_ttfb": {
+    "samples_ms": [
+      19.523,
+      6.172,
+      5.528,
+      5.35
+    ],
+    "statuses": [
+      200,
+      200,
+      200,
+      200
+    ],
+    "p95_ms": 19.523,
+    "note": "connect-to-headers only; few samples by design (SSE admission limits)"
+  }
+}

@@ -1,0 +1,71 @@
+{
+ "probe": "q023_env_probe",
+ "version": 1,
+ "label": "codespace-pre",
+ "quick": false,
+ "utc": "2026-11-08T20:03:09Z",
+ "github": {},
+ "resources": {
+  "arch": "x86_64",
+  "kernel": "6.8.0-1064-azure",
+  "python": "3.11.18",
+  "cpu_model": "AMD EPYC 7763 64-Core Processor",
+  "cpu_count": 4,
+  "cpu_affinity": 4,
+  "cgroup_cpu_quota": null,
+  "ram_total_gib": 15.62,
+  "ram_available_gib": 14.36,
+  "cgroup_mem_limit_gib": null,
+  "disk_total_gib": 31.3,
+  "disk_free_gib": 17.5
+ },
+ "cpu_steadiness": {
+  "reps": 15,
+  "iters": 200000,
+  "median_s": 0.07884,
+  "min_s": 0.07694,
+  "max_s": 0.08312,
+  "cv": 0.0175
+ },
+ "parallel": {
+  "workers": 4,
+  "single_s": 0.08457,
+  "parallel_wall_s": 0.15785,
+  "effective_cores": 2.14,
+  "scaling_efficiency": 0.536,
+  "steal_share": 0.0
+ },
+ "loopback_http": {
+  "requests": 400,
+  "errors": 0,
+  "sequential_single_client": true,
+  "p50_ms": 0.558,
+  "p95_ms": 0.671,
+  "p99_ms": 0.74,
+  "max_ms": 1.922
+ },
+ "not_a_load_test": "bounded CPU work (seconds) + single-client sequential loopback GETs; no stress/spike/soak (D-134, Q-023)",
+ "classification": {
+  "verdict": "reduced_R177_only",
+  "effective_vcpu": 4,
+  "effective_ram_gib": 15.62,
+  "nodes_assumed": 1,
+  "role_minimum_met": {
+   "sut": false,
+   "generator": false,
+   "storage": false
+  },
+  "gaps": [
+   "separate_nodes: have 1, need 3 (SUT / load generator / storage on separate machines)",
+   "sut: have 4 vCPU / 15.62 GiB, need 16 vCPU / 32 GiB",
+   "generator: have 4 vCPU / 15.62 GiB, need 8 vCPU / 16 GiB",
+   "storage: have 4 vCPU / 15.62 GiB, need 8 vCPU / 32 GiB"
+  ],
+  "policy_note": "resource fit only: an owner ban (e.g. D-134: no stress/spike/soak on the shared sandbox) or a provider ToS still applies on top",
+  "closes": {
+   "R-177_full": false,
+   "R-178": false,
+   "R-179": false
+  }
+ }
+}

@@ -1,0 +1,3426 @@
+{
+ "rows": [
+  {
+   "service": "api-admin-tools",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+   },
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 29997,
+   "failed": 0,
+   "dropped_iterations": 4,
+   "p50_ms": 6.079748,
+   "p95_ms": 8.6993216,
+   "p99_ms": 11.669510080000013,
+   "max_ms": 143.744545,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-agents",
+   "profile": "stress",
+   "ok": false,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+   },
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+   },
+   "http_reqs": 1219,
+   "failed": 0,
+   "dropped_iterations": 164,
+   "p50_ms": 788.11909,
+   "p95_ms": 1358.4257869,
+   "p99_ms": 2237.445515719998,
+   "max_ms": 3249.430247,
+   "stopped": true,
+   "stop_rule": "S3",
+   "stop_reason": "p95 > 2.0x SLO (600.0ms) for 2 consecutive windows (S3)",
+   "stop_at_s": 10.0,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 105,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-auth",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+   },
+   "slo_p95_ms": 200,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 29994,
+   "failed": 0,
+   "dropped_iterations": 6,
+   "p50_ms": 3.403683,
+   "p95_ms": 4.7246349,
+   "p99_ms": 6.556943819999999,
+   "max_ms": 131.862007,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-chat",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 50,
+    "max_vus": 80
+   },
+   "slo_p95_ms": 2000,
+   "slo_p99_ms": 1000,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 14999,
+   "failed": 0,
+   "dropped_iterations": 2,
+   "p50_ms": 8.050767,
+   "p95_ms": 10.6629411,
+   "p99_ms": 12.658016740000006,
+   "max_ms": 138.797103,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": [
+     {
+      "task": "9c115251d87c",
+      "at": 1794170733.132,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     }
+    ]
+   }
+  },
+  {
+   "service": "api-health",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 200,
+    "max_vus": 240
+   },
+   "slo_p95_ms": 200,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 59987,
+   "failed": 0,
+   "dropped_iterations": 14,
+   "p50_ms": 1.030173,
+   "p95_ms": 4.7810934,
+   "p99_ms": 8.816292239999964,
+   "max_ms": 260.930629,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-memory",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+   },
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 29998,
+   "failed": 0,
+   "dropped_iterations": 3,
+   "p50_ms": 3.2520974999999996,
+   "p95_ms": 4.336068999999999,
+   "p99_ms": 6.035483779999996,
+   "max_ms": 27.036513,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-sse",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 1.0,
+    "max_vus": 10
+   },
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 301,
+   "failed": 0,
+   "dropped_iterations": 0,
+   "p50_ms": 3.223189,
+   "p95_ms": 4.248786,
+   "p99_ms": 5.54419,
+   "max_ms": 10.173927,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-task-lifecycle",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 20,
+    "max_vus": 40
+   },
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 12000,
+   "failed": 0,
+   "dropped_iterations": 0,
+   "p50_ms": 5.2282715,
+   "p95_ms": 12.114221399999996,
+   "p99_ms": 14.62129323,
+   "max_ms": 62.82866,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": [
+     {
+      "task": "e1a548f79263",
+      "at": 1794170145.586,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2d1e79084c2a",
+      "at": 1794170419.471,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8656863db4d0",
+      "at": 1794170419.474,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ac62aee81251",
+      "at": 1794170419.477,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f27b1c0d46ff",
+      "at": 1794170419.479,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2744c55673b4",
+      "at": 1794170419.482,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2488dbadfcb5",
+      "at": 1794170419.485,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d52ddb3f4229",
+      "at": 1794170419.488,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b3ff4ee5a9b9",
+      "at": 1794170419.49,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9ee5a9f8387f",
+      "at": 1794170419.493,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7c478057dbc9",
+      "at": 1794170419.496,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "17cf3314c0a3",
+      "at": 1794170419.499,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "937afbca7f74",
+      "at": 1794170419.501,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "85444839c529",
+      "at": 1794170419.504,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4a86afcb82d1",
+      "at": 1794170419.507,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2d54191855fe",
+      "at": 1794170419.509,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5952c118b7f2",
+      "at": 1794170419.514,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "598b54a9d82a",
+      "at": 1794170419.517,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "efefb3ea8d40",
+      "at": 1794170419.52,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "0cc129a57850",
+      "at": 1794170419.522,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b41979a7cccb",
+      "at": 1794170419.525,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "0957642177f8",
+      "at": 1794170419.528,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4892ef6d3cd7",
+      "at": 1794170419.531,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "00c4d607bffa",
+      "at": 1794170419.534,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "c71ff833ca03",
+      "at": 1794170419.536,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3f55c45b1da1",
+      "at": 1794170419.539,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "39b954aafe14",
+      "at": 1794170419.541,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "fd9920458a34",
+      "at": 1794170419.544,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "835a48e37c53",
+      "at": 1794170419.547,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d987fe828897",
+      "at": 1794170419.55,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7e37d361f996",
+      "at": 1794170419.552,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "0d01d13ac2c0",
+      "at": 1794170419.555,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "afb551d0ef09",
+      "at": 1794170419.558,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "98d6f97fb6b3",
+      "at": 1794170419.561,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9d1c89bab305",
+      "at": 1794170419.564,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "cafeb9463f14",
+      "at": 1794170419.566,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5eccf4a1f790",
+      "at": 1794170419.569,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2e0ae1c58709",
+      "at": 1794170419.571,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9385097c061b",
+      "at": 1794170419.574,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "30867c16e565",
+      "at": 1794170419.577,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2e099d7f7e37",
+      "at": 1794170419.58,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "33fd0b181993",
+      "at": 1794170419.583,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3f34c9f4797d",
+      "at": 1794170419.585,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5251c2a020cf",
+      "at": 1794170419.588,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "c11b1f71ffbc",
+      "at": 1794170419.591,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7052a5861b59",
+      "at": 1794170419.593,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "50d79b26d871",
+      "at": 1794170419.596,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "c948c0ba03fa",
+      "at": 1794170419.598,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e14ebf7a2193",
+      "at": 1794170419.601,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "753fecf674dd",
+      "at": 1794170419.604,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7970bd4b24cc",
+      "at": 1794170419.607,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "561f716a1ca8",
+      "at": 1794170419.61,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2715b835f8cd",
+      "at": 1794170419.612,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7053b8e7a696",
+      "at": 1794170419.615,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "961ae2d12d85",
+      "at": 1794170419.618,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "676a045c8a1f",
+      "at": 1794170419.62,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "90a6278f3e43",
+      "at": 1794170419.625,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "a35760222a6c",
+      "at": 1794170419.628,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8539cecc8705",
+      "at": 1794170419.631,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9adc7e11d90e",
+      "at": 1794170419.633,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f58815734169",
+      "at": 1794170419.636,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "dc73d7027f5a",
+      "at": 1794170419.64,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "87553520a863",
+      "at": 1794170419.643,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "faaac30e49ef",
+      "at": 1794170419.646,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e1f99d992aad",
+      "at": 1794170419.648,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4a9c2a4d6d03",
+      "at": 1794170419.651,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ed1986b7a559",
+      "at": 1794170419.654,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1717e66325ea",
+      "at": 1794170419.657,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "269aa1027fdd",
+      "at": 1794170419.66,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "390fd18d23a9",
+      "at": 1794170419.662,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9d92c3cc370f",
+      "at": 1794170419.665,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e76cf0bd0edc",
+      "at": 1794170419.668,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7820bbd352c2",
+      "at": 1794170419.672,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "cfc4788aa68f",
+      "at": 1794170419.675,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "54462faf7162",
+      "at": 1794170419.677,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7cce99b453d9",
+      "at": 1794170419.68,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7c290e78b584",
+      "at": 1794170419.683,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7c0603143430",
+      "at": 1794170419.686,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "21406169b9d9",
+      "at": 1794170419.689,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "95ad0959b066",
+      "at": 1794170419.692,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "307e9ab1be7d",
+      "at": 1794170419.695,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d69f7332170a",
+      "at": 1794170419.698,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "446d12f560f2",
+      "at": 1794170419.701,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f5b07d99ed71",
+      "at": 1794170419.703,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5819635905d1",
+      "at": 1794170419.706,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d922a9f1e141",
+      "at": 1794170419.709,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e15cffd7ef07",
+      "at": 1794170419.711,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "694f8a91a78e",
+      "at": 1794170419.714,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "073f0ce74270",
+      "at": 1794170419.718,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ee265cf1c29f",
+      "at": 1794170419.721,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1d192b98d25a",
+      "at": 1794170419.723,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ce80205bf275",
+      "at": 1794170419.727,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7592a7874b3f",
+      "at": 1794170419.729,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "a007764b8494",
+      "at": 1794170419.735,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9ed30415b006",
+      "at": 1794170419.738,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3afb3dcf1d7f",
+      "at": 1794170419.741,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "83fd108c4cec",
+      "at": 1794170419.744,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "666591fdc684",
+      "at": 1794170419.746,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8d50bcef6948",
+      "at": 1794170419.749,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "bdb110fa974f",
+      "at": 1794170419.752,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "47a7952000d6",
+      "at": 1794170419.754,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "df340281a477",
+      "at": 1794170419.757,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e61d377109e8",
+      "at": 1794170419.759,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "24d05494ddb8",
+      "at": 1794170419.762,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3ef58d7cafc5",
+      "at": 1794170419.765,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1753653fac86",
+      "at": 1794170419.768,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6f9ed6acbd74",
+      "at": 1794170419.77,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "cc6307d9110f",
+      "at": 1794170419.773,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "a586af2ff419",
+      "at": 1794170419.776,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "a94ebfe0331d",
+      "at": 1794170419.778,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3f20656d82d0",
+      "at": 1794170419.782,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f99d6e075a87",
+      "at": 1794170419.784,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "73e75fd42d64",
+      "at": 1794170419.787,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "154a8f936c7e",
+      "at": 1794170419.79,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5b07653d4a65",
+      "at": 1794170419.793,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5f789972472f",
+      "at": 1794170419.795,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7e401628add8",
+      "at": 1794170419.798,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3588a949a902",
+      "at": 1794170419.8,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d5b5438ecf1e",
+      "at": 1794170419.803,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "593ce6cc9a59",
+      "at": 1794170419.806,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "462610e4bc34",
+      "at": 1794170419.808,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ce7995e1b1f4",
+      "at": 1794170419.811,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "24f6a3e23151",
+      "at": 1794170419.813,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9a9e971b6ca8",
+      "at": 1794170419.816,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "456f9bb823bb",
+      "at": 1794170419.819,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "78f366c8fa12",
+      "at": 1794170419.821,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "521992f23196",
+      "at": 1794170419.824,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b731611ef78c",
+      "at": 1794170419.826,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b608cbee865e",
+      "at": 1794170419.831,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "645f5faca8b5",
+      "at": 1794170419.834,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "90f88a8fa6e4",
+      "at": 1794170419.836,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3e52a66ac8b8",
+      "at": 1794170419.839,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "25edfda01996",
+      "at": 1794170419.841,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4dbbd94c839b",
+      "at": 1794170419.847,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4a8571008bcd",
+      "at": 1794170419.849,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f2d6124f8191",
+      "at": 1794170419.852,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5483badac62a",
+      "at": 1794170419.855,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e246038510e0",
+      "at": 1794170419.857,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "073b8ae72bc8",
+      "at": 1794170419.86,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     }
+    ]
+   }
+  },
+  {
+   "service": "api-tasks-read",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+   },
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 29998,
+   "failed": 0,
+   "dropped_iterations": 3,
+   "p50_ms": 3.1814285,
+   "p95_ms": 4.509518949999997,
+   "p99_ms": 6.201552589999999,
+   "max_ms": 35.983589,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-tasks-submit",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 50,
+    "max_vus": 80
+   },
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 15000,
+   "failed": 0,
+   "dropped_iterations": 0,
+   "p50_ms": 3.592683,
+   "p95_ms": 5.078010549999997,
+   "p99_ms": 7.468846320000003,
+   "max_ms": 59.014687,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": [
+     {
+      "task": "afa66aeb80fd",
+      "at": 1794169828.556,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4033df4f4454",
+      "at": 1794169828.558,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7e469fa8e416",
+      "at": 1794169831.639,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f42dc810a3c2",
+      "at": 1794169831.648,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "114b26530adf",
+      "at": 1794169834.746,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2e49655a5a3f",
+      "at": 1794169837.851,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "33fb0b88950f",
+      "at": 1794169837.862,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8343ce4e7813",
+      "at": 1794169840.971,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "dec77407f333",
+      "at": 1794169844.084,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d1ea55e56363",
+      "at": 1794169844.087,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "aee4c9f73106",
+      "at": 1794169847.204,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "692b1d576bb6",
+      "at": 1794169850.328,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "27ca1facf3a8",
+      "at": 1794169850.331,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "05769aa19f7f",
+      "at": 1794169853.445,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e167ad65b2e0",
+      "at": 1794169853.448,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d2e5e2e9dbbc",
+      "at": 1794169856.565,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f0cc42568f88",
+      "at": 1794169859.684,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "108b26fe167e",
+      "at": 1794169859.687,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ce7b725aa514",
+      "at": 1794169862.785,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d44094025855",
+      "at": 1794169865.903,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1a5ef9cd3c1c",
+      "at": 1794169865.904,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "26cfda174ed9",
+      "at": 1794169869.043,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2c9496478e21",
+      "at": 1794169872.167,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d6f28cbcd24e",
+      "at": 1794169872.17,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "604428e3363a",
+      "at": 1794169875.312,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "733f1ba1b820",
+      "at": 1794169875.323,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4bb85329752d",
+      "at": 1794169878.443,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "539be789f886",
+      "at": 1794169881.569,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1a5f85060309",
+      "at": 1794169881.572,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7c2881ef8c59",
+      "at": 1794169884.714,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5ceda1fd547e",
+      "at": 1794169887.865,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8f2524f53b58",
+      "at": 1794169887.868,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b7bdce2049e8",
+      "at": 1794169891.023,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5e222c5b4e83",
+      "at": 1794169894.152,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "91c074870d68",
+      "at": 1794169894.164,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9de9686fdcff",
+      "at": 1794169897.29,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "289a4e6a0e55",
+      "at": 1794169897.302,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "38a5adf5adc9",
+      "at": 1794169900.415,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "c3cd406cabd0",
+      "at": 1794169903.532,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "62cbfa9af731",
+      "at": 1794169903.534,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d0bd4c825b43",
+      "at": 1794169906.685,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "207b413ca045",
+      "at": 1794169909.812,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7b2e4b535575",
+      "at": 1794169909.824,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "448f155788fc",
+      "at": 1794169912.963,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "bb00697af1bd",
+      "at": 1794169916.088,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "300b266832c6",
+      "at": 1794169916.091,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1a1136b6a46c",
+      "at": 1794169919.223,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "fe1d83d8ae4d",
+      "at": 1794169922.348,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "683d1a46afd2",
+      "at": 1794169922.355,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "55516542f72f",
+      "at": 1794169925.49,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "abfbc6d88aa7",
+      "at": 1794169925.492,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "96ddd25495bb",
+      "at": 1794169928.646,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b25244fdca7f",
+      "at": 1794169931.743,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2884eacfc5c2",
+      "at": 1794169931.745,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6a1c60ff8451",
+      "at": 1794169934.903,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "0a3df1717404",
+      "at": 1794169938.006,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "fc686c9579ce",
+      "at": 1794169938.009,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8b5b435e40a5",
+      "at": 1794169941.143,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f0c4820a9ff4",
+      "at": 1794169944.332,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b6580b18fbbb",
+      "at": 1794169944.352,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f8bf43e6db28",
+      "at": 1794169947.506,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9b18ae8fdb36",
+      "at": 1794169947.509,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3f2fecb1c821",
+      "at": 1794169950.632,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1bf978f09c18",
+      "at": 1794169953.735,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "fa33af7dc933",
+      "at": 1794169953.746,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4de134febee6",
+      "at": 1794169956.864,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "cd9c759c0c9a",
+      "at": 1794169959.951,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3deae9ee72d3",
+      "at": 1794169959.963,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "eb67a80543e1",
+      "at": 1794169963.085,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "430e59c0b767",
+      "at": 1794169966.204,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5d077ed130a3",
+      "at": 1794169966.207,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "328a06d9914c",
+      "at": 1794169969.306,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6c2ae65716f8",
+      "at": 1794169969.309,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ec9b67e5faa4",
+      "at": 1794169972.411,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "dbcf35d85792",
+      "at": 1794169975.546,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3ab53ca8e639",
+      "at": 1794169975.549,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "296d359c803c",
+      "at": 1794169978.65,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9ec95399704e",
+      "at": 1794169981.785,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5be0c873110c",
+      "at": 1794169981.788,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "c5c1c4a1a6e9",
+      "at": 1794169984.91,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "732633f8995a",
+      "at": 1794169988.03,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8917ec2a3388",
+      "at": 1794169988.033,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "0d3b6d83286b",
+      "at": 1794169991.125,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "81d3217b28d0",
+      "at": 1794169994.246,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7978af2adf4a",
+      "at": 1794169994.249,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2f3e97f6a173",
+      "at": 1794169997.385,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "caf84ce27c5a",
+      "at": 1794169997.388,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8ae7d328bda3",
+      "at": 1794170000.503,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8bc3ca8dac00",
+      "at": 1794170003.63,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "02f52a9a21d3",
+      "at": 1794170003.641,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "885a97e0a440",
+      "at": 1794170006.754,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "a1ee4460cca4",
+      "at": 1794170009.863,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b990abc29ac1",
+      "at": 1794170009.866,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9b2035fc7350",
+      "at": 1794170012.991,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e01e354aeac6",
+      "at": 1794170016.128,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "07db897e7162",
+      "at": 1794170016.132,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6cd31dbb40fe",
+      "at": 1794170019.288,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4b9b35bbc41c",
+      "at": 1794170019.291,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d95972c07f61",
+      "at": 1794170022.429,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b289c36cde98",
+      "at": 1794170025.553,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1465413ecaa7",
+      "at": 1794170025.555,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "89a10f5f291b",
+      "at": 1794170028.663,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "c3ef35f3f1f8",
+      "at": 1794170031.765,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "74f0e69a7ab8",
+      "at": 1794170031.768,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "499ae1e6a9d1",
+      "at": 1794170034.889,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f2348d5f914a",
+      "at": 1794170038.034,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "c8d823e3c0e2",
+      "at": 1794170038.036,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3263ef18033b",
+      "at": 1794170041.192,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "64d2cc1d6947",
+      "at": 1794170044.343,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "c5affcb00fe6",
+      "at": 1794170044.346,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6677c3311573",
+      "at": 1794170047.446,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "57f6fa4b29f4",
+      "at": 1794170047.449,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "441ae8c68731",
+      "at": 1794170050.565,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "da657d6576d6",
+      "at": 1794170053.704,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7a8c755e5c94",
+      "at": 1794170053.707,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "37464a7f6146",
+      "at": 1794170056.832,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5b6ac8eaebae",
+      "at": 1794170059.947,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4ac8099b8332",
+      "at": 1794170059.95,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "66543bac5669",
+      "at": 1794170063.087,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7ce77eda37bc",
+      "at": 1794170066.228,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f1abafb151b1",
+      "at": 1794170066.231,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "75dc100c9dce",
+      "at": 1794170069.383,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "02ce2e412841",
+      "at": 1794170069.388,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3d5bf2d82556",
+      "at": 1794170072.509,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "75a0bb3e664a",
+      "at": 1794170075.667,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "60432a1c16b6",
+      "at": 1794170075.67,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "fd4f09d3fb8c",
+      "at": 1794170078.832,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "771a5c9e3584",
+      "at": 1794170081.985,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "16b9bf947571",
+      "at": 1794170081.988,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b7071766c77e",
+      "at": 1794170085.129,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5713b81745ea",
+      "at": 1794170088.272,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "29175e953afb",
+      "at": 1794170088.287,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1a141189b5c1",
+      "at": 1794170091.452,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "bf76943f704b",
+      "at": 1794170091.464,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "a8263cd3c23a",
+      "at": 1794170094.588,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6e3ca48fc281",
+      "at": 1794170097.722,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5b2b6c39f2c9",
+      "at": 1794170097.724,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "680019a995c1",
+      "at": 1794170100.869,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d236af642d43",
+      "at": 1794170104.023,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "224e1e585d28",
+      "at": 1794170104.027,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "7c6a4a70ba80",
+      "at": 1794170107.225,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9cbcf3e568c2",
+      "at": 1794170110.373,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f0f5767bb17d",
+      "at": 1794170110.375,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4eafbb0dfc4b",
+      "at": 1794170113.528,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "fe3f227e2883",
+      "at": 1794170113.531,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1b171a76cb39",
+      "at": 1794170116.669,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b5df2a08871c",
+      "at": 1794170117.878,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     }
+    ]
+   }
+  },
+  {
+   "service": "frontend",
+   "profile": "stress",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+   },
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 30000,
+   "failed": 0,
+   "dropped_iterations": 1,
+   "p50_ms": 1.3510455000000001,
+   "p95_ms": 1.8148889499999998,
+   "p99_ms": 2.434391219999999,
+   "max_ms": 17.518967,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-admin-tools",
+   "profile": "spike",
+   "ok": false,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+   },
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+   },
+   "http_reqs": 16665,
+   "failed": 0,
+   "dropped_iterations": 304,
+   "p50_ms": 43.466917,
+   "p95_ms": 1172.3823381999998,
+   "p99_ms": 1467.9677560800055,
+   "max_ms": 3199.436928,
+   "stopped": true,
+   "stop_rule": "S3",
+   "stop_reason": "p95 > 2.0x SLO — censored windows [16]: < 50% of scheduled iterations completed (stalled/in-flight) (1000.0ms) for 2 consecutive windows (S3)",
+   "stop_at_s": 85.0,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 105,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-agents",
+   "profile": "spike",
+   "ok": false,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+   },
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+   },
+   "http_reqs": 837,
+   "failed": 0,
+   "dropped_iterations": 1312,
+   "p50_ms": 2522.123926,
+   "p95_ms": 3671.5544791999996,
+   "p99_ms": 4154.193643799998,
+   "max_ms": 5174.47163,
+   "stopped": true,
+   "stop_rule": "S3",
+   "stop_reason": "p95 > 2.0x SLO — censored windows [1]: < 50% of scheduled iterations completed (stalled/in-flight) (600.0ms) for 2 consecutive windows (S3)",
+   "stop_at_s": 10.0,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 105,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-auth",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+   },
+   "slo_p95_ms": 200,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 23989,
+   "failed": 0,
+   "dropped_iterations": 12,
+   "p50_ms": 3.277494,
+   "p95_ms": 4.708453799999999,
+   "p99_ms": 6.514962999999998,
+   "max_ms": 106.865482,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-chat",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 100,
+    "max_vus": 160
+   },
+   "slo_p95_ms": 2000,
+   "slo_p99_ms": 1000,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 11995,
+   "failed": 0,
+   "dropped_iterations": 5,
+   "p50_ms": 7.522525,
+   "p95_ms": 11.298384699999998,
+   "p99_ms": 17.870865119999994,
+   "max_ms": 144.755314,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": [
+     {
+      "task": "97baf45b71f9",
+      "at": 1794172916.232,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     }
+    ]
+   }
+  },
+  {
+   "service": "api-health",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 400,
+    "max_vus": 480
+   },
+   "slo_p95_ms": 200,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 47968,
+   "failed": 0,
+   "dropped_iterations": 32,
+   "p50_ms": 1.2754604999999999,
+   "p95_ms": 7.82999295,
+   "p99_ms": 30.49236081000003,
+   "max_ms": 335.919249,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-memory",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+   },
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 23992,
+   "failed": 0,
+   "dropped_iterations": 9,
+   "p50_ms": 3.336888,
+   "p95_ms": 4.8959357500000005,
+   "p99_ms": 6.66688083,
+   "max_ms": 57.052128,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-sse",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 2.0,
+    "max_vus": 20
+   },
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 241,
+   "failed": 0,
+   "dropped_iterations": 0,
+   "p50_ms": 3.41831,
+   "p95_ms": 4.978376,
+   "p99_ms": 6.168956599999997,
+   "max_ms": 12.27415,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-task-lifecycle",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 40,
+    "max_vus": 80
+   },
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 9600,
+   "failed": 0,
+   "dropped_iterations": 0,
+   "p50_ms": 5.308959,
+   "p95_ms": 13.071129699999995,
+   "p99_ms": 15.824855460000002,
+   "max_ms": 89.9753,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": [
+     {
+      "task": "f00f880051de",
+      "at": 1794172682.986,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f931de58fdfe",
+      "at": 1794172682.989,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8bc1daa6eb2d",
+      "at": 1794172682.992,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b1583856b20c",
+      "at": 1794172686.083,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e9ce99b772c8",
+      "at": 1794172689.189,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b2ad9e23238a",
+      "at": 1794172689.193,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "85bc7a17e29e",
+      "at": 1794172692.292,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1b4095953e0e",
+      "at": 1794172695.419,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8aaa4d8c3dc6",
+      "at": 1794172695.43,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6e169bc02c1a",
+      "at": 1794172698.54,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "46d60d016289",
+      "at": 1794172701.663,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4057ed9f4faf",
+      "at": 1794172701.666,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "deef50413968",
+      "at": 1794172704.791,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f23118b7fe55",
+      "at": 1794172707.921,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8fdc58ed8af5",
+      "at": 1794172707.923,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5b5b78d8fa93",
+      "at": 1794172711.069,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1807f75a0126",
+      "at": 1794172711.071,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "885e09e99de8",
+      "at": 1794172714.181,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1001d6896437",
+      "at": 1794172717.32,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "a91449e734c0",
+      "at": 1794172717.33,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6c6011e12fb6",
+      "at": 1794172720.459,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2b5461f0bf97",
+      "at": 1794172723.57,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "98eac25c2e44",
+      "at": 1794172723.573,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "54e629877800",
+      "at": 1794172726.687,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b2e3b96f41a7",
+      "at": 1794172729.812,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "db15fd6bc817",
+      "at": 1794172729.815,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ad644b74c999",
+      "at": 1794172732.958,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f097cc662a79",
+      "at": 1794172732.962,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "16d8ceb45766",
+      "at": 1794172736.104,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4e7e51256c78",
+      "at": 1794172739.24,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "64d917e4dab5",
+      "at": 1794172739.244,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "83a83be98029",
+      "at": 1794172742.348,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "51a3dc66c368",
+      "at": 1794172745.509,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8b25ad6742b4",
+      "at": 1794172745.512,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "71ee038674d7",
+      "at": 1794172748.681,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "99e871ecef2d",
+      "at": 1794172751.814,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "53539cf94ac9",
+      "at": 1794172751.816,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e05d43a41fb8",
+      "at": 1794172754.981,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "cab6df779c15",
+      "at": 1794172754.985,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "75d54ffc784e",
+      "at": 1794172758.105,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6effe5ddeb76",
+      "at": 1794172761.267,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "920d2bc2cef6",
+      "at": 1794172761.281,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "da6fa45d9086",
+      "at": 1794172764.418,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5f1bcf188992",
+      "at": 1794172767.584,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2fc02e44ab35",
+      "at": 1794172767.587,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "de1217078825",
+      "at": 1794172770.717,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "93f37ed1776d",
+      "at": 1794172773.881,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "56e225c4030c",
+      "at": 1794172773.885,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "07e38095a8d3",
+      "at": 1794172777.01,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "491eb589e531",
+      "at": 1794172777.011,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "1e7d0cd7475c",
+      "at": 1794172780.144,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d595804b631a",
+      "at": 1794172783.263,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "28d9c64a4b11",
+      "at": 1794172783.267,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e1c65d6665fd",
+      "at": 1794172786.412,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "501536ebe428",
+      "at": 1794172788.98,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     }
+    ]
+   }
+  },
+  {
+   "service": "api-tasks-read",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+   },
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 23988,
+   "failed": 0,
+   "dropped_iterations": 13,
+   "p50_ms": 3.3431335,
+   "p95_ms": 5.022866799999998,
+   "p99_ms": 6.778839590000002,
+   "max_ms": 106.408089,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-tasks-submit",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 100,
+    "max_vus": 160
+   },
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 11986,
+   "failed": 0,
+   "dropped_iterations": 15,
+   "p50_ms": 10.5335655,
+   "p95_ms": 21.53520825,
+   "p99_ms": 122.18432894999827,
+   "max_ms": 1669.139653,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": [
+     {
+      "task": "da1477af1da9",
+      "at": 1794172552.376,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ce2cb6140b43",
+      "at": 1794172552.379,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5a8e301ddd6f",
+      "at": 1794172555.47,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "92eb432e95de",
+      "at": 1794172558.63,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6b023f1848b7",
+      "at": 1794172558.64,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "119dbb22ca32",
+      "at": 1794172561.817,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "a4c1fedd6924",
+      "at": 1794172565.031,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "59b3af1939d7",
+      "at": 1794172565.042,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b42270147c15",
+      "at": 1794172568.899,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "71322b607603",
+      "at": 1794172568.911,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8eed3993242e",
+      "at": 1794172572.089,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d7664dd61641",
+      "at": 1794172575.694,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "790e0547a2ce",
+      "at": 1794172575.697,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4d96c1b91c51",
+      "at": 1794172579.019,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3bb3aa3f5f18",
+      "at": 1794172579.03,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3608d0978df3",
+      "at": 1794172582.53,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "bdbceb082f69",
+      "at": 1794172582.542,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "857fb0c6c1df",
+      "at": 1794172585.736,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "2e8bba43ccb0",
+      "at": 1794172589.061,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "23896ca02428",
+      "at": 1794172589.124,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9466094d237b",
+      "at": 1794172592.291,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "16fb088733ae",
+      "at": 1794172592.477,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5cca1a1e68fa",
+      "at": 1794172595.848,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "54de6a346875",
+      "at": 1794172599.163,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "0060641fa6a2",
+      "at": 1794172599.165,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "202112aadb38",
+      "at": 1794172602.663,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "20b04ea3bcd6",
+      "at": 1794172602.675,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "9a4c26ad191d",
+      "at": 1794172605.892,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d5e51e7402a6",
+      "at": 1794172609.112,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3f42b9d069f1",
+      "at": 1794172609.114,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f2809f7bdefe",
+      "at": 1794172612.356,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "ebd2713495b6",
+      "at": 1794172612.367,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "b52202e37f1c",
+      "at": 1794172615.542,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d15db8962416",
+      "at": 1794172619.052,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "4b51822f4095",
+      "at": 1794172619.054,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "8a011fd237f6",
+      "at": 1794172622.247,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "69073e3adfea",
+      "at": 1794172622.25,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "cf277b62f7a7",
+      "at": 1794172625.463,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e7f50d19cf6d",
+      "at": 1794172628.632,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "eb01e4a9efce",
+      "at": 1794172628.643,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "60333d5902e1",
+      "at": 1794172631.928,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "294b9cbd138c",
+      "at": 1794172635.622,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5884b19b7574",
+      "at": 1794172635.635,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "29c85e2c572d",
+      "at": 1794172638.923,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5d744f91d276",
+      "at": 1794172639.036,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "32260d2bb998",
+      "at": 1794172642.286,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "bf3c18b1d427",
+      "at": 1794172645.732,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3984c0ff7a5f",
+      "at": 1794172645.742,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "3de1455751f3",
+      "at": 1794172649.142,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "41b3ac0572ab",
+      "at": 1794172649.233,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "f87b95112625",
+      "at": 1794172652.497,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "6de73ff7fe03",
+      "at": 1794172652.507,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "e78d4ad8c5af",
+      "at": 1794172656.398,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "d1011839c2b8",
+      "at": 1794172656.436,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "58397aa45a49",
+      "at": 1794172659.848,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "00b5a1bb8d8f",
+      "at": 1794172663.108,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "5adfc04013fd",
+      "at": 1794172663.136,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "58298e9f6af9",
+      "at": 1794172666.705,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     },
+     {
+      "task": "eb500d04c3c0",
+      "at": 1794172666.715,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+     }
+    ]
+   }
+  },
+  {
+   "service": "frontend",
+   "profile": "spike",
+   "ok": true,
+   "classification": "measured",
+   "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+   },
+   "slo_p95_ms": 300,
+   "slo_p99_ms": null,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "http_reqs": 23993,
+   "failed": 0,
+   "dropped_iterations": 8,
+   "p50_ms": 1.306214,
+   "p95_ms": 1.7561723999999999,
+   "p99_ms": 2.4984900399999903,
+   "max_ms": 21.97777,
+   "stopped": false,
+   "stop_rule": null,
+   "stop_reason": null,
+   "stop_at_s": null,
+   "probe_failures": [],
+   "generator_sut_separated": true,
+   "k6_exit_code": 0,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "extra": {
+    "retention_evictions": []
+   }
+  },
+  {
+   "service": "api-task-lifecycle",
+   "profile": "soak",
+   "ok": false,
+   "classification": "no_report",
+   "note": ""
+  }
+ ],
+ "points_sha256": {
+  "baseline/k6_points_api-admin-tools_baseline.jsonl": {
+   "sha256": "e70510efa6cdc50d16a9103aa31aa9c39cb16aceb1eeb18658a1d0564edbac35",
+   "bytes": 805658
+  },
+  "baseline/k6_points_api-agents_baseline.jsonl": {
+   "sha256": "4d40f619fd2dfac80dcaed45d85c2f6e1cfc9d045cac08e3dceb92307f437873",
+   "bytes": 803589
+  },
+  "baseline/k6_points_api-auth_baseline.jsonl": {
+   "sha256": "26171ccbc3afa36d367bb97420bf197d0857c989dd8c8e9a8c5be481e919be7d",
+   "bytes": 826936
+  },
+  "baseline/k6_points_api-chat_baseline.jsonl": {
+   "sha256": "68b64531b8fef3d0bf8683b84eeb3cd9cd56c3d80a2220dcba957a36deabcd3d",
+   "bytes": 1209635
+  },
+  "baseline/k6_points_api-health_baseline.jsonl": {
+   "sha256": "f4aa1694c09f979968cc9669c886d33c78dadce8255da7bcec5413a1f0e57371",
+   "bytes": 1547420
+  },
+  "baseline/k6_points_api-memory_baseline.jsonl": {
+   "sha256": "c7140fa7554d7f9481421380d9e9d5db9d0bba17461024cb1981f6636b9edefc",
+   "bytes": 804457
+  },
+  "baseline/k6_points_api-sse_baseline.jsonl": {
+   "sha256": "86d7dd6aea3186bc4a5b556bec43921989eeb986d69d594f108d87b28c7d3f0d",
+   "bytes": 26341
+  },
+  "baseline/k6_points_api-task-lifecycle_baseline.jsonl": {
+   "sha256": "f7f4670314759a1dd8350e1b6a859d00e1ad234756bbad9fcf6d247e838c3d20",
+   "bytes": 328676
+  },
+  "baseline/k6_points_api-tasks-read_baseline.jsonl": {
+   "sha256": "33d0970cc2ae03b28a872140d1f78be840e2eaa770e0318bcd48a9ef5a561253",
+   "bytes": 818181
+  },
+  "baseline/k6_points_api-tasks-submit_baseline.jsonl": {
+   "sha256": "385637fe30f5fe1b4df5a3ccf0bc81ab7bfebbc979b8407ecb590c7524bb08f2",
+   "bytes": 401038
+  },
+  "baseline/k6_points_frontend_baseline.jsonl": {
+   "sha256": "89670ef79601baa07864af367ba0befea86281f3cf6cf77e30ff58bbacefb9a3",
+   "bytes": 837617
+  },
+  "normal/k6_points_api-admin-tools_normal.jsonl": {
+   "sha256": "414a3adfa68210872373a939f7540d3d686d11222cf09656b9646f473156cbb6",
+   "bytes": 4787874
+  },
+  "normal/k6_points_api-agents_normal.jsonl": {
+   "sha256": "3db7f8ef75da214eb7aaec66efcd916a618111b605a190a3cc3b3ed7d1f81a31",
+   "bytes": 4774827
+  },
+  "normal/k6_points_api-auth_normal.jsonl": {
+   "sha256": "3b15488e82675f3acbcced99534bbfd18ed8d83a72bdef809082f42127514c12",
+   "bytes": 4893980
+  },
+  "normal/k6_points_api-chat_normal.jsonl": {
+   "sha256": "9c28c95c68d80697d43c99a3238a8e1a92845ff080b214afdf14a1ad079e6f34",
+   "bytes": 2389649
+  },
+  "normal/k6_points_api-health_normal.jsonl": {
+   "sha256": "433e415a0168b3fc620108199d4620df524de8656ddca43dd3764f76fa1fe01e",
+   "bytes": 9194091
+  },
+  "normal/k6_points_api-memory_normal.jsonl": {
+   "sha256": "df8d269decb5ed324970bdaabf4e82df39cda5ec6d9e7b375ddcf493893806ec",
+   "bytes": 4760280
+  },
+  "normal/k6_points_api-sse_normal.jsonl": {
+   "sha256": "fcc887ea63d894b658b7aba52fe03803c940f9daa5cfd86626521fd67f51e267",
+   "bytes": 61546
+  },
+  "normal/k6_points_api-task-lifecycle_normal.jsonl": {
+   "sha256": "d95fd371bf95e3fa5f35989c0edf159bbe124aea8b0f50c5224cd9a99316600f",
+   "bytes": 1899211
+  },
+  "normal/k6_points_api-tasks-read_normal.jsonl": {
+   "sha256": "b6a1fde84d727253d791aff25fc0b1eb110b7468fb83638a9df707abd6499b8a",
+   "bytes": 4842281
+  },
+  "normal/k6_points_api-tasks-submit_normal.jsonl": {
+   "sha256": "ceb5139f83f20c65d62175774c65d816e85cbb0781ad230620055fcc290cd4ab",
+   "bytes": 2351172
+  },
+  "normal/k6_points_frontend_normal.jsonl": {
+   "sha256": "db86ab1f9374d9a98f274238c8e91b6fcbb3412d9fcdea974aa9e35afcf2ca42",
+   "bytes": 4983768
+  },
+  "soak/k6_points_api-task-lifecycle_soak.jsonl": {
+   "sha256": "fe7a8071535d6104baa321fe6130674dc71d58378c9472743889a498e9c2b246",
+   "bytes": 1107123
+  },
+  "spike/k6_points_api-admin-tools_spike.jsonl": {
+   "sha256": "a5dc2917a906dfcd92b037c1f4b397e59bb8ce0a31ad42045a7936d5d0b2ae9a",
+   "bytes": 66331123
+  },
+  "spike/k6_points_api-agents_spike.jsonl": {
+   "sha256": "52d5f1f66cde2c3a1f8d23667665b1f8b973b2849cb83065f771cc7a84ba7716",
+   "bytes": 3547051
+  },
+  "spike/k6_points_api-auth_spike.jsonl": {
+   "sha256": "cc7a2f7bbe936d90744d734f06fd11b1ede1c30995b3d0e3227cb912c1cef02e",
+   "bytes": 97276110
+  },
+  "spike/k6_points_api-chat_spike.jsonl": {
+   "sha256": "f74473e30e4d62303a8fceca1d71e74fde7e4f87e4ede4e9e0b543fd1f0db75f",
+   "bytes": 47323096
+  },
+  "spike/k6_points_api-health_spike.jsonl": {
+   "sha256": "cd80bf0fa3bea035f08238050176765c3b5867138cdc96100cc1ee248bb26edb",
+   "bytes": 183067716
+  },
+  "spike/k6_points_api-memory_spike.jsonl": {
+   "sha256": "ec74327f8d93f0d682adc3e2122b83027678afd13ed07fbb805b8cc2c005685e",
+   "bytes": 94603123
+  },
+  "spike/k6_points_api-sse_spike.jsonl": {
+   "sha256": "0712d82ac8dfc1787f78809f97f8a769144414e5ea3c5162017e3a12d65614f0",
+   "bytes": 961419
+  },
+  "spike/k6_points_api-task-lifecycle_spike.jsonl": {
+   "sha256": "b6fbe267ab9d8e01bc5d52fa63db51fbbdcbed9b6802b4f42404e3086a674bf6",
+   "bytes": 37477378
+  },
+  "spike/k6_points_api-tasks-read_spike.jsonl": {
+   "sha256": "ee3f69780317276d835313d54cd1afc7f44a81110a63fe9b7fc2cf5d792fad12",
+   "bytes": 96243800
+  },
+  "spike/k6_points_api-tasks-submit_spike.jsonl": {
+   "sha256": "4e686e91c7ab87e1e2b1f49e523b06b5e65773bd668911eff6aa5666e56b09e6",
+   "bytes": 46535536
+  },
+  "spike/k6_points_frontend_spike.jsonl": {
+   "sha256": "80c8a1ab3ebdc6314a19b7a5e75057e053c4ac2a9231fb3b9c02ce4ba0e5b785",
+   "bytes": 99088668
+  },
+  "stress/k6_points_api-admin-tools_stress.jsonl": {
+   "sha256": "4f8a55a8b7d10ad48a8f7bf1c48818231543890b31b407e5eb83f2a9a8d00ec3",
+   "bytes": 119386647
+  },
+  "stress/k6_points_api-agents_stress.jsonl": {
+   "sha256": "b739f7b08f7aa10fcda88d9242f88f8bb82bab60743bde645c6024fd4a99a7c6",
+   "bytes": 4893839
+  },
+  "stress/k6_points_api-auth_stress.jsonl": {
+   "sha256": "638be4c97bc904b4a203ab37637ddd78d936470a08dd4af836b63f5abb077ff2",
+   "bytes": 121923036
+  },
+  "stress/k6_points_api-chat_stress.jsonl": {
+   "sha256": "418280f5a1b5ac16f7c531b0a565a872bb9f45cae5f738a9ceac709da3b7701e",
+   "bytes": 59338782
+  },
+  "stress/k6_points_api-health_stress.jsonl": {
+   "sha256": "5e58d1caa2f65e29a3e0c68006a1fbe95ebdd1bf9795ed58bc20b31a366b983f",
+   "bytes": 229500006
+  },
+  "stress/k6_points_api-memory_stress.jsonl": {
+   "sha256": "e80e5e5b6354b755321d4140473843a86c21224f6d5ab2e2367328f914da9e31",
+   "bytes": 118580644
+  },
+  "stress/k6_points_api-sse_stress.jsonl": {
+   "sha256": "f55dc05fd313e8987ca8ee694b8a8433fcdaffda3eb8a547479fe8951d3b3304",
+   "bytes": 1233911
+  },
+  "stress/k6_points_api-task-lifecycle_stress.jsonl": {
+   "sha256": "7eea9377a712d839e150a7abc85ec338995695dd34484a633f3e70a20c351b8d",
+   "bytes": 46986199
+  },
+  "stress/k6_points_api-tasks-read_stress.jsonl": {
+   "sha256": "f3b0e7bb082f09e2e1b11105f0eefa12ca99758985476c09c5c252805830755f",
+   "bytes": 120650822
+  },
+  "stress/k6_points_api-tasks-submit_stress.jsonl": {
+   "sha256": "6c033d9ef975d2bc0018d7e211c0255ddd7b7cd4136c81a18d9d691995865993",
+   "bytes": 58380238
+  },
+  "stress/k6_points_frontend_stress.jsonl": {
+   "sha256": "9256cb71182012fe9ae7a7f0f3fdd70c55cb006390011dcb1fd2d5200972771a",
+   "bytes": 124196942
+  }
+ },
+ "sha": "1ce3ffcfc96d55fce65667aa19b0f8d3f11ae152"
+}

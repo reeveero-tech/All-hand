@@ -1,0 +1,102 @@
+{
+  "service": "api-agents",
+  "classification": "measured",
+  "ok": false,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 105,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<300"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 300,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 837,
+    "requests_failed": 0,
+    "duration_avg_ms": 2380.4311833189954,
+    "duration_med_ms": 2522.123926,
+    "duration_p90_ms": 3510.4592714,
+    "duration_p95_ms": 3671.5544791999996,
+    "duration_p99_ms": 4154.193643799998,
+    "duration_max_ms": 5174.47163,
+    "dropped_iterations": 1312
+  },
+  "raw_quantiles": {
+    "n": 837,
+    "p50_ms": 2522.124,
+    "p95_ms": 3676.843,
+    "p99_ms": 4190.342,
+    "max_ms": 5174.472,
+    "p95_ms_k6_method": 3671.5541999999996
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "stopped": true,
+  "probe_failures": [],
+  "sentinel_id": "b3af79134d53",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 5,
+    "ready": 5,
+    "isolation": 1,
+    "integrity": 1
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/spike/k6_summary_api-agents_spike.json",
+  "stdout_log_path": "/tmp/r177cs/spike/k6_stdout_api-agents_spike.log",
+  "stop_decision": {
+    "stopped": true,
+    "rule": "p95_window",
+    "rule_id": "S3",
+    "reason": "p95 > 2.0x SLO — censored windows [1]: < 50% of scheduled iterations completed (stalled/in-flight) (600.0ms) for 2 consecutive windows (S3)",
+    "at_s": 10.0,
+    "measurements": {
+      "windows": [
+        {
+          "window": 0,
+          "value_ms": 992.4858,
+          "samples": 115
+        },
+        {
+          "window": 1,
+          "value_ms": null,
+          "samples": 420,
+          "censored": true,
+          "iters": 420,
+          "expected_iters": 1000.0,
+          "dropped": 580,
+          "observed_p95_ms_of_completed": 3752.675662
+        }
+      ],
+      "limit_ms": 600.0,
+      "consecutive_required": 2,
+      "window_s": 5.0
+    }
+  }
+}

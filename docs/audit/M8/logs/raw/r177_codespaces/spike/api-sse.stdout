@@ -1,0 +1,97 @@
+{
+  "service": "api-sse",
+  "classification": "measured",
+  "ok": true,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 241,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.645299834024897,
+    "duration_med_ms": 3.41831,
+    "duration_p90_ms": 4.495668,
+    "duration_p95_ms": 4.978376,
+    "duration_p99_ms": 6.168956599999997,
+    "duration_max_ms": 12.27415,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 241,
+    "p50_ms": 3.418,
+    "p95_ms": 4.978,
+    "p99_ms": 6.397,
+    "max_ms": 12.274,
+    "p95_ms_k6_method": 4.978
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 2.0,
+    "max_vus": 20
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 2.0,
+    "max_vus": 20
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "7c478a647088",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 120,
+    "ready": 120,
+    "isolation": 41,
+    "integrity": 41
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/spike/k6_summary_api-sse_spike.json",
+  "stdout_log_path": "/tmp/r177cs/spike/k6_stdout_api-sse_spike.log",
+  "sse_stream_ttfb": {
+    "samples_ms": [
+      19.523,
+      6.172,
+      5.528,
+      5.35
+    ],
+    "statuses": [
+      200,
+      200,
+      200,
+      200
+    ],
+    "p95_ms": 19.523,
+    "note": "connect-to-headers only; few samples by design (SSE admission limits)"
+  },
+  "stop_decision": {
+    "stopped": false,
+    "rule": null,
+    "rule_id": null,
+    "reason": null,
+    "at_s": null,
+    "measurements": {}
+  }
+}

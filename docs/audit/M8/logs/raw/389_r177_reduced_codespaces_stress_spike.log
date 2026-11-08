@@ -1,0 +1,48 @@
+# 389 — R-177 stress + spike, REDUCED environment (Q-023 option (a), owner approval 2026-11-08) — D-141
+# environment: ONE GitHub Codespace standardLinux32gb (repo reeveero-tech/All-hand, created 2026-11-08T20:00:09Z, idle-timeout 240m, retention 1h)
+#   lscpu: AMD EPYC 7763, 1 socket x 2 cores x 2 threads = 4 vCPU (SMT); RAM 15.62 GiB; x86_64; kernel 6.8.0-1064-azure
+#   probe pre : effective_cores=2.14/4 cpu_cv=0.0175 steal=0.0 verdict=reduced_R177_only
+#   probe post: effective_cores=1.82/4 cpu_cv=0.0852 steal=0.0 verdict=reduced_R177_only
+# code: main 1ce3ffcfc96d55fce65667aa19b0f8d3f11ae152 (merge of PR #337); Python 3.11 (conda-forge) + pip --require-hashes requirements.lock/requirements-dev.lock (3.14 rejected by hash check — NOT bypassed); k6 v0.57.0 sha256-verified; web/ built with npm ci && npm run build
+# SUT: one uvicorn worker (same as render.yaml/Dockerfile), storage=volatile; k6 = separate PROCESS on the SAME VM (generator_sut_separated=True means process separation only — NOT machine separation)
+# profiles unchanged from benchmarks/r177/services.json: stress = 5x normal for 300 s, spike = 10x normal for 120 s; owner SLOs + stop limits S1-S5 unchanged (OWNER_FLOOR in code)
+# override used: --allow-dedicated-env + AGOS_ALLOW_BIG_LOAD=1 per service via --service (the --all path dropped the override: bug fixed in this batch, logs 387/388)
+# cost accounting: November Codespaces usage before this run = 0 (billing usage API); all historical line items netAmount 0.0
+
+profile service             ok    rate/s dur_s  reqs   failed dropped p50_ms  p95_ms  p99_ms  max_ms  slo_p95 stop
+stress  api-admin-tools     True     100   300  29997      0       4     6.1     8.7    11.7   143.7     500 -
+stress  api-agents          False    100   300   1219      0     164   788.1  1358.4  2237.4  3249.4     300 S3@10.0s
+stress  api-auth            True     100   300  29994      0       6     3.4     4.7     6.6   131.9     200 -
+stress  api-chat            True      50   300  14999      0       2     8.1    10.7    12.7   138.8    2000 -
+stress  api-health          True     200   300  59987      0      14     1.0     4.8     8.8   260.9     200 -
+stress  api-memory          True     100   300  29998      0       3     3.3     4.3     6.0    27.0     300 -
+stress  api-sse             True     1.0   300    301      0       0     3.2     4.2     5.5    10.2     500 -
+stress  api-task-lifecycle  True      20   300  12000      0       0     5.2    12.1    14.6    62.8     500 -
+stress  api-tasks-read      True     100   300  29998      0       3     3.2     4.5     6.2    36.0     300 -
+stress  api-tasks-submit    True      50   300  15000      0       0     3.6     5.1     7.5    59.0     500 -
+stress  frontend            True     100   300  30000      0       1     1.4     1.8     2.4    17.5     300 -
+spike   api-admin-tools     False    200   120  16665      0     304    43.5  1172.4  1468.0  3199.4     500 S3@85.0s
+spike   api-agents          False    200   120    837      0    1312  2522.1  3671.6  4154.2  5174.5     300 S3@10.0s
+spike   api-auth            True     200   120  23989      0      12     3.3     4.7     6.5   106.9     200 -
+spike   api-chat            True     100   120  11995      0       5     7.5    11.3    17.9   144.8    2000 -
+spike   api-health          True     400   120  47968      0      32     1.3     7.8    30.5   335.9     200 -
+spike   api-memory          True     200   120  23992      0       9     3.3     4.9     6.7    57.1     300 -
+spike   api-sse             True     2.0   120    241      0       0     3.4     5.0     6.2    12.3     500 -
+spike   api-task-lifecycle  True      40   120   9600      0       0     5.3    13.1    15.8    90.0     500 -
+spike   api-tasks-read      True     200   120  23988      0      13     3.3     5.0     6.8   106.4     300 -
+spike   api-tasks-submit    True     100   120  11986      0      15    10.5    21.5   122.2  1669.1     500 -
+spike   frontend            True     200   120  23993      0       8     1.3     1.8     2.5    22.0     300 -
+
+stress: 10/11 ok; spike: 9/11 ok; HTTP request failures across all 22 runs: 0; probe failures (health/readiness/tenant/integrity, S5): 0
+
+findings (honest):
+F1 api-agents (GET /api/agents + /api/specializations): S3 stop at 10 s in stress (100/s) and spike (200/s). Root cause measured locally: /api/agents returns ALL 1000 agents (148,015 bytes) unpaginated, ~16 ms CPU per call (in-process median 16.3 ms, p90 21.3 ms) on the single event loop => ~60 calls/s ceiling for that route; stress sends ~50/s of it plus the other route. A capacity defect, not a crash: 0 failed requests. Fix options (pagination / snapshot cache / ETag) change the API contract => NOT changed in this batch.
+F2 api-admin-tools (GET /api/admin/tools): stress 100/s flat (median ~6 ms for 300 s); spike 200/s => median per 10 s window 9.8, 9.6, 10.8, 11.1, 54.7, 250.4, 619.4, 983.9, 1173.9 ms: linear queue growth = offered load above the single worker's service rate (~5 ms CPU x 200/s ~ 1 core). S3 stopped at 85 s. Saturation, not a leak (stress was flat).
+F3 api-tasks-submit spike: passed, but p99 122 ms and max 1669 ms vs p95 21.5 ms — tail sensitivity under 100/s submissions; within SLO.
+F4 cross-cutting: production runs ONE uvicorn worker (render.yaml startCommand, Dockerfile CMD) and the state (TASKS, AGENT_REGISTRY, rate-limit, DAG runs) is in-process. CPU-bound routes therefore cap at ~1 core regardless of machine size: the Q-023 spec of a 16-vCPU SUT would NOT raise these ceilings without a multi-worker/shared-state design (RISK-036, Q-026).
+
+what this does NOT prove:
+- no capacity number: SUT, generator and storage share 2 physical cores (SMT); latencies include generator contention.
+- volatile storage only (live-local storage stress/spike not run here).
+- soak: separate log 390 (running at the time of this log).
+- criteria in benchmarks/p6/acceptance_criteria.json stay 'proposed'; R-177 not done.

@@ -1,0 +1,1 @@
+service entry requires the DEDICATED isolated environment (Q-023 — owner decision). Refusing to run on the documented/CI environment. Override (owner only): --allow-dedicated-env AND AGOS_ALLOW_BIG_LOAD=1.

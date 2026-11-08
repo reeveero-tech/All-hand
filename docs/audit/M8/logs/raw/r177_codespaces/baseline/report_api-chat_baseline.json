@@ -1,0 +1,346 @@
+{
+  "service": "api-chat",
+  "classification": "measured",
+  "ok": true,
+  "profile": "baseline",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<2000",
+      "p(99)<1000"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 2000,
+  "slo_p99_ms": 1000,
+  "metrics": {
+    "http_reqs": 301,
+    "requests_failed": 0,
+    "duration_avg_ms": 5.857342594684388,
+    "duration_med_ms": 5.68723,
+    "duration_p90_ms": 6.296943,
+    "duration_p95_ms": 6.709484,
+    "duration_p99_ms": 9.037794,
+    "duration_max_ms": 13.851927,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 301,
+    "p50_ms": 5.687,
+    "p95_ms": 6.709,
+    "p99_ms": 9.038,
+    "max_ms": 13.852,
+    "p95_ms_k6_method": 6.709
+  },
+  "params": {
+    "duration_s": 60,
+    "arrival_rate": 5,
+    "max_vus": 8
+  },
+  "baseline_params": {
+    "duration_s": 60,
+    "arrival_rate": 5,
+    "max_vus": 8
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 2000.0,
+      "p95_stop_ms": 4000.0,
+      "p99_slo_ms": 1000.0,
+      "p99_stop_ms": 2000.0,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 5.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": false,
+      "rule": null,
+      "rule_id": null,
+      "reason": null,
+      "at_s": null,
+      "measurements": {}
+    },
+    "breaches": [],
+    "totals": {
+      "requests": 301,
+      "failed": 0,
+      "checks": 602,
+      "checks_passed": 602
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 9.037794,
+        "p99_ms": 13.851927,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 1,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 6.723462,
+        "p99_ms": 8.479407,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 2,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 6.356986,
+        "p99_ms": 10.832178,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 5.972377,
+        "p99_ms": 6.001703,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 6.019145,
+        "p99_ms": 6.117769,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 5,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 6.692011,
+        "p99_ms": 8.96433,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 6,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 6.51065,
+        "p99_ms": 6.535071,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 7,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 6.124369,
+        "p99_ms": 6.47269,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 8,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 6.205863,
+        "p99_ms": 6.606391,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 9,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 8.201995,
+        "p99_ms": 8.543578,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 10,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 7.310415,
+        "p99_ms": 11.380629,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 11,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 6.650659,
+        "p99_ms": 7.85805,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 12,
+        "samples": 1,
+        "sufficient": false,
+        "p95_ms": 6.181607,
+        "p99_ms": 6.181607,
+        "reqs": 1,
+        "failed": 0,
+        "checks": 2,
+        "checks_ok": 2,
+        "iters": 1,
+        "dropped": 0
+      }
+    ]
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "920f8ae91a02",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/baseline/k6_summary_api-chat_baseline.json",
+  "stdout_log_path": "/tmp/r177cs/baseline/k6_stdout_api-chat_baseline.log",
+  "p99_assessment": {
+    "quantile": 0.99,
+    "threshold_ms": 1000.0,
+    "n": 301,
+    "n_min_required": 299,
+    "confidence": 0.95,
+    "point_ms": 9.038,
+    "upper_bound_ms": 13.852,
+    "sufficient": true,
+    "verdict": "pass",
+    "passed": true,
+    "rule": "pass ⇔ n >= n_min AND point < threshold AND distribution-free 95% upper bound < threshold"
+  },
+  "tail_review": {
+    "n": 301,
+    "max_ms": 13.852,
+    "med_ms": 5.687,
+    "max_over_med": 2.44,
+    "over_threshold": 0,
+    "over_half_threshold": 0,
+    "top": [
+      {
+        "ms": 13.852,
+        "t_s": 2.048,
+        "endpoint": "chat",
+        "seq": 10
+      },
+      {
+        "ms": 11.381,
+        "t_s": 52.246,
+        "endpoint": "chat",
+        "seq": 261
+      },
+      {
+        "ms": 10.832,
+        "t_s": 13.245,
+        "endpoint": "chat",
+        "seq": 66
+      },
+      {
+        "ms": 9.038,
+        "t_s": 3.843,
+        "endpoint": "chat",
+        "seq": 19
+      },
+      {
+        "ms": 8.964,
+        "t_s": 25.243,
+        "endpoint": "chat",
+        "seq": 126
+      }
+    ]
+  }
+}
