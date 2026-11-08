@@ -1,0 +1,44 @@
+# Q-023 (D-140): measured resource probe of the FREE GitHub-hosted runners
+# (standard runners are free in public repositories — no billing path).
+# Bounded seconds of CPU work + single-client loopback GETs per job:
+# NOT a load test (no stress/spike/soak — D-134). No secrets, read-only token.
+# Three replicas per label show host-to-host variance (fresh VM per job).
+# Not a required check; it never gates a merge.
+name: Q-023 env probe
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/q023_env_probe.py
+      - .github/workflows/q023-env-probe.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: q023-env-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        replica: [1, 2, 3]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Probe (stdlib only, no dependency install)
+        run: |
+          python3 scripts/q023_env_probe.py \
+            --label "${{ matrix.runner }}-r${{ matrix.replica }}" \
+            --json "probe-${{ matrix.runner }}-r${{ matrix.replica }}.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: q023-probe-${{ matrix.runner }}-r${{ matrix.replica }}
+          path: probe-*.json
+          retention-days: 30

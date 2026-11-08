@@ -594,19 +594,38 @@ NO_EXTERNAL_AGENT = ("no external agent is registered: an 'external' task cannot
                      "(an admin registers one via POST /api/agents/external)")
 
 
+def _inflight(agent) -> int:
+    """Leases the registry holds for this executor right now (D-140)."""
+    try:
+        return AGENT_REGISTRY.load_of(_identity_id(agent))
+    except Exception:  # noqa: BLE001 — selection must never fail on a lookup
+        return 0
+
+
+def _dispatch_key(agent):
+    # R-178 (D-140): in-flight leases FIRST. ``status`` and ``tasks_completed``
+    # change only when the run starts/ends, and the run awaits (running write,
+    # publish) between pick and execute — so a concurrent burst used to pick
+    # the SAME agent N times (log 384: 10/10 on one agent, peak concurrency
+    # 10, four idle). The lease count is bumped by ``acquire`` in the same
+    # loop step as the pick (no await in between), so it sees bound work.
+    # Then idle before busy, then least-completed (D-139). Busy-but-slow
+    # agents no longer attract work just because they completed less.
+    return (_inflight(agent), 0 if agent.status == "idle" else 1,
+            agent.stats["tasks_completed"])
+
+
 def _pick_agent(specialization: str):
     if specialization == "external" and EXTERNAL_AGENTS:
-        return min(EXTERNAL_AGENTS, key=lambda a: a.stats["tasks_completed"])
+        return min(EXTERNAL_AGENTS, key=lambda a: (_inflight(a), a.stats["tasks_completed"]))
     pool = CIVILIZATION.get(specialization)
     if not pool:
         raise HTTPException(404, f"Unknown specialization: {specialization}")
-    # R-178 (D-139): least-completed selection among idle agents — the ladder
-    # L0 run proved the old (idle or pool)[0] let ONE agent execute 100/100
-    # tasks of its specialization, making the R-178 Jain fairness criterion
-    # (>= 0.90 within a specialization) unreachable from the /api/tasks path.
-    # min() is stable (first minimum wins), same rule the external path uses.
-    idle = [a for a in pool if a.status == "idle"]
-    return min(idle or pool, key=lambda a: a.stats["tasks_completed"])
+    # R-178 (D-139): least-completed selection — the ladder L0 run proved the
+    # old (idle or pool)[0] let ONE agent execute 100/100 tasks of its
+    # specialization. D-140 adds the in-flight key above (burst pile-up).
+    # min() is stable (first minimum wins).
+    return min(pool, key=_dispatch_key)
 
 
 def _prune_tasks():

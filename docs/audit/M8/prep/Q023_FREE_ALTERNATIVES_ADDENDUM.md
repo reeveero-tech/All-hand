@@ -45,3 +45,13 @@ aarch64) ولا حساب Oracle جديد.
 1. الاختيار: مدفوع معزول (§9) أم مجاني مخفض (هذا الملحق) أم كلاهما بالتدرج.
 2. من يُنشئ الحساب/الموارد (الوكيل لا ينشئ أيًّا منها).
 3. إن اختار خيارًا مجانيًا: تأكيد قبول «R-177 مخفض معلن» كحد للنتائج حتى توفر بيئة معزولة.
+
+## تصويب D-140 (2026-11-08) — يُقرأ قبل ما سبق
+
+النص أعلاه مُبقًى كما كُتب (D-063). ثلاثة ادعاءات فيه ثبت خطؤها عند التحقق المباشر:
+
+1. **Hugging Face Spaces ليست خيارًا مجانيًا هنا**: «CPU Basic بلا تكلفة بالساعة، لكن إنشاء Space جديد يعمل على حوسبة (Gradio أو Docker) يتطلب خطة مدفوعة» ([HF Spaces hardware](https://huggingface.co/docs/hub/en/spaces-gpus)).
+2. **Codespaces**: أكبر نوع متاح لهذا الحساب 4 أنوية/16GB (`standardLinux32gb`، من `GET /repos/reeveero-tech/All-hand/codespaces/machines`)، والحصة المجانية 120 ساعة **مضروبة في الأنوية** ([Codespaces billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)).
+3. **Oracle**: بطاقة ائتمان مطلوبة للتسجيل حتى لـAlways Free ([Oracle FAQ](https://www.oracle.com/cloud/free/faq/)).
+
+القرار الكامل والمحدّث: [`Q023_DECISION_REPORT.md`](Q023_DECISION_REPORT.md).
