@@ -246,6 +246,12 @@ class AgentRegistry:
             raise UnknownAgent(f"unknown agent name: {name}")
         return self._agents[self._names[name]]
 
+    def load_of(self, agent_id: str) -> int:
+        """Leases currently held by ``agent_id`` (0 for an unknown identity).
+        Updated synchronously by ``acquire``/``release`` — the dispatch path
+        reads it to see work already bound but not yet started (D-140)."""
+        return self._load.get(agent_id, 0)
+
     def select_agent(self, specialization: str) -> AgentIdentity:
         """Least-loaded active identity of the specialization (ties: the identity
         whose load changed least recently). O(log n) amortised via a lazy heap."""

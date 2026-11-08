@@ -138,6 +138,12 @@ class QueueWaitListener(threading.Thread):
         self.url, self.key, self.want_ids = url.rstrip("/"), key, set(want_ids)
         self.accepted: Dict[str, float] = {}
         self.started: Dict[str, float] = {}
+        # D-140: per-agent concurrency from the same stream (task_started /
+        # task_completed carry the agent). End totals alone (Jain) hid a burst
+        # pile-up — log 384: 10/10 concurrent tasks on one agent.
+        self._live: Dict[str, int] = {}
+        self.peak: Dict[str, int] = {}
+        self._open: Dict[str, str] = {}
         self.lines = 0
         self._halt = threading.Event()
         self._sock = None
@@ -179,6 +185,14 @@ class QueueWaitListener(threading.Thread):
             self.accepted[tid] = t
         elif ev.get("type") == "task_started" and tid not in self.started:
             self.started[tid] = t
+            agent = ev.get("agent")
+            if agent:
+                self._open[tid] = agent
+                self._live[agent] = self._live.get(agent, 0) + 1
+                self.peak[agent] = max(self.peak.get(agent, 0), self._live[agent])
+        elif ev.get("type") == "task_completed" and tid in self._open:
+            agent = self._open.pop(tid)
+            self._live[agent] = self._live.get(agent, 1) - 1
 
     def stop(self) -> None:
         self._halt.set()
@@ -347,6 +361,15 @@ def run_level(level: int, storage: str, n_tasks: int, drain_timeout_s: float,
             "per_agent_completed": per_agent,
             "per_specialization_completed": per_spec_done,
             "task_completed_event_counts": {k: v for k, v in ev_counts.items() if v != 1},
+            # D-140 (report-only, NOT a criterion — no verdict, owner decides
+            # whether it becomes one): peak concurrent tasks per agent seen on
+            # the SSE stream. >1 on an agent while peers stay idle = pile-up.
+            "agent_peak_concurrency": {
+                "max": max(listener.peak.values()) if listener.peak else None,
+                "agents_observed": len(listener.peak),
+                "agents_over_1": sum(1 for v in listener.peak.values() if v > 1),
+                "per_agent": dict(sorted(listener.peak.items())),
+            },
         }
         out["recovery"] = {"agents_after_kill_restart": killed_registered,
                            "agents_target": level,

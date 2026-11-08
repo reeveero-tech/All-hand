@@ -1,0 +1,19 @@
+# 386 — Q-023 env probe on GitHub-hosted public runners (D-140)
+# workflow: .github/workflows/q023-env-probe.yml, PR #337, run https://github.com/reeveero-tech/All-hand/actions/runs/42459506764 (6 jobs, all success, 7-8 s each)
+# tested sha (PR merge ref): 942ce8c1; artifacts fetched via REST artifacts/{id}/zip -> docs/audit/M8/logs/raw/q023_probe/gha_*.json
+# NOT a load test: bounded CPU work + 400 sequential single-client loopback GETs per job
+
+ubuntu-24.04-arm-r1: arch=aarch64 cpu=0xd49 vcpu=4 ram=15.57GiB disk_free=106.6GiB cv=0.0005 eff_cores=2.87/4 steal=0.0 lb_p95=0.731ms lb_p99=0.768ms verdict=reduced_R177_only sha=942ce8c1
+ubuntu-24.04-arm-r2: arch=aarch64 cpu=0xd49 vcpu=4 ram=15.57GiB disk_free=106.6GiB cv=0.0007 eff_cores=3.19/4 steal=0.0 lb_p95=0.729ms lb_p99=0.766ms verdict=reduced_R177_only sha=942ce8c1
+ubuntu-24.04-arm-r3: arch=aarch64 cpu=0xd49 vcpu=4 ram=15.57GiB disk_free=106.6GiB cv=0.0028 eff_cores=2.86/4 steal=0.0 lb_p95=0.706ms lb_p99=0.776ms verdict=reduced_R177_only sha=942ce8c1
+ubuntu-24.04-r1: arch=x86_64 cpu=AMD EPYC 7763 64-Core Processor vcpu=4 ram=15.61GiB disk_free=85.8GiB cv=0.0082 eff_cores=1.88/4 steal=0.0 lb_p95=0.639ms lb_p99=0.704ms verdict=reduced_R177_only sha=942ce8c1
+ubuntu-24.04-r2: arch=x86_64 cpu=AMD EPYC 9V74 80-Core Processor vcpu=4 ram=15.61GiB disk_free=85.8GiB cv=0.0096 eff_cores=1.5/4 steal=0.0 lb_p95=0.512ms lb_p99=0.546ms verdict=reduced_R177_only sha=942ce8c1
+ubuntu-24.04-r3: arch=x86_64 cpu=AMD EPYC 9V45 96-Core Processor vcpu=4 ram=15.61GiB disk_free=85.8GiB cv=0.1366 eff_cores=1.54/4 steal=0.0 lb_p95=0.347ms lb_p99=0.388ms verdict=reduced_R177_only sha=942ce8c1
+
+reading (honest):
+- resources match the published spec (4 vCPU / ~15.6 GiB) but every job is ONE machine: SUT, generator and storage would be co-located. classify() => reduced_R177_only on all 6; closes R-177_full/R-178/R-179 = false.
+- x64 reproducibility is poor: three different CPU models in three jobs (EPYC 7763 / 9V74 / 9V45), so the same test lands on different hardware run to run; one job had CPU CV 0.137 (noisy) vs 0.008-0.010 in the others.
+- x64 effective parallel cores 1.50-1.88 of 4 (scaling efficiency ~0.38-0.47). Probable cause: the 4 vCPU are SMT siblings (~2 physical cores) - NOT verified (no lscpu topology captured); short 0.17 s window also includes process start overhead. Either way 4 vCPU here is not 4 cores of throughput.
+- arm64 is steady (CV <=0.003, 2.86-3.19 effective cores) but the project's requirements.lock does not install on arm64 (log 381) - a supply-chain change is needed first.
+- jobs cannot accept connections from each other => no 3-node separation; 6 h per job => no 24 h soak. The owner's directive excludes treating Actions as an isolated-environment substitute; consistent with these measurements.
+- verdict: GitHub-hosted runners are NOT eligible for approved R-177..R-181 measurement. Usable only for L0 reproducibility/health checks.

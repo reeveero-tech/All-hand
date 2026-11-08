@@ -1,0 +1,35 @@
+# 385 — R-178 burst fairness GREEN (D-140) — 2026-11-08T07:16:11Z
+# code: branch m9/r178-burst-fairness-q023-probes (working tree on top of main 4518249b); python 3.14.8; nproc=2
+## new tests
+tests/test_r178_burst_fairness.py::test_concurrent_burst_spreads_over_the_pool PASSED [ 25%]
+tests/test_r178_burst_fairness.py::test_burst_equal_to_pool_gives_one_task_per_agent PASSED [ 50%]
+tests/test_r178_burst_fairness.py::test_slow_agent_does_not_attract_extra_work_while_busy PASSED [ 75%]
+tests/test_r178_burst_fairness.py::test_registry_load_of_is_zero_for_unknown_and_tracks_leases PASSED [100%]
+============================== 4 passed in 2.14s ===============================
+## 10x stability
+run 1: ============================== 4 passed in 2.13s ===============================
+run 2: ============================== 4 passed in 2.26s ===============================
+run 3: ============================== 4 passed in 2.19s ===============================
+run 4: ============================== 4 passed in 2.16s ===============================
+run 5: ============================== 4 passed in 2.18s ===============================
+run 6: ============================== 4 passed in 2.19s ===============================
+run 7: ============================== 4 passed in 2.27s ===============================
+run 8: ============================== 4 passed in 2.25s ===============================
+run 9: ============================== 4 passed in 2.12s ===============================
+run 10: ============================== 4 passed in 2.21s ===============================
+## raw probe outputs after fix
+{"pool": ["validator_0095", "validator_0096", "validator_0097", "validator_0098", "validator_0099"], "picks": {"validator_0095": 2, "validator_0096": 2, "validator_0097": 2, "validator_0098": 2, "validator_0099": 2}, "peak": {"validator_0095": 2, "validator_0096": 2, "validator_0097": 2, "validator_0098": 2, "validator_0099": 2}, "status": {"completed": 10}}
+{"pool": ["validator_0095", "validator_0096", "validator_0097", "validator_0098", "validator_0099"], "picks": {"validator_0095": 1, "validator_0096": 1, "validator_0097": 1, "validator_0098": 1, "validator_0099": 1}, "peak": {"validator_0095": 1, "validator_0096": 1, "validator_0097": 1, "validator_0098": 1, "validator_0099": 1}, "status": {"completed": 5}}
+{"pool": ["validator_0095", "validator_0096", "validator_0097", "validator_0098", "validator_0099"], "picks": {"validator_0095": 1, "validator_0096": 8, "validator_0097": 7, "validator_0098": 7, "validator_0099": 7}, "peak": {"validator_0095": 1, "validator_0096": 2, "validator_0097": 2, "validator_0098": 2, "validator_0099": 2}, "status": {"completed": 30}}
+
+## L0 ladder (live-local PostgreSQL 18.6 + PostgREST 12.2.3 via kong :54321, same co-located 2-vCPU sandbox as log 383 — health check only, D-134; NOT a capacity step)
+# ladder.py now reports execution.agent_peak_concurrency (report-only, no verdict, not a criterion)
+PRE-FIX (main 4518249b dispatch, new ladder field): l0_healthy=True accepted=100/100 dropped=0 final={'completed': 100} per_agent_completed=[19, 19, 20, 21, 21] jain=('pass', 0.998003992015968) peak_concurrency_max=3 agents_over_1=5/5 dispatch_p95_ms=275.6 dispatch_p99_ms=321.1 dispatch_max_ms=327.8 queue_wait_p95_ms=694.7 agents_lost_after_kill=0 imbalance=not_measured
+POST-FIX run6: l0_healthy=True accepted=100/100 dropped=0 final={'completed': 100} per_agent_completed=[20, 20, 20, 20, 20] jain=('pass', 1.0) peak_concurrency_max=1 agents_over_1=0/5 dispatch_p95_ms=239.6 dispatch_p99_ms=253.4 dispatch_max_ms=271.8 queue_wait_p95_ms=729.2 agents_lost_after_kill=0 imbalance=not_measured
+POST-FIX run7: l0_healthy=True accepted=100/100 dropped=0 final={'completed': 100} per_agent_completed=[19, 20, 20, 20, 21] jain=('pass', 0.999000999000999) peak_concurrency_max=2 agents_over_1=1/5 dispatch_p95_ms=238.0 dispatch_p99_ms=256.6 dispatch_max_ms=263.2 queue_wait_p95_ms=611.7 agents_lost_after_kill=0 imbalance=not_measured
+POST-FIX run8: l0_healthy=True accepted=100/100 dropped=0 final={'completed': 100} per_agent_completed=[20, 20, 20, 20, 20] jain=('pass', 1.0) peak_concurrency_max=2 agents_over_1=1/5 dispatch_p95_ms=190.5 dispatch_p99_ms=230.8 dispatch_max_ms=249.1 queue_wait_p95_ms=670.6 agents_lost_after_kill=0 imbalance=not_measured
+
+reading (honest):
+- Jain on END TOTALS passes before AND after the fix (0.998 vs 0.999-1.0): it cannot see the pile-up. The new peak-concurrency field does: pre-fix every agent ran >1 task at once (max 3); post-fix max 1-2 with 0-1 agents above 1.
+- post-fix peak 2 is expected here: 16 concurrent submitters > 5 agents, so when all 5 are busy the least-loaded one takes a second lease. There is NO per-agent concurrency cap in server.py (design observation for R-178, not changed in this batch).
+- latencies are co-located (SUT + generator + storage on 2 vCPU) and not comparable to any target; criteria stay proposed; L0 proves no capacity level.

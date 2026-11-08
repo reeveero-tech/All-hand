@@ -1,0 +1,13 @@
+# 384 — R-178 burst fairness RED (D-140) — 2026-11-08T07:15:57Z
+# code under test: main 4518249b UNMODIFIED (fix stashed); python 3.14.8 local; nproc=2
+# note: a first draft of the probe called _run_task_traced directly, which never releases leases (release lives in _run_task's finally) — corrected to the full _run_task path before this RED run; the corrected probe is what is committed.
+
+E   AssertionError: {'validator_0095': 10}
+E   AssertionError: {'validator_0095': 5}
+E   AssertionError: slow agent ran 5 tasks at once — slowness attracted load: {'pool': ['validator_0095', 'validator_0096', 'validator_0097', 'validator_0098', 'validator_0099'], 'picks': {'validator_0095': 5, 'validator_0096': 10, 'validator_0097': 5, 'validator_0098': 5, 'validator_0099': 5}, 'peak': {'validator_0095': 5, 'validator_0096': 5, 'validator_0097': 5, 'validator_0098': 5, 'validator_0099': 5}, 'status': {'completed': 30}}
+E   AttributeError: 'AgentRegistry' object has no attribute 'load_of'
+FAILED tests/test_r178_burst_fairness.py::test_concurrent_burst_spreads_over_the_pool
+FAILED tests/test_r178_burst_fairness.py::test_burst_equal_to_pool_gives_one_task_per_agent
+FAILED tests/test_r178_burst_fairness.py::test_slow_agent_does_not_attract_extra_work_while_busy
+FAILED tests/test_r178_burst_fairness.py::test_registry_load_of_is_zero_for_unknown_and_tracks_leases
+============================== 4 failed in 2.21s ===============================

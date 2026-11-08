@@ -1,0 +1,79 @@
+{
+  "classification": {
+    "closes": {
+      "R-177_full": false,
+      "R-178": false,
+      "R-179": false
+    },
+    "effective_ram_gib": 15.61,
+    "effective_vcpu": 4,
+    "gaps": [
+      "separate_nodes: have 1, need 3 (SUT / load generator / storage on separate machines)",
+      "sut: have 4 vCPU / 15.61 GiB, need 16 vCPU / 32 GiB",
+      "generator: have 4 vCPU / 15.61 GiB, need 8 vCPU / 16 GiB",
+      "storage: have 4 vCPU / 15.61 GiB, need 8 vCPU / 32 GiB"
+    ],
+    "nodes_assumed": 1,
+    "policy_note": "resource fit only: an owner ban (e.g. D-134: no stress/spike/soak on the shared sandbox) or a provider ToS still applies on top",
+    "role_minimum_met": {
+      "generator": false,
+      "storage": false,
+      "sut": false
+    },
+    "verdict": "reduced_R177_only"
+  },
+  "cpu_steadiness": {
+    "cv": 0.0082,
+    "iters": 200000,
+    "max_s": 0.08419,
+    "median_s": 0.08212,
+    "min_s": 0.08177,
+    "reps": 15
+  },
+  "github": {
+    "GITHUB_JOB": "probe",
+    "GITHUB_RUN_ID": "42459506764",
+    "GITHUB_SHA": "942ce8c16c43fa2336c92c81a4383f08f5b52c4a",
+    "ImageOS": "ubuntu24",
+    "RUNNER_ARCH": "X64",
+    "RUNNER_NAME": "GitHub Actions 1000007373",
+    "RUNNER_OS": "Linux"
+  },
+  "label": "ubuntu-24.04-r1",
+  "loopback_http": {
+    "errors": 0,
+    "max_ms": 20.732,
+    "p50_ms": 0.527,
+    "p95_ms": 0.639,
+    "p99_ms": 0.704,
+    "requests": 400,
+    "sequential_single_client": true
+  },
+  "not_a_load_test": "bounded CPU work (seconds) + single-client sequential loopback GETs; no stress/spike/soak (D-134, Q-023)",
+  "parallel": {
+    "effective_cores": 1.88,
+    "parallel_wall_s": 0.17432,
+    "scaling_efficiency": 0.469,
+    "single_s": 0.08183,
+    "steal_share": 0.0,
+    "workers": 4
+  },
+  "probe": "q023_env_probe",
+  "quick": false,
+  "resources": {
+    "arch": "x86_64",
+    "cgroup_cpu_quota": null,
+    "cgroup_mem_limit_gib": null,
+    "cpu_affinity": 4,
+    "cpu_count": 4,
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "disk_free_gib": 85.8,
+    "disk_total_gib": 144.3,
+    "kernel": "7.0.0-1017-azure",
+    "python": "3.12.3",
+    "ram_available_gib": 14.67,
+    "ram_total_gib": 15.61
+  },
+  "utc": "2026-11-08T07:36:47Z",
+  "version": 1
+}

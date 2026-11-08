@@ -85,6 +85,25 @@ def test_sse_listener_first_event_wins():
     assert lis.accepted["t1"] == first
 
 
+def test_sse_listener_tracks_peak_concurrency_per_agent():
+    # D-140: two tasks running on the same agent at once must show peak 2
+    # (end totals cannot reveal this pile-up — log 384)
+    lis = L.QueueWaitListener("http://127.0.0.1:1", "k", {"t1", "t2", "t3"})
+    lis._handle('data: {"type": "task_started", "task_id": "t1", "agent": "a"}')
+    lis._handle('data: {"type": "task_started", "task_id": "t2", "agent": "a"}')
+    lis._handle('data: {"type": "task_completed", "task_id": "t1", "agent": "a"}')
+    lis._handle('data: {"type": "task_completed", "task_id": "t2", "agent": "a"}')
+    lis._handle('data: {"type": "task_started", "task_id": "t3", "agent": "b"}')
+    lis._handle('data: {"type": "task_completed", "task_id": "t3", "agent": "b"}')
+    assert lis.peak == {"a": 2, "b": 1}
+
+
+def test_sse_listener_completed_without_started_does_not_go_negative():
+    lis = _listener()
+    lis._handle('data: {"type": "task_completed", "task_id": "t1", "agent": "a"}')
+    assert lis.peak == {} and lis._live == {}
+
+
 def test_sse_listener_waits_only_when_both_sides():
     lis = _listener()
     lis._handle('data: {"type": "task_started", "task_id": "t1"}')  # started without created
