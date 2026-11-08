@@ -1,0 +1,30 @@
+# 382 — D-139: R-178 ladder tools — RED first (tool absent => suite cannot even collect)
+# base: main 80cb2f98 + branch m9/r178-ladder-tools (tests written BEFORE the tool existed)
+# 2026-11-08; shared 2-CPU sandbox (PostgreSQL 18.6 + PostgREST 12.2.3 on loopback for the L0 runs)
+
+## RED — tests/test_r178_ladder_tools.py with benchmarks/r178/ladder.py removed (stashed)
+=========================== short test summary info ============================
+ERROR tests/test_r178_ladder_tools.py - FileNotFoundError: [Errno 2] No such ...
+!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!
+============================== 1 error in 0.11s ==============================
+
+## RED — dispatch fairness defect (found by the tool's first L0 run, BEFORE the fix)
+tests/test_r178_dispatch_fairness.py on UNFIXED server.py (_pick_agent = (idle or pool)[0]):
+test_pick_agent_does_not_starve_the_pool_when_one_agent_leads  FAILED
+test_pick_agent_spreads_picks_across_idle_agents              FAILED
+  all picks went to one agent: ['validator_0058' x10]
+test_unknown_specialization_still_404                        PASSED (1 passed, 2 failed)
+
+L0 run 1 (live-local, 100 agents, 100 tasks) on UNFIXED main:
+  per_agent_completed: {'validator_0095': 100} — ONE agent executed 100/100 tasks
+  r178.worker_fairness_jain FAIL 0.2 | specialization_imbalance FAIL inf | agents_lost not_measured (bad data shape)
+  => the R-178 Jain criterion (>= 0.90) is UNREACHABLE from the /api/tasks path on main.
+     Root cause: server.py::_pick_agent returned (idle or pool)[0] — first idle agent, always the same one.
+
+## tooling defects found by run 1 and fixed in the same batch (before GREEN)
+  - specialization_imbalance must be not_measured on a single-specialization L0 workload (its
+    data_source requires an equal mix) — never pass, never fail, honest not_measured + why.
+  - agents_lost_after_kill evaluates via its declared metric (silent_loss: names before vs after
+    restart), not a fabricated counts list.
+  - Jain counts = every agent of the worked specialization (zeros included — filtering them
+    inflated the index), per the criterion data_source "داخل التخصص الواحد".

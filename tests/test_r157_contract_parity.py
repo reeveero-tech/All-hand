@@ -420,8 +420,9 @@ class _A:
 def test_c5_selection_policies_are_pinned_as_they_are(monkeypatch):
     pool = [_A("a0", done=5), _A("a1", done=1), _A("a2", done=0, failed=3), _A("a3", done=0)]
     monkeypatch.setattr(server, "CIVILIZATION", {"analyst": pool})
-    # server.py: first idle agent in pool order (load is ignored)
-    assert server._pick_agent("analyst").name == "a0"
+    # server.py: fewest completed tasks among idle agents, pool order tiebreak (D-139/R-178;
+    # was: first idle agent in pool order, load ignored — monopoly measured by ladder tool, logs 382/383)
+    assert server._pick_agent("analyst").name == "a2"
     # pipeline: least-loaded idle agent (completed + failed), reserved at once
     picked = asyncio.run(orchestrator._pick(pool))
     assert picked.name == "a3" and picked.status == "working"

@@ -600,8 +600,13 @@ def _pick_agent(specialization: str):
     pool = CIVILIZATION.get(specialization)
     if not pool:
         raise HTTPException(404, f"Unknown specialization: {specialization}")
+    # R-178 (D-139): least-completed selection among idle agents — the ladder
+    # L0 run proved the old (idle or pool)[0] let ONE agent execute 100/100
+    # tasks of its specialization, making the R-178 Jain fairness criterion
+    # (>= 0.90 within a specialization) unreachable from the /api/tasks path.
+    # min() is stable (first minimum wins), same rule the external path uses.
     idle = [a for a in pool if a.status == "idle"]
-    return (idle or pool)[0]
+    return min(idle or pool, key=lambda a: a.stats["tasks_completed"])
 
 
 def _prune_tasks():
