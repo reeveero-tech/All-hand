@@ -1,0 +1,97 @@
+{
+  "service": "api-agents",
+  "classification": "measured",
+  "ok": false,
+  "profile": "stress",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 105,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<300"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 300,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 1219,
+    "requests_failed": 0,
+    "duration_avg_ms": 793.9019192272352,
+    "duration_med_ms": 788.11909,
+    "duration_p90_ms": 1291.2328670000002,
+    "duration_p95_ms": 1358.4257869,
+    "duration_p99_ms": 2237.445515719998,
+    "duration_max_ms": 3249.430247,
+    "dropped_iterations": 164
+  },
+  "raw_quantiles": {
+    "n": 1219,
+    "p50_ms": 788.119,
+    "p95_ms": 1359.665,
+    "p99_ms": 2243.653,
+    "max_ms": 3249.43,
+    "p95_ms_k6_method": 1358.4256999999998
+  },
+  "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+  },
+  "baseline_params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+  },
+  "stopped": true,
+  "probe_failures": [],
+  "sentinel_id": "f4c3ab226494",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 9,
+    "ready": 9,
+    "isolation": 3,
+    "integrity": 3
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/stress/k6_summary_api-agents_stress.json",
+  "stdout_log_path": "/tmp/r177cs/stress/k6_stdout_api-agents_stress.log",
+  "stop_decision": {
+    "stopped": true,
+    "rule": "p95_window",
+    "rule_id": "S3",
+    "reason": "p95 > 2.0x SLO (600.0ms) for 2 consecutive windows (S3)",
+    "at_s": 10.0,
+    "measurements": {
+      "windows": [
+        {
+          "window": 0,
+          "value_ms": 605.970611,
+          "samples": 396
+        },
+        {
+          "window": 1,
+          "value_ms": 1201.546476,
+          "samples": 406
+        }
+      ],
+      "limit_ms": 600.0,
+      "consecutive_required": 2,
+      "window_s": 5.0
+    }
+  }
+}

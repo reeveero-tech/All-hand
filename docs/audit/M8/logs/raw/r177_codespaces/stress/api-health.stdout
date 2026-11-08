@@ -1,0 +1,81 @@
+{
+  "service": "api-health",
+  "classification": "measured",
+  "ok": true,
+  "profile": "stress",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<200"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 200,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 59987,
+    "requests_failed": 0,
+    "duration_avg_ms": 2.2077843844999605,
+    "duration_med_ms": 1.030173,
+    "duration_p90_ms": 4.2647908,
+    "duration_p95_ms": 4.7810934,
+    "duration_p99_ms": 8.816292239999964,
+    "duration_max_ms": 260.930629,
+    "dropped_iterations": 14
+  },
+  "raw_quantiles": {
+    "n": 59987,
+    "p50_ms": 1.03,
+    "p95_ms": 4.781,
+    "p99_ms": 8.871,
+    "max_ms": 260.931,
+    "p95_ms_k6_method": 4.781
+  },
+  "params": {
+    "duration_s": 300,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "baseline_params": {
+    "duration_s": 300,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "9e4ebedde67f",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 292,
+    "ready": 292,
+    "isolation": 98,
+    "integrity": 98
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/stress/k6_summary_api-health_stress.json",
+  "stdout_log_path": "/tmp/r177cs/stress/k6_stdout_api-health_stress.log",
+  "stop_decision": {
+    "stopped": false,
+    "rule": null,
+    "rule_id": null,
+    "reason": null,
+    "at_s": null,
+    "measurements": {}
+  }
+}

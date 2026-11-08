@@ -1,0 +1,12 @@
+[api-health:normal] ok=True class=measured p95=4.4775424ms reqs=2400 failed=0 stopped=False (60s)
+[api-agents:normal] ok=True class=measured p95=23.511452399999996ms reqs=1200 failed=0 stopped=False (60s)
+[api-tasks-read:normal] ok=True class=measured p95=4.878575ms reqs=1201 failed=0 stopped=False (60s)
+[api-tasks-submit:normal] ok=True class=measured p95=5.999075ms reqs=601 failed=0 stopped=False tracked=31/31 e2e_p95=11.35ms (60s)
+[api-task-lifecycle:normal] ok=True class=measured p95=6.8887355999999995ms reqs=482 failed=0 stopped=False tracked=31/31 e2e_p95=11.439ms (60s)
+[api-memory:normal] ok=True class=measured p95=6.521305ms reqs=1201 failed=0 stopped=False (60s)
+[api-chat:normal] ok=True class=measured p95=8.702503ms reqs=601 failed=0 stopped=False p99=10.797ms ucb95=13.643 n=601 [pass] (60s)
+[api-admin-tools:normal] ok=True class=measured p95=7.63234255ms reqs=1200 failed=0 stopped=False (60s)
+[api-sse:normal] ok=True class=measured p95=5.310672599999998ms reqs=12 failed=0 stopped=False (62s)
+[api-auth:normal] ok=True class=measured p95=4.169137ms reqs=1201 failed=0 stopped=False (60s)
+[frontend:normal] ok=False class=not_measured p95=Nonems reqs=None failed=None stopped=None (0s)
+{"counts": {"measured": 10, "not_measured": 1, "stopped": 0, "failed": 1}, "summary_path": "/tmp/r177cs/normal/summary_all_normal_volatile.json"}

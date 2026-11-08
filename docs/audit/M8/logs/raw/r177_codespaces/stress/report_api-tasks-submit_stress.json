@@ -1,0 +1,1962 @@
+{
+  "service": "api-tasks-submit",
+  "classification": "measured",
+  "ok": true,
+  "profile": "stress",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 15000,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.7927614018000093,
+    "duration_med_ms": 3.592683,
+    "duration_p90_ms": 4.3159713,
+    "duration_p95_ms": 5.078010549999997,
+    "duration_p99_ms": 7.468846320000003,
+    "duration_max_ms": 59.014687,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 15000,
+    "p50_ms": 3.593,
+    "p95_ms": 5.078,
+    "p99_ms": 7.469,
+    "max_ms": 59.015,
+    "p95_ms_k6_method": 5.078199999999997
+  },
+  "params": {
+    "duration_s": 300,
+    "arrival_rate": 50,
+    "max_vus": 80
+  },
+  "baseline_params": {
+    "duration_s": 300,
+    "arrival_rate": 50,
+    "max_vus": 80
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 500.0,
+      "p95_stop_ms": 1000.0,
+      "p99_slo_ms": null,
+      "p99_stop_ms": null,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 50.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": false,
+      "rule": null,
+      "rule_id": null,
+      "reason": null,
+      "at_s": null,
+      "measurements": {}
+    },
+    "breaches": [],
+    "totals": {
+      "requests": 15000,
+      "failed": 0,
+      "checks": 15000,
+      "checks_passed": 15000
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 249,
+        "sufficient": true,
+        "p95_ms": 4.550774,
+        "p99_ms": 6.161638,
+        "reqs": 249,
+        "failed": 0,
+        "checks": 249,
+        "checks_ok": 249,
+        "iters": 246,
+        "dropped": 0
+      },
+      {
+        "idx": 1,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.769731,
+        "p99_ms": 6.481882,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 2,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.467488,
+        "p99_ms": 7.482837,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.763748,
+        "p99_ms": 6.369649,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.752899,
+        "p99_ms": 7.943174,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 5,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.59436,
+        "p99_ms": 7.002567,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 6,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.565365,
+        "p99_ms": 8.472956,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 7,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 6.189349,
+        "p99_ms": 8.237235,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 8,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.296479,
+        "p99_ms": 7.484738,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 9,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.670057,
+        "p99_ms": 14.504099,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 10,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.096349,
+        "p99_ms": 7.792301,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 11,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.846978,
+        "p99_ms": 6.439019,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 12,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.686867,
+        "p99_ms": 7.135529,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 13,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.601027,
+        "p99_ms": 9.469762,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 14,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.754773,
+        "p99_ms": 7.729956,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 15,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.022458,
+        "p99_ms": 6.079574,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 16,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.062035,
+        "p99_ms": 6.526442,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 17,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.679198,
+        "p99_ms": 6.490516,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 18,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.778667,
+        "p99_ms": 8.181813,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 19,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.064873,
+        "p99_ms": 6.894807,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 20,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.552187,
+        "p99_ms": 5.976869,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 21,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.083485,
+        "p99_ms": 6.269966,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 22,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.247425,
+        "p99_ms": 8.932346,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 23,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.773206,
+        "p99_ms": 7.175272,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 24,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.093134,
+        "p99_ms": 7.04586,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 25,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.678753,
+        "p99_ms": 6.728409,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 26,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.732337,
+        "p99_ms": 6.338118,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 27,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.945109,
+        "p99_ms": 7.166049,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 28,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.381568,
+        "p99_ms": 11.159399,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 29,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.54723,
+        "p99_ms": 7.423016,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 30,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.26828,
+        "p99_ms": 6.46861,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 31,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.394308,
+        "p99_ms": 7.145195,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 32,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.28066,
+        "p99_ms": 5.948633,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 33,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.171756,
+        "p99_ms": 5.789787,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 34,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.318483,
+        "p99_ms": 7.7705,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 35,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.278463,
+        "p99_ms": 5.045417,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 36,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.11977,
+        "p99_ms": 5.407384,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 37,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.574949,
+        "p99_ms": 9.348188,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 38,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.547731,
+        "p99_ms": 6.257758,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 39,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.92859,
+        "p99_ms": 7.813884,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 40,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.533284,
+        "p99_ms": 5.986567,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 41,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.273486,
+        "p99_ms": 9.109776,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 42,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.256004,
+        "p99_ms": 9.241808,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 43,
+        "samples": 249,
+        "sufficient": true,
+        "p95_ms": 4.518858,
+        "p99_ms": 7.233875,
+        "reqs": 249,
+        "failed": 0,
+        "checks": 249,
+        "checks_ok": 249,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 44,
+        "samples": 251,
+        "sufficient": true,
+        "p95_ms": 6.028295,
+        "p99_ms": 8.11678,
+        "reqs": 251,
+        "failed": 0,
+        "checks": 251,
+        "checks_ok": 251,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 45,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.610643,
+        "p99_ms": 10.957513,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 46,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.291665,
+        "p99_ms": 8.072616,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 47,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.356601,
+        "p99_ms": 7.346462,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 48,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.504805,
+        "p99_ms": 10.709913,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 49,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.609398,
+        "p99_ms": 5.446366,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 50,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.706836,
+        "p99_ms": 6.054832,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 51,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.6024,
+        "p99_ms": 7.71431,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 52,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.239305,
+        "p99_ms": 7.598373,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 53,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.845471,
+        "p99_ms": 7.374214,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 54,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 4.874557,
+        "p99_ms": 6.502099,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 55,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.194811,
+        "p99_ms": 6.504332,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 56,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 6.160083,
+        "p99_ms": 12.273127,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 57,
+        "samples": 250,
+        "sufficient": true,
+        "p95_ms": 5.565551,
+        "p99_ms": 7.418794,
+        "reqs": 250,
+        "failed": 0,
+        "checks": 250,
+        "checks_ok": 250,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 58,
+        "samples": 249,
+        "sufficient": true,
+        "p95_ms": 5.970294,
+        "p99_ms": 19.531256,
+        "reqs": 249,
+        "failed": 0,
+        "checks": 249,
+        "checks_ok": 249,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 59,
+        "samples": 251,
+        "sufficient": true,
+        "p95_ms": 5.208292,
+        "p99_ms": 10.401064,
+        "reqs": 251,
+        "failed": 0,
+        "checks": 251,
+        "checks_ok": 251,
+        "iters": 250,
+        "dropped": 0
+      },
+      {
+        "idx": 60,
+        "samples": 1,
+        "sufficient": false,
+        "p95_ms": 4.938524,
+        "p99_ms": 4.938524,
+        "reqs": 1,
+        "failed": 0,
+        "checks": 1,
+        "checks_ok": 1,
+        "iters": 4,
+        "dropped": 0
+      }
+    ]
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "afa66aeb80fd",
+  "storage": "volatile",
+  "retention_evictions": [
+    {
+      "task": "afa66aeb80fd",
+      "at": 1794169828.556,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "4033df4f4454",
+      "at": 1794169828.558,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "7e469fa8e416",
+      "at": 1794169831.639,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "f42dc810a3c2",
+      "at": 1794169831.648,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "114b26530adf",
+      "at": 1794169834.746,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "2e49655a5a3f",
+      "at": 1794169837.851,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "33fb0b88950f",
+      "at": 1794169837.862,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "8343ce4e7813",
+      "at": 1794169840.971,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "dec77407f333",
+      "at": 1794169844.084,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "d1ea55e56363",
+      "at": 1794169844.087,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "aee4c9f73106",
+      "at": 1794169847.204,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "692b1d576bb6",
+      "at": 1794169850.328,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "27ca1facf3a8",
+      "at": 1794169850.331,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "05769aa19f7f",
+      "at": 1794169853.445,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "e167ad65b2e0",
+      "at": 1794169853.448,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "d2e5e2e9dbbc",
+      "at": 1794169856.565,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "f0cc42568f88",
+      "at": 1794169859.684,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "108b26fe167e",
+      "at": 1794169859.687,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "ce7b725aa514",
+      "at": 1794169862.785,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "d44094025855",
+      "at": 1794169865.903,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "1a5ef9cd3c1c",
+      "at": 1794169865.904,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "26cfda174ed9",
+      "at": 1794169869.043,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "2c9496478e21",
+      "at": 1794169872.167,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "d6f28cbcd24e",
+      "at": 1794169872.17,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "604428e3363a",
+      "at": 1794169875.312,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "733f1ba1b820",
+      "at": 1794169875.323,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "4bb85329752d",
+      "at": 1794169878.443,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "539be789f886",
+      "at": 1794169881.569,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "1a5f85060309",
+      "at": 1794169881.572,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "7c2881ef8c59",
+      "at": 1794169884.714,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "5ceda1fd547e",
+      "at": 1794169887.865,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "8f2524f53b58",
+      "at": 1794169887.868,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "b7bdce2049e8",
+      "at": 1794169891.023,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "5e222c5b4e83",
+      "at": 1794169894.152,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "91c074870d68",
+      "at": 1794169894.164,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "9de9686fdcff",
+      "at": 1794169897.29,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "289a4e6a0e55",
+      "at": 1794169897.302,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "38a5adf5adc9",
+      "at": 1794169900.415,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "c3cd406cabd0",
+      "at": 1794169903.532,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "62cbfa9af731",
+      "at": 1794169903.534,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "d0bd4c825b43",
+      "at": 1794169906.685,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "207b413ca045",
+      "at": 1794169909.812,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "7b2e4b535575",
+      "at": 1794169909.824,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "448f155788fc",
+      "at": 1794169912.963,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "bb00697af1bd",
+      "at": 1794169916.088,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "300b266832c6",
+      "at": 1794169916.091,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "1a1136b6a46c",
+      "at": 1794169919.223,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "fe1d83d8ae4d",
+      "at": 1794169922.348,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "683d1a46afd2",
+      "at": 1794169922.355,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "55516542f72f",
+      "at": 1794169925.49,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "abfbc6d88aa7",
+      "at": 1794169925.492,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "96ddd25495bb",
+      "at": 1794169928.646,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "b25244fdca7f",
+      "at": 1794169931.743,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "2884eacfc5c2",
+      "at": 1794169931.745,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "6a1c60ff8451",
+      "at": 1794169934.903,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "0a3df1717404",
+      "at": 1794169938.006,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "fc686c9579ce",
+      "at": 1794169938.009,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "8b5b435e40a5",
+      "at": 1794169941.143,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "f0c4820a9ff4",
+      "at": 1794169944.332,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "b6580b18fbbb",
+      "at": 1794169944.352,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "f8bf43e6db28",
+      "at": 1794169947.506,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "9b18ae8fdb36",
+      "at": 1794169947.509,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "3f2fecb1c821",
+      "at": 1794169950.632,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "1bf978f09c18",
+      "at": 1794169953.735,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "fa33af7dc933",
+      "at": 1794169953.746,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "4de134febee6",
+      "at": 1794169956.864,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "cd9c759c0c9a",
+      "at": 1794169959.951,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "3deae9ee72d3",
+      "at": 1794169959.963,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "eb67a80543e1",
+      "at": 1794169963.085,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "430e59c0b767",
+      "at": 1794169966.204,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "5d077ed130a3",
+      "at": 1794169966.207,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "328a06d9914c",
+      "at": 1794169969.306,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "6c2ae65716f8",
+      "at": 1794169969.309,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "ec9b67e5faa4",
+      "at": 1794169972.411,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "dbcf35d85792",
+      "at": 1794169975.546,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "3ab53ca8e639",
+      "at": 1794169975.549,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "296d359c803c",
+      "at": 1794169978.65,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "9ec95399704e",
+      "at": 1794169981.785,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "5be0c873110c",
+      "at": 1794169981.788,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "c5c1c4a1a6e9",
+      "at": 1794169984.91,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "732633f8995a",
+      "at": 1794169988.03,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "8917ec2a3388",
+      "at": 1794169988.033,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "0d3b6d83286b",
+      "at": 1794169991.125,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "81d3217b28d0",
+      "at": 1794169994.246,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "7978af2adf4a",
+      "at": 1794169994.249,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "2f3e97f6a173",
+      "at": 1794169997.385,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "caf84ce27c5a",
+      "at": 1794169997.388,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "8ae7d328bda3",
+      "at": 1794170000.503,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "8bc3ca8dac00",
+      "at": 1794170003.63,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "02f52a9a21d3",
+      "at": 1794170003.641,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "885a97e0a440",
+      "at": 1794170006.754,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "a1ee4460cca4",
+      "at": 1794170009.863,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "b990abc29ac1",
+      "at": 1794170009.866,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "9b2035fc7350",
+      "at": 1794170012.991,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "e01e354aeac6",
+      "at": 1794170016.128,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "07db897e7162",
+      "at": 1794170016.132,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "6cd31dbb40fe",
+      "at": 1794170019.288,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "4b9b35bbc41c",
+      "at": 1794170019.291,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "d95972c07f61",
+      "at": 1794170022.429,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "b289c36cde98",
+      "at": 1794170025.553,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "1465413ecaa7",
+      "at": 1794170025.555,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "89a10f5f291b",
+      "at": 1794170028.663,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "c3ef35f3f1f8",
+      "at": 1794170031.765,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "74f0e69a7ab8",
+      "at": 1794170031.768,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "499ae1e6a9d1",
+      "at": 1794170034.889,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "f2348d5f914a",
+      "at": 1794170038.034,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "c8d823e3c0e2",
+      "at": 1794170038.036,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "3263ef18033b",
+      "at": 1794170041.192,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "64d2cc1d6947",
+      "at": 1794170044.343,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "c5affcb00fe6",
+      "at": 1794170044.346,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "6677c3311573",
+      "at": 1794170047.446,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "57f6fa4b29f4",
+      "at": 1794170047.449,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "441ae8c68731",
+      "at": 1794170050.565,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "da657d6576d6",
+      "at": 1794170053.704,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "7a8c755e5c94",
+      "at": 1794170053.707,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "37464a7f6146",
+      "at": 1794170056.832,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "5b6ac8eaebae",
+      "at": 1794170059.947,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "4ac8099b8332",
+      "at": 1794170059.95,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "66543bac5669",
+      "at": 1794170063.087,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "7ce77eda37bc",
+      "at": 1794170066.228,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "f1abafb151b1",
+      "at": 1794170066.231,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "75dc100c9dce",
+      "at": 1794170069.383,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "02ce2e412841",
+      "at": 1794170069.388,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "3d5bf2d82556",
+      "at": 1794170072.509,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "75a0bb3e664a",
+      "at": 1794170075.667,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "60432a1c16b6",
+      "at": 1794170075.67,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "fd4f09d3fb8c",
+      "at": 1794170078.832,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "771a5c9e3584",
+      "at": 1794170081.985,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "16b9bf947571",
+      "at": 1794170081.988,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "b7071766c77e",
+      "at": 1794170085.129,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "5713b81745ea",
+      "at": 1794170088.272,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "29175e953afb",
+      "at": 1794170088.287,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "1a141189b5c1",
+      "at": 1794170091.452,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "bf76943f704b",
+      "at": 1794170091.464,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "a8263cd3c23a",
+      "at": 1794170094.588,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "6e3ca48fc281",
+      "at": 1794170097.722,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "5b2b6c39f2c9",
+      "at": 1794170097.724,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "680019a995c1",
+      "at": 1794170100.869,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "d236af642d43",
+      "at": 1794170104.023,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "224e1e585d28",
+      "at": 1794170104.027,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "7c6a4a70ba80",
+      "at": 1794170107.225,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "9cbcf3e568c2",
+      "at": 1794170110.373,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "f0f5767bb17d",
+      "at": 1794170110.375,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "4eafbb0dfc4b",
+      "at": 1794170113.528,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "fe3f227e2883",
+      "at": 1794170113.531,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "1b171a76cb39",
+      "at": 1794170116.669,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    },
+    {
+      "task": "b5df2a08871c",
+      "at": 1794170117.878,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    }
+  ],
+  "tracked_ids": [
+    "4033df4f4454",
+    "7e469fa8e416",
+    "f42dc810a3c2",
+    "114b26530adf",
+    "2e49655a5a3f",
+    "33fb0b88950f",
+    "8343ce4e7813",
+    "dec77407f333",
+    "d1ea55e56363",
+    "aee4c9f73106",
+    "692b1d576bb6",
+    "27ca1facf3a8",
+    "05769aa19f7f",
+    "e167ad65b2e0",
+    "d2e5e2e9dbbc",
+    "f0cc42568f88",
+    "108b26fe167e",
+    "ce7b725aa514",
+    "d44094025855",
+    "1a5ef9cd3c1c",
+    "26cfda174ed9",
+    "2c9496478e21",
+    "d6f28cbcd24e",
+    "604428e3363a",
+    "733f1ba1b820",
+    "4bb85329752d",
+    "539be789f886",
+    "1a5f85060309",
+    "7c2881ef8c59",
+    "5ceda1fd547e",
+    "8f2524f53b58",
+    "b7bdce2049e8",
+    "5e222c5b4e83",
+    "91c074870d68",
+    "9de9686fdcff",
+    "289a4e6a0e55",
+    "38a5adf5adc9",
+    "c3cd406cabd0",
+    "62cbfa9af731",
+    "d0bd4c825b43",
+    "207b413ca045",
+    "7b2e4b535575",
+    "448f155788fc",
+    "bb00697af1bd",
+    "300b266832c6",
+    "1a1136b6a46c",
+    "fe1d83d8ae4d",
+    "683d1a46afd2",
+    "55516542f72f",
+    "abfbc6d88aa7",
+    "96ddd25495bb",
+    "b25244fdca7f",
+    "2884eacfc5c2",
+    "6a1c60ff8451",
+    "0a3df1717404",
+    "fc686c9579ce",
+    "8b5b435e40a5",
+    "f0c4820a9ff4",
+    "b6580b18fbbb",
+    "f8bf43e6db28",
+    "9b18ae8fdb36",
+    "3f2fecb1c821",
+    "1bf978f09c18",
+    "fa33af7dc933",
+    "4de134febee6",
+    "cd9c759c0c9a",
+    "3deae9ee72d3",
+    "eb67a80543e1",
+    "430e59c0b767",
+    "5d077ed130a3",
+    "328a06d9914c",
+    "6c2ae65716f8",
+    "ec9b67e5faa4",
+    "dbcf35d85792",
+    "3ab53ca8e639",
+    "296d359c803c",
+    "9ec95399704e",
+    "5be0c873110c",
+    "c5c1c4a1a6e9",
+    "732633f8995a",
+    "8917ec2a3388",
+    "0d3b6d83286b",
+    "81d3217b28d0",
+    "7978af2adf4a",
+    "2f3e97f6a173",
+    "caf84ce27c5a",
+    "8ae7d328bda3",
+    "8bc3ca8dac00",
+    "02f52a9a21d3",
+    "885a97e0a440",
+    "a1ee4460cca4",
+    "b990abc29ac1",
+    "9b2035fc7350",
+    "e01e354aeac6",
+    "07db897e7162",
+    "6cd31dbb40fe",
+    "4b9b35bbc41c",
+    "d95972c07f61",
+    "b289c36cde98",
+    "1465413ecaa7",
+    "89a10f5f291b",
+    "c3ef35f3f1f8",
+    "74f0e69a7ab8",
+    "499ae1e6a9d1",
+    "f2348d5f914a",
+    "c8d823e3c0e2",
+    "3263ef18033b",
+    "64d2cc1d6947",
+    "c5affcb00fe6",
+    "6677c3311573",
+    "57f6fa4b29f4",
+    "441ae8c68731",
+    "da657d6576d6",
+    "7a8c755e5c94",
+    "37464a7f6146",
+    "5b6ac8eaebae",
+    "4ac8099b8332",
+    "66543bac5669",
+    "7ce77eda37bc",
+    "f1abafb151b1",
+    "75dc100c9dce",
+    "02ce2e412841",
+    "3d5bf2d82556",
+    "75a0bb3e664a",
+    "60432a1c16b6",
+    "fd4f09d3fb8c",
+    "771a5c9e3584",
+    "16b9bf947571",
+    "b7071766c77e",
+    "5713b81745ea",
+    "29175e953afb",
+    "1a141189b5c1",
+    "bf76943f704b",
+    "a8263cd3c23a",
+    "6e3ca48fc281",
+    "5b2b6c39f2c9",
+    "680019a995c1",
+    "d236af642d43",
+    "224e1e585d28",
+    "7c6a4a70ba80",
+    "9cbcf3e568c2",
+    "f0f5767bb17d",
+    "4eafbb0dfc4b",
+    "fe3f227e2883",
+    "1b171a76cb39",
+    "b5df2a08871c",
+    "3e80cc9d5ec8",
+    "273da598642c",
+    "bab013497c9a",
+    "2f764ee9b828",
+    "02a5d1df1256"
+  ],
+  "probe_counts": {
+    "health": 288,
+    "ready": 288,
+    "isolation": 97,
+    "integrity": 97
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/stress/k6_summary_api-tasks-submit_stress.json",
+  "stdout_log_path": "/tmp/r177cs/stress/k6_stdout_api-tasks-submit_stress.log",
+  "tracked_tasks": {
+    "submitted": 151,
+    "accepted": 151,
+    "completed": 151,
+    "failed": 0,
+    "timeout": 0,
+    "e2e_p50_ms": 17.055,
+    "e2e_p95_ms": 30.657,
+    "e2e_max_ms": 43.955,
+    "all_completed": true
+  }
+}

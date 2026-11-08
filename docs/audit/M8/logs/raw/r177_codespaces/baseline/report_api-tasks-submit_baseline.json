@@ -1,0 +1,211 @@
+{
+  "service": "api-tasks-submit",
+  "classification": "measured",
+  "ok": true,
+  "profile": "baseline",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 101,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.779429396039606,
+    "duration_med_ms": 3.649735,
+    "duration_p90_ms": 4.094431,
+    "duration_p95_ms": 4.749675,
+    "duration_p99_ms": 6.350694,
+    "duration_max_ms": 6.985671,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 101,
+    "p50_ms": 3.65,
+    "p95_ms": 4.75,
+    "p99_ms": 6.351,
+    "max_ms": 6.986,
+    "p95_ms_k6_method": 4.75
+  },
+  "params": {
+    "duration_s": 20,
+    "arrival_rate": 5,
+    "max_vus": 8
+  },
+  "baseline_params": {
+    "duration_s": 20,
+    "arrival_rate": 5,
+    "max_vus": 8
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 500.0,
+      "p95_stop_ms": 1000.0,
+      "p99_slo_ms": null,
+      "p99_stop_ms": null,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 5.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": false,
+      "rule": null,
+      "rule_id": null,
+      "reason": null,
+      "at_s": null,
+      "measurements": {}
+    },
+    "breaches": [],
+    "totals": {
+      "requests": 101,
+      "failed": 0,
+      "checks": 101,
+      "checks_passed": 101
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 4.27247,
+        "p99_ms": 4.373121,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 25,
+        "checks_ok": 25,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 1,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 4.094431,
+        "p99_ms": 5.866899,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 25,
+        "checks_ok": 25,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 2,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 5.269488,
+        "p99_ms": 6.985671,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 25,
+        "checks_ok": 25,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 25,
+        "sufficient": true,
+        "p95_ms": 4.109618,
+        "p99_ms": 6.350694,
+        "reqs": 25,
+        "failed": 0,
+        "checks": 25,
+        "checks_ok": 25,
+        "iters": 25,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 1,
+        "sufficient": false,
+        "p95_ms": 3.427159,
+        "p99_ms": 3.427159,
+        "reqs": 1,
+        "failed": 0,
+        "checks": 1,
+        "checks_ok": 1,
+        "iters": 1,
+        "dropped": 0
+      }
+    ]
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "b38f02f04687",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [
+    "437e51e4e8f2",
+    "10584b653cc8",
+    "c3bc9c2ee872",
+    "85e25e827f06",
+    "7a588a5674eb",
+    "83814b48fb09",
+    "e4f233a10981",
+    "a8d7f51116c1",
+    "ed4a5034d6a1",
+    "e2db525b9740",
+    "59b59332261d"
+  ],
+  "probe_counts": {
+    "health": 20,
+    "ready": 20,
+    "isolation": 7,
+    "integrity": 7
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/baseline/k6_summary_api-tasks-submit_baseline.json",
+  "stdout_log_path": "/tmp/r177cs/baseline/k6_stdout_api-tasks-submit_baseline.log",
+  "tracked_tasks": {
+    "submitted": 11,
+    "accepted": 11,
+    "completed": 11,
+    "failed": 0,
+    "timeout": 0,
+    "e2e_p50_ms": 9.043,
+    "e2e_p95_ms": 12.626,
+    "e2e_max_ms": 12.626,
+    "all_completed": true
+  }
+}

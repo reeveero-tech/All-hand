@@ -1,0 +1,298 @@
+{
+  "service": "frontend",
+  "classification": "measured",
+  "ok": true,
+  "profile": "normal",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<300"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 300,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 1201,
+    "requests_failed": 0,
+    "duration_avg_ms": 1.719630910074939,
+    "duration_med_ms": 1.688499,
+    "duration_p90_ms": 1.97908,
+    "duration_p95_ms": 2.07186,
+    "duration_p99_ms": 2.43747,
+    "duration_max_ms": 15.377382,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 1201,
+    "p50_ms": 1.688,
+    "p95_ms": 2.072,
+    "p99_ms": 2.437,
+    "max_ms": 15.377,
+    "p95_ms_k6_method": 2.072
+  },
+  "params": {
+    "duration_s": 60,
+    "arrival_rate": 20,
+    "max_vus": 24
+  },
+  "baseline_params": {
+    "duration_s": 60,
+    "arrival_rate": 20,
+    "max_vus": 24
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 300.0,
+      "p95_stop_ms": 600.0,
+      "p99_slo_ms": null,
+      "p99_stop_ms": null,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 20.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": false,
+      "rule": null,
+      "rule_id": null,
+      "reason": null,
+      "at_s": null,
+      "measurements": {}
+    },
+    "breaches": [],
+    "totals": {
+      "requests": 1201,
+      "failed": 0,
+      "checks": 2402,
+      "checks_passed": 2402
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.353656,
+        "p99_ms": 3.764386,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 99,
+        "dropped": 0
+      },
+      {
+        "idx": 1,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 1.99303,
+        "p99_ms": 2.180713,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 2,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.066674,
+        "p99_ms": 2.3266,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 1.993457,
+        "p99_ms": 2.138191,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.111182,
+        "p99_ms": 2.317298,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 5,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.193827,
+        "p99_ms": 2.880828,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 6,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.031553,
+        "p99_ms": 2.123534,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 7,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.154438,
+        "p99_ms": 2.43747,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 8,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.006028,
+        "p99_ms": 2.154024,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 9,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.046049,
+        "p99_ms": 2.4112,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 10,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.014199,
+        "p99_ms": 2.358867,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 11,
+        "samples": 100,
+        "sufficient": true,
+        "p95_ms": 2.07186,
+        "p99_ms": 3.214047,
+        "reqs": 100,
+        "failed": 0,
+        "checks": 200,
+        "checks_ok": 200,
+        "iters": 100,
+        "dropped": 0
+      },
+      {
+        "idx": 12,
+        "samples": 1,
+        "sufficient": false,
+        "p95_ms": 1.400174,
+        "p99_ms": 1.400174,
+        "reqs": 1,
+        "failed": 0,
+        "checks": 2,
+        "checks_ok": 2,
+        "iters": 2,
+        "dropped": 0
+      }
+    ]
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "3cf7a4e4fe16",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/normal/k6_summary_frontend_normal.json",
+  "stdout_log_path": "/tmp/r177cs/normal/k6_stdout_frontend_normal.log",
+  "frontend_paths": [
+    "/",
+    "/assets/index-8tYp6104.js",
+    "/assets/index-B6dOodBA.css",
+    "/agents"
+  ]
+}

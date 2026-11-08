@@ -1,0 +1,353 @@
+{
+  "service": "api-chat",
+  "classification": "measured",
+  "ok": true,
+  "profile": "normal",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<2000",
+      "p(99)<1000"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 2000,
+  "slo_p99_ms": 1000,
+  "metrics": {
+    "http_reqs": 601,
+    "requests_failed": 0,
+    "duration_avg_ms": 6.7621434875208,
+    "duration_med_ms": 6.45062,
+    "duration_p90_ms": 8.066049,
+    "duration_p95_ms": 8.702503,
+    "duration_p99_ms": 10.797079,
+    "duration_max_ms": 31.426348,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 601,
+    "p50_ms": 6.451,
+    "p95_ms": 8.703,
+    "p99_ms": 10.797,
+    "max_ms": 31.426,
+    "p95_ms_k6_method": 8.703
+  },
+  "params": {
+    "duration_s": 60,
+    "arrival_rate": 10,
+    "max_vus": 16
+  },
+  "baseline_params": {
+    "duration_s": 60,
+    "arrival_rate": 10,
+    "max_vus": 16
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 2000.0,
+      "p95_stop_ms": 4000.0,
+      "p99_slo_ms": 1000.0,
+      "p99_stop_ms": 2000.0,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 10.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": false,
+      "rule": null,
+      "rule_id": null,
+      "reason": null,
+      "at_s": null,
+      "measurements": {}
+    },
+    "breaches": [],
+    "totals": {
+      "requests": 601,
+      "failed": 0,
+      "checks": 1202,
+      "checks_passed": 1202
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 8.702503,
+        "p99_ms": 10.136283,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 1,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 8.134975,
+        "p99_ms": 10.797079,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 2,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 7.805303,
+        "p99_ms": 8.780416,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 10.33454,
+        "p99_ms": 11.507436,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 8.295036,
+        "p99_ms": 9.888817,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 5,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 8.055386,
+        "p99_ms": 8.934817,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 6,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 8.049795,
+        "p99_ms": 9.460488,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 7,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 8.223118,
+        "p99_ms": 13.643112,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 8,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 8.25974,
+        "p99_ms": 8.376495,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 9,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 8.498095,
+        "p99_ms": 11.046238,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 10,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 9.816414,
+        "p99_ms": 31.426348,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 11,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 9.427119,
+        "p99_ms": 9.915902,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 100,
+        "checks_ok": 100,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 12,
+        "samples": 1,
+        "sufficient": false,
+        "p95_ms": 6.879453,
+        "p99_ms": 6.879453,
+        "reqs": 1,
+        "failed": 0,
+        "checks": 2,
+        "checks_ok": 2,
+        "iters": 1,
+        "dropped": 0
+      }
+    ]
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "4790c166b78a",
+  "storage": "volatile",
+  "retention_evictions": [
+    {
+      "task": "4790c166b78a",
+      "at": 1794168869.422,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    }
+  ],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 60,
+    "ready": 60,
+    "isolation": 21,
+    "integrity": 21
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/normal/k6_summary_api-chat_normal.json",
+  "stdout_log_path": "/tmp/r177cs/normal/k6_stdout_api-chat_normal.log",
+  "p99_assessment": {
+    "quantile": 0.99,
+    "threshold_ms": 1000.0,
+    "n": 601,
+    "n_min_required": 299,
+    "confidence": 0.95,
+    "point_ms": 10.797,
+    "upper_bound_ms": 13.643,
+    "sufficient": true,
+    "verdict": "pass",
+    "passed": true,
+    "rule": "pass ⇔ n >= n_min AND point < threshold AND distribution-free 95% upper bound < threshold"
+  },
+  "tail_review": {
+    "n": 601,
+    "max_ms": 31.426,
+    "med_ms": 6.451,
+    "max_over_med": 4.87,
+    "over_threshold": 0,
+    "over_half_threshold": 0,
+    "top": [
+      {
+        "ms": 31.426,
+        "t_s": 51.461,
+        "endpoint": "chat",
+        "seq": 514
+      },
+      {
+        "ms": 13.643,
+        "t_s": 35.244,
+        "endpoint": "chat",
+        "seq": 352
+      },
+      {
+        "ms": 11.959,
+        "t_s": 51.242,
+        "endpoint": "chat",
+        "seq": 512
+      },
+      {
+        "ms": 11.507,
+        "t_s": 15.341,
+        "endpoint": "chat",
+        "seq": 153
+      },
+      {
+        "ms": 11.203,
+        "t_s": 37.841,
+        "endpoint": "chat",
+        "seq": 378
+      }
+    ]
+  }
+}

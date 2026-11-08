@@ -968,12 +968,13 @@ def _diff_counts(a: Optional[Dict[str, int]], b: Optional[Dict[str, int]]) -> Di
 
 
 def _run_each(names, sut_url, api_key, out, profile="baseline", tenants=None,
-              storage=None):
+              storage=None, allow_dedicated_env=False):
     reports: Dict[str, Any] = {}
     for name in names:
         t0 = time.time()
         reports[name] = run_service(name, sut_url=sut_url, api_key=api_key, out_dir=out,
-                                    profile=profile, tenants=tenants, storage=storage)
+                                    profile=profile, tenants=tenants, storage=storage,
+                                    allow_dedicated_env=allow_dedicated_env)
         print(f"[{name}:{profile}] {_brief(reports[name])} ({time.time() - t0:.0f}s)",
               flush=True)
     return reports
@@ -983,9 +984,19 @@ def run_all_baselines(sut_url: Optional[str] = None,
                       api_key: str = DEFAULT_API_KEY,
                       out_dir: Optional[pathlib.Path] = None,
                       profile: str = "baseline", storage: str = "volatile",
-                      services: Optional[List[str]] = None) -> Dict[str, Any]:
-    """كل الخدمات المقيسة — SUT واحد، حمل تلو الآخر، ملخص مصنف."""
+                      services: Optional[List[str]] = None,
+                      allow_dedicated_env: bool = False) -> Dict[str, Any]:
+    """كل الخدمات المقيسة — SUT واحد، حمل تلو الآخر، ملخص مصنف.
+
+    D-141: تجاوز Q-023 المزدوج (`allow_dedicated_env` + `AGOS_ALLOW_BIG_LOAD=1`) يُمرَّر
+    إلى كل خدمة؛ ويُفحص الحرس مرة قبل تشغيل أي SUT فلا يبدأ شيء ثم يُرفض.
+    """
     data = load_services()
+    if profile not in ("baseline", "normal"):
+        heavy = (data.get("heavy_profiles") or {}).get(profile)
+        if not heavy:
+            raise SystemExit(f"unknown profile {profile}")
+        _guard_dedicated_env(heavy, allow_dedicated_env)
     names = services or [n for n, s in data["services"].items() if s.get("measured")]
     out = pathlib.Path(out_dir) if out_dir else pathlib.Path(
         tempfile.mkdtemp(prefix="r177_all_"))
@@ -993,12 +1004,14 @@ def run_all_baselines(sut_url: Optional[str] = None,
 
     reports: Dict[str, Any] = {}
     if sut_url is not None:
-        reports = _run_each(names, sut_url, api_key, out, profile)
+        reports = _run_each(names, sut_url, api_key, out, profile,
+                            allow_dedicated_env=allow_dedicated_env)
     else:
         with sut_process(api_key, storage=storage) as sut:  # SUT محلي منفصل
             before = coverage_snapshot(sut.url, api_key)
             reports = _run_each(names, sut.url, api_key, out, profile, sut.tenants,
-                                storage=sut.storage)
+                                storage=sut.storage,
+                                allow_dedicated_env=allow_dedicated_env)
             after = coverage_snapshot(sut.url, api_key)
             coverage = {"tools_executed_during_run": _diff_counts(before.get("executed"),
                                                                    after.get("executed")),
@@ -1199,7 +1212,8 @@ def main() -> int:
         names = args.services.split(",") if args.services else None
         summary = run_all_baselines(sut_url=args.sut_url, api_key=args.api_key, out_dir=out,
                                     profile=args.profile, storage=args.storage,
-                                    services=names)
+                                    services=names,
+                                    allow_dedicated_env=args.allow_dedicated_env)
         return 0 if summary["counts"]["failed"] == 0 else 1
     if args.service:
         if args.sut_url:

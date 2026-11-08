@@ -1,0 +1,23 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/user/workspace/All-hand
+configfile: pytest.ini
+plugins: asyncio-1.4.1.post1, anyio-4.15.1, ddtrace-4.16.3
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3 items
+
+tests/test_r177_all_heavy_override.py F.F                                [100%]
+
+=================================== FAILURES ===================================
+__________ test_all_heavy_with_double_override_reaches_every_service ___________
+tests/test_r177_all_heavy_override.py:42: in test_all_heavy_with_double_override_reaches_every_service
+    s = m.run_all_baselines(sut_url="http://127.0.0.1:9", out_dir=tmp_path, profile="stress",
+E   TypeError: run_all_baselines() got an unexpected keyword argument 'allow_dedicated_env'
+________________ test_all_heavy_flag_without_env_still_refused _________________
+tests/test_r177_all_heavy_override.py:67: in test_all_heavy_flag_without_env_still_refused
+    m.run_all_baselines(sut_url="http://127.0.0.1:9", out_dir=tmp_path, profile="spike",
+E   TypeError: run_all_baselines() got an unexpected keyword argument 'allow_dedicated_env'
+=========================== short test summary info ============================
+FAILED tests/test_r177_all_heavy_override.py::test_all_heavy_with_double_override_reaches_every_service
+FAILED tests/test_r177_all_heavy_override.py::test_all_heavy_flag_without_env_still_refused
+========================= 2 failed, 1 passed in 0.16s ==========================
