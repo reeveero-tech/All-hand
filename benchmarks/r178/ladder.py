@@ -103,18 +103,18 @@ class RssSampler(threading.Thread):
         self.pid, self.interval_s = pid, interval_s
         self.peak_kb = 0
         self.samples = 0
-        self._stop = threading.Event()
+        self._halt = threading.Event()
 
     def run(self) -> None:
-        while not self._stop.is_set():
+        while not self._halt.is_set():
             s = read_status_kb(self.pid)
             if s:
                 self.peak_kb = max(self.peak_kb, s.get("VmRSS", 0))
                 self.samples += 1
-            self._stop.wait(self.interval_s)
+            self._halt.wait(self.interval_s)
 
     def stop(self) -> None:
-        self._stop.set()
+        self._halt.set()
         self.join(timeout=5)
 
     def peak_bytes(self) -> Optional[int]:
@@ -139,7 +139,7 @@ class QueueWaitListener(threading.Thread):
         self.accepted: Dict[str, float] = {}
         self.started: Dict[str, float] = {}
         self.lines = 0
-        self._stop = threading.Event()
+        self._halt = threading.Event()
         self._sock = None
 
     def run(self) -> None:
@@ -154,7 +154,7 @@ class QueueWaitListener(threading.Thread):
         except OSError:
             return
         buf = b""
-        while not self._stop.is_set():
+        while not self._halt.is_set():
             chunk = self._sock.read(4096)
             if not chunk:
                 break
@@ -181,7 +181,7 @@ class QueueWaitListener(threading.Thread):
             self.started[tid] = t
 
     def stop(self) -> None:
-        self._stop.set()
+        self._halt.set()
         self.join(timeout=5)
         if self._sock is not None:
             try:
