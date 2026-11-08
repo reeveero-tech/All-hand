@@ -1,0 +1,400 @@
+# 391 — R-177 (D-142): native-JSON fast path for /api/agents and /api/admin/tools + RISK-036 measured probe
+# base=6b82d04331b801a54f6cdbd882e3cc4923b8f743 (main after PR #338), branch m9/r177-native-json-fastpath, 2026-11-08T23:09:53Z
+# host: 3.14.8 2 cpus, Model name: Intel(R) Xeon(R) Processor @ 2.90GHz
+# environment: this sandbox (NOT the Q-023 isolated env, NOT production). In-process TestClient numbers include client overhead.
+# Contract rule (owner): API shape/status/headers MUST NOT change. Production config (render.yaml/Dockerfile) NOT changed.
+
+## 1. RED (tests/test_r177_native_json_fastpath.py on base code; fast-path absent ⇒ helper missing, and the generic encoder IS walked: 'assert 2 == 0')
+E   AttributeError: module 'server' has no attribute '_native_json_response'
+=========================== short test summary info ============================
+FAILED tests/test_r177_native_json_fastpath.py::test_agents_list_is_byte_identical_to_the_generic_path
+FAILED tests/test_r177_native_json_fastpath.py::test_agents_filter_is_byte_identical_and_still_filters
+FAILED tests/test_r177_native_json_fastpath.py::test_admin_tools_is_byte_identical_and_still_role_gated
+FAILED tests/test_r177_native_json_fastpath.py::test_the_routes_no_longer_walk_the_generic_encoder
+FAILED tests/test_r177_native_json_fastpath.py::test_non_native_values_fall_back_to_the_generic_encoder[content0]
+FAILED tests/test_r177_native_json_fastpath.py::test_non_native_values_fall_back_to_the_generic_encoder[content1]
+FAILED tests/test_r177_native_json_fastpath.py::test_non_native_values_fall_back_to_the_generic_encoder[content2]
+FAILED tests/test_r177_native_json_fastpath.py::test_non_native_values_fall_back_to_the_generic_encoder[content3]
+FAILED tests/test_r177_native_json_fastpath.py::test_native_values_render_exactly_like_the_generic_encoder[content0]
+FAILED tests/test_r177_native_json_fastpath.py::test_native_values_render_exactly_like_the_generic_encoder[content1]
+FAILED tests/test_r177_native_json_fastpath.py::test_native_values_render_exactly_like_the_generic_encoder[content2]
+FAILED tests/test_r177_native_json_fastpath.py::test_native_values_render_exactly_like_the_generic_encoder[content3]
+FAILED tests/test_r177_native_json_fastpath.py::test_nan_is_still_rejected_like_before
+============================== 13 failed in 1.22s ==============================
+
+## 2. Root cause — cProfile, 200 requests, BEFORE (base code)
+### GET /api/agents (1000 agents, 148015 bytes)
+200 148015
+mean_ms=14.62
+         33240465 function calls (29836863 primitive calls) in 12.256 seconds
+
+   Ordered by: internal time
+   List reduced from 477 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+3401000/200    6.027    0.000   10.760    0.054 /home/user/.local/lib/python3.14/site-packages/fastapi/encoders.py:129(jsonable_encoder)
+19442200/19441800    2.585    0.000    2.590    0.000 {built-in method builtins.isinstance}
+  3401000    1.451    0.000    2.166    0.000 /usr/local/lib/python3.14/dataclasses.py:1477(is_dataclass)
+  3407600    0.337    0.000    0.337    0.000 {built-in method builtins.hasattr}
+      200    0.220    0.001    0.220    0.001 /usr/local/lib/python3.14/json/encoder.py:207(iterencode)
+  1601600    0.212    0.000    0.212    0.000 {method 'startswith' of 'str' objects}
+     1200    0.196    0.000    0.196    0.000 {method 'execute' of 'sqlite3.Connection' objects}
+   200000    0.160    0.000    0.215    0.000 /home/user/workspace/All-hand/agent_civilization/agents/real/real_agents.py:168(snapshot)
+      200    0.158    0.001    0.394    0.002 /home/user/workspace/All-hand/server.py:2396(list_agents)
+   400600    0.064    0.000    0.064    0.000 {method 'keys' of 'dict' objects}
+   402800    0.061    0.000    0.061    0.000 {method 'items' of 'dict' objects}
+      200    0.055    0.000    0.055    0.000 {method 'close' of 'sqlite3.Connection' objects}
+### GET /api/admin/tools (100 tools, 26589 bytes)
+200 26589
+mean_ms=3.68
+         5215685 function calls (4737683 primitive calls) in 2.468 seconds
+
+   Ordered by: internal time
+   List reduced from 499 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+476000/200    0.837    0.000    1.500    0.007 /home/user/.local/lib/python3.14/site-packages/fastapi/encoders.py:129(jsonable_encoder)
+2741000/2740600    0.378    0.000    0.382    0.000 {built-in method builtins.isinstance}
+   476000    0.203    0.000    0.305    0.000 /usr/local/lib/python3.14/dataclasses.py:1477(is_dataclass)
+     1600    0.186    0.000    0.186    0.000 {method 'execute' of 'sqlite3.Connection' objects}
+      200    0.060    0.000    0.060    0.000 {method 'close' of 'sqlite3.Connection' objects}
+   483800    0.050    0.000    0.050    0.000 {built-in method builtins.hasattr}
+      200    0.034    0.000    0.034    0.000 /usr/local/lib/python3.14/json/encoder.py:207(iterencode)
+      400    0.034    0.000    0.107    0.000 /home/user/workspace/All-hand/agent_civilization/core/tool_registry.py:369(search)
+   227400    0.029    0.000    0.029    0.000 {method 'startswith' of 'str' objects}
+    41600    0.026    0.000    0.032    0.000 /home/user/workspace/All-hand/agent_civilization/core/tool_registry.py:226(_vkey)
+      200    0.021    0.000    0.172    0.001 /home/user/workspace/All-hand/server.py:3244(admin_list_tools)
+     1594    0.018    0.000    0.018    0.000 {method 'poll' of 'select.epoll' objects}
+
+## 3. AFTER (fast path)
+### GET /api/agents
+200 148015
+mean_ms=4.12
+         1026196 function calls (1023394 primitive calls) in 1.234 seconds
+
+   Ordered by: internal time
+   List reduced from 472 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      200    0.220    0.001    0.220    0.001 /usr/local/lib/python3.14/json/encoder.py:207(iterencode)
+     1200    0.166    0.000    0.166    0.000 {method 'execute' of 'sqlite3.Connection' objects}
+   200000    0.152    0.000    0.211    0.000 /home/user/workspace/All-hand/agent_civilization/agents/real/real_agents.py:168(snapshot)
+      200    0.121    0.001    0.583    0.003 /home/user/workspace/All-hand/server.py:2415(list_agents)
+   200200    0.059    0.000    0.059    0.000 {built-in method builtins.round}
+      200    0.050    0.000    0.050    0.000 {method 'close' of 'sqlite3.Connection' objects}
+   200200    0.023    0.000    0.023    0.000 /home/user/workspace/All-hand/server.py:604(_all_agents)
+      400    0.013    0.000    0.608    0.002 /home/user/workspace/All-hand/server.py:355(wrapper)
+      200    0.011    0.000    0.014    0.000 {built-in method _sqlite3.connect}
+     1591    0.009    0.000    1.109    0.001 /usr/local/lib/python3.14/asyncio/base_events.py:1982(_run_once)
+     1198    0.008    0.000    0.008    0.000 {method 'recv' of '_socket.socket' objects}
+     1591    0.008    0.000    0.008    0.000 {method 'poll' of 'select.epoll' objects}
+### GET /api/admin/tools
+200 26589
+mean_ms=2.33
+         775752 function calls (773550 primitive calls) in 0.764 seconds
+
+   Ordered by: internal time
+   List reduced from 494 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     1600    0.143    0.000    0.143    0.000 {method 'execute' of 'sqlite3.Connection' objects}
+      200    0.044    0.000    0.044    0.000 {method 'close' of 'sqlite3.Connection' objects}
+      400    0.031    0.000    0.103    0.000 /home/user/workspace/All-hand/agent_civilization/core/tool_registry.py:369(search)
+      200    0.029    0.000    0.029    0.000 /usr/local/lib/python3.14/json/encoder.py:207(iterencode)
+    41600    0.025    0.000    0.031    0.000 /home/user/workspace/All-hand/agent_civilization/core/tool_registry.py:226(_vkey)
+      200    0.018    0.000    0.196    0.001 /home/user/workspace/All-hand/server.py:3263(admin_list_tools)
+   124999    0.016    0.000    0.016    0.000 {method 'get' of 'dict' objects}
+    40000    0.014    0.000    0.043    0.000 /home/user/workspace/All-hand/agent_civilization/core/tool_registry.py:395(<lambda>)
+     1800    0.012    0.000    0.055    0.000 {built-in method builtins.sorted}
+      200    0.010    0.000    0.067    0.000 /home/user/workspace/All-hand/agent_civilization/core/tool_certification.py:72(state_counts)
+      200    0.009    0.000    0.012    0.000 {built-in method _sqlite3.connect}
+     1597    0.008    0.000    0.647    0.000 /usr/local/lib/python3.14/asyncio/base_events.py:1982(_run_once)
+
+## 4. Before → after, CPU ms per request (median of 3 reps; /api/agents n=400/rep, /api/admin/tools n=800/rep)
+### AGENTS_PER_SPEC=50 (1000 agents — the R-177 harness default)
+before: {"/api/agents": {"n_per_rep": 400, "reps": [{"wall_ms": 15.636, "cpu_ms": 14.938}, {"wall_ms": 15.356, "cpu_ms": 14.627}, {"wall_ms": 15.234, "cpu_ms": 14.421}], "median_cpu_ms": 14.627}, "/api/admin/tools": {"n_per_rep": 800, "reps": [{"wall_ms": 3.731, "cpu_ms": 3.298}, {"wall_ms": 3.848, "cpu_ms": 3.395}, {"wall_ms": 3.967, "cpu_ms": 3.517}], "median_cpu_ms": 3.395}}
+after:  {"/api/agents": {"n_per_rep": 400, "reps": [{"wall_ms": 3.895, "cpu_ms": 3.48}, {"wall_ms": 4.118, "cpu_ms": 3.614}, {"wall_ms": 3.869, "cpu_ms": 3.475}], "median_cpu_ms": 3.48}, "/api/admin/tools": {"n_per_rep": 800, "reps": [{"wall_ms": 2.593, "cpu_ms": 2.119}, {"wall_ms": 2.563, "cpu_ms": 2.134}, {"wall_ms": 2.744, "cpu_ms": 2.295}], "median_cpu_ms": 2.134}}
+### AGENTS_PER_SPEC=3 (60 agents — the value in render.yaml)
+before: {"/api/agents": {"n_per_rep": 400, "reps": [{"wall_ms": 2.701, "cpu_ms": 2.27}, {"wall_ms": 2.904, "cpu_ms": 2.37}, {"wall_ms": 2.658, "cpu_ms": 2.241}], "median_cpu_ms": 2.27}, "/api/admin/tools": {"n_per_rep": 800, "reps": [{"wall_ms": 4.047, "cpu_ms": 3.564}, {"wall_ms": 3.987, "cpu_ms": 3.518}, {"wall_ms": 4.131, "cpu_ms": 3.596}], "median_cpu_ms": 3.564}}
+after:  {"/api/agents": {"n_per_rep": 400, "reps": [{"wall_ms": 2.091, "cpu_ms": 1.697}, {"wall_ms": 2.191, "cpu_ms": 1.806}, {"wall_ms": 2.319, "cpu_ms": 1.852}], "median_cpu_ms": 1.806}, "/api/admin/tools": {"n_per_rep": 800, "reps": [{"wall_ms": 2.593, "cpu_ms": 2.2}, {"wall_ms": 2.79, "cpu_ms": 2.321}, {"wall_ms": 2.719, "cpu_ms": 2.312}], "median_cpu_ms": 2.312}}
+
+## 5. Contract identity (base vs fast path, fresh process each; sha256 of the full body + content-type/length)
+### before
+{
+ "/api/agents": {
+  "status": 200,
+  "sha256": "ec3828106e8c2e7e7f7a9fa9deff5685b6373d32d6df3473d3cf9360a7b59975",
+  "bytes": 148015,
+  "headers": {
+   "content-length": "148015",
+   "content-type": "application/json"
+  }
+ },
+ "/api/agents?specialization=analyst": {
+  "status": 200,
+  "sha256": "7b6df16e215a3eb09f747a2a27df6cc1831f88b99553d9b9d2893d5abd0c308f",
+  "bytes": 7063,
+  "headers": {
+   "content-length": "7063",
+   "content-type": "application/json"
+  }
+ },
+ "/api/agents?specialization=nope": {
+  "status": 200,
+  "sha256": "f860ac6b4a78c1a005b0fcec8fe032e6ee56ffdd6c731482f7f7ea20d9132d1d",
+  "bytes": 23,
+  "headers": {
+   "content-length": "23",
+   "content-type": "application/json"
+  }
+ },
+ "/api/admin/tools": {
+  "status": 200,
+  "sha256": "a7edf369427706fc11a5fb9a44b9540552da334d5484160c7cefa6a46178fbad",
+  "bytes": 26789,
+  "headers": {
+   "content-length": "26789",
+   "content-type": "application/json"
+  }
+ }
+}
+### after
+{
+ "/api/agents": {
+  "status": 200,
+  "sha256": "ec3828106e8c2e7e7f7a9fa9deff5685b6373d32d6df3473d3cf9360a7b59975",
+  "bytes": 148015,
+  "headers": {
+   "content-length": "148015",
+   "content-type": "application/json"
+  }
+ },
+ "/api/agents?specialization=analyst": {
+  "status": 200,
+  "sha256": "7b6df16e215a3eb09f747a2a27df6cc1831f88b99553d9b9d2893d5abd0c308f",
+  "bytes": 7063,
+  "headers": {
+   "content-length": "7063",
+   "content-type": "application/json"
+  }
+ },
+ "/api/agents?specialization=nope": {
+  "status": 200,
+  "sha256": "f860ac6b4a78c1a005b0fcec8fe032e6ee56ffdd6c731482f7f7ea20d9132d1d",
+  "bytes": 23,
+  "headers": {
+   "content-length": "23",
+   "content-type": "application/json"
+  }
+ },
+ "/api/admin/tools": {
+  "status": 200,
+  "sha256": "a7edf369427706fc11a5fb9a44b9540552da334d5484160c7cefa6a46178fbad",
+  "bytes": 26789,
+  "headers": {
+   "content-length": "26789",
+   "content-type": "application/json"
+  }
+ }
+}
+diff: IDENTICAL
+openapi schema sha256 before=bf34816eb5b66ac37fd5eef617d87cf8ae6557de6b92b636ad7dbf5c5831b44f after=bf34816eb5b66ac37fd5eef617d87cf8ae6557de6b92b636ad7dbf5c5831b44f (IDENTICAL)
+
+## 6. RISK-036 probe (test-only uvicorn processes on this 2-cpu host; the load generator SHARES the host — scaling numbers are NOT capacity)
+# server_cpu_cores = (utime+stime of the uvicorn process tree)/elapsed. 1 worker pins ≈1.0 core ⇒ the one-process ceiling is MEASURED, not inferred.
+# with 2 workers the host is saturated by generator+server, so no throughput gain is visible here — a scaling measurement needs a separate generator (Q-023).
+# (measured with the fast path applied; errors = 503 from F5 below)
+{"workers": 1, "path": "/api/agents", "conc": 16, "dur_s": 15, "requests": 5102, "errors": 0, "rps": 337.8, "p50_ms": 33.4, "p95_ms": 91.5, "server_cpu_cores": 1.02, "server_pids": 1, "host_cpus": 2}
+{"workers": 2, "path": "/api/agents", "conc": 16, "dur_s": 15, "requests": 4922, "errors": 0, "rps": 322.2, "p50_ms": 25.6, "p95_ms": 128.4, "server_cpu_cores": 1.1, "server_pids": 4, "host_cpus": 2}
+{"workers": 1, "path": "/api/admin/tools", "conc": 16, "dur_s": 15, "requests": 6882, "errors": 5, "rps": 455.8, "p50_ms": 23.3, "p95_ms": 30.0, "server_cpu_cores": 0.98, "server_pids": 1, "host_cpus": 2}
+{"workers": 2, "path": "/api/admin/tools", "conc": 16, "dur_s": 15, "requests": 5935, "errors": 11, "rps": 391.1, "p50_ms": 9.4, "p95_ms": 134.1, "server_cpu_cores": 1.01, "server_pids": 4, "host_cpus": 2}
+
+## 7. RISK-036 probe — process-local state under --workers 2 (volatile storage, test-only): 40 tasks accepted, each read 3× by id
+{"workers": 1, "post_status": {"202": 40}, "get_by_id_status": {"200": 120}, "tasks": 40}
+{"workers": 2, "post_status": {"202": 40}, "get_by_id_status": {"200": 66, "404": 54}, "tasks": 40}
+# ⇒ with 2 workers 54/120 reads (45%) answer 404 for ACCEPTED tasks: TASKS is process memory. Raising the worker count without shared state BREAKS the API.
+
+## 8. New finding F5 — shared SQLite rate limiter fails closed under CPU saturation (/api/admin/tools, 16 conns, 15 s, 1 worker)
+first run (window=60): {200: 6034, 503: 5} body={"detail":"rate limiter unavailable; retry later"}
+window=60 run=1 {200: 8696} {}
+window=1 run=1 {200: 5512, 503: 2} {503: b'{"detail":"rate limiter unavailable; retry later"}'}
+window=60 run=2 {200: 9007, 503: 3} {503: b'{"detail":"rate limiter unavailable; retry later"}'}
+window=1 run=2 {200: 11212} {}
+# ⇒ 0–0.08% 503 at ~400–750 req/s, independent of the window row count. Fail-closed is the designed behaviour (never unlimited) — NOT changed (security path; owner/design decision). Cause not isolated (busy_timeout 2 s exceeded while the loop is CPU-saturated; GIL contention suspected, unproven).
+
+## Appendix — exact probe sources (run from the repo root; not shipped as tools)
+### /tmp/perf/prof.py (sha256 9b1d6a14f0c8f00f64d6337d308450317f68f985883e16ec0f38c0ba4b690ee1)
+import os, sys, time, cProfile, pstats, io, json
+os.environ.update({"AGOS_ENV":"test","AGOS_LLM_KEYLESS":"1","AGOS_ALLOW_CODE_EXEC":"1","AGOS_API_KEY":"test:phase1","AGOS_RATE_LIMIT_REQUESTS":"1000000"})
+sys.path.insert(0, os.getcwd())
+from fastapi.testclient import TestClient
+import logging; logging.disable(logging.CRITICAL)
+import server
+path = sys.argv[1]; n = int(sys.argv[2]) if len(sys.argv)>2 else 200
+with TestClient(server.app) as c:
+    h={"X-API-Key":"test:phase1"}
+    r=c.get(path,headers=h); print(r.status_code, len(r.content))
+    for _ in range(20): c.get(path,headers=h)
+    t=time.perf_counter()
+    for _ in range(n): c.get(path,headers=h)
+    dt=(time.perf_counter()-t)/n*1000; print(f"mean_ms={dt:.2f}")
+    if "--prof" in sys.argv:
+        pr=cProfile.Profile(); pr.enable()
+        for _ in range(n): c.get(path,headers=h)
+        pr.disable(); s=io.StringIO(); pstats.Stats(pr,stream=s).sort_stats("tottime").print_stats(25); print(s.getvalue()[:6000])
+
+### /tmp/perf/bench.py (sha256 42fab21723abf00a8cc1195a922f048a4dc234f174174af59c67dfc70ba37ea5)
+import os, sys, time, json, tempfile, logging, statistics
+os.environ.update({"AGOS_ENV":"test","AGOS_LLM_KEYLESS":"1","AGOS_ALLOW_CODE_EXEC":"1","AGOS_API_KEY":"test:phase1","AGOS_RATE_LIMIT_REQUESTS":"1000000","AGOS_TOOL_REGISTRY_DB":tempfile.mktemp(suffix=".sqlite3")})
+sys.path.insert(0, os.getcwd()); logging.disable(50)
+from fastapi.testclient import TestClient
+import server
+res={}
+with TestClient(server.app) as c:
+    h={"X-API-Key":"test:phase1"}
+    for p,n in [("/api/agents",400),("/api/admin/tools",800)]:
+        for _ in range(30): c.get(p,headers=h)
+        reps=[]
+        for _ in range(3):
+            cpu0=time.process_time(); t=time.perf_counter()
+            for _ in range(n): c.get(p,headers=h)
+            reps.append({"wall_ms":(time.perf_counter()-t)/n*1000,"cpu_ms":(time.process_time()-cpu0)/n*1000})
+        res[p]={"n_per_rep":n,"reps":[{k:round(v,3) for k,v in r.items()} for r in reps],
+                "median_cpu_ms":round(statistics.median(r["cpu_ms"] for r in reps),3)}
+print(json.dumps(res))
+
+### /tmp/perf/bodies.py (sha256 4d313292b53d7670cb2de0a88395e1708f4843a292150992089b7c4390c61121)
+import os, sys, hashlib, json, tempfile, logging
+os.environ.update({"AGOS_ENV":"test","AGOS_LLM_KEYLESS":"1","AGOS_ALLOW_CODE_EXEC":"1","AGOS_API_KEY":"test:phase1","AGOS_RATE_LIMIT_REQUESTS":"1000000","AGOS_TOOL_REGISTRY_DB":tempfile.mktemp(suffix=".sqlite3")})
+sys.path.insert(0, os.getcwd()); logging.disable(50)
+from fastapi.testclient import TestClient
+import server
+out={}
+with TestClient(server.app) as c:
+    h={"X-API-Key":"test:phase1"}
+    for p in ["/api/agents","/api/agents?specialization=analyst","/api/agents?specialization=nope","/api/admin/tools"]:
+        r=c.get(p,headers=h)
+        out[p]={"status":r.status_code,"sha256":hashlib.sha256(r.content).hexdigest(),"bytes":len(r.content),
+                "headers":{k:v for k,v in r.headers.items() if k in("content-type","content-length")}}
+print(json.dumps(out,indent=1))
+
+### /tmp/perf/workers.py (sha256 0d6f06a5fb0d764780d44b2f8c5d36383537bf94b06331afe64d67d1ef89ca1f)
+"""RISK-036 probe: CPU ceiling of ONE uvicorn process vs --workers 2 (test-only).
+Measures server-side CPU (sum over the uvicorn process tree) and throughput."""
+import asyncio, json, os, subprocess, sys, time, tempfile, signal
+import aiohttp
+CLK = os.sysconf("SC_CLK_TCK")
+def tree(pid):
+    out=[pid]
+    for p in os.listdir("/proc"):
+        if p.isdigit():
+            try:
+                st=open(f"/proc/{p}/stat").read().split()
+                if int(st[3])==pid: out.append(int(p))
+            except Exception: pass
+    return out
+def cpu(pids):
+    t=0
+    for p in pids:
+        try:
+            st=open(f"/proc/{p}/stat").read().rsplit(")",1)[1].split(); t+=int(st[11])+int(st[12])
+        except Exception: pass
+    return t/CLK
+async def load(url, conc, dur, headers):
+    n=0; lat=[]; err=0; end=time.monotonic()+dur
+    async with aiohttp.ClientSession(headers=headers) as s:
+        async def w():
+            nonlocal n, err
+            while time.monotonic()<end:
+                t=time.perf_counter()
+                try:
+                    async with s.get(url) as r:
+                        await r.read(); ok=r.status==200
+                except Exception: ok=False
+                lat.append((time.perf_counter()-t)*1000); n+=1; err+= (not ok)
+        await asyncio.gather(*[w() for _ in range(conc)])
+    lat.sort(); return n, err, lat[len(lat)//2], lat[int(len(lat)*0.95)]
+def run(workers, path, port, conc=16, dur=15):
+    env={**os.environ,"AGOS_ENV":"test","AGOS_LLM_KEYLESS":"1","AGOS_API_KEY":"test:phase1","AGOS_RATE_LIMIT_REQUESTS":"100000000",
+         "AGOS_TOOL_REGISTRY_DB":tempfile.mktemp(suffix=".sqlite3")}
+    cmd=[sys.executable,"-m","uvicorn","server:app","--port",str(port),"--log-level","warning"]+(["--workers",str(workers)] if workers>1 else [])
+    p=subprocess.Popen(cmd,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    try:
+        import urllib.request
+        for _ in range(120):
+            try: urllib.request.urlopen(f"http://127.0.0.1:{port}/health",timeout=1); break
+            except Exception: time.sleep(0.5)
+        time.sleep(2)
+        pids=tree(p.pid); c0=cpu(pids); t0=time.monotonic()
+        n,err,p50,p95=asyncio.run(load(f"http://127.0.0.1:{port}{path}",conc,dur,{"X-API-Key":"test:phase1"}))
+        el=time.monotonic()-t0; c1=cpu(pids)
+        return {"workers":workers,"path":path,"conc":conc,"dur_s":dur,"requests":n,"errors":err,"rps":round(n/el,1),
+                "p50_ms":round(p50,1),"p95_ms":round(p95,1),"server_cpu_cores":round((c1-c0)/el,2),"server_pids":len(pids),
+                "host_cpus":os.cpu_count()}
+    finally:
+        p.send_signal(signal.SIGTERM)
+        try: p.wait(15)
+        except Exception: p.kill()
+if __name__=="__main__":
+    rows=[]
+    for path in sys.argv[2].split(","):
+        for w in (1,2):
+            rows.append(run(w,path,int(sys.argv[1])+w)); print(json.dumps(rows[-1]),flush=True)
+
+### /tmp/perf/divergence.py (sha256 5478e6790fb07e250a0ea7b5314b410338301fc3c3a2e8b5554ff4573331a4d4)
+import json, os, subprocess, sys, tempfile, time, signal, urllib.request, collections
+port=int(sys.argv[1]); workers=int(sys.argv[2])
+env={**os.environ,"AGOS_ENV":"test","AGOS_LLM_KEYLESS":"1","AGOS_API_KEY":"test:phase1","AGOS_RATE_LIMIT_REQUESTS":"100000000",
+     "AGOS_TOOL_REGISTRY_DB":tempfile.mktemp(suffix=".sqlite3"),"AGOS_RATE_LIMIT_DB":tempfile.mktemp(suffix=".sqlite3"),
+     "AGOS_SSE_ADMISSION_DB":tempfile.mktemp(suffix=".sqlite3")}
+cmd=[sys.executable,"-m","uvicorn","server:app","--port",str(port),"--log-level","warning"]+(["--workers",str(workers)] if workers>1 else [])
+p=subprocess.Popen(cmd,env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+B=f"http://127.0.0.1:{port}"; H={"X-API-Key":"test:phase1","Content-Type":"application/json"}
+def req(m,path,body=None):
+    r=urllib.request.Request(B+path,method=m,headers=H,data=json.dumps(body).encode() if body else None)
+    try:
+        with urllib.request.urlopen(r,timeout=10) as x: return x.status, json.loads(x.read() or b"{}")
+    except urllib.error.HTTPError as e: return e.code, {}
+for _ in range(120):
+    try: urllib.request.urlopen(B+"/health",timeout=1); break
+    except Exception: time.sleep(0.5)
+time.sleep(3)
+ids=[]; acc=collections.Counter()
+for i in range(40):
+    s,b=req("POST","/api/tasks",{"specialization":"analyst","prompt":f"count words in probe {i}"}); acc[s]+=1
+    if s==202: ids.append(b.get("task_id"))
+time.sleep(3)
+look=collections.Counter()
+for t in ids:
+    for _ in range(3):
+        s,_b=req("GET",f"/api/tasks/{t}"); look[s]+=1
+print(json.dumps({"workers":workers,"post_status":dict(acc),"get_by_id_status":dict(look),"tasks":len(ids)}))
+p.send_signal(signal.SIGTERM); p.wait(20)
+
+### /tmp/perf/errs.py (sha256 e9e6ea457f0c0a09a19d73b689f3ed81c5d31c60eec618d9c5481c77a6c9b759)
+import asyncio, aiohttp, collections, os, subprocess, sys, tempfile, time, signal, urllib.request
+port=int(sys.argv[1]); workers=int(sys.argv[2])
+env={**os.environ,"AGOS_ENV":"test","AGOS_LLM_KEYLESS":"1","AGOS_API_KEY":"test:phase1","AGOS_RATE_LIMIT_REQUESTS":"100000000","AGOS_RATE_LIMIT_WINDOW":os.environ.get("W","60"),"AGOS_TOOL_REGISTRY_DB":tempfile.mktemp(suffix=".sqlite3")}
+cmd=[sys.executable,"-m","uvicorn","server:app","--port",str(port),"--log-level","warning"]+(["--workers",str(workers)] if workers>1 else [])
+log=open(f"/tmp/perf/errs_srv_{workers}.log","w")
+p=subprocess.Popen(cmd,env=env,stdout=log,stderr=log)
+for _ in range(120):
+    try: urllib.request.urlopen(f"http://127.0.0.1:{port}/health",timeout=1); break
+    except Exception: time.sleep(0.5)
+time.sleep(2)
+cnt=collections.Counter(); bodies={}
+async def main():
+    async with aiohttp.ClientSession(headers={"X-API-Key":"test:phase1"}) as s:
+        end=time.monotonic()+15
+        async def w():
+            while time.monotonic()<end:
+                try:
+                    async with s.get(f"http://127.0.0.1:{port}/api/admin/tools") as r:
+                        b=await r.read(); cnt[r.status]+=1
+                        if r.status!=200: bodies.setdefault(r.status,b[:200])
+                except Exception as e: cnt[type(e).__name__]+=1
+        await asyncio.gather(*[w() for _ in range(16)])
+asyncio.run(main())
+print(dict(cnt), bodies)
+p.send_signal(signal.SIGTERM); p.wait(15)
+
