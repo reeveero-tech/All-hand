@@ -26,7 +26,7 @@
    "unit": "s",
    "min_samples": null,
    "data_source": "المولد: من أول POST إنشاء إلى آخر 2xx (ساعة monotonic في المولد)",
-   "tool": "not_implemented",
+   "tool": "benchmarks/r178/ladder.py",
    "status": "proposed",
    "report_only": false
   },
@@ -40,7 +40,7 @@
    "unit": "bytes",
    "min_samples": null,
    "data_source": "VmHWM من /proc/<sut_pid>/status بعد اكتمال الإنشاء",
-   "tool": "not_implemented",
+   "tool": "benchmarks/r178/ladder.py",
    "status": "proposed",
    "report_only": false
   },
@@ -54,7 +54,7 @@
    "unit": "bytes/agent",
    "min_samples": null,
    "data_source": "ميل OLS لـVmRSS مقابل عدد الوكلاء على درجات السلّم",
-   "tool": "not_implemented",
+   "tool": "benchmarks/r178/ladder.py",
    "status": "proposed",
    "report_only": true,
    "gap_closed": "«نمو خطي معلن» بلا حد في الخطة ⇒ صار مقياسًا للإبلاغ فقط (report_only) لا معيار قبول"
@@ -126,7 +126,7 @@
    "unit": "index",
    "min_samples": null,
    "data_source": "agent_stats.tasks_completed لكل agent_name داخل التخصص الواحد بعد التشغيل",
-   "tool": "not_implemented",
+   "tool": "benchmarks/r178/ladder.py",
    "status": "proposed",
    "report_only": false,
    "gap_closed": "«العامل» غير معرف في الخطة ⇒ عُرِّف كمثيل الوكيل (agent_name) لأنه الوحدة المسجلة في agent_stats؛ SUT عملية واحدة فلا عمال OS متعددون"
@@ -141,7 +141,7 @@
    "unit": "count",
    "min_samples": null,
    "data_source": "مفاتيح idempotency المطبقة لدى المستلم الوهمي (سجل المستلم)",
-   "tool": "not_implemented",
+   "tool": "benchmarks/r178/ladder.py",
    "status": "proposed",
    "report_only": false
   },
@@ -155,7 +155,7 @@
    "unit": "ratio",
    "min_samples": null,
    "data_source": "عدد المهام المكتملة لكل تخصص عند مزيج متساوٍ",
-   "tool": "not_implemented",
+   "tool": "benchmarks/r178/ladder.py",
    "status": "proposed",
    "report_only": false
   },
@@ -169,7 +169,7 @@
    "unit": "count",
    "min_samples": null,
    "data_source": "الاستجابات بعد تجاوز AGOS_MAX_AGENTS/حدود الطابور (status + Retry-After)",
-   "tool": "not_implemented",
+   "tool": "benchmarks/r178/ladder.py",
    "status": "proposed",
    "report_only": false
   },
@@ -183,7 +183,7 @@
    "unit": "count",
    "min_samples": null,
    "data_source": "قائمة الوكلاء المسجلين قبل القتل مقابل بعد الإقلاع",
-   "tool": "not_implemented",
+   "tool": "benchmarks/r178/ladder.py",
    "status": "proposed",
    "report_only": false
   },
@@ -197,7 +197,7 @@
    "unit": "count",
    "min_samples": null,
    "data_source": "accepted (استجابات 2xx) مقابل tasks.status النهائية + DLQ + lease صالح بعد التفريغ",
-   "tool": "not_implemented",
+   "tool": "benchmarks/p6/l0_task_correctness.py (L0 صحة فقط — ليس درجة من السلّم)",
    "status": "proposed",
    "report_only": false
   },
@@ -211,7 +211,7 @@
    "unit": "count",
    "min_samples": null,
    "data_source": "سجل المستلم الوهمي",
-   "tool": "not_implemented",
+   "tool": "benchmarks/p6/l0_task_correctness.py (L0 صحة فقط — ليس درجة من السلّم)",
    "status": "proposed",
    "report_only": false
   },
@@ -225,7 +225,7 @@
    "unit": "ratio",
    "min_samples": null,
    "data_source": "GET /api/tasks/{id} + صف tasks + آخر حدث task_completed لكل id",
-   "tool": "not_implemented",
+   "tool": "benchmarks/p6/l0_task_correctness.py (L0 صحة فقط — ليس درجة من السلّم)",
    "status": "proposed",
    "report_only": false
   },

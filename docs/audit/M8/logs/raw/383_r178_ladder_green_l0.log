@@ -1,0 +1,64 @@
+# 383 — D-139: R-178 ladder tools GREEN + L0 health runs (live-local) + dispatch fairness fix
+# 2026-11-08; shared 2-CPU sandbox; PostgreSQL 18.6 + PostgREST 12.2.3 loopback stack (scripts/r042), SUT real process, generator threads in-process of the runner (separate from SUT process)
+
+## GREEN — unit/guard tests x3 consecutive runs
+============== 14 passed ==============
+============== 14 passed ==============
+============== 14 passed ==============
+
+## dispatch fairness fix (server.py::_pick_agent least-completed among idle)
+tests/test_r178_dispatch_fairness.py: 3 passed (starvation, spread, 404 contract)
+
+## L0 health runs — AFTER the fix (r178.worker_fairness_jain on the real dispatch path)
+--- run 3 ---
+l0_healthy: True
+creation: time_s=0.618 registered=100/100 peak_rss=83.0MB rss_per_agent=850KB
+accepted: 100 dropped: 0 final_states: {'completed': 100}
+dispatch p50/p95/p99/max ms: 187.8 263.1 274.2 279.5
+queue_wait p50/p95/p99/max ms: 578.7 813.8 913.3 913.3
+agents_lost_after_kill_restart: 0 per-agent: {'validator_0095': 21, 'validator_0096': 20, 'validator_0097': 20, 'validator_0098': 20, 'validator_0099': 19}
+  r178.error_rate pass 0.0
+  r178.duplicate_side_effects pass 0
+  r178.worker_fairness_jain pass 0.999000999000999
+  r178.specialization_imbalance not_measured None
+  r178.agents_lost_after_kill pass 0
+--- run 4 ---
+l0_healthy: True
+creation: time_s=0.62 registered=100/100 peak_rss=83.0MB rss_per_agent=850KB
+accepted: 100 dropped: 0 final_states: {'completed': 100}
+dispatch p50/p95/p99/max ms: 154.3 232.9 271.9 276.3
+queue_wait p50/p95/p99/max ms: 547.9 687.1 687.3 687.3
+agents_lost_after_kill_restart: 0 per-agent: {'validator_0095': 21, 'validator_0096': 21, 'validator_0097': 20, 'validator_0098': 19, 'validator_0099': 19}
+  r178.error_rate pass 0.0
+  r178.duplicate_side_effects pass 0
+  r178.worker_fairness_jain pass 0.998003992015968
+  r178.specialization_imbalance not_measured None
+  r178.agents_lost_after_kill pass 0
+--- run 5 ---
+l0_healthy: True
+creation: time_s=0.618 registered=100/100 peak_rss=82.9MB rss_per_agent=849KB
+accepted: 100 dropped: 0 final_states: {'completed': 100}
+dispatch p50/p95/p99/max ms: 161.9 255.8 295.2 298.9
+queue_wait p50/p95/p99/max ms: 516.8 643.3 675.4 675.4
+agents_lost_after_kill_restart: 0 per-agent: {'validator_0095': 20, 'validator_0096': 20, 'validator_0097': 20, 'validator_0098': 20, 'validator_0099': 20}
+  r178.error_rate pass 0.0
+  r178.duplicate_side_effects pass 0
+  r178.worker_fairness_jain pass 1.0
+  r178.specialization_imbalance not_measured None
+  r178.agents_lost_after_kill pass 0
+
+## honest limits
+- L0 is a health check, NOT an R-178 ladder step (D-134); no capacity level is proven.
+- 2-CPU shared sandbox: SUT + generator + PostgreSQL + PostgREST co-located — latencies are
+  co-location numbers, not separated-node numbers; the queue-wait tail (p99 ~913ms) is the
+  co-location artifact class log-380/F4 flagged and MUST be re-measured on separated nodes.
+- queue_wait measured from SSE task_created->task_started on the subscriber clock (the only
+  measurable pair; task_started is SSE-only — acceptance_criteria gap note).
+
+--- full local suite (2026-11-08, after C5 pin update to D-139 contract) ---
+- pytest tests/ -q: 4304 passed, 0 failed, 9 skipped, 9 xfailed (12 min) — final confirmation run in full_suite2.log;
+  intermediate run before the C5 pin update: 4303 passed + 1 failed (test_r157_contract_parity.py::test_c5_selection_policies_are_pinned_as_they_are
+  pinned the OLD first-idle rule; pin updated to the D-139 least-completed rule in the same PR, logs 382/383 cited in the test comment).
+- environment note: tests/test_r176_load_framework.py and tests/test_r177_per_service.py need k6 installed OUTSIDE
+  the suite (python scripts/r176_load_framework.py --ensure-k6); without it 8 tests fail on download guard (R-072) —
+  environmental, not code. With k6 installed: 30/30 pass (r176_r177.log).
