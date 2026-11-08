@@ -222,3 +222,11 @@ def test_batch_files_are_listed_outside_the_snapshot(baseline):
     for p in listed:
         assert (ROOT / p).exists(), p
         assert p not in snapshot, p
+
+
+def test_k6_stdout_evidence_is_assigned_to_evidence_data():
+    """D-141: raw k6 runner output (`*.stdout`) under docs/audit is recorded
+    evidence — it must land in the evidence-data integrity group (UTF-8 read),
+    not fall through unassigned."""
+    assert btb.assign("docs/audit/M8/logs/raw/r177_codespaces/stress.stdout") == "evidence-data"
+    assert btb.assign("somewhere/else.stdout") is None
