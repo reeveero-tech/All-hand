@@ -1,0 +1,32 @@
+# 394 — R-177 batch 7 (D-144): RED — resource sampler + leak indicators + --service for failure-recovery
+# branch m9/r177-resource-sampler-fr-all; code under test = origin/main f9223dfe (scripts/r177_resource_sampler.py and
+# scripts/r177_sut_launcher.py absent, scripts/r177_per_service.py unchanged) with the NEW tests/test_r177_resource_sampler.py
+# expected red: modules missing (errors) + main() ignores --service for --failure-recovery + no sampler wiring (failures)
+2026-11-09T07:04:10Z
+code under test: origin/main f9223dfe scripts (new modules absent, harness unchanged) + new test file
+E   AttributeError: 'SutProcess' object has no attribute 'res_csv'
+=========================== short test summary info ============================
+FAILED tests/test_r177_resource_sampler.py::test_main_passes_service_to_failure_recovery
+FAILED tests/test_r177_resource_sampler.py::test_main_failure_recovery_default_service_unchanged
+FAILED tests/test_r177_resource_sampler.py::test_sut_pid_provider - Attribute...
+FAILED tests/test_r177_resource_sampler.py::test_run_service_signature_accepts_sampler
+FAILED tests/test_r177_resource_sampler.py::test_res_brief_handles_unmeasured
+FAILED tests/test_r177_resource_sampler.py::test_launcher_sut_in_process_fds_measured
+FAILED tests/test_r177_resource_sampler.py::test_default_sut_command_unchanged
+ERROR tests/test_r177_resource_sampler.py::test_unreadable_fd_dir_is_none_not_zero
+ERROR tests/test_r177_resource_sampler.py::test_permission_denied_fd_dir_is_none_not_zero
+ERROR tests/test_r177_resource_sampler.py::test_empty_readable_fd_dir_is_a_real_zero
+ERROR tests/test_r177_resource_sampler.py::test_child_process_fds_are_counted_and_positive
+ERROR tests/test_r177_resource_sampler.py::test_fd_growth_in_child_is_visible
+ERROR tests/test_r177_resource_sampler.py::test_steady_series_is_not_significant_growth
+ERROR tests/test_r177_resource_sampler.py::test_linear_growth_is_detected_with_correct_slope
+ERROR tests/test_r177_resource_sampler.py::test_warmup_growth_is_excluded - F...
+ERROR tests/test_r177_resource_sampler.py::test_unmeasured_fds_are_not_measured_not_zero
+ERROR tests/test_r177_resource_sampler.py::test_no_samples_is_not_measured - ...
+ERROR tests/test_r177_resource_sampler.py::test_indicator_never_claims_no_leak
+ERROR tests/test_r177_resource_sampler.py::test_pid_changes_are_reported - Fi...
+ERROR tests/test_r177_resource_sampler.py::test_sampler_follows_pid_and_writes_csv
+ERROR tests/test_r177_resource_sampler.py::test_sampler_skips_dead_pid_without_fake_rows
+ERROR tests/test_r177_resource_sampler.py::test_nondumpable_process_external_none_inprocess_measured
+ERROR tests/test_r177_resource_sampler.py::test_load_rows_windows_and_parses
+========================= 7 failed, 16 errors in 0.35s =========================

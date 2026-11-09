@@ -1,0 +1,61 @@
+# 395 — R-177 batch 7 (D-144): GREEN — in-process resource sampler, leak indicators, root cause of fds=0
+
+## 1. root cause of fds=0 in the log-390 soak (PROVEN, reproduced here)
+server.py:80 calls safety.harden_server_process() = prctl(PR_SET_DUMPABLE, 0) (R-100 security control).
+A non-dumpable process's /proc/<pid>/fd and smaps_rollup are owned by root and unreadable (EACCES) to every
+other process of the same user, INCLUDING its parent. status/stat stay mode 0444, so RSS/threads were
+measurable and fds were not. The old sidecar 'ls /proc/$pid/fd 2>/dev/null | wc -l' hid the error and printed 0.
+The earlier hypothesis about the '<' (high priority) STAT flag is NOT the cause and is withdrawn.
+Live reproduction on this sandbox (same command as the codespace soak, then via the launcher):
+date 2026-11-09T07:05:41Z uid 2000
+== python -m uvicorn (unchanged command) pid 25893
+cmdline: /usr/local/bin/python3 -m uvicorn server:app --port 58819
+  /proc/25893/fd owner_uid=0 mode=0o500
+  /proc/25893/smaps_rollup owner_uid=0 mode=0o444
+  /proc/25893/status owner_uid=0 mode=0o444
+  /proc/25893/stat owner_uid=0 mode=0o444
+  old sidecar form `ls /proc/PID/fd 2>/dev/null | wc -l` => 0 | stderr hidden by 2>/dev/null was: ls: cannot open directory '/proc/25893/fd': Permission denied
+  external read_sample: {'rss_kb': 84920, 'threads': 6, 'pss_kb': None, 'fds': None, 'fds_error': 'PermissionError: Permission denied'}
+== r177_sut_launcher.py pid 25902
+cmdline: /usr/local/bin/python3 /home/user/workspace/All-hand/scripts/r177_sut_launcher.py server:app --port 51975
+  /proc/25902/fd owner_uid=0 mode=0o500
+  /proc/25902/smaps_rollup owner_uid=0 mode=0o444
+  /proc/25902/status owner_uid=0 mode=0o444
+  /proc/25902/stat owner_uid=0 mode=0o444
+  old sidecar form `ls /proc/PID/fd 2>/dev/null | wc -l` => 0 | stderr hidden by 2>/dev/null was: ls: cannot open directory '/proc/25902/fd': Permission denied
+  external read_sample: {'rss_kb': 84988, 'threads': 7, 'pss_kb': None, 'fds': None, 'fds_error': 'PermissionError: Permission denied'}
+  in-process rows: 4 last: {'rss_kb': 84988, 'pss_kb': 65215, 'private_dirty_kb': 55964, 'threads': 7, 'fds': 16, 'fds_error': ''}
+
+## 2. fix (hardening NOT disabled)
+- scripts/r177_sut_launcher.py: equivalent to 'python -m uvicorn server:app --port P' (cwd first on sys.path, same
+  uvicorn entry point); when R177_RES_CSV is set it starts ONE daemon thread inside the SUT that samples its own /proc
+  (a process may always read its own entries). Cost: one small /proc read per tick (soak 10s, other profiles 1s).
+- scripts/r177_resource_sampler.py: count_fds -> None + errno reason on failure, NEVER 0; read_sample (VmRSS, VmHWM,
+  Threads, Pss, Private_Dirty, Anonymous, utime, stime, fds); OLS slope/h + 95% CI after a warm-up cut (max(25%, 600s));
+  growth_significant = CI lower bound > 0. Indicator only: no approved leak threshold exists (proposed), no 'no leak' claim.
+- scripts/r177_per_service.py: report['resources'] = {in_process (authoritative), external (cross-check, PermissionError
+  recorded), leak_indicators, leak_indicators_source}; --failure-recovery now honours --service (default unchanged:
+  api-tasks-submit); failure_recovery result gains resources_during/resources_post and a descriptive 'outcome'
+  (stopped_and_recovered | unaffected_no_stop | failed). ok semantics are UNCHANGED (a fault no stop rule caught stays ok=False).
+- thresholds, profiles, SLOs, stop limits: unchanged. server.py: unchanged.
+
+## 3. green x10 (tests/test_r177_resource_sampler.py, 23 tests)
+2026-11-09T07:03:05Z
+f9223dfe
+============================== 23 passed in 4.23s ==============================
+============================== 23 passed in 4.23s ==============================
+============================== 23 passed in 4.25s ==============================
+============================== 23 passed in 4.24s ==============================
+============================== 23 passed in 4.24s ==============================
+============================== 23 passed in 4.13s ==============================
+============================== 23 passed in 4.23s ==============================
+============================== 23 passed in 4.18s ==============================
+============================== 23 passed in 4.25s ==============================
+============================== 23 passed in 4.21s ==============================
+
+## 4. existing harness tests unaffected
+tests/test_r177_per_service.py + test_r177_all_heavy_override.py + test_r177_stop_limits.py: 85 passed (65.41s)
+
+## 5. end-to-end smoke (local sandbox, NOT a capacity number): --failure-recovery crash --service api-health --storage volatile
+{"service": "api-health", "scenario": "crash", "storage": "volatile", "ok": true, "outcome": "stopped_and_recovered", "fault_fired_at_s": 10.093, "detection_latency_s": 0.01, "restart_to_health_s": 0.605, "restart_to_ready_s": 0.001, "pre_fault_tasks": {"checked": 1, "lost": 1, "completed": 0, "failed": 0, "still_pending": 0, "settle_s": 0.0}, "post_recovery_baseline": {"ok": true, "brief": "ok=True class=measured p95=4.348087ms reqs=401 failed=0 stopped=False", "elapsed_s": 20.2}, "resources_during": {"status": "measured", "pids": [25469], "pid_changes": 0, "series": {"rss_kb": {"status": "measured", "first": 89264.0, "last": 89264.0, "max": 89264.0}, "pss_kb": {"status": "measured", "first": 69356.0, "last": 69473.0, "max": 69473.0}, "private_dirty_kb": {"status": "measured", "first": 59460.0, "last": 59572.0, "max": 59572.0}, "anonymous_kb": {"status": "measured", "first": 59420.0, "last": 59532.0, "max": 59532.0}, "threads": {"status": "measured", "first": 8.0, "last": 8.0, "max": 8.0}, "fds": {"status": "measured", "first": 24.0, "last": 24.0, "max": 24.0}}}, "resources_post": {"status": "measured", "pids": [25496], "pid_changes": 0, "series": {"rss_kb": {"status": "measured", "first": 89620.0, "last": 89708.0, "max": 89708.0}, "pss_kb": {"status": "measured", "first": 69665.0, "last": 69905.0, "max": 69905.0}, "private_dirty_kb": {"status": "measured", "first": 59628.0, "last": 59872.0, "max": 59872.0}, "anonymous_kb": {"status": "measured", "first": 59588.0, "last": 59828.0, "max": 59828.0}, "threads": {"status": "measured", "first": 9.0, "last": 9.0, "max": 9.0}, "fds": {"status": "measured", "first": 24.0, "last": 24.0, "max": 24.0}}}}
+stop rule: S5

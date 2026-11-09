@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import csv
 import hashlib
 import importlib.util
 import json
@@ -89,6 +90,56 @@ def sl():
     if _SL is None:
         _SL = _load_module("r177_stop_limits", STOP_LIMITS)
     return _SL
+
+
+_RS = None
+
+
+def rsamp():
+    """D-144 resource sampler (scripts/r177_resource_sampler.py)."""
+    global _RS
+    if _RS is None:
+        _RS = _load_module("r177_resource_sampler",
+                           REPO / "scripts" / "r177_resource_sampler.py")
+    return _RS
+
+
+def _res_brief(res: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Short view of a run's resources (per-series first/last/max + pid changes)."""
+    li = (res or {}).get("leak_indicators") or {}
+    if li.get("status") != "measured":
+        return {"status": li.get("status") or (res or {}).get("status", "not_measured")}
+    return {"status": "measured", "pids": li.get("pids"), "pid_changes": li.get("pid_changes"),
+            "series": {k: {x: v.get(x) for x in ("status", "first", "last", "max", "errors")
+                           if x in v} for k, v in li["series"].items()}}
+
+
+def _resources_section(sampler, inproc_csv, t0, out: pathlib.Path, tag: str) -> Dict[str, Any]:
+    """D-144: in_process (authoritative: fds/PSS readable) + external (cross-check)."""
+    sec: Dict[str, Any] = {
+        "method_note": ("in_process = sampler thread inside the SUT (scripts/r177_sut_launcher.py);"
+                        " external = same reads from the harness (the SUT is non-dumpable, so "
+                        "fds/smaps are PermissionError there — recorded, not 0)")}
+    sec["external"] = sampler.stop() if sampler is not None else {
+        "status": "not_measured", "reason": "no harness-owned SUT pid (e.g. --sut-url)"}
+    if inproc_csv and t0 is not None:
+        rows = rsamp().load_rows(pathlib.Path(inproc_csv), t0, time.time())
+        window = out / f"resources_inproc_{tag}.csv"
+        with open(window, "w", newline="", encoding="utf-8") as fh:
+            w = csv.DictWriter(fh, fieldnames=rsamp().FIELDS, extrasaction="ignore")
+            w.writeheader()
+            for r in rows:
+                w.writerow({k: ("" if r.get(k) is None else r.get(k)) for k in rsamp().FIELDS})
+        sec["in_process"] = {"csv": str(window), "leak_indicators": rsamp().leak_indicators(rows)}
+    else:
+        sec["in_process"] = {"status": "not_measured",
+                             "reason": "SUT not started through r177_sut_launcher.py"}
+    li = (sec["in_process"].get("leak_indicators") or {})
+    sec["leak_indicators"] = li if li.get("status") == "measured" else (
+        sec["external"].get("leak_indicators") or {"status": "not_measured"})
+    sec["leak_indicators_source"] = ("in_process" if li.get("status") == "measured"
+                                     else "external")
+    return sec
 
 
 def ensure_k6() -> pathlib.Path:
@@ -287,8 +338,12 @@ class SutProcess:
     """SUT حقيقي في عملية OS منفصلة، قابل للقتل وإعادة التشغيل على المنفذ نفسه."""
 
     def __init__(self, api_key: str = DEFAULT_API_KEY, tenants: Optional[Tenants] = None,
-                 storage: str = "volatile", startup_timeout_s: float = 180.0):
+                 storage: str = "volatile", startup_timeout_s: float = 180.0,
+                 res_csv: Optional[pathlib.Path] = None, res_interval_s: float = 1.0):
         self.api_key = api_key
+        # D-144: in-process sampler via scripts/r177_sut_launcher.py (the server
+        # is non-dumpable, so its fds/smaps are unreadable from outside)
+        self.res_csv = pathlib.Path(res_csv) if res_csv else None
         self.tenants = tenants or Tenants()
         self.storage = storage
         self.port = r176()._free_port()
@@ -297,11 +352,16 @@ class SutProcess:
         self.proc: Optional[subprocess.Popen] = None
         self.env = {**os.environ, **r176().SUT_ENV, "AGOS_API_KEY": api_key,
                     **self.tenants.env(), **storage_env(storage)}
+        if self.res_csv:
+            self.env.update({"R177_RES_CSV": str(self.res_csv),
+                             "R177_RES_INTERVAL_S": str(res_interval_s)})
 
     def start(self) -> float:
         t0 = time.monotonic()
+        entry = ([str(REPO / "scripts" / "r177_sut_launcher.py")] if self.res_csv
+                 else ["-m", "uvicorn"])
         self.proc = subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", "server:app", "--port", str(self.port)],
+            [sys.executable, *entry, "server:app", "--port", str(self.port)],
             cwd=str(REPO), env=self.env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         deadline = t0 + self.timeout
         while time.monotonic() < deadline:
@@ -319,6 +379,10 @@ class SutProcess:
                 return round(time.monotonic() - t0, 3)
             time.sleep(0.1)
         return None
+
+    def pid(self) -> Optional[int]:
+        """Current SUT pid (changes after a crash restart) — for the D-144 sampler."""
+        return self.proc.pid if self.proc and self.proc.poll() is None else None
 
     def kill(self) -> None:
         if self.proc and self.proc.poll() is None:
@@ -346,8 +410,9 @@ def _sut_context(api_key: str = DEFAULT_API_KEY, storage: str = "volatile"):
 
 
 @contextlib.contextmanager
-def sut_process(api_key: str = DEFAULT_API_KEY, storage: str = "volatile"):
-    sut = SutProcess(api_key, storage=storage)
+def sut_process(api_key: str = DEFAULT_API_KEY, storage: str = "volatile",
+                res_csv: Optional[pathlib.Path] = None, res_interval_s: float = 1.0):
+    sut = SutProcess(api_key, storage=storage, res_csv=res_csv, res_interval_s=res_interval_s)
     try:
         sut.start()
         yield sut
@@ -709,7 +774,10 @@ def run_service(service_name: str, sut_url: Optional[str] = None,
                 tenants: Optional[Tenants] = None,
                 inject: Optional[Callable[[float], None]] = None,
                 monitor: bool = True,
-                storage: Optional[str] = None) -> Dict[str, Any]:
+                storage: Optional[str] = None,
+                sample_pid: Optional[Callable[[], Optional[int]]] = None,
+                sample_interval_s: Optional[float] = None,
+                inproc_csv: Optional[pathlib.Path] = None) -> Dict[str, Any]:
     """قياس خدمة واحدة بملمح محدد مع حدود الإيقاف الحية وإنتاج تقرير الدليل الخام.
 
     التصنيف صريح: measured / skip / not_measured — لا شيء يمر صامتًا. والتشغيل
@@ -758,6 +826,17 @@ def run_service(service_name: str, sut_url: Optional[str] = None,
     for f in (raw, stream):
         if f.exists():
             f.unlink()
+    # D-144: in-harness SUT resource sampler (RSS/PSS/threads/fds), following
+    # the SUT pid across restarts; an unreadable fd dir is None, never 0.
+    sampler = None
+    res_t0 = time.time()  # in-process rows are windowed to this run
+    if sample_pid is not None:
+        res_csv = out / f"resources_{tag}.csv"
+        if res_csv.exists():
+            res_csv.unlink()
+        sampler = rsamp().ResourceSampler(
+            sample_pid, interval_s=sample_interval_s or (10.0 if profile == "soak" else 1.0),
+            csv_path=res_csv).start()
 
     env = {**os.environ,
            "TARGET_URL": sut_url,
@@ -907,6 +986,8 @@ def run_service(service_name: str, sut_url: Optional[str] = None,
             s == 200 for s in report["sse_stream_ttfb"]["statuses"])
     if stopped:
         report["ok"] = False  # لا يمكن إخفاء الإيقاف
+    report["resources"] = _resources_section(sampler, inproc_csv,
+                                             res_t0, out, tag)
     (out / f"samples_{tag}.json").write_text(json.dumps(
         [[s["t_s"], s["ms"], s["endpoint"]] for s in mon.samples]), encoding="utf-8")
     (out / f"report_{tag}.json").write_text(
@@ -1076,7 +1157,8 @@ def run_failure_recovery(scenario: str, out_dir: Optional[pathlib.Path] = None,
         raise SystemExit("storage-outage needs --storage live-local")
     result: Dict[str, Any] = {"scenario": scenario, "storage": storage, "service": service,
                               "fault_at_s": fault_at_s}
-    sut = SutProcess(api_key, storage=storage)
+    sut = SutProcess(api_key, storage=storage, res_csv=out / "resources_inproc_all.csv",
+                     res_interval_s=1.0)
     try:
         result["cold_start_s"] = round(sut.start(), 3)
         state = {"fired": False, "fired_at": None, "resumed": False, "ready_during": []}
@@ -1097,7 +1179,7 @@ def run_failure_recovery(scenario: str, out_dir: Optional[pathlib.Path] = None,
 
         rep = run_service(service, sut_url=sut.url, api_key=api_key, out_dir=out,
                           profile="normal", tenants=sut.tenants, inject=inject,
-                          storage=sut.storage)
+                          storage=sut.storage, sample_pid=sut.pid, inproc_csv=sut.res_csv)
         if scenario == "storage-outage" and state["fired"] and not state["resumed"]:
             os.kill(stack["postgrest"], signal.SIGCONT)
             state["resumed"] = True
@@ -1151,9 +1233,12 @@ def run_failure_recovery(scenario: str, out_dir: Optional[pathlib.Path] = None,
         # خط أساس بعد التعافي: يجب أن يمر بالعتبات المعتمدة
         t_b = time.monotonic()
         post = run_service(service, sut_url=sut.url, api_key=api_key, out_dir=out / "post",
-                           profile="baseline", tenants=sut.tenants, storage=sut.storage)
+                           profile="baseline", tenants=sut.tenants, storage=sut.storage,
+                           sample_pid=sut.pid, inproc_csv=sut.res_csv)
         result["post_recovery_baseline"] = {"ok": post["ok"], "brief": _brief(post),
                                             "elapsed_s": round(time.monotonic() - t_b, 1)}
+        result["resources_during"] = _res_brief(rep.get("resources"))
+        result["resources_post"] = _res_brief(post.get("resources"))
     finally:
         if scenario == "storage-outage":
             st = _local_stack_pids()
@@ -1166,6 +1251,17 @@ def run_failure_recovery(scenario: str, out_dir: Optional[pathlib.Path] = None,
         result["fault_fired_at_s"] is not None and dec.get("stopped")
         and result["post_recovery_baseline"]["ok"]
         and (scenario != "crash" or result["restart_to_ready_s"] is not None))
+    # D-144: outcome is descriptive, separate from ok (ok semantics unchanged:
+    # a fault that no stop rule caught is ok=False even if the service was unaffected)
+    m = result.get("metrics_during") or {}
+    if result["ok"]:
+        result["outcome"] = "stopped_and_recovered"
+    elif (scenario == "storage-outage" and not dec.get("stopped")
+          and result.get("load_report_ok") and result["post_recovery_baseline"]["ok"]
+          and not (m.get("http_req_failed") or 0)):
+        result["outcome"] = "unaffected_no_stop"  # service did not depend on storage
+    else:
+        result["outcome"] = "failed"
     (out / f"failure_recovery_{scenario}_{storage}.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(result, ensure_ascii=False, indent=1))
@@ -1206,7 +1302,8 @@ def main() -> int:
         _guard_dedicated_env(heavy, args.allow_dedicated_env)
     if args.failure_recovery:
         res = run_failure_recovery(args.failure_recovery, out_dir=out, storage=args.storage,
-                                   api_key=args.api_key)
+                                   api_key=args.api_key,
+                                   service=args.service or "api-tasks-submit")
         return 0 if res["ok"] else 1
     if args.all:
         names = args.services.split(",") if args.services else None
@@ -1221,11 +1318,16 @@ def main() -> int:
                               out_dir=out, allow_dedicated_env=args.allow_dedicated_env,
                               profile=args.profile)
         else:
-            with sut_process(args.api_key, storage=args.storage) as sut:
+            res_dir = out or pathlib.Path(tempfile.mkdtemp(prefix="r177_res_"))
+            res_dir.mkdir(parents=True, exist_ok=True)
+            with sut_process(args.api_key, storage=args.storage,
+                             res_csv=res_dir / f"resources_inproc_all_{args.service}.csv",
+                             res_interval_s=10.0 if args.profile == "soak" else 1.0) as sut:
                 rep = run_service(args.service, sut_url=sut.url, api_key=args.api_key,
                                   out_dir=out, allow_dedicated_env=args.allow_dedicated_env,
                                   profile=args.profile, tenants=sut.tenants,
-                                  storage=sut.storage)
+                                  storage=sut.storage, sample_pid=sut.pid,
+                                  inproc_csv=sut.res_csv)
         print(json.dumps({k: v for k, v in rep.items() if k != "stop"} | {
             "stop_decision": (rep.get("stop") or {}).get("decision")},
             ensure_ascii=False, indent=2))
