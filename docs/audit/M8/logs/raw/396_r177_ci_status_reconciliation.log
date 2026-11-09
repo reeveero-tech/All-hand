@@ -59,3 +59,24 @@ branch m9/r177-soak-and-fastpath-ab (= content of PR #340), /tmp/r178/full_suite
 log 392 recorded 4334 passed / 1 failed (test_r175 ... certifies_all_100, depends on the live external web) on the
 D-142 branch. On the later run the same test passed: the failure stays recorded as environmental and intermittent
 (it was never counted as a pass). 9 skipped / 9 xfailed are not counted as passes.
+
+## local full suite on THIS branch (m9/r177-resource-sampler-fr-all @ 5852f571), /tmp/r178/full_suite_d144.log
+  FAILED tests/test_r175_batch4_phase1.py::test_the_phase1_runbook_certifies_all_100_with_real_evidence
+  = 1 failed, 4357 passed, 9 skipped, 17 deselected, 9 xfailed in 719.65s (0:11:59) =
+  exit=1
+failure detail (verbatim):
+  =================================== FAILURES ===================================
+  _________ test_the_phase1_runbook_certifies_all_100_with_real_evidence _________
+  tests/test_r175_batch4_phase1.py:195: in test_the_phase1_runbook_certifies_all_100_with_real_evidence
+      assert proc.returncode == 0, proc.stderr[-500:]
+  E   AssertionError: Redis not available. Using in-memory fallback.
+  E     
+  E   assert 1 == 0
+  E    +  where 1 = CompletedProcess(args=['/usr/local/bin/python3', '/home/user/workspace/All-hand/scripts/certify_phase1.py'], returncod...nector packs) is an owner decision — never automatic"\n}\n', stderr='Redis not available. Using in-memory fallback.\n').returncode
+  =========================== short test summary info ============================
+the same test failed in log 389b and log 392 (where the cause was the live external web: educator 502, researcher search
+budget) and passed in other full runs. Here the subprocess stdout was truncated in the assertion message, so the cause of
+THIS failure is NOT proven. Diagnostic re-run of the runbook alone right after (2026-11-09T07:20:45Z): rc=0, certified_count=100,
+not_certified=[] — recorded as a diagnosis, NOT as a replacement result. This batch does not touch the tool registry, the
+runbook or any code it imports (changes: scripts/r177_*.py, a new test, docs). Status: intermittent, cause unproven for this
+run, not counted as a pass, not disabled.
