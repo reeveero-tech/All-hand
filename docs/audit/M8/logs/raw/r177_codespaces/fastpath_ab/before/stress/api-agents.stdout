@@ -1,0 +1,88 @@
+{
+  "service": "api-agents",
+  "classification": "measured",
+  "ok": false,
+  "profile": "stress",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 105,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<300"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 300,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 1213,
+    "requests_failed": 0,
+    "duration_avg_ms": 845.4669905210227,
+    "duration_med_ms": 894.564115,
+    "duration_p90_ms": 1363.7457542,
+    "duration_p95_ms": 1428.2517363999998,
+    "duration_p99_ms": 2460.613075359995,
+    "duration_max_ms": 3403.42957,
+    "dropped_iterations": 193
+  },
+  "raw_quantiles": {
+    "n": 1213,
+    "p50_ms": 894.564,
+    "p95_ms": 1429.278,
+    "p99_ms": 2465.625,
+    "max_ms": 3403.43,
+    "p95_ms_k6_method": 1428.2519999999997
+  },
+  "params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+  },
+  "baseline_params": {
+    "duration_s": 300,
+    "arrival_rate": 100,
+    "max_vus": 120
+  },
+  "stopped": true,
+  "probe_failures": [],
+  "sentinel_id": "afe2d1824058",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 9,
+    "ready": 9,
+    "isolation": 3,
+    "integrity": 3
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177ab/before/stress/k6_summary_api-agents_stress.json",
+  "stdout_log_path": "/tmp/r177ab/before/stress/k6_stdout_api-agents_stress.log",
+  "stop_decision": {
+    "stopped": true,
+    "rule": "error_rate",
+    "rule_id": "S1",
+    "reason": "window 1 error rate 0.0126 > 0.01 (S1)",
+    "at_s": 10.0,
+    "measurements": {
+      "window": 1,
+      "failed": 5,
+      "total": 397,
+      "rate": 0.012594,
+      "limit": 0.01,
+      "scope": "window"
+    }
+  }
+}

@@ -1,0 +1,304 @@
+{
+ "services": {
+  "api-task-lifecycle": {
+   "classification": "measured",
+   "ok": true,
+   "k6_exit_code": 0,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "slo_status": "approved",
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 7200,
+    "arrival_rate": 4,
+    "max_vus": 8
+   },
+   "stopped": false,
+   "generator_sut_separated": true,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "stop_decision": null,
+   "metrics": {
+    "http_reqs": 57600,
+    "requests_failed": 0,
+    "duration_avg_ms": 7.938375477378511,
+    "duration_med_ms": 6.639037,
+    "duration_p90_ms": 12.4364238,
+    "duration_p95_ms": 13.3835678,
+    "duration_p99_ms": 16.019603900000007,
+    "duration_max_ms": 67.967617,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 57600,
+    "p50_ms": 6.637,
+    "p95_ms": 13.384,
+    "p99_ms": 16.02,
+    "max_ms": 67.968,
+    "p95_ms_k6_method": 13.384
+   },
+   "retention_evictions": {
+    "count": 3545,
+    "all_last_seen_terminal": true,
+    "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)",
+    "note": "full list in api-<svc>.stdout"
+   },
+   "probe_failures": [],
+   "samples_keys": "list",
+   "resources": {
+    "samples": 240,
+    "first_utc": "2026-11-08T21:32:49Z",
+    "last_utc": "2026-11-08T23:32:24Z",
+    "pids": [
+     "28746"
+    ],
+    "rss_kb_first": 82260,
+    "rss_kb_last": 89568,
+    "rss_kb_min": 82260,
+    "rss_kb_max": 89568,
+    "rss_kb_mean_first_quarter": 88650,
+    "rss_kb_mean_last_quarter": 89521,
+    "hwm_kb_last": 89572,
+    "threads_first": 8,
+    "threads_last": 9,
+    "threads_max": 9,
+    "fds_all_zero": true,
+    "fds_max": 0,
+    "cpu_s_total": 566.91
+   }
+  },
+  "api-chat": {
+   "classification": "measured",
+   "ok": true,
+   "k6_exit_code": 0,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "slo_status": "approved",
+   "slo_p95_ms": 2000,
+   "slo_p99_ms": 1000,
+   "params": {
+    "duration_s": 7200,
+    "arrival_rate": 10,
+    "max_vus": 16
+   },
+   "stopped": false,
+   "generator_sut_separated": true,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "stop_decision": null,
+   "metrics": {
+    "http_reqs": 72001,
+    "requests_failed": 0,
+    "duration_avg_ms": 9.92405691684833,
+    "duration_med_ms": 9.676132,
+    "duration_p90_ms": 11.379283,
+    "duration_p95_ms": 12.196289,
+    "duration_p99_ms": 13.936087,
+    "duration_max_ms": 55.632298,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 72001,
+    "p50_ms": 9.676,
+    "p95_ms": 12.196,
+    "p99_ms": 13.936,
+    "max_ms": 55.632,
+    "p95_ms_k6_method": 12.196
+   },
+   "retention_evictions": {
+    "count": 1,
+    "all_last_seen_terminal": true,
+    "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)",
+    "note": "full list in api-<svc>.stdout"
+   },
+   "probe_failures": [],
+   "samples_keys": "list",
+   "resources": {
+    "samples": 285,
+    "first_utc": "2026-11-08T23:33:14Z",
+    "last_utc": "2026-11-09T01:55:20Z",
+    "pids": [
+     "57390"
+    ],
+    "rss_kb_first": 83936,
+    "rss_kb_last": 90700,
+    "rss_kb_min": 83936,
+    "rss_kb_max": 90732,
+    "rss_kb_mean_first_quarter": 90179,
+    "rss_kb_mean_last_quarter": 90700,
+    "hwm_kb_last": 90772,
+    "threads_first": 8,
+    "threads_last": 8,
+    "threads_max": 8,
+    "fds_all_zero": true,
+    "fds_max": 0,
+    "cpu_s_total": 679.63
+   }
+  },
+  "api-sse": {
+   "classification": "measured",
+   "ok": true,
+   "k6_exit_code": 0,
+   "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+   },
+   "slo_status": "approved",
+   "slo_p95_ms": 500,
+   "slo_p99_ms": null,
+   "params": {
+    "duration_s": 7200,
+    "arrival_rate": 0.2,
+    "max_vus": 2
+   },
+   "stopped": false,
+   "generator_sut_separated": true,
+   "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+   "storage": "volatile",
+   "stop_decision": null,
+   "metrics": {
+    "http_reqs": 1440,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.2089798819444493,
+    "duration_med_ms": 3.1169124999999998,
+    "duration_p90_ms": 3.4755193000000015,
+    "duration_p95_ms": 3.7618791999999996,
+    "duration_p99_ms": 5.261590399999996,
+    "duration_max_ms": 8.716001,
+    "dropped_iterations": 0
+   },
+   "raw_quantiles": {
+    "n": 1440,
+    "p50_ms": 3.117,
+    "p95_ms": 3.761,
+    "p99_ms": 5.277,
+    "max_ms": 8.716,
+    "p95_ms_k6_method": 3.7615
+   },
+   "retention_evictions": {
+    "count": 0,
+    "all_last_seen_terminal": true,
+    "contract": null,
+    "note": "full list in api-<svc>.stdout"
+   },
+   "probe_failures": [],
+   "samples_keys": "list",
+   "resources": {
+    "samples": 239,
+    "first_utc": "2026-11-09T01:56:15Z",
+    "last_utc": "2026-11-09T03:55:19Z",
+    "pids": [
+     "86178"
+    ],
+    "rss_kb_first": 80580,
+    "rss_kb_last": 81688,
+    "rss_kb_min": 80580,
+    "rss_kb_max": 81688,
+    "rss_kb_mean_first_quarter": 81159,
+    "rss_kb_mean_last_quarter": 81683,
+    "hwm_kb_last": 81688,
+    "threads_first": 7,
+    "threads_last": 8,
+    "threads_max": 8,
+    "fds_all_zero": true,
+    "fds_max": 0,
+    "cpu_s_total": 38.91
+   }
+  }
+ },
+ "sha256": {
+  "api-chat.resources.csv": {
+   "sha256": "a2e1b425ebdd827269467dc438b369fd9c71d440431eebc27ee76c5446ce6969",
+   "bytes": 15375
+  },
+  "api-chat.stdout": {
+   "sha256": "62ec1ebf4aff1decf7309efee364dc5f75ddc4e43dfa8e3460e5ae7b5369dcba",
+   "bytes": 3265
+  },
+  "api-sse.resources.csv": {
+   "sha256": "303b5255b2df413d4bfc6a18e3717359f30aabb55a9b2f2f4fa3bf1f24ef4327",
+   "bytes": 12407
+  },
+  "api-sse.stdout": {
+   "sha256": "8e592e6d327d3ad7e32d306454d1205fa19294b8c1c3cc264864129941d90e5e",
+   "bytes": 2239
+  },
+  "api-task-lifecycle.resources.csv": {
+   "sha256": "17696f9ada5329d6734a9ba0159beff12dc28262f933c073ef0a7e1aa3c477aa",
+   "bytes": 12941
+  },
+  "api-task-lifecycle.stdout": {
+   "sha256": "2d421af228869933795deada4a863c472ff52903b656a9359995551eae6c5d83",
+   "bytes": 782805
+  },
+  "k6_points_api-chat_soak.jsonl": {
+   "sha256": "eecac501c9de58c5d546535a740ab2a1591230825b7ceb6fdb73a2a4ecf6dbc9",
+   "bytes": 284748592
+  },
+  "k6_points_api-sse_soak.jsonl": {
+   "sha256": "c39e7244296aee8487d218396bc89041af16327d752b98cde20535e40b48ffb3",
+   "bytes": 7063580
+  },
+  "k6_points_api-task-lifecycle_soak.jsonl": {
+   "sha256": "ffa5b2fe10748bdbb4df35c2d1317bdaf948a9120195d6c8c21eaf2eedededb9",
+   "bytes": 225691519
+  },
+  "k6_stdout_api-chat_soak.log": {
+   "sha256": "795ad96756c91933cc1ae1fa83f4a22827addcce28996264c6ac24b021e6ac6f",
+   "bytes": 994901
+  },
+  "k6_stdout_api-sse_soak.log": {
+   "sha256": "de2e32d3db2a3f67b7af37db549bdc7d02e38c9c7303b8db6472f1a2e72e20a6",
+   "bytes": 947253
+  },
+  "k6_stdout_api-task-lifecycle_soak.log": {
+   "sha256": "500b623f5a27cc4ab13e9ea71946a78fc6d2773c2142e8f6b41d8c46418020ca",
+   "bytes": 958150
+  },
+  "k6_summary_api-chat_soak.json": {
+   "sha256": "c6dd177780e6230952d025e33c6d4211f139b0a1c996ec9da23e21ac7c25678b",
+   "bytes": 4156
+  },
+  "k6_summary_api-sse_soak.json": {
+   "sha256": "cca4d3e59ed657528620a3b8b69e2d3a56bf638dc378748bc1f550d31dd0e1d4",
+   "bytes": 4084
+  },
+  "k6_summary_api-task-lifecycle_soak.json": {
+   "sha256": "b6e385793427de1567c24da98fb83d2ca7bd9c07b886b735f553c14d4c122629",
+   "bytes": 4231
+  },
+  "report_api-chat_soak.json": {
+   "sha256": "3bf2f6eceaff311e08c42edf8926480edaabe503859e18758fbe9a1c7469db61",
+   "bytes": 404948
+  },
+  "report_api-sse_soak.json": {
+   "sha256": "3b3f657d2657d39873e23c662835fbeffa3e4837c40707ede9e00f94ed66144c",
+   "bytes": 392135
+  },
+  "report_api-task-lifecycle_soak.json": {
+   "sha256": "ac03da532e806f23ea31f931cefcbc2eba95361debbe7eef5d92b58c19fccb19",
+   "bytes": 1181212
+  },
+  "samples_api-chat_soak.json": {
+   "sha256": "bf9c5a98ceafa1040484b08519fb554809dd50338adf8aa38cb7840763afb48b",
+   "bytes": 1944206
+  },
+  "samples_api-sse_soak.json": {
+   "sha256": "bff5273be0f98bcc6088ea9e460f5b6da8ab4cf83d3c396bb1ccea0d7a1fcbc1",
+   "bytes": 48577
+  },
+  "samples_api-task-lifecycle_soak.json": {
+   "sha256": "9ed284806de1cbce8849853a22d50b0bd07a1066ceb1acd0846c2599ddba47e0",
+   "bytes": 2256769
+  }
+ },
+ "soak_log": "== api-task-lifecycle soak 2026-11-08T21:32:19Z\nexit=0\n== api-chat soak 2026-11-08T23:32:44Z\nexit=0\n== api-sse soak 2026-11-09T01:55:45Z\nexit=0\nSOAK_DONE 2026-11-09T03:55:48Z\n"
+}

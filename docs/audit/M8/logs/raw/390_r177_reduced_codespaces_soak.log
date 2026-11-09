@@ -1,0 +1,119 @@
+# 390 — R-177 reduced environment (D-141, owner option a): SOAK — GitHub Codespace standardLinux32gb, 4 cores
+# code under test: 1ce3ffcfc96d55fce65667aa19b0f8d3f11ae152 (the codespace checkout, a pre-merge D-141 commit. server.py/agent_civilization/agos_kernel are identical to main 6b82d043 (git diff --stat empty). It differs only in scripts/r177_per_service.py: the --all override fix of logs 387/388, which is unused here because every soak used --service. The D-142 fast path was NOT in the soak SUT.)
+# harness: scripts/r177_per_service.py --service S --profile soak --storage volatile --allow-dedicated-env (AGOS_ALLOW_BIG_LOAD=1); k6 v0.57.0
+# SUT: one uvicorn worker (as render.yaml/Dockerfile). k6 = separate PROCESS on the SAME VM: generator_sut_separated=True means process separation only — NOT host separation.
+# NOT production-capacity evidence (owner rule). Thresholds/SLOs untouched; 42 criteria remain proposed.
+
+## §0 Run sequence (/tmp/soak.log, verbatim)
+== api-task-lifecycle soak 2026-11-08T21:32:19Z
+exit=0
+== api-chat soak 2026-11-08T23:32:44Z
+exit=0
+== api-sse soak 2026-11-09T01:55:45Z
+exit=0
+SOAK_DONE 2026-11-09T03:55:48Z
+Each service ran exactly once. No service was rerun. Nothing was changed in the codespace during the soak.
+
+## §1 Per-service result (harness report)
+### api-task-lifecycle
+classification=measured ok=True k6_exit=0 stopped=False stop_rule=None slo_status=approved slo_p95_ms=500 slo_p99_ms=None
+params: duration_s=7200 arrival_rate=4/s max_vus=8  (= baseline_params; soak load is the baseline rate held for 2h)
+thresholds={"http_req_failed": true, "checks": true, "http_req_duration": true}
+http_reqs=57600 failed=0 dropped_iterations=0  p50=6.64ms p95=13.38ms p99=16.02ms max=67.97ms
+probe_failures=[]
+retention_evictions=3545, all last_seen_terminal=True; contract: volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164) — expected volatile retention, not loss (every evicted task had been seen terminal)
+### api-chat
+classification=measured ok=True k6_exit=0 stopped=False stop_rule=None slo_status=approved slo_p95_ms=2000 slo_p99_ms=1000
+params: duration_s=7200 arrival_rate=10/s max_vus=16  (= baseline_params; soak load is the baseline rate held for 2h)
+thresholds={"http_req_failed": true, "checks": true, "http_req_duration": true}
+http_reqs=72001 failed=0 dropped_iterations=0  p50=9.68ms p95=12.20ms p99=13.94ms max=55.63ms
+probe_failures=[]
+retention_evictions=1, all last_seen_terminal=True; contract: volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164) — expected volatile retention, not loss (every evicted task had been seen terminal)
+### api-sse
+classification=measured ok=True k6_exit=0 stopped=False stop_rule=None slo_status=approved slo_p95_ms=500 slo_p99_ms=None
+params: duration_s=7200 arrival_rate=0.2/s max_vus=2  (= baseline_params; soak load is the baseline rate held for 2h)
+thresholds={"http_req_failed": true, "checks": true, "http_req_duration": true}
+http_reqs=1440 failed=0 dropped_iterations=0  p50=3.12ms p95=3.76ms p99=5.26ms max=8.72ms
+probe_failures=[]
+retention_evictions=0
+
+## §2 Latency stability — 10-minute windows from raw k6 points (soak_windows.json; computed after the soak from k6_points_*.jsonl, sha256 in soak/RAW_SHA256.txt)
+### api-task-lifecycle
+start_min      n    p50ms    p95ms    p99ms    maxms  failed
+        0   4801     4.86    10.92    12.87    35.20       0
+       10   4799     9.75    12.89    15.49    56.12       0
+       20   4800     9.84    12.66    14.84    28.28       0
+       30   4800     9.90    13.16    15.66    43.68       0
+       40   4800     9.81    13.02    15.37    36.78       0
+       50   4800    10.42    14.23    16.60    48.67       0
+       60   4800    10.33    13.89    16.34    36.62       0
+       70   4800    10.50    14.25    16.96    67.97       0
+       80   4800    10.30    13.51    16.32    30.25       0
+       90   4800    10.49    13.63    16.80    57.32       0
+      100   4800    10.12    13.02    15.50    36.06       0
+      110   4800    10.22    13.54    16.44    44.79       0
+  windows 1..11: p95 min=12.66 max=14.25 (spread 1.59ms); first-hour mean p95=13.19 second-hour mean p95=13.64
+### api-chat
+start_min      n    p50ms    p95ms    p99ms    maxms  failed
+        0   6001     9.96    12.70    14.51    41.98       0
+       10   6000    10.42    12.84    14.63    25.05       0
+       20   6000    10.23    13.33    15.37    53.73       0
+       30   6000     9.58    11.22    13.20    27.53       0
+       40   6000     9.60    11.32    13.12    42.27       0
+       50   6000     9.55    11.18    13.11    21.88       0
+       60   6000     9.48    11.24    13.33    39.07       0
+       70   6000     9.55    11.16    13.18    24.67       0
+       80   6000     9.66    11.56    13.48    55.63       0
+       90   6000     9.58    11.27    13.39    22.98       0
+      100   6000     9.65    11.28    13.51    21.78       0
+      110   6000     9.51    11.11    13.64    43.96       0
+  windows 1..11: p95 min=11.11 max=13.33 (spread 2.21ms); first-hour mean p95=11.98 second-hour mean p95=11.27
+### api-sse
+start_min      n    p50ms    p95ms    p99ms    maxms  failed
+        0    120     3.11     3.51     4.89     6.59       0
+       10    120     3.13     3.78     4.38     7.62       0
+       20    120     3.08     3.56     4.89     5.29       0
+       30    121     3.13     3.52     5.21     5.37       0
+       40    120     3.13     3.71     6.32     8.72       0
+       50    120     3.14     3.75     4.14     4.60       0
+       60    119     3.14     3.69     5.25     5.66       0
+       70    121     3.17     3.79     5.43     5.61       0
+       80    120     3.12     4.12     5.14     5.35       0
+       90    120     3.06     3.87     5.43     7.99       0
+      100    119     3.08     3.49     4.25     4.45       0
+      110    120     3.09     3.86     4.42     7.28       0
+  windows 1..11: p95 min=3.49 max=4.12 (spread 0.63ms); first-hour mean p95=3.66 second-hour mean p95=3.80
+Reading:
+- No window has a failure. Every window's p95 is far under the SLO: 500ms for lifecycle and sse, 2000ms for chat. No window's p95 or p99 trends upward without limit.
+- api-task-lifecycle: window 0 has a lower p50 (4.86 vs ~10ms). One possible cause is the warm-up before the volatile store reaches MAX_TASKS_KEPT=500, after which evictions start; this is not proven.
+  From window 1 to window 11, p50 drifts about +0.5ms (9.75 to 10.2–10.5), roughly +5% between hour 1 and hour 2. The drift is small and bounded and has no measured cause. It is recorded, not explained away.
+- api-chat: p95 is flat to slightly falling (12.7 to 11.1ms).
+- api-sse: about 120 requests per window. The soak rate is 0.2/s by design (SSE admission limits), so this is a low-load stability check, not a load test.
+
+## §3 SUT process resources — external sidecar every 30s (soak/<svc>.resources.csv: /proc/<pid>/status VmRSS/VmHWM/Threads, /proc/<pid>/stat utime+stime)
+svc                 samples pid    rss_first rss_last  rss_meanQ1 rss_meanQ4  hwm_last thr_first thr_last cpu_s
+api-task-lifecycle     240 28746      82260     89568      88650      89521     89572         8        9  566.9
+api-chat               285 57390      83936     90700      90179      90700     90772         8        8  679.6
+api-sse                239 86178      80580     81688      81159      81683     81688         7        8   38.9
+Slopes (first-quarter mean to last-quarter mean, about 90 minutes apart):
+- api-task-lifecycle: RSS +871 KB (+0.98%); first sample to last +7308 KB, mostly within the first quarter, about 30 minutes (warm-up: first sample < Q1 mean); threads 8→9; same PID throughout (no restart)
+- api-chat: RSS +521 KB (+0.58%); first sample to last +6764 KB, mostly within the first quarter, about 30 minutes (warm-up: first sample < Q1 mean); threads 8→8; same PID throughout (no restart)
+- api-sse: RSS +524 KB (+0.65%); first sample to last +1108 KB, mostly within the first quarter, about 30 minutes (warm-up: first sample < Q1 mean); threads 7→8; same PID throughout (no restart)
+- fds: NOT MEASURED. The sidecar read 0 open fds in every sample for all three services. A live process cannot have 0 fds, so the reading failed (the `ls /proc/<pid>/fd` read is unreliable in this sandbox). fd stability is NOT claimed.
+- The harness has NO in-tool leak metric. The RSS/threads slopes above are external observations over 2h at baseline rate. They do not prove the absence of a leak at higher load or over longer durations.
+
+## §4 Classification for R-177 (soak row)
+- measured + pass (2h, baseline rate, volatile, same-VM generator): api-task-lifecycle, api-chat, api-sse
+- not_measured (NOT pass): api-health, api-auth, api-agents, api-admin-tools, api-memory, api-tasks-submit, api-tasks-read, frontend — 8 services
+- Not covered by this soak: durable storage, multi-worker, production host, separate generator host, loads above the baseline rate.
+
+## §5 Evidence
+- committed: docs/audit/M8/logs/raw/r177_codespaces/soak/ — <svc>.stdout (harness report), k6_summary_*_soak.json, <svc>.resources.csv, soak_summary.json (derived; eviction list collapsed to a count), soak_windows.json, COMMITTED_SHA256.txt
+- kept only in the codespace, deleted with it; sha256+bytes recorded in soak/RAW_SHA256.txt: k6_points_*.jsonl (≈518MB total), samples_*.json, report_*.json, k6_stdout_*.log
+- integrity: every committed raw file's sha256 equals the sha256 computed inside the codespace (checked line by line before commit)
+
+## §6 Codespace lifecycle and cost (Q-023: free quota only)
+- created 2026-11-08T20:00:09Z (standardLinux32gb, 4 cores); deleted 2026-11-09T04:24:41Z with `gh codespace delete --force`; `gh codespace list` afterwards is empty.
+- wall time 8.41h × 4 cores = 33.6 core-hours (upper bound from timestamps).
+- GitHub billing summary 2026-11 at deletion (lags by a few minutes): sku codespaces_compute_d4 grossQuantity 7.997 h = 32.0 core-h, discountQuantity 7.997, **netAmount 0.0**; codespaces_storage 0.131 GB-month, netAmount 0.0.
+- No paid resource was created; free personal quota is 120 core-hours/month.

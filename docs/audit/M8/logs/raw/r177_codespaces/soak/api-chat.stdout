@@ -1,0 +1,142 @@
+{
+  "service": "api-chat",
+  "classification": "measured",
+  "ok": true,
+  "profile": "soak",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<2000",
+      "p(99)<1000"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 2000,
+  "slo_p99_ms": 1000,
+  "metrics": {
+    "http_reqs": 72001,
+    "requests_failed": 0,
+    "duration_avg_ms": 9.92405691684833,
+    "duration_med_ms": 9.676132,
+    "duration_p90_ms": 11.379283,
+    "duration_p95_ms": 12.196289,
+    "duration_p99_ms": 13.936087,
+    "duration_max_ms": 55.632298,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 72001,
+    "p50_ms": 9.676,
+    "p95_ms": 12.196,
+    "p99_ms": 13.936,
+    "max_ms": 55.632,
+    "p95_ms_k6_method": 12.196
+  },
+  "params": {
+    "duration_s": 7200,
+    "arrival_rate": 10,
+    "max_vus": 16
+  },
+  "baseline_params": {
+    "duration_s": 7200,
+    "arrival_rate": 10,
+    "max_vus": 16
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "962d9f32dc1d",
+  "storage": "volatile",
+  "retention_evictions": [
+    {
+      "task": "962d9f32dc1d",
+      "at": 1794180816.03,
+      "last_seen_terminal": true,
+      "contract": "volatile MAX_TASKS_KEPT=500 (finished records evicted oldest-first, R-164)"
+    }
+  ],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 7153,
+    "ready": 7153,
+    "isolation": 2385,
+    "integrity": 2385
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177cs/soak/k6_summary_api-chat_soak.json",
+  "stdout_log_path": "/tmp/r177cs/soak/k6_stdout_api-chat_soak.log",
+  "p99_assessment": {
+    "quantile": 0.99,
+    "threshold_ms": 1000.0,
+    "n": 72001,
+    "n_min_required": 299,
+    "confidence": 0.95,
+    "point_ms": 13.936,
+    "upper_bound_ms": 14.032,
+    "sufficient": true,
+    "verdict": "pass",
+    "passed": true,
+    "rule": "pass ⇔ n >= n_min AND point < threshold AND distribution-free 95% upper bound < threshold"
+  },
+  "tail_review": {
+    "n": 72001,
+    "max_ms": 55.632,
+    "med_ms": 9.676,
+    "max_over_med": 5.75,
+    "over_threshold": 0,
+    "over_half_threshold": 0,
+    "top": [
+      {
+        "ms": 55.632,
+        "t_s": 5183.294,
+        "endpoint": "chat",
+        "seq": 51832
+      },
+      {
+        "ms": 53.73,
+        "t_s": 1404.492,
+        "endpoint": "chat",
+        "seq": 14044
+      },
+      {
+        "ms": 43.956,
+        "t_s": 7192.382,
+        "endpoint": "chat",
+        "seq": 71923
+      },
+      {
+        "ms": 42.266,
+        "t_s": 2660.78,
+        "endpoint": "chat",
+        "seq": 26607
+      },
+      {
+        "ms": 41.984,
+        "t_s": 166.68,
+        "endpoint": "chat",
+        "seq": 1666
+      }
+    ]
+  },
+  "stop_decision": {
+    "stopped": false,
+    "rule": null,
+    "rule_id": null,
+    "reason": null,
+    "at_s": null,
+    "measurements": {}
+  }
+}

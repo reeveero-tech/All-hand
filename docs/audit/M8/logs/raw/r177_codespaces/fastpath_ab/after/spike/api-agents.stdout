@@ -1,0 +1,81 @@
+{
+  "service": "api-agents",
+  "classification": "measured",
+  "ok": true,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<300"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 300,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 23974,
+    "requests_failed": 0,
+    "duration_avg_ms": 10.216025524401468,
+    "duration_med_ms": 5.6935585,
+    "duration_p90_ms": 9.313587000000002,
+    "duration_p95_ms": 18.43445919999996,
+    "duration_p99_ms": 100.8211131300006,
+    "duration_max_ms": 1663.465603,
+    "dropped_iterations": 27
+  },
+  "raw_quantiles": {
+    "n": 23974,
+    "p50_ms": 5.694,
+    "p95_ms": 18.453,
+    "p99_ms": 101.833,
+    "max_ms": 1663.466,
+    "p95_ms_k6_method": 18.43479999999996
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "248c1608492e",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 116,
+    "ready": 116,
+    "isolation": 39,
+    "integrity": 39
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177ab/after/spike/k6_summary_api-agents_spike.json",
+  "stdout_log_path": "/tmp/r177ab/after/spike/k6_stdout_api-agents_spike.log",
+  "stop_decision": {
+    "stopped": false,
+    "rule": null,
+    "rule_id": null,
+    "reason": null,
+    "at_s": null,
+    "measurements": {}
+  }
+}
