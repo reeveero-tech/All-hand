@@ -1,0 +1,61 @@
+# 396 — status records reconciled with current CI (D-144 §B). Read directly from the GitHub API on 2026-11-09T07:06:22Z
+
+## main CI after each R-177 merge (workflow 'AGOS Kernel CI/CD' + 'Governance Gate')
+run_id | head_sha | event | conclusion | run_attempt | created | updated | url
+42531582128 | 6b82d043 | push | success | 1 | 2026-11-08T22:42:40Z | 2026-11-08T23:18:20Z | https://github.com/reeveero-tech/All-hand/actions/runs/42531582128
+42538963682 | 2dd3a8d3 | push | success | 1 | 2026-11-09T00:12:57Z | 2026-11-09T00:50:19Z | https://github.com/reeveero-tech/All-hand/actions/runs/42538963682
+42564812543 | f9223dfe | push | success | 2 | 2026-11-09T05:00:25Z | 2026-11-09T05:39:23Z | https://github.com/reeveero-tech/All-hand/actions/runs/42564812543
+Governance Gate on main:
+42564812602 | f9223dfe | success | 1
+42538963654 | 2dd3a8d3 | success | 1
+42531582233 | 6b82d043 | success | 1
+
+## f9223dfe (merge of PR #340) — attempt 1 FAILED in job 'storage', attempt 2 succeeded
+attempt 1 (conclusion=failure):
+  test = success (job 128988922431)
+  quality = success (job 128988922708)
+  network = success (job 128988978200)
+  storage = failure (job 128999012905)
+  build = success (job 128999012931)
+  audit = success (job 128999012938)
+  docker = success (job 128999012949)
+  publish = skipped (job 128999142012)
+attempt 2 (conclusion=success):
+  storage = success
+  build = success
+  docker = success
+  audit = success
+  publish = skipped
+  quality = success
+  test = success
+  network = success
+attempt-1 storage job log (https://github.com/reeveero-tech/All-hand/actions/runs/42564812543/job/128999012905), lines 350-365:
+  2026-11-09T05:35:07.8229540Z ##[group]Run curl -sSL -o /tmp/pgrst.tar.xz https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz
+  2026-11-09T05:35:07.8230705Z curl -sSL -o /tmp/pgrst.tar.xz https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz
+  2026-11-09T05:35:07.8231659Z echo "9f71269e61ac3a940281e93ff415760f5957e430e475ba4c3889f3ede7d5527c  /tmp/pgrst.tar.xz" | sha256sum -c -
+  2026-11-09T05:35:07.8232223Z tar -xf /tmp/pgrst.tar.xz -C /tmp
+  2026-11-09T05:35:07.8282814Z shell: /usr/bin/bash -e {0}
+  2026-11-09T05:35:07.8283073Z env:
+  2026-11-09T05:35:07.8283345Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.18/x64
+  2026-11-09T05:35:07.8283802Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.18/x64/lib/pkgconfig
+  2026-11-09T05:35:07.8284258Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.18/x64
+  2026-11-09T05:35:07.8284703Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.18/x64
+  2026-11-09T05:35:07.8285105Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.18/x64
+  2026-11-09T05:35:07.8285498Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.18/x64/lib
+  2026-11-09T05:35:07.8285824Z ##[endgroup]
+  2026-11-09T05:35:08.0065857Z sha256sum: WARNING: 1 computed checksum did NOT match
+  2026-11-09T05:35:08.0066238Z /tmp/pgrst.tar.xz: FAILED
+  2026-11-09T05:35:08.0080975Z ##[error]Process completed with exit code 1.
+cause: the downloaded PostgREST v12.2.3 archive did not match the pinned sha256 9f71269e…5527c (download
+integrity check refused it, as designed). The same pinned checksum matched the local copy, and attempt 2 passed
+with the same pin => transient download corruption/substitution, not a code defect. It is recorded as a FAILED
+attempt, not erased; the current CI result for f9223dfe is success on attempt 2.
+'publish' = skipped in both attempts: it is NOT counted as a pass (no publish/deploy happens from these runs).
+
+## local full suite (supersedes the network-dependent failure in log 392 §2-§3)
+branch m9/r177-soak-and-fastpath-ab (= content of PR #340), /tmp/r178/full_suite_d143.log, finished 2026-11-09T04:38Z:
+  ==== 4335 passed, 9 skipped, 17 deselected, 9 xfailed in 756.37s (0:12:36) =====
+  exit=0
+log 392 recorded 4334 passed / 1 failed (test_r175 ... certifies_all_100, depends on the live external web) on the
+D-142 branch. On the later run the same test passed: the failure stays recorded as environmental and intermittent
+(it was never counted as a pass). 9 skipped / 9 xfailed are not counted as passes.
