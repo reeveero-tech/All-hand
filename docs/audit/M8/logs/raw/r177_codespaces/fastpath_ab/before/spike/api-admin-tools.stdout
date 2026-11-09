@@ -1,0 +1,88 @@
+{
+  "service": "api-admin-tools",
+  "classification": "measured",
+  "ok": false,
+  "profile": "spike",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 105,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": false
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 13372,
+    "requests_failed": 0,
+    "duration_avg_ms": 507.2828680916833,
+    "duration_med_ms": 467.876495,
+    "duration_p90_ms": 832.5812730999999,
+    "duration_p95_ms": 1011.3361117499999,
+    "duration_p99_ms": 1967.4474463099816,
+    "duration_max_ms": 2953.105165,
+    "dropped_iterations": 215
+  },
+  "raw_quantiles": {
+    "n": 13372,
+    "p50_ms": 467.876,
+    "p95_ms": 1011.379,
+    "p99_ms": 1981.287,
+    "max_ms": 2953.105,
+    "p95_ms_k6_method": 1011.3361
+  },
+  "params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "baseline_params": {
+    "duration_s": 120,
+    "arrival_rate": 200,
+    "max_vus": 240
+  },
+  "stopped": true,
+  "probe_failures": [],
+  "sentinel_id": "b282efba7b90",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 45,
+    "ready": 45,
+    "isolation": 15,
+    "integrity": 15
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/r177ab/before/spike/k6_summary_api-admin-tools_spike.json",
+  "stdout_log_path": "/tmp/r177ab/before/spike/k6_stdout_api-admin-tools_spike.log",
+  "stop_decision": {
+    "stopped": true,
+    "rule": "error_rate",
+    "rule_id": "S1",
+    "reason": "window 12 error rate 0.0103 > 0.01 (S1)",
+    "at_s": 65.0,
+    "measurements": {
+      "window": 12,
+      "failed": 10,
+      "total": 970,
+      "rate": 0.010309,
+      "limit": 0.01,
+      "scope": "window"
+    }
+  }
+}

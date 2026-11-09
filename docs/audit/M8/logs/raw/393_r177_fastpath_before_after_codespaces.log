@@ -1,0 +1,54 @@
+# 393 — R-177 / D-142: native-JSON fast path — before/after under the SAME harness on the SAME Codespace (4 cores, standardLinux32gb)
+# before = 6b82d04331b801a54f6cdbd882e3cc4923b8f743 (main before #339)   after = 2dd3a8d3a33c3fc25f0bea3a9ec68cd10a727264 (main after #339)
+# each SHA in its own fresh detached git worktree (/tmp/wt_before, /tmp/wt_after). The codespace working tree was not used. Shared venv /tmp/venv311 and k6 v0.57.0.
+# cmd: AGOS_ALLOW_BIG_LOAD=1 python scripts/r177_per_service.py --service S --profile P --storage volatile --allow-dedicated-env --out DIR  (D-141 double override)
+# order interleaved per (profile, service): before then after, to limit drift bias. Started after the soak finished (SOAK_DONE 03:55:48Z); load average 0.36 at start.
+# one run per cell, no reruns. Profiles, thresholds and stop rules are unchanged. NOT production-capacity evidence; same-VM generator (process separation only).
+
+## §0 ab.log (verbatim)
+before=6b82d04331b801a54f6cdbd882e3cc4923b8f743 after=2dd3a8d3a33c3fc25f0bea3a9ec68cd10a727264
+4
+ 04:00:18 up  9:17,  0 user,  load average: 0.36, 0.14, 0.10
+== before stress api-agents 2026-11-09T04:00:18Z
+exit=1
+== after stress api-agents 2026-11-09T04:00:35Z
+exit=0
+== before stress api-admin-tools 2026-11-09T04:05:37Z
+exit=0
+== after stress api-admin-tools 2026-11-09T04:10:38Z
+exit=0
+== before spike api-agents 2026-11-09T04:15:39Z
+exit=1
+== after spike api-agents 2026-11-09T04:15:54Z
+exit=0
+== before spike api-admin-tools 2026-11-09T04:17:55Z
+exit=1
+== after spike api-admin-tools 2026-11-09T04:19:06Z
+exit=0
+AB_DONE 2026-11-09T04:21:07Z
+
+## §1 Results (harness report + k6 summary)
+profile service          side    ok    reqs   rate/s  failed dropped  p95ms    p99ms   stop
+stress  api-agents       before  False   1213     79.9      0     193   1428.3   2460.6   S1@10.0s: window 1 error rate 0.0126 > 0.01 (S1)
+stress  api-agents       after   True   29996    100.0      0       5      6.9     14.1   none (full duration)
+stress  api-admin-tools  before  True   29997    100.0      0       3      7.5      9.5   none (full duration)
+stress  api-admin-tools  after   True   29998    100.0      0       2      4.7      6.2   none (full duration)
+spike   api-agents       before  False    792     71.5      0    1187   3503.9   4027.6   S3@10.0s: p95 > 2.0x SLO — censored windows [1]: < 50% of scheduled iterations completed (stalled/in
+spike   api-agents       after   True   23974    199.7      0      27     18.4    100.8   none (full duration)
+spike   api-admin-tools  before  False  13372    193.8      0     215   1011.3   1967.4   S1@65.0s: window 12 error rate 0.0103 > 0.01 (S1)
+spike   api-admin-tools  after   True   23992    199.8      0       9      6.1      8.6   none (full duration)
+params: stress = 300s at 100/s (max_vus 120); spike = 120s at 200/s (max_vus 240). Same values on both sides.
+
+## §2 Reading
+- api-agents stress: before stopped at 10s (S1, harness error-rate window 0.0126 > 0.01; 193 dropped iterations; p95 1428ms). After: full 300s at 100.0/s, p95 6.9ms, 0 failed, ok=True.
+- api-agents spike: before stopped at 10s (S3, p95 > 2×SLO; censored windows; 1187 dropped). After: full 120s at 199.7/s, p95 18.4ms, p99 100.8ms, 27 dropped, ok=True.
+- api-admin-tools stress: both sides pass. p95 went from 7.5 to 4.7ms.
+- api-admin-tools spike: before stopped at 65s (S1, error-rate window 0.0103 > 0.01; p95 1011ms). After: full 120s at 199.8/s, p95 6.1ms, ok=True.
+- Before: 1 of 4 cells passed. After: 4 of 4 passed. k6 http failures are 0 in all cells; the before-side stops come from the harness's own windowed monitor rules (S1/S3), which are unchanged.
+- This matches log 391 (encoder ~88%/~62% of route CPU removed). The saturation point moved above the tested rates: 100/s and 200/s now hold on one worker in this VM.
+  The new saturation point was NOT searched for: no higher profile was run. That would need a profile change, which needs owner approval.
+- CPU: NOT measured per run in this A/B (the harness records none, and no sidecar ran). The per-request CPU figures stay those of log 391 (in-process, sandbox).
+- Not shown here: production capacity, multi-worker behaviour, durable storage, separate generator host.
+
+## §3 Evidence
+docs/audit/M8/logs/raw/r177_codespaces/fastpath_ab/{before,after}/{stress,spike}/<svc>.stdout + k6_summary_<svc>_<profile>.json + ab.log; SHA256.txt (sha256 of every committed file). k6 points/samples were kept only in the codespace and deleted with it.
