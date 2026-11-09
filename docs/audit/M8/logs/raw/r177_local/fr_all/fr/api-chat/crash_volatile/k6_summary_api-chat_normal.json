@@ -1,0 +1,153 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "chat status 200": {
+                    "passes": 101,
+                    "fails": 0,
+                    "name": "chat status 200",
+                    "path": "::chat status 200",
+                    "id": "d10a12090eb913ffb630cda429098d06"
+                },
+                "chat body ok": {
+                    "name": "chat body ok",
+                    "path": "::chat body ok",
+                    "id": "5c9341fa16116bae881baf8fa5072dbe",
+                    "passes": 101,
+                    "fails": 0
+                }
+            }
+    },
+    "metrics": {
+        "http_req_connecting": {
+            "min": 0,
+            "med": 0,
+            "max": 0.283127,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0.156359,
+            "avg": 0.008172980198019802
+        },
+        "http_req_receiving": {
+            "min": 0.052073,
+            "med": 0.065175,
+            "max": 0.821511,
+            "p(90)": 0.084767,
+            "p(95)": 0.120129,
+            "p(99)": 0.237456,
+            "avg": 0.081017
+        },
+        "iteration_duration": {
+            "p(90)": 56.155689,
+            "p(95)": 59.283716,
+            "p(99)": 72.128629,
+            "avg": 55.99778747524753,
+            "min": 53.751037,
+            "med": 55.169578,
+            "max": 84.448985
+        },
+        "http_reqs": {
+            "count": 101,
+            "rate": 10.03859621782044
+        },
+        "http_req_sending": {
+            "med": 0.033626,
+            "max": 0.075273,
+            "p(90)": 0.04197,
+            "p(95)": 0.052643,
+            "p(99)": 0.074648,
+            "avg": 0.03592046534653466,
+            "min": 0.024696
+        },
+        "vus": {
+            "min": 0,
+            "max": 0,
+            "value": 0
+        },
+        "data_sent": {
+            "count": 23114,
+            "rate": 2297.3476532544723
+        },
+        "http_req_duration{expected_response:true}": {
+            "max": 32.385794,
+            "p(90)": 5.127319,
+            "p(95)": 8.756894,
+            "p(99)": 20.925378,
+            "avg": 5.283030643564354,
+            "min": 3.119455,
+            "med": 4.489249
+        },
+        "http_req_duration": {
+            "p(99)": 20.925378,
+            "avg": 5.283030643564354,
+            "min": 3.119455,
+            "med": 4.489249,
+            "max": 32.385794,
+            "p(90)": 5.127319,
+            "p(95)": 8.756894,
+            "thresholds": {
+                "p(99)<1000": false,
+                "p(95)<2000": false
+            }
+        },
+        "http_req_blocked": {
+            "p(90)": 0.013036,
+            "p(95)": 0.029264,
+            "p(99)": 0.219283,
+            "avg": 0.019193960396039596,
+            "min": 0.006048,
+            "med": 0.007607,
+            "max": 0.344085
+        },
+        "data_received": {
+            "count": 175498,
+            "rate": 17443.104544901504
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 101,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_req_waiting": {
+            "avg": 5.166093178217821,
+            "min": 3.034197,
+            "med": 4.3935,
+            "max": 32.12789,
+            "p(90)": 5.000216,
+            "p(95)": 8.649066,
+            "p(99)": 20.062371
+        },
+        "vus_max": {
+            "value": 5,
+            "min": 5,
+            "max": 5
+        },
+        "checks": {
+            "passes": 202,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "iterations": {
+            "count": 101,
+            "rate": 10.03859621782044
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0
+        }
+    }
+}

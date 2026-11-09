@@ -1,0 +1,513 @@
+{
+  "service": "api-admin-tools",
+  "classification": "measured",
+  "ok": true,
+  "profile": "baseline",
+  "k6_version": "v0.57.0",
+  "k6_exit_code": 0,
+  "config_sha256": "41d79e4611ec5fa61a494c9ab8afb45d50d72ec5a467c8c05b76bc5532ee3e99",
+  "thresholds": {
+    "http_req_failed": true,
+    "checks": true,
+    "http_req_duration": true
+  },
+  "thresholds_declared": {
+    "http_req_failed": [
+      "rate<0.01"
+    ],
+    "checks": [
+      "rate>0.99"
+    ],
+    "http_req_duration": [
+      "p(95)<500"
+    ]
+  },
+  "slo_status": "approved",
+  "slo_p95_ms": 500,
+  "slo_p99_ms": null,
+  "metrics": {
+    "http_reqs": 201,
+    "requests_failed": 0,
+    "duration_avg_ms": 3.8688232238805957,
+    "duration_med_ms": 3.375016,
+    "duration_p90_ms": 3.864696,
+    "duration_p95_ms": 4.374971,
+    "duration_p99_ms": 23.173234,
+    "duration_max_ms": 30.418319,
+    "dropped_iterations": 0
+  },
+  "raw_quantiles": {
+    "n": 201,
+    "p50_ms": 3.375,
+    "p95_ms": 4.375,
+    "p99_ms": 23.173,
+    "max_ms": 30.418,
+    "p95_ms_k6_method": 4.375
+  },
+  "params": {
+    "duration_s": 20,
+    "arrival_rate": 10,
+    "max_vus": 12
+  },
+  "baseline_params": {
+    "duration_s": 20,
+    "arrival_rate": 10,
+    "max_vus": 12
+  },
+  "stop": {
+    "policy": {
+      "error_rate_max": 0.01,
+      "checks_rate_min": 0.99,
+      "latency_multiplier": 2.0,
+      "consecutive_windows": 2,
+      "window_s": 5.0,
+      "min_window_samples": 10,
+      "min_requests_for_rate": 100,
+      "immediate": [
+        "health_failure",
+        "readiness_failure",
+        "tenant_isolation_violation",
+        "data_integrity_violation"
+      ],
+      "p95_slo_ms": 500.0,
+      "p95_stop_ms": 1000.0,
+      "p99_slo_ms": null,
+      "p99_stop_ms": null,
+      "owner_floor": {
+        "error_rate_max": 0.01,
+        "checks_rate_min": 0.99,
+        "latency_multiplier_max": 2.0,
+        "consecutive_windows_max": 2,
+        "min_requests_for_rate_max": 100,
+        "min_window_samples_max": 20,
+        "window_s_max": 30
+      },
+      "expected_iter_rate": 10.0,
+      "stall_completion_frac": 0.5,
+      "stall_detection_applicable": true
+    },
+    "decision": {
+      "stopped": false,
+      "rule": null,
+      "rule_id": null,
+      "reason": null,
+      "at_s": null,
+      "measurements": {}
+    },
+    "breaches": [],
+    "totals": {
+      "requests": 201,
+      "failed": 0,
+      "checks": 201,
+      "checks_passed": 201
+    },
+    "windows": [
+      {
+        "idx": 0,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 4.374971,
+        "p99_ms": 30.418319,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 1,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 4.309719,
+        "p99_ms": 24.709143,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 2,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 4.487287,
+        "p99_ms": 15.794456,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 3,
+        "samples": 50,
+        "sufficient": true,
+        "p95_ms": 5.308476,
+        "p99_ms": 23.173234,
+        "reqs": 50,
+        "failed": 0,
+        "checks": 50,
+        "checks_ok": 50,
+        "iters": 50,
+        "dropped": 0
+      },
+      {
+        "idx": 4,
+        "samples": 1,
+        "sufficient": false,
+        "p95_ms": 3.425404,
+        "p99_ms": 3.425404,
+        "reqs": 1,
+        "failed": 0,
+        "checks": 1,
+        "checks_ok": 1,
+        "iters": 1,
+        "dropped": 0
+      }
+    ]
+  },
+  "stopped": false,
+  "probe_failures": [],
+  "sentinel_id": "5760e03e1c86",
+  "storage": "volatile",
+  "retention_evictions": [],
+  "tracked_ids": [],
+  "probe_counts": {
+    "health": 21,
+    "ready": 21,
+    "isolation": 8,
+    "integrity": 8
+  },
+  "probes_note": "light third HTTP client (1 req/s health+ready, isolation/integrity every 3s) — outside k6 metrics",
+  "generator_sut_separated": true,
+  "raw_results_path": "/tmp/d144/fr/api-admin-tools/crash_volatile/post/k6_summary_api-admin-tools_baseline.json",
+  "stdout_log_path": "/tmp/d144/fr/api-admin-tools/crash_volatile/post/k6_stdout_api-admin-tools_baseline.log",
+  "resources": {
+    "method_note": "in_process = sampler thread inside the SUT (scripts/r177_sut_launcher.py); external = same reads from the harness (the SUT is non-dumpable, so fds/smaps are PermissionError there — recorded, not 0)",
+    "external": {
+      "csv": "/tmp/d144/fr/api-admin-tools/crash_volatile/post/resources_api-admin-tools_baseline.csv",
+      "interval_s": 1.0,
+      "leak_indicators": {
+        "status": "measured",
+        "warmup_cut_s": 5.0,
+        "samples_total": 21,
+        "samples_post_warmup": 16,
+        "pids": [
+          7280
+        ],
+        "pid_changes": 0,
+        "note": "indicators only — OLS slope per hour with a 95% CI after the warm-up cut. growth_significant = CI lower bound > 0. No approved leak threshold exists (proposed only), so no pass/fail verdict and no 'no leak' claim.",
+        "series": {
+          "rss_kb": {
+            "samples": 16,
+            "missing": 0,
+            "status": "measured",
+            "first": 89304.0,
+            "last": 89436.0,
+            "min": 89304.0,
+            "max": 89436.0,
+            "mean_first_quarter": 89309.0,
+            "mean_last_quarter": 89436.0,
+            "slope_per_h": 34964.111,
+            "slope_per_h_ci95": [
+              20638.026,
+              49290.1961
+            ],
+            "rel_growth_per_h_pct": 39.1496,
+            "growth_significant": true
+          },
+          "pss_kb": {
+            "samples": 0,
+            "missing": 16,
+            "status": "not_measured"
+          },
+          "private_dirty_kb": {
+            "samples": 0,
+            "missing": 16,
+            "status": "not_measured"
+          },
+          "anonymous_kb": {
+            "samples": 0,
+            "missing": 16,
+            "status": "not_measured"
+          },
+          "threads": {
+            "samples": 16,
+            "missing": 0,
+            "status": "measured",
+            "first": 9.0,
+            "last": 9.0,
+            "min": 9.0,
+            "max": 9.0,
+            "mean_first_quarter": 9.0,
+            "mean_last_quarter": 9.0,
+            "slope_per_h": 0.0,
+            "slope_per_h_ci95": [
+              0.0,
+              0.0
+            ],
+            "rel_growth_per_h_pct": 0.0,
+            "growth_significant": false
+          },
+          "fds": {
+            "samples": 0,
+            "missing": 16,
+            "errors": [
+              "PermissionError: Permission denied"
+            ],
+            "status": "not_measured"
+          }
+        }
+      }
+    },
+    "in_process": {
+      "csv": "/tmp/d144/fr/api-admin-tools/crash_volatile/post/resources_inproc_api-admin-tools_baseline.csv",
+      "leak_indicators": {
+        "status": "measured",
+        "warmup_cut_s": 4.9,
+        "samples_total": 20,
+        "samples_post_warmup": 15,
+        "pids": [
+          7280
+        ],
+        "pid_changes": 0,
+        "note": "indicators only — OLS slope per hour with a 95% CI after the warm-up cut. growth_significant = CI lower bound > 0. No approved leak threshold exists (proposed only), so no pass/fail verdict and no 'no leak' claim.",
+        "series": {
+          "rss_kb": {
+            "samples": 15,
+            "missing": 0,
+            "status": "measured",
+            "first": 89304.0,
+            "last": 89436.0,
+            "min": 89304.0,
+            "max": 89436.0,
+            "mean_first_quarter": 89306.67,
+            "mean_last_quarter": 89436.0,
+            "slope_per_h": 35830.2773,
+            "slope_per_h_ci95": [
+              21282.3894,
+              50378.1652
+            ],
+            "rel_growth_per_h_pct": 40.1205,
+            "growth_significant": true
+          },
+          "pss_kb": {
+            "samples": 15,
+            "missing": 0,
+            "status": "measured",
+            "first": 69285.0,
+            "last": 69633.0,
+            "min": 69285.0,
+            "max": 69633.0,
+            "mean_first_quarter": 69311.33,
+            "mean_last_quarter": 69625.0,
+            "slope_per_h": 90936.8067,
+            "slope_per_h_ci95": [
+              78275.9509,
+              103597.6626
+            ],
+            "rel_growth_per_h_pct": 131.2005,
+            "growth_significant": true
+          },
+          "private_dirty_kb": {
+            "samples": 15,
+            "missing": 0,
+            "status": "measured",
+            "first": 59324.0,
+            "last": 59620.0,
+            "min": 59324.0,
+            "max": 59620.0,
+            "mean_first_quarter": 59349.33,
+            "mean_last_quarter": 59612.0,
+            "slope_per_h": 79463.9139,
+            "slope_per_h_ci95": [
+              72425.7354,
+              86502.0923
+            ],
+            "rel_growth_per_h_pct": 133.8918,
+            "growth_significant": true
+          },
+          "anonymous_kb": {
+            "samples": 15,
+            "missing": 0,
+            "status": "measured",
+            "first": 59284.0,
+            "last": 59576.0,
+            "min": 59284.0,
+            "max": 59576.0,
+            "mean_first_quarter": 59309.33,
+            "mean_last_quarter": 59568.0,
+            "slope_per_h": 78539.89,
+            "slope_per_h_ci95": [
+              71233.5244,
+              85846.2556
+            ],
+            "rel_growth_per_h_pct": 132.4242,
+            "growth_significant": true
+          },
+          "threads": {
+            "samples": 15,
+            "missing": 0,
+            "status": "measured",
+            "first": 9.0,
+            "last": 9.0,
+            "min": 9.0,
+            "max": 9.0,
+            "mean_first_quarter": 9.0,
+            "mean_last_quarter": 9.0,
+            "slope_per_h": 0.0,
+            "slope_per_h_ci95": [
+              0.0,
+              0.0
+            ],
+            "rel_growth_per_h_pct": 0.0,
+            "growth_significant": false
+          },
+          "fds": {
+            "samples": 15,
+            "missing": 0,
+            "status": "measured",
+            "first": 24.0,
+            "last": 24.0,
+            "min": 24.0,
+            "max": 24.0,
+            "mean_first_quarter": 24.0,
+            "mean_last_quarter": 24.0,
+            "slope_per_h": 0.0,
+            "slope_per_h_ci95": [
+              0.0,
+              0.0
+            ],
+            "rel_growth_per_h_pct": 0.0,
+            "growth_significant": false
+          }
+        }
+      }
+    },
+    "leak_indicators": {
+      "status": "measured",
+      "warmup_cut_s": 4.9,
+      "samples_total": 20,
+      "samples_post_warmup": 15,
+      "pids": [
+        7280
+      ],
+      "pid_changes": 0,
+      "note": "indicators only — OLS slope per hour with a 95% CI after the warm-up cut. growth_significant = CI lower bound > 0. No approved leak threshold exists (proposed only), so no pass/fail verdict and no 'no leak' claim.",
+      "series": {
+        "rss_kb": {
+          "samples": 15,
+          "missing": 0,
+          "status": "measured",
+          "first": 89304.0,
+          "last": 89436.0,
+          "min": 89304.0,
+          "max": 89436.0,
+          "mean_first_quarter": 89306.67,
+          "mean_last_quarter": 89436.0,
+          "slope_per_h": 35830.2773,
+          "slope_per_h_ci95": [
+            21282.3894,
+            50378.1652
+          ],
+          "rel_growth_per_h_pct": 40.1205,
+          "growth_significant": true
+        },
+        "pss_kb": {
+          "samples": 15,
+          "missing": 0,
+          "status": "measured",
+          "first": 69285.0,
+          "last": 69633.0,
+          "min": 69285.0,
+          "max": 69633.0,
+          "mean_first_quarter": 69311.33,
+          "mean_last_quarter": 69625.0,
+          "slope_per_h": 90936.8067,
+          "slope_per_h_ci95": [
+            78275.9509,
+            103597.6626
+          ],
+          "rel_growth_per_h_pct": 131.2005,
+          "growth_significant": true
+        },
+        "private_dirty_kb": {
+          "samples": 15,
+          "missing": 0,
+          "status": "measured",
+          "first": 59324.0,
+          "last": 59620.0,
+          "min": 59324.0,
+          "max": 59620.0,
+          "mean_first_quarter": 59349.33,
+          "mean_last_quarter": 59612.0,
+          "slope_per_h": 79463.9139,
+          "slope_per_h_ci95": [
+            72425.7354,
+            86502.0923
+          ],
+          "rel_growth_per_h_pct": 133.8918,
+          "growth_significant": true
+        },
+        "anonymous_kb": {
+          "samples": 15,
+          "missing": 0,
+          "status": "measured",
+          "first": 59284.0,
+          "last": 59576.0,
+          "min": 59284.0,
+          "max": 59576.0,
+          "mean_first_quarter": 59309.33,
+          "mean_last_quarter": 59568.0,
+          "slope_per_h": 78539.89,
+          "slope_per_h_ci95": [
+            71233.5244,
+            85846.2556
+          ],
+          "rel_growth_per_h_pct": 132.4242,
+          "growth_significant": true
+        },
+        "threads": {
+          "samples": 15,
+          "missing": 0,
+          "status": "measured",
+          "first": 9.0,
+          "last": 9.0,
+          "min": 9.0,
+          "max": 9.0,
+          "mean_first_quarter": 9.0,
+          "mean_last_quarter": 9.0,
+          "slope_per_h": 0.0,
+          "slope_per_h_ci95": [
+            0.0,
+            0.0
+          ],
+          "rel_growth_per_h_pct": 0.0,
+          "growth_significant": false
+        },
+        "fds": {
+          "samples": 15,
+          "missing": 0,
+          "status": "measured",
+          "first": 24.0,
+          "last": 24.0,
+          "min": 24.0,
+          "max": 24.0,
+          "mean_first_quarter": 24.0,
+          "mean_last_quarter": 24.0,
+          "slope_per_h": 0.0,
+          "slope_per_h_ci95": [
+            0.0,
+            0.0
+          ],
+          "rel_growth_per_h_pct": 0.0,
+          "growth_significant": false
+        }
+      }
+    },
+    "leak_indicators_source": "in_process"
+  }
+}

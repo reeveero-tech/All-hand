@@ -1,0 +1,152 @@
+{
+    "metrics": {
+        "http_req_waiting": {
+            "p(95)": 2.036276,
+            "p(99)": 13.609031,
+            "avg": 1.8557552487562192,
+            "min": 0.99142,
+            "med": 1.393582,
+            "max": 28.099314,
+            "p(90)": 1.655146
+        },
+        "http_req_duration{expected_response:true}": {
+            "max": 29.381163,
+            "p(90)": 2.12526,
+            "p(95)": 2.723263,
+            "p(99)": 19.17868,
+            "avg": 2.389906945273632,
+            "min": 1.250944,
+            "med": 1.762101
+        },
+        "http_req_blocked": {
+            "max": 0.334933,
+            "p(90)": 0.011462,
+            "p(95)": 0.013986,
+            "p(99)": 0.191279,
+            "avg": 0.013805701492537308,
+            "min": 0.006409,
+            "med": 0.008154
+        },
+        "vus_max": {
+            "value": 5,
+            "min": 5,
+            "max": 5
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 201,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_req_duration": {
+            "avg": 2.389906945273632,
+            "min": 1.250944,
+            "med": 1.762101,
+            "max": 29.381163,
+            "p(90)": 2.12526,
+            "p(95)": 2.723263,
+            "p(99)": 19.17868,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "checks": {
+            "passes": 402,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "iterations": {
+            "count": 201,
+            "rate": 10.023512596327013
+        },
+        "data_sent": {
+            "count": 19031,
+            "rate": 949.0421304512408
+        },
+        "data_received": {
+            "count": 9395129,
+            "rate": 468518.37749063293
+        },
+        "http_reqs": {
+            "count": 201,
+            "rate": 10.023512596327013
+        },
+        "http_req_sending": {
+            "max": 0.067662,
+            "p(90)": 0.031739,
+            "p(95)": 0.03848,
+            "p(99)": 0.046059,
+            "avg": 0.027512358208955215,
+            "min": 0.019795,
+            "med": 0.026301
+        },
+        "http_req_receiving": {
+            "avg": 0.5066393383084576,
+            "min": 0.179368,
+            "med": 0.260721,
+            "max": 18.2378,
+            "p(90)": 0.62448,
+            "p(95)": 0.776208,
+            "p(99)": 4.455747
+        },
+        "iteration_duration": {
+            "p(99)": 73.276811,
+            "avg": 53.264500870646785,
+            "min": 51.823915,
+            "med": 52.391395,
+            "max": 81.352323,
+            "p(90)": 53.481198,
+            "p(95)": 54.356227
+        },
+        "vus": {
+            "value": 0,
+            "min": 0,
+            "max": 0
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0
+        },
+        "http_req_connecting": {
+            "p(99)": 0.126598,
+            "avg": 0.003354850746268657,
+            "min": 0,
+            "med": 0,
+            "max": 0.192322,
+            "p(90)": 0,
+            "p(95)": 0
+        }
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "frontend 200": {
+                    "passes": 201,
+                    "fails": 0,
+                    "name": "frontend 200",
+                    "path": "::frontend 200",
+                    "id": "e5625951010a2341d5f2ded2029a1f1f"
+                },
+                "frontend body non-empty": {
+                    "id": "366db1c631f63e24e7019f61a870048c",
+                    "passes": 201,
+                    "fails": 0,
+                    "name": "frontend body non-empty",
+                    "path": "::frontend body non-empty"
+                }
+            }
+    }
+}

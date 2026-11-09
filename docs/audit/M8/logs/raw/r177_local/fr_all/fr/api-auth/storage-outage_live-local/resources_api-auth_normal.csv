@@ -1,0 +1,13 @@
+utc,ts,t_s,pid,rss_kb,hwm_kb,pss_kb,private_dirty_kb,anonymous_kb,threads,fds,fds_error,utime_ticks,stime_ticks
+2026-11-09T07:40:21Z,1794210021.775,0.003,7751,85224,85224,,,,7,,PermissionError: Permission denied,51,8
+2026-11-09T07:40:22Z,1794210022.776,1.004,7751,89092,89092,,,,8,,PermissionError: Permission denied,59,10
+2026-11-09T07:40:23Z,1794210023.776,2.005,7751,89100,89100,,,,8,,PermissionError: Permission denied,63,12
+2026-11-09T07:40:24Z,1794210024.777,3.005,7751,89364,89364,,,,9,,PermissionError: Permission denied,69,13
+2026-11-09T07:40:25Z,1794210025.777,4.006,7751,89368,89368,,,,9,,PermissionError: Permission denied,72,15
+2026-11-09T07:40:26Z,1794210026.778,5.006,7751,89372,89372,,,,9,,PermissionError: Permission denied,77,18
+2026-11-09T07:40:27Z,1794210027.778,6.007,7751,89440,89440,,,,9,,PermissionError: Permission denied,82,19
+2026-11-09T07:40:28Z,1794210028.779,7.007,7751,89444,89444,,,,9,,PermissionError: Permission denied,86,22
+2026-11-09T07:40:29Z,1794210029.779,8.008,7751,89444,89444,,,,9,,PermissionError: Permission denied,91,23
+2026-11-09T07:40:30Z,1794210030.78,9.008,7751,89448,89448,,,,9,,PermissionError: Permission denied,95,25
+2026-11-09T07:40:31Z,1794210031.78,10.009,7751,89456,89456,,,,9,,PermissionError: Permission denied,99,27
+2026-11-09T07:40:32Z,1794210032.781,11.009,7751,89460,89460,,,,9,,PermissionError: Permission denied,103,29

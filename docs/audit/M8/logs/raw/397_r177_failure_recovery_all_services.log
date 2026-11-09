@@ -1,0 +1,135 @@
+# 397 — R-177 / D-145: failure & recovery for all 11 measured services (local sandbox), SSE-probe fix, CI PostgREST fetch fix
+date: 2026-11-09
+environment (declared limits): local agent sandbox, 2 shared vCPU, 8 GB; generator (k6) + SUT + PostgreSQL 18.6 + PostgREST v12.2.3 + kong prefix proxy, all on loopback.
+  NOT managed Supabase, NOT an isolated multi-machine environment, one uvicorn worker, one run per cell. This proves behaviour of the harness/server
+  under these faults on this box; it does not prove production capacity or production recovery (that needs Q-023).
+driver: /tmp/d144/fr_all.sh (serial, never parallel), timeout 900s per cell; thresholds and stop limits UNCHANGED.
+
+## 1. Code under test
+main run (31 cells): sha 39fb71934ae4db070b736ba90b00cec507ce3000 tree 1d8ca1e636383db32a0a4ccd9306df2f6e1f1f9e
+  = PR #341 head; merge commit 13ad8a616b9daaafe6bd999b70265f317000686b has the IDENTICAL tree (verified with git rev-parse <sha>^{tree}).
+api-sse crash re-run (2 cells, after the harness fix of §3): sha 54537c778c4b7746c0293e65ba7f0e6dd00f6a1a tree bddbbd752d62416b49584f7be44eb11f51a2a383
+  (diff vs the tree above: only scripts/r177_per_service.py _sse_ttfb_probe/_sse_probe_ok + new test file; server code identical).
+
+## 2. Results (raw: docs/audit/M8/logs/raw/r177_local/fr_all/{fr,fr_sse_rerun}/, SHA256SUMS.txt; k6 points sha256 in RAW_NOT_COMMITTED_SHA256.txt)
+columns: service scenario ok outcome stop_rule detect_s restart_to_health_s restart_to_ready_s pre_fault_checked lost post_baseline_ok fds_during(first-max) pss_during_max_kB resources
+  api-admin-tools	crash_live-local	True	stopped_and_recovered	S5	0.009	0.606	0.005	1	0	True	27.0-29.0	69520.0	measured
+  api-admin-tools	crash_volatile	True	stopped_and_recovered	S5	0.009	0.606	0.001	1	1	True	24.0-25.0	69529.0	measured
+  api-admin-tools	storage-outage_live-local	True	stopped_and_recovered	S5	1.005	None	None	1	0	True	29.0-29.0	69714.0	measured
+  api-agents	crash_live-local	True	stopped_and_recovered	S5	0.009	0.606	0.005	1	0	True	26.0-26.0	70163.0	measured
+  api-agents	crash_volatile	True	stopped_and_recovered	S5	0.009	0.605	0.001	1	1	True	24.0-27.0	70088.0	measured
+  api-agents	storage-outage_live-local	True	stopped_and_recovered	S5	1.006	None	None	1	0	True	26.0-28.0	70147.0	measured
+  api-auth	crash_live-local	True	stopped_and_recovered	S5	0.009	0.605	0.004	1	0	True	26.0-26.0	69590.0	measured
+  api-auth	crash_volatile	True	stopped_and_recovered	S5	0.01	0.606	0.001	1	1	True	24.0-27.0	69460.0	measured
+  api-auth	storage-outage_live-local	True	stopped_and_recovered	S5	1.006	None	None	1	0	True	26.0-29.0	69558.0	measured
+  api-chat	crash_live-local	True	stopped_and_recovered	S5	0.008	0.605	0.004	1	0	True	27.0-27.0	70209.0	measured
+  api-chat	crash_volatile	True	stopped_and_recovered	S5	0.008	0.605	0.001	1	1	True	24.0-24.0	70236.0	measured
+  api-chat	storage-outage_live-local	True	stopped_and_recovered	S5	1.003	None	None	1	0	True	26.0-30.0	70727.0	measured
+  api-health	crash_live-local	True	stopped_and_recovered	S5	0.013	0.605	0.004	1	0	True	26.0-30.0	75897.0	measured
+  api-health	crash_volatile	True	stopped_and_recovered	S5	0.011	0.605	0.001	1	1	True	24.0-24.0	69619.0	measured
+  api-health	storage-outage_live-local	True	stopped_and_recovered	S5	1.007	None	None	1	0	True	26.0-29.0	73957.0	measured
+  api-memory	crash_live-local	True	stopped_and_recovered	S5	0.009	0.605	0.004	1	0	True	29.0-29.0	69534.0	measured
+  api-memory	crash_volatile	True	stopped_and_recovered	S5	0.009	0.606	0.001	1	1	True	24.0-25.0	69358.0	measured
+  api-memory	storage-outage_live-local	True	stopped_and_recovered	S5	1.005	None	None	1	0	True	26.0-28.0	69674.0	measured
+  api-sse	storage-outage_live-local	True	stopped_and_recovered	S5	1.003	None	None	1	0	True	22.0-24.0	70518.0	measured
+  api-task-lifecycle	crash_live-local	True	stopped_and_recovered	S5	0.008	0.605	0.004	7	0	True	28.0-31.0	69854.0	measured
+  api-task-lifecycle	crash_volatile	True	stopped_and_recovered	S5	0.017	0.605	0.001	7	7	True	24.0-24.0	69794.0	measured
+  api-task-lifecycle	storage-outage_live-local	True	stopped_and_recovered	S5	1.002	None	None	7	0	True	28.0-30.0	69890.0	measured
+  api-tasks-read	crash_live-local	True	stopped_and_recovered	S5	0.008	0.605	0.004	1	0	True	26.0-26.0	69471.0	measured
+  api-tasks-read	crash_volatile	True	stopped_and_recovered	S5	0.01	0.606	0.001	1	1	True	24.0-27.0	69114.0	measured
+  api-tasks-read	storage-outage_live-local	True	stopped_and_recovered	S5	1.004	None	None	1	0	True	27.0-32.0	70057.0	measured
+  api-tasks-submit	crash_live-local	True	stopped_and_recovered	S5	0.008	0.606	0.004	7	0	True	28.0-29.0	70585.0	measured
+  api-tasks-submit	crash_volatile	True	stopped_and_recovered	S5	0.008	0.606	0.001	7	7	True	24.0-24.0	70212.0	measured
+  api-tasks-submit	storage-outage_live-local	True	stopped_and_recovered	S5	1.003	None	None	7	0	True	28.0-30.0	70660.0	measured
+  frontend	crash_live-local	True	stopped_and_recovered	S5	0.009	0.605	0.004	1	0	True	26.0-26.0	71499.0	measured
+  frontend	crash_volatile	True	stopped_and_recovered	S5	0.009	0.605	0.001	1	1	True	24.0-24.0	71601.0	measured
+  frontend	storage-outage_live-local	True	stopped_and_recovered	S5	1.007	None	None	1	0	True	26.0-28.0	71245.0	measured
+  api-sse crash_volatile   [first run, sha 39fb7193] NO REPORT — harness crashed (exit=1): ConnectionRefusedError in _sse_ttfb_probe (stderr kept in fr/api-sse/crash_volatile/stderr.log)
+  api-sse crash_live-local [first run, sha 39fb7193] NO REPORT — same harness crash (exit=1)
+  api-sse crash_live-local [re-run after fix, sha 54537c77] True stopped_and_recovered S5 0.008 0.606 0.005 1 0 True 22.0-22.0 69029.0 measured
+  api-sse crash_volatile [re-run after fix, sha 54537c77] True stopped_and_recovered S5 0.008 0.605 0.001 1 1 True 20.0-20.0 68850.0 measured
+
+storage-outage detail (PostgREST SIGSTOP then SIGCONT): service detect_s post_resume_to_ready_s ready_during_outage requests_failed http_reqs
+   api-admin-tools 1.005 1.032 ['503'] 0 222 {'status': 503, 'reason': 'storage timeout'}
+   api-agents 1.006 0.923 ['503'] 0 222 {'status': 503, 'reason': 'storage timeout'}
+   api-auth 1.006 0.922 ['503'] 0 222 {'status': 503, 'reason': 'storage timeout'}
+   api-chat 1.003 0.934 ['503'] 0 101 {'status': 503, 'reason': 'storage timeout'}
+   api-health 1.007 0.919 ['503'] 0 433 {'status': 503, 'reason': 'storage timeout'}
+   api-memory 1.005 0.932 ['503'] 0 222 {'status': 503, 'reason': 'storage timeout'}
+   api-sse 1.003 0.005 ['503'] 0 3 {'status': 503, 'reason': 'storage timeout'}
+   api-task-lifecycle 1.002 0.92 ['503'] 0 82 {'status': 503, 'reason': 'storage timeout'}
+   api-tasks-read 1.004 0.922 ['503'] 0 203 {'status': 503, 'reason': 'storage timeout'}
+   api-tasks-submit 1.003 0.925 ['503'] 0 101 {'status': 503, 'reason': 'storage timeout'}
+   frontend 1.007 1.024 ['503'] 0 222 {'status': 503, 'reason': 'storage timeout'}
+
+## 2a. Reading (facts only)
+- crash (SIGKILL of the SUT): all 11 services stopped on S5 within 8–17 ms and came back healthy in ~0.605 s, ready 1–5 ms later; post-recovery baseline ok on all 22 crash cells.
+- live-local crash: 0 pre-fault tasks lost on all 11 (checked = 1, or 7 for task services).
+- volatile crash: lost == checked on all 11 (in-memory storage dies with the process). This is BY DESIGN of volatile mode and is NOT a durability pass; `ok` stays True
+  only because the FR definition of `ok` (unchanged) treats volatile loss as expected. It is reported, not hidden.
+- storage-outage: all 11 stopped on S5 readiness_failure (/ready = 503 "storage timeout") ~1.0 s after the fault — including services whose endpoints never touch storage,
+  because readiness checks storage for the whole process. Ready again 0.92–1.03 s after SIGCONT (api-sse 0.005 s); 0 pre-fault tasks lost; 0 failed k6 requests during.
+  outcome=stopped_and_recovered everywhere; no cell gave `unaffected_no_stop`.
+- CORRECTION of an earlier working note: "readiness does not check storage" is WRONG — it does (503 storage timeout). Log 368 recorded S3 after ~9.9 s for the default
+  service; here S5 fires first at ~1 s. The difference between the two runs is NOT investigated in this batch and is recorded as unexplained.
+- resources during the fault window (in-process sampler, D-144): fds 20–32, PSS 68.9–75.9 MB, status `measured` in all 33 reports. Windows are ~10–20 s: far too short
+  for any leak statement — no leak claim is made from FR.
+
+## 2b. What FR on this box cannot measure (declared)
+- network partition / packet loss / latency injection between SUT and storage (single host, loopback only).
+- managed-Supabase failure modes (connection pool exhaustion, failover, regional outage) — local PostgREST only.
+- multi-worker / multi-instance failover, load-balancer health-check behaviour, rolling restart: one worker, no LB (worker count change needs owner decision, D-142).
+- disk-full, OOM-kill under memory pressure, clock skew: not exercised.
+- LLM / tool adapter outages against real providers: fake provider only (declared since log 368).
+- recovery under production-level load: the fault was injected at the `normal` profile only.
+
+## 3. Harness defect found and fixed: SSE TTFB probe crashed FR for api-sse
+root cause: in scenario crash the SSE probe runs after k6 while the SUT is dead; http.client raised ConnectionRefusedError, uncaught, killing the runner (no report).
+second defect found while fixing: `ok and all(s == 200 for s in statuses)` — all([]) is True, so an empty probe would have PASSED.
+fix (scripts/r177_per_service.py): per-probe errors recorded {probe, error}; status measured|partial|not_measured; `_sse_probe_ok` requires status=measured AND non-empty AND all 200.
+red (unmodified code): /tmp/d144/sse_red.log
+  E   TypeError: _sse_ttfb_probe() got an unexpected keyword argument 'pause_s'
+  =========================== short test summary info ============================
+  FAILED tests/test_r177_sse_probe_resilience.py::test_probe_does_not_raise_when_server_down
+  FAILED tests/test_r177_sse_probe_resilience.py::test_probe_measures_when_server_up
+  FAILED tests/test_r177_sse_probe_resilience.py::test_partial_failure_is_marked_partial
+  ============================== 3 failed in 1.18s ===============================
+  rc=1
+  --- behavioural red on unmodified code (probes=1, closed port) ---
+  RAISED ConnectionRefusedError [Errno 111] Connection refused
+  behavioural red for the all([]) defect: old expression evaluates all(s == 200 for s in []) -> True
+green x10: tests/test_r177_sse_probe_resilience.py (4 tests)
+  ============================== 4 passed in 1.16s ===============================
+  ============================== 4 passed in 0.64s ===============================
+  ============================== 4 passed in 1.15s ===============================
+  ============================== 4 passed in 1.14s ===============================
+  ============================== 4 passed in 0.63s ===============================
+  ============================== 4 passed in 0.64s ===============================
+  ============================== 4 passed in 0.63s ===============================
+  ============================== 4 passed in 0.63s ===============================
+  ============================== 4 passed in 1.14s ===============================
+  ============================== 4 passed in 1.14s ===============================
+existing harness tests after the fix: tests/test_r177_per_service.py + tests/test_r177_resource_sampler.py 47 passed.
+re-run evidence: during the fault the api-sse load report has sse_stream_ttfb.status=not_measured with the ConnectionRefusedError recorded and ok=False;
+  the post-recovery baseline has status=measured, errors=[] and ok=True. The two original failed runs are KEPT in fr/api-sse/ (not overwritten, not hidden).
+
+## 4. CI: PostgREST download checksum failures (root cause NOT proven; hardening + diagnosis)
+facts: main run 42564812543 attempt 1 (f9223dfe) and PR #341 run 42578842993 attempt 1 (39fb7193, job 129044869321) both failed in job storage:
+  "sha256sum: WARNING: 1 computed checksum did NOT match / /tmp/pgrst.tar.xz: FAILED". The PR-run step (curl + check) took 0.13 s
+  (07:58:38.5757 -> 07:58:38.7048). The real archive is 3,772,512 bytes, so 0.13 s does NOT by itself prove a bad body (an earlier draft of this
+  note said "17 MB cannot download in 0.13 s" — wrong: 17 MB is the extracted binary). Attempt 2 of each run passed all jobs; attempt 1 stays recorded as failed.
+  ROOT CAUSE NOT PROVEN: the old step logs neither HTTP status nor size nor actual digest.
+  (publish was skipped in both and is not counted as a pass.)
+plausible mechanism, demonstrated locally: `curl -sSL -o y <missing release asset>` -> rc=0, file size 9 bytes (error page saved);
+                            `curl -fsSL --retry ...` on the same URL -> rc=22 "The requested URL returned error: 404".
+fix — hardening + diagnosis, not a proven root-cause fix (.github/workflows/ci.yml step "Install PostgREST v12.2.3 (checksum-pinned)"): curl -f (fail on HTTP error), --retry 5 --retry-all-errors --retry-delay 5
+  --connect-timeout 20; on mismatch print size + actual sha256 + `file` and exit 1. The pinned sha256 is unchanged and still mandatory; nothing is skipped.
+local check of the new step: downloaded, "/tmp/pgrst.tar.xz: OK", extracted. YAML parses.
+not proven: what body was actually downloaded, and whether the upstream error was transient. The new step makes the next failure self-describing
+  (HTTP error -> curl rc=22 after retries; bad bytes -> size + sha256 + file type printed).
+
+## 5. Full local suite on this batch's working tree (before commit of docs; code = 54537c77 + ci.yml change)
+==== 4362 passed, 9 skipped, 17 deselected, 9 xfailed in 790.96s (0:13:10) =====
+exit code: rc=0
+skipped (9) and xfailed (9) are NOT counted as passes. The intermittent test_r175 ...certifies_all_100 (failed once in log 396) passed in this run;
+one pass does not prove the flake is gone.

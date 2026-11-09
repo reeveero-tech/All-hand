@@ -1,0 +1,159 @@
+{
+  "scenario": "crash",
+  "storage": "live-local",
+  "service": "api-sse",
+  "fault_at_s": 10.0,
+  "cold_start_s": 0.613,
+  "load_report_ok": false,
+  "fault_fired_at_s": 10.168,
+  "stop_decision": {
+    "stopped": true,
+    "rule": "health_failure",
+    "rule_id": "S5",
+    "reason": "health_failure: immediate stop (S5)",
+    "at_s": 10.176,
+    "measurements": {
+      "probe": "health_failure",
+      "detail": {
+        "status": null
+      }
+    }
+  },
+  "detection_latency_s": 0.008,
+  "probe_failures_first": [
+    {
+      "kind": "health_failure",
+      "t_s": 10.176,
+      "detail": {
+        "status": null
+      }
+    },
+    {
+      "kind": "readiness_failure",
+      "t_s": 10.176,
+      "detail": {
+        "status": null,
+        "reason": null
+      }
+    }
+  ],
+  "metrics_during": {
+    "http_reqs": 3,
+    "requests_failed": 0,
+    "duration_avg_ms": 12.893304,
+    "duration_med_ms": 8.383863,
+    "duration_p90_ms": 19.7359134,
+    "duration_p95_ms": 21.1549197,
+    "duration_p99_ms": 22.29012474,
+    "duration_max_ms": 22.573926,
+    "dropped_iterations": 0
+  },
+  "tracked_before_fault": null,
+  "restart_to_health_s": 0.606,
+  "restart_to_ready_s": 0.005,
+  "pre_fault_tasks": {
+    "checked": 1,
+    "lost": 0,
+    "completed": 1,
+    "failed": 0,
+    "still_pending": 0,
+    "settle_s": 0.0
+  },
+  "post_recovery_baseline": {
+    "ok": true,
+    "brief": "ok=True class=measured p95=8.7282934ms reqs=5 failed=0 stopped=False",
+    "elapsed_s": 42.2
+  },
+  "resources_during": {
+    "status": "measured",
+    "pids": [
+      10595
+    ],
+    "pid_changes": 0,
+    "series": {
+      "rss_kb": {
+        "status": "measured",
+        "first": 88848.0,
+        "last": 88848.0,
+        "max": 88848.0
+      },
+      "pss_kb": {
+        "status": "measured",
+        "first": 69001.0,
+        "last": 69029.0,
+        "max": 69029.0
+      },
+      "private_dirty_kb": {
+        "status": "measured",
+        "first": 59096.0,
+        "last": 59136.0,
+        "max": 59136.0
+      },
+      "anonymous_kb": {
+        "status": "measured",
+        "first": 59056.0,
+        "last": 59096.0,
+        "max": 59096.0
+      },
+      "threads": {
+        "status": "measured",
+        "first": 8.0,
+        "last": 8.0,
+        "max": 8.0
+      },
+      "fds": {
+        "status": "measured",
+        "first": 22.0,
+        "last": 22.0,
+        "max": 22.0
+      }
+    }
+  },
+  "resources_post": {
+    "status": "measured",
+    "pids": [
+      10640
+    ],
+    "pid_changes": 0,
+    "series": {
+      "rss_kb": {
+        "status": "measured",
+        "first": 89180.0,
+        "last": 90496.0,
+        "max": 90496.0
+      },
+      "pss_kb": {
+        "status": "measured",
+        "first": 69106.0,
+        "last": 70710.0,
+        "max": 70710.0
+      },
+      "private_dirty_kb": {
+        "status": "measured",
+        "first": 59172.0,
+        "last": 60756.0,
+        "max": 60756.0
+      },
+      "anonymous_kb": {
+        "status": "measured",
+        "first": 59128.0,
+        "last": 60732.0,
+        "max": 60732.0
+      },
+      "threads": {
+        "status": "measured",
+        "first": 8.0,
+        "last": 9.0,
+        "max": 9.0
+      },
+      "fds": {
+        "status": "measured",
+        "first": 22.0,
+        "last": 21.0,
+        "max": 22.0
+      }
+    }
+  },
+  "ok": true,
+  "outcome": "stopped_and_recovered"
+}
