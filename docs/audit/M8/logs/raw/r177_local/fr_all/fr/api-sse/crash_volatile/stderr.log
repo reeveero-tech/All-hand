@@ -1,0 +1,46 @@
+Traceback (most recent call last):
+  File "/home/user/workspace/All-hand/scripts/r177_per_service.py", line 1340, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/user/workspace/All-hand/scripts/r177_per_service.py", line 1304, in main
+    res = run_failure_recovery(args.failure_recovery, out_dir=out, storage=args.storage,
+                               api_key=args.api_key,
+                               service=args.service or "api-tasks-submit")
+  File "/home/user/workspace/All-hand/scripts/r177_per_service.py", line 1180, in run_failure_recovery
+    rep = run_service(service, sut_url=sut.url, api_key=api_key, out_dir=out,
+                      profile="normal", tenants=sut.tenants, inject=inject,
+                      storage=sut.storage, sample_pid=sut.pid, inproc_csv=sut.res_csv)
+  File "/home/user/workspace/All-hand/scripts/r177_per_service.py", line 984, in run_service
+    report["sse_stream_ttfb"] = _sse_ttfb_probe(sut_url, api_key)
+                                ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/home/user/workspace/All-hand/scripts/r177_per_service.py", line 741, in _sse_ttfb_probe
+    conn.request("GET", "/api/events/stream", headers={
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        "X-API-Key": api_key, "Accept": "text/event-stream"})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1386, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1432, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1381, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1141, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1085, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1051, in connect
+    self.sock = self._create_connection(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        (self.host,self.port), self.timeout, self.source_address)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.14/socket.py", line 874, in create_connection
+    raise exceptions[0]
+  File "/usr/local/lib/python3.14/socket.py", line 859, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [Errno 111] Connection refused

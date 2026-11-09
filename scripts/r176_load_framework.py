@@ -101,6 +101,31 @@ def _system_k6_matches(pinned: str) -> Optional[pathlib.Path]:
     return None
 
 
+_TRANSIENT_HTTP = {429, 500, 502, 503, 504}
+
+
+def _download_with_retry(url: str, dest: pathlib.Path, attempts: int = 4,
+                         sleep=time.sleep, fetch=None) -> None:
+    """D-145: إعادة المحاولة للأخطاء العابرة فقط (5xx و429 والمهلة)، بتأخير 2/4/8s.
+
+    الأخطاء الدائمة (404 و403) وحارس الشبكة في الاختبارات (R-072) لا تُعاد.
+    التحقق بالبصمة يبقى عند المستدعي ولا يتغير.
+    """
+    import urllib.error
+    fetch = fetch or urllib.request.urlretrieve
+    for i in range(attempts):
+        try:
+            fetch(url, dest)
+            return
+        except urllib.error.HTTPError as exc:
+            if exc.code not in _TRANSIENT_HTTP or i == attempts - 1:
+                raise
+        except (TimeoutError, socket.timeout):
+            if i == attempts - 1:
+                raise
+        sleep(2 ** (i + 1))
+
+
 def ensure_k6() -> pathlib.Path:
     """k6 بالنسبة المثبتة: تنزيل يتحقق بـSHA256 عند الحاجة (مخبأ)، أو
     نسخة النظام إن طابقت النسخة المثبتة. لا حل عائم أبدًا."""
@@ -122,7 +147,7 @@ def ensure_k6() -> pathlib.Path:
     with tempfile.TemporaryDirectory() as td:
         tgz = pathlib.Path(td) / "k6.tgz"
         try:
-            urllib.request.urlretrieve(url, tgz)
+            _download_with_retry(url, tgz)
         except Exception as exc:  # noqa: BLE001 — message clarity beats type
             raise RuntimeError(
                 "downloading the pinned k6 failed "

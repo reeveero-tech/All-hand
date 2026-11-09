@@ -1,0 +1,153 @@
+{
+    "metrics": {
+        "http_req_waiting": {
+            "min": 12.084244,
+            "med": 15.206166,
+            "max": 82.79537,
+            "p(90)": 18.076035,
+            "p(95)": 20.079137,
+            "p(99)": 63.423598,
+            "avg": 16.758726847176078
+        },
+        "iteration_duration": {
+            "p(90)": 68.967506,
+            "p(95)": 71.027501,
+            "p(99)": 114.610117,
+            "avg": 67.55213743189373,
+            "min": 62.826733,
+            "med": 65.832871,
+            "max": 134.250705
+        },
+        "checks": {
+            "passes": 602,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "http_reqs": {
+            "count": 301,
+            "rate": 5.011215483501846
+        },
+        "http_req_receiving": {
+            "avg": 0.09651244186046504,
+            "min": 0.061875,
+            "med": 0.090636,
+            "max": 0.415008,
+            "p(90)": 0.11351,
+            "p(95)": 0.126093,
+            "p(99)": 0.203463
+        },
+        "http_req_duration": {
+            "avg": 16.890222342192686,
+            "min": 12.178281,
+            "med": 15.333515,
+            "max": 83.251819,
+            "p(90)": 18.212327,
+            "p(95)": 20.230378,
+            "p(99)": 63.666581,
+            "thresholds": {
+                "p(95)<2000": false,
+                "p(99)<1000": false
+            }
+        },
+        "http_req_sending": {
+            "p(99)": 0.084242,
+            "avg": 0.03498305315614617,
+            "min": 0.023998,
+            "med": 0.032167,
+            "max": 0.17882,
+            "p(90)": 0.041622,
+            "p(95)": 0.048809
+        },
+        "data_received": {
+            "count": 535150,
+            "rate": 8909.474970086421
+        },
+        "iterations": {
+            "count": 301,
+            "rate": 5.011215483501846
+        },
+        "http_req_tls_handshaking": {
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0
+        },
+        "vus_max": {
+            "value": 5,
+            "min": 5,
+            "max": 5
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 301,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_req_blocked": {
+            "avg": 0.012079491694352162,
+            "min": 0.006219,
+            "med": 0.007896,
+            "max": 0.311991,
+            "p(90)": 0.011645,
+            "p(95)": 0.013768,
+            "p(99)": 0.192324
+        },
+        "vus": {
+            "value": 0,
+            "min": 0,
+            "max": 0
+        },
+        "data_sent": {
+            "count": 68914,
+            "rate": 1147.318617375569
+        },
+        "http_req_connecting": {
+            "p(99)": 0.131301,
+            "avg": 0.002520275747508306,
+            "min": 0,
+            "med": 0,
+            "max": 0.233294,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 20.230378,
+            "p(99)": 63.666581,
+            "avg": 16.890222342192686,
+            "min": 12.178281,
+            "med": 15.333515,
+            "max": 83.251819,
+            "p(90)": 18.212327
+        }
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "chat status 200": {
+                    "name": "chat status 200",
+                    "path": "::chat status 200",
+                    "id": "d10a12090eb913ffb630cda429098d06",
+                    "passes": 301,
+                    "fails": 0
+                },
+                "chat body ok": {
+                    "path": "::chat body ok",
+                    "id": "5c9341fa16116bae881baf8fa5072dbe",
+                    "passes": 301,
+                    "fails": 0,
+                    "name": "chat body ok"
+                }
+            }
+    }
+}

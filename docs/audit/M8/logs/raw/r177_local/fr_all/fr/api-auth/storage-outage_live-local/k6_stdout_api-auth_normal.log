@@ -1,0 +1,72 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+     execution: local
+        script: /home/user/workspace/All-hand/benchmarks/r177/service_load.js
+        output: json (/tmp/d144/fr/api-auth/storage-outage_live-local/k6_points_api-auth_normal.jsonl)
+
+     scenarios: (100.00%) 1 scenario, 24 max VUs, 1m30s max duration (incl. graceful stop):
+              * load: 20.00 iterations/s for 1m0s (maxVUs: 5-24, gracefulStop: 30s)
+
+
+running (0m01.0s), 01/05 VUs, 19 complete and 0 interrupted iterations
+load   [   2% ] 01/05 VUs  0m01.0s/1m0s  20.00 iters/s
+
+running (0m02.0s), 01/05 VUs, 39 complete and 0 interrupted iterations
+load   [   3% ] 01/05 VUs  0m02.0s/1m0s  20.00 iters/s
+
+running (0m03.0s), 01/05 VUs, 59 complete and 0 interrupted iterations
+load   [   5% ] 01/05 VUs  0m03.0s/1m0s  20.00 iters/s
+
+running (0m04.0s), 01/05 VUs, 79 complete and 0 interrupted iterations
+load   [   7% ] 01/05 VUs  0m04.0s/1m0s  20.00 iters/s
+
+running (0m05.0s), 01/05 VUs, 99 complete and 0 interrupted iterations
+load   [   8% ] 01/05 VUs  0m05.0s/1m0s  20.00 iters/s
+
+running (0m06.0s), 01/05 VUs, 119 complete and 0 interrupted iterations
+load   [  10% ] 01/05 VUs  0m06.0s/1m0s  20.00 iters/s
+
+running (0m07.0s), 01/05 VUs, 139 complete and 0 interrupted iterations
+load   [  12% ] 01/05 VUs  0m07.0s/1m0s  20.00 iters/s
+
+running (0m08.0s), 01/05 VUs, 159 complete and 0 interrupted iterations
+load   [  13% ] 01/05 VUs  0m08.0s/1m0s  20.00 iters/s
+
+running (0m09.0s), 01/05 VUs, 179 complete and 0 interrupted iterations
+load   [  15% ] 01/05 VUs  0m09.0s/1m0s  20.00 iters/s
+
+running (0m10.0s), 01/05 VUs, 199 complete and 0 interrupted iterations
+load   [  17% ] 01/05 VUs  0m10.0s/1m0s  20.00 iters/s
+
+running (0m11.0s), 01/05 VUs, 219 complete and 0 interrupted iterations
+load   [  18% ] 01/05 VUs  0m11.0s/1m0s  20.00 iters/s
+
+     ✓ auth rejected 401/403
+
+   ✓ checks.........................: 100.00% 222 out of 222
+     data_received..................: 45 kB   4.1 kB/s
+     data_sent......................: 38 kB   3.4 kB/s
+     http_req_blocked...............: avg=15µs    min=6.03µs  med=7.85µs  max=416.18µs p(90)=11.45µs  p(95)=19.27µs p(99)=249.66µs
+     http_req_connecting............: avg=4.93µs  min=0s      med=0s      max=352.03µs p(90)=0s       p(95)=0s      p(99)=170.78µs
+   ✓ http_req_duration..............: avg=3.27ms  min=2.42ms  med=2.86ms  max=19.35ms  p(90)=3.56ms   p(95)=4.89ms  p(99)=12.73ms 
+       { expected_response:true }...: avg=3.27ms  min=2.42ms  med=2.86ms  max=19.35ms  p(90)=3.56ms   p(95)=4.89ms  p(99)=12.73ms 
+   ✓ http_req_failed................: 0.00%   0 out of 222
+     http_req_receiving.............: avg=80.25µs min=49.35µs med=73.41µs max=328.46µs p(90)=104.02µs p(95)=118.9µs p(99)=206.87µs
+     http_req_sending...............: avg=37.92µs min=26.34µs med=33.86µs max=315.91µs p(90)=42.21µs  p(95)=50.85µs p(99)=124.33µs
+     http_req_tls_handshaking.......: avg=0s      min=0s      med=0s      max=0s       p(90)=0s       p(95)=0s      p(99)=0s      
+     http_req_waiting...............: avg=3.15ms  min=2.31ms  med=2.75ms  max=18.97ms  p(90)=3.42ms   p(95)=4.6ms   p(99)=12.52ms 
+     http_reqs......................: 222     20.027011/s
+     iteration_duration.............: avg=54.08ms min=52.93ms med=53.6ms  max=70.53ms  p(90)=54.59ms  p(95)=55.96ms p(99)=63.58ms 
+     iterations.....................: 221     19.936799/s
+     vus............................: 1       min=1          max=1
+     vus_max........................: 5       min=5          max=5
+
+
+running (0m11.1s), 00/05 VUs, 221 complete and 1 interrupted iterations
+load ✗ [  18% ] 00/05 VUs  0m11.1s/1m0s  20.00 iters/s
+time="2026-11-09T07:40:32Z" level=error msg="test run was aborted because k6 received a 'interrupt' signal"

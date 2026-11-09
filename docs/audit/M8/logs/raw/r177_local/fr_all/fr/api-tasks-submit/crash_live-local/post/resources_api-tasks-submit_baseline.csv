@@ -1,0 +1,22 @@
+utc,ts,t_s,pid,rss_kb,hwm_kb,pss_kb,private_dirty_kb,anonymous_kb,threads,fds,fds_error,utime_ticks,stime_ticks
+2026-11-09T07:28:33Z,1794209313.218,0.003,6358,88920,88920,,,,8,,PermissionError: Permission denied,50,7
+2026-11-09T07:28:34Z,1794209314.219,1.003,6358,89188,89188,,,,8,,PermissionError: Permission denied,57,9
+2026-11-09T07:28:35Z,1794209315.219,2.004,6358,89196,89196,,,,8,,PermissionError: Permission denied,62,10
+2026-11-09T07:28:36Z,1794209316.22,3.004,6358,89712,89712,,,,9,,PermissionError: Permission denied,69,11
+2026-11-09T07:28:37Z,1794209317.22,4.005,6358,89712,89712,,,,9,,PermissionError: Permission denied,74,12
+2026-11-09T07:28:38Z,1794209318.221,5.005,6358,89976,89976,,,,9,,PermissionError: Permission denied,81,13
+2026-11-09T07:28:39Z,1794209319.221,6.006,6358,89980,89980,,,,9,,PermissionError: Permission denied,86,15
+2026-11-09T07:28:40Z,1794209320.222,7.006,6358,89988,89988,,,,9,,PermissionError: Permission denied,94,16
+2026-11-09T07:28:41Z,1794209321.222,8.007,6358,89988,89988,,,,9,,PermissionError: Permission denied,99,17
+2026-11-09T07:28:42Z,1794209322.223,9.007,6358,90000,90000,,,,9,,PermissionError: Permission denied,107,19
+2026-11-09T07:28:43Z,1794209323.223,10.008,6358,90000,90000,,,,9,,PermissionError: Permission denied,112,20
+2026-11-09T07:28:44Z,1794209324.224,11.008,6358,90268,90268,,,,9,,PermissionError: Permission denied,119,21
+2026-11-09T07:28:45Z,1794209325.224,12.009,6358,90328,90328,,,,9,,PermissionError: Permission denied,127,22
+2026-11-09T07:28:46Z,1794209326.225,13.009,6358,90328,90328,,,,9,,PermissionError: Permission denied,134,23
+2026-11-09T07:28:47Z,1794209327.225,14.01,6358,90328,90328,,,,9,,PermissionError: Permission denied,139,23
+2026-11-09T07:28:48Z,1794209328.226,15.01,6358,90328,90328,,,,9,,PermissionError: Permission denied,147,27
+2026-11-09T07:28:49Z,1794209329.226,16.011,6358,90328,90328,,,,9,,PermissionError: Permission denied,153,28
+2026-11-09T07:28:50Z,1794209330.227,17.011,6358,90328,90328,,,,9,,PermissionError: Permission denied,160,28
+2026-11-09T07:28:51Z,1794209331.227,18.011,6358,90328,90328,,,,9,,PermissionError: Permission denied,167,29
+2026-11-09T07:28:52Z,1794209332.228,19.012,6358,90596,90596,,,,9,,PermissionError: Permission denied,173,32
+2026-11-09T07:28:53Z,1794209333.228,20.012,6358,90600,90600,,,,9,,PermissionError: Permission denied,178,34

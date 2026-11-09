@@ -1,0 +1,67 @@
+== api-health crash volatile start 2026-11-09T07:22:56Z
+== api-health crash volatile end 2026-11-09T07:23:28Z exit=0
+== api-health crash live-local start 2026-11-09T07:23:28Z
+== api-health crash live-local end 2026-11-09T07:24:00Z exit=0
+== api-health storage-outage live-local start 2026-11-09T07:24:00Z
+== api-health storage-outage live-local end 2026-11-09T07:24:34Z exit=0
+== api-agents crash volatile start 2026-11-09T07:24:34Z
+== api-agents crash volatile end 2026-11-09T07:25:06Z exit=0
+== api-agents crash live-local start 2026-11-09T07:25:06Z
+== api-agents crash live-local end 2026-11-09T07:25:38Z exit=0
+== api-agents storage-outage live-local start 2026-11-09T07:25:38Z
+== api-agents storage-outage live-local end 2026-11-09T07:26:11Z exit=0
+== api-tasks-read crash volatile start 2026-11-09T07:26:11Z
+== api-tasks-read crash volatile end 2026-11-09T07:26:43Z exit=0
+== api-tasks-read crash live-local start 2026-11-09T07:26:43Z
+== api-tasks-read crash live-local end 2026-11-09T07:27:15Z exit=0
+== api-tasks-read storage-outage live-local start 2026-11-09T07:27:15Z
+== api-tasks-read storage-outage live-local end 2026-11-09T07:27:49Z exit=0
+== api-tasks-submit crash volatile start 2026-11-09T07:27:49Z
+== api-tasks-submit crash volatile end 2026-11-09T07:28:21Z exit=0
+== api-tasks-submit crash live-local start 2026-11-09T07:28:21Z
+== api-tasks-submit crash live-local end 2026-11-09T07:28:53Z exit=0
+== api-tasks-submit storage-outage live-local start 2026-11-09T07:28:53Z
+== api-tasks-submit storage-outage live-local end 2026-11-09T07:29:27Z exit=0
+== api-task-lifecycle crash volatile start 2026-11-09T07:29:27Z
+== api-task-lifecycle crash volatile end 2026-11-09T07:29:59Z exit=0
+== api-task-lifecycle crash live-local start 2026-11-09T07:29:59Z
+== api-task-lifecycle crash live-local end 2026-11-09T07:30:31Z exit=0
+== api-task-lifecycle storage-outage live-local start 2026-11-09T07:30:31Z
+== api-task-lifecycle storage-outage live-local end 2026-11-09T07:31:05Z exit=0
+== api-memory crash volatile start 2026-11-09T07:31:05Z
+== api-memory crash volatile end 2026-11-09T07:31:37Z exit=0
+== api-memory crash live-local start 2026-11-09T07:31:37Z
+== api-memory crash live-local end 2026-11-09T07:32:09Z exit=0
+== api-memory storage-outage live-local start 2026-11-09T07:32:09Z
+== api-memory storage-outage live-local end 2026-11-09T07:32:42Z exit=0
+== api-chat crash volatile start 2026-11-09T07:32:42Z
+== api-chat crash volatile end 2026-11-09T07:33:54Z exit=0
+== api-chat crash live-local start 2026-11-09T07:33:54Z
+== api-chat crash live-local end 2026-11-09T07:35:07Z exit=0
+== api-chat storage-outage live-local start 2026-11-09T07:35:07Z
+== api-chat storage-outage live-local end 2026-11-09T07:36:20Z exit=0
+== api-admin-tools crash volatile start 2026-11-09T07:36:20Z
+== api-admin-tools crash volatile end 2026-11-09T07:36:52Z exit=0
+== api-admin-tools crash live-local start 2026-11-09T07:36:52Z
+== api-admin-tools crash live-local end 2026-11-09T07:37:24Z exit=0
+== api-admin-tools storage-outage live-local start 2026-11-09T07:37:24Z
+== api-admin-tools storage-outage live-local end 2026-11-09T07:37:58Z exit=0
+== api-sse crash volatile start 2026-11-09T07:37:58Z
+== api-sse crash volatile end 2026-11-09T07:38:09Z exit=1
+== api-sse crash live-local start 2026-11-09T07:38:09Z
+== api-sse crash live-local end 2026-11-09T07:38:20Z exit=1
+== api-sse storage-outage live-local start 2026-11-09T07:38:20Z
+== api-sse storage-outage live-local end 2026-11-09T07:39:16Z exit=0
+== api-auth crash volatile start 2026-11-09T07:39:16Z
+== api-auth crash volatile end 2026-11-09T07:39:48Z exit=0
+== api-auth crash live-local start 2026-11-09T07:39:48Z
+== api-auth crash live-local end 2026-11-09T07:40:20Z exit=0
+== api-auth storage-outage live-local start 2026-11-09T07:40:21Z
+== api-auth storage-outage live-local end 2026-11-09T07:40:54Z exit=0
+== frontend crash volatile start 2026-11-09T07:40:54Z
+== frontend crash volatile end 2026-11-09T07:41:26Z exit=0
+== frontend crash live-local start 2026-11-09T07:41:26Z
+== frontend crash live-local end 2026-11-09T07:41:58Z exit=0
+== frontend storage-outage live-local start 2026-11-09T07:41:58Z
+== frontend storage-outage live-local end 2026-11-09T07:42:31Z exit=0
+ALL_DONE 2026-11-09T07:42:31Z

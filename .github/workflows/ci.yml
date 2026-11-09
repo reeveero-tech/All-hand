@@ -370,8 +370,17 @@ jobs:
 
       - name: Install PostgREST v12.2.3 (checksum-pinned)
         run: |
-          curl -sSL -o /tmp/pgrst.tar.xz https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz
-          echo "9f71269e61ac3a940281e93ff415760f5957e430e475ba4c3889f3ede7d5527c  /tmp/pgrst.tar.xz" | sha256sum -c -
+          # D-145 (log 397): two checksum failures with no diagnostics; root cause not proven.
+          # --fail stops an HTTP error body from being saved as the archive; retries cover
+          # transient errors only; on mismatch the size/digest/type are printed. The pinned
+          # sha256 stays mandatory and is never skipped or relaxed.
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 20 \
+            -o /tmp/pgrst.tar.xz https://github.com/PostgREST/postgrest/releases/download/v12.2.3/postgrest-v12.2.3-linux-static-x64.tar.xz
+          if ! echo "9f71269e61ac3a940281e93ff415760f5957e430e475ba4c3889f3ede7d5527c  /tmp/pgrst.tar.xz" | sha256sum -c -; then
+            echo "checksum mismatch: size=$(stat -c %s /tmp/pgrst.tar.xz) sha256=$(sha256sum /tmp/pgrst.tar.xz | cut -d' ' -f1)"
+            file /tmp/pgrst.tar.xz || true
+            exit 1
+          fi
           tar -xf /tmp/pgrst.tar.xz -C /tmp
 
       - name: Verify storage layer + server end-to-end
