@@ -133,3 +133,29 @@ not proven: what body was actually downloaded, and whether the upstream error wa
 exit code: rc=0
 skipped (9) and xfailed (9) are NOT counted as passes. The intermittent test_r175 ...certifies_all_100 (failed once in log 396) passed in this run;
 one pass does not prove the flake is gone.
+
+## 6. CI: main 13ad8a61 (merge of #341) run 42583164931 attempt 1 FAILED in job test (129046532264) — root cause PROVEN
+log: 08:03:19Z "urllib.error.HTTPError: HTTP Error 504: Gateway Time-out" -> "RuntimeError: downloading the pinned k6 failed (HTTPError)"
+  in step `python scripts/r176_load_framework.py --ensure-k6` (ci.yml:58), before any test ran. Downstream jobs skipped (not counted). The same tree passed on PR #341.
+  Attempt 2 re-run requested once (failed jobs only); attempt 1 stays recorded as failed.
+cause: the upstream returned 504 and ensure_k6 had no retry at all (single urlretrieve).
+fix: scripts/r176_load_framework.py _download_with_retry — retry ONLY transient errors (HTTP 429/500/502/503/504, TimeoutError/socket.timeout), 4 attempts,
+  delays 2/4/8 s. Permanent errors (404/403) and the pytest network guard (R-072, RuntimeError) are NOT retried. The SHA256 check is unchanged.
+red (before the helper existed): tests/test_r176_k6_download_retry.py
+  FAILED tests/test_r176_k6_download_retry.py::test_ensure_k6_still_verifies_sha256
+  ============================== 11 failed in 0.65s ==============================
+  rc=1
+green x10 (11 tests each):
+  ============================== 11 passed in 0.14s ==============================
+  ============================== 11 passed in 0.52s ==============================
+  ============================== 11 passed in 0.14s ==============================
+  ============================== 11 passed in 0.14s ==============================
+  ============================== 11 passed in 0.14s ==============================
+  ============================== 11 passed in 0.13s ==============================
+  ============================== 11 passed in 0.13s ==============================
+  ============================== 11 passed in 0.14s ==============================
+  ============================== 11 passed in 0.14s ==============================
+  ============================== 11 passed in 0.14s ==============================
+existing: tests/test_r176_load_framework.py + tests/test_r177_per_service.py 30 passed; `--ensure-k6` locally rc=0 (cached pinned binary).
+not proven: that 3 retries over ~14 s are enough for the next upstream incident; this lowers the probability, it does not remove it.
+note: the full-suite result in §5 predates this §6 change; only the targeted tests above were run after it. CI on the PR head is the full check.
