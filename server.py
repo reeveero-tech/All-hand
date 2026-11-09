@@ -360,6 +360,25 @@ def rate_limit(func: Callable) -> Callable:
     return wrapper
 
 
+# R-177 (D-142, log 391): the reduced Codespaces run (log 389) saturated
+# GET /api/agents (~60 req/s) and GET /api/admin/tools (~200 req/s). Profiling
+# showed the dominant cost was FastAPI's generic ``jsonable_encoder`` walking
+# payloads that are already JSON-native (≈17k calls per /api/agents request),
+# not the route logic. Such payloads are rendered directly with the exact
+# settings Starlette's JSONResponse uses (ensure_ascii=False, allow_nan=False,
+# compact separators) — byte-identical body, status and headers; the API
+# contract is unchanged. Anything json cannot encode natively (datetime, set,
+# Enum, pydantic, ...) falls back to the generic encoder, so the output is
+# still exactly what FastAPI would have produced. NaN stays a ValueError on
+# both paths (behaviour unchanged).
+def _native_json_response(content: Any) -> JSONResponse:
+    try:
+        return JSONResponse(content=content)
+    except TypeError:
+        from fastapi.encoders import jsonable_encoder
+        return JSONResponse(content=jsonable_encoder(content))
+
+
 # ============================================================================
 # CIVILIZATION INITIALIZATION
 # ============================================================================
@@ -2400,7 +2419,7 @@ async def list_agents(request: Request, specialization: Optional[str] = None):
     agents = [a.snapshot() for a in _all_agents()]
     if specialization:
         agents = [a for a in agents if a["specialization"] == specialization]
-    return {"count": len(agents), "agents": agents}
+    return _native_json_response({"count": len(agents), "agents": agents})
 
 
 @app.get("/api/specializations")
@@ -3262,9 +3281,9 @@ async def admin_list_tools(
         # R-175 batch 1 (D-125): the phase counts declared separately — the
         # spec's «يعلن النظام كل رقم منفصلًا» (unique tool_ids, never aliases).
         from agent_civilization.core import tool_certification as r175
-        return {"count": len(tools), "tools": tools,
-                "certification_counts": r175.state_counts(reg),
-                "gate_stats": tool_runtime.stats()}
+        return _native_json_response({"count": len(tools), "tools": tools,
+                                      "certification_counts": r175.state_counts(reg),
+                                      "gate_stats": tool_runtime.stats()})
     except RegistryStoreError:
         raise HTTPException(503, "tool registry store unavailable")
 

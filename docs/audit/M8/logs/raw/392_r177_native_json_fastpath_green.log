@@ -1,0 +1,27 @@
+# 392 — R-177 (D-142): native-JSON fast path GREEN — 2026-11-08T23:11:30Z
+# tests/test_r177_native_json_fastpath.py ×10 + related suites (r171 admin API, web API contract, test_api, r157 contract parity, civilization routes, bug05 agent count, r175 batch1, external-agent tests)
+============================== 13 passed in 0.76s ==============================
+============================== 13 passed in 0.79s ==============================
+============================== 13 passed in 0.80s ==============================
+============================== 13 passed in 0.76s ==============================
+============================== 13 passed in 0.78s ==============================
+============================== 13 passed in 0.86s ==============================
+============================== 13 passed in 0.78s ==============================
+============================== 13 passed in 0.74s ==============================
+============================== 13 passed in 0.74s ==============================
+============================== 13 passed in 0.76s ==============================
+
+============================= 167 passed in 13.08s =============================
+
+## §2 Full local suite on branch (HEAD e72b7f9a, Python 3.14.8, 2026-11-08T23:28:46Z)
+FAILED tests/test_r175_batch4_phase1.py::test_the_phase1_runbook_certifies_all_100_with_real_evidence
+= 1 failed, 4334 passed, 9 skipped, 17 deselected, 9 xfailed in 821.29s (0:13:41) =
+exit=1
+
+## §3 The one failure, diagnosed (not hidden, not retried away)
+test_r175_batch4_phase1::test_the_phase1_runbook_certifies_all_100_with_real_evidence runs scripts/certify_phase1.py, which makes LIVE external web/search calls.
+Isolated x3 on branch: 3 failed. Direct run with the test env on branch:
+ certified_count= 98  not_certified= [{"spec": "educator", "error": "no explanation source: no LLM configured (set OPENROUTER_API_KEY, or allow the keyless provider: AGOS_LLM_KEYLESS=1); web: no result within 20s (queue + call, AGOS_WEB_WAIT_S)"}, {"spec": "researcher", "error": "search: overall budget exceeded (transient, 2 attempts)"}]
+Same run on origin/main (6b82d043, separate git worktree, code without D-142):
+ certified_count= 98  not_certified= [{"spec": "educator", "error": "no explanation source: no LLM configured (set OPENROUTER_API_KEY, or allow the keyless provider: AGOS_LLM_KEYLESS=1); web: HTTP Error 502: Bad Gateway"}, {"spec": "researcher", "error": "search: overall budget exceeded (transient, 2 attempts)"}]
+Conclusion: identical failure on main => environmental (upstream web 502 / search budget from this sandbox), unrelated to D-142 (which touches only /api/agents and /api/admin/tools serialisation). The earlier one-off failure (lahiq 133 run1) is the same live-network dependency. Not counted as pass; not skipped; recorded in QUALITY. CI result for PR #339 is the independent check.
