@@ -722,7 +722,8 @@ class LiveMonitor:
 
 # ------------------------------------------------------------------- SSE
 
-def _sse_ttfb_probe(sut_url: str, api_key: str, probes: int = 4) -> Dict[str, Any]:
+def _sse_ttfb_probe(sut_url: str, api_key: str, probes: int = 4,
+                    pause_s: float = 0.5) -> Dict[str, Any]:
     """زمن اتصال تيار SSE حتى الرؤوس (TTFB) — مسبار منفصل عن المولد.
 
     k6 ينتظر جسم الرد كاملًا (مثبت تجريبيًا في السجل 366: تيار حتى
@@ -734,7 +735,8 @@ def _sse_ttfb_probe(sut_url: str, api_key: str, probes: int = 4) -> Dict[str, An
     u = urlparse(sut_url)
     samples: list = []
     statuses: list = []
-    for _ in range(probes):
+    errors: list = []
+    for i in range(probes):
         conn = http.client.HTTPConnection(u.hostname, u.port, timeout=10)
         try:
             t0 = time.perf_counter()
@@ -745,12 +747,26 @@ def _sse_ttfb_probe(sut_url: str, api_key: str, probes: int = 4) -> Dict[str, An
             statuses.append(resp.status)
             resp.close()
             samples.append(round(ttfb_ms, 3))
+        except (OSError, http.client.HTTPException) as exc:
+            # D-145: الخادم قد يكون مقتولًا (سيناريو crash) — يُسجَّل الخطأ صراحة
+            # ولا يُسقط المشغل؛ المحاولة الفاشلة ليست عينة ولا تُحسب نجاحًا.
+            errors.append({"probe": i, "error": f"{type(exc).__name__}: {exc}"})
         finally:
             conn.close()
-        time.sleep(0.5)
+        if pause_s:
+            time.sleep(pause_s)
     p95 = sorted(samples)[max(0, math.ceil(0.95 * len(samples)) - 1)] if samples else None
-    return {"samples_ms": samples, "statuses": statuses,
-            "p95_ms": p95, "note": "connect-to-headers only; few samples by design (SSE admission limits)"}
+    status = "measured" if samples and not errors else ("partial" if samples else "not_measured")
+    return {"samples_ms": samples, "statuses": statuses, "errors": errors,
+            "status": status, "p95_ms": p95,
+            "note": "connect-to-headers only; few samples by design (SSE admission limits)"}
+
+
+def _sse_probe_ok(res: Dict[str, Any]) -> bool:
+    """D-145: النجاح يتطلب عينات كلها 200 وبلا أخطاء — all([]) لا يُحسب نجاحًا."""
+    statuses = res.get("statuses") or []
+    return (res.get("status") == "measured" and bool(statuses)
+            and all(s == 200 for s in statuses))
 
 
 # ---------------------------------------------------------------- الواجهة
@@ -982,8 +998,7 @@ def run_service(service_name: str, sut_url: Optional[str] = None,
         report["frontend_paths"] = json.loads(extra_env["FRONTEND_PATHS"])
     if service_name == "api-sse":
         report["sse_stream_ttfb"] = _sse_ttfb_probe(sut_url, api_key)
-        report["ok"] = report["ok"] and all(
-            s == 200 for s in report["sse_stream_ttfb"]["statuses"])
+        report["ok"] = report["ok"] and _sse_probe_ok(report["sse_stream_ttfb"])
     if stopped:
         report["ok"] = False  # لا يمكن إخفاء الإيقاف
     report["resources"] = _resources_section(sampler, inproc_csv,
