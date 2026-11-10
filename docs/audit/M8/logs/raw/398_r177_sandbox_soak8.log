@@ -1,0 +1,99 @@
+# السجل 398 — R-177: soak الثماني على بيئة مخفضة (لاحق 138 / D-146)
+
+التاريخ: 2026-11-10 (UTC). الحالة: **منتهٍ — 7 من 8 مكتملة، وapi-tasks-submit بلا soak مكتملة (محاولتان موقوفتان)**.
+
+## 1) الحكم أولًا
+- 7 خدمات أكملت ساعتين كاملتين بلا توقف بحدود الإيقاف وبنجاح كل العتبات المعتمدة (فشل ≤ 5 طلبات من 144 ألفًا، p95 بين 2.6 و6.3ms).
+- api-tasks-read احتاجت محاولتين (الأولى أوقفها حد الإيقاف عند الدقيقة 93 بقفزة ~5 ثوانٍ، والثانية اكتملت بنجاح).
+- api-tasks-submit: محاولتان أوقفتهما حدود الإيقاف (S3) بقفزات زمن استجابة عابرة؛ المحاولة 1 بلا أي خطأ وعند 105 دقائق، والثانية بـ19 فشلًا وتوقف ~16 ثانية عند الدقيقة 59. **لا soak مكتملة لهذه الخدمة** وسياسة الإعادة الواحدة استُنفدت؛ القرار للمالك.
+- هذه بيئة مخفضة معلنة (المولّد والخدمة على الجهاز نفسه) — لا تثبت سعة إنتاجية، **ولا يُعلَن R-177 done**.
+
+## 2) البيئة (معلنة)
+- sandbox وكيل: Intel Xeon @ 2.90GHz، نواتان، 7.8GB RAM، قرص 20GB، kernel 6.1.155، Python 3.14.8، k6 v0.57.0.
+- عامل uvicorn واحد، `--storage volatile`، `--allow-dedicated-env`، k6 عملية منفصلة على الجهاز نفسه (فصل عمليات لا فصل أجهزة).
+- SHA الخادم المُختبَر: `f06bd3bf` (رأس main وقت البدء)؛ أدوات القياس من الفرع `m9/r177-soak-remaining-8` (تغييراته وثائق وأدلة فقط).
+- لا cgroup throttling (nr_throttled=0)؛ لوحظ steal time من hypervisor (~0.6% من /proc/stat) — **ملاحظة فقط، لا تثبت سبب القفزات**.
+- الأمر: `AGOS_ALLOW_BIG_LOAD=1 python3 scripts/r177_per_service.py --service S --profile soak --storage volatile --allow-dedicated-env --out RAW/S` (soak = معدل الوصول العادي × 7200 ثانية).
+
+## 3) تسلسل التشغيل الفعلي (من سجل المشغّل)
+```
+SOAK8_START 2026-11-10T01:51:33Z
+== api-health soak 2026-11-10T01:51:33Z
+COMMITTED api-health (1/8) 2026-11-10T03:51:54Z
+SKIP api-health (already done) 2026-11-10T03:51:54Z
+== api-agents soak 2026-11-10T03:51:54Z
+PUSH_FAILED api-agents 2026-11-10T05:51:58Z
+COMMITTED api-agents (2/8) 2026-11-10T05:51:58Z
+== api-tasks-read soak 2026-11-10T05:51:58Z
+FAILED api-tasks-read rc=1 — stopping the sequence (no silent skips) 2026-11-10T07:25:25Z
+SOAK8_RUNNER_DONE 2026-11-10T07:25:25Z
+SKIP api-health (already done) 2026-11-10T07:27:52Z
+SKIP api-agents (already done) 2026-11-10T07:27:52Z
+== api-tasks-read soak 2026-11-10T07:27:52Z
+SKIP api-health (already done) 2026-11-10T07:28:01Z
+SKIP api-agents (already done) 2026-11-10T07:28:01Z
+== api-tasks-read soak 2026-11-10T07:28:01Z
+COMMITTED api-tasks-read (3/8) 2026-11-10T09:28:06Z
+== api-tasks-submit soak 2026-11-10T09:28:06Z
+FAILED api-tasks-submit rc=1 — stopping the sequence (no silent skips) 2026-11-10T11:14:04Z
+SOAK8_RUNNER_DONE 2026-11-10T11:14:04Z
+SKIP api-health (already done) 2026-11-10T11:16:03Z
+SKIP api-agents (already done) 2026-11-10T11:16:03Z
+SKIP api-tasks-read (already done) 2026-11-10T11:16:03Z
+== api-tasks-submit soak 2026-11-10T11:16:03Z
+FAILED api-tasks-submit rc=1 — stopping the sequence (no silent skips) 2026-11-10T12:15:31Z
+SOAK8_RUNNER_DONE 2026-11-10T12:15:31Z
+== api-memory soak 2026-11-10T12:17:57Z
+PUSH_FAILED api-memory 2026-11-10T14:18:01Z
+COMMITTED api-memory (4/8) 2026-11-10T14:18:01Z
+== api-admin-tools soak 2026-11-10T14:18:01Z
+PUSH_FAILED api-admin-tools 2026-11-10T16:18:04Z
+COMMITTED api-admin-tools (5/8) 2026-11-10T16:18:04Z
+== api-auth soak 2026-11-10T16:18:04Z
+PUSH_FAILED api-auth 2026-11-10T18:18:08Z
+COMMITTED api-auth (6/8) 2026-11-10T18:18:08Z
+== frontend soak 2026-11-10T18:18:08Z
+PUSH_FAILED frontend 2026-11-10T20:18:12Z
+COMMITTED frontend (7/8) 2026-11-10T20:18:12Z
+SOAK8_RUNNER3_DONE 2026-11-10T20:18:12Z
+```
+ملاحظات على التسلسل:
+- `PUSH_FAILED` (خطأ مصادقة عابر عبر وكيل git) في 5 دفعات: الالتزام المحلي نجح، وأُعيد الدفع يدويًا فورًا ونجح؛ لا فقدان أدلة.
+- سطر `== api-tasks-read soak 2026-11-10T07:27:52Z` بدء مزدوج غير مقصود (عملية خلفية قتلتها أداة التنفيذ بعد ثوانٍ، بلا بيانات)؛ التشغيل الفعلي بدأ 07:28:01Z.
+- `SOAK8_RUNNER_DONE` بعد الفشل = توقف المشغّل v2 بحسب تصميمه (لا تخطي صامت)؛ استُكمل بالمشغّل v3 الذي يسجل الفشل ويكمل.
+
+## 4) نتائج الخدمات المكتملة (7)
+| الخدمة | الطلبات | الفشل (حقيقي) | p95 ms | p99 ms | أقصى ms | RSS أول→آخر KB | ميل RSS KB/س (مؤشر) |
+|---|---|---|---|---|---|---|---|
+| api-health | 287997 | 0 | 3.84 | 12.76 | 171.5 | 91080→91352 | 178.7 (0.1961%/س) |
+| api-agents | 143965 | 5 | 6.32 | 27.23 | 2629.6 | 92120→92456 | 312.1 (0.3388%/س) |
+| api-tasks-read | 143990 | 0 | 3.47 | 5.23 | 942.8 | 91196→91264 | 61.9 (0.0679%/س) |
+| api-memory | 143987 | 0 | 3.99 | 10.22 | 1232.6 | 91108→91444 | 45.4 (0.0497%/س) |
+| api-admin-tools | 143965 | 0 | 4.93 | 13.79 | 1834.9 | 91312→91908 | 325.2 (0.3552%/س) |
+| api-auth | 143970 | 1 | 4.3 | 13.61 | 2005.2 | 90008→91812 | 915.7 (1.008%/س) |
+| frontend | 144001 | 0 | 2.57 | 8.01 | 47.2 | 92084→92092 | 3.6 (0.0039%/س) |
+
+- الفشل الحقيقي من `stop.totals.failed` و`k6_summary.http_req_failed.passes` (انظر §6: حقل `metrics.requests_failed` معيب ويعطي 0).
+- العتبات الثلاث (`http_req_failed`، `checks`، `http_req_duration`) true لكل الخدمات السبع، ولم يتوقف أي منها بحدود الإيقاف، ومجسات health/ready/العزل/السلامة: صفر فشل.
+- مؤشرات RSS: **مؤشرات فقط** (OLS بعد قطع الإحماء 1800s مع فاصل ثقة 95%)؛ لا عتبة تسرب معتمدة (مقترحة فقط) فلا حكم نجاح/فشل ولا ادعاء «لا تسرب». أعلى ميل نسبي: api-auth (~1.0%/س، ~0.9MB/س) ويستحق متابعة؛ PSS/Private_Dirty/anonymous غير مقاسة خارجيًا (الخادم non-dumpable) ومقاسة داخل العملية في resources_inproc_*.csv.
+- النوافذ (10 دقائق): soak_windows.json.
+
+## 5) الخدمة التي لم تكتمل: api-tasks-submit
+| المحاولة | المدة قبل الإيقاف | الطلبات | الفشل | القاعدة | القفزة |
+|---|---|---|---|---|---|
+| 1 | 6350ث (~105د) | 63552 | 0 | S3 (p95 نافذة > 2×SLO لنافذتين) | قفزات 1–2.5ث عند t=4450، 4488، 5850–5855، 6321، 6349–6350 |
+| 2 | 3567ث (~59د) | 35600 | 19 | S3 (نوافذ censored: <50% من التكرارات المجدولة اكتملت) | توقف ~16ث عند t=3551–3567، أقصى 10.08ث |
+- بصمة مشتركة مع محاولة api-tasks-read الأولى: اصطفاف متزامن لكل الطلبات الجارية خلف توقف قصير ثم تعافٍ فوري؛ RSS ثابت؛ مجسات health/ready بلا فشل (في المحاولة 1). **سبب التوقف غير مثبت** (مضيف مشترك محتمل لكن غير مؤكد). لم يُخفَّف أي حد.
+- الأدلة: `api-tasks-submit-attempt1-stopped/` و`api-tasks-submit-attempt2-stopped/` و`api-tasks-read-attempt1-stopped/`.
+
+## 6) عيب أداة مكتشف: `metrics.requests_failed`
+k6 v0.57 يُصدّر مقياس المعدّل بحقول `value/passes/fails`، بينما scripts/r177_per_service.py (سطر 930-933) يقرأ `count`/`rate`، فيعود 0 دائمًا. أثره على التقارير الخام المحفوظة فقط (حقل ملخص)؛ حكم `ok` والعتبات وحدود الإيقاف لا تعتمد عليه. تصحيح الوثائق أُجري هنا، وإصلاح الأداة يُنفَّذ في دفعة منفصلة. التقارير الخام لم تُعدَّل.
+
+## 7) ما لا يثبته هذا السجل
+- لا سعة إنتاجية، ولا أداء على جهاز منفصل للمولّد (Q-023).
+- لا حكم تسرب (لا عتبة معتمدة).
+- لا soak مكتملة لـapi-tasks-submit (والخدمات الثلاث الأخرى — api-task-lifecycle وapi-chat وapi-sse — لها soak سابق في السجل 390).
+- لا ربط للقفزات بسبب محدد.
+
+## 8) الأدلة (بصمات الخام sha256 في RAW_NOT_COMMITTED_SHA256.txt لكل خدمة؛ ملفات النقاط الخام ~0.45GB لكل خدمة لم تُلتزم)
+`docs/audit/M8/logs/raw/r177_sandbox_soak/<service>/` (report, k6_summary, samples, resources) + `soak_windows.json`.
