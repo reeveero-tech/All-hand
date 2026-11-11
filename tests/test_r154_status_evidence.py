@@ -29,8 +29,14 @@ M9_FIRST_ITEM = 187  # M8 items: R-151..R-184 (R-185/R-186 are governance
 # entries, not roadmap items); M9 items start at R-187 (D-102)
 
 
+M10_FIRST_ITEM = 200  # D-150: M10 = R-200+, M9 = R-187..R-199
+
+
 def _prog(rid: str) -> str:
-    return "M9" if int(rid[2:]) >= M9_FIRST_ITEM else "M8"
+    n = int(rid[2:])
+    if n >= M10_FIRST_ITEM:
+        return "M10"
+    return "M9" if n >= M9_FIRST_ITEM else "M8"
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -58,17 +64,19 @@ class Repo:
         self.table: dict[str, str] | None = None       # M8 table override
         self.m9_table: dict[str, str] | None = None     # M9 table override
         self.omit_m9_table = False
+        self.m10_table: dict[str, str] | None = None    # M10 table override (D-150)
 
     def write(self) -> None:
         road = ["# ROADMAP", "", "### R-100 — legacy item", "- الحالة: **done**", ""]
         for rid, (st, fl) in self.items.items():
             block = [f"#### {rid} — item", f"- الحالة: **{st}**"] + ([fl] if fl else [])
-            if _prog(rid) == "M9":
+            if _prog(rid) in ("M9", "M10"):
                 block.append(f"- الاعتماديات ({rid}): لا شيء")  # M9 must declare deps (10b)
             road += block + [""]
         _w(self.p, "docs/governance/ROADMAP.md", "\n".join(road) + "\n")
         state = ["# STATE", ""]
-        for pname, override, member in (("M8", self.table, _prog), ("M9", self.m9_table, _prog)):
+        for pname, override, member in (("M8", self.table, _prog), ("M9", self.m9_table, _prog),
+                                       ("M10", self.m10_table, _prog)):
             prog_items = {rid: v[0] for rid, v in self.items.items() if member(rid) == pname}
             if not prog_items or (pname == "M9" and self.omit_m9_table):
                 continue
@@ -482,3 +490,31 @@ def test_workflow_runs_status_check_after_full_checkout():
     for older in ("No-delete check (R-152)", "- name: Atomic batch check\n",
                   "Atomic batch check v2 (R-153)"):
         assert older in wf  # earlier gates kept
+
+
+# ---- M10 program scoping (D-150) ------------------------------------------------
+
+def test_m10_order_independent_of_m9(repo):
+    # M10 items have their own order: an in_progress R-200 is not blocked by a
+    # planned M9 item (cross-program order is not enforced).
+    repo.items["R-187"] = ("planned", "")
+    repo.items["R-200"] = ("in_progress", _fields(branch="m10/r200-x"))
+    assert not any("earlier item" in v for v in repo.run())
+
+
+def test_m10_strict_order_within_program(repo):
+    repo.items["R-200"] = ("planned", "")
+    repo.items["R-201"] = ("in_progress", _fields(branch="m10/r201-x"))
+    assert any("R-201: is in_progress while earlier item R-200 is still planned" in v
+               for v in repo.run())
+
+
+def test_m10_table_required(repo):
+    repo.items["R-200"] = ("planned", "")
+    repo.m10_table = {}
+    got = repo.run()
+    assert any("R-200" in v for v in got)
+
+
+def test_m9_range_ends_at_199():
+    assert ("M9", 187, 199) in cse.PROGRAMS and ("M10", 200, None) in cse.PROGRAMS

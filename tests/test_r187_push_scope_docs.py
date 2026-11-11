@@ -34,7 +34,7 @@ import check_push_docs as cpd  # noqa: E402
 import verify_push_scope_head as vps  # noqa: E402
 
 DOCS = ["docs/governance/ROADMAP.md", "docs/governance/PROJECT_STATE.md",
-        "docs/governance/CHANGELOG.md"]
+        "docs/governance/CHANGELOG.md", "docs/governance/MEMORY.md"]  # MEMORY: D-150
 EV = "docs/audit/M8/logs/raw/999_x.log"
 ZEROS = "0" * 40
 

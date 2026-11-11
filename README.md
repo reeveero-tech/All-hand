@@ -4,12 +4,22 @@ AGOS is a real-first AI-agent civilization: the user submits a goal, the
 civilization plans the stages, assigns specialist roles, executes real tools,
 and returns a combined result.
 
-## What is real now
+> **Start here (2026-11-11, owner decision D-150):** read
+> [`docs/governance/MEMORY.md`](docs/governance/MEMORY.md) (project memory, in
+> Arabic). The project is being rebuilt under program **M10 — AGOS v2**
+> ([roadmap](docs/governance/roadmaps/agos-v2/ROADMAP_V2_AR.md)). Every merge
+> must update the memory, roadmap and state docs in the same batch.
+
+## What is real now (honest summary)
 
 - 20 in-house specializations backed by deterministic runtime handlers.
-- 1,000 local workers by default: 20 specializations × 50 executable agents.
-- 299+ curated open-source agent/framework entries with source URLs.
-- Automatic routing: users do not choose a worker manually.
+- The "1,000 local workers" are 20 handlers × 50 identical generated copies —
+  not 1,000 distinct agents.
+- 299+ open-source agent/framework entries are metadata (name, URL) only; none
+  of them is invoked by the system.
+- Chat routing picks one handler by keywords; multi-agent coordination exists
+  only in the `/civilization/plan|execute` API, which the web UI does not use.
+- Not declared production-ready.
 - Real operations include AST parsing, Python execution, SQLite execution,
   DNS/HTTP probes, statistics, tokenization, runtime metrics, and web-backed
   research where network access is available.

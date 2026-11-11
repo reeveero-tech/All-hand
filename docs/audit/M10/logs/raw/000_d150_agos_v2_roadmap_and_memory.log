@@ -1,0 +1,33 @@
+# M10/000 — D-150: AGOS v2 roadmap (M10) + project memory (MEMORY.md in R0) + M10 in status checker + M8/M9 freeze + PR #352 acceptance (D-066)
+# date: 2026-11-11; base origin/main=7be79cc683de8a45e8e089e47d12be98d11211b0
+
+## 1. PR #352 acceptance (D-066)
+merge_sha=7be79cc683de8a45e8e089e47d12be98d11211b0 tested_head=f4a09608 main CI: AGOS Kernel CI/CD run 43083010460=success; Governance Gate run 43083010809=success; Render live deploy = 7be79cc6
+
+## 2. Gates (local, on the batch commit)
+$ python3 scripts/check_atomic_batch.py origin/main
+atomic-batch v2: 20 changed file(s) in origin/main...HEAD
+Atomic batch v2 passed (R0-R6).
+rc=0
+$ python3 scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 16, 'A': 4}
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+rc=0
+$ python3 scripts/check_conflict_markers.py origin/main HEAD
+Conflict-marker gate passed: no conflict markers added in origin/main...HEAD.
+rc=0
+$ python3 scripts/check_status_evidence.py .
+Status evidence check passed (STATUS_DEFINITIONS §3, rules 1-10b).
+rc=0
+$ python3 scripts/check_push_docs.py origin/main HEAD
+Push-scope docs check passed (R-187): documentation traveled with this push.
+rc=0
+
+## 3. Red check: R0 now rejects a batch without MEMORY.md
+['R0 mandatory governance docs not updated: docs/governance/MEMORY.md']
+
+## 4. Tests
+342 passed in 55.76s
+
+## 5. Scope
+No production code, no deploy, no deletion, no cost. M10 items R-200..R-243 all planned. Frozen to blocked (Q-031): R-170 R-173 R-175 R-177 R-179 R-180 R-181 R-182 R-183 R-184 R-193.

@@ -10,6 +10,7 @@ Exit codes: 0 = batch complete; 1 = at least one rule violated (all listed);
 
 Rules (every violated rule is reported, not only the first):
   R0  any change at all  -> ROADMAP.md, PROJECT_STATE.md, CHANGELOG.md   (= v1)
+                            + MEMORY.md (project memory, owner rule D-150)
   R1  executable change  -> evidence file under docs/audit/              (v1 + wider)
   R2  server.py / civilization_routes.py -> docs/governance/API.md       (= v1)
   R3  agent_civilization/storage/        -> docs/governance/DATA_MODEL.md (= v1)
@@ -34,6 +35,9 @@ MANDATORY = (
     "docs/governance/ROADMAP.md",
     "docs/governance/PROJECT_STATE.md",
     "docs/governance/CHANGELOG.md",
+    # D-150 (owner rule): the project memory is updated in the SAME batch as
+    # every piece of work — never in a separate batch.
+    "docs/governance/MEMORY.md",
 )
 # v1 CODE_RE, verbatim from governance-gate.yml (R-020)
 V1_CODE_RE = re.compile(r"^(server\.py|run\.py|agent_civilization/|agos_kernel/|src/|web/|tests/)")

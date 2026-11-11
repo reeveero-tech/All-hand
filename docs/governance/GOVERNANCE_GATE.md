@@ -1,5 +1,8 @@
 # بوابة الحوكمة (GOVERNANCE_GATE)
 
+> **تحديث D-150 (2026-11-11)**: القاعدة R0 في `scripts/check_atomic_batch.py` تشترط الآن أيضًا `docs/governance/MEMORY.md` (ذاكرة المشروع) في كل دفعة؛ و`scripts/check_status_evidence.py` يعرف البرنامج M10 ‏(R-200+) بجدوله وترتيبه الخاص (M9 = R-187..R-199).
+
+
 > **الحالة**: workflow منفّذ في `.github/workflows/governance-gate.yml` (دفعة M3/3، R-020). **مفروضة فعلياً منذ R-024 (M7/2، 2026-10-12)**: حماية الفرع `main` تفرض الفحوص الإلزامية (quality/test/build/docker/governance/audit؛ strict). اختُبر منطقه محلياً (حالتان إيجابيتان وأربع سلبيات) في `docs/audit/M3/logs/gate_test_harness.sh`. حد موثق: `enforce_admins=false` فحساب المالك يستطيع التجاوز (قرار المالك).
 
 ## القاعدة

@@ -24,10 +24,11 @@ Implements docs/governance/STATUS_DEFINITIONS.md §3:
     For M9 items the line is mandatory and parsed strictly: exactly one
     line, tag matching the item, value = the exact 'لا شيء' or R-NNN
     tokens only; anything else is rejected, not ignored.
-Program scoping (M8→M9 transition, D-102): rules 2-8 apply to every item
-R-151+ regardless of program. Rules 9-10 are scoped per program: M8 =
-R-151..R-184 (R-185/R-186 are governance entries, not roadmap items),
-M9 = R-187+. Cross-program order is not enforced — M9 items document
+Program scoping (M8→M9 transition, D-102; M10, D-150): rules 2-8 apply to
+every item R-151+ regardless of program. Rules 9-10 are scoped per program:
+M8 = R-151..R-184 (R-185/R-186 are governance entries, not roadmap items),
+M9 = R-187..R-199, M10 = R-200+ (D-150). The strict deps line (10b) applies
+to every item R-187+ (M9 and M10). Cross-program order is not enforced — M9 items document
 their M8 dependencies per item instead. Each program with roadmap items
 must have its own "## حالة بنود <program>" table in PROJECT_STATE.
 Reads repository files and git only — never PR text or the GitHub API.
@@ -43,7 +44,9 @@ STATUSES = ("planned", "in_progress", "blocked", "awaiting_merge", "done", "acce
 M8_FIRST = 151
 M8_LAST = 186  # R-185/R-186 are governance entries, not roadmap items
 M9_FIRST = 187
-PROGRAMS = (("M8", M8_FIRST, M8_LAST), ("M9", M9_FIRST, None))
+M9_LAST = 199
+M10_FIRST = 200  # D-150: AGOS v2 program (R-200+), its own table and order
+PROGRAMS = (("M8", M8_FIRST, M8_LAST), ("M9", M9_FIRST, M9_LAST), ("M10", M10_FIRST, None))
 FIELD_LINE = "- أدلة الحالة (R-154):"
 DEPS_LINE_RE = re.compile(r"^- الاعتماديات \((R-\d+)\): (.+)$", re.M)
 DEPS_TOKEN_RE = re.compile(r"^R-\d{3}[0-9a-z]*$")
