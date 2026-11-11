@@ -93,11 +93,16 @@ class _PK(r163._PostgREST):
     """The r163 fake PostgREST + the real schema's ``task_id`` PRIMARY KEY
     (docs/sql/001_init.sql) and a failure injector for task inserts:
     ``fail_inserts[0]`` > 0 fails that many task inserts with 500 (row not
-    stored); ``fail_every[0]`` = k fails every k-th task insert."""
+    stored); ``fail_every[0]`` = k fails the FIRST insert of every k-th
+    distinct task (the accept insert is lost, storage then answers) — decided
+    per task, never by a global counter that would also hit the re-create
+    inserts (a global alternation made one task lose every retry under some
+    interleavings: CI run 43070782094, specialists/3.12)."""
 
     fail_inserts: list = [0]
     fail_every: list = [0]
     inserts_seen: list = [0]
+    tasks_seen: dict = {}
     lock = threading.Lock()
 
     def do_POST(self):  # noqa: N802
@@ -107,13 +112,17 @@ class _PK(r163._PostgREST):
             row = json.loads(raw)
             with self.lock:
                 self.inserts_seen[0] += 1
-                n = self.inserts_seen[0]
                 if self.fail_inserts[0] > 0:
                     self.fail_inserts[0] -= 1
                     self.ops.append(("POST", table, "500-injected"))
                     self._send(500)
                     return
-                if self.fail_every[0] and n % self.fail_every[0] == 1:
+                tid = row.get("task_id")
+                first = tid not in self.tasks_seen
+                if first:
+                    self.tasks_seen[tid] = len(self.tasks_seen) + 1
+                if (self.fail_every[0] and first
+                        and self.tasks_seen[tid] % self.fail_every[0] == 1):
                     self.ops.append(("POST", table, "500-injected"))
                     self._send(500)
                     return
@@ -135,6 +144,7 @@ def pkdb(monkeypatch):
     _PK.fail_inserts[0] = 0
     _PK.fail_every[0] = 0
     _PK.inserts_seen[0] = 0
+    _PK.tasks_seen.clear()
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), _PK)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     from agent_civilization.storage import supabase_store as ss
