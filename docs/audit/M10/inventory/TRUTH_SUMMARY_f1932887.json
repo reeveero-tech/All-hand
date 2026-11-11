@@ -1,0 +1,39 @@
+{
+ "errors": [],
+ "rows": 3763,
+ "rules": {
+  "F01-shims": 1000,
+  "F02-oss-list": 1,
+  "K01-real-agents": 4,
+  "K02-core": 51,
+  "K03-tests": 184,
+  "K04-governance": 102,
+  "K05-audit": 2102,
+  "K06-benchmarks": 70,
+  "K07-scripts": 103,
+  "K08-ops": 19,
+  "R01-web-ui": 18,
+  "R02-server": 1,
+  "R03-civ-routes": 1,
+  "R04-router": 2,
+  "R05-pipeline": 3,
+  "R06-specialist-core": 44,
+  "R07-agent-model": 15,
+  "R08-llm": 1,
+  "R09-memory": 5,
+  "R10-connectors": 2,
+  "R11-storage": 2,
+  "U01-src-frontend": 26,
+  "U02-stale-root-docs": 4,
+  "U03-redis-queue": 1,
+  "U04-agent-factory": 1,
+  "U05-infra-agents": 1
+ },
+ "self_check": "PASS",
+ "verdicts": {
+  "FAKE_REMOVE": 1001,
+  "KEEP": 2635,
+  "REDESIGN": 94,
+  "UNUSED_REMOVE": 33
+ }
+}

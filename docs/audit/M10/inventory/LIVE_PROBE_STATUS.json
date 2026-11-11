@@ -1,0 +1,20 @@
+{
+ "GET /api": 200,
+ "GET /health": 200,
+ "GET /health/live": 200,
+ "GET /health/ready": 200,
+ "GET /metrics": 200,
+ "GET /api/system/status": 200,
+ "GET /api/agents": 200,
+ "GET /api/specializations": 200,
+ "GET /api/tasks": 401,
+ "GET /api/tasks/{task_id}": 401,
+ "GET /api/memory": 401,
+ "GET /api/learning": 401,
+ "GET /api/events": 401,
+ "GET /api/events/stream": 401,
+ "GET /api/admin/tools": 401,
+ "GET /{full_path:path}": 200,
+ "GET /civilization/registry": 401,
+ "GET /civilization/runs/{run_id}": 401
+}
