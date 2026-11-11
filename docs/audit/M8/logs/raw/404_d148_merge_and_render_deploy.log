@@ -1,0 +1,76 @@
+# 404 — إغلاق السجل 403 (D-066) + نشر main على Render بقرار المالك (لاحق 147، D-149) — 2026-11-11
+# لا قيم أسرار في هذا السجل — أسماء المتغيرات فقط.
+
+## 1. دمج PR #351 (D-148، لاحق 146)
+- دُمج بـ`gh pr merge 351 --merge --match-head-commit 9c2d852936f7a05c7caf21d73f9c66270d2d7d3d`
+- merge SHA: e9bc03e64ca1f71aab16384cb0a5accfea5a9bae
+- الرأس المختبر: 9c2d8529 — كل فحوص الـPR خضراء (audit/build/docker/governance/network/push-scope-docs/quality/storage/test).
+- run 43061802141: التشغيلة الأولى للـtest فشلت باختبار واحد فقط
+  tests/test_r175_batch4_phase1.py::test_the_phase1_runbook_certifies_all_100_with_real_evidence
+  (educator: "web search returned no snippets" — يحتاج شبكة صادرة؛ نفس الفشل البيئي الموثق، لا علاقة له بالتغيير)
+  = 1 failed, 4389 passed, 9 skipped, 17 deselected, 9 xfailed. أعيد تشغيل المهمة الفاشلة فقط (rerun --failed) فنجحت كاملة (Python 3.11 و3.12 وspecialists).
+- محليًا (صندوق بلا k6 وبلا شبكة): main 1fa2b782 = 9 failed / 4370 passed؛ الفرع = 9 failed / 4381 passed؛
+  **مجموعة الفشل متطابقة حرفيًا** (r175 educator + r176×3 + r177×5 — كلها k6/شبكة) — لا فشل جديد، و+11 اختبارًا ناجحًا.
+- CI على main لـe9bc03e6: Governance Gate ناجح (run 43070782320)؛ **AGOS Kernel CI/CD run 43070782094 = failure** — اختبار واحد
+  فشل في خطوة Python 3.12 + AGOS_AGENT_IMPL=specialists: test_d148_concurrent_tasks_with_failing_inserts_converge_once
+  (1 failed, 4389 passed). الخطوتان 3.11 و3.12 الأخريان نجحتا. التحليل والإصلاح في §7. (jobs audit/build/docker/storage تُخطّت لفشل test.)
+
+## 2. Render — ما وُجد قبل العمل (حي، لا من التقارير)
+- مساحة العمل tea-d983rhd8nd3s73bll620؛ خدمة واحدة: All-hand ‏srv-d983v7t7vvec738tu550 (Docker، خطة free، oregon،
+  فرع main، autoDeploy، numInstances=1، WEB_CONCURRENCY=1، healthCheckPath فارغ). لا Postgres ولا Key Value ولا أقراص.
+- النشر الحي كان dep-db8ntvtbedkc73f22rt0 على 7ac2cdae (2026-10-16، PR #139) — متأخر 784 commit.
+- كل نشر بعده update_failed: البناء ينجح، والتطبيق يخرج بـ
+  "CredentialsError: production start refused: no credentials configured — set AGOS_TENANT_KEYS and/or AGOS_API_KEY".
+- التخزين: SUPABASE_URL → مشروع gzjfyvuhjgcbgztlczza بمفتاح عام فقط (SUPABASE_ANON_KEY) فكل كتابة مرفوضة بـRLS
+  (لم يُكتب عليه أي صف من الخادم). عند هذا الفحص صار اسم المضيف لا يُحلّ DNS ("Name or service not known" في سجل
+  النسخة القديمة 17:43:28Z) — المشروع القديم لم يعد قائمًا.
+- CORS مفتوح (AGOS_ALLOWED_ORIGINS غير مضبوط).
+
+## 3. قرارات المالك (2026-11-11، نص المالك)
+- مفتاح API: «لا اعرف ماهو هذا المفتاح ولا من اين اجلبه ، اذا كان كلمة سر ، فلديك صلاحية إضافة واحد مؤقتا» ثم «نعم، ولّده».
+- التخزين: قدم رمز إدارة Supabase (لا يُسجل) يفتح مشروعًا جديدًا qehloiuyzksnijstkfmn (أُنشئ 2026-11-11، فارغ)،
+  ثم: «قم بحذف بياناته قاعدة البيانات السابقه من render وقم باعتماد القاعدة الجديده، إنشء كل شي لديك صلاحيه كامله».
+
+## 4. ما نُفذ
+- المخطط: طُبقت docs/sql/001_init.sql و002_tenant_isolation.sql و003_task_queue.sql على المشروع الجديد (Management API).
+  النتيجة: tasks (16 عمودًا) وevents (5) وagent_stats (7)، وRLS مفعّل على الثلاثة.
+- متغيرات Render (دمج، لا استبدال كامل — الأداة لا تحذف متغيرًا منفردًا دون معرفة كل القيم):
+  AGOS_API_KEY (مولّد عشوائيًا 48 حرفًا، مؤقت، لم يظهر في محادثة أو Git أو سجل؛ يراه المالك في لوحة Render)،
+  SUPABASE_URL (→ المشروع الجديد)، SUPABASE_SERVICE_KEY (service_role للمشروع الجديد)،
+  SUPABASE_ANON_KEY (استُبدلت قيمته القديمة بمفتاح المشروع الجديد — لم يبقَ مرجع للقاعدة القديمة)،
+  AGOS_ALLOWED_ORIGINS=https://all-hand.onrender.com.
+- لا خدمة حُذفت أو أُنشئت؛ لا ترقية خطة؛ لا مورد مدفوع؛ عامل Uvicorn واحد كما هو.
+- النشر: dep-dbqai4ivcj2c739hb5ig (new_commit على e9bc03e6) update_failed لأنه بدأ قبل ضبط المتغيرات؛
+  dep-dbqai9cmokes738klgrg (api، بعد ضبط المتغيرات) على **e9bc03e6** = **live**.
+
+## 5. التحقق بعد النشر (لا الاكتفاء بـ"Deploy Successful")
+- السجل: "AGOS_ENV=production, 1 credential(s) for 1 tenant(s)"؛ "CORS restricted to origins: ['https://all-hand.onrender.com']"؛
+  "Supabase storage key: service (from SUPABASE_SERVICE_KEY)"؛ "R-163 durable queue dispatcher started"؛ "Started server process [7]"
+  (عملية واحدة)؛ صفر ERROR/CRITICAL/Traceback/CredentialsError؛ لا قيم أسرار في السجل.
+- /health 200 healthy؛ /health/live 200؛ /health/ready 200 ready (1000 وكيل، 20 تخصصًا)؛ /api/system/status 200
+  (supabase_key.kind=service).
+- /api/tasks بلا مفتاح 401؛ بمفتاح خاطئ 401.
+- POST /api/tasks (analyst، idempotency_key) → 202 queued → GET = completed؛ إعادة الطلب نفسه → نفس task_id + duplicate:true.
+- الصف في القاعدة الجديدة: status=completed، tenant_id=operator، attempts=1 (قراءة بمفتاح الخدمة)؛ المفتاح العام يقرأ [] (RLS يعمل).
+- CI على main لـe9bc03e6 (run 43070782094): فشل اختبار D-148 المتذبذب — §7. النشر الحي لم يتأثر (الكود الإنتاجي سليم).
+
+## 6. ما بقي (للمالك)
+- healthCheckPath ما زال فارغًا في Render (أداة الربط لا تغيّره؛ PR #335 «DO NOT MERGE» يقترح /health/ready — قرار المالك، لم يُمس).
+- render.yaml في المستودع لا يطابق الخدمة الفعلية (اسم agos-civilization، runtime python) — الخدمة ليست Blueprint.
+- Redis غير متاح (احتياطي في الذاكرة) — يكفي لعامل واحد؛ لا يُشترى مورد.
+- خطة free: النسخة تنام عند الخمول وتستيقظ ببطء؛ هذه البيئة ليست إثبات سعة إنتاج.
+- يُنصح المالك بإبطال رمز إدارة Supabase الذي أُرسل في المحادثة وتدوير AGOS_API_KEY المؤقت عند الرغبة.
+- تذبذب r188: تحت المراقبة؛ لا يُدّعى سببه.
+
+## 7. تذبذب اختبار D-148 على main (اكتُشف بعد الدمج — عيب في الاختبار لا في الكود)
+- الفشل: run 43070782094، خطوة 3.12/specialists. الصف المفقود: task 29d4fb674a4f؛ بقية الـ29 مهمة اكتملت بصف واحد.
+- المثبت من السجل الملتقط: 29 رفض إدراج مقابل 15 فقط "accepted in memory but its storage row was NOT created" —
+  الـ14 الأخرى إدراجات **إعادة الإنشاء** أصابها الحاقن نفسه. الحاقن القديم (fail_every=2) عدّاد **عام** يُفشل كل إدراج
+  فردي الترتيب، فيصيب إدراجات إعادة الإنشاء أيضًا؛ وفي هذا التداخل وقعت محاولات 29d4fb674a4f الخمس (محاولتان نهائيتان
+  + 3 جولات صرف في وضع الاختبار fast) كلها على الترتيب الفردي، فسُجل
+  "CRITICAL ... 29d4fb674a4f terminal state completed ABANDONED: ... 3 drain rounds could not re-create it" —
+  وهو **سلوك الحد المصمم** (D-148 §4)، لا خلل إنتاجي. الاختبار كان يفترض ضمنًا أن إعادة الإنشاء تنجح.
+- الإصلاح (اختبار فقط، لا تغيير في server.py): الحاقن صار **لكل مهمة**: يُفشل الإدراج الأول فقط لكل مهمة k-ية مميزة
+  (فقد إدراج القبول ثم تعافي التخزين — السيناريو المقصود)، ولا يمس إدراجات إعادة الإنشاء.
+- إعادة الإنتاج محليًا: الحاقن القديم 0/12 فشل تحت ضغط CPU (نواتان مشغولتان) و specialists — لم يُعَد إنتاجه محليًا؛
+  الآلية مثبتة من سجل CI لا من إعادة إنتاج. بعد الإصلاح: 11/11 × 5 (real) و11/11 × 5 (specialists) و0/12 فشل تحت الضغط.
