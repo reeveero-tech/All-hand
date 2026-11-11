@@ -13,6 +13,8 @@ adapter still calls the full URL (behaviour unchanged).
 """
 from __future__ import annotations
 
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -59,7 +61,19 @@ def test_public_routes_do_not_leak_external_url_credentials(monkeypatch, tenant_
                      "/metrics", "/api", "/health"):
             r = c.get(path)
             bodies.append((path, r.text))
+        # A Prometheus exposition legitimately contains long counter values,
+        # so a digit-only fragment ("987654") can occur inside a counter by
+        # pure coincidence — observed as 09611799998765491 in a main-branch
+        # CI run. The /metrics body is scanned after stripping the trailing
+        # numeric VALUE of every exposition line (the only place a counter
+        # may live; a credential cannot be part of it). Labels and all other
+        # text keep the ORIGINAL strict scan with the full SECRETS list —
+        # a leaked fragment inside any label is still caught, and no
+        # fragment is dropped from the check.
         for path, body in bodies:
+            if path == "/metrics":
+                body = re.sub(r"^(.*?)[ \t]+[-+]?[0-9][0-9.eE+-]*([ \t]+[0-9]+)?$",
+                              r"\1", body, flags=re.M)
             for s in SECRETS + ("K-SECRET",):
                 assert s not in body, f"{path} leaks {s!r}"
         agents = c.get("/api/agents").json()["agents"]
