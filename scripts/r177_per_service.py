@@ -782,6 +782,32 @@ def frontend_paths() -> Optional[List[str]]:
 
 # ------------------------------------------------------------------- التشغيل
 
+def _k6_failed_count(metrics: Dict[str, Any]) -> Optional[int]:
+    """عدد الطلبات الفاشلة من مخرجات k6، بالمصادر بالترتيب الموثق.
+
+    k6 v0.57 يصدّر ``http_req_failed`` (مقياس معدّل Rate) بالحقول
+    ``value/passes/fails`` — **لا** ``count`` ولا ``rate``:
+    - ``passes`` = عدد الطلبات التي فشلت فعلًا (التسمية مضللة تاريخيًا لكنها
+      مصدر العدّ الرسمي)، و``fails`` = عدد الطلبات الناجحة.
+    - ``http_reqs.count`` = المجموع (فاشلة + ناجحة).
+
+    الترتيب: (1) ``passes`` إن وُجد؛ (2) للتوافق مع الصيغة القديمة
+    (``count`` ثم ``rate``×``http_reqs``) قبل v0.57؛ (3) ``None`` إن غاب
+    المقياس كله — لا يُخترع صفر. لا يُعاد احتساب عدد العتبات من هذا الحقل:
+    حكم العتبات مصدره ``thresholds`` كما هو.
+    """
+    m = metrics.get("http_req_failed") or {}
+    if "passes" in m:
+        return int(m["passes"])
+    if "count" in m:
+        return int(m["count"])
+    if "rate" in m:
+        total = (metrics.get("http_reqs") or {}).get("count")
+        if total is not None:
+            return round(float(m["rate"]) * int(total))
+    return None
+
+
 def run_service(service_name: str, sut_url: Optional[str] = None,
                 api_key: str = DEFAULT_API_KEY,
                 out_dir: Optional[pathlib.Path] = None,
@@ -927,10 +953,7 @@ def run_service(service_name: str, sut_url: Optional[str] = None,
             for v in th_.values())
 
     http_reqs = (metrics.get("http_reqs") or {}).get("count", 0)
-    failed = (metrics.get("http_req_failed") or {}).get("count", None)
-    if failed is None:
-        rate = (metrics.get("http_req_failed") or {}).get("rate", 0.0)
-        failed = round(rate * http_reqs)
+    failed = _k6_failed_count(metrics)
     dur = metrics.get("http_req_duration") or {}
 
     vals = sorted(s["ms"] for s in mon.samples)
