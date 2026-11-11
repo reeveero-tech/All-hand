@@ -47,7 +47,6 @@ import logging
 import sys
 import threading
 import json
-import time
 from http.server import ThreadingHTTPServer
 
 import pytest
