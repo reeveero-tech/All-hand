@@ -502,8 +502,12 @@ def test_background_task_with_every_write_rejected_ends_final_not_pending(
     with TestClient(server.app) as c:
         r = c.post("/api/tasks", json={"specialization": SPEC, "prompt": MESSAGE},
                    headers=tenant_auth.headers)
+        # D-148 (لاحق 146): the accept no longer HIDES the rejected insert —
+        # still 202 (volatile contract: memory is the truth), but the body
+        # says the row was not created (additive field, API.md)
         assert r.status_code == 202 and r.json() == {"task_id": r.json()["task_id"],
-                                                    "status": "queued"}
+                                                    "status": "queued",
+                                                    "persisted": False}
         tid = r.json()["task_id"]
         # the background run is the one create_task itself scheduled (its own
         # loop, its own storage session) — we only wait for it to fully end
