@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import check_atomic_batch as cab  # noqa: E402
 
 DOCS = ["docs/governance/ROADMAP.md", "docs/governance/PROJECT_STATE.md",
-        "docs/governance/CHANGELOG.md"]
+        "docs/governance/CHANGELOG.md", "docs/governance/MEMORY.md"]  # MEMORY: D-150
 EV = "docs/audit/M8/logs/raw/999_x.log"
 
 
