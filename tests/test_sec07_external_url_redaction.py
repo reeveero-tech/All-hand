@@ -59,8 +59,20 @@ def test_public_routes_do_not_leak_external_url_credentials(monkeypatch, tenant_
                      "/metrics", "/api", "/health"):
             r = c.get(path)
             bodies.append((path, r.text))
+        # A Prometheus exposition legitimately contains long counter values,
+        # so a digit-only fragment ("987654") can occur inside a counter by
+        # pure coincidence — observed as 09611799998765491 in a main-branch
+        # CI run. On /metrics the digit/hex-only fragments are therefore
+        # asserted in their URL-context forms (a real leak carries the
+        # surrounding URL characters; a counter cannot produce them).
+        METRICS_SAFE = ("bot987654", "987654:ABCDEF")
+        metrics_secrets = tuple(
+            next((f for f in METRICS_SAFE if s in f), s)
+            for s in SECRETS
+        ) + ("K-SECRET",)
         for path, body in bodies:
-            for s in SECRETS + ("K-SECRET",):
+            secrets = metrics_secrets if path == "/metrics" else SECRETS + ("K-SECRET",)
+            for s in secrets:
                 assert s not in body, f"{path} leaks {s!r}"
         agents = c.get("/api/agents").json()["agents"]
         ext = [a for a in agents if a["name"] == "ext-leak"]
