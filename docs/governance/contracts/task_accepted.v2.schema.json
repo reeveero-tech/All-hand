@@ -15,6 +15,18 @@
       "default": null,
       "title": "Duplicate"
     },
+    "persisted": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Persisted"
+    },
     "status": {
       "enum": [
         "queued",

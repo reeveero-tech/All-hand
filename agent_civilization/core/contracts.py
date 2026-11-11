@@ -93,6 +93,11 @@ class TaskAcceptedV2(_Strict):
     task_id: str = Field(pattern=_TASK_ID)
     status: TaskStatus
     duplicate: Optional[bool] = None
+    # D-148 (additive): ``false`` only on the VOLATILE path with storage
+    # configured when the task's row could NOT be created at accept — the
+    # task runs in memory, the response never claims a stored row. Absent
+    # otherwise (the v1 shape of a first creation is unchanged).
+    persisted: Optional[bool] = None
 
 
 class TaskCancelled(_Strict):
@@ -119,6 +124,10 @@ class TaskRecord(_Strict):
     tenant_id: str
     agent: Optional[str] = None
     finished_at: Optional[float] = None
+    # D-148 (additive): present only when the accept could not create the
+    # storage row (``false``); flips to ``true`` once the terminal write
+    # re-created it. Absent for every other record.
+    persisted: Optional[bool] = None
 
     @model_validator(mode="after")
     def _terminal_has_result(self):

@@ -1,0 +1,58 @@
+# 403 — D-148 (لاحق 146): إصلاح فقد إدراج المهمة المتطايرة (storage.insert_task) — 2026-11-11
+# القاعدة: main 1fa2b782 (Merge PR #350). الفرع: m9/d148-volatile-insert-loss.
+
+## 1. العيب المعروف (مسجل في لاحق 143 / السجل 401 §5 — لم يكن قد أُصلح)
+- server.py create_task (الوضع المتطاير: AGOS_TASK_QUEUE=0 صراحةً مع تخزين مُعدّ) كان يتجاهل
+  نتيجة storage.insert_task (يعيد False عند الرفض/الفشل؛ لا يرمي) ويرد 202 {task_id, status:queued}.
+- النهاية: _write_task_terminal -> update_task يعيد False ("no row updated") -> تأجيل في
+  TERMINAL_WRITE_PENDING -> _drain_terminal_writes يعيد المحاولة كل 5ث **بلا نهاية** لصف لن يوجد.
+- الكتابة المسوّرة (_end_unfinished / transition_task = 0 صف) كانت تعتبر الصف المفقود «أُنهي في مكان آخر».
+- الإلغاء على صف مفقود كان يعطي 409 كاذبًا.
+- الوضع الدائم (الافتراضي مع تخزين) لم يكن متأثرًا: فشل الإدراج = 503 منذ D-102.
+- **ليس مثبتًا أن هذا العيب سبب تذبذب r188** (السجل 401). هذا الإصلاح لا يدعي حل التذبذب.
+
+## 2. أحمر أولًا (على main 1fa2b782، worktree منفصل، الاختبار الجديد نفسه)
+### 2.1 مسبار سلوكي (الدليل السلوكي الحاسم)
+202 body: {'task_id': '7e00569b3fae', 'status': 'queued'}            <- لا إشارة إلى أن الصف لم يُنشأ
+pending after 3s: True | PATCH attempts: 114 | no-row-updated logs: 113 | rows: []   <- إعادة محاولة بلا حد، والجدول فارغ
+### 2.2 الملف tests/test_d148_volatile_insert_loss.py على main
+10 failed, 1 passed in 7.09s
+أسباب الفشل (صادقة: بعضها غياب رموز جديدة لا سلوك):
+  3 KeyError: 'persisted'                         (السلوك: الرد لا يعلن فقد الصف)
+  3 AttributeError: no attribute '_mark_row_missing'  (رمز جديد)
+  2 AttributeError: no attribute '_ROW_MISSING'       (رمز جديد)
+  1 assert False / 1 assert None is False             (السلوك)
+الاختبار الوحيد الناجح على main: الصف الموجود يبقى بعقد R-188 غير المحدود (تحكم سلبي مقصود).
+
+## 3. التصميم (D-148)
+- القبول المتطاير يفحص نتيجة الإدراج؛ False مع تخزين يحفظ = ERROR log + عداد task_row_missing
+  + السجل في الذاكرة persisted=false + الرد 202 يضيف "persisted": false (حقل اختياري جمعي؛
+  العقود task_accepted v2 / task_record v1 / task_list v1 صنّفها export_contract_schemas.py ADDITIVE،
+  بلا رفع إصدار). الطريق السعيد بلا تغيير (لا حقل persisted).
+- الكتابة النهائية: التحديث أولًا (سلامة الإدراج الغامض الذي هبط فعلًا — لا تكرار)، فإن لم يُحدّث
+  وكان الصف معروف الفقد -> إعادة إنشائه بنفس task_id بحالته النهائية (task_id مفتاح أساسي في
+  docs/sql/001_init.sql، فلا يمكن صفّان للمعرّف نفسه؛ إدراج أصلي متأخر يصطدم بالمفتاح ويُرفض).
+- الكتابة المسوّرة على صف مفقود تعيد الإنشاء بدل اعتباره «مُنهى في مكان آخر».
+- حد إعادة المحاولة: الصفوف المعروف فقدها تُترك بعد AGOS_TASK_MISSING_ROW_DRAIN_ROUNDS جولة
+  (افتراضي 60 × 5ث ≈ 5 دقائق) مع CRITICAL "ABANDONED" وعداد task_row_abandoned وحذف المدخل.
+  الصفوف الموجودة تبقى بعقد R-188 غير المحدود (لا فقد نتيجة لصف موجود).
+- الإلغاء على صف مفقود = 200 مؤكد (لا 409 كاذب) وتُجدول كتابة cancelled لإعادة الإنشاء.
+- لا يُبلَّغ بنجاح صف لم يُنشأ: persisted يصبح true فقط بعد هبوط الكتابة فعلًا.
+
+## 4. أخضر (الفرع)
+- tests/test_d148_volatile_insert_loss.py: 11 passed (عادي، فشل الإدراج مرئي ثم إعادة إنشاء،
+  غير قابل للتعافي محدود، 30 مهمة متزامنة بفشل إدراج متناوب تتقارب بصف واحد لكل مهمة، إعادة
+  idempotent، إلغاء صف مفقود، بلا تخزين، إدراج غامض هبط = تحديث لا تكرار، إدراج أصلي متأخر لا
+  يكرر، الكتابة المسوّرة تعيد الإنشاء، الصف الموجود غير محدود) + تحقق العقود TaskAcceptedV2/TaskRecord.
+- tests/test_r149_security_qa_gaps.py::test_background_task_with_every_write_rejected_ends_final_not_pending
+  عُدّل عمدًا ليتوقع "persisted": false (تغيير عقد جمعي مقصود). الملف 23/23.
+- الحزم ذات الصلة (d148, r188_terminal_write_retry, g160_2 x2, r163, r149, bug02, r188_task_loss,
+  storage_payloads, r082, bug01, r160_contracts, r160_local_integration): كلها ناجحة.
+- export_contract_schemas.py --check: contracts=31 problems=0.
+- الحزمة الكاملة: انظر §6.
+
+## 5. ما لا يغيره
+- الوضع الدائم، مسار /api/chat (تحديث واحد، ليس حلقة)، العتبات، حدود R-177/R-178، عدد العمال (1)،
+  PR #335، المعايير الـ42. لا ادعاء بسبب r188.
+
+## 6. الحزمة الكاملة (تُملأ أرقامها في سجل الدمج حسب D-066)

@@ -164,6 +164,18 @@
       "title": "Id",
       "type": "string"
     },
+    "persisted": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Persisted"
+    },
     "prompt": {
       "maxLength": 500,
       "title": "Prompt",

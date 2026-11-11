@@ -1,5 +1,6 @@
 # التشغيل والنشر (OPERATIONS)
 
+> **آخر تحديث**: 2026-11-11 — **D-148 (لاحق 146)**: متغير جديد `AGOS_TASK_MISSING_ROW_DRAIN_ROUNDS` (حد إعادة المحاولة لصف مهمة متطايرة لم يُنشأ عند القبول) في القسم «الضغط الخلفي والحدود».
 > **آخر تحديث**: 2026-10-28 — **R-170 (دفعة 15)**: بوابة التحقق من المخرجات **مفعلة افتراضيًا** (قرار المالك) — التعطيل صريح فقط بـ`AGOS_OUTPUT_VALIDATORS=0`؛ إثبات تطابق أحكام البوابة بعد القلب (إعادة تقييم دفعة 10: صفر اختلاف على 214 صفًا) في القسم «بوابة التحقق من المخرجات». قبلها 2026-10-24 — **R-170 (دفعة 4)**: علم بوابة التحقق من المخرجات `AGOS_OUTPUT_VALIDATORS` (كان الافتراضي معطلًا؛ `1` فقط يفعّل) وإرشادات تفعيله المرحلي والتراجع عنه — القسم «بوابة التحقق من المخرجات». قبلها 2026-10-19 — **R-165 (D-084)**: تسعة متغيرات لخطط DAG (`AGOS_PLAN_TIMEOUT_S`، `AGOS_STAGE_TIMEOUT_S`، `AGOS_STAGE_MAX_ATTEMPTS`، `AGOS_PLAN_MAX_STAGE_RUNS`، `AGOS_PLAN_PARALLEL`، `AGOS_STAGE_RETRY_BASE_S`/`_CAP_S`، `AGOS_STAGE_CONTEXT_CHARS`، `AGOS_PLAN_RUNS_KEPT`)، وكلها اختيارية بقيم افتراضية آمنة. قبلها 2026-10-18 — **R-163 (D-082)**: متغيرات الطابور الدائم `AGOS_TASK_QUEUE`/`AGOS_TASK_LEASE_S`/`AGOS_TASK_REAP_S`/`AGOS_TASK_MAX_ATTEMPTS`/`AGOS_TASK_DISPATCH_BATCH`/`AGOS_TASK_DISPATCH_IDLE_S` (القسم «الطابور الدائم»). قبلها 2026-10-16 — R-144 (SEC-04): حدود بث SSE `AGOS_SSE_*` ومراقبتها (القسم «حدود بث SSE»). قبلها 2026-10-15 — R-132: `AGOS_POOL_*`، `AGOS_WEB_WAIT_S`. قبلها R-131: `AGOS_LLM_KEYLESS_MAX_WAIT_S`. قبلها 2026-10-12 — بعد دفعة M4/1 (R-040)
 
 ## البناء والتشغيل المحلي
@@ -338,6 +339,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_TASK_QUEUE_MAX` | server.py | 10000 مهمة معلّقة للخدمة (0 = بلا سقف؛ المتطاير ≤500). البلوغ → 503 + `Retry-After` |
 | `AGOS_TASK_QUEUE_MAX_PER_TENANT` | server.py | 1000 مهمة معلّقة لكل مستأجر (0 = بلا سقف). البلوغ → 429 + `Retry-After` |
 | `AGOS_TASK_ACCEPT_RATE_PER_MIN` | server.py | 0 = معطّل؛ قيمة > 0 = مهام مقبولة لكل مستأجر في 60 ث |
+| `AGOS_TASK_MISSING_ROW_DRAIN_ROUNDS` (D-148) | server.py | 60 جولة صرف (× `AGOS_TASK_TERMINAL_WRITE_DRAIN_INTERVAL_S`=5ث ≈ 5 دقائق؛ 1..1000000) لإعادة إنشاء صف مهمة متطايرة **معروف فقده** (فشل إدراج القبول)، ثم يُترك بسجل CRITICAL «ABANDONED» وعداد `task_row_abandoned`. الصف الموجود غير متأثر (عقد R-188 غير المحدود). المراقبة: العدادان `task_row_missing`/`task_row_abandoned` |
 | `AGOS_TASK_RETRY_AFTER_S` | server.py | 5 ث تلميح `Retry-After` لرفض امتلاء الطابور (1..3600) |
 | `AGOS_TASK_TIMEOUT_S` | server.py | 600 ث مهلة التشغيل الواحد (0 = بلا مهلة؛ ≤86400). انتهاؤها = `failed` بلا إعادة |
 | `AGOS_TASK_RETRY_BASE_S` / `AGOS_TASK_RETRY_CAP_S` | server.py | 1 / 30 ث تراجع بتذبذب قبل إعادة إرسال مهمة مؤجلة (تشبع) أو مستردة (انتهاء عقد) |

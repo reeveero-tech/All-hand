@@ -974,17 +974,26 @@ async def _drain_terminal_writes() -> None:
                 batch = list(TERMINAL_WRITE_PENDING.items())[:TERMINAL_WRITE_DRAIN_BATCH]
 
                 async def _one(task_id: str, payload: Dict[str, Any]) -> bool:
+                    missing = _ROW_MISSING.get(task_id)
                     try:
                         if payload.get("guard"):
                             # G-160-2: the GUARDED write keeps its guard —
                             # False (row finished elsewhere) is settled,
-                            # only a failed request (None) stays pending
-                            landed = await _guarded_terminal_write(
+                            # only a failed request (None) stays pending.
+                            # A row never created (D-148) is re-created.
+                            moved = await _guarded_terminal_write(
                                 task_id, payload["status"], payload["guard"],
-                                **payload["kw"]) is not None
+                                **payload["kw"])
+                            landed = moved is not None
+                            if moved is False and missing is not None:
+                                landed = await _recreate_terminal_row(
+                                    task_id, payload["status"], missing, **payload["kw"])
                         else:
                             landed = await get_storage().update_task(
                                 task_id, payload["status"], **payload["kw"])
+                            if not landed and missing is not None:
+                                landed = await _recreate_terminal_row(
+                                    task_id, payload["status"], missing, **payload["kw"])
                     except asyncio.CancelledError:
                         raise
                     except Exception as e:
@@ -999,6 +1008,7 @@ async def _drain_terminal_writes() -> None:
                             payload["status"], type(e).__name__)
                         landed = False
                     if landed:
+                        _row_settled(task_id)
                         # only remove OUR entry: if a NEWER deferral replaced
                         # it while this attempt was in flight, that payload
                         # is the one that must land — leave it untouched
@@ -1008,6 +1018,21 @@ async def _drain_terminal_writes() -> None:
                                 "task %s terminal write (%s) landed via the "
                                 "background drainer", task_id, payload["status"])
                         return True
+                    # D-148: a row that was never created is retried for a
+                    # FIXED number of rounds, then abandoned loudly — it
+                    # must never keep the drainer alive forever
+                    if "missing_rounds" in payload and TERMINAL_WRITE_PENDING.get(task_id) is payload:
+                        payload["missing_rounds"] += 1
+                        if payload["missing_rounds"] >= TASK_MISSING_ROW_DRAIN_ROUNDS:
+                            TERMINAL_WRITE_PENDING.pop(task_id, None)
+                            _ROW_MISSING.pop(task_id, None)
+                            _row_metric("task_row_abandoned")
+                            logger.critical(
+                                "task %s terminal state %s ABANDONED: its storage row was "
+                                "never created and %d drain rounds could not re-create it; "
+                                "the in-memory record keeps the result (persisted=false)",
+                                task_id, payload["status"], payload["missing_rounds"])
+                            return False
                     # failed (False or raised): move to the BACK so a
                     # persistently-failing head cannot starve the rest —
                     # but never touch a NEWER deferral that replaced this
@@ -1075,6 +1100,85 @@ def _storage_persists() -> bool:
     return True if check is None else bool(check())
 
 
+# R-188 follow-up (لاحق 146, D-148): the VOLATILE accept path used to
+# IGNORE the result of ``storage.insert_task`` (it fails SOFT: False on any
+# transport/HTTP/breaker failure). A task whose row was never created was
+# answered 202 like any other, ran in memory, and its terminal
+# ``update_task`` then matched NO row ("no row updated") — so the bounded
+# in-line retry was spent, the write was DEFERRED, and the drainer retried
+# it FOREVER (it can never land on a row that does not exist). This is the
+# open defect recorded in log 401 §5; it is NOT claimed to be the proven
+# cause of the r188 CI flake.
+#
+# Design (fail visible, converge, stay bounded — no change to durable mode):
+# - the accept CHECKS the insert. On failure the task is still accepted
+#   (the volatile contract: the memory record is the source of truth, and a
+#   public-key deployment rejects every write by design — D-039), but the
+#   miss is LOUD (ERROR log, ``task_row_missing`` counter) and VISIBLE: the
+#   202 body and the task record carry ``"persisted": false``. The API never
+#   claims a stored row it does not have.
+# - the miss is remembered in ``_ROW_MISSING`` (task id -> the insert's own
+#   arguments). The terminal write then RE-CREATES the row when the update
+#   matches nothing: update first (an ambiguous insert that did land — e.g.
+#   a timeout after commit — is simply updated), else insert-then-update
+#   with the SAME task_id. ``task_id`` is the table's primary key, so a late
+#   original insert and the re-create can never yield two rows: the loser
+#   gets a unique violation and the next attempt's update lands.
+# - bounded: a missing-row entry handed to the drainer gets at most
+#   ``TASK_MISSING_ROW_DRAIN_ROUNDS`` rounds; past that it is ABANDONED with
+#   a CRITICAL log and the ``task_row_abandoned`` counter (the in-memory
+#   record keeps the result and ``persisted: false``). Rows that DO exist
+#   keep the R-188 deferral contract unchanged (retried while the server
+#   lives — an outage is not a missing row).
+_ROW_MISSING: Dict[str, Dict[str, Any]] = {}
+TASK_MISSING_ROW_DRAIN_ROUNDS = agent_registry.positive_int_env(
+    "AGOS_TASK_MISSING_ROW_DRAIN_ROUNDS", 60, 1, 1_000_000)
+
+
+def _row_metric(name: str) -> None:
+    try:
+        from agos_kernel.infrastructure.metrics import get_metrics
+        get_metrics().inc_counter(name)
+    except Exception:  # noqa: BLE001 — a metric must never break a write path
+        pass
+
+
+def _mark_row_missing(task_id: str, specialization: str, prompt: str,
+                      tenant_id: Optional[str]) -> None:
+    _ROW_MISSING[task_id] = {"specialization": specialization, "prompt": prompt,
+                             "tenant_id": tenant_id}
+    rec = TASKS.get(task_id)
+    if rec is not None:
+        rec["persisted"] = False
+    _row_metric("task_row_missing")
+    logger.error("task %s accepted in memory but its storage row was NOT created "
+                 "(insert_task failed): persisted=false; the terminal write will "
+                 "re-create the row (bounded)", task_id)
+
+
+def _row_settled(task_id: str) -> None:
+    """The row now exists (updated or re-created): forget the miss."""
+    if _ROW_MISSING.pop(task_id, None) is not None:
+        rec = TASKS.get(task_id)
+        if rec is not None:
+            rec["persisted"] = True
+        logger.info("task %s storage row re-created at its terminal write", task_id)
+
+
+async def _recreate_terminal_row(task_id: str, status: str, missing: Dict[str, Any], *,
+                                 agent_name=None, result=None, elapsed_s=None) -> bool:
+    """Insert the missing row (same task_id — the primary key forbids a
+    duplicate) in its terminal status, then update it with the result.
+    True only when the final update is confirmed."""
+    storage = get_storage()
+    created = await storage.insert_task(task_id, missing["specialization"], missing["prompt"],
+                                        status, tenant_id=missing["tenant_id"])
+    if not created:
+        return False
+    return bool(await storage.update_task(task_id, status, agent_name=agent_name,
+                                          result=result, elapsed_s=elapsed_s))
+
+
 async def _write_task_terminal(task_id: str, status: str, *, agent_name=None,
                                result=None, elapsed_s=None, guard_from=None) -> bool:
     """Persist a task's TERMINAL state with a bounded, jittered retry (see
@@ -1093,21 +1197,33 @@ async def _write_task_terminal(task_id: str, status: str, *, agent_name=None,
         return True
     delay = 0.5
     for attempt in range(1, TASK_TERMINAL_WRITE_ATTEMPTS + 1):
+        missing = _ROW_MISSING.get(task_id)
         try:
             if guard_from is not None:
                 moved = await _guarded_terminal_write(
                     task_id, status, guard_from, agent_name=agent_name,
                     result=result, elapsed_s=elapsed_s)
-                if moved is False:
+                if moved is False and missing is None:
                     logger.info("task %s unfinished-row write skipped: the row was "
                                 "already finished elsewhere (not overwritten)", task_id)
                     return True
                 landed = moved is True
+                if moved is False:
+                    # 0 rows matched because the row was never created —
+                    # not "finished elsewhere": re-create it
+                    landed = await _recreate_terminal_row(
+                        task_id, status, missing, agent_name=agent_name,
+                        result=result, elapsed_s=elapsed_s)
             else:
                 landed = await get_storage().update_task(
                     task_id, status, agent_name=agent_name, result=result,
                     elapsed_s=elapsed_s)
+                if not landed and missing is not None:
+                    landed = await _recreate_terminal_row(
+                        task_id, status, missing, agent_name=agent_name,
+                        result=result, elapsed_s=elapsed_s)
             if landed:
+                _row_settled(task_id)
                 if attempt > 1:
                     logger.info("task %s terminal write (%s) succeeded on attempt %d",
                                 task_id, status, attempt)
@@ -1139,6 +1255,9 @@ async def _write_task_terminal(task_id: str, status: str, *, agent_name=None,
     }
     if guard_from is not None:
         TERMINAL_WRITE_PENDING[task_id]["guard"] = tuple(guard_from)
+    if task_id in _ROW_MISSING:
+        # bounded: a row that was never created gets a fixed round budget
+        TERMINAL_WRITE_PENDING[task_id]["missing_rounds"] = 0
     _ensure_terminal_write_drainer()
     logger.critical(
         "task %s terminal state %s was NOT persisted after %d attempts — "
@@ -2572,7 +2691,14 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
     telemetry.bind_task(task_id)
     telemetry.event("task", "queued", specialization=req.specialization)
     storage = get_storage()
-    await storage.insert_task(task_id, req.specialization, req.prompt, "queued", tenant_id=principal.tenant_id)
+    # D-148: the insert result is CHECKED (it fails soft). A miss is loud and
+    # visible ("persisted": false) and the terminal write re-creates the row
+    # (bounded) instead of retrying an update that can never match a row.
+    persisted = await storage.insert_task(task_id, req.specialization, req.prompt, "queued",
+                                          tenant_id=principal.tenant_id)
+    row_missing = not persisted and _storage_persists()
+    if row_missing:
+        _mark_row_missing(task_id, req.specialization, req.prompt, principal.tenant_id)
     await storage.insert_event("task_created", {"task_id": task_id, "specialization": req.specialization},
                                tenant_id=principal.tenant_id)
     await _publish(principal.tenant_id, {"type": "task_created", "task_id": task_id,
@@ -2592,6 +2718,8 @@ async def create_task(request: Request, req: TaskRequest, api_key: Optional[str]
     finally:
         reset_public_llm_consent(token)
     logger.info(f"Task created: {task_id} for specialization: {req.specialization}")
+    if row_missing:
+        return {"task_id": task_id, "status": "queued", "persisted": False}
     return {"task_id": task_id, "status": "queued"}
 
 
@@ -2693,10 +2821,18 @@ async def cancel_task(request: Request, task_id: str,
             # confirmed — the row may be re-dispatched later. Answering 409
             # here would claim a finish that never happened.
             raise _storage_unavailable("storage unavailable: cancel not confirmed — the task may still run")
-        if moved is False:
+        if moved is False and task_id not in _ROW_MISSING:
             # someone else finished/recovered it between the read and this write
             raise HTTPException(409, "task already finished")
     rec.update(status="failed", result=outcome, finished_at=time.time())
+    if task_id in _ROW_MISSING:
+        # D-148: the row was never created — 0 rows matched is not "finished
+        # elsewhere". The cancel is confirmed in memory; the cancelled row is
+        # re-created by the bounded terminal write (its own loop task).
+        t = asyncio.get_running_loop().create_task(
+            _write_task_terminal(task_id, "cancelled", agent_name=rec.get("agent"), result=outcome))
+        _UNFINISHED_WRITES.add(t)
+        t.add_done_callback(_UNFINISHED_WRITES.discard)
     _QUEUE_STATE.pop(task_id, None)
     _QUEUE_BACKOFF.pop(task_id, None)
     _QUEUE_DEFERRALS.pop(task_id, None)
