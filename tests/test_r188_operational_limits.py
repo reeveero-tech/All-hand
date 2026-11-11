@@ -464,10 +464,29 @@ def _wait_all_completed(srv, st, ids, timeout=600):
     histogram = {}
     for r in rows.values():
         histogram[r["status"]] = histogram.get(r["status"], 0) + 1
+    # log 401: classify each missing id instead of a bare count — a missing
+    # row means the task's INSERT never landed (an insert defect), while a
+    # non-terminal row means the TERMINAL update never landed (an update
+    # defect: the row froze mid-flight). The two are different defects; the
+    # fake PostgREST's op counter (unit._PostgREST.ops) says which verbs
+    # the server actually issued, so the failure is diagnosable from the
+    # run itself. This changes NO assertion and NO timeout — evidence only.
+    import test_r188_task_loss as _loss
+    insert_count = sum(1 for v, t, n in (_loss.unit._PostgREST.ops or [])
+                       if v == "POST" and t == "tasks")
+    patch_count = sum(1 for v, t, n in (_loss.unit._PostgREST.ops or [])
+                      if v == "PATCH" and t == "tasks")
+    patch_zero = sum(1 for v, t, n in (_loss.unit._PostgREST.ops or [])
+                     if v == "PATCH" and t == "tasks" and n == 0)
     raise AssertionError(
         f"accepted tasks never completed within {timeout}s — {len(missing)} "
-        f"rows MISSING; status histogram: {histogram}; recipient requests: "
-        f"{len(st.requests)}; server log tail:\n{srv._tail()}")
+        f"rows MISSING; missing ids: {sorted(missing)}; non-terminal rows: "
+        f"{[t for t, r in rows.items() if r['status'] != 'completed']}; status "
+        f"histogram: {histogram}; recipient requests: {len(st.requests)}; fake "
+        f"PostgREST ops: POST tasks={insert_count}, PATCH tasks={patch_count} "
+        f"(of which matched 0 rows: {patch_zero}) — a missing row is an "
+        f"INSERT defect, a non-terminal row is a TERMINAL-UPDATE defect; "
+        f"server log tail:\n{srv._tail()}")
 
 
 def _wait_rows(pred, timeout=600):

@@ -39,6 +39,9 @@ class _PostgREST(BaseHTTPRequestHandler):
 
     rows: dict = {"tasks": [], "events": [], "agent_stats": []}
     gets: list = []
+    ops: list = []           # log 401: every POST/PATCH/GET as
+                              # (verb, table, matched-rows-count) — diagnosis
+                              # only, no response behaviour change
     mode: list = ["ok"]          # "ok" | "reject" (store down) | "reject_insert"
                                  # | "reject_insert_hold" (task insert blocks on
                                  # `gate`, then fails — see below)
@@ -108,12 +111,14 @@ class _PostgREST(BaseHTTPRequestHandler):
         if idem is not None and any(
                 r.get("idempotency_key") == idem and r.get("tenant_id") == row.get("tenant_id")
                 for r in self.rows["tasks"]):
+            self.ops.append(("POST", table, "409-duplicate"))
             self._send(409)     # the unique (tenant_id, idempotency_key) index
             return
         row.setdefault("created_at", time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + "+00:00")
         row.setdefault("attempts", 0)
         row.setdefault("max_attempts", 3)
         self.rows[table].append(row)
+        self.ops.append(("POST", table, len(self.rows[table])))
         self._send(201)
 
     def do_PATCH(self):  # noqa: N802
@@ -132,6 +137,7 @@ class _PostgREST(BaseHTTPRequestHandler):
         matched = self._matched(table, q)
         for r in matched:
             r.update(patch)
+        self.ops.append(("PATCH", table, len(matched)))
         if "return=representation" in self.headers.get("Prefer", ""):
             self._send(200, matched)   # PostgREST: updated rows, [] if none
         else:
@@ -140,6 +146,7 @@ class _PostgREST(BaseHTTPRequestHandler):
     def do_GET(self):  # noqa: N802
         table, q = self._table_q()
         self.gets.append((table, dict(q)))
+        self.ops.append(("GET", table, None))
         if self.mode[0] == "reject":
             self._send(500)
             return

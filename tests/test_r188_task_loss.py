@@ -917,6 +917,7 @@ def _wait_for(predicate, timeout=40.0, step=0.1):
 def fake_backend():
     unit._PostgREST.rows = {"tasks": [], "events": [], "agent_stats": []}
     unit._PostgREST.gets = []
+    unit._PostgREST.ops = []     # log 401: diagnostic op counter, reset per test
     unit._PostgREST.mode[0] = "ok"
     _BarrierPostgREST.armed.clear()
     _BarrierPostgREST.release.clear()
