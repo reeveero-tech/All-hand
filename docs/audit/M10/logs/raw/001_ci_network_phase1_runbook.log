@@ -46,3 +46,8 @@ SKIPPED [1] tests/test_r175_batch4_phase1.py:249: educator: no LLM key and the l
 1 skipped, 7 deselected
 $ pytest tests/test_r175_batch4_phase1.py -q
 7 passed, 1 deselected
+
+# --- second follow-up: R-187 after a force-push ---
+# head bc1374db (amended + force-pushed over f3aacb3d): AGOS Kernel CI/CD 43122221152 = success (network = success),
+# Governance Gate 43122215821 (push) = failure "before ref not found: f3aacb3d…", 43122221235 (pull_request) = failure
+# "R-187 merge binding: job push-scope-docs RED on the head SHA". Fix: a normal (non-force) follow-up commit with docs.
