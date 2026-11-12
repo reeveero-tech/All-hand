@@ -1,0 +1,33 @@
+# M10/010 — R-203 acceptance (approved-deletion mechanism + repository cleanup)
+# date: 2026-11-12
+batch 1: PR #361 (mechanism + DEL-001 list, no deletions) merge f0dc0fd6 "Merge pull request #361 from reeveero-tech/m10/r203-deletion-mechanism"
+batch 2: pr=#362 head (tested) e31e5a5e058e530d7b2a2c8d55d29501260bb37b
+merge abb951ca8f355a518db8310a386abd7ffbbb31fd "Merge pull request #362 from reeveero-tech/m10/r203-cleanup" (merge^2 == tested head)
+
+## main CI run 43195369451 (AGOS Kernel CI/CD) on abb951ca = success
+jobs: test=success quality=success network=success storage=success build=success docker=success audit=success publish=skipped
+test (3 legs, identical):
+==== 4446 passed, 34 skipped, 18 deselected, 9 xfailed in 651.96s (0:10:51) ====
+==== 4446 passed, 34 skipped, 18 deselected, 9 xfailed in 629.69s (0:10:29) ====
+==== 4446 passed, 34 skipped, 18 deselected, 9 xfailed in 649.47s (0:10:49) ====
+summary used for evidence: 4446 passed, 34 skipped, 18 deselected
+(R-202 main had 4437 passed: removed queue/breaker/redis/shim tests, added R-203 tests -> net +9)
+skipped 34 = same as R-202 (9 live-service tests + 25 R-202 live schema tests that run in job storage)
+storage job: R-202 v2 schema 48 passed; network job: 17 passed, 1 skipped, 4489 deselected
+
+## Acceptance criterion
+- red first: tests/test_r203_deletion_lists.py on the old gate = 20 failed, 4 passed (log 008); green 38 passed
+- the full suite passes after the deletion: main CI above
+- no live path depends on a deleted file: tests/test_r203_cleanup.py (AST over every tracked .py: no import of a
+  deleted module; /health checks = api, civilization, storage; import server + TestClient), red on the batch-1 head
+  (4 failed, 1 passed), green 5 passed; and the live deploy below
+- size: 3811 -> 2779 tracked files, 103,243,838 -> 102,159,771 bytes (log 009)
+
+## Live deploy (Render auto deploy of main; checked by HTTP — the Render API was not available in this session)
+GET https://all-hand.onrender.com/health -> healthy, checks = ['api', 'civilization', 'storage'] (no 'redis'), uptime reset (new instance)
+GET https://all-hand.onrender.com/ -> 200; bundle /assets/index-DkME2AOy.js: 0 x "AGOS Civilization", app-title children "AGOS"
+
+## Not tested / limits
+- the Render deploy id was not read (connector unavailable); the live check is by behaviour (/health shape + bundle text)
+- deferred by D-152: registry/oss_agents.py (R-214), R-169 multi-version scripts (R-227), agent_factory.py (R-213)
+- the "1000 agents" count in /health is still the 20x50 generated copies (R-201 labels it; real redesign R-213)

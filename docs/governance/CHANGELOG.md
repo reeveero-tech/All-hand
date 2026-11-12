@@ -3355,3 +3355,10 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - **ما عُدّل**: `agos_kernel/infrastructure/__init__.py` و`health.py` (لا `check_redis`)، `core/contracts.py` (لا `queue_task`؛ 30 عقدًا)، `.github/workflows/ci.yml` (لا خطوات الواجهة الجذرية ولا تدقيق npm الجذري)، `scripts/build_entrypoint_map.py`، `.env.example`/`OPERATIONS.md`/`DEPLOY.md` (لا `REDIS_URL` ولا `CIRCUIT_BREAKER_*`)، `ARCHITECTURE.md`، رأس `web/src/App.jsx` → «AGOS».
 - **الاختبارات**: جديد `tests/test_r203_cleanup.py` (أحمر على رأس الدفعة 1: 4 failed, 1 passed؛ أخضر: 5 passed)؛ `web/tests/ui_truth.test.mjs` (أحمر 45/1 ثم 46/0)؛ عُدلت اختبارات الـshims والطابور والقاطع وR-158 وR-157 C6 وR-200. الحزمة الكاملة محليًا: 4438 passed, 34 skipped, 18 deselected, 9 xfailed (8 فشل k6 محلي فقط).
 - **الحالة**: R-203 `awaiting_merge` (PR #362). القبول في الدفعة التالية بعد CI على main وتحقق النشر.
+
+## 2026-11-12 — لاحق 158: قبول R-203 — `done` (السجل M10/010)
+- PR #361 (الآلية + DEL-001) وPR #362 (الحذف) مدموجان؛ دمج `abb951ca` ورأس مختبر `e31e5a5e` (merge^2).
+- CI على main ‏run 43195369451 = success: test (3 أرجل) 4446 passed, 34 skipped, 18 deselected, 9 xfailed؛ storage 48 passed؛ network 17 passed, 1 skipped.
+- تحقق حي: `GET /health` = healthy بفحوص `api`، `civilization`، `storage` فقط؛ حزمة الواجهة بلا «AGOS Civilization» والرأس «AGOS».
+- لم يُختبر: معرف نشر Render (لم يُقرأ في هذه الجلسة؛ التحقق بالسلوك). المؤجلات بقرار D-152: R-213، R-214، R-227.
+- R-203 `done`. التالي R-204.
