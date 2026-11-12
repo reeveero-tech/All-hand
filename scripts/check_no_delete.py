@@ -42,6 +42,7 @@ import sys
 LIST_DIR = "docs/governance/deletions/"
 LIST_RE = re.compile(r"^docs/governance/deletions/(DEL-\d{3})\.list$")
 DECISIONS = "docs/governance/DECISIONS.md"
+LIST_README = LIST_DIR + "README.md"  # the human explanation of the lists
 DECISION_RE = re.compile(r"^#\s*decision:\s*(D-\d{3,})\s*$")
 
 
@@ -174,12 +175,15 @@ def find_violations(base: str, head: str, cwd: str | None = None) -> dict:
             continue  # an invalid list authorizes nothing
         for p in info["paths"]:
             allowed.setdefault(p, lid)
-    list_changes = sorted(p for p, st in changed.items() if LIST_RE.match(p) or p.startswith(LIST_DIR))
+    list_changes = sorted(p for p, st in changed.items()
+                          if LIST_RE.match(p) or (p.startswith(LIST_DIR) and p != LIST_README))
     problems: list[str] = []
     base_list_files = {i["file"] for i in base_lists.values()}
     for p in list_changes:
         if p in base_list_files:
             problems.append(f"{p}: merged deletion lists are immutable (status {changed[p]})")
+        elif p == LIST_README:
+            continue
         elif not LIST_RE.match(p):
             problems.append(f"{p}: only docs/governance/deletions/DEL-NNN.list files belong here")
     new_ids = {LIST_RE.match(p).group(1) for p in list_changes
@@ -196,7 +200,7 @@ def find_violations(base: str, head: str, cwd: str | None = None) -> dict:
     unauthorized = [p for p in deleted if p not in allowed]
     return {"deleted": deleted, "renamed": renamed, "counts": counts,
             "authorized": authorized, "unauthorized": unauthorized,
-            "problems": problems, "merge_base": merge_base,
+            "problems": problems, "merge_base": merge_base, "new_lists": sorted(new_ids),
             "lists": {k: len(v["paths"]) for k, v in base_lists.items() if not v["problems"]},
             "invalid_lists": {k: v["problems"] for k, v in base_lists.items() if v["problems"]}}
 
@@ -215,6 +219,9 @@ def main(argv: list[str]) -> int:
           f"{res['counts'] or 'empty diff'}")
     print(f"deletion lists merged at merge-base {res['merge_base'][:12]}: "
           f"{res['lists'] or 'none'}")
+    if res["new_lists"]:
+        print(f"new deletion lists in this PR (validated, authorize nothing until merged): "
+              f"{res['new_lists']}")
     for lid, probs in sorted(res["invalid_lists"].items()):
         print(f"::warning::{LIST_DIR}{lid}.list is invalid and authorizes nothing: {'; '.join(probs)}")
     rc = 0

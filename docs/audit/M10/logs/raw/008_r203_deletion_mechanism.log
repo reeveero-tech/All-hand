@@ -33,7 +33,7 @@ FAILED tests/test_r203_deletion_lists.py::test_green_main_moved_on_after_the_bra
 
 ## 3. Green — new gate
 $ pytest tests/test_r203_deletion_lists.py tests/test_r152_no_delete_gate.py -q
-============================= 37 passed in 17.66s ==============================
+============================= 38 passed in 17.21s ==============================
 $ ruff check --select F,E722 scripts/check_no_delete.py tests/test_r203_deletion_lists.py
 All checks passed!
 
@@ -47,3 +47,11 @@ All checks passed!
 
 ## 5. Not in this batch
 - no file deleted; no runtime code changed; batch 2 deletes DEL-001 after this PR is merged
+
+## 6. Gate on this PR's own diff (DEL-001 is new here, so it is validated but authorizes nothing)
+$ python scripts/check_no_delete.py origin/main HEAD
+deletion lists merged at merge-base 0b1b1875dee2: none
+new deletion lists in this PR (validated, authorize nothing until merged): ['DEL-001']
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+(first run failed: README.md in the deletions directory was rejected -> README.md is now the one allowed
+ non-list file there; test_green_readme_in_the_deletions_directory_is_allowed added)

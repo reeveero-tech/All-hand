@@ -198,6 +198,13 @@ def test_red_rename_of_unlisted_file_rejected(repo):
 
 # ---- green: what must pass ---------------------------------------------------
 
+def test_green_readme_in_the_deletions_directory_is_allowed(repo):
+    _branch(repo)
+    _w(repo, "docs/governance/deletions/README.md", "# lists\n")
+    _commit(repo)
+    res = _run(repo)
+    assert res.returncode == 0, res.stdout
+
 def test_green_valid_new_list_without_deletions_passes(repo):
     _branch(repo)
     _w(repo, "docs/governance/deletions/DEL-001.list", LIST_OK)
