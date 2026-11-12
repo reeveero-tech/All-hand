@@ -35,9 +35,13 @@ export default function Dashboard({ status, liveEvent }) {
     <div>
       <div className="dashboard-grid">
         <div className="stat-card">
-          <div className="stat-label">الوكلاء النشطون</div>
-          <div className="stat-value accent">{status.total_agents}</div>
-          <div className="stat-sub">{status.specializations} تخصص · {status.external_agents} خارجي</div>
+          {/* R-201: the real unit is the handler (one per specialization);
+              the rest of total_agents are identical generated copies. */}
+          <div className="stat-label">المعالجات الحقيقية</div>
+          <div className="stat-value accent">{status.specializations}</div>
+          <div className="stat-sub">
+            معالج واحد لكل تخصص · {Math.max(0, (status.total_agents || 0) - (status.external_agents || 0))} نسخة مسجلة · {status.external_agents} خارجي
+          </div>
         </div>
 
         <div className="stat-card">

@@ -1,8 +1,11 @@
 # AGOS Agent Civilization
 
-AGOS is a real-first AI-agent civilization: the user submits a goal, the
-civilization plans the stages, assigns specialist roles, executes real tools,
-and returns a combined result.
+AGOS is an AI-agent platform **being rebuilt** (program M10 — AGOS v2). Today
+it is a FastAPI server with 20 real specialist handlers that run real tools,
+and a monitoring web UI. The goal — a platform that plans, coordinates many
+agents and checks its own work — is **not reached yet**; see the honest
+summary below (R-200 truth inventory:
+[`docs/audit/M10/inventory/REPORT_AR.md`](docs/audit/M10/inventory/REPORT_AR.md)).
 
 > **Start here (2026-11-11, owner decision D-150):** read
 > [`docs/governance/MEMORY.md`](docs/governance/MEMORY.md) (project memory, in
@@ -50,12 +53,21 @@ SUPABASE_SERVICE_KEY=... # server-side secret/service_role key (RLS on, no anon 
 
 ## API flow
 
-- `POST /civilization/plan` receives `{ "message": "..." }` and returns the
-auto-generated multi-stage plan.
-- `POST /civilization/execute` receives the same message and executes all stages.
-- `GET /civilization/registry` returns the open-source agent registry and total
-addressable civilization scale.
-- Legacy `/api/tasks` remains available for direct specialization calls.
+What the web UI uses (R-200 route inventory):
+
+- `POST /api/chat` — the message is routed by keywords to **one** handler.
+- `POST /api/tasks` / `GET /api/tasks` — send a task to one specialization and
+  follow it.
+- `GET /api/system/status`, `/api/agents`, `/api/specializations`,
+  `/api/events` — monitoring. `total_agents` counts the 20 handlers' identical
+  copies (plus external agents); the real unit is the handler.
+
+API only (not used by the web UI):
+
+- `POST /civilization/plan` and `POST /civilization/execute` — a multi-stage
+  planner/executor with approvals.
+- `GET /civilization/registry` — the open-source registry: **metadata only**
+  (names and URLs); none of these entries is executed.
 
 ## Deployment
 
