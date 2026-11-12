@@ -1,0 +1,50 @@
+# M10/005 — R-201 acceptance (live verification after merge)
+date_utc=2026-11-12T04:30:26Z
+pr=#357
+tested_sha=9151eae67bfb0495f1de8b86019310113c3d2537
+merge_sha=81dbd7f2db5aa15a269400c04799de7fb09b272f
+merge_parents: c39b6d8602f926f31a8dc4ccf164219a856579eb 9151eae67bfb0495f1de8b86019310113c3d2537
+merge_subject: Merge pull request #357 from reeveero-tech/m10/r201-remove-illusion
+ci_run=43150922872 (AGOS Kernel CI/CD, push on main) conclusion=success
+governance_run=43150922874 conclusion=success
+jobs: test=success quality=success network=success build=success docker=success storage=success audit=success publish=skipped
+
+## main test job (130959596707) pytest summary, 3 legs:
+==== 4411 passed, 9 skipped, 18 deselected, 9 xfailed in 749.78s (0:12:29) =====
+==== 4411 passed, 9 skipped, 18 deselected, 9 xfailed in 713.66s (0:11:53) =====
+==== 4411 passed, 9 skipped, 18 deselected, 9 xfailed in 712.13s (0:11:52) =====
+## network job (130959666903):
+=============== 17 passed, 1 skipped, 4429 deselected in 13.56s ================
+## storage job (130972759038):
+============================== 4 passed in 1.97s ===============================
+============================== 2 passed in 0.21s ===============================
+============================== 1 passed in 0.18s ===============================
+
+## PR #357 checks before merge: quality test build docker governance audit push-scope-docs storage network = pass
+## previous main run for #356 (c39b6d86): 43145344750 conclusion=success
+
+## Render deploy
+service=srv-d983v7t7vvec738tu550 deploy=dep-dbqjfat9el5s73evvbkg commit=81dbd7f2 trigger=new_commit status=live started=2026-11-12T03:51:07Z finished=2026-11-12T03:51:46Z
+
+## Live check https://all-hand.onrender.com (no API key, GET only)
+title: AGOS — لوحة المراقبة
+bundle: /assets/index-C0KRDSz8.js
+count[الوكلاء النشطون]=0
+count[وكيل نشط]=0
+count[حضارة الوكلاء]=0
+count[تطوير الحضارة]=0
+count[لوحة التحكم]=0
+count[المعالجات الحقيقية]=1
+count[لوحة المراقبة]=1
+count[نسخة مسجلة]=2
+system_status: {'specializations': 20, 'total_agents': 1000, 'external_agents': 0}
+
+## Screenshots (sandbox browser, no key): docs/audit/M10/screens/r201/after_{dashboard,specializations,agents,chat}.png
+dashboard shows: المعالجات الحقيقية 20 / معالج واحد لكل تخصص · 1000 نسخة مسجلة · 0 خارجي
+agents shows: 20 معالجات حقيقية · 1000 نسخة مسجلة · 0 تعمل الآن ; one card per handler '50 نسخ متطابقة · خامل'
+
+## Limits / untested
+- live check is GET only without a key; POST/DELETE not exercised live.
+- header brand text 'AGOS Civilization' still shown (a product name, not a number); renaming is left to R-202/R-203 naming decision.
+- /api/system/status still public (R-204).
+result: success
