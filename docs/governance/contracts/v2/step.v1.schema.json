@@ -1,0 +1,371 @@
+{
+  "$defs": {
+    "AcceptanceCriterion": {
+      "additionalProperties": false,
+      "description": "One acceptance criterion of a task or step, checkable by ``check``.",
+      "properties": {
+        "check": {
+          "enum": [
+            "tests",
+            "sources",
+            "recompute",
+            "schema",
+            "review",
+            "human"
+          ],
+          "title": "Check",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9_.-]{1,40}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "check"
+      ],
+      "title": "AcceptanceCriterion",
+      "type": "object"
+    },
+    "ErrorInfo": {
+      "additionalProperties": false,
+      "description": "A declared failure: a stable machine code and a human message.",
+      "properties": {
+        "code": {
+          "pattern": "^[a-z][a-z0-9_.]{1,63}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        },
+        "message": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ErrorInfo",
+      "type": "object"
+    },
+    "Verification": {
+      "additionalProperties": false,
+      "description": "Result of the independent check of a step's output.",
+      "properties": {
+        "checked_at": {
+          "format": "date-time",
+          "title": "Checked At",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "method": {
+          "enum": [
+            "tests",
+            "sources",
+            "recompute",
+            "schema",
+            "review",
+            "human"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "maxLength": 4000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "passed",
+        "method",
+        "checked_at"
+      ],
+      "title": "Verification",
+      "type": "object"
+    }
+  },
+  "$id": "agos://contracts/v2/step/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One node of a task's plan graph — one row of agos.steps.",
+  "properties": {
+    "acceptance": {
+      "items": {
+        "$ref": "#/$defs/AcceptanceCriterion"
+      },
+      "title": "Acceptance",
+      "type": "array"
+    },
+    "agent_spec_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Agent Spec Id"
+    },
+    "attempt": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Attempt",
+      "type": "integer"
+    },
+    "cost_usd": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Cost Usd",
+      "type": "number"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "depends_on": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "title": "Depends On",
+      "type": "array"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ErrorInfo"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    },
+    "input": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Input"
+    },
+    "kind": {
+      "enum": [
+        "plan",
+        "act",
+        "verify",
+        "fix",
+        "review",
+        "approval",
+        "final"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "max_attempts": {
+      "default": 3,
+      "maximum": 10,
+      "minimum": 1,
+      "title": "Max Attempts",
+      "type": "integer"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "output": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output"
+    },
+    "parent_step_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Step Id"
+    },
+    "seq": {
+      "minimum": 0,
+      "title": "Seq",
+      "type": "integer"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "status": {
+      "default": "pending",
+      "enum": [
+        "pending",
+        "ready",
+        "running",
+        "waiting_approval",
+        "succeeded",
+        "failed",
+        "skipped",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "task_id": {
+      "format": "uuid",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "tokens_in": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Tokens In",
+      "type": "integer"
+    },
+    "tokens_out": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Tokens Out",
+      "type": "integer"
+    },
+    "verification": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Verification"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "workspace_id": {
+      "format": "uuid",
+      "title": "Workspace Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "workspace_id",
+    "task_id",
+    "seq",
+    "kind",
+    "title",
+    "created_at"
+  ],
+  "title": "Step",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-rules": [
+    "id not in depends_on",
+    "attempt <= max_attempts",
+    "status 'succeeded' requires verification.passed = true",
+    "status 'failed' requires error {code, message}",
+    "finished_at is set exactly when status is succeeded, failed, skipped or cancelled"
+  ]
+}

@@ -344,9 +344,12 @@ jobs:
     # see docs/governance/DECISIONS.md D-038.
     runs-on: ubuntu-26.04
     needs: [quality, test]
+    # R-202 (D-151): the official pgvector image = PostgreSQL 17 + the `vector`
+    # extension that the v2 schema (docs/sql/v2/001_core.sql) needs. The v1
+    # stack below runs on it unchanged.
     services:
       postgres:
-        image: postgres:17
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: agos
@@ -394,6 +397,20 @@ jobs:
           set -o pipefail
           bash scripts/r042/run_local_stack.sh 2>&1 | tee "$GITHUB_WORKSPACE/r042_storage.log"
 
+      - name: R-202 v2 schema on a test database (apply + contracts + RLS)
+        env:
+          # superuser on the same service; the test creates and drops its own
+          # database (agos_v2_r202_test) — v1 tables are not touched.
+          V2_SCHEMA_ADMIN_URI: postgresql://postgres:postgres@localhost:5432/postgres
+        run: |
+          set -o pipefail
+          python -m pytest tests/test_r202_v2_schema.py -v -p no:cacheprovider 2>&1 | tee "$GITHUB_WORKSPACE/r202_v2_schema.log"
+          grep -q " passed" "$GITHUB_WORKSPACE/r202_v2_schema.log"
+          # the live tests must RUN here, not skip
+          if grep -qE "[0-9]+ skipped" "$GITHUB_WORKSPACE/r202_v2_schema.log"; then
+            echo "::error::R-202 live schema tests were skipped"; exit 1
+          fi
+
       - name: Upload storage verification log
         if: always()
         uses: actions/upload-artifact@v7
@@ -402,6 +419,7 @@ jobs:
           path: |
             r042_storage.log
             r161_storage_local.json
+            r202_v2_schema.log
 
   network:
     # R-072 (RISK-019): the internet-facing agents (researcher / api_integrator /

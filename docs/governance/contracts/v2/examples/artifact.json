@@ -1,0 +1,14 @@
+{
+  "id": "66666666-6666-4666-8666-666666666666",
+  "workspace_id": "11111111-1111-4111-8111-111111111111",
+  "task_id": "44444444-4444-4444-8444-444444444444",
+  "step_id": "55555555-5555-4555-8555-555555555552",
+  "kind": "text",
+  "name": "answer.md",
+  "mime_type": "text/markdown",
+  "inline_content": "Pgvector supports exact and approximate nearest-neighbour search (HNSW and IVFFlat). Source: https://github.com/pgvector/pgvector",
+  "storage_path": null,
+  "size_bytes": 129,
+  "sha256": "f86d7da68456336abfc52be12afcbe844db3087a9e47d9656cfd4a0b074a5713",
+  "created_at": "2026-11-12T05:00:32Z"
+}

@@ -1,0 +1,249 @@
+{
+  "$defs": {
+    "AgentLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "max_cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cost Usd"
+        },
+        "max_tokens": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Tokens"
+        },
+        "timeout_s": {
+          "default": 300,
+          "maximum": 86400,
+          "minimum": 1,
+          "title": "Timeout S",
+          "type": "integer"
+        }
+      },
+      "title": "AgentLimits",
+      "type": "object"
+    },
+    "LoopPolicy": {
+      "additionalProperties": false,
+      "description": "plan -> act -> observe -> verify -> fix, bounded.",
+      "properties": {
+        "max_fix_attempts": {
+          "default": 2,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Max Fix Attempts",
+          "type": "integer"
+        },
+        "max_iterations": {
+          "default": 8,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Max Iterations",
+          "type": "integer"
+        }
+      },
+      "title": "LoopPolicy",
+      "type": "object"
+    },
+    "MemoryPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "knowledge": {
+          "default": false,
+          "title": "Knowledge",
+          "type": "boolean"
+        },
+        "task": {
+          "default": true,
+          "title": "Task",
+          "type": "boolean"
+        },
+        "user": {
+          "default": false,
+          "title": "User",
+          "type": "boolean"
+        }
+      },
+      "title": "MemoryPolicy",
+      "type": "object"
+    },
+    "ModelPolicy": {
+      "additionalProperties": false,
+      "description": "Which models the agent may run on (resolved by the model gateway, R-206).",
+      "properties": {
+        "min_context_tokens": {
+          "default": 8000,
+          "minimum": 1000,
+          "title": "Min Context Tokens",
+          "type": "integer"
+        },
+        "needs_tool_calls": {
+          "default": true,
+          "title": "Needs Tool Calls",
+          "type": "boolean"
+        },
+        "preferred": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Preferred",
+          "type": "array"
+        },
+        "temperature": {
+          "default": 0.2,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Temperature",
+          "type": "number"
+        }
+      },
+      "required": [
+        "preferred"
+      ],
+      "title": "ModelPolicy",
+      "type": "object"
+    },
+    "Permissions": {
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "default": false,
+          "title": "Network",
+          "type": "boolean"
+        },
+        "requires_approval_for": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Requires Approval For",
+          "type": "array"
+        }
+      },
+      "title": "Permissions",
+      "type": "object"
+    }
+  },
+  "$id": "agos://contracts/v2/agent_spec/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "What an agent IS (the 7 parts of ROADMAP_V2_AR §3) — the body of\nagos.agent_specs.spec. Weights are never stored: the 'brain' is a model\npolicy resolved through the model gateway.",
+  "properties": {
+    "description": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "eval_set": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9_./-]{1,200}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Eval Set"
+    },
+    "instructions": {
+      "maxLength": 50000,
+      "minLength": 1,
+      "title": "Instructions",
+      "type": "string"
+    },
+    "limits": {
+      "$ref": "#/$defs/AgentLimits"
+    },
+    "loop": {
+      "$ref": "#/$defs/LoopPolicy"
+    },
+    "memory": {
+      "$ref": "#/$defs/MemoryPolicy"
+    },
+    "model": {
+      "$ref": "#/$defs/ModelPolicy"
+    },
+    "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "output_schema": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Schema"
+    },
+    "permissions": {
+      "$ref": "#/$defs/Permissions"
+    },
+    "role": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Role",
+      "type": "string"
+    },
+    "slug": {
+      "pattern": "^[a-z][a-z0-9_]{1,62}$",
+      "title": "Slug",
+      "type": "string"
+    },
+    "tools": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Tools",
+      "type": "array"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "slug",
+    "version",
+    "name",
+    "description",
+    "role",
+    "instructions",
+    "model"
+  ],
+  "title": "AgentSpec",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-rules": [
+    "slug and version equal the agos.agent_specs columns"
+  ]
+}

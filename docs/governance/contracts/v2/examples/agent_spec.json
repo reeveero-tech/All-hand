@@ -1,0 +1,40 @@
+{
+  "slug": "researcher",
+  "version": 1,
+  "name": "Researcher",
+  "description": "Finds sources on the web and writes a cited summary.",
+  "role": "Research a question and answer only with claims backed by fetched sources.",
+  "instructions": "1. Plan the searches. 2. Fetch each source. 3. Write the answer; every claim cites a fetched URL. 4. If a claim has no source, drop it or say it is unverified.",
+  "model": {
+    "preferred": [
+      "openrouter/mistralai/mistral-nemo"
+    ],
+    "min_context_tokens": 32000,
+    "needs_tool_calls": true,
+    "temperature": 0.2
+  },
+  "tools": [
+    "web.search",
+    "web.fetch"
+  ],
+  "memory": {
+    "task": true,
+    "user": false,
+    "knowledge": true
+  },
+  "loop": {
+    "max_iterations": 8,
+    "max_fix_attempts": 2
+  },
+  "permissions": {
+    "network": true,
+    "requires_approval_for": []
+  },
+  "limits": {
+    "max_cost_usd": 0.5,
+    "max_tokens": 200000,
+    "timeout_s": 600
+  },
+  "output_schema": null,
+  "eval_set": "evals/researcher/v1"
+}

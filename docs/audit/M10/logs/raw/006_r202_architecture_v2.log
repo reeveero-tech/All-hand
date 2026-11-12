@@ -1,0 +1,76 @@
+# M10/006 — R-202 architecture v2 decision, stack, data model v2, contracts
+# date: 2026-11-12; base origin/main=3a4bfcc0950e36c471c302660e220425c01f3013 (PR #358 merge)
+# decision: D-151; ADR docs/governance/ARCHITECTURE_V2.md; data model docs/governance/DATA_MODEL_V2.md
+
+## 1. Environment (local test database only — nothing applied to hosted Supabase)
+PostgreSQL 18.6 (Ubuntu 18.6-0ubuntu0.26.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, 64-bit
+pgvector 0.8.1
+python 3.12.15; pydantic 2.14.1
+auth stub (test only): scripts/v2/supabase_auth_stub.sql (roles anon/authenticated/service_role, auth.uid() from request.jwt.claims)
+
+## 2. Red — live test before the NULL fix in the "failed needs error" CHECK
+(CHECK was: status <> 'failed' or (error ? 'code' and ...); with error NULL the expression is NULL and Postgres accepts the row)
+___ test_live_database_rejects_the_same_invalid_cases[failed without error1] ___
+E   AssertionError: database accepted: failed without error
+FAILED tests/test_r202_v2_schema.py::test_live_database_rejects_the_same_invalid_cases[failed without error0]
+FAILED tests/test_r202_v2_schema.py::test_live_database_rejects_the_same_invalid_cases[failed without error1]
+========================= 2 failed, 46 passed in 3.27s =========================
+
+## 3. Green — after the fix (error is not null and error ? 'code' ...)
+$ V2_SCHEMA_ADMIN_URI=postgresql://postgres:***@localhost:5432/postgres pytest tests/test_r202_v2_schema.py -q
+============================== 48 passed in 3.27s ==============================
+(repeated 4 times locally: 48 passed each)
+$ pytest tests/test_r202_v2_schema.py -q -rs   # no database
+======================== 23 passed, 25 skipped in 0.45s ========================
+$ python scripts/export_v2_contract_schemas.py --check
+v2 contracts: 5 checked, 0 problem(s)
+$ pytest tests/test_r153_atomic_batch_v2.py -q
+============================== 58 passed in 1.51s ==============================
+
+## 4. What the live test proves
+- the SQL applies on a fresh database (agos_v2_r202_test, created and dropped)
+- the 16 invalid cases rejected by the contracts are rejected by the database too
+- SQL columns == contract fields (tasks, steps, artifacts, messages); agent_specs.spec holds AgentSpec
+- the example scenario (contracts/v2/examples) inserts via jsonb_populate_record and reads back into the contracts
+- RLS: a member sees only their workspace; anon has no access; task_events is append-only;
+  completing a task by UPDATE without verified_at is rejected
+
+## 5. CI
+storage job image postgres:17 -> pgvector/pgvector:pg17; new step "R-202 v2 schema on a test database"
+(V2_SCHEMA_ADMIN_URI to the service container, fails if any test is skipped, log r202_v2_schema.log uploaded)
+
+## 6. Files
+   M .github/workflows/ci.yml
+   M docs/governance/API.md
+   M docs/governance/ARCHITECTURE.md
+   M docs/governance/CHANGELOG.md
+   M docs/governance/DATA_MODEL.md
+   M docs/governance/DECISIONS.md
+   M docs/governance/MEMORY.md
+   M docs/governance/PROJECT_STATE.md
+   M docs/governance/QUALITY.md
+   M docs/governance/ROADMAP.md
+   M scripts/check_atomic_batch.py
+   M tests/test_r153_atomic_batch_v2.py
+  ?? agos_v2/
+  ?? docs/audit/M10/logs/raw/006_r202_architecture_v2.log
+  ?? docs/governance/ARCHITECTURE_V2.md
+  ?? docs/governance/DATA_MODEL_V2.md
+  ?? docs/governance/contracts/v2/
+  ?? docs/sql/v2/
+  ?? scripts/export_v2_contract_schemas.py
+  ?? scripts/v2/
+  ?? tests/test_r202_v2_schema.py
+  docs/audit/M10/logs/raw/006_r202_architecture_v2.log
+
+## 7. Not done / limits
+- not applied to hosted Supabase (R-204, needs owner secret SUPABASE_DB_URL)
+- no /api/v2 routes, no runtime change, no deploy change, no secrets, no cost
+- product header rename "AGOS Civilization" -> "AGOS" executes in R-203
+
+## 8. Full suite (local, not network)
+first run stopped at tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned
+(agos_v2/*.py had no group) -> scripts/build_test_baseline.py py-runtime rules now include ^agos_v2/.*\.py$
+re-run: 9 failed, 4428 passed, 34 skipped, 18 deselected, 9 xfailed
+the 9 failures are tests/test_r177_per_service.py + r176 (k6 binary not installed in this sandbox:
+"downloading the pinned k6 failed"); unrelated to R-202; CI installs k6 before the suite.
