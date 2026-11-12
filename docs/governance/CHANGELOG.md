@@ -3332,6 +3332,7 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - **المخطط**: `docs/sql/v2/001_core.sql` — مخطط `agos`، 10 جداول، مفاتيح مركبة تمنع خلط المساحات، RLS على كل الجداول، سجل أحداث إضافة فقط، وقيود الحالات النهائية؛ الشرح في [`DATA_MODEL_V2.md`](DATA_MODEL_V2.md).
 - **العقود**: `agos_v2/contracts.py` → `docs/governance/contracts/v2/*.v1.schema.json` (توليد وفحص `scripts/export_v2_contract_schemas.py --check`) + أمثلة سيناريو مترابط.
 - **الاختبار**: `tests/test_r202_v2_schema.py` — 23 دائمًا + 25 حيًا (`V2_SCHEMA_ADMIN_URI`). محليًا 48 passed؛ الأحمر: 2 failed (قيد failed بلا خطأ كان يمر لأن NULL).
+- **خط الأساس**: `scripts/build_test_baseline.py` يضم `agos_v2/*.py` إلى مجموعة py-runtime (اختبار R-158 يطلب تصنيف كل ملف).
 - **CI**: job ‏storage على `pgvector/pgvector:pg17` + خطوة R-202 تفشل عند أي تخطٍّ؛ `check_atomic_batch.py` يعامل `agos_v2/` ككود تشغيلي.
 - **ما لم يتغير**: لا مسار ولا نشر ولا تطبيق على Supabase ولا أسرار ولا تكلفة. R-202 `awaiting_merge`.
 

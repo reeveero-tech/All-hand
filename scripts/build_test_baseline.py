@@ -66,7 +66,7 @@ GROUPS: List[Dict] = [
      "rationale": "Generated thin shims + 20 templates: compile + import every module (each is importable by name) "
                   "and exercise through the suite in specialists mode; per-file unit tests would test the generator twice."},
     {"id": "py-runtime", "title": "Python runtime packages + server", "category": "compile/import/lint/unit/integration",
-     "rules": [r"^agent_civilization/.*\.py$", r"^agos_kernel/.*\.py$", r"^server\.py$", r"^run\.py$"],
+     "rules": [r"^agent_civilization/.*\.py$", r"^agos_kernel/.*\.py$", r"^agos_v2/.*\.py$", r"^server\.py$", r"^run\.py$"],
      "rationale": "Live code: compile, import each module, ruff with CI's fatal rule set, and line coverage from the "
                   "suite (which file the tests actually execute)."},
     {"id": "sql-storage", "title": "SQL schema + live storage stack", "category": "schema/integration/live",

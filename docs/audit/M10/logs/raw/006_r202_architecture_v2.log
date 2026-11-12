@@ -67,3 +67,10 @@ storage job image postgres:17 -> pgvector/pgvector:pg17; new step "R-202 v2 sche
 - not applied to hosted Supabase (R-204, needs owner secret SUPABASE_DB_URL)
 - no /api/v2 routes, no runtime change, no deploy change, no secrets, no cost
 - product header rename "AGOS Civilization" -> "AGOS" executes in R-203
+
+## 8. Full suite (local, not network)
+first run stopped at tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned
+(agos_v2/*.py had no group) -> scripts/build_test_baseline.py py-runtime rules now include ^agos_v2/.*\.py$
+re-run: 9 failed, 4428 passed, 34 skipped, 18 deselected, 9 xfailed
+the 9 failures are tests/test_r177_per_service.py + r176 (k6 binary not installed in this sandbox:
+"downloading the pinned k6 failed"); unrelated to R-202; CI installs k6 before the suite.
