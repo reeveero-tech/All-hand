@@ -61,8 +61,6 @@ curl https://YOUR-APP.onrender.com/health
 | `AGOS_RATE_LIMIT_REQUESTS` / `AGOS_RATE_LIMIT_WINDOW` | تحديد معدل الطلبات | `100` / `60` |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | تخزين دائم (فارغ = ذاكرة مؤقتة، حالة `degraded`) | — |
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | بدائل خلفية يقرأها `supabase_store.py` (الواجهة لا تقرأها) | — |
-| `REDIS_URL` | طابور Redis (فارغ = بديل داخلي) | `redis://localhost:6379` |
-| `CIRCUIT_BREAKER_*` | ضبط القاطع (4 متغيرات) | `5/3/60/3` |
 | `EXTERNAL_AGENTS` | JSON لوكلاء خارجيين عند الإقلاع | — |
 
 `PYTHON_VERSION` في `render.yaml` يستهلكه Render (المنصة) لا كود التطبيق.

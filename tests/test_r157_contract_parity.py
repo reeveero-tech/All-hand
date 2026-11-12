@@ -435,15 +435,11 @@ def test_c5_selection_policies_are_pinned_as_they_are(monkeypatch):
         server._pick_agent("nope")
 
 
-# ============================================================ C6 frontends (Q-002 open)
-def test_c6_src_client_paths_exist_on_the_server_under_api_prefix():
-    """src/lib/api.ts builds paths relative to a user-set base. Every path it
-    calls exists on the server under /api (path compatibility only — auth and
-    payload drift are recorded as gap G-157-4; Q-002 is NOT decided here)."""
-    text = (ROOT / "src/lib/api.ts").read_text(encoding="utf-8")
-    calls = set(re.findall(r'request<[^>]*>\(\s*[`"](/[a-z/_]+)', text, re.S))
-    assert calls >= {"/system/status", "/agents", "/specializations", "/tasks", "/chat"}
-    routes = {r.path for r in server.app.routes if hasattr(r, "path")}
-    for p in {c.rstrip("/") for c in calls}:
-        assert "/api" + p in routes or ("/api" + p + "/{task_id}") in routes, p
-    assert (ROOT / "web/src/api.js").exists() and (ROOT / "src/router.tsx").exists()
+# ============================================================ C6 frontends
+def test_c6_root_src_client_removed_web_is_the_only_frontend():
+    """C6 compared src/lib/api.ts paths with the server (Q-002). R-203 (D-152,
+    DEL-001) removed the undeployed root src/ app; web/src/api.js is the only
+    client, and its calls are matched against the routes by
+    tests/test_r200_truth_inventory.py::test_route_parser_on_the_real_repo."""
+    assert not (ROOT / "src").exists()
+    assert (ROOT / "web/src/api.js").exists()

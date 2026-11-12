@@ -124,9 +124,9 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_TASK_DISPATCH_IDLE_S` (R-163) | server.py | 0.2 ث انتظار دورة الإرسال عند الخمول (≥0.05) |
 | `AGOS_WORKER_CAPACITY` (R-162، D-081) | server.py + core/agent_registry.py | 1024 مهمة جارية في وقت واحد لعامل العملية (1..100000؛ قيمة غير صالحة توقف الإقلاع). عند بلوغها تنتهي المهمة الجديدة `failed` بسبب `worker capacity saturated: …` فوراً، بلا انتظار. التراجع: إزالة المتغير |
 | `EXTERNAL_AGENTS` | agents/external_adapter.py | `""` — بلا وكيل خارجي (لا هنا ولا عبر `POST /api/agents/external`) ترد مهام `external` بـ409 فوراً (R-140، BUG-01) |
-| `REDIS_URL` | agos_kernel/infrastructure/redis_queue.py | `redis://localhost:6379` |
 | `METRICS_NAMESPACE` | agos_kernel/infrastructure/metrics.py | `agos` |
-| `CIRCUIT_BREAKER_*` (4 متغيرات) | agos_kernel/infrastructure | 5/3/60/3 |
+
+> R-203 (D-152، DEL-001): `REDIS_URL` و`CIRCUIT_BREAKER_*` أُزيلت مع `redis_queue.py` و`circuit_breaker.py`؛ لم يعد `/health` يعرض فحص `redis`.
 
 **محدث R-041**: كل متغيرات `.env.example` موثقة ومقروءة في الكود (بما فيها `CIRCUIT_BREAKER_*` و`AGENTS_PER_SPEC` و`REDIS_URL` و`METRICS_NAMESPACE` و`VITE_API_BASE`).
 
@@ -275,7 +275,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 
 ## R-160 — ما يلاحظه المشغّل (D-072، 2026-10-17)
 - `/health`: رسالة المكوّن الفاشل صارت `Error: <نوع الاستثناء>` (كانت نص الاستثناء). التشخيص التفصيلي من سجلات الخادم بنوع الخطأ و`/metrics`، لا من جسم `/health`.
-- سجلات الطابور تطبع هدف Redis بصيغة `scheme://host:port` فقط (كان العنوان كاملاً، وقد يحمل كلمة مرور، عند كل `/health`).
+- (تاريخي حتى R-203) سجلات طابور Redis كانت تطبع هدفه بصيغة `scheme://host:port` فقط؛ الطابور نفسه حُذف في R-203 (D-152).
 - سجلات الاستثناءات في القوالب والوكلاء والطابور بنوع الاستثناء فقط. فحص محلي: `python3 scripts/scan_raw_exception_logs.py` (rc=1 عند موقع جديد غير مراجَع).
 - إيقاف الخادم أثناء مهام جارية: سجلاتها في الذاكرة تنتهي `failed` بسبب «task cancelled before completion»؛ صفوف التخزين المتطايرة تُكتب `failed` بانتقال مشروط قبل إغلاق التخزين، بحد `AGOS_TASK_SHUTDOWN_WRITE_FLUSH_S` (افتراضي 15 ث؛ ما يتجاوزه يُسجَّل CRITICAL بالعدد ويُفقد مع العملية — D-106). صفوف الطابور الدائم تبقى لاسترداد العقد/الحاصد. كانت تبقى `running` (G-160-2، أُغلقت بحدود معلنة).
 - فحص العقود محلياً: `python3 scripts/export_contract_schemas.py --check`؛ بعد تغيير مقصود: `python3 scripts/export_contract_schemas.py` ثم مراجعة الفرق ورفع الإصدار إن كان BREAKING.
