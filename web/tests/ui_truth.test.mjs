@@ -108,6 +108,7 @@ const teardown = async ({ root, container }) => {
 const BANNED = [
   'وكيل نشط', 'الوكلاء النشطون', 'وكلاء نشطون',
   'حضارة الوكلاء', 'وكلاء حقيقيين', 'لوحة التحكم',
+  'AGOS Civilization', // R-203: the header is just "AGOS" (no civilization claim)
 ];
 
 beforeEach(() => {});
@@ -186,6 +187,7 @@ test('R-201: static guard — no banned phrase anywhere in web/src or index.html
   assert.deepEqual(hits, []);
   const app = readFileSync(new URL('src/App.jsx', root), 'utf8');
   assert.ok(app.includes("label: 'لوحة المراقبة'"), 'dashboard tab must be "لوحة المراقبة"');
+  assert.ok(app.includes('<div className="app-title">AGOS</div>'), 'R-203: header title must be "AGOS"');
 });
 
 test('cleanup: transpiled temp files removed', () => {

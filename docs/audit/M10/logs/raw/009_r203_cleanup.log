@@ -1,0 +1,56 @@
+R-203 batch 2 — delete exactly DEL-001 (D-152) and adapt what depended on it
+branch: m10/r203-cleanup (on top of batch 1 / PR #361)
+date: 2026-11-12
+
+## 1. What was deleted
+git rm --pathspec-from-file=<DEL-001 paths>   -> 1033 files, 26,712 lines
+  1000 agent_civilization/agents/specialists/<spec>/<spec>_NNNN.py shims (classes still generated from _templates/)
+  26 root frontend files (src/**, root package.json/package-lock.json, tsconfig.json, vite.config.ts,
+     eslint.config.js, components.json, public/robots.txt, .lovable/plan.md)
+  4 root docs: CIVILIZATION_MAP.md, FINAL-ARCHITECTURE.md, IMPLEMENTATION_PLAN.md, INTEGRITY-REPORT.md
+  agos_kernel/infrastructure/redis_queue.py, agos_kernel/infrastructure/circuit_breaker.py,
+  docs/governance/contracts/queue_task.v1.schema.json
+
+## 2. Size difference (tracked files, git ls-files)
+before (batch-1 head 54897b43): 3811 files, 103,243,838 bytes
+after  (this batch):            2779 files, 102,159,771 bytes   (-1032 net: -1033 deleted, +1 new test)
+deleted content: 1,073,286 bytes; root npm tree (package-lock.json, ~414 packages) no longer installed or audited
+
+## 3. Adapted (nothing live depends on a deleted path)
+- agos_kernel/infrastructure/__init__.py: no RedisQueue/CircuitBreaker import
+- agos_kernel/infrastructure/health.py: check_redis removed -> /health checks = api, civilization, storage
+- agent_civilization/core/contracts.py: QueueTask + queue_task entry removed (export_contract_schemas --check: contracts=30 problems=0)
+- server.py docstring, supabase_store.py comment, .env.example/OPERATIONS/DEPLOY: REDIS_URL and CIRCUIT_BREAKER_* removed
+- .github/workflows/ci.yml: root-app install/lint/build steps and root npm audit steps removed (the app is gone; web/ steps unchanged)
+- scripts/build_entrypoint_map.py: queue subsystem -> core/task_queue.py, observability -> core/backpressure.py
+- web/src/App.jsx: header "AGOS Civilization" -> "AGOS" (ARCHITECTURE_V2 §6 promise)
+- tests adapted: test_specialists_package (shim files gone, module path not importable), test_r160_contracts
+  (queue tests removed), test_r160_g159_1_log_redaction (redis tests removed; /health test now breaks storage_stats),
+  test_infrastructure (breaker/redis tests removed; live breaker covered by test_r164_backpressure), test_r158_test_baseline
+  (snapshot files may leave HEAD only via a merged deletion list), test_r157_contract_parity C6, test_r200_truth_inventory
+
+## 4. Red first, then green
+tests/test_r203_cleanup.py on the batch-1 head (before deleting):
+FAILED tests/test_r203_cleanup.py::test_every_del_001_path_is_gone - Assertio...
+FAILED tests/test_r203_cleanup.py::test_no_tracked_python_imports_a_deleted_module
+FAILED tests/test_r203_cleanup.py::test_health_has_no_redis_check_and_the_app_serves
+FAILED tests/test_r203_cleanup.py::test_no_root_frontend_left_and_ci_does_not_build_it
+========================= 4 failed, 1 passed in 2.45s ==========================
+same file after deleting: 5 passed
+web: tests/ui_truth.test.mjs with the "AGOS" assertion before the header change: pass 45, fail 1; after: pass 46, fail 0
+no-delete gate: the deletions pass only because DEL-001 is merged in main (batch 1); see section 6
+
+## 5. Full local suite (sandbox, no k6 binary)
+$ python -m pytest -q -m "not network" -p no:cacheprovider
+= 8 failed, 4438 passed, 34 skipped, 18 deselected, 9 xfailed in 692.54s (0:11:32) =
+The 8 failures are the k6-download tests (r176/r177) — no k6 in the sandbox, CI installs it. Same 8 before this batch.
+CI on the PR head is the authoritative run.
+
+## 6. Gates on this branch after merging main (DEL-001 merged at f0dc0fd6, PR #361)
+$ python scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 30, 'D': 1033, 'A': 2}
+deletion lists merged at merge-base f0dc0fd6f62c: {'DEL-001': 1033}
+authorized deletions (D-152 mechanism): 1033 by list {'DEL-001': 1033}
+No-delete gate passed: 1033 deletion(s), all in merged deletion lists.
+check_atomic_batch / check_status_evidence / check_push_docs / check_conflict_markers: rc=0
+after merge: API.md + DATA_MODEL.md updated (atomic-batch R2/R3 asked for them: /health and the queue contract changed)

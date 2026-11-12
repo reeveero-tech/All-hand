@@ -454,29 +454,6 @@ class LLMResult(_Strict):
         return self
 
 
-# -------------------------------------------------------------------- queue
-
-class QueueTask(_Strict):
-    """``agos_kernel.infrastructure.redis_queue.Task.to_dict()`` — the payload
-    stored in Redis (results hash) and rebuilt by ``Task.from_dict``. Note its
-    own status vocabulary (pending/queued/running/completed/failed/cancelled) differs
-    from the API task status; the queue is not on the HTTP task path (R-156
-    map — the server runs tasks with asyncio, R-163 owns a durable queue)."""
-    id: str
-    specialization: str
-    prompt: str
-    status: Literal["pending", "queued", "running", "completed", "failed", "cancelled"]
-    data: Optional[Dict[str, Any]] = None
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    created_at: Optional[str] = None
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
-    priority: int = 0
-    attempts: int = Field(0, ge=0)
-    max_attempts: int = Field(3, ge=1)
-
-
 # ----------------------------------------------------------- storage writes
 
 # R-188: the durable queue (now the default) writes INTERNAL queue states
@@ -549,7 +526,6 @@ CONTRACTS: Dict[str, tuple] = {
     "not_ready":            (1, NotReady, "response", "GET /health/ready 503 -> probe"),
     "memory_list":          (1, MemoryList, "response", "GET /api/memory -> client"),
     "llm_result":           (1, LLMResult, "internal", "LLMClient.complete -> handlers"),
-    "queue_task":           (1, QueueTask, "storage", "RedisQueue -> Redis -> RedisQueue"),
     "storage_task_insert":  (2, TaskInsert, "storage", "SupabaseStorage.insert_task -> PostgREST"),
     "storage_task_update":  (2, TaskUpdate, "storage", "SupabaseStorage.update_task -> PostgREST"),
     "storage_event_insert": (1, EventInsert, "storage", "SupabaseStorage.insert_event -> PostgREST"),

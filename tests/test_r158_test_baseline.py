@@ -161,7 +161,13 @@ def test_baseline_is_for_the_base_sha_and_covers_every_file_exactly_once(baselin
     paths = [f["path"] for f in baseline["files"]]
     assert paths == sorted(set(paths)) and baseline["tracked_files"] == len(paths)
     head = {p for p in _git("ls-files", "-z").split("\0") if p}
-    assert set(paths) <= head
+    # R-203 (D-152): a tracked file may now leave HEAD only through a merged
+    # deletion list (docs/governance/deletions/DEL-NNN.list, R-152 gate).
+    listed = set()
+    for lst in sorted((ROOT / "docs/governance/deletions").glob("DEL-*.list")):
+        listed |= {ln.strip() for ln in lst.read_text(encoding="utf-8").splitlines()
+                   if ln.strip() and not ln.lstrip().startswith("#")}
+    assert set(paths) - listed <= head
     if _has_commit(BASE_SHA):
         at_sha = sorted(p for p in _git("ls-tree", "-r", "-z", "--name-only", BASE_SHA).split("\0") if p)
         assert paths == at_sha

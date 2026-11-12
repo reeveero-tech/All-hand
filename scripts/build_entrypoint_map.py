@@ -60,9 +60,9 @@ SUBSYSTEMS = {
     "memory-and-learning": ["agent_civilization/core/experience.py", "agos_kernel/agent_production/memory_system.py",
                             "agos_kernel/agent_production/learning_runtime.py",
                             "agos_kernel/agent_production/memory_store.py"],
-    "queue": ["agos_kernel/infrastructure/redis_queue.py"],
+    "queue": ["agent_civilization/core/task_queue.py"],  # R-203: redis_queue.py removed (DEL-001)
     "observability": ["agos_kernel/infrastructure/metrics.py", "agos_kernel/infrastructure/health.py",
-                      "agos_kernel/infrastructure/circuit_breaker.py", "agent_civilization/core/sse.py"],
+                      "agent_civilization/core/backpressure.py", "agent_civilization/core/sse.py"],
     "frontend-web": ["web/index.html", "web/src/main.jsx", "web/src/api.js"],
     "frontend-root": ["src/router.tsx", "src/start.ts", "src/server.ts", "src/lib/api.ts"],
 }
@@ -542,13 +542,14 @@ def build_map(repo: str, sha: str) -> Tuple[Dict, List[str]]:
         },
         "frontend": {
             "web": "served by server.py from web/dist when it exists (conditional SPA route + /assets mount)",
-            "root_src": "built in CI only; external deployment UNRESOLVED — Q-002 (17 inventory rows stay unresolved)",
+            "root_src": ("built in CI only; external deployment UNRESOLVED — Q-002" if "src/router.tsx" in snap.tracked
+                         else "removed in R-203 (D-152, DEL-001): never deployed, web/ is the only frontend"),
         },
         "queue": {
-            "redis_queue_importers": sorted({e["from"] for e in edges if e["to"] == "agos_kernel/infrastructure/redis_queue.py"}),
-            "in_server_static_closure": "agos_kernel/infrastructure/redis_queue.py" in static_all,
-            "in_server_top_level_closure": "agos_kernel/infrastructure/redis_queue.py" in static_top,
-            "note": "importing the module does not mean a Redis connection is opened — that depends on REDIS_URL at runtime",
+            "task_queue_importers": sorted({e["from"] for e in edges if e["to"] == "agent_civilization/core/task_queue.py"}),
+            "in_server_static_closure": "agent_civilization/core/task_queue.py" in static_all,
+            "in_server_top_level_closure": "agent_civilization/core/task_queue.py" in static_top,
+            "note": "R-163 durable task queue (PostgREST/memory); the in-memory Redis queue was removed in R-203",
         },
     }
 
@@ -646,12 +647,12 @@ def render_md(m: Dict, json_name: str, cmd: str) -> str:
           '  server --> llm["core.llm (OpenRouter / keyless public LLM)"]',
           '  server --> tools["external_adapter + safety + pools (network tools)"]',
           '  server --> mem["experience (memory) ; agos_kernel memory/learning"]',
-          '  server --> obs["metrics / health / circuit_breaker / sse"]',
+          '  server --> obs["metrics / health / backpressure / sse"]',
           '  webb["web/ vite build"] --> dist["web/dist"] -. "if WEB_DIST.exists()" .-> server',
           '  rootb["src/ TanStack build (CI only)"] -. "deployment ? Q-002" .-> unknown["unresolved"]',
-          ('  server --> queue["agos_kernel redis_queue (module-level import via agos_kernel.infrastructure)"]'
+          ('  server --> queue["core.task_queue (R-163 durable queue)"]'
            if m["runtime_paths"]["queue"]["in_server_top_level_closure"] else
-           '  server -. "lazy/conditional" .-> queue["agos_kernel redis_queue"]'),
+           '  server -. "lazy/conditional" .-> queue["core.task_queue"]'),
           '  ci["CI workflows"] --> tests["pytest tests/ + web node tests"]',
           '  ci --> gates["governance: no-delete, atomic v1/v2, status evidence"]', "```", "",
           "> المخطط ملخص بشري (`declared`) لحواف `auto:*` في JSON؛ المرجع هو JSON.", "",
@@ -690,7 +691,7 @@ def render_md(m: Dict, json_name: str, cmd: str) -> str:
     L += ["## مسارات التشغيل", "", f"- `AGOS_AGENT_IMPL` ∈ {rp['agent_impl']['values']}: **real** — {rp['agent_impl']['real']}؛ "
           f"**specialists** — {rp['agent_impl']['specialists']}.",
           f"- الواجهة: web — {rp['frontend']['web']}؛ src — {rp['frontend']['root_src']}.",
-          f"- الطابور: مستوردو `redis_queue`: {rp['queue']['redis_queue_importers']}؛ في الإغلاق الكامل={rp['queue']['in_server_static_closure']}، "
+          f"- الطابور: مستوردو `task_queue`: {rp['queue']['task_queue_importers']}؛ في الإغلاق الكامل={rp['queue']['in_server_static_closure']}، "
           f"على مستوى الوحدة={rp['queue']['in_server_top_level_closure']}.", "",
           "## متغيرات البيئة (قراءات حرفية)", "", "| المتغير | المواضع |", "|---|---|"]
     for k, v in m["env_flags"].items():

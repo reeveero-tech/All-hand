@@ -65,7 +65,7 @@ export default function App() {
         <div className="app-header-brand">
           <div className="app-logo">A</div>
           <div>
-            <div className="app-title">AGOS Civilization</div>
+            <div className="app-title">AGOS</div>
             <div className="app-subtitle">v3.0 · قيد إعادة البناء (M10)</div>
           </div>
         </div>

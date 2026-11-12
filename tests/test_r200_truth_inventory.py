@@ -81,9 +81,10 @@ def test_route_parser_on_the_real_repo():
     assert by["GET /{full_path:path}"]["used_by_web_ui"] == "no"
     assert by["POST /api/chat"]["used_by_web_ui"] == "yes"
     assert not any(r["used_by_web_ui"] == "yes" for r in rows if r["path"].startswith("/civilization"))
-    # the undeployed src/ UI calls paths without the /api prefix -> they match no route
-    orphan = routes.unmatched_calls(ROOT / "src", rows)
-    assert "/system/status" in orphan and "/chat" in orphan
+    # the undeployed src/ UI (its calls matched no route) was removed in R-203
+    # (D-152, DEL-001); the deployed web/ UI has no orphan call
+    assert not (ROOT / "src").exists()
+    assert routes.unmatched_calls(ROOT / "web" / "src", rows) == []
 
 
 def test_unprobed_routes_are_never_claimed_public():

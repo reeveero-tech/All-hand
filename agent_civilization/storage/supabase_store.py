@@ -342,8 +342,8 @@ def is_configured() -> bool:
 #   * "supabase" — PostgREST (hosted Supabase or a local PostgREST stack):
 #     the service depends on it, so readiness answers 503 unless a probe
 #     shows the store reachable AND accepting the configured credentials.
-# Redis (agos_kernel.infrastructure.redis_queue) is not on the request path
-# of server.py; it stays an informational /health check only.
+# There is no Redis: the unused in-memory "Redis" queue and its /health check
+# were removed in R-203 (D-152, DEL-001).
 #
 # The probe is a single read-only ``HEAD /rest/v1/tasks?select=task_id&limit=1``
 # (no body is read, no write of any kind), with its own short timeout, its own

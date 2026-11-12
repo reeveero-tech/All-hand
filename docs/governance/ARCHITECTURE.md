@@ -1,5 +1,6 @@
 # المعمارية (ARCHITECTURE)
 
+> **آخر تحديث**: 2026-11-12 — **R-203 الدفعة 2 (D-152، DEL-001)**: حُذفت 1033 ملفًا (1000 shim وهمي، واجهة `src/` الجذرية غير المنشورة، 4 وثائق جذرية قديمة، `redis_queue.py` و`circuit_breaker.py` ومخطط `queue_task`). `/health` لم يعد يضم فحص `redis`. الواجهة الوحيدة `web/`.
 > **آخر تحديث**: 2026-11-12 — **R-202 (D-151)**: معمارية v2 المعتمدة في [`ARCHITECTURE_V2.md`](ARCHITECTURE_V2.md). هذا الملف يصف v1 العامل حاليًا ويبقى صحيحًا له حتى سحب v1 (R-224)؛ لا تغيير في الكود الحي.
 > **آخر تحديث**: 2026-10-19 — **R-166b (D-086: إصلاحات مراجعة قبول R-166)**: بوابة اعتماد المراحل الحساسة (dag.SENSITIVE) غير قابلة للتجاوز عبر `/civilization/coordinate` (حقل `approve_stages` + `pending_approvals` في الاستجابة)، ولا نجاح خفي لإجابة `ok=False` (قائمة `failed`)، ولا إعادة تنفيذ تلقائية لأثر جانبي غير مؤكد (failover صريح فقط)، وملكية إجابة للمُعيّن وسياج المحاولة القديمة، وسقف رسائل في `delegate`/`failover`، وعدالة لكل تخصص شاملة أصحاب الحمل الصفري. **مصالحة عدّ**: `civilization_routes.py` صار **6 مسارات** /civilization/* (كانت الوثيقة تقول 4 — بقي العدد قديماً منذ R-165). قبلها > **آخر تحديث**: 2026-10-19 — **R-166 (D-085)**: وحدة تنسيق جماعي جديدة `agent_civilization/core/coordination.py` (fan-out/fan-in فوق مشاركين منطقيين: توزيع عادل، idempotency بالرسالة، كشف فقد صريح، failover، حدود تفويض) ونقطة نهاية `POST /civilization/coordinate` (الصف 27). قبلها 2026-10-18 — R-163 (طابور مهام دائم اختياري)، وقبلها R-145/SEC-06، وقبلها R-132، وقبلها R-119 (مصالحة ادعاءات قديمة مع الواقع — خلل وثائق مقابل واقع).
 >
@@ -31,11 +32,9 @@ All-hand/ (الجذر — 10 أدلة جذرية متتبعة، 1,546 ملفاً
 │   ├── storage/supabase_store.py ← طبقة Supabase REST
 │   └── civilization_routes.py   ← 6 مسارات /civilization/* (تسجيل ديناميكي)
 ├── agos_kernel/                 ← البنية التحتية المستوردة من server.py (9 ملفات)
-│   └── infrastructure/          ← circuit_breaker, metrics, health, redis_queue
+│   └── infrastructure/          ← metrics, health (R-203: حُذف circuit_breaker و redis_queue)
 ├── web/                         ← واجهة React/Vite — بناء ناجح، تُخدم عبر Docker
-├── src/                         ← واجهة الجذر (TanStack) — بناء ناجح منذ R-013 (M2/4، D-017)
 ├── scripts/                    ← سكربتات التشغيل والقياس (R-051، R-053، R-100، R-119…)
-├── public/                      ← أصول ثابتة
 ├── docs/                        ← وثائق الحوكمة + الأدلة (governance/، audit/، sql/)
 ├── .github/                     ← سير عمل CI (ci.yml، governance-gate.yml)
 ├── .lovable/                    ← دليل متتبع في المستودع (محتواه بيانات بنية مشروع أصلية؛ لم يُجرَ فحص مستهلكين له في هذه الدفعة)
@@ -65,12 +64,12 @@ All-hand/ (الجذر — 10 أدلة جذرية متتبعة، 1,546 ملفاً
 - **التخزين**: `SupabaseStorage` عبر REST على جداول `tasks`، `events`، `agent_stats`؛ العمليات تفشل بصمت عند غياب الإعداد، و`server.py` يعوض بمنطق الذاكرة لكل مسار على حدة.
 
 ### 3. `agos_kernel/` (البنية التحتية)
-- `CircuitBreaker` (dataclass يقبل `name` + `config`)، `metrics.py`، `health.py`، `redis_queue.py`. **مصالحة R-119**: الوصف القديم "عيب مُتحقق في export_prometheus/task_priority/CircuitBreaker" كان ادعاءات M0 قبل إصلاحات R-003a-d — عولجت في M1 (راجع QUALITY.md § R-068).
+- `metrics.py`، `health.py`. **R-203 (D-152، DEL-001)**: حُذف `circuit_breaker.py` و`redis_queue.py` (غير مستخدمين في مسار الطلب). كان: `CircuitBreaker` و`redis_queue.py`. **مصالحة R-119**: الوصف القديم "عيب مُتحقق في export_prometheus/task_priority/CircuitBreaker" كان ادعاءات M0 قبل إصلاحات R-003a-d — عولجت في M1 (راجع QUALITY.md § R-068).
 
 ### 4. `web/` (الواجهة)
 - Vite 8 + React 18 (JavaScript). البناء ناجح. تُخدم عبر `Dockerfile` (`COPY --from=frontend-build /app/web/dist`). **مُصالحة R-119: كانت "Vite 5" وهذا قديم — القياس الحالي vite ^8.3.4 (R-071).**
 
-### 5. `src/` + root TS (واجهة الجذر — TanStack)
+### 5. `src/` + root TS (واجهة الجذر — TanStack) — **حُذفت في R-203 (D-152، DEL-001)**؛ ما يلي تاريخي
 - **بناء ناجح** منذ R-013 (M2/4، D-017؛ 2026-10-12) — استُكملت وحدات `lovable-error-reporting` و`error-capture` و`error-page`. **مصالحة R-119: الوثيقة كانت تقول "فشل البناء" وهذا ادعاء قديم من M0**. الجزء غير المتحصل عليه: تقرير الربط الحقيقي بخدمات AGOS (Q-002 — محلولة جزئياً).
 
 ## مسارات غير مرتبطة بمسار التشغيل المُتحقق منه

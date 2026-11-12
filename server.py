@@ -2331,7 +2331,6 @@ async def health_check():
     - API availability
     - Civilization status
     - Storage status
-    - Redis status (if configured)
     """
     try:
         # Import health check components
