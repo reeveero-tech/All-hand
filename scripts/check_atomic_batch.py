@@ -19,7 +19,7 @@ Rules (every violated rule is reported, not only the first):
   R6  web/ source change                 -> a change under web/tests/ or tests/ (new)
 
 "Executable" (R1) = the v1 paths (server.py, run.py, agent_civilization/,
-agos_kernel/, src/, web/, tests/) PLUS scripts/, .github/, Docker/Render
+agos_kernel/, src/, web/, tests/) PLUS scripts/, .github/, agos_v2/ (R-202), Docker/Render
 files, dependency manifests and lockfiles, and build/test configuration.
 The v1 inline step is kept unchanged in the workflow (no interface is
 removed); this script can only add failures, never remove one.
@@ -45,13 +45,14 @@ V1_CODE_RE = re.compile(r"^(server\.py|run\.py|agent_civilization/|agos_kernel/|
 EXTRA_EXEC_RE = re.compile(
     r"^(scripts/|\.github/|Dockerfile$|\.dockerignore$|render\.yaml$|requirements[^/]*$"
     r"|package(-lock)?\.json$|pytest\.ini$|vite\.config\.ts$|tsconfig\.json$"
-    r"|eslint\.config\.js$|components\.json$|public/|\.env\.example$|docs/sql/)"
+    r"|eslint\.config\.js$|components\.json$|public/|\.env\.example$|docs/sql/"
+    r"|agos_v2/)"  # R-202 (D-151): the v2 package is executable code too
 )
 EVIDENCE_RE = re.compile(r"^docs/audit/.+")
 API_RE = re.compile(r"^server\.py|agent_civilization/civilization_routes\.py")  # v1 (unanchored 2nd alt kept)
 STORAGE_RE = re.compile(r"agent_civilization/storage/")  # v1 (unanchored, kept)
 WORKFLOW_RE = re.compile(r"^\.github/workflows/")
-RUNTIME_PY_RE = re.compile(r"^(server\.py|run\.py|(agent_civilization|agos_kernel)/.+\.py)$")
+RUNTIME_PY_RE = re.compile(r"^(server\.py|run\.py|(agent_civilization|agos_kernel|agos_v2)/.+\.py)$")
 WEB_SRC_RE = re.compile(r"^web/(?!tests/).+\.(m?js|jsx|ts|tsx|html|css)$")
 TESTS_RE = re.compile(r"^tests/.+")
 WEB_TESTS_RE = re.compile(r"^web/tests/.+")

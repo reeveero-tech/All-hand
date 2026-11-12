@@ -1,0 +1,116 @@
+{
+  "$id": "agos://contracts/v2/artifact/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A task output — one row of agos.artifacts. Exactly one of\ninline_content / storage_path.",
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    },
+    "inline_content": {
+      "anyOf": [
+        {
+          "maxLength": 1000000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Inline Content"
+    },
+    "kind": {
+      "enum": [
+        "file",
+        "text",
+        "code",
+        "data",
+        "link"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "mime_type": {
+      "pattern": "^[a-z]+/[a-z0-9.+-]+",
+      "title": "Mime Type",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Sha256",
+      "type": "string"
+    },
+    "size_bytes": {
+      "minimum": 0,
+      "title": "Size Bytes",
+      "type": "integer"
+    },
+    "step_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Step Id"
+    },
+    "storage_path": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z0-9/_.-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Storage Path"
+    },
+    "task_id": {
+      "format": "uuid",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "format": "uuid",
+      "title": "Workspace Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "workspace_id",
+    "task_id",
+    "kind",
+    "name",
+    "mime_type",
+    "size_bytes",
+    "sha256",
+    "created_at"
+  ],
+  "title": "Artifact",
+  "type": "object",
+  "x-contract-version": 1,
+  "x-rules": [
+    "exactly one of inline_content / storage_path"
+  ]
+}

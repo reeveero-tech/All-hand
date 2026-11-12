@@ -62,6 +62,8 @@ def test_missing_any_mandatory_doc_fails(drop):
     "package-lock.json", "pytest.ini", "vite.config.ts", "tsconfig.json",
     "eslint.config.js", "components.json", "public/favicon.ico", ".env.example",
     "docs/sql/002_x.sql",
+    # R-202 (D-151): the v2 package
+    "agos_v2/contracts.py", "docs/sql/v2/001_core.sql",
 ])
 def test_executable_change_requires_evidence(path):
     # only R1 is asserted; R2/R5/R6 may also fire for some paths. No helper
@@ -100,7 +102,7 @@ def test_workflow_rule():
 # ---- R5/R6 (new) --------------------------------------------------------------
 
 @pytest.mark.parametrize("path", ["server.py", "run.py", "agent_civilization/core/a.py",
-                                  "agos_kernel/metrics.py"])
+                                  "agos_kernel/metrics.py", "agos_v2/contracts.py"])
 def test_runtime_python_requires_tests(path):
     base = DOCS + [EV, "docs/governance/API.md"]
     assert "R5" in rules(base + [path])
