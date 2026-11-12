@@ -437,6 +437,15 @@ async def _run_stage(run: Run, name: str, civilization: Dict[str, list], goal: s
                 try:
                     res = await asyncio.wait_for(agent.execute(work), timeout=limit)
                 except asyncio.TimeoutError:
+                    if limit < st["timeout_s"]:
+                        # M10/003: the wait was capped by the remaining PLAN
+                        # deadline, so this timeout IS the plan deadline (it
+                        # can fire before _drive's own asyncio.wait notices).
+                        run.deadline_hit = True
+                        s.update(status=TIMED_OUT, error="plan deadline reached")
+                        if not s["output"]:
+                            s["output"] = "plan deadline reached"
+                        return
                     err, timed = f"stage timed out after {limit:.1f}s", True
                 except asyncio.CancelledError:
                     raise

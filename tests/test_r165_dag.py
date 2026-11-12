@@ -332,6 +332,39 @@ def test_plan_deadline_times_out_running_and_skips_the_rest():
     assert c["x"][0].status == "idle"
 
 
+def test_a_stage_cut_short_by_the_plan_deadline_marks_the_plan_timed_out():
+    """M10/003 race (main run 43131667029): when the stage's own wait_for was
+    capped by the remaining PLAN deadline, its TimeoutError IS the plan
+    deadline. Driving _run_stage directly makes the inner timeout win
+    deterministically (the outer asyncio.wait never runs here)."""
+    c = civ(x=answer(delay=5))
+    p = dag.normalize_plan(plan(st("a", "x", timeout_s=30)))
+    r = dag.Run(p, None, None, None)
+
+    async def go():
+        await dag._run_stage(r, "a", c, "g", [], time.monotonic() + 0.1,
+                             asyncio.Semaphore(1))
+    run(go())
+    assert r.state["a"]["status"] == "timed_out"
+    assert r.state["a"]["error"] == "plan deadline reached"
+    assert r.deadline_hit is True
+    assert dag._aggregate(r) == "timed_out"
+
+
+def test_a_stage_hitting_its_own_timeout_is_not_a_plan_deadline():
+    c = civ(x=answer(delay=5))
+    p = dag.normalize_plan(plan(st("a", "x", timeout_s=0.1)))
+    r = dag.Run(p, None, None, None)
+
+    async def go():
+        await dag._run_stage(r, "a", c, "g", [], time.monotonic() + 30,
+                             asyncio.Semaphore(1))
+    run(go())
+    assert r.state["a"]["status"] == "timed_out"
+    assert r.deadline_hit is False
+    assert dag._aggregate(r) == "failed"
+
+
 def test_budget_of_stage_runs_is_enforced_across_retries():
     c = civ(x=lambda w: _coro(fail()), y=answer())
     rep = run(dag.run_plan(plan(st("a", "x", max_attempts=5), st("b", "y", []),
