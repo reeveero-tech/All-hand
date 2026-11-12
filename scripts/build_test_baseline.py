@@ -103,7 +103,7 @@ GROUPS: List[Dict] = [
      "rationale": "Locks must be fully hash-pinned (pip --require-hashes in CI); pytest.ini must parse; "
                   ".env.example must be KEY=VALUE lines. The installed set is what this baseline ran on."},
     {"id": "governance-data", "title": "Governance templates, specs, inventories, maps", "category": "schema",
-     "rules": [r"^docs/governance/.*\.(csv|json)$"],
+     "rules": [r"^docs/governance/.*\.(csv|json)$", r"^docs/governance/deletions/DEL-\d{3}\.list$"],
      "rationale": "Parse every CSV/JSON; CSV rows must match the header width; the tool-registry seed is checked "
                   "against the required keys/types of its schema; governance gates run on the snapshot."},
     {"id": "evidence-scripts", "title": "Historical audit scripts (docs/audit/*)", "category": "compile",

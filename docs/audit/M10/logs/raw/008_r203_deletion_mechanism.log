@@ -1,0 +1,70 @@
+# M10/008 — R-203 batch 1: reviewed deletion mechanism (D-152) + list DEL-001
+# date: 2026-11-12; base origin/main=0b1b1875dee2f5623ee6c5475e69ee3575db0720 (PR #360 merge)
+
+## 1. Design
+- scripts/check_no_delete.py: deletions pass only for paths in docs/governance/deletions/DEL-NNN.list
+  present at the merge base (git show <merge-base>:...), whose D-NNN section in DECISIONS.md cites the file.
+- lists immutable once merged; a PR that deletes may not add/modify a list; new lists validated against HEAD
+  (format, decision, every path tracked); no labels / PR text / environment override.
+- no lists => zero tolerance exactly as before (R-152 tests unchanged).
+
+## 2. Red — new tests against the OLD gate (git stash of scripts/check_no_delete.py)
+FAILED tests/test_r203_deletion_lists.py::test_red_unlisted_deletion_rejected_even_with_a_merged_list
+FAILED tests/test_r203_deletion_lists.py::test_red_list_added_in_the_same_pr_authorizes_nothing
+FAILED tests/test_r203_deletion_lists.py::test_red_editing_a_merged_list_is_rejected
+FAILED tests/test_r203_deletion_lists.py::test_red_editing_a_merged_list_without_deleting_is_rejected
+FAILED tests/test_r203_deletion_lists.py::test_red_merged_list_without_a_matching_decision_authorizes_nothing[# Decisions\n\n### D-901: other\n- docs/governance/deletions/DEL-001.list\n-decision D-900 not found]
+FAILED tests/test_r203_deletion_lists.py::test_red_merged_list_without_a_matching_decision_authorizes_nothing[# Decisions\n\n### D-900: delete old stuff\n- no citation here\n\n### D-901: x\n- DEL-001.list\n-does not cite]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[old/a.py\n-missing '# decision: D-NNN' header]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[# decision: D-900\nold/\n-not an exact relative file path]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[# decision: D-900\n../x.py\n-not an exact relative file path]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[# decision: D-900\n/abs.py\n-not an exact relative file path]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[# decision: D-900\nold/*.py\n-not a tracked file]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[# decision: D-900\nold/zzz.py\n-not a tracked file]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[# decision: D-900\nold/a.py\nold/a.py\n-duplicate path]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[# decision: D-900\ndocs/governance/DECISIONS.md\n-cannot be listed]
+FAILED tests/test_r203_deletion_lists.py::test_red_malformed_new_list_cannot_land[# decision: D-900\n-lists no path]
+FAILED tests/test_r203_deletion_lists.py::test_red_new_list_whose_decision_does_not_cite_it_cannot_land
+FAILED tests/test_r203_deletion_lists.py::test_red_other_files_in_the_deletions_directory_rejected
+FAILED tests/test_r203_deletion_lists.py::test_green_listed_deletions_pass_after_the_list_is_merged
+FAILED tests/test_r203_deletion_lists.py::test_green_listed_move_passes - sub...
+FAILED tests/test_r203_deletion_lists.py::test_green_main_moved_on_after_the_branch_point
+========================= 20 failed, 4 passed in 8.40s =========================
+
+## 3. Green — new gate
+$ pytest tests/test_r203_deletion_lists.py tests/test_r152_no_delete_gate.py -q
+============================= 38 passed in 17.21s ==============================
+$ ruff check --select F,E722 scripts/check_no_delete.py tests/test_r203_deletion_lists.py
+All checks passed!
+
+## 4. DEL-001 (1033 paths; built from docs/audit/M10/inventory/TRUTH_INVENTORY_f1932887.csv)
+- F01-shims 1000; U01-src-frontend 26; U02-stale-root-docs 4;
+  agos_kernel/infrastructure/{redis_queue,circuit_breaker}.py; docs/governance/contracts/queue_task.v1.schema.json
+- all 1033 paths tracked at HEAD (checked when built and again by the gate on this PR)
+- deferred with reasons (D-152): registry/oss_agents.py -> R-214 (live route /civilization/registry);
+  R-169 multi-version scripts -> R-227 (reproduction evidence of a done item);
+  agent_production/agent_factory.py -> R-213 (R-054 behavioural tests rely on it)
+
+## 5. Not in this batch
+- no file deleted; no runtime code changed; batch 2 deletes DEL-001 after this PR is merged
+
+## 6. Gate on this PR's own diff (DEL-001 is new here, so it is validated but authorizes nothing)
+$ python scripts/check_no_delete.py origin/main HEAD
+deletion lists merged at merge-base 0b1b1875dee2: none
+new deletion lists in this PR (validated, authorize nothing until merged): ['DEL-001']
+No-delete gate passed: 0 tracked files deleted, moved or renamed.
+(first run failed: README.md in the deletions directory was rejected -> README.md is now the one allowed
+ non-list file there; test_green_readme_in_the_deletions_directory_is_allowed added)
+
+## 7. R-158 baseline assignment
+tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned failed on DEL-001.list
+-> scripts/build_test_baseline.py governance-data rules += ^docs/governance/deletions/DEL-\d{3}\.list$
+$ pytest tests/test_r158_test_baseline.py -q
+43 passed
+
+## 8. Full local suite (sandbox, no k6 binary installed)
+$ python -m pytest -q -m "not network" -p no:cacheprovider
+= 8 failed, 4454 passed, 34 skipped, 18 deselected, 9 xfailed in 694.68s =
+The 8 failures are all tests/test_r176_load_framework.py / tests/test_r177_per_service.py:
+"downloading the pinned k6 failed" (sandbox has no k6; CI installs it). Not caused by this batch.
+CI on the PR head is the authoritative run.
