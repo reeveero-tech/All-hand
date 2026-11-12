@@ -1,0 +1,78 @@
+# R-200 truth inventory — raw evidence log
+# generated 2026-11-11T23:16:17Z on branch m10/r200-truth-inventory
+# snapshot = f19328877cc66b254b93337340517b466d51f662
+
+$ python3 scripts/build_file_inventory.py . f19328877cc66b254b93337340517b466d51f662 /tmp/inv/base_main.csv --summary /tmp/inv/base_main.json
+snapshot=f19328877cc66b254b93337340517b466d51f662 rows=3763 status={'active': 174, 'docs-only': 187, 'generated': 1963, 'legacy-compatible': 1000, 'shared': 119, 'test-only': 194, 'unresolved': 126} unresolved=126 self_check=PASS
+base_main.csv sha256=a8db244a8dbca3e1a1e01f710cc9bdd4a50e8b493791a7a83c6a76b58e795826 (not committed: 2.7MB, reproducible from the command above)
+
+$ python3 scripts/build_truth_inventory.py /tmp/inv/base_main.csv docs/audit/M10/inventory/TRUTH_INVENTORY_f1932887.csv --summary docs/audit/M10/inventory/TRUTH_SUMMARY_f1932887.json --sha f19328877cc66b254b93337340517b466d51f662
+{"rows": 3763, "verdicts": {"KEEP": 2635, "UNUSED_REMOVE": 33, "REDESIGN": 94, "FAKE_REMOVE": 1001}, "self_check": "PASS"}
+
+$ python3 scripts/build_route_inventory.py docs/audit/M10/inventory/ROUTES.csv --live docs/audit/M10/inventory/LIVE_PROBE_STATUS.json
+{"routes": 31, "used_by_web_ui": 10, "unused_by_web_ui": 21, "src_ui_calls_matching_no_route": ["/agents", "/chat", "/specializations", "/system/status", "/tasks", "/tasks/"]}
+
+$ git ls-tree -r --name-only f19328877cc66b254b93337340517b466d51f662 | wc -l
+3763
+
+# shim bodies check
+1000
+
+# live probe (copied verbatim from the probe run; no API key; GET only)
+# R-200 live probe (no API key, GET only) 2026-11-11T23:12:35Z base=https://all-hand.onrender.com
+GET /api -> 200 504B 0.333748s
+GET /health -> 200 1272B 0.182228s
+GET /health/live -> 200 65B 0.324130s
+GET /health/ready -> 200 53B 0.458022s
+GET /metrics -> 200 45751B 0.375965s
+GET /api/system/status -> 200 972B 0.580480s
+GET /api/agents -> 200 148015B 0.360597s
+GET /api/specializations -> 200 3091B 0.175131s
+GET /api/tasks -> 401 29B 0.176930s
+GET /api/tasks/r200-probe-nonexistent -> 401 29B 0.326829s
+GET /api/memory -> 401 29B 0.171507s
+GET /api/learning -> 401 29B 0.350421s
+GET /api/events -> 401 29B 0.194491s
+GET /api/events/stream -> 401 29B 0.188218s
+GET /api/admin/tools -> 401 29B 0.171187s
+GET / -> 200 771B 0.155826s
+GET /civilization/registry -> 401 29B 0.165951s
+GET /civilization/runs/r200-probe -> 401 29B 0.333638s
+agents count 1000 statuses {'idle': 1000} specs 20 tasks_completed_sum 0
+system/status: {'specializations': 20, 'total_agents': 1000, 'external_agents': 0, 'tasks_completed': 0, 'tasks_failed': 0, 'tasks_in_db': 5, 'llm_provider': 'openrouter', 'llm_model': 'mistralai/mistral-nemo', 'uptime_s': 5366}
+system/status public keys: ['experience', 'external_agents', 'llm_configured', 'llm_model', 'llm_provider', 'public_llm_enabled', 'public_llm_requires_consent', 'security', 'specializations', 'status', 'supabase_configured', 'supabase_key', 'tasks_completed', 'tasks_failed', 'tasks_in_db', 'tasks_in_memory', 'total_agents', 'uptime_s']
+<script type="module" crossorigin src="/assets/index-8tYp6104.js"
+bundle /assets/index-8tYp6104.js size=173030B sha256=eb366f7c955b0926
+bundle contains 'الوكلاء النشطون': 1
+bundle contains 'وكيل نشط': 1
+bundle contains '/api/chat': 1
+bundle contains '/civilization/': 0
+bundle contains 'settings': 0
+bundle contains 'الإعدادات': 0
+bundle contains 'connector': 0
+bundle contains '/api/system/status': 1
+bundle contains 'total_agents': 1
+
+$ sha256sum docs/audit/M10/inventory/*
+76729871948f05cae45a64f38dd50664970dde83729078ff2bf5244dad36ed20  docs/audit/M10/inventory/ROUTES.csv
+fb0d910f316c0454befd44b082969091006afbd810940ba26e17605b0ebb8f89  docs/audit/M10/inventory/TRUTH_INVENTORY_f1932887.csv
+d2c1257801085a7b235c98b42fbbe0a3fe28b35de5c791e22076b15e4fc86e2d  docs/audit/M10/inventory/LIVE_PROBE_STATUS.json
+faa96b63c36322a41dd94caeb993e7edb7128ff8a837983f04878a93afd4438c  docs/audit/M10/inventory/TRUTH_SUMMARY_f1932887.json
+
+$ pytest tests/test_r200_truth_inventory.py -q
+
+============================== 9 passed in 0.23s ===============================
+shim evidence: 1000 shim files; distinct bodies after normalising the number and the specialisation name = 1; each re-exports a generated class from _templates via generate_create (R-105/D-049)
+
+# --- D-066 acceptance of PR #354 (recorded in this batch) ---
+$ gh pr view 354 --json state,mergeCommit
+MERGED 094dbff2f7a21f0670c995e5a58a257fe3362cf4 (tested head 14776a806beb78c0ca44be2d495df5be0890ce67)
+$ gh api repos/reeveero-tech/All-hand/actions/runs?head_sha=14776a80…
+43126998195 Governance Gate pull_request success
+43126998135 AGOS Kernel CI/CD pull_request failure   (required jobs success; only non-required `network` failed)
+43126987496 Governance Gate push success
+# network job: tests/test_network_live.py::test_researcher_live_duckduckgo FAILED —
+#   {'ok': False, 'error': 'search: <urlopen error [Errno 104] Connection reset by peer> (transient, 2 attempts)'}
+#   tests/test_r175_batch4_phase1.py::test_the_phase1_runbook_certifies_all_100_with_real_evidence SKIPPED (external outage, 99/100)
+#   1 failed, 16 passed, 1 skipped, 4418 deselected
+# main CI on 094dbff2: run 43131667029 started at merge time; its result is recorded in the next batch.
