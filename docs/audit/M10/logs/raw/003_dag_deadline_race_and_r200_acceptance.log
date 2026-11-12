@@ -1,0 +1,54 @@
+# M10/003 — main CI failure on 094dbff2 (DAG plan-deadline race) + R-200 acceptance (D-066)
+# date: 2026-11-12; base origin/main=112671a7095135d851d3c5a3f3ddfd6c5e7dfa3e
+
+## 1. PR #354 main CI (merge 094dbff2f7a21f0670c995e5a58a257fe3362cf4): run 43131667029 = failure
+job test 130897026789; legs 1 and 2 green, leg 3 (AGOS_AGENT_IMPL=specialists) red:
+==== 4400 passed, 9 skipped, 18 deselected, 9 xfailed in 756.53s (0:12:36) =====
+==== 4400 passed, 9 skipped, 18 deselected, 9 xfailed in 701.14s (0:11:41) =====
+FAILED tests/test_r165_dag.py::test_plan_deadline_times_out_running_and_skips_the_rest - AssertionError: assert 'failed' == 'timed_out'
+network job (non-required, R-072) also failed there: DuckDuckGo 'Connection reset by peer' + SSL handshake timeout in test_r170_live_tool_evidence.py (external).
+
+## 2. Root cause
+agent_civilization/pipeline/dag.py::_run_stage waits with asyncio.wait_for(limit=min(timeout_s, remaining_plan_time)).
+When the plan deadline is the smaller value, this inner wait can expire before _drive's outer asyncio.wait notices the deadline.
+With STAGE_MAX_ATTEMPTS=1 the stage was then recorded as an ordinary stage timeout, run.deadline_hit stayed False, and the plan aggregate became 'failed' instead of 'timed_out'. Timing-dependent -> flaky on slow CI legs.
+
+## 3. Red (new deterministic test, before the fix)
+
+=================================== FAILURES ===================================
+_____ test_a_stage_cut_short_by_the_plan_deadline_marks_the_plan_timed_out _____
+tests/test_r165_dag.py:349: in test_a_stage_cut_short_by_the_plan_deadline_marks_the_plan_timed_out
+    assert r.state["a"]["error"] == "plan deadline reached"
+E   AssertionError: assert 'stage timed out after 0.1s' == 'plan deadline reached'
+E     
+E     - plan deadline reached
+E     + stage timed out after 0.1s
+=========================== short test summary info ============================
+FAILED tests/test_r165_dag.py::test_a_stage_cut_short_by_the_plan_deadline_marks_the_plan_timed_out
+================== 1 failed, 1 passed, 65 deselected in 0.68s ==================
+
+## 4. Fix
+In the TimeoutError branch: if limit < stage timeout_s, the timeout IS the plan deadline -> run.deadline_hit=True, status TIMED_OUT, error 'plan deadline reached', return (no retry). A stage hitting its own timeout_s keeps the old path (new test test_a_stage_hitting_its_own_timeout_is_not_a_plan_deadline).
+
+## 5. Green (local, sandbox)
+============================== 67 passed in 3.85s ==============================
+deadline tests repeated 30x: 30/30 green; 17 related test files: 576 passed, 10 deselected; ruff --select F,E722 clean.
+
+## 6. R-200 acceptance (PR #355)
+pr=#355 state=MERGED merge_sha=112671a7095135d851d3c5a3f3ddfd6c5e7dfa3e tested_sha=6482558e2a63480abdba82d02f778445721ad99d merged_at=2026-11-12T01:41:54Z
+merge subject: Merge pull request #355 from reeveero-tech/m10/r200-truth-inventory | parents: 094dbff2f7a21f0670c995e5a58a257fe3362cf4 6482558e2a63480abdba82d02f778445721ad99d
+PR runs: AGOS Kernel CI/CD 43131812922=success (all jobs incl. network), Governance Gate 43131812873=success, 43131774426=success
+main CI on merge_sha 112671a7095135d851d3c5a3f3ddfd6c5e7dfa3e: ci_run=43136290764 conclusion=success
+  job quality 130912321452 = success
+  job test 130912321767 = success
+  job network 130912393389 = success
+  job build 130926221788 = success
+  job storage 130926221789 = success
+  job audit 130926221849 = success
+  job docker 130926221889 = success
+  job publish 130926380489 = skipped
+test job pytest summaries (3 legs):
+==== 4409 passed, 9 skipped, 18 deselected, 9 xfailed in 737.69s (0:12:17) =====
+==== 4409 passed, 9 skipped, 18 deselected, 9 xfailed in 709.69s (0:11:49) =====
+==== 4409 passed, 9 skipped, 18 deselected, 9 xfailed in 730.56s (0:12:10) =====
+skipped (9, all legs): R-042 live storage x4, R-163 live queue x2, R-164 live backpressure, R-169 committed v2 rescore, SEC10 live postgrest — need live services; 18 deselected = network marker (job network: 17 passed, 1 skipped).
