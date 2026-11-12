@@ -349,22 +349,6 @@ async def check_storage() -> Dict[str, Any]:
     except Exception as e:
         return {"status": "degraded", "message": f"Error: {type(e).__name__}"}  # R-160 (G-159-1)
 
-async def check_redis() -> Dict[str, Any]:
-    """Check Redis availability."""
-    try:
-        from agos_kernel.infrastructure.redis_queue import get_redis_queue
-        queue = get_redis_queue()
-        await queue.connect()
-        stats = await queue.get_stats()
-        return {
-            "status": "healthy",
-            "message": f"Redis connected: {stats.get('connected', False)}",
-            **stats,
-        }
-    except Exception as e:
-        return {"status": "degraded", "message": f"Redis unavailable: {type(e).__name__}"}  # R-160 (G-159-1)
-
-
 def create_default_registry() -> HealthCheckRegistry:
     """Create registry with default health checks."""
     registry = HealthCheckRegistry()
@@ -388,13 +372,6 @@ def create_default_registry() -> HealthCheckRegistry:
         check_fn=check_storage,
         critical=False,
         tags=["persistence"],
-    ))
-    
-    registry.register(HealthCheck(
-        name="redis",
-        check_fn=check_redis,
-        critical=False,
-        tags=["queue", "infrastructure"],
     ))
     
     return registry

@@ -2,7 +2,7 @@
 
 R-159 closed raw-exception logging in the eight telemetry components and listed
 the remaining sites as G-159-1 (specialist templates, BaseAgent, the
-communication hub, agent_factory, data_worker, redis_queue, server). The R-160
+communication hub, agent_factory, data_worker, redis_queue (removed in R-203), server). The R-160
 review also found: the Redis URL (may carry a password) logged in full on every
 ``/health`` (RedisQueue.__init__), and four ``str(e)`` in the health checks'
 *response* messages (public route).
@@ -215,50 +215,8 @@ def test_external_agents_env_error_logs_position_only(raw, monkeypatch, caplog):
             or "EXTERNAL_AGENTS entry 0 skipped" in text)
 
 
-class _FakeRedis:
-    """Mock Redis client: every call raises an error carrying the secret."""
-
-    def __getattr__(self, name):
-        async def call(*a, **k):
-            raise Boom(SECRET)
-        return call
-
-
-def test_redis_queue_does_not_log_url_credentials(monkeypatch, caplog):
-    from agos_kernel.infrastructure import redis_queue
-    caplog.set_level(logging.DEBUG)
-    redis_queue.RedisQueue(redis_url=f"redis://user:{SECRET}@cache.internal:6380/0")
-    text = _no_secret(caplog)
-    assert "redis://cache.internal:6380" in text
-
-
-def test_redis_queue_target_helper():
-    from agos_kernel.infrastructure.redis_queue import _safe_redis_target
-    assert _safe_redis_target(f"rediss://:{SECRET}@h:1/2?x={SECRET}") == "rediss://h:1"
-    assert _safe_redis_target("") == "?://?"
-    assert SECRET not in _safe_redis_target(f"redis://[{SECRET}")
-
-
-def test_redis_queue_errors_log_and_return_type_only(caplog):
-    from agos_kernel.infrastructure import redis_queue
-    q = redis_queue.RedisQueue(redis_url="redis://localhost:6379")
-    q._use_fallback = False
-    q._redis = _FakeRedis()
-    caplog.set_level(logging.DEBUG)
-
-    async def run():
-        await q.enqueue("spec", "prompt", task_id="t-1")   # hexists + hset fail -> memory
-        q._fallback_tasks.clear()
-        assert await q.dequeue(timeout=0) is None
-        await q.complete("t-x", {})
-        assert await q.fail("t-x", "e") is False
-        assert await q.get_task("t-x") is None
-        assert await q.get_queue_size() == 0
-        return await q.get_stats()
-    stats = asyncio.run(run())
-    assert stats == {"error": "Boom"}
-    text = _no_secret(caplog, stats)
-    assert text.count("Boom") >= 7
+# R-203 (D-152, DEL-001): redis_queue.py was removed (never on the request
+# path), so its three redaction tests went with it.
 
 
 def test_health_check_wrapper_message_is_type_only():
@@ -272,7 +230,6 @@ def test_health_check_wrapper_message_is_type_only():
 
 
 @pytest.mark.parametrize("check,target", [
-    ("check_redis", "agos_kernel.infrastructure.redis_queue.get_redis_queue"),
     ("check_storage", "agent_civilization.storage.storage_stats"),
     ("check_civilization", "agent_civilization.agents.real.create_civilization"),
 ])
@@ -293,15 +250,16 @@ def test_health_component_checks_message_is_type_only(check, target, monkeypatch
 
 def test_public_health_route_body_has_no_exception_text(monkeypatch):
     """In-process TestClient on the real app: a failing component check (here
-    get_redis_queue raising) reaches /health without its text."""
+    storage_stats raising; it was get_redis_queue before R-203) reaches /health
+    without its text."""
     from fastapi.testclient import TestClient
 
+    import agent_civilization.storage as storage
     import server
-    from agos_kernel.infrastructure import redis_queue
 
     def boom(*a, **k):
         raise Boom(SECRET)
-    monkeypatch.setattr(redis_queue, "get_redis_queue", boom)
+    monkeypatch.setattr(storage, "storage_stats", boom)
     with TestClient(server.app, raise_server_exceptions=False) as c:
         r = c.get("/health")
     assert SECRET not in r.text

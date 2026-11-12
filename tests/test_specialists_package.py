@@ -109,6 +109,7 @@ def test_r105_all_1000_names_and_defaults_match_the_baseline():
     """R-105: the generated classes must match the historical baseline exactly —
     names, __all__ order, agent_id defaults, create() defaults."""
     import importlib
+    import importlib.util
     import json
     from pathlib import Path
 
@@ -125,11 +126,10 @@ def test_r105_all_1000_names_and_defaults_match_the_baseline():
             assert cls.__name__ == name
             assert (inspect.signature(cls.__init__).parameters["agent_id"].default
                     == expected["agent_id_default"]), f"{name}: default changed"
-            # the create() default too (kept in the baseline reference)
-            _fmod = importlib.import_module(
-                f"agent_civilization.agents.specialists.{spec}.{expected['file']}")
-            assert (inspect.signature(_fmod.create).parameters["aid"].default
-                    == expected["create_aid_default"]), f"{name}: create() default changed"
+            # R-203 (D-152, DEL-001): the per-agent shim files (and their
+            # create()) were removed; the historical module path is gone.
+            assert importlib.util.find_spec(
+                f"agent_civilization.agents.specialists.{spec}.{expected['file']}") is None
 
 
 def test_r105_fifty_distinct_classes_per_spec_not_aliases():
@@ -141,20 +141,15 @@ def test_r105_fifty_distinct_classes_per_spec_not_aliases():
         assert len(set(map(id, classes))) == 50, f"{spec}: not 50 distinct classes"
 
 
-def test_r105_shims_carry_no_duplicated_implementation():
-    """R-105: the 1,000 historical files must be THIN shims — no _process_task/
-    _execute_work/_handle_message definitions left in them (the implementation
-    lives once per spec in _templates/)."""
+def test_r203_shim_files_are_gone():
+    """R-105 left 1,000 thin shim files; R-203 (D-152, DEL-001) removed them —
+    the classes are generated once per spec from _templates/ (no file per agent)."""
     from pathlib import Path
 
     root = Path(__file__).resolve().parent.parent / "agent_civilization/agents/specialists"
     files = [f for f in root.glob("*/*.py")
              if f.name != "__init__.py" and "_templates" not in str(f)]
-    assert len(files) == 1000
-    with_impl = [f for f in files
-                 if any(m in f.read_text() for m in
-                        ("async def _process_task", "async def _execute_work", "async def _handle_message"))]
-    assert not with_impl, f"implementation still duplicated in: {with_impl[:3]}"
+    assert files == []
 
 
 def test_r105_base_classes_are_the_single_source():
@@ -214,10 +209,10 @@ def test_r105_import_paths_return_the_same_class_object():
         via_root = getattr(top, name)
         via_pkg = getattr(_pkg(spec), name)
         aid = int(name.rsplit("Agent", 1)[1])
-        via_file = getattr(importlib.import_module(
-            f"agent_civilization.agents.specialists.{spec}.{spec}_{aid:04d}"), name)
         assert via_root is via_pkg, f"{name}: root != spec package"
-        assert via_pkg is via_file, f"{name}: spec package != individual file"
+        # R-203 (D-152, DEL-001): the individual historical file path is gone
+        with pytest.raises(ModuleNotFoundError):
+            importlib.import_module(f"agent_civilization.agents.specialists.{spec}.{spec}_{aid:04d}")
 
 
 @pytest.mark.asyncio

@@ -19,7 +19,6 @@
 | SSE | `sse_frame` | `task_created`، `task_started`، `task_completed`، `heartbeat`، `stream_gap` |
 | وكيل/أداة | `agent_outcome`، `handler_result` | ناتج `execute()` في الوضعين `real` و`specialists` وللوكيل الخارجي، وناتج المعالج |
 | LLM | `llm_result` | ناتج `LLMClient.complete` (ok وcontent وerror ثابت) |
-| الطابور | `queue_task` | `Task.to_dict()` في `redis_queue.py` |
 | التخزين | `storage_task_insert`، `storage_task_update`، `storage_event_insert`، `storage_agent_stats` | الأجسام المكتوبة إلى PostgREST؛ مفاتيحها ⊆ أعمدة `docs/sql/001+002` |
 
 ## الإصدارات والتوافق
