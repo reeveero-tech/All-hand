@@ -180,6 +180,48 @@ def test_phase1_ceiling_refuses_the_101st_certified_tool():
 
 # -- the operator runbook: the real phase-1 operation -------------------------
 
+# D-150 CI repair (M10/001): the runbook's educator/researcher/api_integrator/
+# network_client smokes make REAL internet calls (see the runbook docstring:
+# "a hermetic environment reports them not certified"). Requiring 100/100 in
+# the offline required suite made `test` fail whenever the live web search
+# returned no snippets (main run 43105435893, f1932887; also PR #351's first
+# run). The 100/100 check therefore runs in the `network` job; the offline
+# suite keeps a deterministic check of the same runbook below. In the network
+# job the single known external outage (educator, no LLM key, empty web
+# search) is a visible SKIP, so the job stays a signal and not noise
+# (it was green on main before; PR #354's first run showed it would turn red).
+NETWORK_SPECS = {"educator", "researcher", "api_integrator", "network_client"}
+
+
+def _run_runbook():
+    env = dict(os.environ)
+    env.update({"AGOS_TOOL_REGISTRY_DB": str(ROOT / ".pytest_phase1.sqlite3"),
+                "AGOS_API_KEY": "test:phase1",
+                "PATH": os.environ["PATH"]})
+    return subprocess.run(
+        [sys.executable, str(RUNBOOK)], capture_output=True, text=True,
+        env=env, cwd=str(ROOT), timeout=300)
+
+
+def test_the_phase1_runbook_offline_certifies_every_hermetic_tool():
+    """Offline (required suite): every tool that needs no internet is
+    certified; a network-dependent specialist may be reported not certified,
+    but only with its real error — never faked, never silently dropped."""
+    try:
+        proc = _run_runbook()
+        assert proc.returncode in (0, 1), proc.stderr[-500:]
+        report = json.loads(proc.stdout)
+        assert report["phase"] == 1 and report["tools_total"] == 100
+        bad = [n for n in report["not_certified"] if n["spec"] not in NETWORK_SPECS]
+        assert bad == [], bad
+        assert all(n["error"] for n in report["not_certified"])
+        assert report["certified_count"] + len(report["not_certified"]) == 100
+        assert report["certified_count"] >= 100 - len(NETWORK_SPECS)
+    finally:
+        (ROOT / ".pytest_phase1.sqlite3").unlink(missing_ok=True)
+
+
+@pytest.mark.network
 def test_the_phase1_runbook_certifies_all_100_with_real_evidence():
     """The actual phase-1 operation, run for real: the runbook walks every
     seeded tool through a real dispatch + the governed evidence chain and
@@ -192,8 +234,20 @@ def test_the_phase1_runbook_certifies_all_100_with_real_evidence():
         proc = subprocess.run(
             [sys.executable, str(RUNBOOK)], capture_output=True, text=True,
             env=env, cwd=str(ROOT), timeout=300)
+        report = json.loads(proc.stdout) if proc.stdout.strip() else {}
+        # The ONE tolerated outcome (R-072: an outage of the live web must not
+        # turn CI red): educator with no LLM key whose live web search returned
+        # nothing. That is an external-source outage, reported with its real
+        # error — it is SKIPPED (visible), never counted as certified. Any
+        # other shortfall still fails.
+        missing = report.get("not_certified", [])
+        if (proc.returncode == 1 and report.get("certified_count") == 99
+                and [m["spec"] for m in missing] == ["educator"]
+                and "no LLM configured" in missing[0]["error"]
+                and "web search returned no snippets" in missing[0]["error"]):
+            pytest.skip("educator: no LLM key and the live web search returned no "
+                        "snippets (external outage) — 99/100, educator NOT certified")
         assert proc.returncode == 0, proc.stderr[-500:]
-        report = json.loads(proc.stdout)
         assert report["phase"] == 1
         assert report["tools_total"] == 100
         assert report["certified_count"] == 100
