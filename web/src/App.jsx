@@ -49,7 +49,7 @@ export default function App() {
   }, [refreshStatus])
 
   const tabs = [
-    { id: 'dashboard', label: 'لوحة التحكم', icon: '◈' },
+    { id: 'dashboard', label: 'لوحة المراقبة', icon: '◈' },
     { id: 'chat', label: 'المحادثة', icon: '✦' },
     { id: 'specializations', label: 'التخصصات', icon: '◆' },
     { id: 'agents', label: 'الوكلاء', icon: '◇' },
@@ -66,7 +66,7 @@ export default function App() {
           <div className="app-logo">A</div>
           <div>
             <div className="app-title">AGOS Civilization</div>
-            <div className="app-subtitle">v3.0 · حضارة الوكلاء</div>
+            <div className="app-subtitle">v3.0 · قيد إعادة البناء (M10)</div>
           </div>
         </div>
         <nav className="nav-tabs">

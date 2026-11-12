@@ -21,7 +21,8 @@ UI_QUICK_PROMPTS = [
     ("ابحث عن أحدث تقنيات الذكاء الاصطناعي", "researcher"),
     ("اكتب كود Python لحساب متوسط قائمة أرقام", "code_generator"),
     ('تحقق من صحة هذا JSON: {"name":"test","value":42}', "validator"),
-    ("صمم استراتيجية لتطوير الحضارة", "strategist"),
+    # R-201: the old "…لتطوير الحضارة" prompt was a civilization claim; same intent
+    ("صمم استراتيجية لإطلاق منتج جديد", "strategist"),
 ]
 
 

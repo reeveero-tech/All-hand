@@ -1,0 +1,56 @@
+# M10/004 — R-201 remove the illusion from the UI and current docs
+# date: 2026-11-12; base origin/main=c39b6d8602f926f31a8dc4ccf164219a856579eb (PR #356 merge)
+
+## 1. Before (live https://all-hand.onrender.com, deploy c39b6d86, 2026-11-12T03:03Z, sandbox browser, no API key)
+dashboard .dashboard-grid innerText (start):
+  الوكلاء النشطون / 1000 / 20 تخصص · 0 خارجي / المهام المكتملة 0 / 0 فشلت / نموذج LLM mistralai/mistral-nemo متصل (OpenRouter) / Supabase 5 مهمة محفوظة
+agents page: '1000 وكيل نشط' + one card per copy (analyst_0000..analyst_0049 ...), all 'خامل'
+specializations: '20 تخصص · 20 وكيل متاح' + 'كل تخصص يحتوي على وكلاء حقيقيين' + '50 وكيل' per card
+chat empty state: 'ابدأ محادثة مع حضارة الوكلاء'; quick prompt 'صمم استراتيجية لتطوير الحضارة'
+header: 'v3.0 · حضارة الوكلاء'; tab 'لوحة التحكم'; <title>AGOS - حضارة الوكلاء</title>
+screenshots: docs/audit/M10/screens/r201/before_{dashboard,specializations,agents,chat}.png
+299 OSS list: not rendered anywhere in web/ (rg oss|299 web/src = none); only via API GET /civilization/registry (not used by the UI).
+
+## 2. Red — new web/tests/ui_truth.test.mjs on the unchanged UI
+not ok 1 - R-201: Dashboard shows the real handler count from the server, and copies as copies
+  error: 'banned phrase on dashboard: الوكلاء النشطون'
+not ok 2 - R-201: Agents page groups identical copies under their one real handler and shows who is working
+  error: 'banned phrase on agents page: وكيل نشط'
+not ok 3 - R-201: Specializations counts come from the server, not a literal 20
+  error: 'banned phrase on specializations: وكلاء حقيقيين'
+not ok 4 - R-201: Chat says the message goes to one handler chosen by keywords
+  error: 'banned phrase in chat: حضارة الوكلاء'
+not ok 5 - R-201: static guard — no banned phrase anywhere in web/src or index.html; monitor tab is named honestly
+  error: |-
+ok 6 - cleanup: transpiled temp files removed
+# pass 1
+# fail 5
+
+## 3. Changes
+- Dashboard: card 'المعالجات الحقيقية' = status.specializations; sub = total_agents - external_agents labelled 'نسخة مسجلة'.
+- Agents: one card per real handler with 'N نسخ متطابقة' and live working count; external agents listed individually; header 'H معالجات حقيقية · C نسخة مسجلة · W تعمل الآن'.
+- Specializations: count from the server ('{n} تخصصات · معالج واحد لكل تخصص'); per-card 'N نسخ'; honest description.
+- Chat: states the message goes to ONE handler chosen by keywords; civilization prompt replaced by 'صمم استراتيجية لإطلاق منتج جديد' (still routes to strategist; tests/test_r106_chat_routing.py updated).
+- App/index.html: tab 'لوحة المراقبة', subtitle 'قيد إعادة البناء (M10)', title 'AGOS — لوحة المراقبة'.
+- README: intro no longer claims planning/coordination; API section says what the UI uses and that /civilization/registry is metadata only.
+- PROJECT_CHARTER: truth-correction note (1000 = 20 x 50 copies; D-035 criteria are history, not proof of D-150).
+- No server/contract change: every number shown already comes from a server field (system_status v1 unchanged).
+
+## 4. Green
+# tests 46
+# pass 46
+# fail 0
+dist/assets/index-C0KRDSz8.js   174.65 kB │ gzip: 55.06 kB
+✓ built in 164ms
+============================== 13 passed in 0.95s ==============================
+README/charter-reading python tests (7 files): 333 passed, 1 skipped
+related contract/UI python tests (7 files incl. r101/r156/r157/web_api_contract/r200): 172 passed after the r106 prompt update
+
+## 5. Not done here (explicit)
+- Live deploy check + after-screenshots: Render autoDeploy=yes on main; they are recorded in the acceptance batch after merge (R-201 stays awaiting_merge until then).
+- /api/system/status stays public (the UI reads it before a key is entered); access control is R-204.
+- Deleting the 1000 copy files / src/ UI / OSS list: R-203 only.
+
+## 6. PR #356 main CI (merge c39b6d86)
+run 43145344750 status=in_progress conclusion=null
+Render deploy of c39b6d86: dep-dbqio0g473hc7381r3k0 status=live (trigger new_commit).

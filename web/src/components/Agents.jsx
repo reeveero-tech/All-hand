@@ -52,12 +52,25 @@ export default function Agents() {
     }
   }
 
-  const filtered = filter ? agents.filter((a) => a.specialization === filter) : agents
-  const specGroups = {}
-  filtered.forEach((a) => {
-    if (!specGroups[a.specialization]) specGroups[a.specialization] = []
-    specGroups[a.specialization].push(a)
+  // R-201: the local "agents" are identical generated copies of ONE real
+  // handler per specialization (R-200). Show one card per handler with its
+  // copy count and live status; external agents are real and listed one by one.
+  const local = agents.filter((a) => a.specialization !== 'external')
+  const external = agents.filter((a) => a.specialization === 'external')
+  const workingNow = agents.filter((a) => a.status === 'working').length
+  const handlers = {}
+  local.forEach((a) => {
+    const h = handlers[a.specialization] || (handlers[a.specialization] = {
+      name: a.specialization, copies: 0, working: 0, completed: 0, failed: 0, time: 0,
+    })
+    h.copies += 1
+    if (a.status === 'working') h.working += 1
+    h.completed += a.stats?.tasks_completed || 0
+    h.failed += a.stats?.tasks_failed || 0
+    h.time += a.stats?.total_time_s || 0
   })
+  const handlerList = Object.values(handlers).filter((h) => !filter || h.name === filter)
+  const externalList = !filter || filter === 'external' ? external : []
 
   if (loading) {
     return <div className="loading"><div className="spinner" /> جاري تحميل الوكلاء...</div>
@@ -68,9 +81,11 @@ export default function Agents() {
       <div className="card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <div className="card-title" style={{ marginBottom: '4px' }}>{agents.length} وكيل نشط</div>
+            <div className="card-title" style={{ marginBottom: '4px' }}>
+              {Object.keys(handlers).length} معالجات حقيقية · {local.length} نسخة مسجلة · {workingNow} تعمل الآن
+            </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-              {specs.length} تخصص · {agents.filter((a) => a.specialization === 'external').length} وكلاء خارجيون
+              النسخ في كل تخصص نسخ متطابقة من معالج واحد · {external.length} وكلاء خارجيون
             </div>
           </div>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
@@ -99,56 +114,60 @@ export default function Agents() {
         </div>
       </div>
 
-      {Object.keys(specGroups).map((specName) => (
-        <div key={specName} style={{ marginBottom: '24px' }}>
-          <div className="card-title" style={{ marginBottom: '12px' }}>
-            {specName}
-            <span className="badge badge-info" style={{ marginRight: '8px' }}>
-              {specGroups[specName].length}
-            </span>
-          </div>
-          <div className="agent-list">
-            {specGroups[specName].map((agent) => (
-              <div key={agent.name} className="agent-card">
-                <div className="agent-name">{agent.name}</div>
-                <div className="agent-spec">
-                  {agent.specialization === 'external' && (
-                    <span className="badge badge-warning" style={{ marginRight: '6px' }}>
-                      خارجي
-                    </span>
-                  )}
-                  {agent.status === 'idle' ? 'خامل' : agent.status === 'working' ? 'يعمل' : agent.status}
-                </div>
-                <div className="agent-stats">
-                  <div className="agent-stat">
-                    <span className="agent-stat-label">مكتملة</span>
-                    <span className="agent-stat-value success">{agent.stats?.tasks_completed || 0}</span>
-                  </div>
-                  <div className="agent-stat">
-                    <span className="agent-stat-label">فشلت</span>
-                    <span className="agent-stat-value error">{agent.stats?.tasks_failed || 0}</span>
-                  </div>
-                  <div className="agent-stat">
-                    <span className="agent-stat-label">الوقت</span>
-                    <span className="agent-stat-value">
-                      {(agent.stats?.total_time_s || 0).toFixed(1)}s
-                    </span>
-                  </div>
-                </div>
-                {agent.specialization === 'external' && (
-                  <button
-                    className="btn btn-danger"
-                    style={{ marginTop: '12px', fontSize: '12px', padding: '4px 10px' }}
-                    onClick={() => handleRemove(agent.name)}
-                  >
-                    حذف
-                  </button>
-                )}
+      <div className="agent-list" style={{ marginBottom: '24px' }}>
+        {handlerList.map((h) => (
+          <div key={h.name} className="agent-card">
+            <div className="agent-name">{h.name}</div>
+            <div className="agent-spec">
+              {h.copies} نسخ متطابقة · {h.working > 0 ? `يعمل الآن (${h.working})` : 'خامل'}
+            </div>
+            <div className="agent-stats">
+              <div className="agent-stat">
+                <span className="agent-stat-label">مكتملة</span>
+                <span className="agent-stat-value success">{h.completed}</span>
               </div>
-            ))}
+              <div className="agent-stat">
+                <span className="agent-stat-label">فشلت</span>
+                <span className="agent-stat-value error">{h.failed}</span>
+              </div>
+              <div className="agent-stat">
+                <span className="agent-stat-label">الوقت</span>
+                <span className="agent-stat-value">{h.time.toFixed(1)}s</span>
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+        {externalList.map((agent) => (
+          <div key={agent.name} className="agent-card">
+            <div className="agent-name">{agent.name}</div>
+            <div className="agent-spec">
+              <span className="badge badge-warning" style={{ marginRight: '6px' }}>خارجي</span>
+              {agent.status === 'idle' ? 'خامل' : agent.status === 'working' ? 'يعمل' : agent.status}
+            </div>
+            <div className="agent-stats">
+              <div className="agent-stat">
+                <span className="agent-stat-label">مكتملة</span>
+                <span className="agent-stat-value success">{agent.stats?.tasks_completed || 0}</span>
+              </div>
+              <div className="agent-stat">
+                <span className="agent-stat-label">فشلت</span>
+                <span className="agent-stat-value error">{agent.stats?.tasks_failed || 0}</span>
+              </div>
+              <div className="agent-stat">
+                <span className="agent-stat-label">الوقت</span>
+                <span className="agent-stat-value">{(agent.stats?.total_time_s || 0).toFixed(1)}s</span>
+              </div>
+            </div>
+            <button
+              className="btn btn-danger"
+              style={{ marginTop: '12px', fontSize: '12px', padding: '4px 10px' }}
+              onClick={() => handleRemove(agent.name)}
+            >
+              حذف
+            </button>
+          </div>
+        ))}
+      </div>
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>

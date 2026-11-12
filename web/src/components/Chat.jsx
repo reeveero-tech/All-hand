@@ -6,7 +6,7 @@ const QUICK_PROMPTS = [
   'ابحث عن أحدث تقنيات الذكاء الاصطناعي',
   'اكتب كود Python لحساب متوسط قائمة أرقام',
   'تحقق من صحة هذا JSON: {"name":"test","value":42}',
-  'صمم استراتيجية لتطوير الحضارة',
+  'صمم استراتيجية لإطلاق منتج جديد',
 ]
 
 export default function Chat({ status }) {
@@ -91,7 +91,10 @@ export default function Chat({ status }) {
         {messages.length === 0 && (
           <div className="empty-state">
             <div className="empty-state-icon">✦</div>
-            <div>ابدأ محادثة مع حضارة الوكلاء</div>
+            <div>ابدأ محادثة</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>
+              تُوجَّه رسالتك إلى معالج واحد يُختار بكلمات مفتاحية في النص (لا يوجد تنسيق بين عدة وكلاء بعد).
+            </div>
             <div style={{ marginTop: '20px', display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
               {QUICK_PROMPTS.map((p) => (
                 <button key={p} className="btn btn-ghost" style={{ fontSize: '13px' }} onClick={() => handleSend(p)}>
@@ -122,7 +125,7 @@ export default function Chat({ status }) {
             <div className="chat-avatar agent">A</div>
             <div className="chat-bubble">
               <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
-              <span style={{ marginRight: '8px' }}>الوكيل يفكر...</span>
+              <span style={{ marginRight: '8px' }}>المعالج يعمل...</span>
             </div>
           </div>
         )}

@@ -111,7 +111,7 @@ export default function Specializations({ status }) {
             <label className="form-label">المهمة / الطلب</label>
             <textarea
               className="form-input"
-              placeholder="اكتب ما تريد من الوكيل القيام به..."
+              placeholder="اكتب ما تريد من المعالج القيام به..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={3}
@@ -184,9 +184,9 @@ export default function Specializations({ status }) {
   return (
     <div>
       <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="card-title">20 تخصص · {specs.length} وكيل متاح</div>
+        <div className="card-title">{specs.length} تخصصات · معالج واحد لكل تخصص</div>
         <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-          كل تخصص يحتوي على وكلاء حقيقيين يعملون بنماذج LLM وأدوات فعلية. اختر تخصصاً لإرسال مهمة.
+          لكل تخصص معالج حقيقي واحد يستخدم أدوات فعلية (ونموذج LLM إن كان مُهيأً). النسخ المسجلة لكل تخصص نسخ متطابقة من المعالج نفسه. اختر تخصصاً لإرسال مهمة إلى معالجه.
         </div>
       </div>
 
@@ -197,7 +197,7 @@ export default function Specializations({ status }) {
             <div className="spec-name">{spec.name}</div>
             <div className="spec-desc">{spec.description}</div>
             <div className="spec-meta">
-              <span>{spec.agents} وكيل</span>
+              <span>{spec.agents} نسخ</span>
               {spec.tool && <span className="spec-tool">⚙ {spec.tool}</span>}
             </div>
           </div>
