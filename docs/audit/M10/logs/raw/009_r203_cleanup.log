@@ -45,3 +45,12 @@ $ python -m pytest -q -m "not network" -p no:cacheprovider
 = 8 failed, 4438 passed, 34 skipped, 18 deselected, 9 xfailed in 692.54s (0:11:32) =
 The 8 failures are the k6-download tests (r176/r177) — no k6 in the sandbox, CI installs it. Same 8 before this batch.
 CI on the PR head is the authoritative run.
+
+## 6. Gates on this branch after merging main (DEL-001 merged at f0dc0fd6, PR #361)
+$ python scripts/check_no_delete.py origin/main HEAD
+no-delete check: origin/main...HEAD status counts (no-renames): {'M': 30, 'D': 1033, 'A': 2}
+deletion lists merged at merge-base f0dc0fd6f62c: {'DEL-001': 1033}
+authorized deletions (D-152 mechanism): 1033 by list {'DEL-001': 1033}
+No-delete gate passed: 1033 deletion(s), all in merged deletion lists.
+check_atomic_batch / check_status_evidence / check_push_docs / check_conflict_markers: rc=0
+after merge: API.md + DATA_MODEL.md updated (atomic-batch R2/R3 asked for them: /health and the queue contract changed)
