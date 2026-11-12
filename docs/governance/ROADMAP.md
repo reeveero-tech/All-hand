@@ -1,4 +1,5 @@
-> **ابدأ من هنا (2026-11-11، D-150)**: اقرأ [`MEMORY.md`](MEMORY.md) (ذاكرة المشروع) أولًا. البرنامج الحالي **M10 — AGOS v2** (R-200..R-243، ترتيب صارم بندًا بندًا) في قسم «M10» أدناه وتفصيله في [`roadmaps/agos-v2/ROADMAP_V2_AR.md`](roadmaps/agos-v2/ROADMAP_V2_AR.md). بنود M8/M9 المفتوحة مجمدة (`blocked`، Q-031). البند الحالي: **R-202** (`awaiting_merge`، قرار المعمارية v2 والمكدس، D-151)؛ R-200 وR-201 `done`.
+> **ابدأ من هنا (2026-11-11، D-150)**: اقرأ [`MEMORY.md`](MEMORY.md) (ذاكرة المشروع) أولًا. البرنامج الحالي **M10 — AGOS v2** (R-200..R-243، ترتيب صارم بندًا بندًا) في قسم «M10» أدناه وتفصيله في [`roadmaps/agos-v2/ROADMAP_V2_AR.md`](roadmaps/agos-v2/ROADMAP_V2_AR.md). بنود M8/M9 المفتوحة مجمدة (`blocked`، Q-031). البند الحالي: **R-203** (`planned`، آلية الحذف المعتمد وتنظيف المستودع)؛ R-200..R-202 `done` (معمارية v2: D-151).
+> **آخر تحديث**: 2026-11-12 (لاحق 155 — **R-202 «قرار المعمارية v2 والمكدس» `done`**: PR #359 مدموج (`2da093a2`، رأس مختبر `796a4de9`)، CI على main ‏run 43168997334 = success (4437 passed, 34 skipped, 18 deselected؛ job ‏storage: اختبار المخطط الحي 48 passed على `pgvector/pgvector:pg17`). نشر Render `dep-dbqlrik9v7es73dqaji0` حي و`/health` = 200 (لا تغيير تشغيلي). المخطط لم يُطبق على Supabase الحي (R-204). السجل M10/007. التالي R-203.)
 > **آخر تحديث**: 2026-11-12 (لاحق 154 — **R-202 «قرار المعمارية v2 والمكدس» بدأ** (`awaiting_merge`): القرار D-151 في [`ARCHITECTURE_V2.md`](ARCHITECTURE_V2.md)، ونموذج البيانات v2 في [`DATA_MODEL_V2.md`](DATA_MODEL_V2.md) بملف SQL ‏`docs/sql/v2/001_core.sql` (مخطط `agos`، 10 جداول، RLS، قواعد الصدق في القاعدة)، وعقود JSON Schema الخمسة في `contracts/v2/` مولّدة من `agos_v2/contracts.py`. اختبار تطبيق المخطط `tests/test_r202_v2_schema.py` (48 حيًا محليًا على PostgreSQL 18 + pgvector، ويعمل في CI job ‏storage على `pgvector/pgvector:pg17`). لا تغيير حي ولا مسار جديد ولا تطبيق على Supabase. السجل M10/006.)
 > **آخر تحديث**: 2026-11-12 (لاحق 153 — **R-201 «إزالة الوهم» `done`**: PR #357 مدموج (`81dbd7f2`، رأس مختبر `9151eae6`)، CI على main ‏run 43150922872 = success (4411 passed, 9 skipped, 18 deselected)، ونشر Render التلقائي `dep-dbqjfat9el5s73evvbkg` حي. التحقق الحي: الحزمة المنشورة بلا «الوكلاء النشطون» و«وكيل نشط» و«حضارة الوكلاء»، ولوحة المراقبة تعرض «المعالجات الحقيقية 20». لقطات «بعد» في `docs/audit/M10/screens/r201/`. المتبقي المعلن: اسم «AGOS Civilization» في رأس الواجهة (قرار تسمية في R-202). السجل M10/005. التالي R-202.)
 > **آخر تحديث**: 2026-11-12 (لاحق 152 — **R-201 «إزالة الوهم» بدأ** (`awaiting_merge`): الواجهة تعرض «المعالجات الحقيقية» (20 من الخادم) بدل «الوكلاء النشطون 1000»، وصفحة الوكلاء بطاقة لكل معالج مع عدد نسخه المتطابقة، و«لوحة المراقبة» بدل «لوحة التحكم»، والمحادثة تقول إنها تذهب إلى معالج واحد؛ README والميثاق مصححان؛ اختبار واجهة جديد `web/tests/ui_truth.test.mjs` (أحمر 5 ثم أخضر 46/46). التحقق الحي ولقطات «بعد» في دفعة القبول بعد الدمج. السجل M10/004.)
@@ -2294,8 +2295,8 @@
 - القبول (لاحق 153): PR #357 مدموج (`81dbd7f2`)، CI على main ‏43150922872 = success، نشر Render `dep-dbqjfat9el5s73evvbkg` حي؛ الحزمة الحية بلا العبارات القديمة ولوحة المراقبة تعرض «المعالجات الحقيقية 20»؛ لقطات «بعد» في `docs/audit/M10/screens/r201/after_*.png`؛ السجل `docs/audit/M10/logs/raw/005_r201_acceptance_live.log`.
 
 #### R-202 — قرار المعمارية v2 والمكدس
-- الحالة: **awaiting_merge**
-- أدلة الحالة (R-154): branch=m10/r202-architecture-v2 | pr=#359
+- الحالة: **done**
+- أدلة الحالة (R-154): pr=#359 | tested_sha=796a4de94ff3f787ce8ed391d399cefb6da5ad00 | merge_sha=2da093a2886d0071fa4e47c2b2bae27df0cdff2d | ci_run=43168997334 | ci_conclusion=success | tests=4437 passed, 34 skipped, 18 deselected | tests_log=docs/audit/M10/logs/raw/007_r202_acceptance.log | skipped=34 skipped = 9 اختبارات تحتاج خدمات حية (R-042، R-163/R-164، R-169، SEC10) + 25 اختبار R-202 الحي (تحتاج V2_SCHEMA_ADMIN_URI وتُشغَّل في job ‏storage: 48 passed)؛ 18 deselected = علامة network (job ‏network: 17 passed, 1 skipped)؛ 9 xfailed = انحدارات معلومة | untested=المخطط لم يُطبق على Supabase الحي (R-204)؛ لا مسارات /api/v2 بعد | evidence=docs/audit/M10/logs/raw/007_r202_acceptance.log,docs/audit/M10/logs/raw/006_r202_architecture_v2.log
 - الاعتماديات (R-202): R-201
 - المرحلة: M10/P0
 - الهدف: قرار مكتوب واحد يتبعه الجميع.
@@ -2303,6 +2304,7 @@
 - الأدلة المطلوبة: ADR + مخططات + اختبار تطبيق المخطط.
 - التفصيل: [`ROADMAP_V2_AR.md`](roadmaps/agos-v2/ROADMAP_V2_AR.md) — R-202
 - التقدم (لاحق 154): القرار D-151 ‏[`ARCHITECTURE_V2.md`](ARCHITECTURE_V2.md) (الطبقات، المكدس، ما يُعاد استخدامه، اسم المنتج AGOS)؛ المخطط `docs/sql/v2/001_core.sql` و[`DATA_MODEL_V2.md`](DATA_MODEL_V2.md)؛ العقود `agos_v2/contracts.py` ← [`contracts/v2/`](contracts/v2/README.md)؛ الاختبار `tests/test_r202_v2_schema.py` (23 دائمًا + 25 حيًا على قاعدة اختبار؛ أحمر مسجل: قيد «failed يحتاج خطأ» كان يقبل NULL). السجل `docs/audit/M10/logs/raw/006_r202_architecture_v2.log`.
+- القبول (لاحق 155): PR #359 مدموج (`2da093a2`)، CI على main ‏43168997334 = success، واختبار المخطط الحي في job ‏storage ‏48 passed؛ نشر Render حي بلا تغيير تشغيلي. السجل `docs/audit/M10/logs/raw/007_r202_acceptance.log`.
 
 #### R-203 — آلية الحذف المعتمد وتنظيف المستودع
 - الحالة: **planned**

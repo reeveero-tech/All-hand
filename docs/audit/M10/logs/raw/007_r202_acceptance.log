@@ -1,0 +1,26 @@
+# M10/007 — R-202 acceptance (architecture v2, data model v2, contracts)
+# date: 2026-11-12
+pr=#359 head (tested) 796a4de94ff3f787ce8ed391d399cefb6da5ad00
+merge 2da093a2886d0071fa4e47c2b2bae27df0cdff2d "Merge pull request #359 from reeveero-tech/m10/r202-architecture-v2" (merge^2 == tested head)
+
+## main CI run 43168997334 (AGOS Kernel CI/CD) = success
+jobs: test=success quality=success network=success storage=success build=success docker=success audit=success publish=skipped
+test (3 legs, identical):
+==== 4437 passed, 34 skipped, 18 deselected, 9 xfailed in 741.66s (0:12:21) ====
+==== 4437 passed, 34 skipped, 18 deselected, 9 xfailed in 703.67s (0:11:43) ====
+==== 4437 passed, 34 skipped, 18 deselected, 9 xfailed in 720.85s (0:12:00) ====
+summary used for evidence: 4437 passed, 34 skipped, 18 deselected
+skipped 34 = 9 as before (live-service tests: R-042 storage, R-163/R-164 queue, R-169, SEC10 postgrest)
+           + 25 R-202 live schema tests (need V2_SCHEMA_ADMIN_URI; they run in job storage)
+storage job — R-202 v2 schema on a test database (pgvector/pgvector:pg17, fails if anything is skipped):
+============================== 48 passed in 3.19s ==============================
+network job:
+=============== 17 passed, 1 skipped, 4480 deselected in 10.71s ================
+
+## Deploy (no runtime change expected)
+Render auto deploy dep-dbqlrik9v7es73dqaji0 commit 2da093a2 status=live (finished 06:34:27Z)
+GET https://all-hand.onrender.com/health -> 200 {"status":"healthy",...}
+
+## Not tested / limits
+- the v2 SQL is NOT applied to hosted Supabase (R-204; needs owner secret SUPABASE_DB_URL)
+- no /api/v2 routes exist yet; contracts are not used by the running server

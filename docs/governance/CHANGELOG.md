@@ -3336,3 +3336,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - **CI**: job ‏storage على `pgvector/pgvector:pg17` + خطوة R-202 تفشل عند أي تخطٍّ؛ `check_atomic_batch.py` يعامل `agos_v2/` ككود تشغيلي.
 - **ما لم يتغير**: لا مسار ولا نشر ولا تطبيق على Supabase ولا أسرار ولا تكلفة. R-202 `awaiting_merge`.
 
+## 2026-11-12 — لاحق 155: قبول R-202 (السجل M10/007)
+- **CI على main**: ‏run 43168997334 = success (test: 4437 passed, 34 skipped, 18 deselected, 9 xfailed في الأرجل الثلاث؛ storage: اختبار المخطط الحي R-202 ‏48 passed؛ network 17 passed, 1 skipped).
+- **النشر**: Render `dep-dbqlrik9v7es73dqaji0` (commit `2da093a2`) حي، `/health` = 200؛ لا تغيير تشغيلي.
+- **R-202 `done`**. المتبقي المعلن: تطبيق المخطط على Supabase الحي في R-204.
+- **التالي**: R-203 آلية الحذف المعتمد وتنظيف المستودع.
+
