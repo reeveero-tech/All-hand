@@ -122,27 +122,8 @@ jobs:
         working-directory: web/
         run: npm test
 
-      # R-076: @tanstack/react-start (and 8 sibling packages) declare
-      # engines.node >=22.12.0, mirrored in the root package.json. Since R-089
-      # web/ and the Docker build stage are on Node 22 too (D-042).
-      # --engine-strict turns any future engines mismatch into a failure.
-      - name: Set up Node for the root app (>=22.12)
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-
-      # R-070: the root TanStack Start app (src/) was neither linted nor built
-      # in CI; `npm run lint` had been broken (no eslint.config.js) unnoticed.
-      - name: Root app — install (clean, from lockfile, engines enforced)
-        run: |
-          node --version
-          npm ci --engine-strict --no-audit --no-fund
-
-      - name: Root app — lint (no warnings allowed)
-        run: npx eslint . --max-warnings=0
-
-      - name: Root app — build
-        run: npm run build
+      # R-203 (D-152, DEL-001): the root TanStack app (src/, root package.json)
+      # was removed — never deployed; web/ above is the only frontend.
 
   docker:
     # R-040: verify the real Dockerfile builds and the container serves /health.
@@ -316,24 +297,7 @@ jobs:
           # made this step informational since R-045; it now blocks on high/critical
           # in dev deps too. See docs/governance/SECURITY.md R-071.
 
-      # R-077: the root TanStack Start app (src/, ~414 packages) was never
-      # audited in CI — only by hand during M6 cycles. npm audit reads
-      # package-lock.json, so no install is needed; Node 22 matches the root
-      # engines (R-076).
-      - name: Set up Node for the root app (>=22.12)
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-
-      - name: Root dependency audit (production deps)
-        run: |
-          set -o pipefail
-          npm audit --omit=dev --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_root_prod.log"
-
-      - name: Root dependency audit (full, including dev)
-        run: |
-          set -o pipefail
-          npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_root_full.log"
+      # R-203 (D-152, DEL-001): the root npm audit steps went with the root app.
 
   storage:
     # R-042: live storage verification against PostgreSQL + PostgREST — the
