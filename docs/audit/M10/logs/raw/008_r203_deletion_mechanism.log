@@ -55,3 +55,16 @@ new deletion lists in this PR (validated, authorize nothing until merged): ['DEL
 No-delete gate passed: 0 tracked files deleted, moved or renamed.
 (first run failed: README.md in the deletions directory was rejected -> README.md is now the one allowed
  non-list file there; test_green_readme_in_the_deletions_directory_is_allowed added)
+
+## 7. R-158 baseline assignment
+tests/test_r158_test_baseline.py::test_every_tracked_file_at_head_is_assigned failed on DEL-001.list
+-> scripts/build_test_baseline.py governance-data rules += ^docs/governance/deletions/DEL-\d{3}\.list$
+$ pytest tests/test_r158_test_baseline.py -q
+43 passed
+
+## 8. Full local suite (sandbox, no k6 binary installed)
+$ python -m pytest -q -m "not network" -p no:cacheprovider
+= 8 failed, 4454 passed, 34 skipped, 18 deselected, 9 xfailed in 694.68s =
+The 8 failures are all tests/test_r176_load_framework.py / tests/test_r177_per_service.py:
+"downloading the pinned k6 failed" (sandbox has no k6; CI installs it). Not caused by this batch.
+CI on the PR head is the authoritative run.
