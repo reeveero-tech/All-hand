@@ -3349,3 +3349,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - **خط الأساس R-158**: `scripts/build_test_baseline.py` يضم `docs/governance/deletions/DEL-NNN.list` إلى مجموعة governance-data (فحص utf-8)، لأن كل ملف متتبَّع يجب أن ينتمي لمجموعة.
 - **ما لم يتغير**: لا حذف، لا كود تشغيل، لا نشر. R-203 `in_progress`.
 
+## 2026-11-12 — لاحق 157: R-203 الدفعة 2 — حذف DEL-001 (D-152، السجل M10/009)
+- **الحذف**: 1033 ملفًا بالضبط كما في `docs/governance/deletions/DEL-001.list` المدموجة في PR #361؛ بوابة عدم الحذف تقبلها لأن القائمة في نقطة التفرع.
+- **فرق الحجم**: الملفات المتتبعة 3811 → 2779؛ 103,243,838 → 102,159,771 بايت؛ المحذوف 1,073,286 بايت و26,712 سطرًا.
+- **ما عُدّل**: `agos_kernel/infrastructure/__init__.py` و`health.py` (لا `check_redis`)، `core/contracts.py` (لا `queue_task`؛ 30 عقدًا)، `.github/workflows/ci.yml` (لا خطوات الواجهة الجذرية ولا تدقيق npm الجذري)، `scripts/build_entrypoint_map.py`، `.env.example`/`OPERATIONS.md`/`DEPLOY.md` (لا `REDIS_URL` ولا `CIRCUIT_BREAKER_*`)، `ARCHITECTURE.md`، رأس `web/src/App.jsx` → «AGOS».
+- **الاختبارات**: جديد `tests/test_r203_cleanup.py` (أحمر على رأس الدفعة 1: 4 failed, 1 passed؛ أخضر: 5 passed)؛ `web/tests/ui_truth.test.mjs` (أحمر 45/1 ثم 46/0)؛ عُدلت اختبارات الـshims والطابور والقاطع وR-158 وR-157 C6 وR-200. الحزمة الكاملة محليًا: 4438 passed, 34 skipped, 18 deselected, 9 xfailed (8 فشل k6 محلي فقط).
+- **الحالة**: R-203 `awaiting_merge` (PR #362). القبول في الدفعة التالية بعد CI على main وتحقق النشر.
