@@ -3369,4 +3369,5 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - **الاختبارات**: `tests/test_r204_accounts_db.py` (26)، `tests/test_r204_accounts_live.py` (16، Supabase Auth v2.197.0 الحقيقي)، `tests/test_r204_accounts_unit.py` (39). CI ‏job ‏`storage` يثبت GoTrue بتجزئة مثبتة ويفشل إن تُخطي اختبار R-204. 6 طفرات كلها اكتُشفت.
 - **أدوات**: فحص ruff في CI يشمل `agos_v2/`؛ `build_entrypoint_map.py` يدعم `APIRouter(prefix)`؛ اختبار R-156 يقرأ `_IncludedRouter`؛ بوابة R2 تشمل `accounts_api.py`.
 - **ما لم يتغير**: لا تطبيق حي، لا نشر، لا تغيير إعدادات Render/Supabase، مسارات v1 كما هي. R-204 `in_progress`.
+- **تصحيح نطاق الدفع (R-187)**: الدفع `04d6720c..beab88f7` غيّر `API.md` وحده ففشل `push-scope-docs` (الوثائق الأربع الإلزامية غائبة). الدفع التالي يحمل الوثائق الأربع؛ لا تخفيف للفحص.
 
