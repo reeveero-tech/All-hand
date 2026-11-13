@@ -1,7 +1,7 @@
 R-204 batch 2 — accounts in the web UI (web/): sign-in/sign-up, session, workspaces, members, roles, invitations (D-153)
 branch: m10/r204-web   base: main 27bfc5a463ea2d4f3075c64d99f7bbb7293a5dab (merge of PR #364, R-204 batch 1)
 date: 2026-11-13
-scope: web/ only (no server, API or database change). NOT deployed. Uses the /api/v2 routes of batch 1 exactly as documented in API.md.
+scope: web/ only (no server, API or database change). Not yet merged/deployed at the time of writing. Uses the /api/v2 routes of batch 1 exactly as documented in API.md.
 
 ## 1. What was added
 - web/src/session.js — the only place that talks to /api/v2:
@@ -92,6 +92,13 @@ stack: PostgreSQL 18 with docs/sql/v2/001+002, Supabase Auth (GoTrue) v2.197.0 (
   ================= 2 failed, 12 passed, 25 deselected in 1.05s ==================
 - fix: In(seconds) = time relative to the moment the token is built (claims() resolves it); exp/nbf/iat cases use it. Same plugin after the fix: 39 passed;
   without it: 39 passed. Other time.time() uses in the R-204 tests are inside test bodies (computed at run time).
+
+## 5d. Live state after the merge of PR #364 (read-only checks, 2026-11-13 05:06 UTC)
+main CI on 27bfc5a4: Governance Gate success, AGOS Kernel CI/CD run 43365929727 success. Render deploys main automatically (as for R-201..R-203):
+- GET https://all-hand.onrender.com/health -> 200 healthy
+- GET /api/v2/auth/config -> 200 {"configured":false,"email":false,"providers":{"google":false,"github":false},"authorize_url":null}, Cache-Control: no-store
+- GET /api/v2/workspaces -> 503 {"detail":"accounts are not configured on this server (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_DB_URL)"}, Cache-Control: no-store
+=> batch 1 is deployed and inert, as designed. 001/002 are NOT applied to the live Supabase project; no Render/Supabase setting was changed.
 
 ## 6. Not tested (honest)
 - the live Supabase project and the deployed site (nothing applied or deployed; needs the owner's steps in OPERATIONS.md, section R-204);
