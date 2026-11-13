@@ -462,7 +462,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 ### ما نُفذ حيًا (2026-11-13، لاحق 161، السجل `docs/audit/M10/logs/raw/013_r204_live.log`)
 
 بتفويض المالك وبرمز وصول شخصي لواجهة إدارة Supabase (في ملف مؤقت خارج المستودع؛ **يُلغى بعد العمل**):
-1. الترحيلات عبر `POST /v1/projects/{ref}/database/migrations` بالأسماء: `r204_000_vector_in_extensions` (`create extension if not exists vector with schema extensions` — عرف Supabase بإبقاء الامتدادات خارج `public`؛ سطر 001 يصبح بلا أثر)، ثم `r202_001_core`، ثم `r204_002_accounts`. الترحيل `003_function_search_path.sql` يُطبق بعد دمجه بالاسم `r204_003_function_search_path`.
+1. الترحيلات عبر `POST /v1/projects/{ref}/database/migrations` بالأسماء: `r204_000_vector_in_extensions` (`create extension if not exists vector with schema extensions` — عرف Supabase بإبقاء الامتدادات خارج `public`؛ سطر 001 يصبح بلا أثر)، ثم `r202_001_core`، ثم `r204_002_accounts`. الترحيل `003_function_search_path.sql` طُبق بعد دمجه (PR #366) بالاسم `r204_003_function_search_path` (الإصدار 20261113073804).
 2. **الدور `agos_app`** بدل `postgres` في `SUPABASE_DB_URL`:
    `create role agos_app login noinherit password '<مولّد، لا يُكتب>'; grant authenticated to agos_app; alter role agos_app set statement_timeout = '15s';`
    المستخدم في رابط المجمّع: `agos_app.<ref>` على `aws-0-ap-south-1.pooler.supabase.com:5432` مع `sslmode=require`. كلمة المرور في متغير Render وحده. تدويرها: `alter role agos_app password '<جديدة>'` ثم تحديث المتغير (يعيد النشر).

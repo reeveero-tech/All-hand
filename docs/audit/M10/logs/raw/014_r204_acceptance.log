@@ -1,0 +1,105 @@
+R-204 acceptance — accounts, authentication and workspaces: merged, applied live, verified on production (D-153)
+date: 2026-11-13 (UTC)
+PRs: #364 (batch 1 backend, merge 27bfc5a4) · #365 (batch 2 web, merge cb60e1ea) · #366 (batch 3 live enablement + 003)
+#366: tested head 3c954c6dcfe152e692f9e8e4a9cfd211c2441af5 -> merge 54c845d1c4a9e2e46f81a25ea32c3da6886d8e68
+
+## 1. CI on the PR head 3c954c6d (Kernel run 43382313941, Governance run 43382313982)
+  quality, test, network, build, docker, audit, storage = success; governance, push-scope-docs = success
+  test job: 4486 passed, 78 skipped, 18 deselected, 9 xfailed
+  storage job: R-202 v2 schema 48 passed; R-204 accounts (real Supabase Auth + RLS + API) 44 passed, 0 skipped
+    incl. test_every_agos_function_pins_its_search_path PASSED, test_trigger_functions_still_work_with_the_pinned_path PASSED
+
+## 2. CI on main after the merge 54c845d1
+  AGOS Kernel CI/CD run 43387128685 = success (test, quality, network, build, docker, audit, storage; publish skipped)
+    test: 4486 passed, 78 skipped, 18 deselected, 9 xfailed
+    78 skipped = 9 tests needing live services (R-042, R-163/R-164, R-169, SEC10) + 25 R-202 live + 44 R-204 live;
+                 the 69 live ones RUN in job storage (48 + 44 passed above, the job fails if an R-204 test skips)
+    18 deselected = network marker (job network: 17 passed, 1 skipped)
+    storage: 48 passed (R-202), 44 passed (R-204)
+  Governance Gate run 43387128732 = success
+
+## 3. Migration 003 applied live from main 54c845d1 (sha256 059c6a24c73c90e9…)
+  POST /v1/projects/qehloiuyzksnijstkfmn/database/migrations name=r204_003_function_search_path -> HTTP 200
+  live migrations now: 20261113064033 r204_000_vector_in_extensions · 20261113064036 r202_001_core ·
+                       20261113064040 r204_002_accounts · 20261113073804 r204_003_function_search_path
+  agos functions without a pinned search_path (live query) -> [] (was 4)
+  Supabase security advisor after 003: no finding on schema agos. Remaining (pre-existing, public, not ours, owner):
+    rls_enabled_no_policy on public.agent_stats / public.events / public.tasks; public.rls_auto_enable executable by
+    anon and authenticated (security definer).
+
+## 4. Deploy of the merge
+  Render dep-dbrbske8bjmc73bk761g  trigger=new_commit  commit 54c845d1  07:37:53 -> 07:38:26  status=live
+
+## 5. Second live acceptance run on that deploy, with 003 applied (scripts/v2/r204_live_check.py, run f74736,
+##    07:39:05 -> 07:41:09 UTC). Output verbatim:
+PASS config: configured, e-mail on, no provider enabled — {"configured": true, "email": true, "signup_enabled": true, "email_confirmation_required": true, "providers": {"google": false, "github": false}, "authorize_url
+PASS sign-up through the public route answers (status recorded) — status=429 body={"detail":"too many attempts; retry later"}
+PASS sign-up never yields a confirmed account without e-mail confirmation — rows=0
+PASS A sign-in 200 — status=200
+PASS refresh token only in an HttpOnly; Secure; SameSite=Strict cookie on /api/v2/auth — agos_rt
+PASS refresh token not in the JSON body
+PASS sign-in response Cache-Control: no-store
+PASS B sign-in 200
+PASS C sign-in 200
+PASS unconfirmed user refused (403) — status=403
+PASS wrong password and unknown e-mail look the same (no enumeration) — 401/401
+PASS /me returns A
+PASS A's list has WA only
+PASS B's list has WB only
+PASS isolation B→WA: every route 404 (9 operations) — {"get": 404, "rename": 404, "delete": 404, "members": 404, "set_role": 404, "remove": 404, "invitations": 404, "invite": 404, "revoke": 404}
+PASS isolation A→WB: every route 404 (9 operations) — {"get": 404, "rename": 404, "delete": 404, "members": 404, "set_role": 404, "remove": 404, "invitations": 404, "invite": 404, "revoke": 404}
+PASS database unchanged after the cross attempts — [{"name": "r204-live-A-f74736", "n": 1}, {"name": "r204-live-B-f74736", "n": 1}]
+PASS forged/invalid/foreign tokens refused (401), incl. the service and anon keys — {"none": 401, "garbage": 401, "sub_swapped": 401, "alg_none": 401, "anon_key": 401, "service_key": 401}
+PASS X-API-Key is not an identity on /api/v2 — status=401
+PASS Supabase Data API does not expose schema agos — status=406 {"code":"PGRST106","details":null,"hint":"Only the following schemas are exposed: public, 
+PASS owner creates an invitation (201, token once) — status=201
+PASS invitation list never contains the token
+PASS someone else's e-mail cannot accept (C with B's token) — status=403
+PASS invited B accepts — status=200
+PASS the same token cannot be used twice — status=409
+PASS B now sees WA as member (and WB as owner) — {"239789c3-dd07-4ab5-b64f-a608e4dc65d3": "member", "39bb0566-320c-4721-84d0-e8f524135e5c": "owner"}
+PASS member B cannot change roles, invite, rename, delete or remove the owner (403) — {"set_role": 403, "invite": 403, "rename": 403, "delete": 403, "remove_owner": 403}
+PASS C accepts an admin invitation
+PASS admin C cannot invite admins, change roles, remove the owner or delete (403) — {"invite_admin": 403, "set_role": 403, "remove_owner": 403, "delete_ws": 403}
+PASS admin C can invite a member — status=201
+PASS admin C can remove member B
+PASS B no longer reaches WA
+PASS C cannot reach WB (never a member)
+PASS revoked invitation refused (410) — status=410
+PASS expired invitation refused (410) — status=410
+PASS unknown invitation token refused — status=404
+PASS refresh with the cookie gives a new access token — status=200
+PASS logout 204 — status=204
+PASS the access token is dead right after logout (401)
+PASS refresh after logout refused (401)
+PASS A can sign in again
+PASS a banned user's live token is refused (401)
+PASS no secret in this report
+cleanup: [{"users": 0, "workspaces": 0, "members": 0, "invitations": 0}]
+
+SUMMARY: 43 passed, 0 failed (run f74736)
+
+## 6. Render log scan for run f74736 (07:39:00Z..07:42:00Z, read until hasMore=false)
+  6 pages, 548 lines, 146 mention /api/v2; 40 secret fragments searched (all tokens/passwords/invitation tokens of the run,
+  API keys, agos_app password, management token) -> 0 hits; test e-mails -> 0; ERROR/Traceback -> 0.
+
+## 7. R-204 acceptance criterion, item by item
+  "A does not see B's data through any route (API and database)":
+    database — tests/test_r204_accounts_db.py 28 (CI storage) ; API — tests/test_r204_accounts_live.py 16 on real GoTrue (CI)
+    production — 2 runs x (9 operations each direction = 404, DB unchanged, forged tokens 401, Data API refuses agos)
+  "sign-in, sign-out and session expiry work live":
+    production — sign-in 200 (HttpOnly/Secure/SameSite=Strict refresh cookie on /api/v2/auth, not in the body, no-store),
+    unconfirmed 403, wrong password == unknown e-mail (401, same body), refresh 200, logout 204 -> the same access token 401
+    immediately and refresh 401; banned user's live token 401. Expired tokens: unit + real-GoTrue tests (CI); the live
+    jwt_exp is 3600 s, not waited out in production.
+  workspaces / roles / invitations: production — member and admin limits 403, owner-only actions, invitation for another
+    e-mail 403, reuse 409, revoked 410, expired 410, unknown 404.
+
+## 8. Not done (owner) — R-204 is closed with these stated, not hidden
+  1. Custom SMTP: the built-in Supabase mailer delivers only to the project team's addresses (2/h) — measured: public
+     sign-up -> 429 over_email_send_rate_limit. Until then real outside users cannot confirm their e-mail.
+     Autoconfirm must stay OFF (invitation acceptance relies on a confirmed e-mail).
+  2. Google/GitHub OAuth: client apps not created (providers disabled; PKCE exchange tested against real GoTrue only).
+  3. Revoke the Supabase personal access token used for this work.
+  4. Pre-existing public-schema advisor findings (above).
+  5. Not measured: the per-IP rate-limit key behind the Render proxy (v1 behaviour shared by /api/v2).
