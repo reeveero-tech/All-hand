@@ -230,9 +230,16 @@ def test_real_repo_self_check_passes(real_map):
 
 
 def _runtime_routes(extra_env=None):
-    code = ("import json, server\nout=[]\nfor r in server.app.routes:\n"
-            "    ms = sorted(getattr(r, 'methods', None) or ['MOUNT'])\n"
-            "    out.append([ms, r.path])\nprint(json.dumps(out))\n")
+    # R-204: FastAPI 0.143 keeps an included APIRouter as one `_IncludedRouter`
+    # entry; its routes (full paths, prefix applied) are in `original_router`.
+    code = ("import json, server\nout=[]\n"
+            "def walk(routes):\n"
+            "    for r in routes:\n"
+            "        if hasattr(r, 'original_router'):\n"
+            "            walk(r.original_router.routes); continue\n"
+            "        ms = sorted(getattr(r, 'methods', None) or ['MOUNT'])\n"
+            "        out.append([ms, r.path])\n"
+            "walk(server.app.routes)\nprint(json.dumps(out))\n")
     res = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, timeout=120,
                          env=_env(**(extra_env or {})))
     assert res.returncode == 0, res.stderr[-2000:]
@@ -247,7 +254,8 @@ def test_map_routes_equal_routes_registered_on_real_app(real_map):
             if meth not in ("HEAD", "OPTIONS"):
                 rt.add((meth, path))
     rt = {x for x in rt if x[1] not in FRAMEWORK_ROUTES}
-    mp = {(r["method"], r["path"]) for r in m["routes"] if r["file"] in ("server.py", "agent_civilization/civilization_routes.py")}
+    mp = {(r["method"], r["path"]) for r in m["routes"]
+          if r["file"] in ("server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py")}
     cond = {(r["method"], r["path"]) for r in m["routes"] if r["scope"] == "conditional"}
     web_dist = (ROOT / "web" / "dist").exists()
     expected = (mp - cond) | (cond if web_dist else set())

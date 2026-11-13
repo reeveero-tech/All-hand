@@ -81,6 +81,8 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_API_KEY` | server.py | `""` — منذ R-138 مفتاح المشغّل: principal `operator`/`admin`؛ منذ R-139 في الإنتاج ≥16 حرفاً وبلا مسافات طرفية |
 | `AGOS_TENANT_KEYS` (R-138، SEC-02، D-056) | core/tenancy.py | غير مضبوط. قائمة JSON `[{"tenant","key_sha256","role"}]` (تجزئة SHA-256 للمفتاح، الدور `user` افتراضياً أو `admin`). أي خلل → الخادم لا يقلع (`CredentialsError`). بلا هذا ولا `AGOS_API_KEY`: كل مسارات بيانات المستأجرين 401 |
 | `AGOS_ALLOWED_ORIGINS` | server.py | `"*"` |
+| `SUPABASE_DB_URL` (R-204، D-153) | agos_v2/accounts_api.py | غير مضبوط = حسابات v2 معطلة (`/api/v2/*` ترد 503). سلسلة اتصال Postgres للمشروع — على Render رابط **Session pooler** (IPv4) من لوحة Supabase ← Connect. سر: لا يُكتب في المستودع ولا السجلات |
+| `AGOS_PUBLIC_URL` (R-204) | agos_v2/accounts_api.py | غير مضبوط = روابط الدعوة نسبية ولا `redirect_to` في التسجيل. العنوان العام للواجهة (مثل `https://all-hand.onrender.com`) |
 | `AGOS_RATE_LIMIT_REQUESTS` | server.py | 100 |
 | `AGOS_RATE_LIMIT_WINDOW` | server.py | 60 |
 | `AGOS_RATE_LIMIT_DB` (لاحق 61) | core/rate_limit_store.py | ملف مؤقت للمضيف (`agos_rate_limit.sqlite3`) — عدّاد المعدل المشترك بين عمليات المضيف نفسه |
@@ -443,3 +445,16 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 - **الإدارة عبر HTTP**: مسارات admin الأربعة (28–31 في API.md) بدور admin: القائمة، فحص الصحة، التعطيل، التفعيل (فاعل إلزامي مدقق). تعذر المخزن ⇒ 503 fail-closed — لا إجابة فارغة صامتة. التغيير دائم في المخزن المشترك ويصل بوابة كل عامل بلا إعادة تشغيل. CLI المشغّل `scripts/tool_registry_admin.py` يبقى كما هو.
 - **قياس كلفة البوابة**: `python3 benchmarks/r171/gate_perf/run.py --json out.json` (مخزن معزول مؤقت — لا يمس سجل المشغّل): فحص البوابة p50≈6µs (n=2000)، تنفيذ مبوّب 10.7–17.9k ops/s عند تزامن 10–200، فحص صحة كامل (20 أداة) 0.02s. حد معلن: مضيف واحد ومخزن SQLite — يقيس كلفة البوابة لا زمن المزودين (أدوات النموذج/الشبكة لا تُنفَّذ)، للتدقيق لا لاختبار حمل P6.
 - **تعدد المضيفين**: لا يوجد نشر متعدد المضيفين؛ المتطلب موثق (مخزن شبكي بمعاملات ذريّة + بصمة صفوف + fail-closed + حد إعادة تحميل) — قرار نشر لا يُتخذ ضمنًا (استمرار رفض D-113).
+
+
+## R-204 — تفعيل حسابات v2 على البيئة الحية (D-153)
+
+الخطوات التالية **يقوم بها المالك أو تُنفذ بموافقته**؛ لا شيء منها مدفوع.
+
+1. **تطبيق الترحيلين** `docs/sql/v2/001_core.sql` ثم `002_accounts.sql` على مشروع Supabase (يثبت امتداد `vector` المتاح مجانًا). تغيير حي في القاعدة (مخطط `agos` جديد فقط؛ جداول v1 في `public` لا تُمس).
+2. **`SUPABASE_DB_URL` على Render** (لوحة Render ← الخدمة All-hand ← Environment): القيمة من لوحة Supabase ← زر **Connect** ← **Session pooler** (المستخدم `postgres.<ref>`، المنفذ 5432) مع كلمة مرور القاعدة. لا تستخدم الرابط المباشر `db.<ref>.supabase.co` (IPv6 فقط، Render لا يصل إليه). إضافة المتغير تعيد نشر الخدمة.
+3. **روابط Auth** (لوحة Supabase ← Authentication ← URL Configuration): Site URL = `https://all-hand.onrender.com`، وأضفه إلى Redirect URLs. اختياريًا `AGOS_PUBLIC_URL` بالقيمة نفسها على Render.
+4. **(اختياري) OAuth**: تطبيق OAuth في Google Cloud وGitHub بعنوان الرجوع `https://<ref>.supabase.co/auth/v1/callback`، ثم المعرف والسر في لوحة Supabase ← Authentication ← Providers. لا يدخل أي منهما Render أو المستودع.
+5. **التحقق الحي** (بعد 1–3): `GET /api/v2/auth/config` = `configured:true`؛ تسجيل مستخدمَين حقيقيين وتأكيد البريد، مساحة ودعوة، اختبار العزل والخروج — يُسجل في سجل قبول R-204.
+
+**الرجوع**: حذف `SUPABASE_DB_URL` من Render يعيد كل `/api/v2` إلى 503 دون أثر على v1. المخطط `agos` يُترك (لا بيانات v1 فيه).

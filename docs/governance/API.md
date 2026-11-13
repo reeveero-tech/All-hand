@@ -1,3 +1,4 @@
+> **آخر تحديث**: 2026-11-13 — **R-204 (D-153)**: أول مسارات v2 ‏`/api/v2/*` (19 مسارًا في `agos_v2/accounts_api.py`، مضمّنة في `server.py`): التسجيل والدخول والتجديد والخروج وتبادل OAuth، و`/me`، والمساحات والأعضاء والدعوات. الهوية = رمز وصول Supabase Auth فقط (`Authorization: Bearer`)؛ `X-API-Key` ليس هوية هنا. بلا `SUPABASE_URL` و`SUPABASE_ANON_KEY` و`SUPABASE_DB_URL` كلها ترد 503 (عدا `/auth/config`). مسارات v1 بلا تغيير. التفاصيل في القسم «R-204» أدناه.
 > **آخر تحديث**: 2026-11-12 — **R-203 (D-152، DEL-001)**: `GET /health` لم يعد يضم `checks.redis` (كان يعرض «healthy» لطابور Redis داخلي غير مستخدم)؛ الفحوص الآن `api` و`civilization` و`storage` فقط. حُذف عقد `queue_task` (30 عقدًا). لا مسار جديد ولا مسار محذوف.
 > **آخر تحديث**: 2026-11-12 — **R-202 (D-151)**: لا مسار جديد ولا تغيير عقد. عقود v2 (Task، Step، Agent Spec، Artifact، Message) في [`contracts/v2/`](contracts/v2/README.md)؛ مسارات `/api/v2/*` تبدأ في R-204 وما بعده.
 > **آخر تحديث**: 2026-11-11 — **D-148 (لاحق 146)**: `POST /api/tasks` في الوضع المتطاير (`AGOS_TASK_QUEUE=0` مع تخزين مُعدّ): إن لم يُنشأ صف المهمة عند القبول يضيف رد 202 الحقل `"persisted": false` (جمعي اختياري — غائب في الطريق السعيد وفي الوضع الدائم وبلا تخزين)، ويحمله سجل `GET /api/tasks/{id}` حتى يُعاد إنشاء الصف (`true`). `POST /api/tasks/{task_id}/cancel` على مهمة صفها مفقود يرد 200 المعتاد (كان 409 كاذبًا). لا رموز حالة جديدة.
@@ -267,3 +268,34 @@
   - `AGOS_TASK_ACCEPT_RATE_PER_MIN` صار يصمد أمام الطلبات المتزامنة في الوضعين: الطلب المقبول للفحص يحجز حصته فوراً، والطلب الجاري يحتجزها حتى ينتهي — فقد يُرفض طلب بـ429 بينما طلبات أخرى جارية ثم تفشل؛ الحصة المحتجزة تُعاد عند فشل التخزين (503) أو تحوّل الطلب إلى إعادة إرسال (`duplicate: true`)، ولا تُحسب إعادة الإرسال أبداً.
   - بعد 429/503 مع `Retry-After` من المزود لا يصل أي طلب إلى المزود قبل انقضاء المدة، حتى لو وصلت ردود ناجحة متأخرة لطلبات سابقة؛ والطلبات المنتظرة لمقعد المزود بمفتاح تُرد `busy` + `retry_after` إذا فُتح القاطع أثناء انتظارها.
 - **`/metrics`**: مقياس جديد `breaker_stale_outcomes` (وسم `service`) — نتائج نداءات قُبلت قبل تغيّر حالة القاطع فتُهمل.
+
+
+## R-204 — مسارات الحسابات `/api/v2` (D-153، 2026-11-13)
+
+المصدر `agos_v2/accounts_api.py` (`build_router`)، مضمّن في `server.py` بـ`app.include_router` قبل catch-all الواجهة. **الحالة الحية**: غير مفعّلة على Render حتى يضيف المالك `SUPABASE_DB_URL` ويُطبق الترحيل 002 — حتى ذلك الحين كل المسارات (عدا `/auth/config`) ترد **503** `accounts are not configured` (لا هوية بديلة أبدًا).
+
+**قواعد عامة**: الهوية `Authorization: Bearer <access_token>` من Supabase Auth (يُتحقق من التوقيع والمطالبات **و**من أن الجلسة حية في القاعدة)؛ 401 + `WWW-Authenticate: Bearer` عند غيابه أو بطلانه أو انتهائه (`session expired`) أو انتهاء الجلسة (`session ended`). كل استجابة `Cache-Control: no-store`. معرف مساحة/عضو/دعوة لا يخصك أو غير موجود أو بصيغة خاطئة = **404** نفسه (لا تعداد). حد المعدل نفسه في v1 لكل عنوان. رموز الأخطاء من القاعدة: AG401→401، AG403→403 (دور غير كافٍ)، AG404→404، AG409→409، AG410→410، AG422→422؛ أي خطأ آخر في القاعدة 503 بلا تفاصيل.
+
+| المسار | الفعل | الهوية | السلوك |
+|---|---|---|---|
+| `/api/v2/auth/config` | GET | لا | `{configured, email, signup_enabled, email_confirmation_required, providers:{google,github}, authorize_url}` من إعدادات Supabase Auth العامة |
+| `/api/v2/auth/signup` | POST | لا | `{email, password(≥8)}` → 200 `{confirmation_required:true, session:null}` (الرد نفسه لبريد مسجل مسبقًا) أو جلسة إن كان التأكيد معطلًا؛ 422 كلمة مرور ضعيفة؛ 403 التسجيل معطل؛ 429 |
+| `/api/v2/auth/login` | POST | لا | `{email, password}` → 200 `{access_token, token_type, expires_at, expires_in, user:{id,email}}` + كعكة `agos_rt` (HttpOnly, Secure, SameSite=Strict, Path=/api/v2/auth)؛ رمز التجديد **لا** يظهر في الجسم؛ 401 `invalid email or password` (نفسه للبريد غير الموجود)؛ 403 البريد غير مؤكد |
+| `/api/v2/auth/refresh` | POST | كعكة `agos_rt` | 200 جلسة جديدة + كعكة جديدة (تدوير)؛ 401 `session ended` ومسح الكعكة عند رمز ملغى/مُعاد استخدامه/منتهٍ |
+| `/api/v2/auth/oauth/exchange` | POST | لا | `{auth_code, code_verifier}` (PKCE) → جلسة ككعكة الدخول؛ 401 عند الفشل. غير مفعّل حتى يضيف المالك تطبيقات Google/GitHub |
+| `/api/v2/auth/logout` | POST | Bearer (اختياري) | 204 دائمًا مع مسح الكعكة؛ مع رمز صالح تُحذف الجلسة في Supabase Auth فيرفض الرمز نفسه فورًا (401) ويفشل التجديد |
+| `/api/v2/me` | GET | Bearer | `{user:{id,email}, workspaces:[{id,name,role,created_at}]}` |
+| `/api/v2/workspaces` | GET | Bearer | مساحات المستخدم فقط |
+| `/api/v2/workspaces` | POST | Bearer | `{name}` → 201؛ المنشئ owner |
+| `/api/v2/workspaces/{id}` | GET | Bearer (عضو) | المساحة ودورك فيها |
+| `/api/v2/workspaces/{id}` | PATCH | owner/admin | `{name}` |
+| `/api/v2/workspaces/{id}` | DELETE | owner | 204؛ يحذف كل بياناتها (cascade) |
+| `/api/v2/workspaces/{id}/members` | GET | Bearer (عضو) | `[{user_id, email, role, created_at}]` |
+| `/api/v2/workspaces/{id}/members/{user_id}` | PATCH | owner | `{role: owner|admin|member}`؛ 409 لتخفيض آخر مالك |
+| `/api/v2/workspaces/{id}/members/{user_id}` | DELETE | owner (أي أحد)، admin (أعضاء)، أي أحد (نفسه) | 204؛ 409 لآخر مالك |
+| `/api/v2/workspaces/{id}/invitations` | GET | owner/admin | `[{id, email, role, state: pending|accepted|revoked|expired, ...}]` بلا رمز ولا بصمة |
+| `/api/v2/workspaces/{id}/invitations` | POST | owner (admin/member)، admin (member فقط) | `{email, role, ttl_hours 1..720 (افتراضي 72)}` → 201 مع `token` و`accept_url` (`<AGOS_PUBLIC_URL>/#invite=<token>`) **مرة واحدة فقط**؛ يُخزن SHA-256 فقط؛ دعوة جديدة لنفس البريد تلغي السابقة؛ 409 إن كان عضوًا |
+| `/api/v2/workspaces/{id}/invitations/{inv}` | DELETE | owner/admin | 204 إلغاء |
+| `/api/v2/invitations/accept` | POST | Bearer | `{token}` → 200 `{workspace_id, role}`؛ 403 بريد المستخدم المؤكد لا يطابق؛ 409 مستخدمة؛ 410 منتهية أو ملغاة؛ 404 غير موجودة |
+
+**الاختبارات**: `tests/test_r204_accounts_live.py` (خادم Supabase Auth الحقيقي + PostgreSQL، عبر `server.app`)، `tests/test_r204_accounts_db.py` (القاعدة مباشرة)، `tests/test_r204_accounts_unit.py` (بلا شبكة). **ما لم يُثبت بعد**: التشغيل على مشروع Supabase الحي ونشر Render، وOAuth الحي، واستخدام الواجهة لهذه المسارات.

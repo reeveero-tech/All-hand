@@ -28,7 +28,7 @@ jobs:
           # R-032a: specialists/ package cleaned (explicit re-exports, no star
           # imports, no unused imports) — no longer excluded (see docs/governance/RISKS.md Q-004).
           ruff check --select F,E722 \
-            server.py agent_civilization agos_kernel tests
+            server.py agent_civilization agos_kernel agos_v2 tests
 
   test:
     runs-on: ubuntu-26.04
@@ -375,6 +375,32 @@ jobs:
             echo "::error::R-202 live schema tests were skipped"; exit 1
           fi
 
+      - name: Install Supabase Auth (GoTrue) v2.197.0 (checksum-pinned)
+        run: |
+          # R-204 (D-153): the auth server Supabase runs, from its official release.
+          # Same rules as PostgREST above: --fail, transient retries, mandatory sha256.
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 20 \
+            -o /tmp/gotrue.tar.gz https://github.com/supabase/auth/releases/download/v2.197.0/auth-v2.197.0-x86.tar.gz
+          if ! echo "9daff5d1939c3142a1586e435e6e2a7a2f71534ec40ff1b196b59b83ad5678f3  /tmp/gotrue.tar.gz" | sha256sum -c -; then
+            echo "checksum mismatch: size=$(stat -c %s /tmp/gotrue.tar.gz) sha256=$(sha256sum /tmp/gotrue.tar.gz | cut -d' ' -f1)"
+            exit 1
+          fi
+          mkdir -p /tmp/gotrue && tar -xzf /tmp/gotrue.tar.gz -C /tmp/gotrue
+          test -x /tmp/gotrue/auth && test -d /tmp/gotrue/migrations
+
+      - name: R-204 accounts (real Supabase Auth + RLS isolation + API end-to-end)
+        env:
+          V2_SCHEMA_ADMIN_URI: postgresql://postgres:postgres@localhost:5432/postgres
+          GOTRUE_BIN: /tmp/gotrue/auth
+        run: |
+          set -o pipefail
+          python -m pytest tests/test_r204_accounts_db.py tests/test_r204_accounts_live.py -v -p no:cacheprovider 2>&1 | tee "$GITHUB_WORKSPACE/r204_accounts.log"
+          grep -q " passed" "$GITHUB_WORKSPACE/r204_accounts.log"
+          # the live tests must RUN here, not skip
+          if grep -qE "[0-9]+ skipped" "$GITHUB_WORKSPACE/r204_accounts.log"; then
+            echo "::error::R-204 live accounts tests were skipped"; exit 1
+          fi
+
       - name: Upload storage verification log
         if: always()
         uses: actions/upload-artifact@v7
@@ -384,6 +410,7 @@ jobs:
             r042_storage.log
             r161_storage_local.json
             r202_v2_schema.log
+            r204_accounts.log
 
   network:
     # R-072 (RISK-019): the internet-facing agents (researcher / api_integrator /

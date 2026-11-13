@@ -1,0 +1,151 @@
+R-204 batch 1 — accounts, sessions, workspaces, roles and invitations in the backend (D-153)
+branch: m10/r204-accounts   base: main 65d311376120afcd823e3186467b1273833796d6 (PR #363, R-203 acceptance)
+date: 2026-11-13
+scope: backend only (database migration 002 + /api/v2 routes). NOT applied to the live Supabase project, NOT deployed.
+
+## 1. Starting point (read from GitHub / live project, not from the previous agent's report)
+- main head 65d31137 = merge of PR #363; R-203 done via PR #361 + #362 + #363; CI on main: Governance Gate run 43206566501 success, AGOS Kernel CI/CD run 43206566694 success.
+- live Supabase project (read-only queries): no `agos` schema; extension `vector` available but not installed; auth.users = 0;
+  Auth: email signup on, autoconfirm off, Google/GitHub providers off; JWKS = ES256 (asymmetric).
+- 001_core.sql (R-202) had RLS by workspace membership only.
+
+## 2. Red first — gaps of 001 alone, measured on a fresh local PG 18 database (script below, output verbatim)
+--- /tmp/red204b.sql
+\set ON_ERROR_STOP 0
+delete from agos.tasks; delete from agos.workspace_members; delete from agos.workspaces;
+insert into auth.users(id,email,email_confirmed_at) values ('00000000-0000-0000-0000-00000000000a','a@t',now()) on conflict do nothing;
+insert into auth.sessions(id,user_id) values ('00000000-0000-0000-0000-0000000005a1','00000000-0000-0000-0000-00000000000a') on conflict do nothing;
+insert into agos.workspaces(id,name) values ('00000000-0000-0000-0000-0000000000a1','A'),('00000000-0000-0000-0000-0000000000b1','B');
+insert into agos.workspace_members(workspace_id,user_id,role) values
+ ('00000000-0000-0000-0000-0000000000a1','00000000-0000-0000-0000-00000000000a','owner'),
+ ('00000000-0000-0000-0000-0000000000b1','00000000-0000-0000-0000-00000000000a','owner');
+insert into agos.tasks(id,workspace_id,title,goal) values ('00000000-0000-0000-0000-0000000000f1','00000000-0000-0000-0000-0000000000a1','t','g'),('00000000-0000-0000-0000-0000000000f2','00000000-0000-0000-0000-0000000000a1','t2','g');
+\echo [GAP 1] live session; member of A and B moves a task from A to B:
+begin; select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated","session_id":"00000000-0000-0000-0000-0000000005a1"}',true) \g /dev/null
+set local role authenticated;
+update agos.tasks set workspace_id='00000000-0000-0000-0000-0000000000b1' where id='00000000-0000-0000-0000-0000000000f1' returning id, workspace_id;
+rollback;
+\echo [GAP 2] live session; created_by forged as another user:
+begin; select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated","session_id":"00000000-0000-0000-0000-0000000005a1"}',true) \g /dev/null
+set local role authenticated;
+insert into agos.tasks(workspace_id,title,goal,created_by) values ('00000000-0000-0000-0000-0000000000a1','x','y','00000000-0000-0000-0000-0000000000ff') returning created_by;
+rollback;
+\echo [GAP 3] claims for a session that does not exist:
+begin; select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated","session_id":"00000000-0000-0000-0000-00000000dead"}',true) \g /dev/null
+set local role authenticated;
+select count(*) as visible_tasks from agos.tasks;
+rollback;
+\echo [CONTROL] same user with the live session sees:
+begin; select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000000a","role":"authenticated","session_id":"00000000-0000-0000-0000-0000000005a1"}',true) \g /dev/null
+set local role authenticated;
+select count(*) as visible_tasks from agos.tasks;
+rollback;
+--- output (001 alone, then 001 + 002)
+=== schema: 001 ===
+[GAP 1] live session; member of A and B moves a task from A to B:
+                  id                  |             workspace_id             
+--------------------------------------+--------------------------------------
+ 00000000-0000-0000-0000-0000000000f1 | 00000000-0000-0000-0000-0000000000b1
+(1 row)
+
+[GAP 2] live session; created_by forged as another user:
+              created_by              
+--------------------------------------
+ 00000000-0000-0000-0000-0000000000ff
+(1 row)
+
+[GAP 3] claims for a session that does not exist:
+ visible_tasks 
+---------------
+             2
+(1 row)
+
+[CONTROL] same user with the live session sees:
+ visible_tasks 
+---------------
+             2
+(1 row)
+
+=== schema: 002 ===
+[GAP 1] live session; member of A and B moves a task from A to B:
+psql:/tmp/red204b.sql:13: ERROR:  agos.tasks: workspace_id cannot change
+CONTEXT:  PL/pgSQL function agos.forbid_workspace_change() line 4 at RAISE
+[GAP 2] live session; created_by forged as another user:
+              created_by              
+--------------------------------------
+ 00000000-0000-0000-0000-00000000000a
+(1 row)
+
+[GAP 3] claims for a session that does not exist:
+ visible_tasks 
+---------------
+             0
+(1 row)
+
+[CONTROL] same user with the live session sees:
+ visible_tasks 
+---------------
+             2
+(1 row)
+
+
+reading: on 001 alone (a) a member of two workspaces moved a task from A to B, (b) a forged created_by was stored,
+(c) claims naming a session that does not exist still saw 2 tasks. With 002: (a) refused by trigger, (b) created_by =
+the caller, (c) 0 visible, while the same user with a live session still sees 2 (control).
+Also red: tests/test_r204_accounts_db.py::test_rls_itself_refuses_a_dead_session_on_every_table failed on the first
+version of 002 (session checked only in the server path, not in the policies): "assert 1 == 0"; passed after the
+"RLS: live session required" section was added to 002.
+
+## 3. Design (D-153)
+- identity = Supabase Auth access token verified by the server itself (agos_v2/auth.py: JWKS, ES256/RS256 only, alg must match
+  the key type, aud=authenticated, iss=<SUPABASE_URL>/auth/v1, role=authenticated, session_id required, exp/leeway).
+- every request = one transaction as role `authenticated` with request.jwt.claims set locally (agos_v2/db.py, psycopg 3 pool);
+  RLS decides. The service key is never read by the accounts layer; X-API-Key is not a v2 identity.
+- 002_accounts.sql: workspace_invitations; roles owner/admin/member; session_is_active() in every policy; forbid_workspace_change
+  and stamp_created_by triggers; SECURITY DEFINER functions with fixed search_path; direct writes to workspaces/members/invitations revoked.
+- refresh token in an HttpOnly/Secure/SameSite=Strict cookie scoped to /api/v2/auth; responses no-store; nothing token-like logged.
+- 19 routes under /api/v2 (docs/governance/API.md). Unconfigured (no SUPABASE_DB_URL) = 503 on every route.
+
+## 4. Tests
+- tests/test_r204_accounts_db.py   26 (live PG; skip without V2_SCHEMA_ADMIN_URI; CI job storage forbids skips)
+- tests/test_r204_accounts_live.py 15 (real Supabase Auth server GoTrue v2.197.0 + server.app end to end; needs GOTRUE_BIN)
+- tests/test_r204_accounts_unit.py 39 (always, job test)
+local run: GOTRUE_BIN=/tmp/gotrue/auth V2_SCHEMA_ADMIN_URI=postgresql://postgres:postgres@localhost:5432/postgres
+  pytest tests/test_r204_accounts_db.py tests/test_r204_accounts_live.py  -> 41 passed
+  pytest tests/test_r204_accounts_unit.py                                  -> 39 passed
+GoTrue release asset auth-v2.197.0-x86.tar.gz sha256 9daff5d1939c3142a1586e435e6e2a7a2f71534ec40ff1b196b59b83ad5678f3 (pinned in ci.yml)
+
+## 5. Mutation check (each fault planted alone, then the 40 DB+API tests run; /tmp/mut/run.sh)
+MUTATION M1_no_session_check: ======================== 1 failed, 39 passed in 15.81s =========================
+MUTATION M2_no_invite_email_match: ======================== 2 failed, 38 passed in 15.70s =========================
+MUTATION M3_rows_may_move: ======================== 1 failed, 39 passed in 15.79s =========================
+MUTATION M4_no_membership_lock: ======================== 1 failed, 39 passed in 14.84s =========================
+MUTATION M5_no_expiry_check: ======================== 2 failed, 38 passed in 16.13s =========================
+MUTATION M6_no_signature_check: ======================== 1 failed, 39 passed in 16.03s =========================
+all 6 planted faults were caught. (The mutation runs predate the final 2 tests, hence 40 not 41.)
+
+## 6. Known Supabase Auth behaviours (measured with the real server, documented in D-153 / SECURITY.md)
+- reusing the immediately previous refresh token returns the current active token (GoTrue design, not a bypass);
+- reusing an older one after REFRESH_TOKEN_REUSE_INTERVAL -> 401 and the token family is revoked;
+- after reuse detection an already-issued access token stays valid until its exp (session row not deleted); explicit logout ends it at once.
+
+## 7. Tool / gate changes
+- scripts/build_entrypoint_map.py: APIRouter(prefix) applied; "api" subsystem includes agos_v2/accounts_api.py.
+- tests/test_r156_entrypoint_map.py: reads _IncludedRouter.original_router (FastAPI 0.143); comparison covers the v2 routes;
+  smoke test skips v2 routes (503 by design when unconfigured — covered by test_unconfigured_router_answers_503_everywhere).
+- scripts/check_atomic_batch.py R2 now includes agos_v2/accounts_api.py (+ test in tests/test_r153_atomic_batch_v2.py).
+- .github/workflows/ci.yml quality job: ruff F,E722 scope now includes agos_v2/ (was missing since R-202); `ruff check --select F,E722 server.py agent_civilization agos_kernel agos_v2 tests` -> All checks passed!
+
+## 8. Full suite (local, Python 3.12 venv, no GOTRUE_BIN / V2_SCHEMA_ADMIN_URI -> live tests skip here; CI storage job runs them)
+pytest tests/ -q -p no:cacheprovider
+= 8 failed, 4477 passed, 75 skipped, 18 deselected, 9 xfailed in 675.99s (0:11:15) =
+the 8 failures = tests/test_r176_load_framework.py (3) + tests/test_r177_per_service.py (5): need the pinned k6 binary,
+  absent in this sandbox — same 8 as in every local run since R-176 (CI installs k6; they pass there).
+75 skipped = the 34 skipped on main before this batch + 41 R-204 live tests (26 DB + 15 GoTrue), run separately above: 41 passed.
+
+## 9. Not tested in this batch (honest)
+- the live Supabase project: 001/002 not applied; no live sign-up; SUPABASE_DB_URL not set on Render; not deployed.
+- OAuth Google/GitHub end to end (providers are off on the live project; the PKCE exchange path is covered against the real
+  GoTrue only up to its refusal of an invalid code).
+- whether the live project's Data API (PostgREST) exposes schema `agos` (policies require a live session either way).
+- the web UI (next batch).

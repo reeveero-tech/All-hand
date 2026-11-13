@@ -86,6 +86,14 @@ def test_api_rule():
                                      "docs/governance/API.md"])
 
 
+def test_api_rule_covers_v2_accounts_routes():
+    # R-204 (D-153): the /api/v2 routes live in agos_v2/accounts_api.py
+    base = DOCS + [EV, "tests/test_x.py"]
+    assert "R2" in rules(base + ["agos_v2/accounts_api.py"])
+    assert "R2" not in rules(base + ["agos_v2/accounts_api.py", "docs/governance/API.md"])
+    assert "R2" not in rules(base + ["agos_v2/contracts.py"])
+
+
 def test_storage_rule():
     base = DOCS + [EV, "tests/test_x.py"]
     assert "R3" in rules(base + ["agent_civilization/storage/x.py"])

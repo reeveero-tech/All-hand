@@ -209,6 +209,8 @@ async def _lifespan(_app):
     await _flush_unfinished_writes(TASK_SHUTDOWN_WRITE_FLUSH_S)
     await experience.persist()  # R-103: no-op unless AGOS_MEMORY_FILE is set
     await get_storage().close()
+    if V2_ACCOUNTS is not None:  # R-204: the v2 database pool
+        await V2_ACCOUNTS.close()
 
 
 app = FastAPI(
@@ -3497,6 +3499,27 @@ async def _admin_tool_lifecycle(name: str, action: ToolAdminAction, cmd: str) ->
 
 # ---------------------------------------------------------------------------
 
+
+# ---------------------------------------------------------------------------
+# R-204 (D-153): AGOS v2 accounts — /api/v2 (Supabase Auth users, workspaces,
+# roles, invitations; RLS-isolated). Configured only when SUPABASE_URL,
+# SUPABASE_ANON_KEY and SUPABASE_DB_URL are all set; otherwise every v2 route
+# answers 503 "accounts are not configured" (never a fallback identity). The
+# server API key is not an identity on these routes.
+# ---------------------------------------------------------------------------
+from agos_v2.accounts_api import AccountsConfig, AccountsService, build_router as _build_v2_accounts  # noqa: E402
+
+_V2_ACCOUNTS_CONFIG = AccountsConfig.from_env()
+V2_ACCOUNTS: Optional[AccountsService] = (
+    AccountsService(_V2_ACCOUNTS_CONFIG) if _V2_ACCOUNTS_CONFIG is not None else None)
+logger.info("startup: v2 accounts %s", "configured" if V2_ACCOUNTS is not None else "not configured")
+
+
+async def _v2_rate_limit(request: Request) -> None:
+    await check_rate_limit(request.client.host if request.client else "unknown")
+
+
+app.include_router(_build_v2_accounts(lambda: V2_ACCOUNTS, rate_limiter=_v2_rate_limit))
 
 # ---------------------------------------------------------------------------
 # Civilization auto-routing endpoints (no user-picked specialization)
