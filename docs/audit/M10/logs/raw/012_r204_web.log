@@ -69,6 +69,15 @@ stack: PostgreSQL 18 with docs/sql/v2/001+002, Supabase Auth (GoTrue) v2.197.0 (
   button stretched full width -> fixed (btn-ghost, align-self) and re-checked by screenshot.
 - sign-out + reload -> sign-in form; GET /api/v2/workspaces without token = 401; POST /api/v2/auth/refresh with the old cookie = 401 (session really ended).
 
+## 5b. Gap found by the existing R-200 gate (tests/test_r200_truth_inventory.py::test_route_parser_on_the_real_repo)
+- red: with the new web calls, unmatched_calls(web/src) = 10 calls to /api/v2/* (first: /api/v2/auth/config). Cause: scripts/build_route_inventory.py read only
+  `@app.<method>` in server.py + civilization_routes.py, so the 19 /api/v2 routes of batch 1 (APIRouter(prefix="/api/v2") in agos_v2/accounts_api.py) were
+  missing from the inventory already on main (len(rows) stayed 31 — that gap was invisible while no web call existed).
+- fix: the tool also reads agos_v2/accounts_api.py and applies the APIRouter prefix (`name = APIRouter(prefix=...)`); only decorators of `app` or of a known
+  router count; a missing source file stays an error. Test strengthened (not relaxed): 50 rows = 31 + 19, all 19 v2 rows sourced from accounts_api.py,
+  login and invitations/accept used by the web UI, and still no web call matching no route.
+- after: tests/test_r200_truth_inventory.py 9 passed. The committed R-200 snapshot (REPORT_AR.md, main f1932887) is historical and is not regenerated.
+
 ## 6. Not tested (honest)
 - the live Supabase project and the deployed site (nothing applied or deployed; needs the owner's steps in OPERATIONS.md, section R-204);
 - a successful Google/GitHub sign-in (providers disabled in the live project);
