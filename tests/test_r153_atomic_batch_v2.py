@@ -91,6 +91,9 @@ def test_api_rule_covers_v2_accounts_routes():
     base = DOCS + [EV, "tests/test_x.py"]
     assert "R2" in rules(base + ["agos_v2/accounts_api.py"])
     assert "R2" not in rules(base + ["agos_v2/accounts_api.py", "docs/governance/API.md"])
+    # R-205 (D-154): the provider-key routes live in agos_v2/byok.py
+    assert "R2" in rules(base + ["agos_v2/byok.py"])
+    assert "R2" not in rules(base + ["agos_v2/byok.py", "docs/governance/API.md"])
     assert "R2" not in rules(base + ["agos_v2/contracts.py"])
 
 

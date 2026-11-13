@@ -299,3 +299,16 @@
 | `/api/v2/invitations/accept` | POST | Bearer | `{token}` → 200 `{workspace_id, role}`؛ 403 بريد المستخدم المؤكد لا يطابق؛ 409 مستخدمة؛ 410 منتهية أو ملغاة؛ 404 غير موجودة |
 
 **الاختبارات**: `tests/test_r204_accounts_live.py` (خادم Supabase Auth الحقيقي + PostgreSQL، عبر `server.app`)، `tests/test_r204_accounts_db.py` (القاعدة مباشرة)، `tests/test_r204_accounts_unit.py` (بلا شبكة). **ما لم يُثبت بعد**: التشغيل على مشروع Supabase الحي ونشر Render، وOAuth الحي، واستخدام الواجهة لهذه المسارات.
+
+## R-205 — مفاتيح المزودين `/api/v2` (D-154، 2026-11-14)
+كلها تتطلب جلسة R-204 (`Authorization: Bearer <access token>`)، و`Cache-Control: no-store`. لا استجابة تحمل السر: الصف = `id, workspace_id, provider, label, base_url, status, last4, has_secret, created_at, updated_at, revoked_at, last_test_at, last_test_ok, last_test_reason, use_count, last_used_at, tokens_in, tokens_out, cost_usd`.
+| المسار | الوظيفة |
+|---|---|
+| `GET /api/v2/provider-keys/providers` | المزودون السبعة وهل الخزنة مهيأة (`vault_configured`) |
+| `GET /api/v2/workspaces/{ws}/provider-keys` | مفاتيحي في هذه المساحة فقط |
+| `POST /api/v2/workspaces/{ws}/provider-keys` | إضافة `{provider, api_key?, label?, base_url?}` → 201 (حد 20 → 409) |
+| `PATCH /api/v2/workspaces/{ws}/provider-keys/{id}` | تعديل الاسم/العنوان أو استبدال السر |
+| `POST /api/v2/workspaces/{ws}/provider-keys/{id}/revoke` | إبطال (مسح النص المشفر) |
+| `DELETE /api/v2/workspaces/{ws}/provider-keys/{id}` | حذف → 204 |
+| `POST /api/v2/workspaces/{ws}/provider-keys/{id}/test` | اختبار صادق → `{ok, reason, http_status, tested_at}`؛ 10/دقيقة → 429 |
+الأخطاء: 422 بلا صدى للمدخل؛ 404 لمفتاح غيري أو غير موجود (لا تعداد)؛ 409 مبطل/خزنة مختلفة/فشل سلامة؛ 503 الخزنة أو القاعدة غير مهيأة.

@@ -3509,10 +3509,18 @@ async def _admin_tool_lifecycle(name: str, action: ToolAdminAction, cmd: str) ->
 # ---------------------------------------------------------------------------
 from agos_v2.accounts_api import AccountsConfig, AccountsService, build_router as _build_v2_accounts  # noqa: E402
 
+from agos_v2.byok import KeyVault as _ByokVault  # noqa: E402
+
 _V2_ACCOUNTS_CONFIG = AccountsConfig.from_env()
+# R-205 (D-154): the BYOK key-encryption key. Unset = the key routes answer 503
+# "key vault is not configured"; set but malformed = the server refuses to boot
+# (fail-closed, the R-189 rule) — never a silent fallback.
+_V2_BYOK_VAULT = _ByokVault.from_env()
 V2_ACCOUNTS: Optional[AccountsService] = (
-    AccountsService(_V2_ACCOUNTS_CONFIG) if _V2_ACCOUNTS_CONFIG is not None else None)
-logger.info("startup: v2 accounts %s", "configured" if V2_ACCOUNTS is not None else "not configured")
+    AccountsService(_V2_ACCOUNTS_CONFIG, vault=_V2_BYOK_VAULT) if _V2_ACCOUNTS_CONFIG is not None else None)
+logger.info("startup: v2 accounts %s; BYOK vault %s",
+            "configured" if V2_ACCOUNTS is not None else "not configured",
+            "configured" if _V2_BYOK_VAULT is not None else "not configured")
 
 
 async def _v2_rate_limit(request: Request) -> None:

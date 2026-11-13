@@ -30,6 +30,9 @@ STUB = ROOT / "scripts" / "v2" / "supabase_auth_stub.sql"
 SQL1 = ROOT / "docs" / "sql" / "v2" / "001_core.sql"
 SQL2 = ROOT / "docs" / "sql" / "v2" / "002_accounts.sql"
 SQL3 = ROOT / "docs" / "sql" / "v2" / "003_function_search_path.sql"
+# R-205: 004 is applied too, so the schema-wide checks below (search_path,
+# anon access) also cover the BYOK functions and table.
+SQL4 = ROOT / "docs" / "sql" / "v2" / "004_byok.sql"
 ADMIN_URI = os.environ.get("V2_SCHEMA_ADMIN_URI", "")
 DB = "agos_v2_r204_db_test"
 
@@ -66,7 +69,7 @@ def db():
         c.execute(f"drop database if exists {DB}")
         c.execute(f"create database {DB}")
     with psycopg.connect(_uri(DB), autocommit=True) as c:
-        for f in (STUB, SQL1, SQL2, SQL3):
+        for f in (STUB, SQL1, SQL2, SQL3, SQL4):
             c.execute(f.read_text(encoding="utf-8"))
     yield _uri(DB)
     with psycopg.connect(_uri("postgres"), autocommit=True) as c:
@@ -251,6 +254,16 @@ def test_anon_has_no_access(db):
             with pytest.raises(psycopg.Error) as ei:
                 c.execute("select count(*) from agos.workspaces")
             assert ei.value.sqlstate == "42501"
+    # R-205: nor to the BYOK table or any of its functions
+    for stmt in ("select count(*) from agos.provider_keys",
+                 "select agos.byok_revoke_key(gen_random_uuid())",
+                 "select * from agos.byok_key_material(gen_random_uuid(), 'use')"):
+        with psycopg.connect(db) as c:
+            with c.transaction():
+                c.execute("set local role anon")
+                with pytest.raises(psycopg.Error) as ei:
+                    c.execute(stmt)
+                assert ei.value.sqlstate == "42501", stmt
 
 
 # ================================================================== roles

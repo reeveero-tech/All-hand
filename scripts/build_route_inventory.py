@@ -27,7 +27,8 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = ("server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py")
+SOURCES = ("server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py",
+           "agos_v2/byok.py")  # R-205 (D-154): the provider-key routes, own APIRouter(prefix="/api/v2")
 ROUTE_RE = re.compile(r"""@(\w+)\.(get|post|put|patch|delete|websocket)\(\s*["']([^"']+)["']""")
 ROUTER_RE = re.compile(r"""\b(\w+)\s*=\s*APIRouter\(([^)]*)\)""")
 PREFIX_RE = re.compile(r"""\bprefix\s*=\s*["']([^"']*)["']""")

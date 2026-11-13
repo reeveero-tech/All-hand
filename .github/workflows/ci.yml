@@ -388,17 +388,17 @@ jobs:
           mkdir -p /tmp/gotrue && tar -xzf /tmp/gotrue.tar.gz -C /tmp/gotrue
           test -x /tmp/gotrue/auth && test -d /tmp/gotrue/migrations
 
-      - name: R-204 accounts (real Supabase Auth + RLS isolation + API end-to-end)
+      - name: R-204 accounts + R-205 BYOK (real Supabase Auth + RLS isolation + API end-to-end + key leak tests)
         env:
           V2_SCHEMA_ADMIN_URI: postgresql://postgres:postgres@localhost:5432/postgres
           GOTRUE_BIN: /tmp/gotrue/auth
         run: |
           set -o pipefail
-          python -m pytest tests/test_r204_accounts_db.py tests/test_r204_accounts_live.py -v -p no:cacheprovider 2>&1 | tee "$GITHUB_WORKSPACE/r204_accounts.log"
+          python -m pytest tests/test_r204_accounts_db.py tests/test_r204_accounts_live.py tests/test_r205_byok_live.py -v -p no:cacheprovider 2>&1 | tee "$GITHUB_WORKSPACE/r204_accounts.log"
           grep -q " passed" "$GITHUB_WORKSPACE/r204_accounts.log"
           # the live tests must RUN here, not skip
           if grep -qE "[0-9]+ skipped" "$GITHUB_WORKSPACE/r204_accounts.log"; then
-            echo "::error::R-204 live accounts tests were skipped"; exit 1
+            echo "::error::R-204/R-205 live accounts/BYOK tests were skipped"; exit 1
           fi
 
       - name: Upload storage verification log

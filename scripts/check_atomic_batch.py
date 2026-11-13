@@ -12,7 +12,8 @@ Rules (every violated rule is reported, not only the first):
   R0  any change at all  -> ROADMAP.md, PROJECT_STATE.md, CHANGELOG.md   (= v1)
                             + MEMORY.md (project memory, owner rule D-150)
   R1  executable change  -> evidence file under docs/audit/              (v1 + wider)
-  R2  server.py / civilization_routes.py / agos_v2/accounts_api.py -> docs/governance/API.md (v1 + R-204)
+  R2  server.py / civilization_routes.py / agos_v2/accounts_api.py / agos_v2/byok.py
+                         -> docs/governance/API.md (v1 + R-204 + R-205)
   R3  agent_civilization/storage/        -> docs/governance/DATA_MODEL.md (= v1)
   R4  .github/workflows/                 -> docs/governance/QUALITY.md   (= v1)
   R5  runtime Python change              -> a change under tests/        (new)
@@ -50,7 +51,8 @@ EXTRA_EXEC_RE = re.compile(
 )
 EVIDENCE_RE = re.compile(r"^docs/audit/.+")
 API_RE = re.compile(r"^server\.py|agent_civilization/civilization_routes\.py"  # v1 (unanchored 2nd alt kept)
-                    r"|^agos_v2/accounts_api\.py")  # R-204 (D-153): the /api/v2 routes
+                    r"|^agos_v2/accounts_api\.py"  # R-204 (D-153): the /api/v2 routes
+                    r"|^agos_v2/byok\.py")  # R-205 (D-154): the /api/v2 provider-key routes
 STORAGE_RE = re.compile(r"agent_civilization/storage/")  # v1 (unanchored, kept)
 WORKFLOW_RE = re.compile(r"^\.github/workflows/")
 RUNTIME_PY_RE = re.compile(r"^(server\.py|run\.py|(agent_civilization|agos_kernel|agos_v2)/.+\.py)$")
