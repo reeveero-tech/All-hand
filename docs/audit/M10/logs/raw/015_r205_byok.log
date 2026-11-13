@@ -1,0 +1,91 @@
+R-205 batch 1 — user AI provider key vault (BYOK): implemented and tested locally; NOT enabled live (D-154)
+date: 2026-11-14 (UTC run times 2026-11-13 ~23:00-00:30)   branch: m10/r205-byok   base: main f57d22f8
+tested code head: 9ad11be07a026fb4def152a90d6e91e2b56d8ddf
+
+## 0. CI before starting — main network job failure (run 43397136530)
+  cause: external free service MyMemory (504, then ~16 s answers over the 10 s client timeout; now 429 daily quota
+         from this sandbox IP). No code or test change. Action: gh run rerun 43397136530 --failed
+  attempt 4 = success (network: 17 passed, 1 skipped). network is not a required check; nothing skipped/weakened.
+
+## 1. Honest note on order
+  The tests were written together with the first code draft, not strictly before it. Red is therefore proven
+  two ways: (a) the new tests run against main f57d22f8 fail; (b) mutations of the finished code are caught.
+
+## 2. Red on main f57d22f8 (tests copied onto a clean checkout of main) — verbatim tail
+  collected 10 items / 1 error
+  ImportError while importing test module '/tmp/r205/main/tests/test_r205_byok_unit.py'.
+  E   ImportError: cannot import name 'byok' from 'agos_v2' (/tmp/r205/main/agos_v2/__init__.py)
+  !!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+  =============================== 1 error in 0.68s ===============================
+  ERROR tests/test_r205_byok_live.py::test_lifecycle_add_list_edit_test_revoke_delete
+  ERROR tests/test_r205_byok_live.py::test_all_seven_providers_and_ollama_url_rules
+  ERROR tests/test_r205_byok_live.py::test_the_key_never_leaves_in_responses_logs_db_params_or_backups
+  ERROR tests/test_r205_byok_live.py::test_ciphertext_columns_are_not_readable_even_by_the_owner
+  ERROR tests/test_r205_byok_live.py::test_other_users_and_other_members_cannot_see_or_touch_a_key
+  ERROR tests/test_r205_byok_live.py::test_removed_member_loses_keys_and_copied_ciphertext_does_not_decrypt
+  ERROR tests/test_r205_byok_live.py::test_provider_outage_timeout_and_wrong_vault_key_are_honest
+  ERROR tests/test_r205_byok_live.py::test_abuse_caps_key_count_and_test_rate
+  ERROR tests/test_r205_byok_live.py::test_resolve_for_the_gateway_stops_at_once_and_usage_is_recorded
+  ERROR tests/test_r205_byok_live.py::test_signed_out_session_cannot_use_keys
+
+## 3. Mutations on the final code (scripts: /tmp/r205/mut.py, rerun on 9ad11be0) — verbatim
+  == M1 422 returns raw pydantic errors (with input): exit=1 -> RED (caught)
+      FAILED tests/test_r205_byok_unit.py::test_validation_422_never_echoes_the_key_but_fastapi_default_does
+      FAILED tests/test_r205_byok_live.py::test_the_key_never_leaves_in_responses_logs_db_params_or_backups
+      ============================== 2 failed in 1.89s ===============================
+  == M2 plaintext stored in key_ct: exit=1 -> RED (caught)
+      ERROR    agos.v2.byok:byok.py:407 byok: key 9c984e2b-cc26-49ff-874c-d0aca2e728fb failed integrity check
+      ERROR    agos.v2.byok:byok.py:407 byok: key 9c984e2b-cc26-49ff-874c-d0aca2e728fb failed integrity check
+      ERROR    agos.v2.byok:byok.py:407 byok: key 9c984e2b-cc26-49ff-874c-d0aca2e728fb failed integrity check
+      ERROR    agos.v2.byok:byok.py:407 byok: key 9c984e2b-cc26-49ff-874c-d0aca2e728fb failed integrity check
+      FAILED tests/test_r205_byok_unit.py::test_seal_open_roundtrip_and_ciphertext_holds_no_key
+      FAILED tests/test_r205_byok_live.py::test_the_key_never_leaves_in_responses_logs_db_params_or_backups
+      ============================== 2 failed in 1.43s ===============================
+  == M3 auth header follows redirects: exit=1 -> RED (caught)
+      FAILED tests/test_r205_byok_unit.py::test_redirect_never_carries_the_key_and_is_not_success
+      ============================== 1 failed in 1.36s ===============================
+  == M4 material ignores revoke: exit=1 -> RED (caught)
+      FAILED tests/test_r205_byok_live.py::test_resolve_for_the_gateway_stops_at_once_and_usage_is_recorded
+      FAILED tests/test_r205_byok_live.py::test_lifecycle_add_list_edit_test_revoke_delete
+      ============================== 2 failed in 2.32s ===============================
+  == M5 RLS without owner check: exit=1 -> RED (caught)
+      FAILED tests/test_r205_byok_live.py::test_other_users_and_other_members_cannot_see_or_touch_a_key
+      ============================== 1 failed in 2.30s ===============================
+  == M6 key test logs the key: exit=1 -> RED (caught)
+      FAILED tests/test_r205_byok_live.py::test_the_key_never_leaves_in_responses_logs_db_params_or_backups
+      ============================== 1 failed in 1.81s ===============================
+  ALL MUTATIONS CAUGHT
+  web mutations (web code unchanged since): W1 field not emptied after save -> 2 fail; W2 key kept in sessionStorage -> 2 fail
+  note: the M4 mutation was redefined (mut.py) to the direct weakening — drop the revoked check in
+        byok_key_material — instead of a first draft edit of a purpose branch; the run above uses the direct one.
+
+## 4. Green
+  tests/test_r205_byok_unit.py 29 passed; tests/test_r205_byok_live.py 11 passed (real GoTrue v2.197.0 + PostgreSQL 18)
+  web: npm test 81/81 (77 existing + 4 provider_keys_ui)
+  R-202/R-204/R-205/R-189 together (live env): 191 passed, 0 skipped
+  full suite (live env, k6 not installed here): 8 failed, 4587 passed, 9 skipped, 18 deselected, 9 xfailed in 714.76s (0:11:54) 
+    the 8 failures = tests/test_r176_load_framework.py (3) + tests/test_r177_per_service.py (5): k6 binary missing in
+    this sandbox (the suite's network guard blocks its download); CI installs k6. No other failure.
+  first full run found 3 real gaps, fixed in this batch: the static route inventory and entrypoint map did not
+  read agos_v2/byok.py (7 routes) nor AGOS_BYOK_KEK -> byok.py now has its own APIRouter(prefix="/api/v2") and
+  both tools + the atomic-batch R2 rule include it.
+  ruff (F,E722): All checks passed!
+
+## 5. What the leak tests cover (tests/test_r205_byok_live.py)
+  def test_lifecycle_add_list_edit_test_revoke_delete(byok):
+  def test_all_seven_providers_and_ollama_url_rules(byok):
+  def test_the_key_never_leaves_in_responses_logs_db_params_or_backups(byok, spy, caplog):
+  def test_ciphertext_columns_are_not_readable_even_by_the_owner(byok):
+  def test_other_users_and_other_members_cannot_see_or_touch_a_key(byok):
+  def test_removed_member_loses_keys_and_copied_ciphertext_does_not_decrypt(byok):
+  def test_provider_outage_timeout_and_wrong_vault_key_are_honest(byok):
+  def test_abuse_caps_key_count_and_test_rate(byok):
+  def test_resolve_for_the_gateway_stops_at_once_and_usage_is_recorded(byok):
+  def test_signed_out_session_cannot_use_keys(byok):
+  def test_rollback_is_clean_and_004_reapplies():
+
+## 6. NOT done (needs the owner) — R-205 stays in_progress
+  - migration 004 is NOT applied on Supabase (live migrations: 000..003 only); rollback file tested locally
+  - AGOS_BYOK_KEK is NOT set on Render -> the provider-key routes answer 503 'key vault is not configured'
+  - no live test with a real owner key; no real key was used anywhere; no paid request was made
+  - usage/cost columns exist for R-206 and are 0 (nothing calls models yet); no quota/billing (out of scope)
