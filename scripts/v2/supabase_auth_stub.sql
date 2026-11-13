@@ -22,3 +22,20 @@ language sql stable as $$
     ), '')::uuid
 $$;
 grant execute on function auth.uid() to anon, authenticated, service_role;
+
+-- R-204 (D-153): the parts of Supabase Auth that docs/sql/v2/002_accounts.sql
+-- reads — the columns it uses only. `if not exists`: on a database where the
+-- real Supabase Auth server (GoTrue) already created its schema
+-- (tests/test_r204_accounts_live.py), its full tables are kept as they are.
+create table if not exists auth.users (
+  id                 uuid primary key,
+  email              text,
+  email_confirmed_at timestamptz,
+  banned_until       timestamptz,
+  deleted_at         timestamptz
+);
+create table if not exists auth.sessions (
+  id        uuid primary key,
+  user_id   uuid not null,
+  not_after timestamptz
+);

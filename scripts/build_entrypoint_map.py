@@ -45,7 +45,7 @@ REPO_PATH_RE = re.compile(r"(?<![\w./-])((?:scripts|tests|web|docs|agent_civiliz
 
 # Human-declared subsystem grouping (needs_human_review). Contents are extracted automatically.
 SUBSYSTEMS = {
-    "api": ["server.py", "agent_civilization/civilization_routes.py"],
+    "api": ["server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py"],
     "agent-runtime-real": ["agent_civilization/agents/real/real_agents.py", "agent_civilization/core/agents/real_dispatcher.py",
                            "agent_civilization/core/agents/base_agent.py"],
     "agent-runtime-specialists": ["agent_civilization/agents/real/specialist_runtime.py",
@@ -117,6 +117,16 @@ def python_facts(snap: Snapshot, path: str) -> Dict:
         return out
     pkg = bfi.module_name(path) or ""
     base_pkg = pkg if path.endswith("__init__.py") else pkg.rpartition(".")[0]
+    # R-204: `r = APIRouter(prefix="/api/v2")` — decorator routes on `r` carry the prefix
+    prefixes: Dict[str, str] = {}
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Assign) and isinstance(n.value, ast.Call) \
+                and ast.unparse(n.value.func).rpartition(".")[2] == "APIRouter":
+            pre = next((k.value.value for k in n.value.keywords if k.arg == "prefix"
+                        and isinstance(k.value, ast.Constant) and isinstance(k.value.value, str)), "")
+            for t in n.targets:
+                if isinstance(t, ast.Name):
+                    prefixes[t.id] = pre
     for node, stack in _walk(tree, []):
         kind = _scope_kind(stack)
         line = getattr(node, "lineno", 0)
@@ -182,7 +192,9 @@ def python_facts(snap: Snapshot, path: str) -> Dict:
                         and d.args and isinstance(d.args[0], ast.Constant) and isinstance(d.args[0].value, str):
                     deps = sorted({ast.unparse(a.args[0]) for a in ast.walk(node.args) if isinstance(a, ast.Call)
                                    and ast.unparse(a.func) in ("Security", "Depends") and a.args})
-                    out["routes"].append({"method": d.func.attr.upper(), "path": d.args[0].value, "handler": node.name,
+                    pre = prefixes.get(d.func.value.id, "") if isinstance(d.func.value, ast.Name) else ""
+                    out["routes"].append({"method": d.func.attr.upper(), "path": pre + d.args[0].value,
+                                          "handler": node.name,
                                           "line": node.lineno, "file": path, "scope": kind,
                                           "condition": _condition(stack), "deps": deps,
                                           "evidence": "auto:ast-decorator"})

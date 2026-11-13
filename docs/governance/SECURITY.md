@@ -311,3 +311,28 @@
 - **لا كشف**: الرد 503 يحمل سببًا من قائمة ثابتة فقط (`storage unavailable|unreachable|timeout|credentials rejected|credentials cannot write|schema missing|check failed`) — لا URL ولا مضيف ولا مفتاح ولا نص استثناء؛ السجل يسجل الرمز وحده.
 - **تغيير سلوك**: نسخة مهيأة بمفتاح عام (anon) صارت 503 «storage credentials cannot write» بدل 200 — كانت أصلًا لا تستطيع الكتابة (D-084).
 - **الاختبارات**: `tests/test_sec10_storage_readiness.py` (37 + 1 حي) — أحمر على main (السجل 369: 30 فشل، والحي `200 == 503` أثناء SIGSTOP)، أخضر وثبات ×3 والحي (السجل 371)، وأثر الأداء والتعافي (السجل 372).
+
+## R-204 — حسابات المستخدمين والجلسات والعزل (D-153، 2026-11-13)
+
+**النموذج**: المستخدم يُعرّف **فقط** برمز وصول Supabase Auth يتحقق منه الخادم بنفسه (`agos_v2/auth.py`)، ثم تُنفذ كل استعلاماته في معاملة واحدة بدور `authenticated` و`request.jwt.claims` محلية فتقرر RLS في القاعدة ما يراه (`agos_v2/db.py`). خطأ في كود الخادم لا يكشف مساحة أخرى. مفتاح الخدمة لا يُستخدم لطلبات المستخدمين (ولا يُقرأ في طبقة الحسابات)؛ مفتاح `X-API-Key` ليس هوية على `/api/v2`.
+
+| التهديد | الحماية | الاختبار |
+|---|---|---|
+| رمز مزور / `alg=none` / HS256 بالمفتاح العام / مفتاح مهاجم بنفس `kid` / تبديل `sub` | توقيع غير متماثل من JWKS فقط، و`alg` يطابق نوع المفتاح | `test_forged_and_malformed_tokens_are_refused` (حي)، `test_signature_and_algorithm_attacks` |
+| رمز صحيح التوقيع بمطالبات خاطئة (`role` = service_role/anon، `aud`، `iss`، بلا `session_id`، منتهٍ) | فحص المطالبات | الحي + `test_bad_claims_are_refused` (14 حالة) |
+| رمز بعد الخروج / جلسة مستخدم آخر / مستخدم محظور أو محذوف / جلسة منتهية | `agos.session_is_active()` في كل معاملة **وفي كل سياسة RLS** | `test_logout_ends_the_session_immediately`، `test_banned_user_…`، `test_rls_itself_refuses_a_dead_session_on_every_table` |
+| تزوير `workspace_id` في إدخال / نقل صف إلى مساحة أخرى / تزوير `created_by` | RLS `with check` + مشغل `forbid_workspace_change` + `stamp_created_by` | `test_forged_workspace_id_on_insert_is_refused`، `test_rows_never_move_between_workspaces` |
+| معرف مورد أجنبي عبر API | RLS + 404 موحد (لا تعداد) | `test_user_b_cannot_reach_user_a_workspace_through_any_route` (8 عمليات × 3 أنواع معرفات) |
+| صلاحيات المدير تكسر العزل | الأدوار تُفرض داخل المساحة فقط؛ المدير لا يدعو مديرين ولا يحذف المساحة ولا يغير الأدوار | `test_admin_role_limits`، الحي |
+| إزالة آخر مالك (حتى بالتزامن) | قفل صف المساحة في دوال العضوية | `test_two_owners_demoting_each_other_concurrently_leave_one_owner` |
+| سرقة/تخمين رمز الدعوة | 32 بايت عشوائية، SHA-256 فقط في القاعدة (العمود غير مقروء)، يظهر مرة واحدة، انتهاء وإلغاء واستخدام واحد، قبول بالبريد **المؤكد** المطابق فقط | `test_invitation_roles_and_membership_through_the_api`، `test_expired_and_revoked_…` |
+| تعداد الحسابات | تسجيل بريد مسجل = الرد نفسه؛ كلمة مرور خاطئة = بريد غير موجود | `test_duplicate_signup_and_wrong_password_reveal_nothing` |
+| تسريب الرموز في السجلات أو الذاكرة المؤقتة | لا تسجيل لأي رمز أو كلمة مرور؛ `no-store` على كل رد `/api/v2` بما فيه الأخطاء (`_NoStoreRoute`)؛ رمز التجديد في كعكة HttpOnly/Secure/SameSite=Strict بمسار ضيق | `test_no_token_or_password_reaches_the_logs` (8 أسرار عبر تدفق كامل)، `test_signup_confirm_login_session_shape`، `test_unconfigured_router_answers_503_everywhere` |
+| CSRF على التجديد | SameSite=Strict + المسار `/api/v2/auth`؛ بقية المسارات تحتاج Bearer صريحًا (لا كعكة) | — (خاصية تصميم) |
+| رش `kid` عشوائية لإجبار جلب JWKS | جلب واحد كل 30 ثانية كحد أقصى | `test_unknown_kid_refetch_is_bounded` |
+
+**حدود معلنة (صادقة)**:
+- سلوك Supabase Auth: رمز التجديد السابق مباشرة يُقبل ويعيد الحالي نفسه؛ إعادة استخدام أقدم بعد فترة السماح تُبطل العائلة. بعد كشف إعادة الاستخدام يبقى رمز الوصول القائم صالحًا حتى انتهائه (ساعة افتراضيًا) لأن الجلسة لا تُحذف — الخروج الصريح وحده يُنهيه فورًا. تقصير عمر رمز الوصول قرار إعداد للمالك في لوحة Supabase.
+- مخطط `agos` يجب ألا يُكشف عبر Data API ‏(PostgREST) في Supabase — سيُتحقق من ذلك حيًا قبل التفعيل (PostgREST يتحقق من التوقيع لا من حياة الجلسة؛ لكن سياسات 002 تشترط الجلسة الحية فتحمي حتى هذا المسار).
+- OAuth: مسار تبادل PKCE مختبر على خادم Auth الحقيقي حتى رفض رمز مزيف (`test_oauth_pkce_exchange_with_a_bogus_code_is_refused`)؛ الدخول الناجح عبر Google/GitHub لم يُختبر (المزودان معطلان في المشروع الحي ويحتاجان تطبيقات OAuth من المالك).
+- لم يُختبر بعد: مشروع Supabase الحي، الواجهة.

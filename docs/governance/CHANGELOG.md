@@ -3362,3 +3362,12 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - تحقق حي: `GET /health` = healthy بفحوص `api`، `civilization`، `storage` فقط؛ حزمة الواجهة بلا «AGOS Civilization» والرأس «AGOS».
 - لم يُختبر: معرف نشر Render (لم يُقرأ في هذه الجلسة؛ التحقق بالسلوك). المؤجلات بقرار D-152: R-213، R-214، R-227.
 - R-203 `done`. التالي R-204.
+
+## 2026-11-13 — لاحق 159: R-204 الدفعة 1 — الحسابات والجلسات والمساحات في الخلفية (D-153، السجل M10/011)
+- **القاعدة**: `docs/sql/v2/002_accounts.sql` بعد 001 — جدول `workspace_invitations`، الأدوار owner/admin/member، `session_is_active()` (الجلسة في `auth.sessions`، غير منتهية، المستخدم غير محذوف/محظور) مشروطة في **كل** سياسات RLS، مشغلات `forbid_workspace_change` و`stamp_created_by`، دوال SECURITY DEFINER لإدارة المساحات والأعضاء والدعوات (آخر مالك محمي بقفل)، والكتابة المباشرة لجداول العضوية مسحوبة.
+- **الخادم**: `agos_v2/auth.py` (ES256/RS256 من JWKS فقط؛ رفض `alg=none` وHS256 وتبديل المطالبات؛ جلب JWKS محدود)، `agos_v2/db.py` (psycopg 3 + pool، معاملة لكل طلب بدور `authenticated`)، `agos_v2/gotrue.py`، `agos_v2/accounts_api.py` (19 مسارًا: تسجيل/دخول/تجديد/خروج/OAuth PKCE، المساحات، الأعضاء، الدعوات). رمز التجديد في كعكة HttpOnly/Secure/SameSite=Strict؛ لا تسجيل لأي رمز؛ كل ردود `/api/v2` (والأخطاء أيضًا) `no-store` عبر صنف مسار موحد. `server.py` يضمّن الموجّه. تبعيات: `psycopg[binary]` 3.3.9، `psycopg-pool` 3.3.3.
+- **الاختبارات**: `tests/test_r204_accounts_db.py` (26)، `tests/test_r204_accounts_live.py` (16، Supabase Auth v2.197.0 الحقيقي)، `tests/test_r204_accounts_unit.py` (39). CI ‏job ‏`storage` يثبت GoTrue بتجزئة مثبتة ويفشل إن تُخطي اختبار R-204. 6 طفرات كلها اكتُشفت.
+- **أدوات**: فحص ruff في CI يشمل `agos_v2/`؛ `build_entrypoint_map.py` يدعم `APIRouter(prefix)`؛ اختبار R-156 يقرأ `_IncludedRouter`؛ بوابة R2 تشمل `accounts_api.py`.
+- **ما لم يتغير**: لا تطبيق حي، لا نشر، لا تغيير إعدادات Render/Supabase، مسارات v1 كما هي. R-204 `in_progress`.
+- **تصحيح نطاق الدفع (R-187)**: الدفع `04d6720c..beab88f7` غيّر `API.md` وحده ففشل `push-scope-docs` (الوثائق الأربع الإلزامية غائبة). الدفع التالي يحمل الوثائق الأربع؛ لا تخفيف للفحص.
+
