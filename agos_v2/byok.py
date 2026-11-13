@@ -186,9 +186,11 @@ class KeyVault:
         return f"KeyVault(kek_id={self.kek_id})"
 
     @classmethod
-    def from_env(cls, env: Mapping[str, str] = os.environ) -> Optional["KeyVault"]:
-        # literal name (== KEK_ENV) so the entrypoint map (R-156) sees the read
-        raw = (env.get("AGOS_BYOK_KEK") or "").strip()
+    def from_env(cls, env: Optional[Mapping[str, str]] = None) -> Optional["KeyVault"]:
+        # the process read uses os.environ.get with the literal name (== KEK_ENV)
+        # so the entrypoint map (R-156) lists it; `env` is for tests only
+        raw = os.environ.get("AGOS_BYOK_KEK") if env is None else env.get(KEK_ENV)
+        raw = (raw or "").strip()
         if not raw:
             return None
         try:
