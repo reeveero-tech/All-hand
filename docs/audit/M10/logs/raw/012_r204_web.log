@@ -43,6 +43,9 @@ Note: the first red run aborted with SIGKILL — assert.equal(<jsdom element>, u
 # tests 77  # pass 77  # fail 0  (46 existing + 19 tests/session.test.mjs + 12 tests/account_ui.test.mjs)
 account_ui.test.mjs renders the REAL Account.jsx + session.js in jsdom against a fake /api/v2 that follows API.md; session.test.mjs drives session.js with a fake fetch.
 npm run build: OK.
+Python full suite (local, after 5b + 5c, python -m pytest -q): 8 failed, 4478 passed, 76 skipped, 18 deselected, 9 xfailed in 701.94s.
+  The 8 failures are the k6 load tests (tests/test_r176_load_framework.py x3, tests/test_r177_per_service.py x5): the pinned k6 binary is not installed
+  locally and the suite's network guard (R-072) blocks its download — CI installs it in a separate step. No other failure.
 
 ## 4. Mutations (planted one at a time, npm test, restored) — /tmp/webmut/run.py
 M1 access token persisted to sessionStorage: CAUGHT (fail 1) — sign-in keeps the access token in memory only — never in storage, never exposed to the UI
