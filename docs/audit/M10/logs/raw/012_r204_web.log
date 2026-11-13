@@ -78,6 +78,18 @@ stack: PostgreSQL 18 with docs/sql/v2/001+002, Supabase Auth (GoTrue) v2.197.0 (
   login and invitations/accept used by the web UI, and still no web call matching no route.
 - after: tests/test_r200_truth_inventory.py 9 passed. The committed R-200 snapshot (REPORT_AR.md, main f1932887) is historical and is not regenerated.
 
+## 5c. Time-fragile test found by the full local suite (batch 1 test, fixed here)
+- full suite (local, 744 s): tests/test_r204_accounts_unit.py::test_bad_claims_are_refused[over3-not_yet_valid] and [over4-not_yet_valid] FAILED
+  "DID NOT RAISE TokenError"; alone: 39 passed. Cause: the parametrize values {"nbf": int(time.time()) + 600} / {"iat": ...} are computed at COLLECTION;
+  the suite reached the test > 600 s later, so "the future" was already past. CI passed only because it reached the test sooner.
+- red, reproduced deterministically: plugin /tmp/shiftplug/shift_after_collect.py (collection sees the clock 660 s in the past, tests the real clock):
+  =========================== short test summary info ============================
+  FAILED tests/test_r204_accounts_unit.py::test_bad_claims_are_refused[over3-not_yet_valid]
+  FAILED tests/test_r204_accounts_unit.py::test_bad_claims_are_refused[over4-not_yet_valid]
+  ================= 2 failed, 12 passed, 25 deselected in 1.05s ==================
+- fix: In(seconds) = time relative to the moment the token is built (claims() resolves it); exp/nbf/iat cases use it. Same plugin after the fix: 39 passed;
+  without it: 39 passed. Other time.time() uses in the R-204 tests are inside test bodies (computed at run time).
+
 ## 6. Not tested (honest)
 - the live Supabase project and the deployed site (nothing applied or deployed; needs the owner's steps in OPERATIONS.md, section R-204);
 - a successful Google/GitHub sign-in (providers disabled in the live project);

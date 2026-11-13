@@ -50,8 +50,16 @@ class Keys:
         return self.jwks()
 
 
+class In:
+    """A time relative to the moment the token is built (not to collection:
+    parametrize values are computed when the suite starts, minutes earlier)."""
+    def __init__(self, seconds):
+        self.seconds = seconds
+
+
 def claims(**over):
     now = int(time.time())
+    over = {k: (now + v.seconds if isinstance(v, In) else v) for k, v in over.items()}
     c = {"iss": ISS, "aud": "authenticated", "role": "authenticated", "exp": now + 3600,
          "iat": now, "sub": str(uuid.uuid4()), "session_id": str(uuid.uuid4()),
          "email": "a@example.com", "is_anonymous": False}
@@ -97,11 +105,11 @@ async def test_valid_es256_and_rs256_tokens(keys, verifier):
 
 
 @pytest.mark.parametrize("over,code", [
-    ({"exp": int(time.time()) - 60}, "expired"),
+    ({"exp": In(-60)}, "expired"),
     ({"exp": ...}, "no_expiry"),
     ({"exp": True}, "no_expiry"),
-    ({"nbf": int(time.time()) + 600}, "not_yet_valid"),
-    ({"iat": int(time.time()) + 600}, "not_yet_valid"),
+    ({"nbf": In(600)}, "not_yet_valid"),
+    ({"iat": In(600)}, "not_yet_valid"),
     ({"iss": "https://other.supabase.co/auth/v1"}, "bad_issuer"),
     ({"iss": ...}, "bad_issuer"),
     ({"aud": "anon"}, "bad_audience"),
