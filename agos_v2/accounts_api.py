@@ -34,6 +34,7 @@ from datetime import timedelta
 from typing import Any, Awaitable, Callable, Dict, Optional
 
 from fastapi import APIRouter, Body, HTTPException, Request, Response
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import Identity, JwksVerifier, TokenError
@@ -219,9 +220,28 @@ def _gotrue_code(data: Dict[str, Any]) -> str:
 RateLimiter = Callable[[Request], Awaitable[None]]
 
 
+class _NoStoreRoute(APIRoute):
+    """Every /api/v2 answer — success or HTTP error — is ``no-store``: these
+    responses carry sessions, invitation links and membership lists."""
+
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+
+        async def no_store_handler(request: Request) -> Response:
+            try:
+                resp = await handler(request)
+            except HTTPException as exc:
+                exc.headers = {**NO_STORE, **(exc.headers or {})}
+                raise
+            for k, v in NO_STORE.items():
+                resp.headers.setdefault(k, v)
+            return resp
+        return no_store_handler
+
+
 def build_router(get_service: Callable[[], Optional[AccountsService]],
                  rate_limiter: Optional[RateLimiter] = None) -> APIRouter:
-    r = APIRouter(prefix="/api/v2", tags=["v2 accounts"])
+    r = APIRouter(prefix="/api/v2", tags=["v2 accounts"], route_class=_NoStoreRoute)
 
     def svc() -> AccountsService:
         s = get_service()

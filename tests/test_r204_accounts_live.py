@@ -453,6 +453,20 @@ def test_banned_user_is_refused_with_a_valid_token(stack):
     assert stack.client.get("/api/v2/me", headers=u.h).status_code == 401
 
 
+def test_oauth_pkce_exchange_with_a_bogus_code_is_refused(stack):
+    """The PKCE exchange route reaches the real auth server and turns its refusal
+    into 401 with no session and no cookie; malformed input never reaches it."""
+    c = stack.client
+    r = c.post("/api/v2/auth/oauth/exchange",
+               json={"auth_code": str(uuid.uuid4()), "code_verifier": "v" * 43})
+    assert r.status_code == 401 and "access_token" not in r.text
+    assert "agos_rt" not in r.headers.get("set-cookie", "")
+    assert r.headers["cache-control"] == "no-store"
+    for bad in ({"auth_code": "x", "code_verifier": "short"}, {"auth_code": "", "code_verifier": "v" * 43},
+                {"auth_code": "x", "code_verifier": "v" * 43, "extra": 1}):
+        assert c.post("/api/v2/auth/oauth/exchange", json=bad).status_code == 422
+
+
 def test_forged_and_malformed_tokens_are_refused(stack):
     u = register(stack, "forge")
     other = register(stack, "victim")

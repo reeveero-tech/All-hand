@@ -239,7 +239,10 @@ def test_unconfigured_router_answers_503_everywhere():
     for method, path in [("get", "/api/v2/me"), ("get", "/api/v2/workspaces"),
                          ("post", "/api/v2/auth/refresh"), ("post", "/api/v2/auth/logout"),
                          ("get", f"/api/v2/workspaces/{ws}/members")]:
-        assert getattr(c, method)(path).status_code == 503, path
+        r = getattr(c, method)(path)
+        assert r.status_code == 503, path
+        assert r.headers["cache-control"] == "no-store", path  # errors too, not only successes
+    assert c.get("/api/v2/auth/config").headers["cache-control"] == "no-store"
 
 
 def test_v2_routes_are_registered_in_server():

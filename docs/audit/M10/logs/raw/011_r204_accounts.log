@@ -108,7 +108,7 @@ version of 002 (session checked only in the server path, not in the policies): "
 
 ## 4. Tests
 - tests/test_r204_accounts_db.py   26 (live PG; skip without V2_SCHEMA_ADMIN_URI; CI job storage forbids skips)
-- tests/test_r204_accounts_live.py 15 (real Supabase Auth server GoTrue v2.197.0 + server.app end to end; needs GOTRUE_BIN)
+- tests/test_r204_accounts_live.py 16 (real Supabase Auth server GoTrue v2.197.0 + server.app end to end; needs GOTRUE_BIN)
 - tests/test_r204_accounts_unit.py 39 (always, job test)
 local run: GOTRUE_BIN=/tmp/gotrue/auth V2_SCHEMA_ADMIN_URI=postgresql://postgres:postgres@localhost:5432/postgres
   pytest tests/test_r204_accounts_db.py tests/test_r204_accounts_live.py  -> 41 passed
@@ -145,7 +145,15 @@ the 8 failures = tests/test_r176_load_framework.py (3) + tests/test_r177_per_ser
 
 ## 9. Not tested in this batch (honest)
 - the live Supabase project: 001/002 not applied; no live sign-up; SUPABASE_DB_URL not set on Render; not deployed.
-- OAuth Google/GitHub end to end (providers are off on the live project; the PKCE exchange path is covered against the real
-  GoTrue only up to its refusal of an invalid code).
+- OAuth Google/GitHub end to end (providers are off on the live project). The PKCE exchange route is covered against the
+  real GoTrue only up to its refusal of a bogus code (test_oauth_pkce_exchange_with_a_bogus_code_is_refused).
 - whether the live project's Data API (PostgREST) exposes schema `agos` (policies require a live session either way).
 - the web UI (next batch).
+
+## 10. Follow-up commit in the same batch (after the first push of this PR)
+- found while writing the OAuth test: HTTP-error answers of /api/v2 had no Cache-Control: no-store (only successes did).
+  fix: agos_v2/accounts_api.py _NoStoreRoute (route_class of the v2 router) adds no-store to every answer, errors included.
+  red: tests/test_r204_accounts_unit.py -k unconfigured with the old accounts_api.py -> 1 failed; green -> 39 passed.
+- new live test test_oauth_pkce_exchange_with_a_bogus_code_is_refused (401, no cookie, no token; malformed input 422).
+- re-run: GOTRUE_BIN=... V2_SCHEMA_ADMIN_URI=... pytest tests/test_r204_accounts_db.py tests/test_r204_accounts_live.py -> 42 passed (26 + 16)
+  (the earlier "41 passed" lines above are the first commit's run.)

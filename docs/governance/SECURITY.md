@@ -327,11 +327,12 @@
 | إزالة آخر مالك (حتى بالتزامن) | قفل صف المساحة في دوال العضوية | `test_two_owners_demoting_each_other_concurrently_leave_one_owner` |
 | سرقة/تخمين رمز الدعوة | 32 بايت عشوائية، SHA-256 فقط في القاعدة (العمود غير مقروء)، يظهر مرة واحدة، انتهاء وإلغاء واستخدام واحد، قبول بالبريد **المؤكد** المطابق فقط | `test_invitation_roles_and_membership_through_the_api`، `test_expired_and_revoked_…` |
 | تعداد الحسابات | تسجيل بريد مسجل = الرد نفسه؛ كلمة مرور خاطئة = بريد غير موجود | `test_duplicate_signup_and_wrong_password_reveal_nothing` |
-| تسريب الرموز في السجلات أو الذاكرة المؤقتة | لا تسجيل لأي رمز أو كلمة مرور؛ `no-store`؛ رمز التجديد في كعكة HttpOnly/Secure/SameSite=Strict بمسار ضيق | `test_no_token_or_password_reaches_the_logs` (8 أسرار عبر تدفق كامل)، `test_signup_confirm_login_session_shape` |
+| تسريب الرموز في السجلات أو الذاكرة المؤقتة | لا تسجيل لأي رمز أو كلمة مرور؛ `no-store` على كل رد `/api/v2` بما فيه الأخطاء (`_NoStoreRoute`)؛ رمز التجديد في كعكة HttpOnly/Secure/SameSite=Strict بمسار ضيق | `test_no_token_or_password_reaches_the_logs` (8 أسرار عبر تدفق كامل)، `test_signup_confirm_login_session_shape`، `test_unconfigured_router_answers_503_everywhere` |
 | CSRF على التجديد | SameSite=Strict + المسار `/api/v2/auth`؛ بقية المسارات تحتاج Bearer صريحًا (لا كعكة) | — (خاصية تصميم) |
 | رش `kid` عشوائية لإجبار جلب JWKS | جلب واحد كل 30 ثانية كحد أقصى | `test_unknown_kid_refetch_is_bounded` |
 
 **حدود معلنة (صادقة)**:
 - سلوك Supabase Auth: رمز التجديد السابق مباشرة يُقبل ويعيد الحالي نفسه؛ إعادة استخدام أقدم بعد فترة السماح تُبطل العائلة. بعد كشف إعادة الاستخدام يبقى رمز الوصول القائم صالحًا حتى انتهائه (ساعة افتراضيًا) لأن الجلسة لا تُحذف — الخروج الصريح وحده يُنهيه فورًا. تقصير عمر رمز الوصول قرار إعداد للمالك في لوحة Supabase.
 - مخطط `agos` يجب ألا يُكشف عبر Data API ‏(PostgREST) في Supabase — سيُتحقق من ذلك حيًا قبل التفعيل (PostgREST يتحقق من التوقيع لا من حياة الجلسة؛ لكن سياسات 002 تشترط الجلسة الحية فتحمي حتى هذا المسار).
-- لم يُختبر بعد: مشروع Supabase الحي، OAuth الحي، الواجهة.
+- OAuth: مسار تبادل PKCE مختبر على خادم Auth الحقيقي حتى رفض رمز مزيف (`test_oauth_pkce_exchange_with_a_bogus_code_is_refused`)؛ الدخول الناجح عبر Google/GitHub لم يُختبر (المزودان معطلان في المشروع الحي ويحتاجان تطبيقات OAuth من المالك).
+- لم يُختبر بعد: مشروع Supabase الحي، الواجهة.

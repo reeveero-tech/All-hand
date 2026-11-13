@@ -459,7 +459,7 @@
 
 ## R-204 — اختبارات الحسابات على خادم Supabase Auth الحقيقي (D-153، 2026-11-13)
 - **تغيير CI** (job ‏`storage`): خطوة «Install Supabase Auth (GoTrue) v2.197.0 (checksum-pinned)» — من الإصدار الرسمي `supabase/auth` مع sha256 إلزامي (`9daff5d1…5678f3`) وإعادة محاولة للأخطاء العابرة فقط، كقاعدة PostgREST. ثم خطوة «R-204 accounts» تشغّل `tests/test_r204_accounts_db.py` و`tests/test_r204_accounts_live.py` وتفشل إن تُخطي أي اختبار؛ السجل `r204_accounts.log` ضمن artifact التخزين.
-- **الاختبارات**: قاعدة حية 26 + طرف لطرف 15 (GoTrue حقيقي + `server.app`) + وحدة 39 (دائمًا، job ‏`test`). اختبار طفرات يدوي: 6 أعطال مزروعة (فحص الجلسة، مطابقة بريد الدعوة، منع نقل الصفوف، قفل العضوية، انتهاء الدعوة، فحص التوقيع) — كلها اكتُشفت. التفاصيل في `docs/audit/M10/logs/raw/011_r204_accounts.log`.
+- **الاختبارات**: قاعدة حية 26 + طرف لطرف 16 (GoTrue حقيقي + `server.app`) + وحدة 39 (دائمًا، job ‏`test`). اختبار طفرات يدوي: 6 أعطال مزروعة (فحص الجلسة، مطابقة بريد الدعوة، منع نقل الصفوف، قفل العضوية، انتهاء الدعوة، فحص التوقيع) — كلها اكتُشفت. التفاصيل في `docs/audit/M10/logs/raw/011_r204_accounts.log`.
 - **تشديد فحص الجودة**: `ruff check --select F,E722` في job ‏`quality` صار يشمل `agos_v2/` (كان خارج النطاق منذ R-202؛ يمر الآن بلا أخطاء).
 - **تشديد بوابة**: `check_atomic_batch.py` القاعدة R2 تشمل `agos_v2/accounts_api.py` (مسارات v2 تحتاج `API.md`).
 - **تحديث أداة**: `scripts/build_entrypoint_map.py` يطبّق `prefix` الخاص بـ`APIRouter` على مسارات المزخرفات، و`tests/test_r156_entrypoint_map.py` يقرأ مسارات `_IncludedRouter` (FastAPI 0.143) — مقارنة الخريطة بالواقع بقيت كاملة.
