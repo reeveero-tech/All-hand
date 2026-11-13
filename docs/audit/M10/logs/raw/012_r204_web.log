@@ -1,0 +1,106 @@
+R-204 batch 2 — accounts in the web UI (web/): sign-in/sign-up, session, workspaces, members, roles, invitations (D-153)
+branch: m10/r204-web   base: main 27bfc5a463ea2d4f3075c64d99f7bbb7293a5dab (merge of PR #364, R-204 batch 1)
+date: 2026-11-13
+scope: web/ only (no server, API or database change). Not yet merged/deployed at the time of writing. Uses the /api/v2 routes of batch 1 exactly as documented in API.md.
+
+## 1. What was added
+- web/src/session.js — the only place that talks to /api/v2:
+  - access token in memory only (never localStorage/sessionStorage, never in a URL, never exposed to components: getSession() returns user + expiry only);
+  - page reload restores the session through the HttpOnly refresh cookie (POST /api/v2/auth/refresh), no password;
+  - 401 -> exactly one refresh + one retry; concurrent 401s share one refresh (single flight); token refreshed before a call when it expires within 30 s;
+    refresh refused or still 401 after refresh -> local session ended (no loop);
+  - sign-out: POST /api/v2/auth/logout with the token, local session ends even if the server cannot confirm;
+  - OAuth (Google/GitHub) prepared: PKCE S256, verifier kept in sessionStorage for the redirect only and removed when used; return without verifier refused locally;
+  - completeFromUrl(): ?code (OAuth), #invite=<token>, provider errors, implicit e-mail-confirmation tokens (that session is ENDED, never adopted); the URL is cleaned every time;
+  - pending invitation token kept for this tab only (sessionStorage), current workspace id in localStorage (an id, not a secret);
+  - API errors -> Arabic messages keeping the server detail.
+- web/src/components/Account.jsx + tab «الحساب» in App.jsx + account-* styles in index.css:
+  - sign-in / sign-up; provider buttons only for providers the server enables (/api/v2/auth/config); honest message when accounts are not configured on the server;
+  - workspace switcher, create, rename (owner/admin), delete (owner);
+  - members: role select only for the owner; remove rules follow the server (owner any non-self, admin members only); «مغادرة» for self, hidden for the only owner (the server refuses it, AG409);
+  - invitations: owner may invite admin/member, admin member only; the link is shown ONCE after creation; revoke; pending-invitation banner with accept / ignore;
+  - an invitation link opened in an already-open page (hash change, no reload) is picked up too (hashchange listener).
+
+## 2. Red first (measured)
+Defects found by the browser check in section 5 (same-page invitation link ignored; only owner offered «مغادرة») -> 3 new UI tests written first,
+run against the code WITHOUT the fix (git stash of Account.jsx), output verbatim:
+ok 1 - accounts not configured on the server: honest message, no sign-in form, nothing else called
+ok 2 - sign-in form; provider buttons only for providers the server enables
+ok 3 - wrong password: clear message, still signed out
+not ok 4 - owner: switcher, members with role controls, invitation link shown once
+ok 5 - admin: invites members only, cannot change roles or delete
+ok 6 - invitation from the address bar: removed from the URL, accepted after sign-in, its workspace selected
+not ok 7 - invitation link opened in the already-open page (hash change, no reload) is picked up
+not ok 8 - same-page invitation link while signed out: told to sign in with the invited e-mail
+ok 9 - reload with the refresh cookie restores the session without a password
+ok 10 - sign-out ends the server session and returns to the sign-in form
+ok 11 - membership lost meanwhile (404): reported, list reloaded without it
+ok 12 - cleanup: transpiled temp files removed
+After the fix: 12/12 in account_ui.test.mjs.
+Note: the first red run aborted with SIGKILL — assert.equal(<jsdom element>, undefined) makes node try to print the whole DOM; the assertions now compare booleans.
+
+## 3. Tests (npm test in web/, Node 22.23.5, the same command CI runs in job build)
+# tests 77  # pass 77  # fail 0  (46 existing + 19 tests/session.test.mjs + 12 tests/account_ui.test.mjs)
+account_ui.test.mjs renders the REAL Account.jsx + session.js in jsdom against a fake /api/v2 that follows API.md; session.test.mjs drives session.js with a fake fetch.
+npm run build: OK.
+Python full suite (local, after 5b + 5c, python -m pytest -q): 8 failed, 4478 passed, 76 skipped, 18 deselected, 9 xfailed in 701.94s.
+  The 8 failures are the k6 load tests (tests/test_r176_load_framework.py x3, tests/test_r177_per_service.py x5): the pinned k6 binary is not installed
+  locally and the suite's network guard (R-072) blocks its download — CI installs it in a separate step. No other failure.
+
+## 4. Mutations (planted one at a time, npm test, restored) — /tmp/webmut/run.py
+M1 access token persisted to sessionStorage: CAUGHT (fail 1) — sign-in keeps the access token in memory only — never in storage, never exposed to the UI
+M2 refresh not single-flight: CAUGHT (fail 1) — concurrent 401s share one refresh
+M3 implicit e-mail-confirmation token adopted as a session: CAUGHT (fail 1) — e-mail confirmation tokens in the URL are NOT adopted: that session is ended and the URL cleaned
+M4 address bar not cleaned (tokens stay in the URL): CAUGHT (fail 7) — invitation from the address bar: removed from the URL, accepted after sign-in, its workspace selected; invitation link opened in the already-open page (hash change, no reload) is picked up; same-page invitation link while signed out: told to sign in with the invited e-mail
+M5 session kept after a refused retry (401 after refresh): CAUGHT (fail 1) — still 401 after a successful refresh -> session ended, no second refresh
+M6 admin offered role changes: CAUGHT (fail 1) — (failing test name not captured by the script; fail count measured)
+M7 admin offered to invite admins: CAUGHT (fail 1) — admin: invites members only, cannot change roles or delete
+M8 the only owner offered to leave: CAUGHT (fail 1) — owner: switcher, members with role controls, invitation link shown once
+8/8 caught.
+
+## 5. Browser check against a REAL local stack (not mocks)
+stack: PostgreSQL 18 with docs/sql/v2/001+002, Supabase Auth (GoTrue) v2.197.0 (the binary CI uses), server.app serving web/dist on http://localhost:8765
+(the fixture of tests/test_r204_accounts_live.py, unchanged). Sandbox Chrome.
+- sign-up owner@demo.test -> «تحقق من بريدك» (confirmation required); sign-in before confirmation -> «البريد لم يُؤكَّد بعد…» (403); confirmed (SQL, local only) -> sign-in OK.
+- created workspace «فريق التجربة»; invitation for member@demo.test (role member) -> link shown once; after reload not shown again; pending row with «إلغاء».
+- browser storage after sign-in: localStorage = {agos_workspace: <id>} only; sessionStorage = {}; document.cookie = "" (refresh cookie is HttpOnly).
+- reload -> session restored without password.
+- sign-out -> sign-in form; invitation link opened in the SAME page while signed out -> ignored (defect 1, section 2); full load -> picked up, URL cleaned to "/".
+- after fix: same-page hash -> banner shown, URL cleaned; member@demo.test accepted -> «انضممت إلى المساحة بدور عضو»; member view: no role select, no rename/delete,
+  no invitation form, «مغادرة» only; members (2) list shows the owner.
+- owner view before fix offered «مغادرة» to the only owner (defect 2); plain .btn buttons rendered with the browser default white background and the delete
+  button stretched full width -> fixed (btn-ghost, align-self) and re-checked by screenshot.
+- sign-out + reload -> sign-in form; GET /api/v2/workspaces without token = 401; POST /api/v2/auth/refresh with the old cookie = 401 (session really ended).
+
+## 5b. Gap found by the existing R-200 gate (tests/test_r200_truth_inventory.py::test_route_parser_on_the_real_repo)
+- red: with the new web calls, unmatched_calls(web/src) = 10 calls to /api/v2/* (first: /api/v2/auth/config). Cause: scripts/build_route_inventory.py read only
+  `@app.<method>` in server.py + civilization_routes.py, so the 19 /api/v2 routes of batch 1 (APIRouter(prefix="/api/v2") in agos_v2/accounts_api.py) were
+  missing from the inventory already on main (len(rows) stayed 31 — that gap was invisible while no web call existed).
+- fix: the tool also reads agos_v2/accounts_api.py and applies the APIRouter prefix (`name = APIRouter(prefix=...)`); only decorators of `app` or of a known
+  router count; a missing source file stays an error. Test strengthened (not relaxed): 50 rows = 31 + 19, all 19 v2 rows sourced from accounts_api.py,
+  login and invitations/accept used by the web UI, and still no web call matching no route.
+- after: tests/test_r200_truth_inventory.py 9 passed. The committed R-200 snapshot (REPORT_AR.md, main f1932887) is historical and is not regenerated.
+
+## 5c. Time-fragile test found by the full local suite (batch 1 test, fixed here)
+- full suite (local, 744 s): tests/test_r204_accounts_unit.py::test_bad_claims_are_refused[over3-not_yet_valid] and [over4-not_yet_valid] FAILED
+  "DID NOT RAISE TokenError"; alone: 39 passed. Cause: the parametrize values {"nbf": int(time.time()) + 600} / {"iat": ...} are computed at COLLECTION;
+  the suite reached the test > 600 s later, so "the future" was already past. CI passed only because it reached the test sooner.
+- red, reproduced deterministically: plugin /tmp/shiftplug/shift_after_collect.py (collection sees the clock 660 s in the past, tests the real clock):
+  =========================== short test summary info ============================
+  FAILED tests/test_r204_accounts_unit.py::test_bad_claims_are_refused[over3-not_yet_valid]
+  FAILED tests/test_r204_accounts_unit.py::test_bad_claims_are_refused[over4-not_yet_valid]
+  ================= 2 failed, 12 passed, 25 deselected in 1.05s ==================
+- fix: In(seconds) = time relative to the moment the token is built (claims() resolves it); exp/nbf/iat cases use it. Same plugin after the fix: 39 passed;
+  without it: 39 passed. Other time.time() uses in the R-204 tests are inside test bodies (computed at run time).
+
+## 5d. Live state after the merge of PR #364 (read-only checks, 2026-11-13 05:06 UTC)
+main CI on 27bfc5a4: Governance Gate success, AGOS Kernel CI/CD run 43365929727 success. Render deploys main automatically (as for R-201..R-203):
+- GET https://all-hand.onrender.com/health -> 200 healthy
+- GET /api/v2/auth/config -> 200 {"configured":false,"email":false,"providers":{"google":false,"github":false},"authorize_url":null}, Cache-Control: no-store
+- GET /api/v2/workspaces -> 503 {"detail":"accounts are not configured on this server (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_DB_URL)"}, Cache-Control: no-store
+=> batch 1 is deployed and inert, as designed. 001/002 are NOT applied to the live Supabase project; no Render/Supabase setting was changed.
+
+## 6. Not tested (honest)
+- the live Supabase project and the deployed site (nothing applied or deployed; needs the owner's steps in OPERATIONS.md, section R-204);
+- a successful Google/GitHub sign-in (providers disabled in the live project);
+- e-mail delivery of confirmation links (local stack confirmed by SQL).

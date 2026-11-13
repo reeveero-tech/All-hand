@@ -5,6 +5,7 @@ import Specializations from './components/Specializations.jsx'
 import Agents from './components/Agents.jsx'
 import Tasks from './components/Tasks.jsx'
 import ApiKeyBar from './components/ApiKeyBar.jsx'
+import Account from './components/Account.jsx'
 import { fetchSystemStatus, openEventStream } from './api.js'
 
 export default function App() {
@@ -54,6 +55,7 @@ export default function App() {
     { id: 'specializations', label: 'التخصصات', icon: '◆' },
     { id: 'agents', label: 'الوكلاء', icon: '◇' },
     { id: 'tasks', label: 'المهام', icon: '▢' },
+    { id: 'account', label: 'الحساب', icon: '◎' },
   ]
 
   return (
@@ -91,6 +93,7 @@ export default function App() {
         {tab === 'specializations' && <Specializations status={status} />}
         {tab === 'agents' && <Agents />}
         {tab === 'tasks' && <Tasks liveEvent={liveEvent} />}
+        {tab === 'account' && <Account />}
       </main>
     </div>
   )

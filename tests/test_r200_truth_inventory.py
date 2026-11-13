@@ -77,7 +77,13 @@ def test_a_runtime_importer_keeps_the_module():
 def test_route_parser_on_the_real_repo():
     rows = routes.build(ROOT)
     by = {f'{r["method"]} {r["path"]}': r for r in rows}
-    assert len(rows) == 31
+    # 31 routes on server.py + 19 /api/v2 routes on the R-204 APIRouter
+    # (agos_v2/accounts_api.py, prefix "/api/v2") — the router prefix is applied
+    assert len(rows) == 50
+    v2 = [r for r in rows if r["path"].startswith("/api/v2/")]
+    assert len(v2) == 19 and all(r["source"].startswith("agos_v2/accounts_api.py:") for r in v2)
+    assert by["POST /api/v2/auth/login"]["used_by_web_ui"] == "yes"
+    assert by["POST /api/v2/invitations/accept"]["used_by_web_ui"] == "yes"
     assert by["GET /{full_path:path}"]["used_by_web_ui"] == "no"
     assert by["POST /api/chat"]["used_by_web_ui"] == "yes"
     assert not any(r["used_by_web_ui"] == "yes" for r in rows if r["path"].startswith("/civilization"))

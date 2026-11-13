@@ -6,7 +6,9 @@ Usage::
     python3 scripts/build_route_inventory.py <out.csv> [--live live.json]
 
 Static part (reproducible): every ``@app.<method>("<path>")`` in server.py and
-agent_civilization/civilization_routes.py, with its file:line, whether the
+agent_civilization/civilization_routes.py, and every ``@<router>.<method>("<path>")``
+on an ``APIRouter(prefix=...)`` in agos_v2/accounts_api.py (R-204; the prefix is
+applied), with its file:line, whether the
 which frontend calls it:
 the deployed UI (``web/src``) and the undeployed second UI (``src/``).
 
@@ -25,8 +27,19 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = ("server.py", "agent_civilization/civilization_routes.py")
-ROUTE_RE = re.compile(r"""@app\.(get|post|put|patch|delete|websocket)\(\s*["']([^"']+)["']""")
+SOURCES = ("server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py")
+ROUTE_RE = re.compile(r"""@(\w+)\.(get|post|put|patch|delete|websocket)\(\s*["']([^"']+)["']""")
+ROUTER_RE = re.compile(r"""\b(\w+)\s*=\s*APIRouter\(([^)]*)\)""")
+PREFIX_RE = re.compile(r"""\bprefix\s*=\s*["']([^"']*)["']""")
+
+
+def _prefixes(text: str) -> Dict[str, str]:
+    """{name: prefix} for every `name = APIRouter(prefix="...")`; `app` has none."""
+    out = {"app": ""}
+    for name, args in ROUTER_RE.findall(text):
+        m = PREFIX_RE.search(args)
+        out[name] = m.group(1) if m else ""
+    return out
 COLUMNS = ["method", "path", "source", "used_by_web_ui", "used_by_src_ui",
            "live_status_no_key", "requires_key_live", "note"]
 
@@ -69,12 +82,14 @@ def build(root: Path, live: Optional[Dict[str, int]] = None) -> List[Dict[str, s
     web, src = _calls(root / "web" / "src"), _calls(root / "src")
     rows = []
     for rel in SOURCES:
-        lines = (root / rel).read_text(encoding="utf-8").splitlines()
+        text = (root / rel).read_text(encoding="utf-8")  # a missing source is an error
+        prefixes = _prefixes(text)
+        lines = text.splitlines()
         for i, line in enumerate(lines):
             m = ROUTE_RE.search(line)
-            if not m:
-                continue
-            method, path = m.group(1).upper(), m.group(2)
+            if not m or m.group(1) not in prefixes:
+                continue  # not a route decorator of `app` or of a known APIRouter
+            method, path = m.group(2).upper(), prefixes[m.group(1)] + m.group(3)
             key = f"{method} {path}"
             st = (live or {}).get(key)
             # auth is enforced by middleware/Security deps, so it is MEASURED
