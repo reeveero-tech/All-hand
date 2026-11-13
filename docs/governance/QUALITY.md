@@ -463,3 +463,5 @@
 - **تشديد فحص الجودة**: `ruff check --select F,E722` في job ‏`quality` صار يشمل `agos_v2/` (كان خارج النطاق منذ R-202؛ يمر الآن بلا أخطاء).
 - **تشديد بوابة**: `check_atomic_batch.py` القاعدة R2 تشمل `agos_v2/accounts_api.py` (مسارات v2 تحتاج `API.md`).
 - **تحديث أداة**: `scripts/build_entrypoint_map.py` يطبّق `prefix` الخاص بـ`APIRouter` على مسارات المزخرفات، و`tests/test_r156_entrypoint_map.py` يقرأ مسارات `_IncludedRouter` (FastAPI 0.143) — مقارنة الخريطة بالواقع بقيت كاملة.
+- **الواجهة (لاحق 160، الدفعة 2)**: `web/tests/session.test.mjs` (19: الرمز في الذاكرة فقط، تجديد واحد مشترك، لا حلقة، PKCE، تنظيف الرابط، عدم اعتماد رموز تأكيد البريد، التخزين المعطل) و`web/tests/account_ui.test.mjs` (12: المكون الحقيقي `Account.jsx` مع `session.js` في jsdom ضد `/api/v2` وهمي يتبع `API.md`). تُشغّل في job ‏`build` ‏(`npm test`). 8 طفرات اكتُشفت. فحص المتصفح على المكدس المحلي الحقيقي في السجل `docs/audit/M10/logs/raw/012_r204_web.log`. ملاحظة: `assert.equal(عنصر jsdom, undefined)` عند الفشل يجعل node يطبع شجرة DOM كاملة ويُقتل (SIGKILL) — قارن قيمًا منطقية.
+

@@ -897,3 +897,20 @@ textarea.form-input {
     width: 100%;
   }
 }
+
+/* R-204: account, workspaces, members, invitations */
+.account-page { display: flex; flex-direction: column; gap: 16px; max-width: 760px; }
+.account-card { display: flex; flex-direction: column; gap: 12px; }
+.account-header { flex-direction: row; justify-content: space-between; align-items: center; }
+.account-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.account-actions .form-input { flex: 1 1 200px; }
+.account-select { flex: 0 0 auto; width: auto; }
+.account-hint { color: var(--text-muted); font-size: 0.85rem; }
+.account-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.account-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.account-row > span:first-child { flex: 1 1 180px; overflow-wrap: anywhere; }
+.account-invite-link { display: flex; flex-direction: column; gap: 6px; padding: 10px;
+  border: 1px dashed var(--accent-dim); border-radius: var(--radius-sm); }
+.account-card > .btn { align-self: flex-start; }
+.account-page .btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
