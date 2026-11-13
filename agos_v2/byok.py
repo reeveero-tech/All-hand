@@ -187,7 +187,8 @@ class KeyVault:
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> Optional["KeyVault"]:
-        raw = (env.get(KEK_ENV) or "").strip()
+        # literal name (== KEK_ENV) so the entrypoint map (R-156) sees the read
+        raw = (env.get("AGOS_BYOK_KEK") or "").strip()
         if not raw:
             return None
         try:
