@@ -81,7 +81,7 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 | `AGOS_API_KEY` | server.py | `""` — منذ R-138 مفتاح المشغّل: principal `operator`/`admin`؛ منذ R-139 في الإنتاج ≥16 حرفاً وبلا مسافات طرفية |
 | `AGOS_TENANT_KEYS` (R-138، SEC-02، D-056) | core/tenancy.py | غير مضبوط. قائمة JSON `[{"tenant","key_sha256","role"}]` (تجزئة SHA-256 للمفتاح، الدور `user` افتراضياً أو `admin`). أي خلل → الخادم لا يقلع (`CredentialsError`). بلا هذا ولا `AGOS_API_KEY`: كل مسارات بيانات المستأجرين 401 |
 | `AGOS_ALLOWED_ORIGINS` | server.py | `"*"` |
-| `SUPABASE_DB_URL` (R-204، D-153) | agos_v2/accounts_api.py | غير مضبوط = حسابات v2 معطلة (`/api/v2/*` ترد 503). سلسلة اتصال Postgres للمشروع — على Render رابط **Session pooler** (IPv4) من لوحة Supabase ← Connect. سر: لا يُكتب في المستودع ولا السجلات |
+| `SUPABASE_DB_URL` (R-204، D-153) | agos_v2/accounts_api.py | غير مضبوط = حسابات v2 معطلة (`/api/v2/*` ترد 503). سلسلة اتصال Postgres للمشروع — على Render رابط **Session pooler** (IPv4) بالدور المقيد `agos_app` (لا `postgres`؛ انظر قسم R-204). سر: لا يُكتب في المستودع ولا السجلات |
 | `AGOS_PUBLIC_URL` (R-204) | agos_v2/accounts_api.py | غير مضبوط = روابط الدعوة نسبية ولا `redirect_to` في التسجيل. العنوان العام للواجهة (مثل `https://all-hand.onrender.com`) |
 | `AGOS_RATE_LIMIT_REQUESTS` | server.py | 100 |
 | `AGOS_RATE_LIMIT_WINDOW` | server.py | 60 |
@@ -452,9 +452,22 @@ pip-compile --generate-hashes --no-strip-extras --constraint=requirements.lock -
 الخطوات التالية **يقوم بها المالك أو تُنفذ بموافقته**؛ لا شيء منها مدفوع.
 
 1. **تطبيق الترحيلين** `docs/sql/v2/001_core.sql` ثم `002_accounts.sql` على مشروع Supabase (يثبت امتداد `vector` المتاح مجانًا). تغيير حي في القاعدة (مخطط `agos` جديد فقط؛ جداول v1 في `public` لا تُمس).
-2. **`SUPABASE_DB_URL` على Render** (لوحة Render ← الخدمة All-hand ← Environment): القيمة من لوحة Supabase ← زر **Connect** ← **Session pooler** (المستخدم `postgres.<ref>`، المنفذ 5432) مع كلمة مرور القاعدة. لا تستخدم الرابط المباشر `db.<ref>.supabase.co` (IPv6 فقط، Render لا يصل إليه). إضافة المتغير تعيد نشر الخدمة.
+2. **`SUPABASE_DB_URL` على Render** (لوحة Render ← الخدمة All-hand ← Environment): رابط **Session pooler** (المنفذ 5432) بالدور المقيد `agos_app` (الخطوة 2 في «ما نُفذ حيًا» أدناه) — لا بالمستخدم `postgres`. لا تستخدم الرابط المباشر `db.<ref>.supabase.co` (IPv6 فقط، Render لا يصل إليه). إضافة المتغير تعيد نشر الخدمة.
 3. **روابط Auth** (لوحة Supabase ← Authentication ← URL Configuration): Site URL = `https://all-hand.onrender.com`، وأضفه إلى Redirect URLs. اختياريًا `AGOS_PUBLIC_URL` بالقيمة نفسها على Render.
 4. **(اختياري) OAuth**: تطبيق OAuth في Google Cloud وGitHub بعنوان الرجوع `https://<ref>.supabase.co/auth/v1/callback`، ثم المعرف والسر في لوحة Supabase ← Authentication ← Providers. لا يدخل أي منهما Render أو المستودع.
 5. **التحقق الحي** (بعد 1–3): `GET /api/v2/auth/config` = `configured:true`؛ تسجيل مستخدمَين حقيقيين وتأكيد البريد، مساحة ودعوة، اختبار العزل والخروج — يُسجل في سجل قبول R-204.
 
 **الرجوع**: حذف `SUPABASE_DB_URL` من Render يعيد كل `/api/v2` إلى 503 دون أثر على v1. المخطط `agos` يُترك (لا بيانات v1 فيه).
+
+### ما نُفذ حيًا (2026-11-13، لاحق 161، السجل `docs/audit/M10/logs/raw/013_r204_live.log`)
+
+بتفويض المالك وبرمز وصول شخصي لواجهة إدارة Supabase (في ملف مؤقت خارج المستودع؛ **يُلغى بعد العمل**):
+1. الترحيلات عبر `POST /v1/projects/{ref}/database/migrations` بالأسماء: `r204_000_vector_in_extensions` (`create extension if not exists vector with schema extensions` — عرف Supabase بإبقاء الامتدادات خارج `public`؛ سطر 001 يصبح بلا أثر)، ثم `r202_001_core`، ثم `r204_002_accounts`. الترحيل `003_function_search_path.sql` يُطبق بعد دمجه بالاسم `r204_003_function_search_path`.
+2. **الدور `agos_app`** بدل `postgres` في `SUPABASE_DB_URL`:
+   `create role agos_app login noinherit password '<مولّد، لا يُكتب>'; grant authenticated to agos_app; alter role agos_app set statement_timeout = '15s';`
+   المستخدم في رابط المجمّع: `agos_app.<ref>` على `aws-0-ap-south-1.pooler.supabase.com:5432` مع `sslmode=require`. كلمة المرور في متغير Render وحده. تدويرها: `alter role agos_app password '<جديدة>'` ثم تحديث المتغير (يعيد النشر).
+3. Auth: `site_url` و`uri_allow_list` = `https://all-hand.onrender.com` (و`/**`). لم يُغير: التأكيد بالبريد إلزامي، OAuth معطل، `jwt_exp=3600`.
+4. Render: دمج `SUPABASE_DB_URL` و`AGOS_PUBLIC_URL` (لا استبدال للمتغيرات الأخرى) ← النشر `dep-dbrb2p8u01pc73ankt10` حي.
+5. القبول الحي: `scripts/v2/r204_live_check.py` (للمشغل فقط، لا يعمل في CI؛ يقرأ المفاتيح من ملفات خارج المستودع عبر `AGOS_SB_KEYS_FILE` و`AGOS_SB_MGMT_TOKEN_FILE`؛ ينشئ مستخدمي اختبار مؤكدين على `example.test` ويحذف كل ما أنشأه).
+
+**متبقٍ للمالك**: SMTP مخصص ليصل بريد التأكيد للمستخدمين الحقيقيين (البريد المدمج يرسل لفريق المشروع فقط، 2/ساعة)؛ تطبيقات OAuth إن أراد (الرجوع `https://qehloiuyzksnijstkfmn.supabase.co/auth/v1/callback`)؛ إلغاء رمز الإدارة الشخصي.
