@@ -37,6 +37,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 STUB = ROOT / "scripts" / "v2" / "supabase_auth_stub.sql"
 SQL1 = ROOT / "docs" / "sql" / "v2" / "001_core.sql"
 SQL2 = ROOT / "docs" / "sql" / "v2" / "002_accounts.sql"
+SQL3 = ROOT / "docs" / "sql" / "v2" / "003_function_search_path.sql"
 ADMIN_URI = os.environ.get("V2_SCHEMA_ADMIN_URI", "")
 GOTRUE_BIN = os.environ.get("GOTRUE_BIN", "")
 DB = "agos_v2_r204_live_test"
@@ -140,7 +141,7 @@ def stack():
         st.proc.kill()
         pytest.fail("GoTrue did not start")
     with psycopg.connect(st.db, autocommit=True) as c:
-        for f in (STUB, SQL1, SQL2):
+        for f in (STUB, SQL1, SQL2, SQL3):
             c.execute(f.read_text(encoding="utf-8"))
 
     os.environ.setdefault("AGOS_ENV", "test")

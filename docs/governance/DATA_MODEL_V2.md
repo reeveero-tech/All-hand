@@ -2,7 +2,7 @@
 
 > **المصدر**: [`docs/sql/v2/001_core.sql`](../sql/v2/001_core.sql) (المخطط) و`agos_v2/contracts.py` (العقود). هذا الملف يشرحهما ولا يضيف إليهما. القرار المعماري في [`ARCHITECTURE_V2.md`](ARCHITECTURE_V2.md).
 > **الحالة**: مختبر على قاعدة اختبار فقط (PostgreSQL 18 محليًا، 17 + pgvector في CI). **لم يُطبق على Supabase الحي**؛ يُطبق في R-204 بموافقة المالك.
-> **R-204 (D-153، 2026-11-13)**: الترحيل الثاني [`docs/sql/v2/002_accounts.sql`](../sql/v2/002_accounts.sql) يُطبق بعد 001 — الأدوار والدعوات والجلسات (القسم «002» أدناه).
+> **R-204 (D-153، 2026-11-13)**: الترحيل الثاني [`docs/sql/v2/002_accounts.sql`](../sql/v2/002_accounts.sql) يُطبق بعد 001 — الأدوار والدعوات والجلسات (القسم «002» أدناه). ثم [`003_function_search_path.sql`](../sql/v2/003_function_search_path.sql) (لاحق 161): `search_path` ثابت لدوال المشغلات الأربع، بلا تغيير في السلوك.
 > نموذج v1 (الجداول `public.tasks` و`events` و`agent_stats`) موصوف في [`DATA_MODEL.md`](DATA_MODEL.md) ويبقى يعمل حتى R-224.
 
 ## المبادئ

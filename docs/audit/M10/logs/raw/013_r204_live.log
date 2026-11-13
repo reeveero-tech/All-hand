@@ -1,0 +1,145 @@
+R-204 batch 3 — accounts enabled LIVE on Supabase + Render, verified against production (D-153)
+branch: m10/r204-live   base: main cb60e1ea17daae7620c3d4e28b0172a3cead7a53 (merge of PR #365, R-204 batch 2)
+date: 2026-11-13 (UTC times below)
+authority: the owner granted full authority in the conversation and supplied a Supabase personal access token
+           (kept only in a mode-600 file in the operator sandbox, never in the repo/logs/Render; the owner is asked to revoke it).
+No new Supabase project, no paid resource, no plan change. Single Uvicorn worker unchanged. No load test.
+
+## 1. Pre-flight (before any change, 06:3x UTC)
+- project qehloiuyzksnijstkfmn (ap-south-1), PostgreSQL 17.11; schema agos absent; auth.users = 0.
+- PostgREST exposed schemas = public,graphql_public (agos NOT exposed — kept that way on purpose).
+- Supabase JWT signing keys: JWKS ES256 (asymmetric) — what agos_v2/auth.py verifies.
+
+## 2. Migrations applied (Management API POST /v1/projects/{ref}/database/migrations, files from main cb60e1ea)
+  20261113064033  r204_000_vector_in_extensions  = "create extension if not exists vector with schema extensions;"
+                  (Supabase convention + advisor 0014: extensions outside public; 001's own
+                   "create extension if not exists vector" is then a no-op)
+  20261113064036  r202_001_core      docs/sql/v2/001_core.sql      sha256 50905cd9554ccdf7…
+  20261113064040  r204_002_accounts  docs/sql/v2/002_accounts.sql  sha256 1b9acc6b4656ffb6…
+  every call: HTTP 200. Not yet applied: 003 (this batch; applied after merge, recorded in the acceptance log).
+
+## 3. Live database state measured after the migrations (re-measured 06:5x UTC)
+  agos tables 11, RLS enabled on 11 (not FORCE: owner postgres bypasses, as designed — the app never connects as owner)
+  agos policies 13, all 13 contain agos.session_is_active()
+  agos functions 17, triggers 15
+  anon has no USAGE on schema agos; authenticated has USAGE
+  vector 0.8.2 in schema extensions
+
+## 4. Least-privilege login role for the server: agos_app
+  rolcanlogin=t rolinherit=f rolsuper=f rolcreaterole=f rolcreatedb=f rolbypassrls=f
+  rolconfig={statement_timeout=15s}; member of {authenticated} only (NOINHERIT: nothing until SET ROLE authenticated,
+  which agos_v2/db.py does per request inside the transaction).
+  password: generated in the operator sandbox (secrets.token_urlsafe), never printed, never in the repo; stored only in
+  the Render env var SUPABASE_DB_URL (session pooler aws-0-ap-south-1.pooler.supabase.com:5432, sslmode=require).
+  Probes as agos_app WITHOUT set role: schema agos denied, schema auth denied, public.tasks denied, CREATE in public denied,
+  SET ROLE service_role / postgres denied. As authenticated without claims: 0 workspaces, session_is_active() = false.
+
+## 5. Supabase Auth configuration (Management API PATCH /config/auth)
+  changed: site_url = https://all-hand.onrender.com ; uri_allow_list = https://all-hand.onrender.com,https://all-hand.onrender.com/**
+  unchanged and verified: mailer_autoconfirm=false (e-mail confirmation REQUIRED — invitation security relies on a
+  confirmed e-mail), disable_signup=false, jwt_exp=3600, refresh_token_rotation_enabled=true (reuse interval 10 s),
+  external_google_enabled=false, external_github_enabled=false, smtp_host=None (built-in mailer), rate_limit_email_sent=2/h,
+  password_min_length=6 at Supabase (the server's sign-up route enforces 8, agos_v2/accounts_api.py SignupIn).
+
+## 6. Render
+  env merged (not replaced) on srv-d983v7t7vvec738tu550: SUPABASE_DB_URL (agos_app pooler URL), AGOS_PUBLIC_URL=https://all-hand.onrender.com
+  deploy dep-dbrb2p8u01pc73ankt10  trigger=api  commit cb60e1ea  created 06:42:45  finished 06:43:17  status=live
+  after deploy: GET /api/v2/auth/config ->
+    {"configured":true,"email":true,"signup_enabled":true,"email_confirmation_required":true,"providers":{"google":false,"github":false},
+     "authorize_url":"https://qehloiuyzksnijstkfmn.supabase.co/auth/v1/authorize"}
+  GET /health -> 200
+
+## 7. Live acceptance run against PRODUCTION (scripts/v2/r204_live_check.py, run a077fe, ~06:44–06:47 UTC)
+Test users were created CONFIRMED through the Auth admin API (no e-mail sent), on the reserved domain example.test;
+D was left unconfirmed. Every request below goes to https://all-hand.onrender.com/api/v2 (the deployed server), not to a
+local copy. Output verbatim:
+PASS config: configured, e-mail on, no provider enabled — {"configured": true, "email": true, "signup_enabled": true, "email_confirmation_required": true, "providers": {"google": false, "github": false}, "authorize_url
+PASS sign-up through the public route answers (status recorded) — status=422 body={"detail":"invalid email or password"}
+PASS sign-up never yields a confirmed account without e-mail confirmation — rows=0
+PASS A sign-in 200 — status=200
+PASS refresh token only in an HttpOnly; Secure; SameSite=Strict cookie on /api/v2/auth — agos_rt
+PASS refresh token not in the JSON body
+PASS sign-in response Cache-Control: no-store
+PASS B sign-in 200
+PASS C sign-in 200
+PASS unconfirmed user refused (403) — status=403
+PASS wrong password and unknown e-mail look the same (no enumeration) — 401/401
+PASS /me returns A
+PASS A's list has WA only
+PASS B's list has WB only
+PASS isolation B→WA: every route 404 (9 operations) — {"get": 404, "rename": 404, "delete": 404, "members": 404, "set_role": 404, "remove": 404, "invitations": 404, "invite": 404, "revoke": 404}
+PASS isolation A→WB: every route 404 (9 operations) — {"get": 404, "rename": 404, "delete": 404, "members": 404, "set_role": 404, "remove": 404, "invitations": 404, "invite": 404, "revoke": 404}
+PASS database unchanged after the cross attempts — [{"name": "r204-live-A-a077fe", "n": 1}, {"name": "r204-live-B-a077fe", "n": 1}]
+PASS forged/invalid/foreign tokens refused (401), incl. the service and anon keys — {"none": 401, "garbage": 401, "sub_swapped": 401, "alg_none": 401, "anon_key": 401, "service_key": 401}
+PASS X-API-Key is not an identity on /api/v2 — status=401
+PASS Supabase Data API does not expose schema agos — status=406 {"code":"PGRST106","details":null,"hint":"Only the following schemas are exposed: public, 
+PASS owner creates an invitation (201, token once) — status=201
+PASS invitation list never contains the token
+PASS someone else's e-mail cannot accept (C with B's token) — status=403
+PASS invited B accepts — status=200
+PASS the same token cannot be used twice — status=409
+PASS B now sees WA as member (and WB as owner) — {"8c8fb824-5ac2-49c8-97e8-1772a1288dc9": "member", "cad0eda0-d1ea-416d-9663-52698bd2ff33": "owner"}
+PASS member B cannot change roles, invite, rename, delete or remove the owner (403) — {"set_role": 403, "invite": 403, "rename": 403, "delete": 403, "remove_owner": 403}
+PASS C accepts an admin invitation
+PASS admin C cannot invite admins, change roles, remove the owner or delete (403) — {"invite_admin": 403, "set_role": 403, "remove_owner": 403, "delete_ws": 403}
+PASS admin C can invite a member — status=201
+PASS admin C can remove member B
+PASS B no longer reaches WA
+PASS C cannot reach WB (never a member)
+PASS revoked invitation refused (410) — status=410
+PASS expired invitation refused (410) — status=410
+PASS unknown invitation token refused — status=404
+PASS refresh with the cookie gives a new access token — status=200
+PASS logout 204 — status=204
+PASS the access token is dead right after logout (401)
+PASS refresh after logout refused (401)
+PASS A can sign in again
+PASS a banned user's live token is refused (401)
+PASS no secret in this report
+cleanup: [{"users": 0, "workspaces": 0, "members": 0, "invitations": 0}]
+
+SUMMARY: 43 passed, 0 failed (run a077fe)
+
+Note on the sign-up line: GoTrue rejects the reserved .test domain (400 email_address_invalid, mapped to 422), so that probe
+did NOT exercise the e-mail path. A second probe through the public route with agos-r204-probe2@example.com (06:48:21 UTC)
+returned 429 "too many attempts; retry later"; Supabase auth log for that request:
+  path=/signup status=429 error_code=over_email_send_rate_limit "email rate limit exceeded" (actor_username agos-r204-probe2@example.com)
+  -> no user row remained (auth.users count for that address = 0).
+Meaning: sign-up works up to the e-mail step, but with the built-in Supabase mailer (2 e-mails/hour, and Supabase only
+delivers built-in mail to the project's team addresses) real users cannot reliably receive the confirmation e-mail.
+Custom SMTP is an OWNER decision (provider/account/cost) — NOT done, and autoconfirm stays OFF on purpose.
+
+## 8. Cleanup (measured after the run, 06:48:54 UTC)
+  auth.users=0  agos.workspaces=0  agos.workspace_invitations=0  auth.sessions=0  auth.refresh_tokens=0
+
+## 9. Secret leak scan of the deployed server's logs (Render logs API, resource srv-d983v7t7vvec738tu550)
+  window 2026-11-13T06:40:00Z..06:50:00Z, read forward until hasMore=false: 17 pages, 1678 log lines (type app),
+  150 lines mention /api/v2.
+  searched for 40 fragments: every access/refresh token, invitation token and password generated by the run, the
+  service_role/anon/publishable/secret API keys, the agos_app password and the management token (full value + inner fragments)
+  -> 0 hits. Test e-mail addresses in logs -> 0. ERROR/Traceback lines in the window -> 0.
+  (The fragments were compared in the operator sandbox; none was sent to the logs API as a query.)
+
+## 10. Supabase advisors after the migrations
+  security WARN 0011 function_search_path_mutable x4 — ours: agos.touch_updated_at, forbid_update (001), forbid_workspace_change,
+    stamp_created_by (002). Fix in this batch: docs/sql/v2/003_function_search_path.sql.
+    red first (local PG 18 + 001/002, before 003 existed):
+      tests/test_r204_accounts_db.py::test_every_agos_function_pins_its_search_path FAILED
+      AssertionError: assert ['forbid_upda...h_updated_at'] == []  (Left contains 4 more items, first extra item: 'forbid_update')
+    guard (passes before and after): ::test_trigger_functions_still_work_with_the_pinned_path — all four triggers still act.
+    green with 003 in both fixtures: test_r204_accounts_db.py + test_r204_accounts_live.py (real GoTrue v2.197.0) +
+      test_r202_v2_schema.py -> 92 passed in 22.29s, 0 skipped.
+  security, NOT ours (pre-existing in public, reported to the owner, not touched): public.rls_auto_enable executable by
+    anon/authenticated; RLS enabled without policies on public.agent_stats, public.events, public.tasks.
+  performance (INFO/WARN, recorded, deferred — no data yet): 13 foreign keys without covering index; auth_rls_initplan on
+    agos.memory_items; multiple_permissive_policies on agos.agent_specs.
+
+## 11. Not done / open (honest list)
+  - 003 is not yet applied live (after merge; recorded in the acceptance log).
+  - real-user sign-up e-mail delivery: needs custom SMTP (owner decision, §7).
+  - Google/GitHub OAuth: client apps are the owner's (callback https://qehloiuyzksnijstkfmn.supabase.co/auth/v1/callback); providers stay disabled.
+  - logout ends the Supabase session (verified: the old access token is 401 immediately because every policy checks
+    session_is_active()). A token of a still-active session lives up to jwt_exp=3600 s; shortening it is optional (owner).
+  - not measured: the per-IP limiter key behind the Render proxy (uvicorn trusts X-Forwarded-For only from 127.0.0.1 by
+    default, so request.client.host may be the proxy address — clients could share one bucket). Pre-existing v1 behaviour
+    shared by /api/v2; recorded as an open question, not changed in R-204.

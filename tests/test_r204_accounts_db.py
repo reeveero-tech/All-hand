@@ -1,5 +1,5 @@
 """R-204 (D-153): workspace isolation, roles, invitations and sessions — proven
-in the DATABASE itself (docs/sql/v2/001_core.sql + 002_accounts.sql).
+in the DATABASE itself (docs/sql/v2/001_core.sql + 002_accounts.sql + 003).
 
 Live only (``V2_SCHEMA_ADMIN_URI`` = PostgreSQL superuser URI with pgvector;
 CI job ``storage``). A fresh database is created; users are rows of the
@@ -29,6 +29,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 STUB = ROOT / "scripts" / "v2" / "supabase_auth_stub.sql"
 SQL1 = ROOT / "docs" / "sql" / "v2" / "001_core.sql"
 SQL2 = ROOT / "docs" / "sql" / "v2" / "002_accounts.sql"
+SQL3 = ROOT / "docs" / "sql" / "v2" / "003_function_search_path.sql"
 ADMIN_URI = os.environ.get("V2_SCHEMA_ADMIN_URI", "")
 DB = "agos_v2_r204_db_test"
 
@@ -65,7 +66,7 @@ def db():
         c.execute(f"drop database if exists {DB}")
         c.execute(f"create database {DB}")
     with psycopg.connect(_uri(DB), autocommit=True) as c:
-        for f in (STUB, SQL1, SQL2):
+        for f in (STUB, SQL1, SQL2, SQL3):
             c.execute(f.read_text(encoding="utf-8"))
     yield _uri(DB)
     with psycopg.connect(_uri("postgres"), autocommit=True) as c:
@@ -447,3 +448,47 @@ def test_claims_do_not_leak_to_the_next_transaction(db):
         # same connection, next transaction: no identity, superuser role again
         assert c.execute("select auth.uid()").fetchone()[0] is None
         assert c.execute("select current_user").fetchone()[0] != "authenticated"
+
+
+def test_every_agos_function_pins_its_search_path(db):
+    """R-204 live (Supabase advisor 0011 function_search_path_mutable): a function
+    whose search_path follows the caller can be steered by objects the caller
+    puts earlier in the path. Every function in schema agos must pin it."""
+    rows = admin(db, """
+        select p.proname
+          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'agos'
+           and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c
+                            where c like 'search_path=%%')
+         order by 1""")
+    assert [r[0] for r in rows] == []
+
+
+def test_trigger_functions_still_work_with_the_pinned_path(db):
+    """The 003 fix must not break the four trigger functions it pins."""
+    u = make_user(db, "sp_u")
+    ws, other = new_ws(db, u, "sp1"), new_ws(db, u, "sp2")
+    # touch_updated_at (rename through the API function, separate transaction)
+    q(db, u, "select agos.rename_workspace(%s, 'renamed')", (ws,))
+    assert admin(db, "select updated_at > created_at from agos.workspaces where id = %s", (ws,))[0][0] is True
+    # forbid_workspace_change — even the superuser cannot move a row between workspaces
+    with pytest.raises(psycopg.Error) as ei:
+        admin(db, "update agos.workspace_members set workspace_id = %s where workspace_id = %s", (other, ws))
+    assert ei.value.sqlstate == "AG422"
+    # stamp_created_by — a user-session insert gets created_by = auth.uid()
+    conv = str(uuid.uuid4())
+    with psycopg.connect(db, autocommit=True) as c:
+        with c.transaction():
+            c.execute("select set_config('request.jwt.claims', %s, true)", (json.dumps(u.claims()),))
+            c.execute("insert into agos.conversations (id, workspace_id, created_by, title) "
+                      "values (%s, %s, %s, 'c')", (conv, ws, str(uuid.uuid4())))
+    assert str(admin(db, "select created_by from agos.conversations where id = %s", (conv,))[0][0]) == u.id
+    # forbid_update — task_events stay append-only
+    task = str(uuid.uuid4())
+    admin(db, "insert into agos.tasks (id, workspace_id, created_by, title, goal) values (%s,%s,%s,'t','g')",
+          (task, ws, u.id))
+    admin(db, "insert into agos.task_events (workspace_id, task_id, type) values (%s,%s,'task.created')",
+          (ws, task))
+    with pytest.raises(psycopg.Error) as ei:
+        admin(db, "update agos.task_events set type = 'task.failed' where task_id = %s", (task,))
+    assert "append-only" in str(ei.value)
