@@ -1,0 +1,38 @@
+# M10/018 — R-205 live activation, step 1 (lahiq 165) — 2026-11-14 (UTC)
+# Owner approval: "اوافق على الترحيل ابدء" (message after lahiq 164 report).
+# No secret value appears in this log. The KEK length below comes from the server's own error text (length only).
+
+## A. Main CI after PR #370 (merge 5e22bf2f)
+CI run 43549483518 = success ; Governance 43549483407 = success
+Live probe after auto-deploy (no session): POST /api/v2/workspaces/<ws>/provider-keys -> 401 "sign-in required"
+
+## B. Owner's deploy after adding AGOS_BYOK_KEK (Render)
+deploy dep-dbrtn7l6e07s7387nd00 trigger=service_updated commit=5e22bf2f 03:55:10->03:55:45 status=update_failed
+previous deploy dep-dbrsucajnfac73bl1v60 (5e22bf2f) stays live -> no outage, vault still unconfigured (routes 503 when signed in)
+boot log 03:55:42:
+  File "/app/server.py", line 3518, in <module>
+    _V2_BYOK_VAULT = _ByokVault.from_env()
+  File "/app/agos_v2/byok.py", line 202, in from_env
+  agos_v2.byok.VaultConfigError: AGOS_BYOK_KEK must be base64 of exactly 32 bytes (got 24)
+03:55:45 ==> Exited with status 1
+Meaning: the stored value decodes to 24 bytes (e.g. a 32-character string, or `openssl rand -base64 24`).
+A correct value is 44 characters ending with "=" (base64 of 32 random bytes). The guard worked as designed (fail closed).
+Agent did NOT read, print or change the Render variable. Owner must replace it in the dashboard.
+
+## C. Migration 004 applied live (owner-approved)
+file docs/sql/v2/004_byok.sql @ main 5e22bf2f sha256=7e5b9009eeff568aa897b8a4e6cac5323072653b1507508eb6fcab6aa95d3dce (13095 bytes)
+supabase apply_migration name=r205_004_byok -> {"success":true}
+list_migrations: r204_000_vector_in_extensions, r202_001_core, r204_002_accounts, r204_003_function_search_path, r205_004_byok (20261114035837)
+verification query:
+  byok_fns=9 fns_without_search_path=0 rls(provider_keys)=true rows=0 trigger trg_members_drop_keys=1
+  authenticated SELECT key_ct=false dek_wrapped=false last4=true
+  anon SELECT provider_keys=false ; anon EXECUTE byok_key_material=false
+security advisor after: 0 findings mentioning agos./provider_keys/byok
+  (finding types present, all pre-existing on public schema: rls_enabled_no_policy, rls_auto_enable,
+   anon_/authenticated_security_definer_function_executable — owner item, unchanged)
+rollback (not run): docs/sql/v2/004_byok_rollback.sql
+
+## D. Not done / untested
+redeploy: NOT triggered — it would fail again with the same KEK value; waits for owner to fix the value.
+live add/test/revoke/delete with fake keys: not run (needs a booted vault).
+owner real-key UI test: not run.
