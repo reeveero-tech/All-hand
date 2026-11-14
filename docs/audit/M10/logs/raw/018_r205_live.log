@@ -36,3 +36,71 @@ rollback (not run): docs/sql/v2/004_byok_rollback.sql
 redeploy: NOT triggered — it would fail again with the same KEK value; waits for owner to fix the value.
 live add/test/revoke/delete with fake keys: not run (needs a booted vault).
 owner real-key UI test: not run.
+
+## E. KEK fixed by the agent with owner approval ("قم بتوليد ذلك واضبطه", 2026-11-14 07:42 +03)
+value generated in the sandbox: python os.urandom(32) -> base64 (44 chars, decodes to 32 bytes); written to a mode-600 temp file,
+passed once to Render update_environment_variables (merge mode, only AGOS_BYOK_KEK), never printed; temp file shredded right after.
+Render auto-deploy dep-dbrudf5g1s2s73dldneg (commit 9ae03e8f) -> live 04:42:36->~04:43; boot log without VaultConfigError/Traceback;
+/health 200 ; POST provider-keys without session -> 401 "sign-in required".
+Owner must copy the value from the Render dashboard into a password manager (lost KEK = stored keys unreadable).
+
+## F. Live acceptance with FAKE keys (scripts/v2/r205_live_check.py; no owner key, no paid call)
+two confirmed test users agos-r205-9dfa6b-{a,b}@example.test inserted in auth.users/auth.identities via SQL
+(bcrypt hash computed locally; no e-mail sent); sign-in through the production API.
+-- run 1, phase add (first draft of the script)
+PASS providers list 200 with 7 providers — openai,anthropic,google,openrouter,mistral,groq,ollama
+PASS A sign-in 200 — status=200
+PASS B sign-in 200 — status=200
+PASS A adds a fake OpenAI key: 201 — status=201
+PASS add response has last4 only, not the key — last4=0b94
+PASS A's list: 1 key, last4 only, no secret material — fields=['base_url', 'cost_usd', 'created_at', 'has_secret', 'id', 'label', 'last4', 'last_test_at', 'last_test_ok', 'last_test_reason', 'last_used_at', 'provider', 'revoked_at', 'status', 'tokens_in', 'tokens_out', 'updated_at', 'use_count', 'workspace_id']
+PASS honest test of a fake key: ok=false reason=invalid_key (provider said 401) — {"ok": false, "reason": "invalid_key", "http_status": 401}
+PASS no session -> 401 — status=401
+FAIL isolation: B cannot list/add/test/edit/revoke/delete A's key (all 404) — {"list": 404, "add": 422, "test": 404, "edit": 404, "revoke": 404, "delete": 404, "via_own_ws": 404}
+PASS B's own list is empty — []
+PASS ollama URL pointing at the server itself is refused (422) — status=422 {"detail":[{"loc":["label"],"msg":"Field required","type":"missing"}]}
+PASS malformed key refused (422) and not echoed — status=422
+phase add: 1 FAILED
+   NOTE run 1: the two FAILs/PASS on "add"/"ollama" were invalid probes (body missing the required "label" -> 422 on the body).
+   re-probed by hand with a label: B add into A's workspace -> 404 "workspace not found";
+   ollama base_url 127.0.0.1 / 169.254.169.254 / localhost -> saved (201) but the key test answers reason=blocked_address
+   (SEC-05 outbound guard, as designed in D-154); entries deleted (204). Script fixed accordingly.
+-- run 1, phase revoke
+PASS A revokes: 200 status=revoked, last4 cleared or kept, no key — status=200 last4=0b94
+PASS test after revoke is refused (410) — status=410 {"detail":"key is revoked"}
+PASS A deletes: 204 — status=204
+PASS A's list is empty after delete — []
+PASS test after delete: 404 — status=404
+phase revoke: all passed
+-- DB while run-1 key active: provider=openai status=active last4=0b94 key_ct present (72 bytes) dek_wrapped present kek_id present
+   plaintext (full and without prefix) not found in key_ct ; whole-row text search for the key: 0 hits
+-- run 2, phase add (fixed script)
+PASS providers list 200 with 7 providers — openai,anthropic,google,openrouter,mistral,groq,ollama
+PASS A sign-in 200 — status=200
+PASS B sign-in 200 — status=200
+PASS A adds a fake OpenAI key: 201 — status=201
+PASS add response has last4 only, not the key — last4=4880
+PASS A's list: 1 key, last4 only, no secret material — fields=['base_url', 'cost_usd', 'created_at', 'has_secret', 'id', 'label', 'last4', 'last_test_at', 'last_test_ok', 'last_test_reason', 'last_used_at', 'provider', 'revoked_at', 'status', 'tokens_in', 'tokens_out', 'updated_at', 'use_count', 'workspace_id']
+PASS honest test of a fake key: ok=false reason=invalid_key (provider said 401) — {"ok": false, "reason": "invalid_key", "http_status": 401}
+PASS no session -> 401 — status=401
+PASS isolation: B cannot list/add/test/edit/revoke/delete A's key (all 404) — {"list": 404, "add": 404, "test": 404, "edit": 404, "revoke": 404, "delete": 404, "via_own_ws": 404}
+PASS B's own list is empty — []
+PASS ollama http://127.0.0.1:11434: test refused by the outbound guard (blocked_address) — status=200 {"ok":false,"reason":"blocked_address","http_status":null,"tested_at":"2026-11-14T04:47:02.879991+00
+PASS ollama http://169.254.169.254: test refused by the outbound guard (blocked_address) — status=200 {"ok":false,"reason":"blocked_address","http_status":null,"tested_at":"2026-11-14T04:47:10.747866+00
+PASS ollama http://localhost:11434: test refused by the outbound guard (blocked_address) — status=200 {"ok":false,"reason":"blocked_address","http_status":null,"tested_at":"2026-11-14T04:47:18.624475+00
+PASS malformed key refused (422) and not echoed — status=422
+phase add: all passed
+-- run 2: revoke only -> 200 revoked ; DB: status=revoked revoked_at set key_ct NULL key_nonce NULL dek_wrapped NULL (last4 kept: 4880)
+-- Render log scan 04:42 -> end: both fake keys (full, without prefix, last 12 chars, "agosfake") -> 0 hits each;
+   both test passwords and the tails of both access tokens -> 0 hits; control search "provider-keys" -> 5 hits (search works)
+-- cleanup: access tokens had expired (API cleanup 401) and the test users were deleted first, so the remaining rows were
+   removed by SQL by exact id: 4 test workspaces deleted (cascade: members, provider_keys). After: provider_keys=0,
+   r205-live workspaces=0, members of the test users=0, agos-r205 users=0.
+-- FINDING (not fixed, needs a migration => owner approval): agos.workspace_members.user_id has NO foreign key to auth.users
+   (only workspace_id -> workspaces ON DELETE CASCADE). Deleting an auth user leaves memberships, workspaces and provider_keys
+   rows (ciphertext) orphaned. Observed live: after deleting the test users, 4 members rows and 1 key row remained.
+-- SQL for the DB checks/cleanup ran through a Supabase personal token the owner pasted in chat; used only for this, file shredded.
+   The owner must revoke that token.
+
+## G. Still not done
+owner real-key test through the UI (R-205 stays in_progress) ; fix for the orphan FINDING (owner decision).
