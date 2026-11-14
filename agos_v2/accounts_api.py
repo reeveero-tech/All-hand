@@ -272,11 +272,20 @@ def build_router(get_service: Callable[[], Optional[AccountsService]],
             raise HTTPException(503, "auth service unavailable; retry later",
                                 headers={"Retry-After": "5"}) from None
 
-    async def run(request: Request, fn):
-        """Verify the caller, then run ``fn(conn, ident)`` as that user."""
+    async def signed_in(request: Request) -> Identity:
+        """Rate limit + token check only — for routes that must answer 401
+        before saying anything else about the server (R-205)."""
         s = svc()
         await limit(request)
-        ident = await identity(request, s)
+        return await identity(request, s)
+
+    async def run(request: Request, fn, ident: Optional[Identity] = None):
+        """Verify the caller (unless ``signed_in`` already did), then run
+        ``fn(conn, ident)`` as that user; the live session is checked here."""
+        s = svc()
+        if ident is None:
+            await limit(request)
+            ident = await identity(request, s)
         import psycopg  # noqa: WPS433 - optional dependency, needed only when configured
         try:
             async with s.db.user_tx(ident) as conn:
@@ -593,5 +602,6 @@ def build_router(get_service: Callable[[], Optional[AccountsService]],
         return await run(request, q)
 
     # R-205 (D-154): the user's AI provider keys — same identity/RLS/no-store path
-    add_byok_routes(r, svc=svc, run=run, fetchall=fetchall, fetchone=fetchone, uuid_of=_uuid)
+    add_byok_routes(r, svc=svc, run=run, signed_in=signed_in, fetchall=fetchall,
+                    fetchone=fetchone, uuid_of=_uuid)
     return r

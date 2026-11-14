@@ -385,6 +385,14 @@ def test_provider_outage_timeout_and_wrong_vault_key_are_honest(byok):
         for r in (c.get(kpath(ws), headers=u.h), add(st, u, ws, "openai", fake_key(), "x"),
                   c.post(kpath(ws, kid, "/test"), headers=u.h)):
             assert r.status_code == 503 and "AGOS_BYOK_KEK" in r.json()["detail"]
+        # identity comes first: without a session the answer is 401 and says
+        # nothing about the server's vault (found on the live deploy, 2026-11-14)
+        anon = (c.get(kpath(ws)), c.post(kpath(ws), json={"provider": "openai"}),
+                c.patch(kpath(ws, kid), json={"label": "x"}), c.post(kpath(ws, kid, "/revoke")),
+                c.delete(kpath(ws, kid)), c.post(kpath(ws, kid, "/test")))
+        for r in anon:
+            assert r.status_code == 401, (r.request.method, r.request.url, r.status_code, r.text[:120])
+            assert "AGOS_BYOK_KEK" not in r.text and "vault" not in r.text.lower()
     finally:
         st.svc.vault = saved
 
