@@ -15,6 +15,7 @@ providers (need the owner's Google/GitHub apps).
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import json
 import logging
@@ -78,8 +79,10 @@ class Stack:
     pass
 
 
-@pytest.fixture(scope="module")
-def stack():
+@contextlib.contextmanager
+def live_stack(db_name: str = DB, sql_files=(STUB, SQL1, SQL2, SQL3), service_kwargs=None):
+    """GoTrue + a fresh database + server.py wired to it (reused by R-205)."""
+    DB = db_name  # noqa: N806 - the database this stack owns
     st = Stack()
     with psycopg.connect(_uri("postgres"), autocommit=True) as c:
         c.execute(f"drop database if exists {DB} with (force)")
@@ -141,7 +144,7 @@ def stack():
         st.proc.kill()
         pytest.fail("GoTrue did not start")
     with psycopg.connect(st.db, autocommit=True) as c:
-        for f in (STUB, SQL1, SQL2, SQL3):
+        for f in sql_files:
             c.execute(f.read_text(encoding="utf-8"))
 
     os.environ.setdefault("AGOS_ENV", "test")
@@ -152,7 +155,8 @@ def stack():
     st.server = server
     st.svc = AccountsService(AccountsConfig(supabase_url=st.url, public_key="test-public-key",
                                             db_url=st.db, public_url="https://agos.test",
-                                            auth_url_override=st.url))
+                                            auth_url_override=st.url),
+                             **(service_kwargs or {}))
     saved = (server.V2_ACCOUNTS, server.RATE_LIMIT_REQUESTS)
     server.V2_ACCOUNTS = st.svc
     server.RATE_LIMIT_REQUESTS = 100000
@@ -167,6 +171,12 @@ def stack():
         st.log.close()
         with psycopg.connect(_uri("postgres"), autocommit=True) as c:
             c.execute(f"drop database if exists {DB} with (force)")
+
+
+@pytest.fixture(scope="module")
+def stack():
+    with live_stack() as st:
+        yield st
 
 
 # ---------------------------------------------------------------- helpers

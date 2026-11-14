@@ -283,6 +283,23 @@ export const revokeInvitation = (ws, id) =>
   request(`/api/v2/workspaces/${enc(ws)}/invitations/${enc(id)}`, { method: 'DELETE' });
 export const acceptInvitation = (token) => request('/api/v2/invitations/accept', { method: 'POST', body: { token } });
 
+// ------------------------------------------------- R-205: provider keys (BYOK)
+// The key travels ONCE, in the body of the add/replace request (HTTPS); it is
+// never kept here, never put in storage or a URL, and the server never sends
+// it back (only last4). Pinned by web/tests/provider_keys_ui.test.mjs.
+export const listKeyProviders = () => request('/api/v2/provider-keys/providers');
+export const listProviderKeys = (ws) => request(`/api/v2/workspaces/${enc(ws)}/provider-keys`);
+export const addProviderKey = (ws, body) =>
+  request(`/api/v2/workspaces/${enc(ws)}/provider-keys`, { method: 'POST', body });
+export const editProviderKey = (ws, id, body) =>
+  request(`/api/v2/workspaces/${enc(ws)}/provider-keys/${enc(id)}`, { method: 'PATCH', body });
+export const revokeProviderKey = (ws, id) =>
+  request(`/api/v2/workspaces/${enc(ws)}/provider-keys/${enc(id)}/revoke`, { method: 'POST' });
+export const deleteProviderKey = (ws, id) =>
+  request(`/api/v2/workspaces/${enc(ws)}/provider-keys/${enc(id)}`, { method: 'DELETE' });
+export const testProviderKey = (ws, id) =>
+  request(`/api/v2/workspaces/${enc(ws)}/provider-keys/${enc(id)}/test`, { method: 'POST' });
+
 // tests only: forget the in-memory session without calling the server
 export function _resetForTests() {
   session = null;

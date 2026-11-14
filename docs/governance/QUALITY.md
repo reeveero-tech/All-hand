@@ -465,3 +465,8 @@
 - **تحديث أداة**: `scripts/build_entrypoint_map.py` يطبّق `prefix` الخاص بـ`APIRouter` على مسارات المزخرفات، و`tests/test_r156_entrypoint_map.py` يقرأ مسارات `_IncludedRouter` (FastAPI 0.143) — مقارنة الخريطة بالواقع بقيت كاملة.
 - **الواجهة (لاحق 160، الدفعة 2)**: `web/tests/session.test.mjs` (19: الرمز في الذاكرة فقط، تجديد واحد مشترك، لا حلقة، PKCE، تنظيف الرابط، عدم اعتماد رموز تأكيد البريد، التخزين المعطل) و`web/tests/account_ui.test.mjs` (12: المكون الحقيقي `Account.jsx` مع `session.js` في jsdom ضد `/api/v2` وهمي يتبع `API.md`). تُشغّل في job ‏`build` ‏(`npm test`). 8 طفرات اكتُشفت. فحص المتصفح على المكدس المحلي الحقيقي في السجل `docs/audit/M10/logs/raw/012_r204_web.log`. ملاحظة: `assert.equal(عنصر jsdom, undefined)` عند الفشل يجعل node يطبع شجرة DOM كاملة ويُقتل (SIGKILL) — قارن قيمًا منطقية.
 - **درس (لاحق 160)**: قيم `parametrize` تُحسب عند جمع الاختبارات لا عند تشغيلها — أي وقت نسبي («بعد 10 دقائق») يُحسب داخل الاختبار (`In(seconds)` في `test_r204_accounts_unit.py`)، وإلا فشل حين تطول الحزمة.
+
+## R-205 — اختبارات خزنة المفاتيح في job ‏storage (D-154، 2026-11-14)
+- **تغيير CI** (job ‏`storage`، خطوة الحسابات): الخطوة نفسها تشغّل الآن `tests/test_r205_byok_live.py` (11) مع اختبارات R-204 على خادم Supabase Auth الحقيقي وPostgreSQL، وأي تخطٍ فيها يُفشل الخطوة كما كان. لا اختبار أُزيل ولا شرط خُفف؛ في job ‏`test` تُحسب هذه الـ11 ضمن المتخطاة (تحتاج الخدمات) لأنها تُشغَّل هنا.
+- **أداتا الجرد الثابت** (`scripts/build_route_inventory.py`، `scripts/build_entrypoint_map.py`) تقرآن `agos_v2/byok.py` أيضًا، وبوابة الدفعة الذرية R2 تشترط تحديث `API.md` عند تغييره (تشديد، لا تخفيف).
+- **وحدة/واجهة**: `tests/test_r205_byok_unit.py` (29) في job ‏`test`؛ `web/tests/provider_keys_ui.test.mjs` (4) في `npm test`.

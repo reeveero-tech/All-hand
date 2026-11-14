@@ -91,6 +91,33 @@ def default_master_key_file() -> str:
         tempfile.gettempdir(), "agos_secrets_master_key")
 
 
+def check_master_key(key: bytes) -> bytes:
+    """Refuse a master/key-encryption key that is not exactly 32 bytes."""
+    if not isinstance(key, (bytes, bytearray)) or len(key) != _MASTER_KEY_LEN:
+        got = len(key) if isinstance(key, (bytes, bytearray)) else type(key).__name__
+        raise MasterKeyError(f"master key must hold exactly {_MASTER_KEY_LEN} bytes (got {got})")
+    return bytes(key)
+
+
+def seal(key: bytes, plaintext: bytes, aad: bytes) -> tuple[bytes, bytes]:
+    """AES-256-GCM with a fresh 96-bit nonce; ``aad`` binds the ciphertext to
+    its owner/purpose. Returns ``(nonce, ciphertext)``. The R-189 cipher —
+    reused by R-205 (agos_v2/byok.py) for envelope encryption."""
+    nonce = os.urandom(_NONCE_LEN)
+    return nonce, AESGCM(check_master_key(key)).encrypt(nonce, plaintext, aad)
+
+
+def unseal(key: bytes, nonce: bytes, ct: bytes, aad: bytes, what: str = "ciphertext") -> bytes:
+    """Decrypt or refuse (fail-closed): a wrong key, a different ``aad`` or any
+    corruption raises ``SecretStoreError`` naming ``what`` — never the value."""
+    try:
+        return AESGCM(check_master_key(key)).decrypt(nonce, ct, aad)
+    except MasterKeyError:
+        raise
+    except Exception:  # InvalidTag and any cipher failure
+        raise SecretStoreError(f"integrity failure for {what} — refusing") from None
+
+
 class SecretStore:
     """SQLite-backed encrypted secret store (one instance per process; the
     file is the shared state — same pattern as the rate-limit store)."""
@@ -120,22 +147,13 @@ class SecretStore:
 
     def _encrypt(self, key: bytes, tenant: str, name: str, version: int,
                  value: str) -> tuple[bytes, bytes]:
-        nonce = os.urandom(_NONCE_LEN)
-        aad = self._aad(tenant, name, version)
-        ct = AESGCM(key).encrypt(nonce, value.encode("utf-8"), aad)
-        return nonce, ct
+        return seal(key, value.encode("utf-8"), self._aad(tenant, name, version))
 
     def _decrypt(self, key: bytes, tenant: str, name: str, version: int,
                  nonce: bytes, ct: bytes) -> str:
-        aad = self._aad(tenant, name, version)
-        try:
-            pt = AESGCM(key).decrypt(nonce, ct, aad)
-        except Exception:  # InvalidTag and any cipher failure
-            raise SecretStoreError(
-                f"secret ciphertext integrity failure for '{name}' "
-                f"(tenant/name/version mismatch or corruption) — refusing"
-            ) from None
-        return pt.decode("utf-8")
+        return unseal(key, nonce, ct, self._aad(tenant, name, version),
+                      what=f"secret '{name}' (tenant/name/version mismatch or corruption)"
+                      ).decode("utf-8")
 
     @staticmethod
     def _aad(tenant: str, name: str, version: int) -> bytes:

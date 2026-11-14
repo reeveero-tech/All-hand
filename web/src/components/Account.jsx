@@ -4,7 +4,8 @@ import {
   getSession, onSessionChange, pendingInvite, clearPendingInvite, acceptInvitation,
   savedWorkspace, saveWorkspace, listWorkspaces, createWorkspace, renameWorkspace,
   deleteWorkspace, listMembers, setMemberRole, removeMember, listInvitations,
-  createInvitation, revokeInvitation,
+  createInvitation, revokeInvitation, listKeyProviders, listProviderKeys, addProviderKey,
+  editProviderKey, revokeProviderKey, deleteProviderKey, testProviderKey,
 } from '../session.js'
 
 // R-204 (D-153): sign-up / sign-in (e-mail + Google/GitHub when enabled on the
@@ -162,6 +163,168 @@ function Members({ ws, me, setNotice, onLostAccess }) {
           )
         })}
       </ul>
+    </div>
+  )
+}
+
+// ------------------------------------------------------- R-205 (D-154): BYOK
+// The user's own AI provider keys in this workspace. Visible to this user only
+// (not to other members, owners or admins — the database enforces it). The key
+// is typed into a password field, sent once, and the field is emptied; the
+// server answers with the last 4 characters only.
+const TEST_REASON = {
+  ok: 'يعمل', invalid_key: 'المفتاح غير صحيح', forbidden: 'المفتاح لا يملك الصلاحية',
+  endpoint_not_found: 'عنوان الاختبار غير موجود', rate_limited: 'المزود يحد الطلبات الآن',
+  provider_unavailable: 'المزود غير متاح الآن', unexpected_status: 'رد غير متوقع من المزود',
+  unexpected_redirect: 'المزود أعاد التوجيه (لم يُرسل المفتاح)', timeout: 'انتهت المهلة',
+  unreachable: 'تعذر الوصول إلى المزود', blocked_address: 'العنوان محلي/خاص ولا يصل إليه الخادم',
+  tls_error: 'خطأ في شهادة الاتصال', test_failed: 'فشل الاختبار',
+}
+const KEY_STATUS = { active: 'فعال', revoked: 'مُبطل' }
+
+function keyError(err) {
+  if (err.status === 503 && String(err.detail || '').includes('AGOS_BYOK_KEK')) return 'خزنة المفاتيح غير مفعلة على هذا الخادم بعد'
+  if (err.status === 409 && String(err.detail || '').includes('limit')) return 'بلغت الحد الأقصى (20 مفتاحًا في المساحة)'
+  if (err.status === 409) return 'تعذر فك المفتاح المحفوظ — أدخل المفتاح من جديد'
+  if (err.status === 410) return 'المفتاح مُبطل'
+  if (err.status === 429) return 'اختبارات كثيرة — انتظر دقيقة'
+  return err.message
+}
+
+function ProviderKeys({ ws }) {
+  const [providers, setProviders] = useState([])
+  const [keys, setKeys] = useState(null)
+  const [error, setError] = useState(null)
+  const [provider, setProvider] = useState('openai')
+  const [label, setLabel] = useState('')
+  const [secret, setSecret] = useState('')
+  const [baseUrl, setBaseUrl] = useState('')
+  const [replacing, setReplacing] = useState(null)
+  const [replacement, setReplacement] = useState('')
+  const [results, setResults] = useState({})
+  const [busy, setBusy] = useState(false)
+
+  const load = useCallback(async () => {
+    try {
+      setKeys(await listProviderKeys(ws.id))
+      setError(null)
+    } catch (err) {
+      setKeys([])
+      setError(keyError(err))
+    }
+  }, [ws.id])
+  useEffect(() => {
+    load()
+    listKeyProviders().then(setProviders).catch(() => setProviders([]))
+  }, [load])
+
+  const current = providers.find((p) => p.id === provider)
+  const needsUrl = Boolean(current && current.needs_url)
+  const needsKey = !current || current.needs_key
+
+  const add = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      const body = { provider, label: label.trim() }
+      if (secret) body.api_key = secret
+      if (needsUrl) body.base_url = baseUrl.trim()
+      await addProviderKey(ws.id, body)
+      setLabel(''); setBaseUrl('')
+      await load()
+    } catch (err) {
+      setError(keyError(err))
+    } finally {
+      setSecret('') // never kept, success or not
+      setBusy(false)
+    }
+  }
+  const run = async (fn) => {
+    try { await fn(); await load() } catch (err) { setError(keyError(err)) }
+  }
+  const replace = async (e, k) => {
+    e.preventDefault()
+    const value = replacement
+    setReplacement('')
+    setReplacing(null)
+    await run(() => editProviderKey(ws.id, k.id, { api_key: value }))
+  }
+  const test = async (k) => {
+    try {
+      const r = await testProviderKey(ws.id, k.id)
+      setResults((m) => ({ ...m, [k.id]: r }))
+      await load()
+    } catch (err) {
+      setError(keyError(err))
+    }
+  }
+
+  return (
+    <div className="card account-card" aria-label="مفاتيح الذكاء الاصطناعي">
+      <div className="card-title">مفاتيح الذكاء الاصطناعي — مفاتيحك أنت فقط</div>
+      <div className="account-hint">يُحفظ المفتاح مشفرًا على الخادم ولا يُعرض مرة أخرى؛ يظهر آخر 4 أحرف فقط. لا يراه أعضاء المساحة الآخرون. الإبطال أو الحذف يوقف استخدامه فورًا.</div>
+      {error && <div className="badge badge-error" role="alert">{error}</div>}
+      {!keys && <div className="loading">جارٍ التحميل…</div>}
+      {keys && keys.length > 0 && (
+        <ul className="account-list">
+          {keys.map((k) => {
+            const r = results[k.id]
+            return (
+              <li key={k.id} className="account-row" data-key={k.id}>
+                <span>{(providers.find((p) => p.id === k.provider) || {}).name || k.provider} — {k.label}</span>
+                <span className="badge badge-info" data-mask>{k.has_secret ? `••••${k.last4}` : (k.status === 'revoked' && k.last4 ? `••••${k.last4} (ممسوح)` : 'بلا مفتاح')}</span>
+                {k.base_url && <span className="account-hint">{k.base_url}</span>}
+                <span className={`badge ${k.status === 'active' ? 'badge-success' : 'badge-error'}`}>{KEY_STATUS[k.status] || k.status}</span>
+                {k.last_test_at && (
+                  <span className="account-hint" data-test-result>
+                    آخر اختبار: {TEST_REASON[k.last_test_reason] || k.last_test_reason}{r && r.http_status ? ` (HTTP ${r.http_status})` : ''}
+                  </span>
+                )}
+                <span className="account-hint" data-usage>استخدام: {k.use_count} — رموز {k.tokens_in}/{k.tokens_out} — تكلفة ${k.cost_usd}</span>
+                {k.status === 'active' && (
+                  <>
+                    <button className="btn btn-ghost" type="button" onClick={() => test(k)}>اختبار المفتاح</button>
+                    {k.provider !== 'ollama' && (
+                      <button className="btn btn-ghost" type="button" onClick={() => { setReplacing(k.id); setReplacement('') }}>استبدال المفتاح</button>
+                    )}
+                    <button className="btn btn-ghost" type="button" onClick={() => {
+                      if (window.confirm('إبطال هذا المفتاح؟ يتوقف استخدامه فورًا ويُمسح من الخادم.')) run(() => revokeProviderKey(ws.id, k.id))
+                    }}>إبطال</button>
+                  </>
+                )}
+                <button className="btn btn-danger" type="button" onClick={() => {
+                  if (window.confirm('حذف هذا المفتاح نهائيًا؟')) run(() => deleteProviderKey(ws.id, k.id))
+                }}>حذف</button>
+                {replacing === k.id && (
+                  <form className="account-actions" aria-label="استبدال المفتاح" onSubmit={(e) => replace(e, k)}>
+                    <input className="form-input" type="password" autoComplete="off" spellCheck={false}
+                           aria-label="المفتاح الجديد" maxLength={512} value={replacement}
+                           onChange={(e) => setReplacement(e.target.value)} />
+                    <button className="btn btn-primary" type="submit" disabled={replacement.length < 8}>حفظ</button>
+                  </form>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      {keys && keys.length === 0 && !error && <div className="account-hint">لا مفاتيح بعد</div>}
+      <form className="account-actions" aria-label="إضافة مفتاح" onSubmit={add}>
+        <select className="form-input account-select" aria-label="المزود" value={provider} onChange={(e) => setProvider(e.target.value)}>
+          {(providers.length ? providers : [{ id: 'openai', name: 'OpenAI' }]).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <input className="form-input" aria-label="اسم المفتاح" placeholder="اسم للتمييز" maxLength={80}
+               value={label} onChange={(e) => setLabel(e.target.value)} />
+        {needsUrl && (
+          <input className="form-input" aria-label="عنوان Ollama" placeholder="http://host:11434" maxLength={300}
+                 value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+        )}
+        <input className="form-input" type="password" autoComplete="off" spellCheck={false} aria-label="المفتاح"
+               placeholder={needsKey ? 'المفتاح' : 'مفتاح (اختياري)'} maxLength={512}
+               value={secret} onChange={(e) => setSecret(e.target.value)} />
+        <button className="btn btn-primary" type="submit"
+                disabled={busy || !label.trim() || (needsKey && secret.length < 8) || (needsUrl && !baseUrl.trim())}>حفظ المفتاح</button>
+      </form>
     </div>
   )
 }
@@ -358,6 +521,7 @@ function Workspaces({ user, setNotice, inviteTick }) {
             )}
           </div>
           <Members key={`m-${ws.id}`} ws={ws} me={user} setNotice={setNotice} onLostAccess={lostAccess} />
+          <ProviderKeys key={`k-${ws.id}`} ws={ws} />
           {(ws.role === 'owner' || ws.role === 'admin') && <Invitations key={`i-${ws.id}`} ws={ws} setNotice={setNotice} />}
         </>
       )}

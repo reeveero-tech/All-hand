@@ -255,7 +255,8 @@ def test_map_routes_equal_routes_registered_on_real_app(real_map):
                 rt.add((meth, path))
     rt = {x for x in rt if x[1] not in FRAMEWORK_ROUTES}
     mp = {(r["method"], r["path"]) for r in m["routes"]
-          if r["file"] in ("server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py")}
+          if r["file"] in ("server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py",
+                          "agos_v2/byok.py")}
     cond = {(r["method"], r["path"]) for r in m["routes"] if r["scope"] == "conditional"}
     web_dist = (ROOT / "web" / "dist").exists()
     expected = (mp - cond) | (cond if web_dist else set())
