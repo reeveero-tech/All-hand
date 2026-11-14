@@ -362,7 +362,7 @@ def providers_public() -> list:
             for p in PROVIDERS.values()]
 
 
-def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
+def add_byok_routes(r, *, svc, run, signed_in, fetchall, fetchone, uuid_of) -> None:
     """Mount the BYOK routes on the v2 accounts router ``r`` (same identity,
     session check, RLS transaction, rate limit and no-store rules).
 
@@ -413,6 +413,7 @@ def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
 
     @b.get("/workspaces/{workspace_id}/provider-keys")
     async def list_keys(request: Request, workspace_id: str):
+        ident0 = await signed_in(request)  # 401 first, before any other answer
         ws = uuid_of(workspace_id, "workspace")
         vault_of(svc())
 
@@ -422,10 +423,11 @@ def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
             rows = await fetchall(conn, f"select {META_COLS} from agos.provider_keys "
                                         "where workspace_id = %s order by created_at, id", (ws,))
             return [_meta(x) for x in rows]
-        return await run(request, q)
+        return await run(request, q, ident=ident0)
 
     @b.post("/workspaces/{workspace_id}/provider-keys", status_code=201)
     async def create_key(request: Request, workspace_id: str):
+        ident0 = await signed_in(request)  # 401 first, before any other answer
         ws = uuid_of(workspace_id, "workspace")
         vault = vault_of(svc())
         body = await parse_body(request, KeyIn)
@@ -448,10 +450,11 @@ def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
                                 m["key_nonce"], m["dek_wrapped"], m["dek_nonce"], m["kek_id"]))
             return _meta(await fetchone(conn, f"select {META_COLS} from agos.provider_keys where id = %s",
                                         (kid,)))
-        return await run(request, q)
+        return await run(request, q, ident=ident0)
 
     @b.patch("/workspaces/{workspace_id}/provider-keys/{key_id}")
     async def edit_key(request: Request, workspace_id: str, key_id: str):
+        ident0 = await signed_in(request)  # 401 first, before any other answer
         ws, kid = uuid_of(workspace_id, "workspace"), uuid_of(key_id, "key")
         vault = vault_of(svc())
         body = await parse_body(request, KeyPatch)
@@ -475,10 +478,11 @@ def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
                                 m["kek_id"]))
             return _meta(await fetchone(conn, f"select {META_COLS} from agos.provider_keys where id = %s",
                                         (kid,)))
-        return await run(request, q)
+        return await run(request, q, ident=ident0)
 
     @b.post("/workspaces/{workspace_id}/provider-keys/{key_id}/revoke")
     async def revoke_key(request: Request, workspace_id: str, key_id: str):
+        ident0 = await signed_in(request)  # 401 first, before any other answer
         ws, kid = uuid_of(workspace_id, "workspace"), uuid_of(key_id, "key")
         vault_of(svc())
 
@@ -487,10 +491,11 @@ def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
             await conn.execute("select agos.byok_revoke_key(%s)", (kid,))
             return _meta(await fetchone(conn, f"select {META_COLS} from agos.provider_keys where id = %s",
                                         (kid,)))
-        return await run(request, q)
+        return await run(request, q, ident=ident0)
 
     @b.delete("/workspaces/{workspace_id}/provider-keys/{key_id}", status_code=204)
     async def delete_key(request: Request, workspace_id: str, key_id: str):
+        ident0 = await signed_in(request)  # 401 first, before any other answer
         ws, kid = uuid_of(workspace_id, "workspace"), uuid_of(key_id, "key")
         vault_of(svc())
 
@@ -498,10 +503,11 @@ def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
             await own_meta(conn, ws, kid)
             await conn.execute("select agos.byok_delete_key(%s)", (kid,))
             return Response(status_code=204)
-        return await run(request, q)
+        return await run(request, q, ident=ident0)
 
     @b.post("/workspaces/{workspace_id}/provider-keys/{key_id}/test")
     async def test_key(request: Request, workspace_id: str, key_id: str):
+        ident0 = await signed_in(request)  # 401 first, before any other answer
         ws, kid = uuid_of(workspace_id, "workspace"), uuid_of(key_id, "key")
         s = svc()
         vault = vault_of(s)
@@ -514,7 +520,7 @@ def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
             row = await fetchone(conn, "select * from agos.byok_key_material(%s, 'test')", (kid,))
             return row["provider"], row["base_url"], opened(vault, row)
 
-        provider_id, base_url, secret = await run(request, load)
+        provider_id, base_url, secret = await run(request, load, ident=ident0)
         result = await s.key_tester.test(PROVIDERS[provider_id], secret, base_url)
         del secret
 
@@ -522,7 +528,7 @@ def add_byok_routes(r, *, svc, run, fetchall, fetchone, uuid_of) -> None:
             await conn.execute("select agos.byok_record_test(%s, %s, %s)", (kid, result.ok, result.reason))
             return await fetchone(conn, "select last_test_at from agos.provider_keys where id = %s", (kid,))
 
-        row = await run(request, record)
+        row = await run(request, record, ident=ident0)
         return {"ok": result.ok, "reason": result.reason, "http_status": result.http_status,
                 "tested_at": row["last_test_at"].isoformat() if row else None}
 
