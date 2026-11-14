@@ -1,0 +1,37 @@
+R-205 batch 2 — provider-key routes: session check first (401), API.md providers route corrected (D-154)
+date: 2026-11-14 (UTC)   branch: m10/r205-auth-order   base: main afa46190
+
+## 1. Batch 1 merged and verified on main
+  PR #368 tested head 27e989057f39f79dbe4480e6ee90da69d108833c -> merge afa46190
+  CI on the PR head: AGOS Kernel CI/CD run 43538325972 = success (all jobs; audit green after PR #369)
+    test: 4515 passed, 89 skipped, 18 deselected, 9 xfailed  (89 = 78 before + 11 R-205 live, which run in storage)
+    storage: R-202 48 passed; R-204 + R-205 55 passed, 0 skipped
+  CI on main afa46190: AGOS Kernel CI/CD run 43542019295 = success (quality, test, network, storage, build, docker,
+    audit; publish skipped); Governance Gate run 43542019223 = success
+  CI on main 83d5fcef (PR #369, opentelemetry-api 1.45.2): run 43538232366 = success
+
+## 2. Read-only live probe after the automatic Render deploy (no session, no key, no live change)
+  GET  https://all-hand.onrender.com/api/v2/provider-keys/providers -> 200, list of 7 providers
+       (fields id, name, needs_key, needs_url — no vault_configured: API.md said otherwise -> corrected here)
+  POST https://all-hand.onrender.com/api/v2/workspaces/<random uuid>/provider-keys {"provider":"openai"}
+       -> HTTP503 {"detail":"key vault is not configured on this server (AGOS_BYOK_KEK)"}
+       honest (AGOS_BYOK_KEK is not set), but answered to a request WITHOUT a session
+  GET  /health -> 200
+
+## 3. Red (new assertion in tests/test_r205_byok_live.py::test_provider_outage_timeout_and_wrong_vault_key_are_honest)
+  E   AssertionError: ('GET', URL('https://testserver/api/v2/workspaces/969bb50a-39d5-4e2c-a89c-0fbc88eeacc0/provider-keys'), 503, '{"detail":"key vault is not configured on this server (AGOS_BYOK_KEK)"}')
+  ======================= 1 failed, 10 deselected in 3.08s =======================
+
+## 4. Fix
+  agos_v2/accounts_api.py: signed_in(request) = rate limit + token check; run(request, fn, ident=None) reuses a given
+    identity (rate limit counted once); the live-session check stays inside the transaction.
+  agos_v2/byok.py: the six handlers start with  ident0 = await signed_in(request)  and pass ident=ident0 to run.
+
+## 5. Green
+  R-204 + R-205 unit and live (real GoTrue + PostgreSQL): 95 passed
+  full suite (live env, k6 not installed here): 8 failed, 4587 passed, 9 skipped, 18 deselected, 9 xfailed in 707.46s (0:11:47) 
+    the 8 failures = the k6 tests (test_r176 3 + test_r177 5), k6 binary missing in this sandbox; CI installs it.
+  ruff (F,E722): All checks passed!
+
+## 6. Still NOT done (owner) — R-205 stays in_progress
+  migration 004 not applied live; AGOS_BYOK_KEK not set on Render; no live test with a real owner key.
