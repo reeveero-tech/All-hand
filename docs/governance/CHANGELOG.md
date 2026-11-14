@@ -3392,3 +3392,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - **الدمج**: PR #366 → `54c845d1` (رأس مختبر `3c954c6d`). CI على main: Kernel ‏43387128685 = success (4486 passed, 78 skipped, 18 deselected؛ storage: R-204 ‏44 passed، R-202 ‏48)، Governance ‏43387128732 = success.
 - **حيًا**: الترحيل `r204_003_function_search_path` مطبق من main؛ لا دالة في `agos` بلا `search_path` ثابت؛ مستشار Supabase الأمني بلا أي تحذير على `agos`. النشر التلقائي `dep-dbrbske8bjmc73bk761g` حي؛ تشغيل قبول ثانٍ على الإنتاج (run f74736) ‏43/43، سجلات Render للنافذة (548 سطرًا) بلا جزء سري، والتنظيف كامل.
 - **حالة البند**: R-204 `done` بأدلة R-154. **متبقٍ للمالك ومعلن**: SMTP مخصص (البريد المدمج لفريق المشروع فقط، 2/ساعة)، OAuth Google/GitHub اختياري، إلغاء رمز الإدارة الشخصي، تحذيرات `public` القديمة. التالي R-205 (لم يبدأ).
+
+## 2026-11-14 — لاحق 163أ: إصلاح ثغرة تبعية opentelemetry-api (السجل M10/016)
+- **السبب**: بوابة `audit` الإلزامية فشلت على PR #368 (run 43529647138) بثغرة نُشرت في 2026-11-12: `opentelemetry-api` 1.45.1 — CVE-2026-126360 / GHSA-mf5v-w3w3-f6cg (رفض خدمة بتراجع تعبير نمطي عند تحليل `traceparent` مشوّه). التبعية غير مباشرة (عبر fastapi).
+- **الإصلاح**: `requirements.lock` → 1.45.2 مع بصمتي PyPI الرسميتين؛ لا تبعيات جديدة. `pip-audit -r requirements.lock`: أحمر على main ثم «No known vulnerabilities found».
+- **ما لم يتغير**: لا كود ولا اختبار ولا بوابة؛ R-205 كما هو (`in_progress`، PR #368).
