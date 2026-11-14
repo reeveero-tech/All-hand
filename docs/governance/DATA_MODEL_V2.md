@@ -81,3 +81,9 @@
 [`docs/sql/v2/004_byok.sql`](../sql/v2/004_byok.sql) يُطبق بعد 003؛ تراجعه [`004_byok_rollback.sql`](../sql/v2/004_byok_rollback.sql).
 - **`agos.provider_keys`**: `id` (يولده الخادم)، `workspace_id`، `user_id`، `provider` (7 قيم)، `label`، `base_url` (Ollama فقط)، `status` (`active`/`revoked`)، `last4`، المادة المشفرة `key_ct/key_nonce/dek_wrapped/dek_nonce/kek_id` (كلها أو لا شيء؛ المبطل بلا مادة)، الأوقات، نتيجة آخر اختبار، والاستخدام `use_count/last_used_at/tokens_in/tokens_out/cost_usd` (لـR-206، بلا حصص).
 - **الوصول**: RLS ‏select لصاحب المفتاح العضو بجلسة حية فقط؛ `authenticated` لا يملك صلاحية على أعمدة المادة المشفرة؛ الكتابة والقراءة المادية عبر دوال `agos.byok_*` (SECURITY DEFINER، `search_path` ثابت)؛ إزالة العضو تحذف مفاتيحه (`trg_members_drop_keys`).
+
+## الترحيل 005 — حذف المستخدم (R-205، D-155)
+[`docs/sql/v2/005_user_fk.sql`](../sql/v2/005_user_fk.sql) يُطبق بعد 004؛ تراجعه [`005_user_fk_rollback.sql`](../sql/v2/005_user_fk_rollback.sql).
+- **مفاتيح أجنبية إلى `auth.users(id)`**: `cascade` على `workspace_members.user_id`، `provider_keys.user_id`، `workspace_invitations.invited_by` و`accepted_by`، `memory_items.user_id`؛ `set null` على `workspaces/conversations/tasks.created_by` و`messages.author_id`.
+- **`trg_members_keep_owner`** (بعد حذف عضو): مساحة بلا أعضاء تُحذف؛ مساحة بلا مالك يُرقّى فيها أقدم مدير ثم أقدم عضو.
+- عضوية لمستخدم غير موجود تُرفض (`ForeignKeyViolation`).

@@ -3425,3 +3425,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - النتائج الحية: إضافة 201 بآخر 4 أحرف فقط؛ القائمة بلا مادة سرية؛ اختبار صادق invalid_key (401، بلا تكلفة)؛ بلا جلسة 401؛ العزل 404 في سبعة مسارات؛ Ollama على 127.0.0.1/169.254.169.254/localhost = blocked_address؛ مفتاح قصير 422؛ الإبطال يمسح `key_ct`/`key_nonce`/`dek_wrapped`؛ الاختبار بعده 410؛ الحذف 204 ثم 404. القاعدة: نص مشفر فقط. سجلات Render: 0 ظهور للمفاتيح وكلمات المرور ورموز الجلسات.
 - التنظيف: 0 صفوف تجريبية متبقية (جزء منه بـSQL بالمعرف لأن رموز الجلسة انتهت).
 - اكتشاف: `agos.workspace_members.user_id` بلا مفتاح أجنبي إلى `auth.users` — بند قرار مالك (ترحيل). R-205 باقٍ `in_progress` حتى اختبار المالك بمفتاحه؛ R-206 لم يبدأ.
+
+## 2026-11-15 — لاحق 167: R-205 الدفعة 3 — المستخدم المحذوف لا يترك شيئًا (D-155، السجل M10/019)
+- جديد: `docs/sql/v2/005_user_fk.sql` و`005_user_fk_rollback.sql` — تسعة مفاتيح أجنبية إلى `auth.users` (cascade: العضويات، `provider_keys`، الدعوات المرسلة/المقبولة، `memory_items`؛ set null: `created_by` و`messages.author_id`)، المشغل `trg_members_keep_owner` (مساحة خالية تُحذف، مساحة بلا مالك يُرقّى فيها أقدم مدير ثم عضو)، تنظيف اليتامى القائمين قبل المفاتيح.
+- اختبارات: `test_deleting_a_user_deletes_their_data_and_keeps_every_workspace_owned`، `test_005_removes_existing_orphans_then_its_rollback_is_clean`؛ مكدس BYOK الحي على 001-005. أحمر (الملف غائب) ثم أخضر 86 passed محليًا؛ 3 طفرات مكتشفة (واحدة بعد توسيع الاختبار).
+- D-155 في DECISIONS، قسم 005 في DATA_MODEL_V2، خطوة 0 في OPERATIONS. **لم يُطبق حيًا بعد**.
