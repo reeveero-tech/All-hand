@@ -344,3 +344,6 @@
 - **مستشار Supabase الأمني**: 4 تحذيرات `function_search_path_mutable` على دوال المشغلات في `agos` — أُصلحت في `docs/sql/v2/003_function_search_path.sql` (أحمر أولًا). موجودة قبلنا في `public` ولم تُمس (قرار المالك): `public.rls_auto_enable` قابلة للتنفيذ من anon/authenticated، وRLS بلا سياسات على `public.agent_stats/events/tasks`.
 - **البريد**: خادم البريد المدمج في Supabase لا يرسل إلا لعناوين فريق المشروع وبحد 2 رسالة/ساعة ([وثائق Supabase](https://supabase.com/docs/guides/auth/auth-smtp))؛ قيس حيًا: تسجيل عبر المسار العام → 429 `over_email_send_rate_limit`. **التأكيد التلقائي (`mailer_autoconfirm`) يبقى معطلًا عمدًا**: قبول الدعوة يعتمد على بريد مؤكد، وتعطيل التأكيد يسمح بانتحال بريد مدعو. الحل SMTP مخصص بقرار المالك.
 - لم يُقس: مفتاح محدد المعدل لكل IP خلف وكيل Render (uvicorn لا يثق بـ`X-Forwarded-For` إلا من 127.0.0.1 افتراضيًا، فقد يتشارك العملاء دلوًا واحدًا) — سلوك v1 قائم، سؤال مفتوح.
+
+## تبعية: opentelemetry-api 1.45.2 (CVE-2026-126360، 2026-11-14)
+- `pip-audit` في job ‏`audit` كشف الثغرة بعد نشرها (رفض خدمة عبر `traceparent` مشوّه، CWE-1333)؛ رُفعت النسخة في `requirements.lock` إلى 1.45.2. AGOS لا يستدعي المروِّج مباشرة، لكن الإصلاح لا يُؤجَّل. السجل `docs/audit/M10/logs/raw/016_sec_otel_cve.log`.
