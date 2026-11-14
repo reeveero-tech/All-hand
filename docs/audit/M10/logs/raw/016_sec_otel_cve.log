@@ -1,0 +1,27 @@
+Dependency vulnerability fix — opentelemetry-api 1.45.1 -> 1.45.2 (CVE-2026-126360 / GHSA-mf5v-w3w3-f6cg)
+date: 2026-11-14 (UTC)   branch: m10/sec-otel-1452   base: main f57d22f8
+
+## 1. How it was found
+  CI job audit (required) failed on PR #368 (run 43529647138, job 132257933932) — not caused by that PR:
+  "Found 1 known vulnerability in 1 package / opentelemetry-api 1.45.1 CVE-2026-126360 1.45.2"
+  The advisory was published 2026-11-12T22:24Z (OSV), after the last green main run, so main is affected too.
+  Advisory (OSV): quadratic-time regex backtracking in TraceContextTextMapPropagator.extract() on a malformed
+  traceparent with an embedded newline (CWE-1333, DoS). opentelemetry-api is transitive (via fastapi); AGOS does not
+  call the propagator itself.
+
+## 2. Red — pip-audit -r requirements.lock on main (local, pip-audit in Python 3.11 venv)
+  Found 1 known vulnerability in 1 package
+  Name              Version ID              Fix Versions
+  ----------------- ------- --------------- ------------
+  opentelemetry-api 1.45.1  CVE-2026-126360 1.45.2
+
+## 3. Fix — requirements.lock only (one pin, hashes from PyPI JSON for 1.45.2)
+  opentelemetry_api-1.45.2-py3-none-any.whl sha256 2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34
+  opentelemetry_api-1.45.2.tar.gz           sha256 d7b0008e21e5fd61cbe7a7f34ca3b6905a78ab677d9bc395e299359c75cda6b4
+  requires_dist unchanged (typing-extensions>=4.5.0). pip download --require-hashes of the new line: wheel sha256 matches.
+
+## 4. Green
+  No known vulnerabilities found
+  pip check (Python 3.11 venv with 1.45.2): No broken requirements found.
+  tests/test_r204_accounts_unit.py + tests/test_r156_entrypoint_map.py: 61 passed. Full CI on the PR is the gate.
+  No test, gate or audit rule was changed or relaxed.
