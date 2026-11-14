@@ -1,5 +1,5 @@
 """R-205 (D-154): BYOK end-to-end — real Supabase Auth (GoTrue) + PostgreSQL with
-migrations 001-004 + server.py's /api/v2 routes + a loopback fake provider.
+migrations 001-005 + server.py's /api/v2 routes + a loopback fake provider.
 
 FAKE keys only; no real provider is contacted and no credit is spent. What
 this does NOT prove: the hosted Supabase project (004 is not applied live
@@ -93,7 +93,7 @@ def byok():
     vault = KeyVault(kek)
     tester = KeyTester(endpoints={p: prov.url + "/v1/models" for p in PROVIDERS if p != "ollama"},
                        allow_private=True, timeout=1.0)
-    with live_stack(DB, (STUB, SQL1, SQL2, SQL3, SQL4),
+    with live_stack(DB, (STUB, SQL1, SQL2, SQL3, SQL4, SQL5),
                     {"vault": vault, "key_tester": tester}) as st:
         st.prov, st.vault, st.kek = prov, vault, kek
         yield st
@@ -503,3 +503,150 @@ def test_rollback_is_clean_and_004_reapplies():
     finally:
         with psycopg.connect(_uri("postgres"), autocommit=True) as c:
             c.execute(f"drop database if exists {name} with (force)")
+
+
+# ======================================================= 005: deleted user (D-155)
+
+SQL5 = ROOT / "docs" / "sql" / "v2" / "005_user_fk.sql"
+SQL5_RB = ROOT / "docs" / "sql" / "v2" / "005_user_fk_rollback.sql"
+
+
+def _fresh_db(name, files):
+    from tests.test_r204_accounts_live import _uri
+    with psycopg.connect(_uri("postgres"), autocommit=True) as c:
+        c.execute(f"drop database if exists {name} with (force)")
+        c.execute(f"create database {name}")
+    c = psycopg.connect(_uri(name), autocommit=True)
+    for f in files:
+        c.execute(f.read_text(encoding="utf-8"))
+    return c
+
+
+def _drop_db(name):
+    from tests.test_r204_accounts_live import _uri
+    with psycopg.connect(_uri("postgres"), autocommit=True) as c:
+        c.execute(f"drop database if exists {name} with (force)")
+
+
+def _user(c):
+    uid = uuid.uuid4()
+    c.execute("insert into auth.users (id, email, email_confirmed_at) values (%s, %s, now())",
+              (uid, f"{uid.hex[:8]}@example.test"))
+    return uid
+
+
+def _ws(c, *members):
+    ws = c.execute("insert into agos.workspaces (name, created_by) values ('w', %s) returning id",
+                   (members[0][0],)).fetchone()[0]
+    for i, (uid, role) in enumerate(members):
+        c.execute("insert into agos.workspace_members (workspace_id, user_id, role, created_at) "
+                  "values (%s, %s, %s, now() + make_interval(secs => %s))", (ws, uid, role, i))
+    return ws
+
+
+def _key(c, ws, uid):
+    kid = uuid.uuid4()
+    c.execute("insert into agos.provider_keys (id, workspace_id, user_id, provider, label, last4, key_ct, "
+              "key_nonce, dek_wrapped, dek_nonce, kek_id) values (%s,%s,%s,'openai','k','abcd','\\x01',"
+              "'\\x02','\\x03','\\x04','0123456789abcdef')", (kid, ws, uid))
+    return kid
+
+
+def _count(c, q, *a):
+    return c.execute(q, a).fetchone()[0]
+
+
+@pytest.mark.skipif(not ADMIN_URI, reason="needs V2_SCHEMA_ADMIN_URI")
+def test_deleting_a_user_deletes_their_data_and_keeps_every_workspace_owned():
+    """Finding of lahiq 166 (live): deleting an auth user left memberships, keys
+    (ciphertext) and solo workspaces behind. With 005 a user deletion removes
+    the user's memberships, keys, sent invitations and user memories, clears
+    created_by/accepted_by, deletes a workspace left with no member, and a
+    workspace that lost its last owner gets one (earliest admin, else member)."""
+    name = "agos_v2_r205_userfk_test"
+    c = _fresh_db(name, (STUB, SQL1, SQL2, SQL3, SQL4, SQL5))
+    try:
+        u1, u2, u3, u4 = (_user(c) for _ in range(4))
+        solo = _ws(c, (u1, "owner"))
+        shared = _ws(c, (u2, "owner"), (u1, "member"), (u4, "member"), (u3, "admin"))
+        _key(c, solo, u1)
+        k_shared = _key(c, shared, u1)
+        k_u2 = _key(c, shared, u2)
+        c.execute("insert into agos.workspace_invitations (workspace_id, email, role, token_sha256, invited_by, "
+                  "expires_at) values (%s, 'x@example.test', 'member', %s, %s, now() + interval '1 day')",
+                  (shared, "a" * 64, u1))
+        c.execute("insert into agos.workspace_invitations (workspace_id, email, role, token_sha256, invited_by, "
+                  "expires_at, accepted_at, accepted_by) values (%s, 'y@example.test', 'member', %s, %s, "
+                  "now() + interval '1 day', now(), %s)", (shared, "b" * 64, u2, u1))
+        c.execute("insert into agos.memory_items (workspace_id, scope, user_id, content) values (%s,'user',%s,'m')",
+                  (shared, u1))
+        task = c.execute("insert into agos.tasks (workspace_id, created_by, title, goal) values (%s,%s,'t','g') "
+                         "returning id", (shared, u1)).fetchone()[0]
+
+        c.execute("delete from auth.users where id = %s", (u1,))
+        assert _count(c, "select count(*) from agos.workspaces where id = %s", solo) == 0
+        assert _count(c, "select count(*) from agos.workspace_members where user_id = %s", u1) == 0
+        assert _count(c, "select count(*) from agos.provider_keys where user_id = %s", u1) == 0
+        assert _count(c, "select count(*) from agos.provider_keys where id = %s", k_shared) == 0
+        assert _count(c, "select count(*) from agos.provider_keys where id = %s", k_u2) == 1
+        assert _count(c, "select count(*) from agos.workspace_invitations where invited_by = %s", u1) == 0
+        assert _count(c, "select count(*) from agos.workspace_invitations where accepted_by = %s", u1) == 0
+        assert _count(c, "select count(*) from agos.memory_items where user_id = %s", u1) == 0
+        assert c.execute("select created_by from agos.tasks where id = %s", (task,)).fetchone()[0] is None
+        assert _count(c, "select count(*) from agos.workspace_members where workspace_id = %s", shared) == 3
+
+        c.execute("delete from auth.users where id = %s", (u2,))   # the last owner
+        roles = dict(c.execute("select user_id, role from agos.workspace_members where workspace_id = %s",
+                               (shared,)).fetchall())
+        assert roles == {u3: "owner", u4: "member"}                # the admin, not the earlier member
+        c.execute("delete from auth.users where id = %s", (u3,))
+        assert dict(c.execute("select user_id, role from agos.workspace_members where workspace_id = %s",
+                              (shared,)).fetchall()) == {u4: "owner"}
+        c.execute("delete from auth.users where id = %s", (u4,))
+        assert _count(c, "select count(*) from agos.workspaces where id = %s", shared) == 0
+        assert _count(c, "select count(*) from agos.provider_keys") == 0
+
+        # deleting a workspace directly still works (the trigger sees it gone)
+        u5 = _user(c)
+        w5 = _ws(c, (u5, "owner"))
+        c.execute("delete from agos.workspaces where id = %s", (w5,))
+        assert _count(c, "select count(*) from agos.workspaces where id = %s", w5) == 0
+        # a membership for a user who does not exist is refused
+        with pytest.raises(psycopg.errors.ForeignKeyViolation):
+            c.execute("insert into agos.workspace_members (workspace_id, user_id, role) values (%s, %s, 'member')",
+                      (_ws(c, (u5, "owner")), uuid.uuid4()))
+    finally:
+        c.close()
+        _drop_db(name)
+
+
+@pytest.mark.skipif(not ADMIN_URI, reason="needs V2_SCHEMA_ADMIN_URI")
+def test_005_removes_existing_orphans_then_its_rollback_is_clean():
+    """Live had orphans (users deleted before 005): 005 must clean them before
+    adding the keys, report nothing it should keep, and roll back cleanly."""
+    name = "agos_v2_r205_userfk_orphans_test"
+    c = _fresh_db(name, (STUB, SQL1, SQL2, SQL3, SQL4))
+    try:
+        live, gone = _user(c), uuid.uuid4()                       # `gone` never existed in auth.users
+        w_orphan = _ws(c, (gone, "owner"))                        # only an orphan member -> deleted
+        w_mixed = _ws(c, (gone, "owner"), (live, "member"))       # orphan owner -> live user promoted
+        _key(c, w_mixed, gone)
+        keep = _key(c, w_mixed, live)
+        c.execute(SQL5.read_text(encoding="utf-8"))
+        assert _count(c, "select count(*) from agos.workspaces where id = %s", w_orphan) == 0
+        assert dict(c.execute("select user_id, role from agos.workspace_members where workspace_id = %s",
+                              (w_mixed,)).fetchall()) == {live: "owner"}
+        assert [r[0] for r in c.execute("select id from agos.provider_keys").fetchall()] == [keep]
+        fks = c.execute("""select count(*) from pg_constraint where contype = 'f'
+                             and confrelid = 'auth.users'::regclass
+                             and connamespace = 'agos'::regnamespace""").fetchone()[0]
+        assert fks == 9
+        c.execute(SQL5_RB.read_text(encoding="utf-8"))
+        assert c.execute("""select count(*) from pg_constraint where contype = 'f'
+                              and confrelid = 'auth.users'::regclass""").fetchone()[0] == 0
+        assert _count(c, "select count(*) from pg_trigger where tgname = 'trg_members_keep_owner'") == 0
+        c.execute(SQL5.read_text(encoding="utf-8"))                # forward again
+        assert _count(c, "select count(*) from pg_trigger where tgname = 'trg_members_keep_owner'") == 1
+    finally:
+        c.close()
+        _drop_db(name)
