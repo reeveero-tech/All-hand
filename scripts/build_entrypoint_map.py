@@ -46,7 +46,7 @@ REPO_PATH_RE = re.compile(r"(?<![\w./-])((?:scripts|tests|web|docs|agent_civiliz
 # Human-declared subsystem grouping (needs_human_review). Contents are extracted automatically.
 SUBSYSTEMS = {
     "api": ["server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py",
-            "agos_v2/byok.py"],  # R-205 (D-154)
+            "agos_v2/byok.py", "agos_v2/gateway_api.py"],  # R-205 (D-154), R-206 (D-158)
     "agent-runtime-real": ["agent_civilization/agents/real/real_agents.py", "agent_civilization/core/agents/real_dispatcher.py",
                            "agent_civilization/core/agents/base_agent.py"],
     "agent-runtime-specialists": ["agent_civilization/agents/real/specialist_runtime.py",
