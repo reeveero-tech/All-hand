@@ -39,6 +39,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import Identity, JwksVerifier, TokenError
 from .byok import KeyTester, KeyVault, TestLimiter, add_byok_routes
+from .gateway_api import CallLimiter, add_gateway_routes
 from .db import AccountsDB, SessionInactive
 from .gotrue import AuthUnavailable, GoTrueClient
 
@@ -127,12 +128,16 @@ class AccountsConfig:
 class AccountsService:
     def __init__(self, config: AccountsConfig, *, gotrue: Optional[GoTrueClient] = None,
                  db: Optional[AccountsDB] = None, verifier: Optional[JwksVerifier] = None,
-                 vault: Optional[KeyVault] = None, key_tester: Optional[KeyTester] = None):
+                 vault: Optional[KeyVault] = None, key_tester: Optional[KeyTester] = None,
+                 gateway=None):
         self.config = config
         # R-205 (D-154): the BYOK vault (None = AGOS_BYOK_KEK unset -> 503 on key routes)
         self.vault = vault
         self.key_tester = key_tester or KeyTester()
         self.byok_test_limiter = TestLimiter()
+        # R-206 (D-158): the model gateway (None = the model-call routes answer 503)
+        self.gateway = gateway
+        self.gateway_limiter = CallLimiter()
         self.gotrue = gotrue or GoTrueClient(config.auth_url, config.public_key)
         self.db = db or AccountsDB(config.db_url)
         self.verifier = verifier or JwksVerifier(self.gotrue.jwks, issuer=config.auth_url)
@@ -604,4 +609,7 @@ def build_router(get_service: Callable[[], Optional[AccountsService]],
     # R-205 (D-154): the user's AI provider keys — same identity/RLS/no-store path
     add_byok_routes(r, svc=svc, run=run, signed_in=signed_in, fetchall=fetchall,
                     fetchone=fetchone, uuid_of=_uuid)
+    # R-206 (D-158): the model gateway — same identity/RLS/no-store path
+    add_gateway_routes(r, svc=svc, run=run, signed_in=signed_in, fetchall=fetchall,
+                       fetchone=fetchone, uuid_of=_uuid)
     return r

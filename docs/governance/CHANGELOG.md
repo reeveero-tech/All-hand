@@ -3448,3 +3448,10 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - R-205: قرار المالك «القبول دون الاختبار» — `accepted` (لا `done`)؛ دليل القبول على main ‏`c4b914be`: CI ‏43668244297 = success (4515 passed, 91 skipped, 18 deselected؛ storage ‏57 passed بلا تخطٍ). اختبار المفتاح الحقيقي ينتقل إلى R-206. السجل M10/021.
 - R-206 (`in_progress`): `agos_v2/gateway.py` (جديد) و`tests/test_r206_gateway.py` (25). أحمر ثم أخضر، 10/10 طفرات. لا استدعاء حي، لا مسار، لا أثر على الإنتاج. السجل M10/022.
 - DECISIONS: D-156، D-157.
+
+## 2026-11-15 — لاحق 171: R-206 الدفعة 2: مسار البوابة وسجل الاستدعاءات (D-158)
+- الدفعة 1 مدموجة: PR #376 ← main ‏`2b3efe8d`.
+- جديد: `agos_v2/gateway_api.py`، `docs/sql/v2/006_model_calls.sql` و`006_model_calls_rollback.sql`، `tests/test_r206_gateway_live.py` (14). معدل: `agos_v2/accounts_api.py`، `server.py`، `scripts/build_route_inventory.py`، `scripts/build_entrypoint_map.py`، `tests/test_r200_truth_inventory.py` (60 مسارًا، v2 ‏29)، `tests/test_r156_entrypoint_map.py`، `.github/workflows/ci.yml` (خطوة storage تشغل اختبارات البوابة الحية وتمنع تخطيها).
+- أحمر ثم أخضر، 14/14 طفرة. 006 غير مطبق حيًا؛ لا استدعاء حي؛ مفتاح المنصة معطل افتراضيًا. السجل M10/023.
+- DECISIONS: D-158. API.md وDATA_MODEL_V2.md وOPERATIONS.md: أقسام R-206.
+

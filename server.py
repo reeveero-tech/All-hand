@@ -3516,11 +3516,20 @@ _V2_ACCOUNTS_CONFIG = AccountsConfig.from_env()
 # "key vault is not configured"; set but malformed = the server refuses to boot
 # (fail-closed, the R-189 rule) — never a silent fallback.
 _V2_BYOK_VAULT = _ByokVault.from_env()
+# R-206 (D-158): the model gateway. Platform keys (OPENROUTER_API_KEY) are used
+# only if AGOS_PLATFORM_MODELS allows the route (unset = never; "free" = only
+# OpenRouter models priced 0) — the owner's R-207 budget decision.
+from agos_v2.gateway_api import build_gateway as _build_v2_gateway  # noqa: E402
+
+_V2_GATEWAY = _build_v2_gateway()
 V2_ACCOUNTS: Optional[AccountsService] = (
-    AccountsService(_V2_ACCOUNTS_CONFIG, vault=_V2_BYOK_VAULT) if _V2_ACCOUNTS_CONFIG is not None else None)
-logger.info("startup: v2 accounts %s; BYOK vault %s",
+    AccountsService(_V2_ACCOUNTS_CONFIG, vault=_V2_BYOK_VAULT, gateway=_V2_GATEWAY)
+    if _V2_ACCOUNTS_CONFIG is not None else None)
+logger.info("startup: v2 accounts %s; BYOK vault %s; gateway platform providers %s, policy %s",
             "configured" if V2_ACCOUNTS is not None else "not configured",
-            "configured" if _V2_BYOK_VAULT is not None else "not configured")
+            "configured" if _V2_BYOK_VAULT is not None else "not configured",
+            _V2_GATEWAY.platform_providers() or "none",
+            (os.environ.get("AGOS_PLATFORM_MODELS") or "").strip().lower() or "off")
 
 
 async def _v2_rate_limit(request: Request) -> None:

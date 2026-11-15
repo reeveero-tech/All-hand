@@ -87,3 +87,8 @@
 - **مفاتيح أجنبية إلى `auth.users(id)`**: `cascade` على `workspace_members.user_id`، `provider_keys.user_id`، `workspace_invitations.invited_by` و`accepted_by`، `memory_items.user_id`؛ `set null` على `workspaces/conversations/tasks.created_by` و`messages.author_id`.
 - **`trg_members_keep_owner`** (بعد حذف عضو): مساحة بلا أعضاء تُحذف؛ مساحة بلا مالك يُرقّى فيها أقدم مدير ثم أقدم عضو.
 - عضوية لمستخدم غير موجود تُرفض (`ForeignKeyViolation`).
+
+## الترحيل 006 — سجل استدعاءات النماذج (R-206، D-158)
+[`docs/sql/v2/006_model_calls.sql`](../sql/v2/006_model_calls.sql) يُطبق بعد 005؛ تراجعه [`006_model_calls_rollback.sql`](../sql/v2/006_model_calls_rollback.sql). **غير مطبق حيًا بعد.**
+- **`agos.model_calls`**: صف لكل استدعاء — `workspace_id` (cascade)، `user_id` (cascade إلى `auth.users`)، `key_id` (set null عند حذف المفتاح؛ NULL لمفتاح المنصة)، `key_source`، `provider`، `model`، `ok`، `reason`، `http_status`، `finish_reason`، `fallback_used`، `attempts` (jsonb)، `tokens_in/out`، `cost_usd` (numeric بلا تقريب)، `cost_source`، `provider_request_id`، `latency_ms`، `created_at`. **لا نص ولا مادة مفتاح.**
+- **الوصول**: RLS ‏select لصاحب الصف العضو بجلسة حية فقط؛ الكتابة عبر `agos.model_call_record` فقط (SECURITY DEFINER)؛ لا تعديل ولا حذف لـ`authenticated`. الدالة تضيف الرموز والتكلفة لمجاميع `provider_keys` إن كان المفتاح نشطًا والاستدعاء ناجحًا.
