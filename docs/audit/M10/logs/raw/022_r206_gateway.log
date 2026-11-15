@@ -1,0 +1,35 @@
+# M10/022 — R-206 الدفعة 1: نواة بوابة النماذج (D-157) — لاحق 170، 2026-11-15
+base_sha=c4b914be600b5fd9a894370c6ebbce5653acb8ab
+scope=agos_v2/gateway.py + tests/test_r206_gateway.py (local only; no live call, no route, no deploy effect)
+
+## A. RED (on main c4b914be, test file present, module absent)
+$ python -m pytest tests/test_r206_gateway.py -q
+=============================== 1 error in 0.20s ===============================
+collected 0 items / 1 error
+ImportError while importing test module '/home/user/workspace/All-hand/tests/test_r206_gateway.py'.
+E   ImportError: cannot import name 'gateway' from 'agos_v2' (/home/user/workspace/All-hand/agos_v2/__init__.py)
+
+## B. GREEN
+python 3.14 local:
+============================== 25 passed in 8.89s ==============================
+python 3.11 (CI version):
+============================== 25 passed in 8.95s ==============================
+ruff check --select F,E722 (CI rule) on both files: All checks passed!
+frozen-file guard + R-205 unit: tests/test_r169_b4_runner.py tests/test_r205_byok_unit.py -m 'not network': 39 passed (safety.py untouched)
+
+## C. MUTATIONS (each applied to gateway.py alone, relevant tests run, file restored)
+m1 retry 401 -> CAUGHT ========================= 1 failed, 7 passed in 4.17s ==========================
+m2 no retry cap on Retry-After -> CAUGHT ========================= 1 failed, 5 passed in 3.17s ==========================
+m3 failure invents empty text -> CAUGHT ========================= 1 failed, 7 passed in 4.17s ==========================
+m4 platform before user key -> CAUGHT ========================= 1 failed, 3 passed in 2.16s ==========================
+m5 unknown cost becomes 0 -> CAUGHT ========================= 1 failed, 1 passed in 1.14s ==========================
+m6 auth header follows redirects -> CAUGHT ========================= 1 failed, 12 passed in 7.29s =========================
+m7 fallback not flagged -> CAUGHT ========================= 1 failed, 6 passed in 3.66s ==========================
+m8 policy ignored -> CAUGHT ========================= 1 failed, 4 passed in 2.67s ==========================
+m9 redirect answer accepted -> CAUGHT ========================= 1 failed, 12 passed in 7.29s =========================
+m10 no deadline -> CAUGHT ========================= 1 failed, 9 passed in 5.80s ==========================
+result: 10/10 caught
+
+## D. NOT DONE IN THIS BATCH (declared)
+- no live provider call; no API route; no streaming; no tool calls; no byok_record_usage wiring
+- acceptance (>=3 live providers, one free; cost match vs provider record) NOT met yet
