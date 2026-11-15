@@ -1,0 +1,44 @@
+# M10/020 — R-205: takeover re-verification of the live state (lahiq 168) — 2026-11-15
+# New lead agent. Read-only checks only: no write to Supabase, no Render setting changed,
+# no secret printed. Supabase SQL via the Management API with a personal token the owner
+# pasted in the conversation (kept in a mode-600 file outside the repo, never printed;
+# the owner must revoke it).
+
+## A. Repository / CI
+main HEAD = 04d5aa34de885f3e41b02f196786d1b2315b7912 (merge of PR #373, 2026-11-14T22:16:51Z)
+AGOS Kernel CI/CD 43647249179 = success; Governance Gate 43647249187 = success
+  storage job: tests/test_r205_byok_live.py::test_deleting_a_user_deletes_their_data_and_keeps_every_workspace_owned PASSED
+               tests/test_r205_byok_live.py::test_005_removes_existing_orphans_then_its_rollback_is_clean PASSED
+               57 passed (real PG + GoTrue). In the "test" job the same two are SKIPPED (no DB there) — expected.
+open PRs: only #335 (DO NOT MERGE, owner decision).
+
+## B. Render (service srv-d983v7t7vvec738tu550)
+live deploy dep-dbsdrldckfvc73di4lbg, commit 04d5aa34, status live (auto, new_commit)
+GET /health -> 200 status healthy (3/3)
+GET /api/v2/auth/config -> configured=true, signup_enabled=true, email_confirmation_required=true, google=false, github=false
+GET /api/v2/me, /api/v2/workspaces, /api/v2/workspaces/<zero-uuid>/provider-keys without session -> 401 (not 503: vault configured)
+app log at each boot since the deploy (22:17, 23:59, 01:04 UTC):
+  "startup: v2 accounts configured; BYOK vault configured"
+log search since 2026-11-14T00:00Z for *sk-or-*, *sk-proj*, *sbp_*, *eyJhbGci*, *KEK=* -> 0 hits each
+
+## C. Supabase qehloiuyzksnijstkfmn (read-only SELECTs)
+supabase_migrations.schema_migrations: r204_000, r202_001, r204_002, r204_003, r205_004_byok
+  -> r205_005_user_fk is NOT applied (OPERATIONS R-205 step 0 still pending).
+FKs in schema agos: 19, all intra-agos (to agos.workspaces/conversations/tasks/steps/agent_specs);
+  none references auth.users -> the lahiq 166 finding is CONFIRMED live.
+row counts: auth.users 0 (soft-deleted 0); agos.workspaces 0, workspace_members 0, provider_keys 0,
+  workspace_invitations 0, memory_items 0, conversations 0, tasks 0, messages 0.
+orphan counts (the step-0 "before" count): members 0, provider_keys 0, invitations 0, memory_items 0,
+  workspaces.created_by 0, workspaces without member 0, workspaces without owner 0.
+  -> applying 005 now deletes / updates 0 rows; risk to existing data = none (there is none).
+
+## D. Consequences
+1. R-205 stays in_progress: no owner key test has happened (0 users, 0 keys in production).
+   The owner has no production account yet: the test needs sign-up first (built-in email reaches
+   only Supabase project team members — R-204 limit).
+2. Order recommended to the owner: apply 005 BEFORE the owner signs up, so the first real account
+   is created with the FKs in place. Live apply still needs the owner's explicit go (new lead).
+3. Finding (out of R-205, not fixed here — logged for the roadmap item that replaces the v1 health):
+   /health still reports "Civilization active with 1000 agents" (agos_kernel/infrastructure/health.py)
+   and storage.details.supabase_key="service". Severity low (no secret value; the "1000" is the v1
+   template copies already disclosed by R-201). Fixing it now would break roadmap order.

@@ -3430,3 +3430,11 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - جديد: `docs/sql/v2/005_user_fk.sql` و`005_user_fk_rollback.sql` — تسعة مفاتيح أجنبية إلى `auth.users` (cascade: العضويات، `provider_keys`، الدعوات المرسلة/المقبولة، `memory_items`؛ set null: `created_by` و`messages.author_id`)، المشغل `trg_members_keep_owner` (مساحة خالية تُحذف، مساحة بلا مالك يُرقّى فيها أقدم مدير ثم عضو)، تنظيف اليتامى القائمين قبل المفاتيح.
 - اختبارات: `test_deleting_a_user_deletes_their_data_and_keeps_every_workspace_owned`، `test_005_removes_existing_orphans_then_its_rollback_is_clean`؛ مكدس BYOK الحي على 001-005. أحمر (الملف غائب) ثم أخضر 86 passed محليًا؛ 3 طفرات مكتشفة (واحدة بعد توسيع الاختبار).
 - D-155 في DECISIONS، قسم 005 في DATA_MODEL_V2، خطوة 0 في OPERATIONS. **لم يُطبق حيًا بعد**.
+
+## 2026-11-15 — لاحق 168: R-205 — استلام الوكيل القائد الجديد وإعادة تحقق حي (السجل M10/020)
+- قراءة فقط، بلا كتابة على Supabase ولا تغيير على Render ولا طباعة سر.
+- main ‏`04d5aa34`: CI ‏43647249179 وGovernance 43647249187 = success؛ اختبارا 005 PASSED في وظيفة storage ‏(57 passed).
+- Render: `dep-dbsdrldckfvc73di4lbg` حي على `04d5aa34`؛ `/health` سليم؛ مسارات v2 ومسار المفاتيح 401 بلا جلسة؛ سجل الإقلاع «BYOK vault configured»؛ 0 ظهور لأنماط المفاتيح والرموز في السجلات.
+- Supabase: الترحيلات 000..004 فقط — **005 غير مطبق**؛ 19 مفتاحًا أجنبيًا كلها داخل `agos`، لا شيء إلى `auth.users` (اكتشاف لاحق 166 مؤكد)؛ القاعدة فارغة (0 مستخدمين، 0 صفوف) فاليتامى 0 وأثر 005 الآن 0 صفوف.
+- اكتشاف منخفض مسجل: `/health` يعلن «1000 agents» (نواة v1). R-205 باقٍ `in_progress`.
+
