@@ -35,6 +35,7 @@ DB = "agos_v2_r206_gateway_test"
 PLATFORM_KEY = "sk-or-PLATFORM-" + uuid.uuid4().hex
 PROMPT_MARK = "PROMPT-" + uuid.uuid4().hex
 ANSWER_MARK = "ANSWER-" + uuid.uuid4().hex
+ARG_MARK = "ARG-" + uuid.uuid4().hex
 
 pytestmark = pytest.mark.skipif(not (ADMIN_URI and GOTRUE_BIN),
                                 reason="needs GOTRUE_BIN and V2_SCHEMA_ADMIN_URI (CI job storage)")
@@ -83,6 +84,13 @@ class ChatProvider:
                 usage = {"prompt_tokens": 11, "completion_tokens": 7}
                 if provider == "openrouter":
                     usage["cost"] = 0.0000123
+                if body.get("tools"):                  # D-159: ask for the first tool
+                    name = body["tools"][0]["function"]["name"]
+                    return self._send(200, {"id": f"gen-{uuid.uuid4().hex}", "choices": [
+                        {"message": {"role": "assistant", "content": None, "tool_calls": [
+                            {"id": "call_1", "type": "function",
+                             "function": {"name": name, "arguments": json.dumps({"q": ARG_MARK})}}]},
+                         "finish_reason": "tool_calls"}], "usage": usage})
                 self._send(200, {"id": f"gen-{uuid.uuid4().hex}", "choices": [
                     {"message": {"role": "assistant", "content": ANSWER_MARK}, "finish_reason": "stop"}],
                     "usage": usage})
@@ -107,7 +115,8 @@ def gw():
     gateway = Gateway(endpoints={p: f"{prov.url}/{p}/v1" for p in ADAPTERS if p != "ollama"},
                       platform_keys={"openrouter": PLATFORM_KEY},
                       platform_policy=platform_policy_from_env(catalog, {"AGOS_PLATFORM_MODELS": "free"}),
-                      price_for=catalog.price_for, allow_private=True, sleep=lambda s: None)
+                      price_for=catalog.price_for, capability_for=catalog.capability_for,
+                      allow_private=True, sleep=lambda s: None)
     gateway.catalog = catalog
     with live_stack(DB, (STUB, SQL1, SQL2, SQL3, SQL4, SQL5, SQL6),
                     {"vault": vault, "gateway": gateway}) as st:
@@ -201,6 +210,21 @@ def test_platform_policy_off_by_default():
     assert platform_policy_from_env(cat, {"AGOS_PLATFORM_MODELS": "free"})(Route("openrouter", "m:free")) is True
     assert build_gateway({}, cat).platform_providers() == []
     assert build_gateway({"OPENROUTER_API_KEY": "x"}, cat).platform_providers() == ["openrouter"]
+
+
+def test_built_gateway_uses_catalog_capabilities():
+    """D-159: the served gateway asks the catalog; a model listed without tools is refused
+    before any request, an unknown model or provider is left to the provider."""
+    from agos_v2.gateway import ChatRequest, Route
+    from agos_v2.gateway_api import Catalog, build_gateway
+    cat = Catalog("http://127.0.0.1:9/never")
+    cat.models = lambda: {"m:free": {"free": True, "tools": False, "structured_output": True}}
+    assert cat.capability_for("openrouter", "m:free") == {"tools": False, "structured_output": True}
+    assert cat.capability_for("openrouter", "other") is None and cat.capability_for("openai", "m:free") is None
+    gw = build_gateway({}, cat)
+    req = ChatRequest(messages=[{"role": "user", "content": "hi"}], tools=[{"name": "t"}])
+    assert gw._missing_capability(Route("openrouter", "m:free"), req) == "tools_not_supported"
+    assert gw._missing_capability(Route("openai", "m:free"), req) is None
 
 
 # ================================================================ fallback and failure
@@ -347,6 +371,62 @@ def test_no_call_log_means_no_provider_call(gw):
                 "rename to model_call_record")
     r = call(st, u, ws, [{"provider": "openai", "model": "gpt-x"}])
     assert r.status_code == 200 and r.json()["ok"] is True and len(st.prov.calls) == n + 1
+
+
+TOOL = {"name": "search", "description": "find", "parameters": {"type": "object",
+                                                                   "properties": {"q": {"type": "string"}}}}
+
+
+def test_tool_call_through_the_api_is_returned_and_recorded_without_arguments(gw):
+    """D-159: tool calls come back to the caller (never run by the server); the call log
+    keeps metadata only — not the tool arguments."""
+    st = gw
+    u = register(st, "tools")
+    ws = new_ws(st, u)
+    add(st, u, ws, "openai", valid_key(st, "tools"), "mine")
+    r = call(st, u, ws, [{"provider": "openai", "model": "gpt-x"}], tools=[TOOL], tool_choice="required")
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["ok"] is True and out["finish_reason"] == "tool_calls" and out["text"] == ""
+    assert out["tool_calls"] == [{"id": "call_1", "name": "search", "arguments": json.dumps({"q": ARG_MARK}),
+                                  "arguments_valid": True}]
+    sent = st.prov.calls[-1]["body"]
+    assert sent["tools"][0]["function"]["name"] == "search" and sent["tool_choice"] == "required"
+    row = sql(st, "select finish_reason, row_to_json(c)::text from agos.model_calls c where id = %s",
+              (out["call_id"],))[0]
+    assert row[0] == "tool_calls" and ARG_MARK not in row[1]
+    # the next turn carries the result back; the provider answers in text
+    hist = [{"role": "user", "content": "find it"},
+            {"role": "assistant", "content": None, "tool_calls": [
+                {"id": "call_1", "name": "search", "arguments": json.dumps({"q": "x"})}]},
+            {"role": "tool", "tool_call_id": "call_1", "content": "found"}]
+    r2 = st.client.post(f"/api/v2/workspaces/{ws}/model-calls", headers=u.h, json={
+        "messages": hist, "routes": [{"provider": "openai", "model": "gpt-x"}]})
+    assert r2.status_code == 422                       # a tool history needs its tools listed
+    r2 = st.client.post(f"/api/v2/workspaces/{ws}/model-calls", headers=u.h, json={
+        "messages": hist, "tools": [TOOL], "routes": [{"provider": "openai", "model": "gpt-x"}]})
+    assert r2.status_code == 200 and r2.json()["tool_calls"] == [{"id": "call_1", "name": "search",
+                                                                  "arguments": json.dumps({"q": ARG_MARK}),
+                                                                  "arguments_valid": True}]
+    assert st.prov.calls[-1]["body"]["messages"][2] == {"role": "tool", "tool_call_id": "call_1",
+                                                         "content": "found"}
+
+
+def test_catalog_capability_refuses_tools_on_a_model_without_them(gw):
+    """The catalog's free model lists no tool support: the platform route is not called,
+    the refusal is recorded, and an invalid tool body is 422 without echo."""
+    st = gw
+    u = register(st, "cap")
+    ws = new_ws(st, u)
+    n = len(st.prov.calls)
+    r = call(st, u, ws, [{"provider": "openrouter", "model": "vendor/free-model:free"}], tools=[TOOL])
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["ok"] is False and out["reason"] == "tools_not_supported" and len(st.prov.calls) == n
+    assert sql(st, "select ok, reason from agos.model_calls where id = %s", (out["call_id"],)) == \
+        [(False, "tools_not_supported")]
+    bad = call(st, u, ws, [{"provider": "openai", "model": "m"}], tools=[dict(TOOL, name=f"bad {ARG_MARK}")])
+    assert bad.status_code == 422 and ARG_MARK not in bad.text and len(st.prov.calls) == n
 
 
 def test_call_rate_limit(gw):
