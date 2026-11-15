@@ -251,6 +251,12 @@ def add_gateway_routes(r, *, svc, run, signed_in, fetchall, fetchone, uuid_of) -
         async def plan(conn, ident):
             if (await fetchone(conn, "select agos.member_role(%s) as r", (ws,)))["r"] is None:
                 raise HTTPException(404, "workspace not found")
+            # no call log (migration 006 not applied) -> refuse BEFORE any provider is
+            # called: a call that cannot be recorded must not be made (cost, honesty)
+            if not (await fetchone(conn, "select exists (select 1 from pg_proc p join pg_namespace n "
+                                         "on n.oid = p.pronamespace where n.nspname = 'agos' "
+                                         "and p.proname = 'model_call_record') as ok", ()))["ok"]:
+                raise HTTPException(503, "model call log is not installed on this server (migration 006)")
             if not limiter.allow(ident.user_id):
                 raise HTTPException(429, "too many model calls; wait a minute", headers={"Retry-After": "60"})
             chosen: Dict[str, Optional[str]] = {}

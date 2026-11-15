@@ -312,3 +312,12 @@
 | `DELETE /api/v2/workspaces/{ws}/provider-keys/{id}` | حذف → 204 |
 | `POST /api/v2/workspaces/{ws}/provider-keys/{id}/test` | اختبار صادق → `{ok, reason, http_status, tested_at}`؛ 10/دقيقة → 429 |
 **الترتيب (لاحق 164)**: حد المعدل والتحقق من الرمز أولًا — بلا جلسة 401 دائمًا، قبل أي 503/422/404؛ ثم الخزنة والجسم. الأخطاء: 422 بلا صدى للمدخل؛ 404 لمفتاح غيري أو غير موجود (لا تعداد)؛ 409 مبطل/خزنة مختلفة/فشل سلامة؛ 503 الخزنة أو القاعدة غير مهيأة.
+
+## R-206 — بوابة النماذج `/api/v2` (D-157، D-158، 2026-11-15)
+كلها تتطلب جلسة R-204 عدا `GET /api/v2/models`، و`Cache-Control: no-store`. لا استجابة ولا سجل يحمل مفتاحًا أو نص الطلب.
+| المسار | الوظيفة |
+|---|---|
+| `GET /api/v2/models` | كتالوج OpenRouter العام (المعرف، طول السياق، الرؤية، الأدوات، المخرجات المنظمة، السعر)؛ تخزين ساعة، و60 ثانية بعد خطأ |
+| `POST /api/v2/workspaces/{ws}/model-calls` | استدعاء `{messages, routes:[{provider, model, key_id?}] (1..4), max_tokens?, temperature?, json_mode?}` → `{ok, text, reason, provider, model, key_source, fallback_used, attempts, tokens_in, tokens_out, cost_usd, cost_source, provider_request_id, latency_ms, call_id}`؛ الفشل `ok=false` و`text=null` برمز سبب (200 — الفشل نتيجة لا خطأ خادم) |
+| `GET /api/v2/workspaces/{ws}/model-calls` | استدعاءاتي في هذه المساحة (بيانات وصفية فقط) |
+**الأخطاء**: 401 بلا جلسة؛ 422 بلا صدى للمدخل (حقل غير معروف، مسار خاطئ، مفتاحان لمزود واحد، مفتاح لمزود آخر)؛ 404 مساحة أو مفتاح ليس لي؛ 410 مفتاح مذكور مبطل؛ 429 أكثر من 20/دقيقة؛ 503 البوابة أو الخزنة أو القاعدة غير مهيأة. **الاختبارات**: `tests/test_r206_gateway.py`، `tests/test_r206_gateway_live.py` (Supabase Auth حقيقي + PostgreSQL + مزود محلي عبر الحلقة). **ما لم يُثبت بعد**: أي استدعاء لمزود حقيقي، والترحيل 006 على الإنتاج.

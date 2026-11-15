@@ -325,6 +325,30 @@ def test_signed_out_and_bad_requests_send_nothing(gw):
     assert len(st.prov.calls) == n
 
 
+def test_no_call_log_means_no_provider_call(gw):
+    """Migration 006 missing (the live database before the owner applies it): the call is
+    refused 503 BEFORE any provider is contacted — an unrecordable call is never made."""
+    st = gw
+    u = register(st, "nolog")
+    ws = new_ws(st, u)
+    k = valid_key(st, "nolog")
+    add(st, u, ws, "openai", k, "mine")
+    sig = ("agos.model_call_record(uuid, uuid, text, text, text, boolean, text, integer, text, boolean, "
+           "jsonb, bigint, bigint, numeric, text, text, integer)")
+    n = len(st.prov.calls)
+    sql(st, f"alter function {sig} rename to model_call_record_off")
+    try:
+        r = call(st, u, ws, [{"provider": "openai", "model": "gpt-x"}])
+        assert r.status_code == 503 and "006" in r.json()["detail"]
+        assert len(st.prov.calls) == n                               # nothing was sent
+    finally:
+        sql(st, "alter function agos.model_call_record_off(uuid, uuid, text, text, text, boolean, text, "
+                "integer, text, boolean, jsonb, bigint, bigint, numeric, text, text, integer) "
+                "rename to model_call_record")
+    r = call(st, u, ws, [{"provider": "openai", "model": "gpt-x"}])
+    assert r.status_code == 200 and r.json()["ok"] is True and len(st.prov.calls) == n + 1
+
+
 def test_call_rate_limit(gw):
     st = gw
     u = register(st, "rate")
