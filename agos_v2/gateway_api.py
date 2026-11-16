@@ -14,6 +14,11 @@ as the accounts and key routes):
   held while waiting on a provider, and a key revoked/deleted before its turn
   is not used. Every call (success or failure) is recorded in
   ``agos.model_calls`` (006: metadata only) and returned with its id.
+* ``POST /workspaces/{ws}/model-calls/stream`` — the same call as Server-Sent
+  Events (D-160): ``route``, ``delta`` (text), ``done`` (full result + call_id).
+  Retries/fallbacks only before the first text; after it a failure is
+  ``stream_interrupted``; a client that leaves -> ``client_disconnected``.
+  Recorded like every call.
 * ``GET /workspaces/{ws}/model-calls`` — the caller's own recent calls.
 * ``GET /models`` — the model catalog (OpenRouter's public list, cached).
 
@@ -29,21 +34,25 @@ from __future__ import annotations
 
 import asyncio
 import collections
+import concurrent.futures
+import contextvars
 import json
 import logging
 import os
 import threading
 import time
+import weakref
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
 from agent_civilization.core import safety
 
 from . import byok
-from .gateway import (OPENROUTER_MODELS_URL, ChatRequest, Credential, Gateway, InvalidRequest, Route,
+from .gateway import (OPENROUTER_MODELS_URL, ChatRequest, Credential, Gateway, InvalidRequest, Result, Route,
                       parse_openrouter_catalog)
 
 logger = logging.getLogger("agos.v2.gateway_api")
@@ -202,6 +211,113 @@ def _parse_call(body: Any):
     return req, routes, key_ids
 
 
+_END = object()
+_BACKGROUND: set = set()          # strong refs: records finished after a client left
+MAX_STREAMS = 16                  # open streams per server process (D-160)
+# Each open stream waits on its provider in a worker thread; its own pool keeps
+# the default pool (plain calls, catalog, key lookups) free, and a full pool is
+# an honest 503 before any provider is called — never a silent queue.
+_STREAM_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_STREAMS, thread_name_prefix="agos-stream")
+_STREAM_SLOTS = threading.BoundedSemaphore(MAX_STREAMS)
+
+
+class _Slot:
+    """One open-stream slot, released exactly once."""
+
+    def __init__(self):
+        self._lock, self._held, self.started = threading.Lock(), True, False
+
+    def release(self) -> None:
+        with self._lock:
+            if self._held:
+                self._held = False
+                _STREAM_SLOTS.release()
+
+    def release_if_unstarted(self) -> None:
+        if not self.started:
+            self.release()
+
+
+def _sse(event: str, data: Dict[str, Any]) -> bytes:
+    return f"event: {event}\ndata: {json.dumps(data, separators=(',', ':'))}\n\n".encode()
+
+
+async def _sse_body(stream, finish, slot):
+    """Stream events from the (blocking) gateway stream; record the call at the end.
+    If the client leaves, the provider stream is stopped and the call is still
+    recorded (``client_disconnected``) by a background task — never lost."""
+    slot.started = True               # from here the body itself releases the slot
+    fut = None
+    handed_off = False
+    try:
+        while True:
+            ctx = contextvars.copy_context()
+            fut = asyncio.get_running_loop().run_in_executor(_STREAM_POOL, ctx.run, next, stream, _END)
+            try:
+                ev = await asyncio.shield(fut)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # noqa: BLE001 - e.g. the key lookup failed mid-call
+                logger.error("gateway stream: stopped by %s", type(exc).__name__)
+                ev = _END
+                if stream.result is None:
+                    stream.result = Result(ok=False, reason="gateway_error", attempts=stream.attempts)
+            fut = None
+            if ev is _END:
+                break
+            yield _sse(ev["type"], ev)
+        handed_off = True
+        result = stream.result
+        record = asyncio.ensure_future(finish(result))
+        _BACKGROUND.add(record)              # kept alive even if the client leaves now
+        record.add_done_callback(_BACKGROUND.discard)
+        try:
+            call_id = await asyncio.shield(record)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - say so honestly; never the body
+            logger.error("gateway stream: call not recorded (%s)", type(exc).__name__)
+            call_id = None
+            yield _sse("error", {"type": "error", "reason": "call_not_recorded"})
+        out = result.to_dict()
+        out["type"], out["call_id"] = "done", call_id
+        yield _sse("done", out)
+    finally:
+        if handed_off:
+            slot.release()
+        else:
+            stream.cancel()
+            task = asyncio.get_running_loop().create_task(_after_disconnect(stream, fut, finish, slot))
+            _BACKGROUND.add(task)
+            task.add_done_callback(_BACKGROUND.discard)
+
+
+def _stream_body(stream, finish):
+    """The SSE body holding one acquired slot. The slot is released when the body
+    ends (after a disconnect: when the call is recorded); a body never started (the
+    client left first) sent nothing to any provider — the stream is lazy — and its
+    slot is released when it is collected."""
+    slot = _Slot()
+    body = _sse_body(stream, finish, slot)
+    weakref.finalize(body, slot.release_if_unstarted)
+    return body
+
+
+async def _after_disconnect(stream, fut, finish, slot) -> None:
+    try:
+        if fut is not None:
+            try:
+                await fut                          # the worker thread sees the cancel at its next line
+            except Exception:  # noqa: BLE001 - the stream records its own reason
+                pass
+        await asyncio.to_thread(stream.close)
+        await finish(stream.result)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("gateway stream: call not recorded after disconnect (%s)", type(exc).__name__)
+    finally:
+        slot.release()
+
+
 def add_gateway_routes(r, *, svc, run, signed_in, fetchall, fetchone, uuid_of) -> None:
     """Mount the gateway routes on the v2 accounts router (see add_byok_routes)."""
     b = APIRouter(prefix="/api/v2", tags=["v2 model gateway"], route_class=r.route_class)
@@ -238,8 +354,8 @@ def add_gateway_routes(r, *, svc, run, signed_in, fetchall, fetchone, uuid_of) -
             return [_iso(x) for x in rows]
         return await run(request, q, ident=ident0)
 
-    @b.post("/workspaces/{workspace_id}/model-calls")
-    async def model_call(request: Request, workspace_id: str):
+    async def prepare(request: Request, workspace_id: str):
+        """Every check that can refuse a call, BEFORE any provider is called (4xx/503)."""
         ident0 = await signed_in(request)  # 401 first, before any other answer
         ws = uuid_of(workspace_id, "workspace")
         s = svc()
@@ -312,6 +428,33 @@ def add_gateway_routes(r, *, svc, run, signed_in, fetchall, fetchone, uuid_of) -
                     return None
                 raise
 
+        return ident0, ws, gw, req, routes, chosen, user_credential
+
+    def recorder(request: Request, ident0, ws, chosen):
+        async def finish(result) -> str:
+            """The record (metadata only) — success and failure alike."""
+            last = result.attempts[-1] if result.attempts else {}
+
+            async def record(conn, ident):
+                row = await fetchone(conn, "select agos.model_call_record(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,"
+                                           "%s,%s,%s,%s,%s,%s) as id",
+                                     (ws, result.key_id, result.key_source if result.ok else last.get("key_source"),
+                                      result.provider or last.get("provider"), result.model or last.get("model"),
+                                      result.ok, result.reason, result.http_status, result.finish_reason,
+                                      result.fallback_used, json.dumps(result.attempts), result.tokens_in,
+                                      result.tokens_out, result.cost_usd, result.cost_source,
+                                      result.provider_request_id, result.latency_ms))
+                return str(row["id"])
+
+            if not result.ok and last.get("key_source") == "byok":
+                # a failed byok call names no answering key; record it as the key that was tried
+                result.key_id = chosen.get(last.get("provider"))
+            return await run(request, record, ident=ident0)
+        return finish
+
+    @b.post("/workspaces/{workspace_id}/model-calls")
+    async def model_call(request: Request, workspace_id: str):
+        ident0, ws, gw, req, routes, chosen, user_credential = await prepare(request, workspace_id)
         try:
             result = await asyncio.to_thread(gw.complete, req, routes, user_credential)
         except HTTPException:
@@ -319,28 +462,27 @@ def add_gateway_routes(r, *, svc, run, signed_in, fetchall, fetchone, uuid_of) -
         except InvalidRequest as e:
             raise HTTPException(422, str(e)) from None
         del req
-
-        # 3) the record (metadata only) — success and failure alike
-        last = result.attempts[-1] if result.attempts else {}
-
-        async def record(conn, ident):
-            row = await fetchone(conn, "select agos.model_call_record(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,"
-                                       "%s,%s,%s,%s,%s,%s) as id",
-                                 (ws, result.key_id, result.key_source if result.ok else last.get("key_source"),
-                                  result.provider or last.get("provider"), result.model or last.get("model"),
-                                  result.ok, result.reason, result.http_status, result.finish_reason,
-                                  result.fallback_used, json.dumps(result.attempts), result.tokens_in,
-                                  result.tokens_out, result.cost_usd, result.cost_source,
-                                  result.provider_request_id, result.latency_ms))
-            return str(row["id"])
-
-        if not result.ok and last.get("key_source") == "byok":
-            # a failed byok call names no answering key; record it as the key that was tried
-            result_key = chosen.get(last.get("provider"))
-            result.key_id = result_key
-        call_id = await run(request, record, ident=ident0)
+        call_id = await recorder(request, ident0, ws, chosen)(result)
         out = result.to_dict()
         out["call_id"] = call_id
         return out
+
+    @b.post("/workspaces/{workspace_id}/model-calls/stream")
+    async def model_call_stream(request: Request, workspace_id: str):
+        """The same call, answered as Server-Sent Events (D-160): ``route`` (which
+        provider/model is streaming; a later one after a fallback), ``delta``
+        (text pieces), then ``done`` (the full result + call_id, as the plain
+        route answers). Refusals before any model call are plain HTTP errors."""
+        ident0, ws, gw, req, routes, chosen, user_credential = await prepare(request, workspace_id)
+        try:
+            stream = gw.stream(req, routes, user_credential)
+        except InvalidRequest as e:
+            raise HTTPException(422, str(e)) from None
+        del req
+        if not _STREAM_SLOTS.acquire(blocking=False):
+            raise HTTPException(503, "too many open streams on this server; retry shortly",
+                                headers={"Retry-After": "5"})
+        body = _stream_body(stream, recorder(request, ident0, ws, chosen))
+        return StreamingResponse(body, media_type="text/event-stream", headers={"X-Accel-Buffering": "no"})
 
     r.routes.extend(b.routes)

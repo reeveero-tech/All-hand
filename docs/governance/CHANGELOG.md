@@ -3470,3 +3470,10 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - PR #379 (لاحق 173) مدموج: main ‏`5dd3f2d8` (CI ‏43781268765 = success). النشر `dep-dbt4vjff3r2c73f3l19g` حي.
 - الإنتاج: `20261116014521 r206_006_model_calls` مطبق عبر Management API؛ أثره 0 صفوف؛ RLS والصلاحيات والمستشار متحقق منها.
 - لا كود. DATA_MODEL_V2.md وOPERATIONS.md وAPI.md: حالة 006. السجل M10/026.
+
+## 2026-11-16 — لاحق 175: R-206 الدفعة 4: البث (SSE) في بوابة النماذج (D-160)
+- PR #380 (لاحق 174) مدموج: main ‏`ffad9855` (CI ‏43788353660: test وstorage = success). النشر `dep-dbt6kt6q1p3s73fifs3g` حي.
+- معدل: `agos_v2/gateway.py` (`Gateway.stream` و`Stream`، قارئ SSE، مجمّعا OpenAI-compatible وAnthropic، `_open` مشترك مع `complete`، رمزا سبب `stream_interrupted` و`client_disconnected`)، `agos_v2/gateway_api.py` (مسار `.../model-calls/stream`، التحضير والتسجيل مشتركان مع المسار العادي، تسجيل خلفي عند المغادرة، مجمع خيوط خاص بالبث بحد 16 و503 عند الامتلاء)، `tests/test_r206_gateway_live.py` (مزود محلي يبث + 9 اختبارات)، `tests/test_r200_truth_inventory.py` (61 مسارًا). جديد: `tests/test_r206_stream.py` (35).
+- أحمر 34 ثم أخضر. لا ترحيل؛ لا استدعاء حي. السجل M10/027.
+- DECISIONS: D-160. API.md: مسار البث وقسمه في R-206.
+- CI على PR #381 (الرشة 43799045089): فشل `storage` بسبب حقيقي في اختبار هذه الدفعة — اختبار مغادرة العميل استورد `httpx` غير المثبت في وظيفة storage؛ صار يستخدم `http.client` من المكتبة القياسية (83 نجح محليًا مع حجب httpx، والطفرات تُكتشف). وفشل `test` في المحاولة الأولى في `test_real_baseline_health` (عتبات زمن /health على المشغل المشترك؛ غير متأثر بهذه الدفعة) ونجح في إعادة تشغيل واحدة موثقة. السجل M10/027.

@@ -16,6 +16,7 @@ import logging
 import os
 import pathlib
 import threading
+import time
 import uuid
 
 import pytest
@@ -84,6 +85,8 @@ class ChatProvider:
                 usage = {"prompt_tokens": 11, "completion_tokens": 7}
                 if provider == "openrouter":
                     usage["cost"] = 0.0000123
+                if body.get("stream"):                 # D-160: Server-Sent Events
+                    return self._stream(body, usage)
                 if body.get("tools"):                  # D-159: ask for the first tool
                     name = body["tools"][0]["function"]["name"]
                     return self._send(200, {"id": f"gen-{uuid.uuid4().hex}", "choices": [
@@ -95,9 +98,37 @@ class ChatProvider:
                     {"message": {"role": "assistant", "content": ANSWER_MARK}, "finish_reason": "stop"}],
                     "usage": usage})
 
+            def _stream(self, body, usage):
+                prompt = json.dumps(body.get("messages"))
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.end_headers()
+                cid = f"gen-{uuid.uuid4().hex}"
+                pieces = [ANSWER_MARK[:12], ANSWER_MARK[12:]]
+                if "SLOW-STREAM" in prompt:
+                    pieces = ["x"] * 400
+                try:
+                    for i, piece in enumerate(pieces):
+                        chunk = {"id": cid, "choices": [{"index": 0, "delta": {"content": piece}}]}
+                        self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
+                        self.wfile.flush()
+                        outer.streamed += 1
+                        if "DROP-AFTER-FIRST" in prompt:
+                            return                     # the connection ends mid-answer
+                        if "SLOW-STREAM" in prompt:
+                            time.sleep(0.05)
+                    for chunk in ({"id": cid, "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+                                  {"id": cid, "choices": [], "usage": usage}):
+                        self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
+                    self.wfile.write(b"data: [DONE]\n\n")
+                    outer.finished += 1
+                except OSError:
+                    outer.broken += 1                  # the gateway hung up on us
+
             def log_message(self, *a):
                 pass
 
+        self.streamed = self.finished = self.broken = 0
         self.srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
         self.url = f"http://127.0.0.1:{self.srv.server_address[1]}"
         threading.Thread(target=self.srv.serve_forever, daemon=True).start()
@@ -536,3 +567,220 @@ def test_006_rollback_is_clean_and_reapplies():
     finally:
         with psycopg.connect(_uri("postgres"), autocommit=True) as c:
             c.execute(f"drop database if exists {name} with (force)")
+
+
+# ================================================================ streaming (D-160)
+
+def stream_call(st, u, ws, routes, prompt=None, headers=None, **extra):
+    body = {"messages": [{"role": "user", "content": prompt or f"hello {PROMPT_MARK}"}], "routes": routes, **extra}
+    return st.client.post(f"/api/v2/workspaces/{ws}/model-calls/stream", json=body,
+                          headers=u.h if headers is None else headers)
+
+
+def events_of(text):
+    out = []
+    for block in text.split("\n\n"):
+        if not block.strip():
+            continue
+        lines = dict(line.split(": ", 1) for line in block.split("\n"))
+        out.append((lines["event"], json.loads(lines["data"])))
+    return out
+
+
+def test_stream_answers_in_pieces_and_is_recorded(gw):
+    st = gw
+    u = register(st, "stream")
+    ws = new_ws(st, u)
+    kid = add(st, u, ws, "openrouter", valid_key(st, "st"), "st").json()["id"]
+    r = stream_call(st, u, ws, [{"provider": "openrouter", "model": "vendor/paid-model"}])
+    assert r.status_code == 200, r.text
+    assert r.headers["content-type"].startswith("text/event-stream")
+    assert r.headers["cache-control"] == "no-store" and r.headers["x-accel-buffering"] == "no"
+    ev = events_of(r.text)
+    assert [e for e, _ in ev] == ["route", "delta", "delta", "done"]
+    assert ev[0][1] == {"type": "route", "provider": "openrouter", "model": "vendor/paid-model",
+                        "key_source": "byok", "fallback_used": False}
+    assert "".join(d["text"] for e, d in ev if e == "delta") == ANSWER_MARK
+    done = ev[-1][1]
+    assert done["ok"] and done["text"] == ANSWER_MARK and done["key_id"] == kid
+    assert (done["tokens_in"], done["tokens_out"], done["cost_usd"], done["cost_source"]) == \
+        (11, 7, "0.0000123", "provider")
+    sent = st.prov.calls[-1]["body"]
+    assert sent["stream"] is True and sent["stream_options"] == {"include_usage": True}
+    row = sql(st, "select ok, reason, key_id::text, tokens_in, tokens_out, cost_usd::text, provider_request_id "
+                  "from agos.model_calls where id = %s", (done["call_id"],))[0]
+    assert row == (True, "ok", kid, 11, 7, "0.0000123", done["provider_request_id"])
+
+
+def test_stream_refusals_are_plain_http_errors_before_any_provider_call(gw):
+    st = gw
+    u, other = register(st, "streamref"), register(st, "streamoth")
+    ws = new_ws(st, u)
+    n = len(st.prov.calls)
+    route = [{"provider": "openai", "model": "m"}]
+    assert stream_call(st, u, ws, route, headers={}).status_code == 401
+    assert stream_call(st, other, ws, route).status_code == 404
+    bad = st.client.post(f"/api/v2/workspaces/{ws}/model-calls/stream", json={"messages": []}, headers=u.h)
+    assert bad.status_code == 422 and bad.headers["cache-control"] == "no-store"
+    assert len(st.prov.calls) == n
+
+
+def test_stream_cut_after_text_is_interrupted_recorded_and_not_replaced(gw):
+    st = gw
+    u = register(st, "streamcut")
+    ws = new_ws(st, u)
+    kid = add(st, u, ws, "openai", valid_key(st, "cut"), "cut").json()["id"]
+    add(st, u, ws, "groq", valid_key(st, "cutg"), "cutg")
+    n = len(st.prov.calls)
+    r = stream_call(st, u, ws, [{"provider": "openai", "model": "a"}, {"provider": "groq", "model": "b"}],
+                    prompt="DROP-AFTER-FIRST please")
+    ev = events_of(r.text)
+    assert [e for e, _ in ev] == ["route", "delta", "done"]
+    done = ev[-1][1]
+    assert done["ok"] is False and done["reason"] == "stream_interrupted" and done["text"] is None
+    assert done["provider"] == "openai" and done["key_id"] == kid and done["tokens_in"] is None
+    assert len(st.prov.calls) == n + 1 and st.prov.calls[-1]["provider"] == "openai"   # groq never called
+    row = sql(st, "select ok, reason, provider, key_id::text, tokens_in, cost_usd from agos.model_calls "
+                  "where id = %s", (done["call_id"],))[0]
+    assert row == (False, "stream_interrupted", "openai", kid, None, None)
+
+
+def test_stream_falls_back_only_before_text(gw):
+    st = gw
+    u = register(st, "streamfb")
+    ws = new_ws(st, u)
+    add(st, u, ws, "mistral", valid_key(st, "fbm"), "fbm")
+    add(st, u, ws, "groq", valid_key(st, "fbg"), "fbg")
+    st.prov.outage.add("mistral")
+    try:
+        r = stream_call(st, u, ws, [{"provider": "mistral", "model": "a"}, {"provider": "groq", "model": "b"}])
+    finally:
+        st.prov.outage.discard("mistral")
+    ev = events_of(r.text)
+    assert [e for e, _ in ev] == ["route", "delta", "delta", "done"]
+    assert ev[0][1]["provider"] == "groq" and ev[0][1]["fallback_used"] is True
+    done = ev[-1][1]
+    assert done["ok"] and done["fallback_used"] and done["attempts"][0]["reason"] == "provider_unavailable"
+
+
+def test_stream_leaks_nothing(gw, caplog):
+    st = gw
+    u = register(st, "streamleak")
+    ws = new_ws(st, u)
+    k = valid_key(st, "sleak")
+    add(st, u, ws, "openai", k, "sleak")
+    caplog.set_level(logging.DEBUG)
+    prompt = "PRIVATE-" + uuid.uuid4().hex
+    r = stream_call(st, u, ws, [{"provider": "openai", "model": "m"}], prompt=prompt)
+    assert events_of(r.text)[-1][1]["ok"]
+    assert not _contains(r.text, k) and prompt not in r.text
+    logs = "\n".join(rec.getMessage() for rec in caplog.records)
+    for blob in [logs] + list(dump_everything(st)):
+        for secret in (k, PLATFORM_KEY, prompt, ANSWER_MARK):
+            assert not _contains(blob, secret), secret
+
+
+def test_client_disconnect_stops_the_provider_and_is_recorded(gw):
+    """A real socket: uvicorn serves the app; the client reads one piece and leaves.
+    The client is the standard library on purpose: the storage CI job installs only
+    what the live tests need, and httpx is not in it."""
+    import http.client
+    import uvicorn
+    from tests.test_r204_accounts_live import _free_port
+    st = gw
+    u = register(st, "streamdc")
+    ws = new_ws(st, u)
+    kid = add(st, u, ws, "openai", valid_key(st, "dc"), "dc").json()["id"]
+    port = _free_port()
+    srv = uvicorn.Server(uvicorn.Config(st.server.app, host="127.0.0.1", port=port, lifespan="off",
+                                        log_level="warning", proxy_headers=True, forwarded_allow_ips="*"))
+    t = threading.Thread(target=srv.run, daemon=True)
+    t.start()
+    try:
+        for _ in range(100):
+            if srv.started:
+                break
+            time.sleep(0.05)
+        broken0 = st.prov.broken
+        body = {"messages": [{"role": "user", "content": "SLOW-STREAM"}], "routes": [{"provider": "openai", "model": "m"}]}
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        try:
+            conn.request("POST", f"/api/v2/workspaces/{ws}/model-calls/stream", body=json.dumps(body),
+                         headers={**u.h, "Content-Type": "application/json",
+                                  "X-Forwarded-Proto": "https", "Host": "testserver"})
+            resp = conn.getresponse()
+            assert resp.status == 200, resp.read()
+            while True:
+                line = resp.readline()
+                assert line, "the stream ended before the first piece"
+                if line.startswith(b"event: delta"):
+                    break                               # leave after the first piece
+        finally:
+            conn.close()                                # the socket really closes here
+        rows = []
+        for _ in range(200):                            # the record is written in the background
+            rows = sql(st, "select ok, reason, provider, key_id::text, tokens_in from agos.model_calls "
+                           "where workspace_id = %s", (ws,))
+            if rows:
+                break
+            time.sleep(0.05)
+        assert rows == [(False, "client_disconnected", "openai", kid, None)]
+        for _ in range(100):
+            if st.prov.broken > broken0:
+                break
+            time.sleep(0.05)
+        assert st.prov.broken > broken0                 # the provider stream was stopped, not read to the end
+    finally:
+        srv.should_exit = True
+        t.join(10)
+
+
+def test_open_stream_limit_is_an_honest_503_before_any_provider_call(gw, monkeypatch):
+    from agos_v2 import gateway_api
+    st = gw
+    u = register(st, "streamcap")
+    ws = new_ws(st, u)
+    add(st, u, ws, "openai", valid_key(st, "cap"), "cap")
+    full = threading.BoundedSemaphore(1)
+    full.acquire()
+    monkeypatch.setattr(gateway_api, "_STREAM_SLOTS", full)
+    n = len(st.prov.calls)
+    r = stream_call(st, u, ws, [{"provider": "openai", "model": "m"}])
+    assert r.status_code == 503 and r.headers["retry-after"] == "5"
+    assert len(st.prov.calls) == n
+    assert sql(st, "select count(*) from agos.model_calls where workspace_id = %s", (ws,)) == [(0,)]
+
+
+def test_every_stream_gives_its_slot_back(gw):
+    from agos_v2 import gateway_api
+    st = gw
+    u = register(st, "streamslot")
+    ws = new_ws(st, u)
+    add(st, u, ws, "openai", valid_key(st, "slot"), "slot")
+    for prompt in ("plain", "DROP-AFTER-FIRST"):
+        stream_call(st, u, ws, [{"provider": "openai", "model": "m"}], prompt=prompt)
+    stream_call(st, u, ws, [{"provider": "groq", "model": "m"}])               # no key: ends at once
+    for _ in range(100):                                                      # disconnect test records late
+        if gateway_api._STREAM_SLOTS._value == gateway_api.MAX_STREAMS:
+            break
+        time.sleep(0.05)
+    assert gateway_api._STREAM_SLOTS._value == gateway_api.MAX_STREAMS
+
+
+def test_unstarted_stream_body_releases_its_slot():
+    import gc
+
+    from agos_v2 import gateway_api
+    before = gateway_api._STREAM_SLOTS._value
+    assert gateway_api._STREAM_SLOTS.acquire(blocking=False)
+    body = gateway_api._stream_body(object(), None)                          # what the route returns
+    assert gateway_api._STREAM_SLOTS._value == before - 1
+    del body                                                                  # never iterated
+    gc.collect()
+    assert gateway_api._STREAM_SLOTS._value == before
+    assert gateway_api._STREAM_SLOTS.acquire(blocking=False) and gateway_api._STREAM_SLOTS.acquire(blocking=False)
+    slot = gateway_api._Slot()
+    slot.release()
+    slot.release()                                                            # exactly once
+    assert gateway_api._STREAM_SLOTS._value == before - 1
+    gateway_api._STREAM_SLOTS.release()
