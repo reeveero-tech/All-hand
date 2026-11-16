@@ -681,8 +681,10 @@ def test_stream_leaks_nothing(gw, caplog):
 
 
 def test_client_disconnect_stops_the_provider_and_is_recorded(gw):
-    """A real socket: uvicorn serves the app; the client reads one piece and leaves."""
-    import httpx
+    """A real socket: uvicorn serves the app; the client reads one piece and leaves.
+    The client is the standard library on purpose: the storage CI job installs only
+    what the live tests need, and httpx is not in it."""
+    import http.client
     import uvicorn
     from tests.test_r204_accounts_live import _free_port
     st = gw
@@ -701,13 +703,20 @@ def test_client_disconnect_stops_the_provider_and_is_recorded(gw):
             time.sleep(0.05)
         broken0 = st.prov.broken
         body = {"messages": [{"role": "user", "content": "SLOW-STREAM"}], "routes": [{"provider": "openai", "model": "m"}]}
-        with httpx.Client(base_url=f"http://127.0.0.1:{port}", timeout=10) as hc:
-            with hc.stream("POST", f"/api/v2/workspaces/{ws}/model-calls/stream", json=body,
-                           headers={**u.h, "X-Forwarded-Proto": "https", "Host": "testserver"}) as resp:
-                assert resp.status_code == 200, resp.read()
-                for line in resp.iter_lines():
-                    if line.startswith("event: delta"):
-                        break                           # leave after the first piece
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        try:
+            conn.request("POST", f"/api/v2/workspaces/{ws}/model-calls/stream", body=json.dumps(body),
+                         headers={**u.h, "Content-Type": "application/json",
+                                  "X-Forwarded-Proto": "https", "Host": "testserver"})
+            resp = conn.getresponse()
+            assert resp.status == 200, resp.read()
+            while True:
+                line = resp.readline()
+                assert line, "the stream ended before the first piece"
+                if line.startswith(b"event: delta"):
+                    break                               # leave after the first piece
+        finally:
+            conn.close()                                # the socket really closes here
         rows = []
         for _ in range(200):                            # the record is written in the background
             rows = sql(st, "select ok, reason, provider, key_id::text, tokens_in from agos.model_calls "

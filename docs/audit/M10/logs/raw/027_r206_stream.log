@@ -71,3 +71,22 @@ every mutation's original text, restored, file compared (cmp) with the reviewed 
 no live provider stream (or any live call); stream_options.include_usage on real providers (mistral excluded on documentation
 belief, not verified); that real providers stop generating when the connection closes; no production record; no UI.
 A cancel is seen at the provider's next line (or the 60 s read timeout), not instantly.
+
+## CI on PR #381 (run 43799045089) — two failures, root causes
+1) job test, first try: tests/test_r177_per_service.py::test_real_baseline_health — ok=False
+   (latency thresholds of the /health load baseline on the shared runner). Not caused by
+   this batch: /health is untouched, the test runs before any r206 test (alphabetical),
+   it passed 3/3 locally on this branch (21 s each) and had not failed in the last 30 CI
+   runs. One documented re-run of the failed jobs: job test PASSED (37m25s).
+2) job storage: tests/test_r206_gateway_live.py::test_client_disconnect_stops_the_provider_and_is_recorded
+   — ModuleNotFoundError: No module named 'httpx'. REAL defect in this batch's test: the
+   storage job installs only what the live tests need; httpx was only in the local venv.
+   Fix: the client is now http.client (standard library); the socket is closed explicitly.
+   Check reproducing the storage job (httpx made unimportable via PYTHONPATH stub):
+     4 live modules (r204 db, r204 live, r205 live, r206 live): 83 passed in 35.81s
+   The rewritten test still catches the defect (mutations on agos_v2/gateway_api.py):
+     only stream.cancel() removed            -> passed  (equivalent: _after_disconnect
+                                                         still calls stream.close())
+     cancel() AND stream.close() removed     -> 1 failed (caught)
+     the background record removed           -> 1 failed (caught)
+   source restored: cmp identical to the backup.
