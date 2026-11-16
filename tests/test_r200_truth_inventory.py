@@ -80,15 +80,17 @@ def test_route_parser_on_the_real_repo():
     # 31 routes on server.py + 19 /api/v2 routes on the R-204 APIRouter
     # (agos_v2/accounts_api.py, prefix "/api/v2") + 7 R-205 provider-key routes
     # (agos_v2/byok.py, its own APIRouter, prefix "/api/v2") + 3 R-206 model-gateway
-    # routes (agos_v2/gateway_api.py, same pattern) — the prefix is applied
-    assert len(rows) == 60
+    # routes (agos_v2/gateway_api.py, same pattern) + the R-206 stream route (D-160)
+    # — the prefix is applied
+    assert len(rows) == 61
     v2 = [r for r in rows if r["path"].startswith("/api/v2/")]
     assert len([r for r in v2 if r["source"].startswith("agos_v2/accounts_api.py:")]) == 19
     keys = [r for r in v2 if r["source"].startswith("agos_v2/byok.py:")]
-    assert len(keys) == 7 and len(v2) == 29
+    assert len(keys) == 7 and len(v2) == 30
     gw = sorted(f'{r["method"]} {r["path"]}' for r in v2 if r["source"].startswith("agos_v2/gateway_api.py:"))
     assert gw == ["GET /api/v2/models", "GET /api/v2/workspaces/{workspace_id}/model-calls",
-                  "POST /api/v2/workspaces/{workspace_id}/model-calls"]
+                  "POST /api/v2/workspaces/{workspace_id}/model-calls",
+                  "POST /api/v2/workspaces/{workspace_id}/model-calls/stream"]
     assert all("provider-keys" in r["path"] for r in keys)
     assert by["POST /api/v2/workspaces/{workspace_id}/provider-keys"]["used_by_web_ui"] == "yes"
     assert by["POST /api/v2/workspaces/{workspace_id}/provider-keys/{key_id}/test"]["used_by_web_ui"] == "yes"
