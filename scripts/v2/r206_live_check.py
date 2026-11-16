@@ -19,7 +19,7 @@ import httpx
 
 BASE = os.environ.get("AGOS_BASE", "https://all-hand.onrender.com")
 API = BASE + "/api/v2"
-USER = json.load(open(os.environ.get("AGOS_R206_USER", "/tmp/r206live/user.json")))
+USER = {}  # loaded in main, never at import (the R-156 map imports every guarded CLI)
 OUT = os.environ.get("AGOS_R206_OUT", "/tmp/r206live/out.json")
 FREE = os.environ.get("AGOS_R206_FREE", "google/gemma-4-31b-it:free")
 FREE2 = os.environ.get("AGOS_R206_FREE2", "nvidia/nemotron-3.5-lightning:free")
@@ -168,6 +168,7 @@ def phase_cleanup():
 
 
 if __name__ == "__main__":
+    USER.update(json.load(open(os.environ.get("AGOS_R206_USER", "/tmp/r206live/user.json"))))
     {"calls": phase_calls, "cleanup": phase_cleanup}[sys.argv[1]]()
     print("phase", sys.argv[1] + ":", "all passed" if not fails else f"{fails} failed")
     sys.exit(1 if fails else 0)
