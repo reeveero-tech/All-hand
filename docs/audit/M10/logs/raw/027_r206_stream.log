@@ -1,5 +1,5 @@
 # M10/027 — R-206 الدفعة 4: البث (SSE) في بوابة النماذج (D-160) — لاحق 175، 2026-11-16
-base_sha=ffad985525a63bc0df4b47e28ae0dd8a20cd76d5 (main after PR #380)
+base_sha=ffad98559af06d580e1806de8742321d1d0701e9 (main after PR #380)
 scope=agos_v2/gateway.py (Gateway.stream, Stream, SSE reader, OpenAI-compatible + Anthropic stream assemblers, _open shared with complete, reasons stream_interrupted/client_disconnected), agos_v2/gateway_api.py (POST /api/v2/workspaces/{ws}/model-calls/stream, prepare/record shared with the plain route, background record on disconnect, dedicated stream pool of 16 + 503 when full), tests/test_r206_stream.py (new), tests/test_r206_gateway_live.py (+9, streaming fake provider), tests/test_r200_truth_inventory.py (61 routes); local only — no migration, no live provider call
 env: Python 3.11.17 venv (requirements.lock), Starlette 1.10.0, FastAPI 0.163.0, uvicorn 0.54.0, PostgreSQL 18 local, Supabase Auth (GoTrue) local binary, fake providers = loopback HTTP servers writing real SSE (FAKE keys only)
 middleware check: MetricsMiddleware and TelemetryMiddleware are pure ASGI (server.py comment R-083/R-159) — they do not buffer a streaming body; the live disconnect test goes through both over a real socket.
