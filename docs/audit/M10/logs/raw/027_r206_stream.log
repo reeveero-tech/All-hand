@@ -1,0 +1,73 @@
+# M10/027 — R-206 الدفعة 4: البث (SSE) في بوابة النماذج (D-160) — لاحق 175، 2026-11-16
+base_sha=ffad985525a63bc0df4b47e28ae0dd8a20cd76d5 (main after PR #380)
+scope=agos_v2/gateway.py (Gateway.stream, Stream, SSE reader, OpenAI-compatible + Anthropic stream assemblers, _open shared with complete, reasons stream_interrupted/client_disconnected), agos_v2/gateway_api.py (POST /api/v2/workspaces/{ws}/model-calls/stream, prepare/record shared with the plain route, background record on disconnect, dedicated stream pool of 16 + 503 when full), tests/test_r206_stream.py (new), tests/test_r206_gateway_live.py (+9, streaming fake provider), tests/test_r200_truth_inventory.py (61 routes); local only — no migration, no live provider call
+env: Python 3.11.17 venv (requirements.lock), Starlette 1.10.0, FastAPI 0.163.0, uvicorn 0.54.0, PostgreSQL 18 local, Supabase Auth (GoTrue) local binary, fake providers = loopback HTTP servers writing real SSE (FAKE keys only)
+middleware check: MetricsMiddleware and TelemetryMiddleware are pure ASGI (server.py comment R-083/R-159) — they do not buffer a streaming body; the live disconnect test goes through both over a real socket.
+
+## A. RED (tests/test_r206_stream.py on main code)
+============================= 34 failed in 17.33s ==============================
+
+## B. GREEN
+refactor guard first: tests/test_r206_gateway.py + tests/test_r206_tools.py after moving the request into _open: 79 passed
+tests/test_r206_stream.py: 35 passed (34 gateway contract tests against a real loopback SSE server + 1 slot test of the HTTP body)
+database-backed modules run alone (r202 schema, r204 db+live, r205 byok live, r206 core/tools/stream/live), live env set:
+======================== 245 passed in 78.50s (0:01:18) ========================
+  includes tests/test_r206_gateway_live.py: 26 passed (9 new: stream answers + record; refusals are plain HTTP before any
+  provider call; cut after text = stream_interrupted, recorded, fallback never called; fallback before text; no key/prompt/
+  answer in DB, logs or the stream; client disconnect over uvicorn + a real socket -> provider connection closed and the
+  call recorded client_disconnected; open-stream limit = 503 + Retry-After with no provider call and no record; every
+  stream gives its slot back; an unstarted body gives its slot back)
+full suite, Python 3.11, live env NOT set, working tree before commit:
+= 1 failed, 4628 passed, 117 skipped, 18 deselected, 9 xfailed in 790.65s (0:13:10) =
+  the 1 failure: tests/test_r156_entrypoint_map.py::test_map_routes_equal_routes_registered_on_real_app — the map is built
+  from the git HEAD snapshot, and the new route was not committed yet. After commit 42668152:
+  tests/test_r156_entrypoint_map.py + tests/test_r200_truth_inventory.py: 31 passed
+ruff check --select F,E722 server.py agent_civilization agos_kernel agos_v2 tests (CI rule): All checks passed!
+
+## C. MUTATIONS (each applied alone, stream + live tests run, file restored)
+set 1 (gateway + API), 20 mutations:
+s1 retry after text -> CAUGHT
+s2 EOF without end = complete -> CAUGHT
+s3 no stream flag -> CAUGHT
+s4 no include_usage -> CAUGHT
+s5 mistral gets stream_options -> CAUGHT
+s6 openai error event ignored -> CAUGHT
+s7 anthropic error ignored -> CAUGHT
+s8 cancel not checked -> CAUGHT
+s9 content-type unchecked -> CAUGHT
+s10 size cap off -> CAUGHT
+s11 comments not skipped -> SURVIVED (equivalent: a ":" comment line has an empty field name, which the parser ignores anyway)
+s12 stream deadline unchecked -> CAUGHT
+s13 tool call id not required -> CAUGHT
+s14 partial keeps text -> CAUGHT
+s15 anthropic no message_stop needed -> CAUGHT
+s16 api disconnect not recorded -> CAUGHT
+s17 api no cancel on disconnect -> CAUGHT (first pass SURVIVED; caught after the slot test was added)
+s18 api no X-Accel header -> CAUGHT
+s19 api done without record -> CAUGHT
+s20 anthropic args not joined -> CAUGHT
+set 2 (open-stream slots), 7 mutations — 7/7 caught:
+p1 no finalize -> CAUGHT
+p6 finalize always -> CAUGHT
+p7 started never set -> CAUGHT
+p2 no release after done -> CAUGHT
+p3 no release after disconnect -> CAUGHT
+p4 no cap -> CAUGHT
+p5 release twice -> CAUGHT
+first pass of set 2: p2, p3, p5 SURVIVED -> found a real flaw: the GC fallback also released the slot of a STARTED body
+after a disconnect (before its record was written). Fixed (release_if_unstarted) and tested; then p6/p7 SURVIVED because
+the test's own cancelled task kept the body alive -> test rewritten to the common real path (body closed at its yield).
+operator note: two mutation runs once overlapped by mistake and left one mutation (p2) in gateway_api.py; found by checking
+every mutation's original text, restored, file compared (cmp) with the reviewed copy before every later run.
+
+## D. FINDINGS FIXED IN THIS BATCH
+1. capacity: each open stream waits on its provider in a worker thread; on the shared default pool many streams would
+   starve plain calls, the catalog and key lookups. Now a dedicated pool of 16 per process, 503 + Retry-After when full,
+   before any provider is called.
+2. a key lookup failing inside the worker thread mid-call would have been recorded as client_disconnected; now gateway_error.
+3. the record task of the final "done" step is kept alive (strong ref) if the client leaves at that moment.
+
+## E. NOT PROVEN
+no live provider stream (or any live call); stream_options.include_usage on real providers (mistral excluded on documentation
+belief, not verified); that real providers stop generating when the connection closes; no production record; no UI.
+A cancel is seen at the provider's next line (or the 60 s read timeout), not instantly.
