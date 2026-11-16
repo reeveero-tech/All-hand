@@ -3465,3 +3465,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - معدل: `agos_v2/gateway.py` (صيغة أدوات واحدة، ترجمة OpenAI-compatible وAnthropic، `tool_calls` في الخرج، فحص القدرة من الكتالوج، رمزا سبب جديدان، القدرة غير المعروفة `null`)، `agos_v2/gateway_api.py` (قبول `tools` و`tool_choice`، `Catalog.capability_for`). جديد: `tests/test_r206_tools.py` (54). معدل: `tests/test_r206_gateway_live.py` (+3).
 - أحمر 52 ثم أخضر، 13/13 طفرة. البوابة لا تنفذ أي أداة؛ الوسائط لا تُسجل؛ لا ترحيل. لا استدعاء حي؛ 006 غير مطبق. السجل M10/025.
 - DECISIONS: D-159. API.md: قسم الأدوات في R-206.
+
+## 2026-11-16 — لاحق 174: R-206 — الترحيل 006 على قاعدة الإنتاج (بموافقة المالك)
+- PR #379 (لاحق 173) مدموج: main ‏`5dd3f2d8` (CI ‏43781268765 = success). النشر `dep-dbt4vjff3r2c73f3l19g` حي.
+- الإنتاج: `20261116014521 r206_006_model_calls` مطبق عبر Management API؛ أثره 0 صفوف؛ RLS والصلاحيات والمستشار متحقق منها.
+- لا كود. DATA_MODEL_V2.md وOPERATIONS.md وAPI.md: حالة 006. السجل M10/026.
