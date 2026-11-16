@@ -93,3 +93,7 @@ the platform key's account — owner); multi-delta streaming (the short answer c
 tools on a real provider; Anthropic streaming live. The unknown model is refused as platform_key_not_allowed (not in the catalog
 = not provably free) — honest, but the reason name does not say "unknown model" (FINDING-3, open).
 R-206 stays in_progress.
+
+## I. Local checks of this batch
+tests/test_r156_entrypoint_map.py::test_every_guarded_cli_imports_cleanly... FAILED first: the new script read its user file at
+import (FileNotFoundError) — every guarded CLI is imported by the R-156 map. Fixed: the file is read in main. After: 22 passed.
