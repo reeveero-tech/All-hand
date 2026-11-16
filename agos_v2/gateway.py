@@ -7,6 +7,15 @@ One request shape (``ChatRequest``) for every provider of R-205:
   endpoint) and ollama (the user's own base URL + ``/v1``);
 * Anthropic's native Messages API (``POST {base}/messages``).
 
+Tool calls (D-159): one provider-neutral format — ``tools`` [{name,
+description?, parameters}], ``tool_choice`` (auto | none | required |
+{name}), assistant messages with ``tool_calls`` [{id, name, arguments}] and
+``tool`` messages {tool_call_id, content} — mapped to OpenAI ``function``
+tools and to Anthropic ``tool_use``/``tool_result`` blocks; the answer's tool
+calls come back in ``Result.tool_calls`` in the same neutral shape. The
+gateway never runs a tool (R-211 does); arguments that are not a JSON object
+are reported (``arguments_valid: false``), never repaired.
+
 Rules (each pinned by tests/test_r206_gateway.py):
 
 * **Key choice**: for each route the caller's own BYOK key first; the
@@ -42,6 +51,7 @@ from __future__ import annotations
 import http.client
 import json
 import logging
+import re
 import socket
 import ssl
 import time
@@ -64,7 +74,13 @@ MAX_BODY = 4 * 1024 * 1024
 MAX_TOKENS_LIMIT = 32768
 MAX_MESSAGES = 200
 MAX_CONTENT_CHARS = 400_000
-ROLES = ("system", "user", "assistant")
+ROLES = ("system", "user", "assistant", "tool")
+MAX_TOOLS = 64
+MAX_TOOL_CALLS = 64
+MAX_TOOL_SCHEMA_CHARS = 64_000
+MAX_TOOL_DESCRIPTION = 1024
+TOOL_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+TOOL_CHOICES = ("auto", "none", "required")
 ANTHROPIC_VERSION = "2023-06-01"
 
 # provider id -> (wire format, default base URL; None = the user's base URL)
@@ -82,7 +98,8 @@ RETRYABLE = frozenset({"rate_limited", "provider_unavailable", "timeout", "unrea
 REASONS = ("ok", "no_key", "platform_key_not_allowed", "invalid_key", "forbidden", "bad_request",
            "model_or_endpoint_not_found", "rate_limited", "provider_unavailable", "unexpected_status",
            "unexpected_redirect", "timeout", "unreachable", "blocked_address", "tls_error",
-           "malformed_response", "deadline_exceeded", "gateway_error")
+           "malformed_response", "deadline_exceeded", "gateway_error",
+           "tools_not_supported", "structured_output_not_supported")
 
 
 class InvalidRequest(ValueError):
@@ -96,16 +113,59 @@ class ChatRequest:
     max_tokens: int = 1024
     temperature: Optional[float] = None
     json_mode: bool = False
+    tools: Optional[List[Dict[str, Any]]] = None
+    tool_choice: Any = None
 
     def __post_init__(self):
+        names = _check_tools(self.tools)
+        if self.tool_choice is not None:
+            if names is None:
+                raise InvalidRequest("tool_choice needs tools")
+            tc = self.tool_choice
+            if not (tc in TOOL_CHOICES if isinstance(tc, str) else
+                    isinstance(tc, dict) and set(tc) == {"name"} and tc["name"] in names):
+                raise InvalidRequest("tool_choice must be auto, none, required or {name} of a listed tool")
         if not isinstance(self.messages, list) or not 1 <= len(self.messages) <= MAX_MESSAGES:
             raise InvalidRequest(f"messages must be a list of 1..{MAX_MESSAGES} items")
         total = 0
+        open_calls: set = set()          # tool calls asked for and not yet answered
+        seen_ids: set = set()
         for m in self.messages:
-            if not isinstance(m, dict) or set(m) != {"role", "content"}:
+            if not isinstance(m, dict) or m.get("role") not in ROLES:
+                raise InvalidRequest(f"each message has a role, one of {', '.join(ROLES)}")
+            role = m["role"]
+            if role == "tool":
+                if set(m) != {"role", "tool_call_id", "content"}:
+                    raise InvalidRequest("a tool message is exactly {role, tool_call_id, content}")
+                if m["tool_call_id"] not in open_calls:
+                    raise InvalidRequest("a tool result must answer an earlier, unanswered tool call")
+                open_calls.discard(m["tool_call_id"])
+            elif role == "assistant" and "tool_calls" in m:
+                if set(m) != {"role", "content", "tool_calls"}:
+                    raise InvalidRequest("an assistant tool turn is {role, content, tool_calls}")
+                if names is None:
+                    raise InvalidRequest("a history with tool calls needs tools")
+                calls = m["tool_calls"]
+                if not isinstance(calls, list) or not 1 <= len(calls) <= MAX_TOOL_CALLS:
+                    raise InvalidRequest(f"tool_calls must be a list of 1..{MAX_TOOL_CALLS} items")
+                for c in calls:
+                    if not isinstance(c, dict) or set(c) != {"id", "name", "arguments"}:
+                        raise InvalidRequest("each tool call is exactly {id, name, arguments}")
+                    if not isinstance(c["id"], str) or not 1 <= len(c["id"]) <= 200 or c["id"] in seen_ids:
+                        raise InvalidRequest("each tool call needs its own id")
+                    if c["name"] not in names:
+                        raise InvalidRequest("a tool call names a tool that is not listed")
+                    if _json_object(c["arguments"]) is None:
+                        raise InvalidRequest("tool call arguments must be a JSON object (as text)")
+                    seen_ids.add(c["id"])
+                    open_calls.add(c["id"])
+                    total += len(c["arguments"])
+                if m["content"] is not None and not isinstance(m["content"], str):
+                    raise InvalidRequest("content must be text")
+                total += len(m["content"] or "")
+                continue
+            elif set(m) != {"role", "content"}:
                 raise InvalidRequest("each message is exactly {role, content}")
-            if m["role"] not in ROLES:
-                raise InvalidRequest(f"role must be one of {', '.join(ROLES)}")
             if not isinstance(m["content"], str):
                 raise InvalidRequest("content must be text")
             total += len(m["content"])
@@ -118,6 +178,45 @@ class ChatRequest:
                                              or not isinstance(self.temperature, (int, float))
                                              or not 0 <= self.temperature <= 2):
             raise InvalidRequest("temperature must be 0..2")
+
+
+def _json_object(text: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(text, str):
+        return None
+    try:
+        v = json.loads(text)
+    except ValueError:
+        return None
+    return v if isinstance(v, dict) else None
+
+
+def _check_tools(tools: Any) -> Optional[set]:
+    """None = no tools; else the set of tool names (each tool validated)."""
+    if tools is None:
+        return None
+    if not isinstance(tools, list) or not 1 <= len(tools) <= MAX_TOOLS:
+        raise InvalidRequest(f"tools must be a list of 1..{MAX_TOOLS} items")
+    names: set = set()
+    for t in tools:
+        if not isinstance(t, dict) or "name" not in t or set(t) - {"name", "description", "parameters"}:
+            raise InvalidRequest("each tool is {name, description?, parameters?}")
+        if not isinstance(t["name"], str) or not TOOL_NAME_RE.match(t["name"]) or t["name"] in names:
+            raise InvalidRequest("each tool needs its own name (letters, digits, _ or -, up to 64)")
+        if "description" in t and (not isinstance(t["description"], str)
+                                   or len(t["description"]) > MAX_TOOL_DESCRIPTION):
+            raise InvalidRequest(f"tool description must be text up to {MAX_TOOL_DESCRIPTION}")
+        if "parameters" in t:
+            p = t["parameters"]
+            if not isinstance(p, dict) or p.get("type") != "object":
+                raise InvalidRequest("tool parameters must be a JSON schema of type object")
+            if len(json.dumps(p)) > MAX_TOOL_SCHEMA_CHARS:
+                raise InvalidRequest("tool parameters are too large")
+        names.add(t["name"])
+    return names
+
+
+def _params(t: Dict[str, Any]) -> Dict[str, Any]:
+    return t.get("parameters") or {"type": "object", "properties": {}}
 
 
 @dataclass(frozen=True)
@@ -166,11 +265,13 @@ class Result:
     latency_ms: Optional[int] = None
     fallback_used: bool = False
     attempts: List[Dict[str, Any]] = field(default_factory=list)
+    tool_calls: List[Dict[str, Any]] = field(default_factory=list)   # [{id, name, arguments, arguments_valid}]
 
     def to_dict(self) -> Dict[str, Any]:
         d = dict(self.__dict__)
         d["cost_usd"] = None if self.cost_usd is None else str(self.cost_usd)
         d["attempts"] = [dict(a) for a in self.attempts]
+        d["tool_calls"] = [dict(c) for c in self.tool_calls]
         return d
 
 
@@ -220,12 +321,54 @@ def _dec(v) -> Optional[Decimal]:
     return d if d.is_finite() and d >= 0 else None
 
 
+def _call(cid: str, name: str, arguments: str) -> Dict[str, Any]:
+    return {"id": cid, "name": name, "arguments": arguments,
+            "arguments_valid": _json_object(arguments) is not None}
+
+
+def _openai_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    out = []
+    for m in messages:
+        if m["role"] == "assistant" and "tool_calls" in m:
+            out.append({"role": "assistant", "content": m["content"], "tool_calls": [
+                {"id": c["id"], "type": "function", "function": {"name": c["name"], "arguments": c["arguments"]}}
+                for c in m["tool_calls"]]})
+        else:
+            out.append(m)
+    return out
+
+
+def _anthropic_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for m in messages:
+        role = m["role"]
+        if role == "system":
+            continue
+        if role == "assistant" and "tool_calls" in m:
+            blocks = [{"type": "text", "text": m["content"]}] if m["content"] else []
+            blocks += [{"type": "tool_use", "id": c["id"], "name": c["name"], "input": json.loads(c["arguments"])}
+                       for c in m["tool_calls"]]
+            out.append({"role": "assistant", "content": blocks})
+        elif role == "tool":
+            block = {"type": "tool_result", "tool_use_id": m["tool_call_id"], "content": m["content"]}
+            prev = out[-1] if out else None
+            if prev and prev["role"] == "user" and isinstance(prev["content"], list) \
+                    and all(b.get("type") == "tool_result" for b in prev["content"]):
+                prev["content"].append(block)            # consecutive results: one user turn
+            else:
+                out.append({"role": "user", "content": [block]})
+        else:
+            out.append(m)
+    return out
+
+
 # ------------------------------------------------------------------ gateway
 class Gateway:
     def __init__(self, *, endpoints: Optional[Mapping[str, str]] = None,
                  platform_keys: Optional[Mapping[str, str]] = None,
                  platform_policy: Optional[Callable[[Route], bool]] = None,
                  price_for: Optional[Callable[[str, str], Optional[Tuple[Decimal, Decimal]]]] = None,
+                 capability_for: Optional[Callable[[str, str], Optional[Mapping[str, Any]]]] = None,
                  allow_private: Optional[bool] = None, timeout_s: float = TIMEOUT_S,
                  deadline_s: float = DEADLINE_S, sleep: Callable[[float], None] = time.sleep,
                  clock: Callable[[], float] = time.monotonic,
@@ -234,6 +377,7 @@ class Gateway:
         self._platform = {k: v for k, v in (platform_keys or {}).items() if v}
         self._policy = platform_policy or (lambda route: False)
         self._price_for = price_for or (lambda p, m: None)
+        self._caps = capability_for or (lambda p, m: None)     # None = unknown -> not refused
         self._allow_private = allow_private
         self._timeout, self._deadline = timeout_s, deadline_s
         self._sleep, self._clock, self._opener = sleep, clock, opener
@@ -271,11 +415,28 @@ class Gateway:
         if fmt == "anthropic":
             system = "\n\n".join(m["content"] for m in req.messages if m["role"] == "system")
             body: Dict[str, Any] = {"model": route.model, "max_tokens": req.max_tokens,
-                                    "messages": [m for m in req.messages if m["role"] != "system"]}
+                                    "messages": _anthropic_messages(req.messages)}
             if system:
                 body["system"] = system
+            if req.tools:
+                body["tools"] = [dict({"name": t["name"]}, **({"description": t["description"]}
+                                                             if "description" in t else {}),
+                                      input_schema=_params(t)) for t in req.tools]
+            if req.tool_choice is not None:
+                tc = req.tool_choice
+                body["tool_choice"] = ({"type": "tool", "name": tc["name"]} if isinstance(tc, dict) else
+                                       {"type": {"required": "any"}.get(tc, tc)})
         else:
-            body = {"model": route.model, "messages": req.messages, "max_tokens": req.max_tokens}
+            body = {"model": route.model, "messages": _openai_messages(req.messages),
+                    "max_tokens": req.max_tokens}
+            if req.tools:
+                body["tools"] = [{"type": "function", "function": dict(
+                    {"name": t["name"]}, **({"description": t["description"]} if "description" in t else {}),
+                    parameters=_params(t))} for t in req.tools]
+            if req.tool_choice is not None:
+                tc = req.tool_choice
+                body["tool_choice"] = ({"type": "function", "function": {"name": tc["name"]}}
+                                       if isinstance(tc, dict) else tc)
             if req.json_mode:
                 body["response_format"] = {"type": "json_object"}
             if route.provider == "openrouter":
@@ -346,7 +507,14 @@ class Gateway:
             if not isinstance(blocks, list):
                 raise _Fail("malformed_response")
             text = "".join(b.get("text", "") for b in blocks if isinstance(b, dict) and b.get("type") == "text")
-            return {"text": text, "finish_reason": data.get("stop_reason"),
+            calls = []
+            for b in blocks:
+                if isinstance(b, dict) and b.get("type") == "tool_use":
+                    if not isinstance(b.get("id"), str) or not isinstance(b.get("name"), str) \
+                            or not isinstance(b.get("input"), dict):
+                        raise _Fail("malformed_response")
+                    calls.append(_call(b["id"], b["name"], json.dumps(b["input"], separators=(",", ":"))))
+            return {"text": text, "finish_reason": data.get("stop_reason"), "tool_calls": calls,
                     "tokens_in": _int(usage.get("input_tokens")), "tokens_out": _int(usage.get("output_tokens")),
                     "cost": None, "id": data.get("id")}
         choices = data.get("choices")
@@ -355,7 +523,24 @@ class Gateway:
         msg = choices[0].get("message")
         if not isinstance(msg, dict) or not isinstance(msg.get("content"), (str, type(None))):
             raise _Fail("malformed_response")
+        calls = []
+        raw_calls = msg.get("tool_calls")
+        if raw_calls is not None:
+            if not isinstance(raw_calls, list):
+                raise _Fail("malformed_response")
+            for c in raw_calls:
+                fn = c.get("function") if isinstance(c, dict) else None
+                if not isinstance(c, dict) or not isinstance(c.get("id"), str) or not isinstance(fn, dict) \
+                        or not isinstance(fn.get("name"), str):
+                    raise _Fail("malformed_response")
+                args = fn.get("arguments", "")
+                if isinstance(args, dict):
+                    args = json.dumps(args, separators=(",", ":"))
+                if not isinstance(args, str):
+                    raise _Fail("malformed_response")
+                calls.append(_call(c["id"], fn["name"], args))
         return {"text": msg.get("content") or "", "finish_reason": choices[0].get("finish_reason"),
+                "tool_calls": calls,
                 "tokens_in": _int(usage.get("prompt_tokens")), "tokens_out": _int(usage.get("completion_tokens")),
                 "cost": _dec(usage.get("cost")), "id": data.get("id")}
 
@@ -384,6 +569,13 @@ class Gateway:
             attempts.append(att)
             if cred is None:
                 last = Result(ok=False, reason=why)
+                continue
+            missing = self._missing_capability(route, req)
+            if missing:
+                # the catalog says this model cannot do what the request needs: not called
+                att["reason"] = missing
+                self._log(route, att)
+                last = Result(ok=False, reason=missing)
                 continue
             t0 = time.monotonic()
             for n in range(MAX_RETRIES + 1):
@@ -417,20 +609,34 @@ class Gateway:
                               finish_reason=parsed["finish_reason"], tokens_in=parsed["tokens_in"],
                               tokens_out=parsed["tokens_out"], cost_usd=cost, cost_source=src,
                               provider_request_id=parsed["id"] if isinstance(parsed["id"], str) else None,
-                              latency_ms=att["latency_ms"], fallback_used=idx > 0, attempts=attempts)
+                              latency_ms=att["latency_ms"], fallback_used=idx > 0, attempts=attempts,
+                              tool_calls=parsed["tool_calls"])
             att["latency_ms"] = int((time.monotonic() - t0) * 1000)
             self._log(route, att)
             last = Result(ok=False, reason=att["reason"], http_status=att["http_status"])
         last.attempts = attempts
         return last
 
+    def _missing_capability(self, route: Route, req: ChatRequest) -> Optional[str]:
+        if not req.tools and not req.json_mode:
+            return None
+        caps = self._caps(route.provider, route.model)
+        if not caps:
+            return None                                    # unknown: the provider decides
+        if req.tools and caps.get("tools") is False:
+            return "tools_not_supported"
+        if req.json_mode and caps.get("structured_output") is False:
+            return "structured_output_not_supported"
+        return None
+
     @staticmethod
     def _log(route: Route, att: Dict[str, Any], parsed: Optional[Dict[str, Any]] = None) -> None:
-        # metadata only: never the key, the prompt or the answer
+        # metadata only: never the key, the prompt, the answer or tool arguments
         logger.info("gateway call provider=%s model=%s source=%s ok=%s reason=%s http=%s retries=%s "
-                    "tokens_in=%s tokens_out=%s latency_ms=%s", route.provider, route.model,
+                    "tokens_in=%s tokens_out=%s tool_calls=%s latency_ms=%s", route.provider, route.model,
                     att["key_source"], att["ok"], att["reason"], att["http_status"], att["retries"],
-                    parsed and parsed["tokens_in"], parsed and parsed["tokens_out"], att["latency_ms"])
+                    parsed and parsed["tokens_in"], parsed and parsed["tokens_out"],
+                    parsed and len(parsed["tool_calls"]), att["latency_ms"])
 
 
 # ------------------------------------------------------------------ catalog
@@ -446,14 +652,17 @@ def parse_openrouter_catalog(doc: Any, *, fetched_at: str) -> Dict[str, Dict[str
             continue
         pricing = m.get("pricing") if isinstance(m.get("pricing"), dict) else {}
         arch = m.get("architecture") if isinstance(m.get("architecture"), dict) else {}
-        params = m.get("supported_parameters") if isinstance(m.get("supported_parameters"), list) else []
+        params = m.get("supported_parameters") if isinstance(m.get("supported_parameters"), list) else None
         mods = arch.get("input_modalities") if isinstance(arch.get("input_modalities"), list) else []
         pin, pout = _dec(pricing.get("prompt")), _dec(pricing.get("completion"))
         out[m["id"]] = {
             "provider": "openrouter", "id": m["id"],
             "context_length": _int(m.get("context_length")),
-            "vision": "image" in mods, "tools": "tools" in params,
-            "structured_output": "response_format" in params or "structured_outputs" in params,
+            "vision": "image" in mods,
+            # no supported_parameters list = unknown (None): the provider decides, D-159
+            "tools": None if params is None else "tools" in params,
+            "structured_output": None if params is None else
+            ("response_format" in params or "structured_outputs" in params),
             "price_in_per_token": pin, "price_out_per_token": pout,
             "free": pin == 0 and pout == 0 if pin is not None and pout is not None else False,
             "source": "openrouter:/api/v1/models", "fetched_at": fetched_at,

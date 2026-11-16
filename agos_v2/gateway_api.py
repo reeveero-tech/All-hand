@@ -5,7 +5,8 @@ as the accounts and key routes):
 
 * ``POST /workspaces/{ws}/model-calls`` — one gateway call. Body:
   ``{messages, routes: [{provider, model, key_id?}], max_tokens?, temperature?,
-  json_mode?}``. For each route the caller's OWN active key in that workspace
+  json_mode?, tools?, tool_choice?}`` (tool format: agos_v2/gateway.py, D-159;
+  the answer's ``tool_calls`` are returned, never run here). For each route the caller's OWN active key in that workspace
   (the one named, else their oldest active key for that provider), else the
   platform key if the platform policy allows that route (default: none).
   Each user key is decrypted only when the gateway reaches its route, in its
@@ -128,6 +129,13 @@ class Catalog:
             return None
         return m["price_in_per_token"], m["price_out_per_token"]
 
+    def capability_for(self, provider: str, model: str):
+        """What the catalog knows about this model (tools, structured output), or None = unknown."""
+        if provider != "openrouter":
+            return None
+        m = self.models().get(model)
+        return {"tools": m["tools"], "structured_output": m["structured_output"]} if m else None
+
     def is_free(self, provider: str, model: str) -> bool:
         if provider != "openrouter":
             return False
@@ -149,7 +157,8 @@ def build_gateway(env: Optional[Dict[str, str]] = None, catalog: Optional[Catalo
     catalog = catalog or Catalog()
     keys = {p: (env.get(name) or "").strip() for p, name in PLATFORM_KEY_ENV.items()}
     gw = Gateway(platform_keys={p: k for p, k in keys.items() if k},
-                 platform_policy=platform_policy_from_env(catalog, env), price_for=catalog.price_for)
+                 platform_policy=platform_policy_from_env(catalog, env), price_for=catalog.price_for,
+                 capability_for=catalog.capability_for)
     gw.catalog = catalog  # type: ignore[attr-defined]
     return gw
 
@@ -170,10 +179,10 @@ def _iso(row: Dict[str, Any]) -> Dict[str, Any]:
 def _parse_call(body: Any):
     if not isinstance(body, dict):
         raise InvalidRequest("body must be a JSON object")
-    extra = set(body) - {"messages", "routes", "max_tokens", "temperature", "json_mode"}
+    extra = set(body) - {"messages", "routes", "max_tokens", "temperature", "json_mode", "tools", "tool_choice"}
     if extra:
         raise InvalidRequest("unknown field(s): " + ", ".join(sorted(extra)))
-    kw = {k: body[k] for k in ("max_tokens", "temperature", "json_mode") if k in body}
+    kw = {k: body[k] for k in ("max_tokens", "temperature", "json_mode", "tools", "tool_choice") if k in body}
     if "json_mode" in kw and not isinstance(kw["json_mode"], bool):
         raise InvalidRequest("json_mode must be true or false")
     req = ChatRequest(messages=body.get("messages"), **kw)
