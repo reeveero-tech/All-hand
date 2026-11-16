@@ -97,3 +97,6 @@ R-206 stays in_progress.
 ## I. Local checks of this batch
 tests/test_r156_entrypoint_map.py::test_every_guarded_cli_imports_cleanly... FAILED first: the new script read its user file at
 import (FileNotFoundError) — every guarded CLI is imported by the R-156 map. Fixed: the file is read in main. After: 22 passed.
+CI on PR #382 (run 43870841411, head 3ae1c7b9): job test FAILED in the same R-156 test for a second cause:
+`import httpx` at the top of the script — CI has no httpx (same lesson as 027: the local venv is not the CI env).
+Fix: httpx is imported inside the two phases. Check with httpx made unimportable (PYTHONPATH stub): 22 passed.

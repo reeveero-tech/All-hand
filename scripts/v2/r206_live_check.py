@@ -15,7 +15,6 @@ Phases:
 Prints statuses, reasons, ids, tokens and cost only — never a token or password.
 """
 import json, os, sys, time
-import httpx
 
 BASE = os.environ.get("AGOS_BASE", "https://all-hand.onrender.com")
 API = BASE + "/api/v2"
@@ -85,6 +84,7 @@ def stream(c, h, ws, routes):
 
 
 def phase_calls():
+    import httpx  # not at import: CI has no httpx and the R-156 map imports every guarded CLI
     c = httpx.Client()
     st = {"run": USER["run"], "calls": {}}
     h = sign_in(c)
@@ -160,6 +160,7 @@ def phase_calls():
 
 
 def phase_cleanup():
+    import httpx
     c = httpx.Client()
     st = json.load(open(OUT))
     h = sign_in(c)
