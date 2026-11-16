@@ -1,0 +1,95 @@
+# M10/028 — R-206: دمج البث ونشره + أول استدعاءات حية على الإنتاج (مفتاح المنصة، نماذج OpenRouter المجانية) — لاحق 176، 2026-11-16
+base_sha=df25e0bc8858861c934349caabcaf45823324ad0 (main after PR #381)
+owner approval: "اوافق تابع" (2026-11-16) — answer to the two pending decisions: AGOS_PLATFORM_MODELS=free on Render, and a
+test user created for the live check and deleted afterwards. No new provider key was added (that needs the owner, via the UI).
+
+## A. PR #381 (batch 4, streaming) — merge and deploy
+PR https://github.com/reeveero-tech/All-hand/pull/381 merged (merge commit) -> main df25e0bc.
+tested head 030b2754 ; CI "AGOS Kernel CI/CD" run 43809011075: quality, test, storage, docker, audit, build = success;
+network = failure (external: live web search "no sources found", same as before — not required, not caused by this batch).
+Governance Gate 43809011040 + push-scope-docs = success.
+CI history on that PR (details in 027 §CI): storage failed once for a real defect in this batch's test (httpx not installed
+in the storage job; fixed with http.client); test failed once in test_r177_per_service::test_real_baseline_health (latency
+thresholds on the shared runner, re-run once, then green on two later heads); push-scope-docs failed once (R-187: a push without
+the four governance docs — my local check used the batch range instead of the push range; fixed by a docs push).
+Render deploy dep-dbt9lv2jnfac73d4dsig (commit df25e0bc, trigger new_commit) -> live 05:56:45Z.
+/health 200 ; POST .../model-calls/stream without a session -> 401 {"detail":"sign-in required"} ; POST .../model-calls -> 401.
+
+## B. AGOS_PLATFORM_MODELS=free on Render (owner-approved)
+before: boot log "gateway platform providers ['openrouter'], policy off" (OPENROUTER_API_KEY already present on Render).
+Render update_environment_variables, merge mode (replace=false), only AGOS_PLATFORM_MODELS=free -> deploy dep-dbtffo6c6qcc7392kolg
+(trigger api, commit df25e0bc) -> live; boot log 12:32:54Z "gateway platform providers ['openrouter'], policy free".
+rollback: delete the variable.
+
+## C. Test user
+one confirmed user agos-r206-833637@example.test (id e741e746-b6a9-4cdc-a320-e76f7498b1ff) inserted in auth.users +
+auth.identities by SQL (bcrypt via extensions.crypt, password generated locally, mode-600 file, never printed; no e-mail sent);
+sign-in through the production API.
+
+## D. Live calls — scripts/v2/r206_live_check.py (operator only, never in CI)
+catalog GET /api/v2/models: 468 OpenRouter models, 17 priced 0 for input and output (public catalog, same day).
+prompt "Reply with exactly the word: pong" (no personal data).
+-- run 1 (max_tokens 32; FREE=google/gemma-4-31b-it:free, FREE2=nvidia/nemotron-3.5-lightning:free)
+PASS sign-in 200 — status=200
+PASS catalog 200 and lists the free model — status=200 n=468 entry={"provider": "openrouter", "id": "google/gemma-4-31b-it:free", "context_length": 262144, "vision": true, "tools": true, "structured_output": true, "price_in_per_token": "0", "price_out_per_token": "0", "free": true, "source": "openrouter:/api/v1/models", "fetched_at": "2026-11-16T12:34:10.579875+00:
+PASS workspace created 201 — status=201
+FAIL plain call on a free OpenRouter model: ok, platform key, cost 0 — {"ok": false, "reason": "rate_limited", "provider": null, "model": null, "key_source": null, "fallback_used": false, "tokens_in": null, "tokens_out": null, "cost_usd": null, "cost_source": null, "provider_request_id": null, "latency_ms": null, "call_id": "5c2e693e-c47d-4bde-bc15-084f645a7948", "attempts": [{"provider": "openrouter", "model": "google/gemma-4-31b-it:free", "reason": "rate_limited", "http_status": 429}], "text": null}
+FAIL streamed call: 200 text/event-stream, route -> delta(s) -> done ok, recorded — {"status": 200, "content_type": "text/event-stream; charset=utf-8", "events": ["done", "...", "done"], "n_delta": 0, "first_delta_ms": null, "joined_text": "", "done": {"ok": false, "reason": "rate_limited", "provider": null, "model": null, "key_source": null, "fallback_used": false, "tokens_in": null, "tokens_out": null, "cost_usd": null, "cost_source": null, "provider_request_id": null, "latency_ms": null, "call_id": "3b3eb760-1299-4f90-a3f3-dc9667b7c13d", "attempts": [{"provider": "openrouter", "model": "google/gemma-4-31b-it:free", "reason": "rate_limited", "http_status": 429}], "text": null}}
+PASS priced model on the platform key refused before any provider call — {"ok": false, "reason": "platform_key_not_allowed", "provider": null, "model": null, "key_source": null, "fallback_used": false, "tokens_in": null, "tokens_out": null, "cost_usd": null, "cost_source": null, "provider_request_id": null, "latency_ms": null, "call_id": "c676b6df-f377-44c0-a1a6-8cbdacbf4515", "attempts": [{"provider": "openrouter", "model": "openai/gpt-4o-mini", "reason": "platform_key_not_allowed", "http_status": null}], "text": null}
+PASS provider without a key: honest no_key — {"ok": false, "reason": "no_key", "provider": null, "model": null, "key_source": null, "fallback_used": false, "tokens_in": null, "tokens_out": null, "cost_usd": null, "cost_source": null, "provider_request_id": null, "latency_ms": null, "call_id": "9d7eee1a-e679-4867-9e94-9a5f3d5c15d1", "attempts": [{"provider": "groq", "model": "llama-3.1-8b-instant", "reason": "no_key", "http_status": null}], "text": null}
+PASS unknown model: refused honestly, no text — {"ok": false, "reason": "platform_key_not_allowed", "provider": null, "model": null, "key_source": null, "fallback_used": false, "tokens_in": null, "tokens_out": null, "cost_usd": null, "cost_source": null, "provider_request_id": null, "latency_ms": null, "call_id": "d0464257-ad3e-4932-82fa-44516bb0d074", "attempts": [{"provider": "openrouter", "model": "agos-r206/does-not-exist:free", "reason": "platform_key_not_allowed", "http_status": null}], "text": null}
+PASS fallback: refused priced route, answered by the second free model, said so — {"ok": true, "reason": "ok", "provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free", "key_source": "platform", "fallback_used": true, "tokens_in": 24, "tokens_out": 32, "cost_usd": "0", "cost_source": "provider", "provider_request_id": "gen-1794832481-aPxevpHFDzSKYVagDgti", "latency_ms": 875, "call_id": "1d8718b2-c40a-475c-8b90-7d6885456b5a", "attempts": [{"provider": "openrouter", "model": "openai/gpt-4o-mini", "reason": "platform_key_not_allowed", "http_status": null}, {"provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free", "reason": "ok", "http_status": 200}], "text": ""}
+PASS my calls are listed (6 recorded) — status=200 n=6 fields=['attempts', 'cost_source', 'cost_usd', 'created_at', 'fallback_used', 'finish_reason', 'http_status', 'id', 'key_id', 'key_source', 'latency_ms', 'model', 'ok', 'provider', 'provider_request_id', 'reason', 'tokens_in', 'tokens_out']
+phase calls: 2 failed
+-- run 2 (max_tokens 256; FREE=nvidia/nemotron-3.5-lightning:free, FREE2=google/gemma-4-26b-a4b-it:free)
+PASS sign-in 200 — status=200
+PASS catalog 200 and lists the free model — status=200 n=468 entry={"provider": "openrouter", "id": "nvidia/nemotron-3.5-lightning:free", "context_length": 1000000, "vision": false, "tools": true, "structured_output": false, "price_in_per_token": "0", "price_out_per_token": "0", "free": true, "source": "openrouter:/api/v1/models", "fetched_at": "2026-11-16T12:34:10
+PASS workspace created 201 — status=201
+PASS plain call on a free OpenRouter model: ok, platform key, cost 0 — {"ok": true, "reason": "ok", "provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free", "key_source": "platform", "fallback_used": false, "tokens_in": 24, "tokens_out": 177, "cost_usd": "0", "cost_source": "provider", "provider_request_id": "gen-1794832500-4PPQFnwVIBphqDzEuTiO", "latency_ms": 1600, "call_id": "c42ae307-af44-4a46-8bc6-c85836fc2c75", "finish_reason": "stop", "attempts": [{"provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free", "reason": "ok", "http_status": 200}], "text": "pong"}
+PASS streamed call: 200 text/event-stream, route -> delta(s) -> done ok, recorded — {"status": 200, "content_type": "text/event-stream; charset=utf-8", "events": ["route", "delta", "done", "...", "delta", "done"], "n_delta": 1, "first_delta_ms": 3382, "joined_text": "pong", "done": {"ok": true, "reason": "ok", "provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free", "key_source": "platform", "fallback_used": false, "tokens_in": 24, "tokens_out": 134, "cost_usd": "0", "cost_source": "provider", "provider_request_id": "gen-1794832505-nIijxlDv1AocOwrPYvST", "latency_ms": 1191, "call_id": "61349d2e-6749-4ebe-8221-27ddd4c1fb45", "finish_reason": "stop", "attempts": [{"provider": "openrouter", "model": "nvidia/nemotron-3.5-lightning:free", "reason": "ok", "http_status": 200}], "text": "pong"}}
+PASS priced model on the platform key refused before any provider call — {"ok": false, "reason": "platform_key_not_allowed", "provider": null, "model": null, "key_source": null, "fallback_used": false, "tokens_in": null, "tokens_out": null, "cost_usd": null, "cost_source": null, "provider_request_id": null, "latency_ms": null, "call_id": "4a683dba-08ff-4e93-b467-03e3552f3764", "finish_reason": null, "attempts": [{"provider": "openrouter", "model": "openai/gpt-4o-mini", "reason": "platform_key_not_allowed", "http_status": null}], "text": null}
+PASS provider without a key: honest no_key — {"ok": false, "reason": "no_key", "provider": null, "model": null, "key_source": null, "fallback_used": false, "tokens_in": null, "tokens_out": null, "cost_usd": null, "cost_source": null, "provider_request_id": null, "latency_ms": null, "call_id": "d1439c52-9539-40cf-a2f1-cf2bc8324529", "finish_reason": null, "attempts": [{"provider": "groq", "model": "llama-3.1-8b-instant", "reason": "no_key", "http_status": null}], "text": null}
+PASS unknown model: refused honestly, no text — {"ok": false, "reason": "platform_key_not_allowed", "provider": null, "model": null, "key_source": null, "fallback_used": false, "tokens_in": null, "tokens_out": null, "cost_usd": null, "cost_source": null, "provider_request_id": null, "latency_ms": null, "call_id": "72c39230-ffd3-44ad-b169-c1f82a706432", "finish_reason": null, "attempts": [{"provider": "openrouter", "model": "agos-r206/does-not-exist:free", "reason": "platform_key_not_allowed", "http_status": null}], "text": null}
+PASS fallback: refused priced route, answered by the second free model, said so — {"ok": true, "reason": "ok", "provider": "openrouter", "model": "google/gemma-4-26b-a4b-it:free", "key_source": "platform", "fallback_used": true, "tokens_in": 8, "tokens_out": 1, "cost_usd": "0", "cost_source": "provider", "provider_request_id": "gen-1794832523-OhMZIliqJ5JugbPOZVun", "latency_ms": 1355, "call_id": "afb493ad-70af-430d-ad1c-adf3fa84bb21", "finish_reason": "stop", "attempts": [{"provider": "openrouter", "model": "openai/gpt-4o-mini", "reason": "platform_key_not_allowed", "http_status": null}, {"provider": "openrouter", "model": "google/gemma-4-26b-a4b-it:free", "reason": "ok", "http_status": 200}], "text": "pong"}
+PASS my calls are listed (6 recorded) — status=200 n=6 fields=['attempts', 'cost_source', 'cost_usd', 'created_at', 'fallback_used', 'finish_reason', 'http_status', 'id', 'key_id', 'key_source', 'latency_ms', 'model', 'ok', 'provider', 'provider_request_id', 'reason', 'tokens_in', 'tokens_out']
+phase calls: all passed
+reading of run 1: the two FAILs are honest failures of the provider, not of the gateway: gemma-4-31b-it:free answered
+HTTP 429 (OpenRouter free-tier rate limit) -> ok=false reason=rate_limited, text null, cost null, recorded. The stream had a
+single "done" event and no "route": by design (agos_v2/gateway.py ~L721) "route" is sent only once the provider has answered
+200 with text/event-stream; a 429 before that ends with "done" alone. The fallback call in run 1 succeeded (nemotron, cost 0)
+but text "" — the reasoning model spent its 32 tokens before answering (tokens_out=32); recorded as ok.
+FINDING-1 (open, not fixed): ok=true with empty text when the token limit is hit (finish_reason was not shown in run 1; run 2
+added it to the script). An empty answer cut by the limit should be visible to the caller as such (finish_reason=length).
+
+note on the "events" field above: the script printed first 3 + "..." + last 2 even for short lists, so
+["done","...","done"] = the single event ["done"] and ["route","delta","done","...","delta","done"] = ["route","delta","done"]
+(n_delta=1). The script now prints short lists whole.
+
+## E. Database (production, read-only SQL after the runs)
+agos.model_calls for the 2 test workspaces: 12 rows = 12 calls (6 per run); columns are metadata only
+(id, workspace_id, user_id, key_id, key_source, provider, model, ok, reason, http_status, finish_reason, fallback_used, attempts,
+tokens_in, tokens_out, cost_usd, cost_source, provider_request_id, latency_ms, created_at) — no prompt, no answer column.
+rows containing "pong" or the prompt text (whole row as text): 0.
+the 4 successful rows: cost_usd=0, cost_source=provider, provider_request_id gen-…, http_status 200; failures: cost null.
+
+## F. Render logs 12:30Z -> end of runs (search API)
+password tail (10 chars): 0 hits ; prompt text: 0 hits ; test e-mail: 0 hits ; control "model-calls": 28 hits (search works).
+
+## G. Cleanup
+both test workspaces deleted through the API (204); after: workspaces 0, model_calls of them 0 (ON DELETE CASCADE), members 0.
+test user deleted by SQL by exact id + e-mail pattern; after: agos-r206 users 0, identities 0, agos.model_calls total 0.
+local files with the password shredded.
+FINDING-2 (open, for R-207): deleting a workspace deletes its call records (cascade) — usage and cost history do not survive
+the workspace; budgets/quotas (R-207) must decide whether that is wanted.
+
+## H. What this proves and what it does not
+PROVEN live: real provider calls through the production gateway (1 provider: OpenRouter, free models, platform key under the
+"free" policy), plain AND streamed (SSE through Render: 200 text/event-stream, route -> delta -> done, recorded), fallback across
+routes with fallback_used and attempts, honest failures (rate_limited 429 from the provider, platform_key_not_allowed for a priced
+model before any provider call, no_key, unknown model refused), call records written on production without prompt/answer.
+NOT proven: three providers (only 1 so far — needs ≥2 more provider keys from the owner via the UI); cost match against the
+provider's bill (cost_usd=0 is what OpenRouter reported in usage; matching the gen-… ids against the OpenRouter activity page needs
+the platform key's account — owner); multi-delta streaming (the short answer came in 1 delta; a longer answer was not tried);
+tools on a real provider; Anthropic streaming live. The unknown model is refused as platform_key_not_allowed (not in the catalog
+= not provably free) — honest, but the reason name does not say "unknown model" (FINDING-3, open).
+R-206 stays in_progress.
