@@ -84,3 +84,8 @@ What this is NOT: not the production server path (session, vault, call log, Rend
   through the gateway library, but not through the deployed server);
 - a sample of recorded costs matched to the provider's own account (OpenRouter activity page, owner's account);
 - long multi-chunk stream, tools and Anthropic live on a cloud provider through production.
+
+## CI fix (PR #384, run 44192560561)
+- quality failed: ruff F811 (12x) - fixture `server` imported from tests/test_r206_gateway.py and redefined as a parameter.
+- fix: local fixture in tests/test_r206_defects.py reusing plain._Script; ruff 0.17.0 `--select F,E722` on server.py agent_civilization agos_kernel agos_v2 tests: All checks passed.
+- local: tests/test_r206_{defects,gateway,stream,tools}.py 132 passed.

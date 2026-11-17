@@ -26,7 +26,22 @@ from agos_v2.gateway_api import Catalog, build_gateway, platform_policy_from_env
 
 from tests import test_r206_gateway as plain
 from tests import test_r206_stream as streaming
-from tests.test_r206_gateway import server  # noqa: F401  (fixture)
+import http.server
+import threading
+
+import pytest
+
+
+@pytest.fixture
+def server():
+    """The same scripted loopback server as tests/test_r206_gateway.py (its handler)."""
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), plain._Script)
+    srv.script, srv.seen = [], []
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+    srv.base = f"http://127.0.0.1:{srv.server_address[1]}"
+    yield srv
+    srv.shutdown()
 
 PROMPT = "PROMPT-" + uuid.uuid4().hex
 REQ = ChatRequest(messages=[{"role": "user", "content": PROMPT}], max_tokens=16)
