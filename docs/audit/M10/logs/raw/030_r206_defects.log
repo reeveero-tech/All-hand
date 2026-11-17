@@ -89,3 +89,9 @@ What this is NOT: not the production server path (session, vault, call log, Rend
 - quality failed: ruff F811 (12x) - fixture `server` imported from tests/test_r206_gateway.py and redefined as a parameter.
 - fix: local fixture in tests/test_r206_defects.py reusing plain._Script; ruff 0.17.0 `--select F,E722` on server.py agent_civilization agos_kernel agos_v2 tests: All checks passed.
 - local: tests/test_r206_{defects,gateway,stream,tools}.py 132 passed.
+
+## Merge blocker (2026-11-18)
+- CI run 44194269016 on PR #384: test/quality/build/docker/storage success; audit FAILURE; network failure (external DuckDuckGo, non-required).
+- audit: npm audit --audit-level=high in web/ -> GHSA-fc5q-39xc-vjpf picomatch <=4.0.7 (high, ReDoS, first_patched_version=null). Path: vite@8.3.4 -> picomatch@4.0.7, tinyglobby@0.2.17 -> fdir@6.5.0 -> picomatch. Dev-only; `npm audit --omit=dev` is clean.
+- Same lockfile on main (PR does not touch web/): local `npm audit --audit-level=high` rc=1 -> main is equally blocked.
+- Not weakened, not bypassed. Owner decision: wait for upstream fix, or a documented, dated exception for this one GHSA in dev deps.
