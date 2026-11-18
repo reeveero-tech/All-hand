@@ -3528,3 +3528,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - جديد: `agos_v2/tools_upstreams.json`، `agos_v2/tools_hub.py` (`GET /api/v2/tools`)، `scripts/tools/mirror_upstreams.py`، `.github/workflows/tools-mirror.yml`، `web/src/components/Tools.jsx` (تبويب «الأدوات»)، `tests/test_r206a_tools_hub.py` (13)، `web/tests/tools_ui.test.mjs` (3).
 - معدل: `server.py` (تسجيل المسار)، `web/src/App.jsx` (التبويب). السجل M10/035.
 
+## 2026-11-18 — لاحق 184: R-206a الدليل الحي بعد الدمج + D-166 مصدر الطائرات
+- دُمج PR #386 (‏ed9c53f0) ونشره Render. تشغيلان حيان لـ`tools-mirror.yml` نجحا؛ الإصدارات `mirror-robin` و`mirror-mdm` و`mirror-mdm-v0.5.2` و`mirror-status` موجودة؛ الاستعادة ومطابقة SHA256 تحققتا؛ `/api/v2/tools` على الإنتاج يعرض الحالة.
+- R-206a يبقى `in_progress`: CI الإجمالي `failure` من job ‏`network` الخارجي وحده (قاعدة R-154).
+- D-166: adsb.lol + adsb.fi بدل Airplanes.live (403) بقرار المالك؛ R-206b يبقى `planned`.
+- جديد: السجل M10/036. لا تغيير في الكود.
