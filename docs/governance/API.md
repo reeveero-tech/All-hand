@@ -332,6 +332,13 @@
 | `GET /api/v2/tools` | عام (بلا جلسة، حد المعدل نفسه): سجل الأدوات مع حالة النسخ لكل مشروع مفتوح `mirror: {state: copied/not_copied_yet, upstream_state: active/archived/gone, upstream_release, snapshot_head, snapshot_at, checked_at, error, release_page, bundle_url, source_url, mirrored_releases[]}`، و`status: {source, generated_at, error}` |
 **المصدر**: `status.json` في إصدار `mirror-status` (رابط تنزيل عام، تخزين 10 دقائق، الخادم لا يستدعي GitHub API). تعذر القراءة يظهر في `status.error` وتبقى آخر نسخة سليمة. لا بيانات مستخدم ولا أسرار.
 
+## R-206d — صفحة تنزيل Mister Download Manager `/api/v2/downloads` (D-165، 2026-11-18)
+| المسار | الوظيفة |
+|---|---|
+| `GET /api/v2/downloads/{tool_id}` | عام (بلا جلسة، حد المعدل العام). `tool_id` أداة من `agos_v2/tools_upstreams.json` تُنسخ إصداراتها (`mirror_releases: true`؛ الآن `mdm` وحدها). الرد: `{ok, id, name, license, license_url, license_note, upstream_url, upstream_state, release: {tag, mirror_page}, verification: {state: verified/failed/not_verified_yet, verified_at, sums_source, mismatched[], missing[], error}, groups: [{id, label, files: [{name, size, sha256, upstream_sha256, verified, url}]}], releases[], source: {source_url, bundle_url}, status_error}` |
+**المصدر**: `status.json` في إصدار `mirror-status`، ثم `manifest.json` في إصدار النسخة `mirror-mdm-<tag>` (روابط تنزيل عامة، تخزين 10 دقائق، إعادة محاولة بعد 60 ث عند الفشل). كل رابط تنزيل يشير إلى نسختنا، لا إلى المصدر. `verified`: ‏true = يطابق `SHA256SUMS.txt` للمصدر، false = لا يطابق (يُعرض بلا رابط تنزيل)، null = غير مدرج في ملف المجاميع.
+**الأخطاء**: 404 لأداة غير معروفة أو لا تُنسخ إصداراتها؛ 503 `no release copied yet` (مع `detail` و`Retry-After: 600`) إن لم يُنسخ إصدار بعد أو تعذرت قراءة `status.json` بلا نسخة سابقة؛ تعذر قراءة `manifest.json` يظهر في `verification.error` ولا يُخفى. MDM برنامج مستقل برخصة GPL-3.0 وكوده؛ لا يرتبط به كود AGOS. **الاختبارات**: `tests/test_r206d_downloads.py`، `web/tests/downloads_ui.test.mjs`.
+
 ## R-206c — خريطة الأفلام `/api/v2/movies` (D-165، 2026-11-18)
 | المسار | الوظيفة |
 |---|---|

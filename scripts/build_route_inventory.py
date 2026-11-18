@@ -32,7 +32,8 @@ SOURCES = ("server.py", "agent_civilization/civilization_routes.py", "agos_v2/ac
            "agos_v2/gateway_api.py",  # R-206 (D-158): the model-gateway routes, same pattern
            "agos_v2/tools_hub.py",  # R-206a (D-165): the public tools-hub route, same pattern
            "agos_v2/flights.py",  # R-206b (D-166): the public flights proxy route, same pattern
-           "agos_v2/movies.py")  # R-206c (D-165): the public movie-map routes, same pattern
+           "agos_v2/movies.py",  # R-206c (D-165): the public movie-map routes, same pattern
+           "agos_v2/downloads.py")  # R-206d (D-165): the public downloads route, same pattern
 ROUTE_RE = re.compile(r"""@(\w+)\.(get|post|put|patch|delete|websocket)\(\s*["']([^"']+)["']""")
 ROUTER_RE = re.compile(r"""\b(\w+)\s*=\s*APIRouter\(([^)]*)\)""")
 PREFIX_RE = re.compile(r"""\bprefix\s*=\s*["']([^"']*)["']""")

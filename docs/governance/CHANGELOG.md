@@ -3551,3 +3551,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - جديد (R-206c): `scripts/tools/build_movie_map.py`، `agos_v2/movies.py` (`GET /api/v2/movies/map`، `GET /api/v2/movies/status`)، `.github/workflows/movies-map.yml`، `web/src/components/Movies.jsx`، `tests/test_r206c_movies.py`، `web/tests/movies_ui.test.mjs`.
 - معدل: `server.py` (تسجيل المسارين)، `agos_v2/tools_upstreams.json` (رابط صفحة الأفلام)، `web/src/App.jsx` (تبويب «الأفلام»)، `web/src/index.css`، قوائم التغطية (`build_entrypoint_map.py`، `build_route_inventory.py`، `check_atomic_batch.py`، `test_r156_entrypoint_map.py`، `test_r200_truth_inventory.py`: 65 مسارًا، 34 في v2)، و`tests/test_r206b_flights.py` (صار للأفلام صفحة).
 - الوثائق: API.md، QUALITY.md. السجلان M10/039 وM10/040.
+
+## 2026-11-18 — لاحق 188: R-206c منجز (D-167) وبدء R-206d صفحة تنزيل MDM
+- R-206c: سجل القبول M10/041 (PR #390، دمج 23cf51fc، تشغيل main ‏44370241044، تشغيل `movies-map.yml` ‏44370250103، فحص الإنتاج والمتصفح).
+- جديد (R-206d): `agos_v2/downloads.py` (`GET /api/v2/downloads/{tool_id}`)، `web/src/components/Downloads.jsx`، `tests/test_r206d_downloads.py`، `web/tests/downloads_ui.test.mjs`.
+- معدل: `scripts/tools/mirror_upstreams.py` (التحقق من نسختنا و`manifest.json`)، `server.py` (تسجيل المسار)، `agos_v2/tools_upstreams.json`، `web/src/App.jsx` (تبويب «التنزيلات»)، `web/src/components/Tools.jsx`، `web/src/index.css`، قوائم التغطية (`build_entrypoint_map.py`، `build_route_inventory.py`، `check_atomic_batch.py`، `test_r156_entrypoint_map.py`، `test_r200_truth_inventory.py`: 66 مسارًا، 35 في v2).
+- الوثائق: API.md، QUALITY.md. السجلان M10/041 وM10/042.

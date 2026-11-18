@@ -8,7 +8,7 @@
      "page": "movies", "source": "https://www.wikidata.org",
      "data_terms": "Wikidata: CC0. Our own map (mikeyguinness.com/movies is not open, nothing copied, D-165): built weekly by .github/workflows/movies-map.yml into the release movies-map."},
     {"id": "mdm", "item": "R-206d", "name": "Mister Download Manager", "kind": "mirror",
-     "repo": "anefzaoui/misterdownloadmanager", "license": "GPL-3.0", "mirror_releases": true},
+     "repo": "anefzaoui/misterdownloadmanager", "license": "GPL-3.0", "mirror_releases": true, "page": "downloads"},
     {"id": "robin", "item": "R-206e", "name": "Robin — بحث OSINT في الويب المظلم", "kind": "mirror",
      "repo": "apurvsinghgautam/robin", "license": "MIT", "mirror_releases": false}
   ]

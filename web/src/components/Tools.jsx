@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 // R-206a (D-165): the tools hub. Lists the tools the owner asked for, with the
 // state of their copies in this repository's releases (written by the
 // tools-mirror workflow). Each tool's own page arrives with its item
-// (R-206b flights, R-206c movies, R-206d Mister Download Manager, R-206e Robin);
+// (R-206b flights, R-206c movies, R-206d Mister Download Manager downloads, R-206e Robin);
 // until then the card says so — it never pretends a tool works.
 const API_BASE = (import.meta.env && import.meta.env.VITE_API_BASE) || ''
 

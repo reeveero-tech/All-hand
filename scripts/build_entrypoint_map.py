@@ -48,7 +48,7 @@ SUBSYSTEMS = {
     "api": ["server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py",
             "agos_v2/byok.py", "agos_v2/gateway_api.py",
             "agos_v2/tools_hub.py", "agos_v2/flights.py",
-            "agos_v2/movies.py"],  # R-205 (D-154), R-206 (D-158), R-206a/b/c (D-165, D-166)
+            "agos_v2/movies.py", "agos_v2/downloads.py"],  # R-205 (D-154), R-206 (D-158), R-206a/b/c/d (D-165, D-166)
     "agent-runtime-real": ["agent_civilization/agents/real/real_agents.py", "agent_civilization/core/agents/real_dispatcher.py",
                            "agent_civilization/core/agents/base_agent.py"],
     "agent-runtime-specialists": ["agent_civilization/agents/real/specialist_runtime.py",

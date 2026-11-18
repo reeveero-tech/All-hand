@@ -11,6 +11,13 @@ For every registry entry with a ``repo`` (agos_v2/tools_upstreams.json):
   * when ``mirror_releases`` is true and the upstream published a release tag
     not copied yet: copy all its assets to the release ``mirror-<id>-<tag>``
     (kept forever; one release per upstream tag);
+  * R-206d: verify every copied release FROM OUR COPY — download the assets of
+    ``mirror-<id>-<tag>`` back, hash each file and compare with the upstream
+    ``SHA256SUMS.txt`` (fetched from the upstream release when it still exists,
+    else from our copy, recorded as ``sums_source``); write ``manifest.json``
+    to the same release. A mismatch is uploaded in the manifest (so the page
+    can warn) and fails the run. Releases copied before R-206d are verified on
+    the next run (``verified_releases`` in status.json);
   * write ``status.json`` to the release ``mirror-status`` (read by the server).
 
 An upstream that is archived or deleted is never an error: the previous copy
@@ -24,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import shutil
@@ -55,6 +63,91 @@ def plan(entry: dict, upstream: dict, prev: dict | None) -> dict:
     if entry.get("mirror_releases") and tag and tag not in (prev.get("mirrored_releases") or []):
         release = tag
     return {"snapshot": snapshot, "release": release}
+
+
+SUMS_NAMES = ("SHA256SUMS.txt", "SHA256SUMS", "sha256sums.txt")
+MANIFEST = "manifest.json"
+
+
+def to_verify(prev: dict | None) -> list[str]:
+    """Copied releases that have no verified manifest yet (oldest first)."""
+    prev = prev or {}
+    done = set(prev.get("verified_releases") or [])
+    return [t for t in (prev.get("mirrored_releases") or []) if t not in done]
+
+
+def parse_sums(text: str) -> dict[str, str]:
+    """``<sha256>  <name>`` / ``<sha256> *<name>`` lines -> {name: sha256}."""
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        parts = line.strip().split(None, 1)
+        if len(parts) != 2:
+            continue
+        digest, name = parts[0].lower(), parts[1].lstrip("*").strip()
+        if len(digest) == 64 and all(c in "0123456789abcdef" for c in digest) and name:
+            out[name.rsplit("/", 1)[-1]] = digest
+    return out
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def build_manifest(entry: dict, tag: str, files: dict[str, tuple[int, str]],
+                   sums: dict[str, str] | None, sums_source: str | None, now: str) -> dict:
+    """``files`` = {name: (size, sha256 of OUR copy)}. ``verified`` per asset:
+    true = matches the upstream sum, false = differs, null = not listed."""
+    assets = []
+    for name in sorted(files):
+        size, digest = files[name]
+        want = (sums or {}).get(name)
+        assets.append({"name": name, "size": size, "sha256": digest, "upstream_sha256": want,
+                       "verified": None if want is None else want == digest})
+    mismatched = [a["name"] for a in assets if a["verified"] is False]
+    missing = sorted(set(sums or {}) - set(files))
+    return {"format": 1, "id": entry["id"], "repo": entry["repo"], "license": entry.get("license"),
+            "tag": tag, "verified_at": now, "sums_source": sums_source,
+            "ok": bool(sums) and not mismatched and not missing,
+            "mismatched": mismatched, "missing": missing, "assets": assets}
+
+
+def verify_copy(self_repo: str, entry: dict, tag: str, work: Path, now: str) -> dict:
+    mtag = f"mirror-{entry['id']}-{tag}"
+    d = work / f"verify-{entry['id']}-{tag}"
+    d.mkdir(exist_ok=True)
+    _run("gh", "release", "download", mtag, "-R", self_repo, "-D", str(d), "--clobber")
+    (d / MANIFEST).unlink(missing_ok=True)
+    files = {p.name: (p.stat().st_size, sha256_file(p)) for p in sorted(d.iterdir()) if p.is_file()}
+    sums, source = None, None
+    up = work / f"sums-{entry['id']}-{tag}"
+    up.mkdir(exist_ok=True)
+    for name in SUMS_NAMES:
+        r = subprocess.run(["gh", "release", "download", tag, "-R", entry["repo"], "-p", name,
+                            "-D", str(up), "--clobber"], capture_output=True, text=True)
+        if r.returncode == 0 and (up / name).exists():
+            sums, source = parse_sums((up / name).read_text(encoding="utf-8", errors="replace")), \
+                f"upstream:{entry['repo']}@{tag}/{name}"
+            break
+    if sums is None:
+        for name in SUMS_NAMES:
+            if (d / name).exists():
+                sums, source = parse_sums((d / name).read_text(encoding="utf-8", errors="replace")), \
+                    f"copy:{mtag}/{name} (upstream release no longer available)"
+                break
+    m = build_manifest(entry, tag, files, sums, source, now)
+    mp = work / MANIFEST
+    mp.write_text(json.dumps(m, ensure_ascii=False, indent=1), encoding="utf-8")
+    _run("gh", "release", "upload", mtag, "-R", self_repo, "--clobber", str(mp))
+    shutil.rmtree(d, ignore_errors=True)
+    shutil.rmtree(up, ignore_errors=True)
+    if not m["ok"]:
+        raise RuntimeError(f"{mtag}: checksum verification failed (sums={source}, "
+                           f"mismatched={m['mismatched']}, missing={m['missing']})")
+    return m
 
 
 def _run(*cmd: str, cwd: str | None = None, capture: bool = True) -> str:
@@ -175,6 +268,12 @@ def main(argv=None) -> int:
                 if p["release"]:
                     copy_release(a.repo, entry, p["release"], work)
                     rec["mirrored_releases"] = sorted(set(rec.get("mirrored_releases") or []) | {p["release"]})
+                if entry.get("mirror_releases"):
+                    for tag in to_verify(rec):
+                        m = verify_copy(a.repo, entry, tag, work, now)
+                        rec["verified_releases"] = sorted(set(rec.get("verified_releases") or []) | {tag})
+                        print(f"{entry['id']}: verified {tag} ({sum(1 for x in m['assets'] if x['verified'])}"
+                              f" files match {m['sums_source']})")
                 print(f"{entry['id']}: upstream={up['state']} snapshot={'new' if p['snapshot'] else 'unchanged'}"
                       f" release={p['release'] or '-'}")
             except Exception as exc:  # reported, never hidden
