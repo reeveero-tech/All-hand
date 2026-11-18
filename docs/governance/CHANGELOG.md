@@ -3522,3 +3522,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - PR #385 (007، D-163) مدموج ← main ‏`9ef553b6` بالعنوان الافتراضي (CI ‏44295078519: كل الوظائف الإلزامية success، `network` failure خارجي).
 - دمج main في `m10/r206-debt` وحل تعارضات التوثيق بإبقاء الطرفين. RISKS: بند (5) من RISK-040 مسدد. لا كود ولا ترحيل.
 - R-206 يبقى `in_progress`؛ القبول وبدء R-207 ينتظران CI ناجحًا على main. السجل M10/034.
+
+## 2026-11-18 — لاحق 183: R-206a مركز الأدوات وحفظ المشاريع المفتوحة (D-165)
+- بأمر المالك: بنود R-206a..R-206e قبل R-207؛ FaceCheck.ID مرفوض؛ خريطة الأفلام تُبنى من Wikidata.
+- جديد: `agos_v2/tools_upstreams.json`، `agos_v2/tools_hub.py` (`GET /api/v2/tools`)، `scripts/tools/mirror_upstreams.py`، `.github/workflows/tools-mirror.yml`، `web/src/components/Tools.jsx` (تبويب «الأدوات»)، `tests/test_r206a_tools_hub.py` (13)، `web/tests/tools_ui.test.mjs` (3).
+- معدل: `server.py` (تسجيل المسار)، `web/src/App.jsx` (التبويب). السجل M10/035.
+
