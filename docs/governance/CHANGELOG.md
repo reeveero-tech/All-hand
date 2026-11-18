@@ -3501,3 +3501,7 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - محليًا: 7/7؛ `tests/test_r206_gateway_live.py` 26/26 مع 007 مطبق. السجل M10/031.
 - مسودة: لا تُدمج قبل قرار المالك، ولا تُطبق على الإنتاج دون موافقة صريحة منفصلة.
 - تصحيح بوابة الدفعة (R4): تغيير CI يتطلب `docs/governance/QUALITY.md` — أضيف قسم «مسودة 007 في job storage».
+## 2026-11-18 — لاحق 180: D-164 استثناء مؤرخ في تدقيق npm الكامل (قرار المالك)
+- جديد: `scripts/check_npm_audit.py` (يحكم على `npm audit --json`: يمنع كل high/critical إلا GHSA-fc5q-39xc-vjpf في `picomatch` حتى 2026-12-18) و`tests/test_d164_npm_audit_exception.py` (8).
+- معدل: `.github/workflows/ci.yml` (خطوة web/ الكاملة في job ‏`audit` تستعمل الفاحص؛ خطوة الإنتاج وpip-audit بلا تغيير)، SECURITY.md، QUALITY.md، DECISIONS.md (D-164).
+- محليًا على web/ الحالي: 5 high كلها من الثغرة نفسها ← 0 مانع؛ ثغرة أخرى أو تاريخ بعد 2026-12-18 ← rc=1. السجل M10/032.
