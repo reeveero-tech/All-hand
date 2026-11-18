@@ -31,3 +31,5 @@ FAILED tests/test_r177_per_service.py::test_negative_threshold_breach_detected
 # fail 0
 
 == production check: pending until after merge (python3 scripts/tools/flights_live_check.py --url https://all-hand.onrender.com)
+
+== CI note: run 44341684214 (push-scope-docs, push event) failed 'before ref not found: 7f08d6f7' after the rebase force-push; a normal follow-up push fixes the range.

@@ -3543,3 +3543,4 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - جديد: `agos_v2/flights.py` (`GET /api/v2/flights`)، `scripts/tools/flights_live_check.py`، `web/src/components/Flights.jsx`، `tests/test_r206b_flights.py` (20)، `web/tests/flights_ui.test.mjs`.
 - معدل: `server.py` (تسجيل المسار)، `agos_v2/tools_upstreams.json` و`tools_hub.py` (حقل `page`)، `web/src/App.jsx` (تبويب «الطائرات»)، `web/src/components/Tools.jsx` (زر «افتح الأداة»)، `web/src/index.css`، قوائم التغطية (`build_entrypoint_map.py`، `build_route_inventory.py`، `check_atomic_batch.py`، test_r156، test_r200).
 - الوثائق: API.md، QUALITY.md. السجل M10/038.
+- ملاحظة: أُعيد بناء الفرع على main بعد دمج #388 (دفع بالقوة)، ففشل فحص `push-scope-docs` لحدث الدفع لأن الإيداع السابق 7f08d6f7 لم يعد موجودًا؛ هذا الإيداع دفع عادي يعطي الفحص نطاقًا صالحًا. لا تغيير في الكود.
