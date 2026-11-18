@@ -2,7 +2,8 @@
   "_comment": "R-206a (D-165): the tools hub registry. 'repo' entries are open-source upstreams kept as full git snapshots (bundle + source tarball) in this repository's GitHub releases by .github/workflows/tools-mirror.yml, so an archived or deleted upstream does not remove the copy. Entries without 'repo' are services this project calls or builds itself (no code copied).",
   "tools": [
     {"id": "flights", "item": "R-206b", "name": "تتبع الطائرات المباشر", "kind": "service",
-     "source": "https://airplanes.live", "data_terms": "Airplanes.live REST API: non-commercial use, no SLA, 1 request/second"},
+     "page": "flights", "source": "https://adsb.lol",
+     "data_terms": "D-166: Airplanes.live closed its free API (403, approval/sponsorship only). Primary adsb.lol (ODbL 1.0, attribution); fallback adsb.fi (personal, non-commercial, cite + link). Server-side proxy, 1 request/second per provider, shared cache."},
     {"id": "movies", "item": "R-206c", "name": "خريطة الأفلام واقتراحها", "kind": "built",
      "source": "https://www.wikidata.org", "data_terms": "Wikidata: CC0"},
     {"id": "mdm", "item": "R-206d", "name": "Mister Download Manager", "kind": "mirror",

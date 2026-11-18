@@ -50,7 +50,7 @@ function MirrorInfo({ m }) {
   )
 }
 
-export default function Tools({ load = fetchTools }) {
+export default function Tools({ load = fetchTools, onOpen }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
 
@@ -82,7 +82,12 @@ export default function Tools({ load = fetchTools }) {
           </div>
           {t.data_terms && <div className="account-hint">شروط البيانات: {t.data_terms}</div>}
           <MirrorInfo m={t.mirror} />
-          <div className="badge badge-info">الواجهة الكاملة لهذه الأداة قيد البناء ({t.item})</div>
+          {t.page
+            ? <div className="account-actions">
+                <span className="badge badge-success">مفعّلة</span>
+                {onOpen && <button className="btn btn-primary" type="button" onClick={() => onOpen(t.page)}>افتح الأداة</button>}
+              </div>
+            : <div className="badge badge-info">الواجهة الكاملة لهذه الأداة قيد البناء ({t.item})</div>}
         </div>
       ))}
     </div>

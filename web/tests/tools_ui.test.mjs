@@ -80,3 +80,21 @@ test('API failure shows an error', async () => {
   assert.match(c.querySelector('[role="alert"]').textContent, /تعذر تحميل الأدوات \(503\)/);
   await done();
 });
+
+// R-206b (D-166): a tool with a page is marked active and opens its tab.
+test('a tool with a page is active and opens its tab', async () => {
+  const opened = [];
+  const c = document.createElement('div');
+  document.body.appendChild(c);
+  const root = createRoot(c);
+  const data = { status: { error: null }, tools: [{ ...DATA.tools[0], page: 'flights' }, DATA.tools[1]] };
+  await act(async () => { root.render(React.createElement(Tools, { load: async () => data, onOpen: (p) => opened.push(p) })); });
+  await settle();
+  const card = c.querySelector('[data-tool=flights]');
+  assert.match(card.textContent, /مفعّلة/);
+  assert.doesNotMatch(card.textContent, /قيد البناء/);
+  await act(async () => { card.querySelector('button').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })); });
+  assert.deepEqual(opened, ['flights']);
+  assert.match(c.querySelector('[data-tool=robin]').textContent, /قيد البناء/);
+  await act(async () => root.unmount()); c.remove();
+});
