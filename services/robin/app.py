@@ -130,15 +130,19 @@ def create_app(robin_factory: Callable[[], Robin] = Robin,
             loaded = True
         except Exception:  # noqa: BLE001 - health must answer
             tor, loaded = False, False
-        try:
-            with open("/app/ROBIN_SRC_SHA256") as f:
-                src = f.read().strip()
-        except OSError:
-            src = None
+        src = None
+        for path in ("/home/robin/ROBIN_SRC_SHA256", "/app/ROBIN_SRC_SHA256"):
+            try:
+                with open(path) as f:
+                    src = f.read().strip()
+                break
+            except OSError:
+                continue
         return {"ok": loaded, "robin_loaded": loaded, "tor_bootstrapped": tor,
                 "configured": len(env.get("ROBIN_SHARED_SECRET") or "") >= 32,
                 "busy": busy.locked(), "robin_src_sha256": src,
-                "robin_src_url": env.get("ROBIN_SRC_URL"), "last": state["last"]}
+                "robin_src_url": env.get("ROBIN_SRC_URL"),
+                "robin_code_from": env.get("ROBIN_CODE_FROM"), "last": state["last"]}
 
     @app.get("/models")
     def models(request: Request):

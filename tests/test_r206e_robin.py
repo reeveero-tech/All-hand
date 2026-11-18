@@ -165,6 +165,14 @@ def test_service_uses_robins_own_pipeline_unsaved_and_redacted():
     assert "redact_secrets" in src and "search.is_abuse_material" in src
 
 
+def test_start_refreshes_from_our_mirror_and_falls_back_to_the_image_copy():
+    sh = (ROOT / "services/robin/start.sh").read_text()
+    assert '"$ROBIN_SRC_URL"' in sh and "import pipeline, search, llm_utils, config" in sh
+    assert "ROBIN_CODE=/app/robin ROBIN_CODE_FROM=image" in sh   # fallback first
+    assert "ROBIN_CODE_FROM=mirror-at-start" in sh
+    assert 'tor --Log' in sh
+
+
 def test_dockerfile_builds_from_our_mirror_without_patching_robin():
     d = (ROOT / "services/robin/Dockerfile").read_text()
     assert "reeveero-tech/All-hand/releases/download/mirror-robin/robin-src.tar.gz" in d
