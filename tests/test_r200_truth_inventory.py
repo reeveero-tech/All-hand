@@ -86,17 +86,20 @@ def test_route_parser_on_the_real_repo():
     # + the R-206b public flights proxy route (agos_v2/flights.py, D-166)
     # + the 2 R-206c public movie-map routes (agos_v2/movies.py, D-165)
     # + the R-206d public downloads route (agos_v2/downloads.py, D-165)
-    assert len(rows) == 66
+    # + the 3 R-206e Robin routes (agos_v2/robin_api.py, D-165)
+    assert len(rows) == 69
     v2 = [r for r in rows if r["path"].startswith("/api/v2/")]
     assert len([r for r in v2 if r["source"].startswith("agos_v2/accounts_api.py:")]) == 19
     keys = [r for r in v2 if r["source"].startswith("agos_v2/byok.py:")]
-    assert len(keys) == 7 and len(v2) == 35
+    assert len(keys) == 7 and len(v2) == 38
     assert [r["path"] for r in v2 if r["source"].startswith("agos_v2/tools_hub.py:")] == ["/api/v2/tools"]
     assert [r["path"] for r in v2 if r["source"].startswith("agos_v2/flights.py:")] == ["/api/v2/flights"]
     assert sorted(r["path"] for r in v2 if r["source"].startswith("agos_v2/movies.py:")) == [
         "/api/v2/movies/map", "/api/v2/movies/status"]
     assert [r["path"] for r in v2 if r["source"].startswith("agos_v2/downloads.py:")] == [
         "/api/v2/downloads/{tool_id}"]
+    assert sorted(f'{r["method"]} {r["path"]}' for r in v2 if r["source"].startswith("agos_v2/robin_api.py:")) == [
+        "GET /api/v2/robin/models", "GET /api/v2/robin/status", "POST /api/v2/robin/investigations"]
     gw = sorted(f'{r["method"]} {r["path"]}' for r in v2 if r["source"].startswith("agos_v2/gateway_api.py:"))
     assert gw == ["GET /api/v2/models", "GET /api/v2/workspaces/{workspace_id}/model-calls",
                   "POST /api/v2/workspaces/{workspace_id}/model-calls",
