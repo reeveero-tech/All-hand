@@ -1,0 +1,73 @@
+# M10/037 — acceptance evidence for R-206a (done) and R-206 (accepted, D-161) under D-167
+# Collected 2026-11-18T15:12:58Z with gh (read-only) from the repository's own Actions runs.
+# Owner decision D-167 (2026-11-18, verbatim): «الفحوص الإلزامية تكفي»
+# Branch protection required contexts (gh api .../branches/main/protection/required_status_checks):
+#   quality,test,build,docker,governance,audit,push-scope-docs
+
+== R-206a: PR #386
+PR #386 MERGED title=R-206a: tools hub, upstream mirrors and auto-update (D-165, lahiq 183)
+head(tested_sha)=4cf1dcb6446bc5d662647d9af89852218c03c7e3
+merge_sha=ed9c53f0e8720f87c2abeca29dbeae134c6f4141
+merge subject: Merge pull request #386 from reeveero-tech/m10/r206a-tools-hub
+merge_sha^2=4cf1dcb6446bc5d662647d9af89852218c03c7e3
+-- CI run 44323493416 (main push at merge_sha)
+run 44323493416 workflow=AGOS Kernel CI/CD event=push head=ed9c53f0e8720f87c2abeca29dbeae134c6f4141 status=completed overall_conclusion=failure
+https://github.com/reeveero-tech/All-hand/actions/runs/44323493416
+jobs:
+  quality=success
+  test=success
+  network=failure
+  docker=success
+  storage=success
+  audit=success
+  build=success
+  publish=skipped
+-- D-167 evaluation: required ci.yml jobs quality,test,build,docker,audit all =success; only failed job network (allowed by D-167) => ci_conclusion=required_success (D-167)
+-- test job, pytest summaries (raw):
+   2026-11-18T14:36:26.1173128Z === 4672 passed, 124 skipped, 18 deselected, 9 xfailed in 833.43s (0:13:53) ====
+   2026-11-18T14:49:42.2207004Z === 4672 passed, 124 skipped, 18 deselected, 9 xfailed in 781.63s (0:13:01) ====
+   2026-11-18T15:03:01.2914713Z === 4672 passed, 124 skipped, 18 deselected, 9 xfailed in 795.42s (0:13:15) ====
+-- storage job, pytest summaries (raw):
+   2026-11-18T15:03:37.6608351Z ============================== 4 passed in 1.70s ===============================
+   2026-11-18T15:03:38.0817367Z ============================== 2 passed in 0.16s ===============================
+   2026-11-18T15:03:38.4296184Z ============================== 1 passed in 0.14s ===============================
+   2026-11-18T15:03:41.5314026Z ============================== 48 passed in 2.57s ==============================
+   2026-11-18T15:04:26.3423147Z ============================= 90 passed in 43.85s ==============================
+-- network job, pytest summaries (raw):
+   2026-11-18T14:23:04.7468055Z FAILED tests/test_r170_live_tool_evidence.py::test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-real] - AssertionError: {'ok': False, 'error': 'search: no sourc
+   2026-11-18T14:23:04.7469361Z FAILED tests/test_r170_live_tool_evidence.py::test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-specialists] - AssertionError: {'ok': False, 'error': 'search: n
+   2026-11-18T14:23:04.7470561Z ========== 2 failed, 15 passed, 1 skipped, 4805 deselected in 13.08s ===========
+
+== R-206: PR #383
+PR #383 MERGED title=R-206: owner decision D-161 — record debt, move to R-207 (lahiq 177)
+head(tested_sha)=122612b319228c2acec01ba6cc700602f006ee1f
+merge_sha=c94385286231e3d225d0a9f69afc9282a1372958
+merge subject: Merge pull request #383 from reeveero-tech/m10/r206-debt
+merge_sha^2=122612b319228c2acec01ba6cc700602f006ee1f
+-- CI run 44308397751 (main push at merge_sha)
+run 44308397751 workflow=AGOS Kernel CI/CD event=push head=c94385286231e3d225d0a9f69afc9282a1372958 status=completed overall_conclusion=failure
+https://github.com/reeveero-tech/All-hand/actions/runs/44308397751
+jobs:
+  test=success
+  quality=success
+  network=failure
+  audit=success
+  build=success
+  storage=success
+  docker=success
+  publish=skipped
+-- D-167 evaluation: required ci.yml jobs quality,test,build,docker,audit all =success; only failed job network (allowed by D-167) => ci_conclusion=required_success (D-167)
+-- test job, pytest summaries (raw):
+   2026-11-18T13:08:24.2376181Z === 4655 passed, 124 skipped, 18 deselected, 9 xfailed in 817.16s (0:13:37) ====
+   2026-11-18T13:21:52.1625867Z === 4655 passed, 124 skipped, 18 deselected, 9 xfailed in 794.38s (0:13:14) ====
+   2026-11-18T13:35:45.1074926Z === 4655 passed, 124 skipped, 18 deselected, 9 xfailed in 829.44s (0:13:49) ====
+-- storage job, pytest summaries (raw):
+   2026-11-18T13:36:27.6944768Z ============================== 4 passed in 1.22s ===============================
+   2026-11-18T13:36:28.0744354Z ============================== 2 passed in 0.14s ===============================
+   2026-11-18T13:36:28.3827252Z ============================== 1 passed in 0.11s ===============================
+   2026-11-18T13:36:30.6725701Z ============================== 48 passed in 1.83s ==============================
+   2026-11-18T13:37:02.1634788Z ============================= 90 passed in 30.81s ==============================
+-- network job, pytest summaries (raw):
+   2026-11-18T12:55:18.5804633Z FAILED tests/test_r170_live_tool_evidence.py::test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-real] - AssertionError: {'ok': False, 'error': 'search: no sourc
+   2026-11-18T12:55:18.5807853Z FAILED tests/test_r170_live_tool_evidence.py::test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-specialists] - AssertionError: {'ok': False, 'error': 'search: n
+   2026-11-18T12:55:18.5810155Z ========== 2 failed, 15 passed, 1 skipped, 4788 deselected in 10.41s ===========

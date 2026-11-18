@@ -34,7 +34,7 @@
 | `done` | `pr`، `tested_sha`، `merge_sha`، `ci_run`، `ci_conclusion`، `tests`، `tests_log`، `skipped`، `untested`، `evidence` |
 | `accepted` | كل حقول `done` + `accepted_by=owner`، `decision` (معرّف `D-NNN`)، واختيارياً `conditions` |
 
-- `pr` = `#N`. `tested_sha` = الـSHA الكامل (40) لرأس الـPR الذي اختبره CI. `merge_sha` = الـSHA الكامل لالتزام الدمج على main. `ci_run` = رقم تشغيل CI على main عند `merge_sha`. `ci_conclusion` = `success` حصراً.
+- `pr` = `#N`. `tested_sha` = الـSHA الكامل (40) لرأس الـPR الذي اختبره CI. `merge_sha` = الـSHA الكامل لالتزام الدمج على main. `ci_run` = رقم تشغيل CI على main عند `merge_sha`. `ci_conclusion` = `success` حصراً، **والاستثناء الوحيد** (D-167، قرار المالك 2026-11-18): `required_success` حين يكون الفشل الإجمالي من job غير إلزامي مدرج في القرار (حاليًا `network` وحده). عندها يلزم الحقلان `ci_exception=D-167` و`ci_failed=<الوظائف الفاشلة>`، ويجب أن يُظهر سجل القبول كل وظيفة إلزامية في ci.yml ‏(`quality` و`test` و`build` و`docker` و`audit`) بصيغة `<job>=success` وكل وظيفة فاشلة بصيغة `<job>=failure`. أي وظيفة فاشلة خارج القائمة تُرفض.
 - `tests` = `N passed, S skipped, D deselected` كما طبعها pytest، و`tests_log` = سجل خام يحتوي هذا النص حرفياً.
 - `skipped` = ما تُخطي/استُبعد **وسببه وأين يُشغَّل** (مثل: 4 R-042 live storage تُشغَّل في job ‏`storage`؛ 4 `network` في job ‏`network`). إن كان S أو D أكبر من صفر فلا يجوز أن يكون الحقل فارغاً أو «لا شيء».
 - `untested` = الحدود التي **لم تُختبر** صراحةً (ولو «لا حدود معروفة — السبب»). الحقل إلزامي لأن الصمت عن الحدود ادعاء ضمني.

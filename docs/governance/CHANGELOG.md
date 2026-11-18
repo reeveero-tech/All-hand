@@ -3533,3 +3533,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - R-206a يبقى `in_progress`: CI الإجمالي `failure` من job ‏`network` الخارجي وحده (قاعدة R-154).
 - D-166: adsb.lol + adsb.fi بدل Airplanes.live (403) بقرار المالك؛ R-206b يبقى `planned`.
 - جديد: السجل M10/036. لا تغيير في الكود.
+
+## 2026-11-18 — لاحق 185: D-167 — R-206 مقبول وR-206a منجز
+- قرار المالك D-167: «الفحوص الإلزامية تكفي». `scripts/check_status_evidence.py` يقبل `ci_conclusion=required_success` بشروط آلية ضيقة (`ci_exception=D-167`، `ci_failed=network` فقط، والسجل يُظهر نجاح `quality`/`test`/`build`/`docker`/`audit`)؛ القاعدة 6 تقبل عنوان القرار `###`.
+- R-206 ‏`accepted` (D-161، الدين RISK-040 البنود 1–4 مفتوحة). R-206a ‏`done`.
+- معدل: `docs/governance/STATUS_DEFINITIONS.md`، `tests/test_r154_status_evidence.py` (+11). جديد: السجل M10/037.
