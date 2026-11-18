@@ -176,4 +176,4 @@ def test_registry_points_the_hub_at_the_flights_page():
     assert f["page"] == "flights" and f["source"] == "https://adsb.lol"
     assert "airplanes.live" not in f["source"] and "D-166" in f["data_terms"]
     merged = {t["id"]: t for t in tools_hub.merge(tools_hub.load_registry(), None, "o/r")}
-    assert merged["flights"]["page"] == "flights" and merged["movies"]["page"] is None
+    assert merged["flights"]["page"] == "flights" and merged["movies"]["page"] == "movies"  # R-206c (D-165)
