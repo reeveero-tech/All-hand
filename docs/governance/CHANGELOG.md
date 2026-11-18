@@ -3545,3 +3545,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - الوثائق: API.md، QUALITY.md. السجل M10/038.
 - ملاحظة: أُعيد بناء الفرع على main بعد دمج #388 (دفع بالقوة)، ففشل فحص `push-scope-docs` لحدث الدفع لأن الإيداع السابق 7f08d6f7 لم يعد موجودًا؛ هذا الإيداع دفع عادي يعطي الفحص نطاقًا صالحًا. لا تغيير في الكود.
 - الدفع اللاحق يحمل ROADMAP وPROJECT_STATE وMEMORY أيضًا (قاعدة R-187 R0).
+
+## 2026-11-18 — لاحق 187: R-206b منجز (D-167) وبدء R-206c خريطة الأفلام
+- R-206b: سجل القبول M10/039 (PR #389، دمج c6168f0a، تشغيل main ‏44350931519، فحص الإنتاج). قيد معلن: adsb.lol يرد 429 من Render، فالخدمة من adsb.fi.
+- جديد (R-206c): `scripts/tools/build_movie_map.py`، `agos_v2/movies.py` (`GET /api/v2/movies/map`، `GET /api/v2/movies/status`)، `.github/workflows/movies-map.yml`، `web/src/components/Movies.jsx`، `tests/test_r206c_movies.py`، `web/tests/movies_ui.test.mjs`.
+- معدل: `server.py` (تسجيل المسارين)، `agos_v2/tools_upstreams.json` (رابط صفحة الأفلام)، `web/src/App.jsx` (تبويب «الأفلام»)، `web/src/index.css`، قوائم التغطية (`build_entrypoint_map.py`، `build_route_inventory.py`، `check_atomic_batch.py`، `test_r156_entrypoint_map.py`، `test_r200_truth_inventory.py`: 65 مسارًا، 34 في v2)، و`tests/test_r206b_flights.py` (صار للأفلام صفحة).
+- الوثائق: API.md، QUALITY.md. السجلان M10/039 وM10/040.

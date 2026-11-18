@@ -1,0 +1,52 @@
+# M10/040 — R-206c movie map (D-165): local build, tests and UI check
+# Branch m10/r206c-movies, collected 2026-11-18T17:12:33Z in the sandbox.
+# Data: Wikidata (CC0 1.0). Nothing copied from mikeyguinness.com or guinnoooo/movies (no licence, D-165).
+
+== live build from Wikidata (real SPARQL calls): python3 scripts/tools/build_movie_map.py --min-sitelinks 20 --out <dir>
+{
+  "generated_at": "2026-11-18T17:10:22Z",
+  "films": 9651,
+  "islands": 146,
+  "genres": 409,
+  "films_without_neighbours": 1,
+  "json_bytes": 3640196,
+  "gzip_bytes": 1290882,
+  "seconds": {
+    "fetch_films": 65.7,
+    "fetch_details": 574.2,
+    "build": 48.2
+  },
+  "min_sitelinks": 20,
+  "limit": null,
+  "from_raw": false
+}
+# fetch: one SPARQL query per film type (FILM_TYPES: film, animated film, anime film, animated feature film, television film).
+# A first try with one VALUES query over all types failed: HTTP 504 Gateway Timeout (Wikidata 60 s limit) after 4 attempts.
+# A film-only (Q11424) query missed ~550 popular films typed only as animated/anime film (e.g. Spirited Away); fixed in this item.
+# Rebuild from the saved raw data (--from-raw), same sandbox: elapsed 45.2 s, max RSS 152.5 MB (9035-film raw set).
+
+== neighbour spot check (first 5 of 20, English titles)
+The Godfather -> The Godfather Part II | The Godfather Part III | The Conversation | Megalopolis | Twixt
+Parasite -> Okja | Mother | Memories of Murder | Mickey 17 | The Host
+Spirited Away -> My Neighbor Totoro | Kiki's Delivery Service | Ponyo | Howl's Moving Castle | The Wind Rises
+Toy Story -> Cars | A Bug's Life | Cars 2 | Toy Story 2 | The Brave Little Toaster
+Your Name -> Suzume | The Garden of Words | Weathering with You | 5 Centimeters Per Second | Children Who Chase Lost Voices
+The Message -> Lion of the Desert | King Solomon's Mines | Lost Horizon | Two-Faced Woman | A Farewell to Arms
+films_without_arabic_title 2865 of 9651
+
+== tests
+============================= 69 passed in 28.50s ==============================
+-- full pytest (AGOS_ENV=development) on this branch before the type fix, tail:
+= 8 failed, 4715 passed, 124 skipped, 18 deselected, 9 xfailed in 739.25s (0:12:19) =
+# the 8 failures are the k6 load tests (no k6 binary in this sandbox; the suite's network guard blocks its download). CI installs k6 before the suite.
+-- web (cd web && npm test):
+# tests 94
+# pass 94
+# fail 0
+
+== UI check (headless Chromium via playwright, built web/dist + the real router serving this build)
+overview: 9,651 films, 146 islands, island labels from the two most common genres, colour per island.
+search 'Spirited Away' -> focus المخطوفة (2001), side panel lists My Neighbor Totoro, Kiki's Delivery Service, Ponyo, Howl's Moving Castle; neighbours visible around the focused film.
+liked films get a white ring; suggestions are computed in the browser from the neighbour lists (no server-side history).
+
+== production: pending until after merge and the first workflow run (gh workflow run movies-map.yml; then GET https://all-hand.onrender.com/api/v2/movies/status)
