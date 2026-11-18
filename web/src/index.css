@@ -952,5 +952,6 @@ textarea.form-input {
 .dl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .dl-file { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); }
 .dl-file-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.downloads-page a:not(.btn) { color: var(--accent); }
 .dl-name { font-weight: 600; direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; }
 .dl-sha { font-size: 11px; direction: ltr; overflow-wrap: anywhere; opacity: 0.75; }

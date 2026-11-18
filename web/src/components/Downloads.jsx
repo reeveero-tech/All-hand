@@ -26,6 +26,11 @@ export function fmtSize(n) {
 }
 
 // the visitor's platform, to put its group first (best effort; never hides others)
+function fmtTime(ts) {
+  if (!ts) return '—'
+  try { return new Date(ts).toLocaleString('ar') } catch { return ts }
+}
+
 export function guessPlatform(ua = (globalThis.navigator && globalThis.navigator.userAgent) || '') {
   if (/Windows/i.test(ua)) return 'windows'
   if (/Mac OS X|Macintosh/i.test(ua)) return 'macos'
@@ -96,7 +101,7 @@ export default function Downloads({ tool = 'mdm', load = fetchDownloads, platfor
         {v.mismatched && v.mismatched.length > 0 &&
           <p role="alert" className="badge badge-error">ملفات لا تطابق: {v.mismatched.join('، ')}</p>}
         {v.error && <p role="alert" className="badge badge-error">تعذر قراءة ملف التحقق: {v.error}</p>}
-        {v.sums_source && <p className="account-hint">مصدر المجاميع: <code>{v.sums_source}</code> · وقت التحقق: {v.verified_at}</p>}
+        {v.sums_source && <p className="account-hint">مصدر المجاميع: <code>{v.sums_source}</code> · وقت التحقق: <bdi>{fmtTime(v.verified_at)}</bdi></p>}
       </div>
 
       {groups.map((g) => (
