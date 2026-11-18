@@ -1,0 +1,60 @@
+# M10/043 — acceptance evidence for R-206d (done) under D-167
+# Collected 2026-11-18T20:35:25Z with gh (read-only) from the repository's own Actions runs.
+# Owner decision D-167 (2026-11-18, verbatim): «الفحوص الإلزامية تكفي»
+# Branch protection required contexts (gh api .../branches/main/protection/required_status_checks):
+#   quality,test,build,docker,governance,audit,push-scope-docs
+
+== R-206d: PR #391
+PR #391 MERGED title=R-206d: MDM downloads from our verified copy + R-206c done (D-165, D-167, lahiq 188)
+head(tested_sha)=e717ea7751b47a85d478ddbbf63cd831f9c1e925
+merge_sha=29b1fe8b250cb12b33555f6b892024fdf82380d1
+merge subject: Merge pull request #391 from reeveero-tech/m10/r206d-downloads
+merge_sha^2=e717ea7751b47a85d478ddbbf63cd831f9c1e925
+-- CI run 44384977779 (main push at merge_sha)
+run 44384977779 workflow=AGOS Kernel CI/CD event=push head=29b1fe8b250cb12b33555f6b892024fdf82380d1 status=completed overall_conclusion=failure
+https://github.com/reeveero-tech/All-hand/actions/runs/44384977779
+jobs:
+  test=success
+  quality=success
+  network=failure
+  docker=success
+  storage=success
+  build=success
+  audit=success
+  publish=skipped
+-- D-167 evaluation: required ci.yml jobs quality,test,build,docker,audit all =success; failed jobs: network => ci_conclusion=required_success (D-167)
+-- test job, pytest summaries (raw):
+   2026-11-18T20:06:55.1493219Z === 4745 passed, 124 skipped, 18 deselected, 9 xfailed in 846.72s (0:14:06) ====
+   2026-11-18T20:20:15.4317425Z === 4745 passed, 124 skipped, 18 deselected, 9 xfailed in 786.53s (0:13:06) ====
+   2026-11-18T20:33:36.8793636Z === 4745 passed, 124 skipped, 18 deselected, 9 xfailed in 798.21s (0:13:18) ====
+-- network job, pytest summaries (raw):
+   2026-11-18T19:53:09.4832310Z FAILED tests/test_r170_live_tool_evidence.py::test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-real] - AssertionError: {'ok': False, 'error': 'search: no sources found'}
+   2026-11-18T19:53:09.4833599Z FAILED tests/test_r170_live_tool_evidence.py::test_live_researcher_passes_router_requirements[best practices for REST API pagination-web-search-specialists] - AssertionError: {'ok': False, 'error': 'search: no sources found'}
+   2026-11-18T19:53:09.4834549Z ========== 2 failed, 15 passed, 1 skipped, 4878 deselected in 12.38s ===========
+-- storage job, pytest summaries (raw):
+   2026-11-18T20:34:14.9331657Z ============================== 4 passed in 1.67s ===============================
+   2026-11-18T20:34:15.4612904Z ============================== 2 passed in 0.20s ===============================
+   2026-11-18T20:34:15.9000495Z ============================== 1 passed in 0.17s ===============================
+   2026-11-18T20:34:19.4077627Z ============================== 48 passed in 2.88s ==============================
+   2026-11-18T20:35:01.1344999Z ============================= 90 passed in 40.80s ==============================
+
+== tools-mirror.yml after the merge (run 44384978605, event=push on 29b1fe8b): conclusion=success
+https://github.com/reeveero-tech/All-hand/actions/runs/44384978605
+log line: mdm: verified v0.5.2 (22 files match upstream:anefzaoui/misterdownloadmanager@v0.5.2/SHA256SUMS.txt)
+snapshots: mdm=new, robin=unchanged; manifest.json uploaded to release mirror-mdm-v0.5.2
+
+== production: GET https://all-hand.onrender.com/api/v2/downloads/mdm (re-read 2026-11-18 ~20:36Z)
+ok= True state= verified verified_at= 2026-11-18T19:52:33+00:00 mismatched= [] missing= []
+sums_source= upstream:anefzaoui/misterdownloadmanager@v0.5.2/SHA256SUMS.txt
+groups: windows 3, macos 2, linux 5, extensions 3, other 5, symbols 4, checksums 2
+every link points to our copy, e.g. https://github.com/reeveero-tech/All-hand/releases/download/mirror-mdm-v0.5.2/MisterDownloadManager-0.5.2-portable.zip
+
+== spot check: the Firefox extension (.xpi) downloaded from OUR link
+sha256 cfc02e30aaadc1bbefb8c7bdbfa7566d4c7b31ff3ae606027d63b399e0b556fb = the value in the upstream SHA256SUMS.txt
+
+== real browser (Chromium/playwright) on https://all-hand.onrender.com, tab «التنزيلات»
+header "Mister Download Manager v0.5.2", badge «كل الملفات طابقت مجاميع المصدر (SHA256)», Linux group first with «مطابق» per file.
+(the page used half the width; fixed in the R-206e branch CSS — cosmetic)
+
+== result: acceptance criterion met (every file served from our copy, SHA256 = upstream sums). Not yet observed:
+a NEW upstream release appearing automatically (none released yet; the daily schedule 17 3 * * * checks).
