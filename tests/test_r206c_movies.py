@@ -187,3 +187,28 @@ def test_server_registers_movies_routes():
     src = (ROOT / "server.py").read_text(encoding="utf-8")
     assert "from agos_v2.movies import build_router as _build_v2_movies" in src
     assert "app.include_router(_build_v2_movies(rate_limiter=_v2_rate_limit))" in src
+
+
+def test_fetch_query_includes_animated_and_anime_films_but_not_shorts():
+    # Spirited Away is typed only "anime film" (Q20650540) on Wikidata, many
+    # animated films only "animated film" (Q202866): a Q11424-only query missed ~550
+    assert bmm.FILM_TYPES == ("Q11424", "Q202866", "Q20650540", "Q29168811", "Q506240")
+    assert not {"Q24862", "Q17517379", "Q18011172"} & set(bmm.FILM_TYPES)
+    q = bmm.fetch_query("Q202866", 20, None)
+    assert "wdt:P31 wd:Q202866;" in q and "FILTER(?sl >= 20)" in q and "LIMIT" not in q
+    assert bmm.fetch_query("Q11424", 25, 7).endswith("LIMIT 7")
+
+
+def test_fetch_films_merges_types_and_keeps_one_row_per_film(monkeypatch):
+    def fake(q):
+        b = lambda qid, sl: {"f": {"value": f"http://www.wikidata.org/entity/{qid}"}, "imdb": {"value": "tt1"},
+                             "date": {"value": "2001-07-20T00:00:00Z"}, "links": {"value": str(sl)}}
+        if "wd:Q11424;" in q:
+            return [b("Q1", 90), b("Q2", 30)]
+        if "wd:Q20650540;" in q:
+            return [b("Q3", 80), b("Q1", 90)]   # Q1 typed both ways
+        return []
+    monkeypatch.setattr(bmm, "sparql", fake)
+    films = bmm.fetch_films(20, None)
+    assert list(films) == ["Q1", "Q3", "Q2"] and films["Q3"]["year"] == 2001
+    assert list(bmm.fetch_films(20, 2)) == ["Q1", "Q3"]   # limit counts distinct films

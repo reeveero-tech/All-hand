@@ -6,7 +6,7 @@ and code are not open, so we do not copy it (D-165): we build our own map from
 Wikidata, whose data is CC0.
 
 Pipeline (pure Python, no numpy — the project has no numeric dependency):
-  1. fetch   — SPARQL: films (Q11424 and subclasses' main instances) that have
+  1. fetch   — SPARQL: films (Q11424 and the film types in FILM_TYPES) that have
                an IMDb id, a publication date and at least ``--min-sitelinks``
                Wikipedia sitelinks (a popularity proxy); then, in batches,
                their labels (ar, en), genres, directors, cast, screenwriters,
@@ -76,16 +76,35 @@ def _qid(uri: str) -> str:
     return uri.rsplit("/", 1)[-1]
 
 
-def fetch_films(min_sitelinks: int, limit: int | None) -> dict[str, dict]:
-    q = f"""SELECT ?f ?imdb (MIN(?d) AS ?date) (MAX(?sl) AS ?links) WHERE {{
-  ?f wdt:P31 wd:Q11424; wdt:P345 ?imdb; wdt:P577 ?d; wikibase:sitelinks ?sl .
+# Feature-length film types. Many well-known films are typed only as one of
+# these (e.g. Spirited Away = anime film), not as "film" (Q11424) itself.
+# Short films (Q24862, Q17517379) and film projects (Q18011172) stay out.
+FILM_TYPES = ("Q11424",     # film
+              "Q202866",    # animated film
+              "Q20650540",  # anime film
+              "Q29168811",  # animated feature film
+              "Q506240")    # television film
+
+
+def fetch_query(film_type: str, min_sitelinks: int, limit: int | None) -> str:
+    # one query per type: a single VALUES query over all types hits the
+    # Wikidata 60 s limit (HTTP 504, measured 2026-11-18)
+    return f"""SELECT ?f ?imdb (MIN(?d) AS ?date) (MAX(?sl) AS ?links) WHERE {{
+  ?f wdt:P31 wd:{film_type}; wdt:P345 ?imdb; wdt:P577 ?d; wikibase:sitelinks ?sl .
   FILTER(?sl >= {int(min_sitelinks)})
 }} GROUP BY ?f ?imdb ORDER BY DESC(?links)""" + (f" LIMIT {int(limit)}" if limit else "")
+
+
+def fetch_films(min_sitelinks: int, limit: int | None) -> dict[str, dict]:
+    bindings = [b for t in FILM_TYPES for b in sparql(fetch_query(t, min_sitelinks, limit))]
+    bindings.sort(key=lambda b: -int(b["links"]["value"]))
     films: dict[str, dict] = {}
-    for b in sparql(q):
+    for b in bindings:
         qid = _qid(b["f"]["value"])
         if qid in films:
             continue
+        if limit and len(films) >= int(limit):
+            break
         year = b["date"]["value"][:5].lstrip("+")[:4]
         films[qid] = {"imdb": b["imdb"]["value"], "year": int(year) if year.isdigit() else None,
                       "links": int(b["links"]["value"]), "en": None, "ar": None,

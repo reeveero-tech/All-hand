@@ -939,6 +939,7 @@ textarea.form-input {
 .movies-bar .form-input { flex: 1 1 260px; }
 .movies-hits { max-height: 220px; overflow-y: auto; }
 .movies-layout { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.movies-map .flights-zoom .btn { background: rgba(20, 24, 33, 0.88); color: var(--text, #e6e8ee); border: 1px solid rgba(255, 255, 255, 0.18); }
 .movies-map { position: relative; flex: 3 1 520px; height: 560px; overflow: hidden; border-radius: 10px;
   background: #11131a; touch-action: none; cursor: grab; }
 .movies-map canvas { display: block; }
