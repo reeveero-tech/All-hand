@@ -306,3 +306,14 @@ export function _resetForTests() {
   refreshing = null;
   listeners.clear();
 }
+
+// ---------------------------------------------------------------- Robin (R-206e)
+// The service status is public; models and investigations need a signed-in
+// user with a live session (agos_v2/robin_api.py).
+export const robinApi = {
+  getSession: () => getSession(),
+  onSessionChange: (fn) => onSessionChange(fn),
+  status: () => request('/api/v2/robin/status', { auth: false }),
+  models: () => request('/api/v2/robin/models'),
+  investigate: (body) => request('/api/v2/robin/investigations', { method: 'POST', body }),
+};

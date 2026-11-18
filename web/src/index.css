@@ -955,3 +955,11 @@ textarea.form-input {
 .downloads-page a:not(.btn) { color: var(--accent); }
 .dl-name { font-weight: 600; direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; }
 .dl-sha { font-size: 11px; direction: ltr; overflow-wrap: anywhere; opacity: 0.75; }
+
+/* R-206e: Robin page */
+.robin-page { display: flex; flex-direction: column; gap: 12px; }
+.robin-form { display: flex; flex-direction: column; gap: 10px; }
+.robin-form label { display: flex; flex-direction: column; gap: 4px; }
+.robin-summary { white-space: pre-wrap; word-break: break-word; background: rgba(255, 255, 255, 0.03); padding: 10px; border-radius: 8px; max-height: 60vh; overflow: auto; font-family: inherit; }
+.robin-sources { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.robin-sources code { word-break: break-all; }

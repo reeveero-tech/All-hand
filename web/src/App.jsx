@@ -10,6 +10,8 @@ import Tools from './components/Tools.jsx'
 import Flights from './components/Flights.jsx'
 import Movies from './components/Movies.jsx'
 import Downloads from './components/Downloads.jsx'
+import Robin from './components/Robin.jsx'
+import { robinApi } from './session.js'
 import { fetchSystemStatus, openEventStream } from './api.js'
 
 export default function App() {
@@ -63,6 +65,7 @@ export default function App() {
     { id: 'flights', label: 'الطائرات', icon: '✈' },
     { id: 'movies', label: 'الأفلام', icon: '◎' },
     { id: 'downloads', label: 'التنزيلات', icon: '⇩' },
+    { id: 'robin', label: 'Robin', icon: '⌕' },
     { id: 'account', label: 'الحساب', icon: '◎' },
   ]
 
@@ -105,6 +108,7 @@ export default function App() {
         {tab === 'flights' && <Flights />}
         {tab === 'movies' && <Movies />}
         {tab === 'downloads' && <Downloads />}
+        {tab === 'robin' && <Robin api={robinApi} />}
         {tab === 'account' && <Account />}
       </main>
     </div>
