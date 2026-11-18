@@ -8,6 +8,7 @@ import ApiKeyBar from './components/ApiKeyBar.jsx'
 import Account from './components/Account.jsx'
 import Tools from './components/Tools.jsx'
 import Flights from './components/Flights.jsx'
+import Movies from './components/Movies.jsx'
 import { fetchSystemStatus, openEventStream } from './api.js'
 
 export default function App() {
@@ -59,6 +60,7 @@ export default function App() {
     { id: 'tasks', label: 'المهام', icon: '▢' },
     { id: 'tools', label: 'الأدوات', icon: '⬡' },
     { id: 'flights', label: 'الطائرات', icon: '✈' },
+    { id: 'movies', label: 'الأفلام', icon: '◎' },
     { id: 'account', label: 'الحساب', icon: '◎' },
   ]
 
@@ -99,6 +101,7 @@ export default function App() {
         {tab === 'tasks' && <Tasks liveEvent={liveEvent} />}
         {tab === 'tools' && <Tools onOpen={setTab} />}
         {tab === 'flights' && <Flights />}
+        {tab === 'movies' && <Movies />}
         {tab === 'account' && <Account />}
       </main>
     </div>

@@ -3550,6 +3550,12 @@ from agos_v2.flights import build_router as _build_v2_flights  # noqa: E402
 
 app.include_router(_build_v2_flights(rate_limiter=_v2_rate_limit))
 
+# R-206c (D-165): our own movie map built from Wikidata (CC0) by the scheduled
+# workflow movies-map.yml; served from the release asset, suggestions in the browser.
+from agos_v2.movies import build_router as _build_v2_movies  # noqa: E402
+
+app.include_router(_build_v2_movies(rate_limiter=_v2_rate_limit))
+
 # ---------------------------------------------------------------------------
 # Civilization auto-routing endpoints (no user-picked specialization)
 # ---------------------------------------------------------------------------
