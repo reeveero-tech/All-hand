@@ -30,7 +30,13 @@ Rules (each pinned by tests/test_r206_gateway.py):
   ``fallback_used`` and lists every attempt (provider, model, key source,
   reason, HTTP status, retries, latency) — nothing is replaced silently.
 * **Failure is failure**: ``ok=False`` and ``text=None``; the gateway never
-  invents an answer.
+  invents an answer. An answer with no text and no tool call (e.g. a reasoning
+  model that spent ``max_tokens`` before writing) is ``empty_output``, not a
+  success; it was billed, so it keeps the route, tokens, cost and request id
+  and is NOT retried on another route (M10/028 finding 1).
+* **Unknown model**: a platform policy may refuse with a reason of its own;
+  the ``free`` policy says ``model_not_found`` when the catalog is loaded and
+  does not list the model (M10/028 finding 3).
 * **Tokens and cost per request**: the provider's reported cost first
   (OpenRouter ``usage.cost``), else an estimate from the catalog price marked
   ``catalog_estimate``, else ``None`` — unknown, never 0.
@@ -103,7 +109,7 @@ REASONS = ("ok", "no_key", "platform_key_not_allowed", "invalid_key", "forbidden
            "unexpected_redirect", "timeout", "unreachable", "blocked_address", "tls_error",
            "malformed_response", "deadline_exceeded", "gateway_error",
            "tools_not_supported", "structured_output_not_supported",
-           "stream_interrupted", "client_disconnected")
+           "stream_interrupted", "client_disconnected", "empty_output", "model_not_found")
 # OpenAI-compatible providers that report usage in a stream only when asked (D-160).
 STREAM_USAGE = frozenset({"openai", "openrouter", "groq", "google", "ollama"})
 
@@ -397,6 +403,22 @@ def _anthropic_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
+def _empty(parsed: Dict[str, Any]) -> bool:
+    """No text (blank counts as none) and no tool call: nothing was answered."""
+    return not parsed["tool_calls"] and not (parsed["text"] or "").strip()
+
+
+def _empty_result(route: "Route", cred: "Credential", parsed: Dict[str, Any], cost, src,
+                  att: Dict[str, Any], idx: int, attempts: List[Dict[str, Any]]) -> "Result":
+    """``empty_output``: a failure (``text=None``) that still names what was billed."""
+    return Result(ok=False, text=None, provider=route.provider, model=route.model, key_source=cred.source,
+                  key_id=cred.key_id, reason="empty_output", http_status=200,
+                  finish_reason=parsed["finish_reason"], tokens_in=parsed["tokens_in"],
+                  tokens_out=parsed["tokens_out"], cost_usd=cost, cost_source=src,
+                  provider_request_id=parsed["id"] if isinstance(parsed["id"], str) else None,
+                  latency_ms=att["latency_ms"], fallback_used=idx > 0, attempts=attempts)
+
+
 # ------------------------------------------------------------------ gateway
 class Gateway:
     def __init__(self, *, endpoints: Optional[Mapping[str, str]] = None,
@@ -429,8 +451,11 @@ class Gateway:
         if cred is not None:
             return cred, None
         if route.provider in self._platform:
-            if not self._policy(route):
-                return None, "platform_key_not_allowed"
+            verdict = self._policy(route)
+            if verdict is not True:
+                # a policy may name its own refusal (model_not_found); anything else is "not allowed"
+                return None, (verdict if isinstance(verdict, str) and verdict in REASONS
+                              and verdict != "ok" else "platform_key_not_allowed")
             return Credential(provider=route.provider, secret=self._platform[route.provider],
                               source="platform"), None
         return None, "no_key"
@@ -640,8 +665,12 @@ class Gateway:
                     break
                 att.update(ok=True, reason="ok", http_status=200,
                            latency_ms=int((time.monotonic() - t0) * 1000))
+                if _empty(parsed):
+                    att.update(ok=False, reason="empty_output")
                 self._log(route, att, parsed)
                 cost, src = self._cost(route, parsed)
+                if not att["ok"]:
+                    return _empty_result(route, cred, parsed, cost, src, att, idx, attempts)
                 return Result(ok=True, text=parsed["text"], provider=route.provider, model=route.model,
                               key_source=cred.source, key_id=cred.key_id, reason="ok", http_status=200,
                               finish_reason=parsed["finish_reason"], tokens_in=parsed["tokens_in"],
@@ -759,8 +788,13 @@ class Gateway:
                 s._close_resp()
                 att.update(ok=True, reason="ok", http_status=200,
                            latency_ms=int((time.monotonic() - t0) * 1000))
+                if _empty(parsed):
+                    att.update(ok=False, reason="empty_output")
                 self._log(route, att, parsed)
                 cost, src = self._cost(route, parsed)
+                if not att["ok"]:
+                    s.result = _empty_result(route, cred, parsed, cost, src, att, idx, attempts)
+                    return
                 s.result = Result(ok=True, text=parsed["text"], provider=route.provider, model=route.model,
                                   key_source=cred.source, key_id=cred.key_id, reason="ok", http_status=200,
                                   finish_reason=parsed["finish_reason"], tokens_in=parsed["tokens_in"],

@@ -28,7 +28,8 @@ server refused before calling any model.
 
 Platform policy (``AGOS_PLATFORM_MODELS``): unset/empty = the platform key is
 never used (owner decision pending, R-207 budgets); ``free`` = only OpenRouter
-models whose catalog price is 0 for input and output.
+models whose catalog price is 0 for input and output; a model the loaded
+catalog does not list is refused as ``model_not_found`` (no request sent).
 """
 from __future__ import annotations
 
@@ -145,6 +146,16 @@ class Catalog:
         m = self.models().get(model)
         return {"tools": m["tools"], "structured_output": m["structured_output"]} if m else None
 
+    def has_model(self, provider: str, model: str) -> Optional[bool]:
+        """True/False when a loaded catalog can say; None = unknown (not OpenRouter,
+        or no good copy of the list) — never a guess."""
+        if provider != "openrouter":
+            return None
+        models = self.models()
+        if not models:
+            return None
+        return model in models
+
     def is_free(self, provider: str, model: str) -> bool:
         if provider != "openrouter":
             return False
@@ -155,7 +166,11 @@ class Catalog:
 def platform_policy_from_env(catalog: Catalog, env: Optional[Dict[str, str]] = None) -> Callable[[Route], bool]:
     value = ((os.environ if env is None else env).get(PLATFORM_POLICY_ENV) or "").strip().lower()
     if value == "free":
-        return lambda route: catalog.is_free(route.provider, route.model)
+        def free(route: Route):
+            if catalog.has_model(route.provider, route.model) is False:
+                return "model_not_found"               # M10/028 finding 3: say so, not "not allowed"
+            return catalog.is_free(route.provider, route.model)
+        return free
     if value:
         logger.error("gateway: unknown %s value; the platform key stays off", PLATFORM_POLICY_ENV)
     return lambda route: False
