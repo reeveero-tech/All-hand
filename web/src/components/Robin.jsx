@@ -24,8 +24,8 @@ export function serviceLine(st) {
   if (!st.configured) return ['badge-info', 'خدمة Robin غير مهيأة على هذا الخادم بعد']
   if (!st.reachable) return ['badge-error', 'خدمة Robin لا تستجيب الآن (قد تكون نائمة؛ أعد المحاولة بعد دقيقة)']
   if (!st.service_configured) return ['badge-error', 'خدمة Robin تعمل لكن إعدادها ناقص']
-  if (!st.tor_bootstrapped) return ['badge-info', 'خدمة Robin تعمل وTor لم يكتمل اتصاله بعد']
-  return ['badge-success', st.busy ? 'خدمة Robin تعمل (مشغولة ببحث آخر)' : 'خدمة Robin تعمل وTor متصل']
+  if (!st.tor_bootstrapped) return ['badge-info', 'خدمة Robin تعمل، واتصال Tor لم يكتمل بعد']
+  return ['badge-success', st.busy ? 'خدمة Robin تعمل (مشغولة ببحث آخر)' : 'خدمة Robin تعمل، واتصال Tor جاهز']
 }
 
 function Sources({ list }) {

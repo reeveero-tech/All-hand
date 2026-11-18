@@ -63,7 +63,7 @@ function setValue(el, v) {
 test('service line covers every state', () => {
   assert.match(serviceLine({ configured: false })[1], /غير مهيأة/);
   assert.equal(serviceLine({ configured: true, reachable: false })[0], 'badge-error');
-  assert.match(serviceLine(UP)[1], /Tor متصل/);
+  assert.match(serviceLine(UP)[1], /اتصال Tor جاهز/);
   assert.ok(!('personal_identity' in PRESETS));
 });
 
