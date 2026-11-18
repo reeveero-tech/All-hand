@@ -288,14 +288,20 @@ jobs:
           # Blocking on critical/high in production deps (react/react-dom).
           # Dev deps are covered by the full audit below (blocking since R-071).
 
-      - name: Web dependency audit (full — blocking since R-071)
+      - name: Web dependency audit (full — blocking since R-071; one dated exception, D-164)
         working-directory: web/
         run: |
           set -o pipefail
-          npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log"
+          npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log" || true
+          npm audit --json > "$GITHUB_WORKSPACE/npm_audit_full.json" || true
+          python3 ../scripts/check_npm_audit.py "$GITHUB_WORKSPACE/npm_audit_full.json"
           # R-071: vite 5 -> 8 closed the two dev-only advisories (esbuild/vite) that
-          # made this step informational since R-045; it now blocks on high/critical
-          # in dev deps too. See docs/governance/SECURITY.md R-071.
+          # made this step informational since R-045; it blocks on high/critical
+          # in dev deps too. D-164 (owner, 2026-11-18): ONE exception —
+          # GHSA-fc5q-39xc-vjpf (picomatch, no upstream fix, dev-only), until
+          # 2026-12-18; any other high/critical advisory, or the date passing,
+          # fails this step. The production-only audit above has no exception.
+          # See docs/governance/SECURITY.md (D-164).
 
       # R-203 (D-152, DEL-001): the root npm audit steps went with the root app.
 
@@ -388,13 +394,13 @@ jobs:
           mkdir -p /tmp/gotrue && tar -xzf /tmp/gotrue.tar.gz -C /tmp/gotrue
           test -x /tmp/gotrue/auth && test -d /tmp/gotrue/migrations
 
-      - name: R-204 accounts + R-205 BYOK + R-206 gateway (real Supabase Auth + RLS isolation + API end-to-end + key leak tests)
+      - name: R-204 accounts + R-205 BYOK + R-206 gateway + 007 draft (real Supabase Auth + RLS isolation + API end-to-end + key leak tests)
         env:
           V2_SCHEMA_ADMIN_URI: postgresql://postgres:postgres@localhost:5432/postgres
           GOTRUE_BIN: /tmp/gotrue/auth
         run: |
           set -o pipefail
-          python -m pytest tests/test_r204_accounts_db.py tests/test_r204_accounts_live.py tests/test_r205_byok_live.py tests/test_r206_gateway_live.py -v -p no:cacheprovider 2>&1 | tee "$GITHUB_WORKSPACE/r204_accounts.log"
+          python -m pytest tests/test_r204_accounts_db.py tests/test_r204_accounts_live.py tests/test_r205_byok_live.py tests/test_r206_gateway_live.py tests/test_r206_007_live.py -v -p no:cacheprovider 2>&1 | tee "$GITHUB_WORKSPACE/r204_accounts.log"
           grep -q " passed" "$GITHUB_WORKSPACE/r204_accounts.log"
           # the live tests must RUN here, not skip
           if grep -qE "[0-9]+ skipped" "$GITHUB_WORKSPACE/r204_accounts.log"; then

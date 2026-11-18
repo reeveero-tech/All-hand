@@ -139,7 +139,8 @@ def phase_calls():
     r = call(c, h, ws, [{"provider": "openrouter", "model": "agos-r206/does-not-exist:free"}])
     b = brief(r.json()) if r.status_code == 200 else {"status": r.status_code, "body": r.text[:200]}
     st["calls"]["unknown_model"] = b
-    check("unknown model: refused honestly, no text", b.get("ok") is False and b.get("text") is None,
+    check("unknown model: refused as model_not_found, no text (M10/028 finding 3)",
+          b.get("ok") is False and b.get("text") is None and b.get("reason") == "model_not_found",
           json.dumps(b, ensure_ascii=False))
     r = call(c, h, ws, [{"provider": "openrouter", "model": PAID}, {"provider": "openrouter", "model": FREE2}])
     b = brief(r.json()) if r.status_code == 200 else {"status": r.status_code}

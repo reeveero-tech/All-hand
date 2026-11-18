@@ -1,0 +1,29 @@
+# M10/033 — R-206: migration 007 applied to the production database — lahiq 181, 2026-11-18
+# Owner approval (verbatim, 2026-11-18, answer to "هل توافق على الخيار B للعيب 2"): "موافق على B، أدمج وطبّق"
+
+## A. Before the apply (read-only, Management API, 2026-11-18)
+auth.users 0; agos.model_calls 0  -> impact 0 rows
+schema_migrations last: 20261116014521 r206_006_model_calls
+FKs on agos.model_calls: key_id -> set null (n), user_id -> cascade (c), workspace_id -> cascade (c); workspace_id NOT NULL
+agos.model_call_record md5(prosrc) = 39b76252cdbaf3c252bcb44770aefb8f = the repo 006 body (applied 001-006 on a local test DB:
+  same md5) -> the 007 rollback restores production exactly
+file sha256 at apply: 95fc88f85bb8b9253f66df25d29d7191dce507cab1ad480f0e4f604f37cf5f90 docs/sql/v2/007_model_calls_retention.sql
+  (= the file on m10/r206-007-draft, CI run 44257837542: storage success incl. tests/test_r206_007_live.py)
+
+## B. Apply
+Management API POST /v1/projects/qehloiuyzksnijstkfmn/database/migrations name=r206_007_model_calls_retention -> HTTP 200
+
+## C. After (read-only)
+schema_migrations: 20261118104551 r206_007_model_calls_retention (after 20261116014521 r206_006_model_calls)
+FKs: workspace_id -> set null (n), user_id -> cascade (c), key_id -> set null (n); workspace_id attnotnull=false
+agos.model_call_record: md5(prosrc) 8d3732ff5e4b6033e312054d09c35e52 (= the 007 body applied on the local test DB),
+  security definer, search_path=pg_catalog, pg_temp
+privileges: anon execute=false, authenticated execute=true, authenticated insert on model_calls=false, anon select=false; RLS on; 0 rows
+security advisor: 5 lints, all in schema public (rls_enabled_no_policy x3, anon_/authenticated_security_definer_function_executable x1 each);
+  0 on agos. 007 touches only agos.
+live app: https://all-hand.onrender.com/health 200 (no restart needed: the server's SQL is unchanged by 007)
+
+## D. Not proven yet
+a recorded call on production surviving a workspace deletion (no users exist); rollback
+docs/sql/v2/007_model_calls_retention_rollback.sql — not run.
+The Supabase personal token used here is the one pasted in the 2026-11-18 takeover order — the owner must revoke it.

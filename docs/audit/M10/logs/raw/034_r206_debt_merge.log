@@ -1,0 +1,19 @@
+# M10/034 — R-206 lahiq 182: merge PR #383 (D-161 debt record) on owner order
+date: 2026-11-18 (Asia/Riyadh)
+owner order (verbatim): «ادمجه وانتقل إلى R-207»
+
+## Verified by the agent
+- PR #385 (migration 007, D-163) merged: main 9ef553b6ac47b25a3f63dc9cd7e7c8e93a2e3673
+  subject "Merge pull request #385 from reeveero-tech/m10/r206-007-draft"
+  parents 5d8a7d3e0e7a0f03fcc695c77b8dc18d86ae6a62 679c1e990d02aaf67028ade67619b55e36989ec6
+- CI on PR #385 head 679c1e99 (run 44295078519): quality, test, build, docker, audit, storage = success;
+  network = failure (tests/test_r170_live_tool_evidence.py, DuckDuckGo bot-check, external). Overall run conclusion: failure.
+  governance (run 44295078742): failed first on the old body hold marker, passed on re-run after the owner-approved removal.
+- origin/main merged into m10/r206-debt (no force-push); conflicts only in governance docs; resolved keeping both sides.
+- RISK-040 item (5) paid: findings (1),(3) fixed in #384 (D-162); finding (2) applied as 007 on production (20261118104551).
+
+## Not done in this batch (stated, not hidden)
+- R-206 stays in_progress. Acceptance (accepted_by=owner, decision=D-161) needs a real CI run with conclusion success;
+  no such run exists while the network job fails. The gate was not weakened and "success" was not written for a failed run.
+- R-207 not started (rule 10b: its dependency R-206 must be done/accepted).
+- D-161 heading is "###"; the acceptance rule matches "^## D-161" (as D-156). To be fixed in the acceptance batch.
