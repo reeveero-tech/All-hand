@@ -332,6 +332,14 @@
 | `GET /api/v2/tools` | عام (بلا جلسة، حد المعدل نفسه): سجل الأدوات مع حالة النسخ لكل مشروع مفتوح `mirror: {state: copied/not_copied_yet, upstream_state: active/archived/gone, upstream_release, snapshot_head, snapshot_at, checked_at, error, release_page, bundle_url, source_url, mirrored_releases[]}`، و`status: {source, generated_at, error}` |
 **المصدر**: `status.json` في إصدار `mirror-status` (رابط تنزيل عام، تخزين 10 دقائق، الخادم لا يستدعي GitHub API). تعذر القراءة يظهر في `status.error` وتبقى آخر نسخة سليمة. لا بيانات مستخدم ولا أسرار.
 
+## R-206c — خريطة الأفلام `/api/v2/movies` (D-165، 2026-11-18)
+| المسار | الوظيفة |
+|---|---|
+| `GET /api/v2/movies/map` | عام (بلا جلسة، حد المعدل العام): الخريطة كاملة `{format: 1, generated_at, source, license, fields, films[], neighbours[], islands[], genres}`؛ كل فيلم صف بالحقول `qid, title_ar, title_en, year, imdb, genres, x, y, island, sitelinks`، و`neighbours[i]` قائمة `[index, score]` (20 جارًا). يُرسل الملف المضغوط كما هو لمن يقبل gzip، مع `ETag` و304 و`Cache-Control: public, max-age=600` |
+| `GET /api/v2/movies/status` | `{ok, source, map: {films, islands, generated_at, source, license}, error}` |
+**المصدر**: الأصل `movies.json.gz` في إصدار `movies-map` لهذا المستودع (رابط تنزيل عام، بلا رمز)، يبنيه سير العمل `movies-map.yml` من Wikidata ‏(CC0). الخادم يتحقق من الشكل قبل الخدمة، ويخزن ساعة، ويعيد المحاولة بعد 120 ث عند الفشل.
+**الأخطاء**: 503 `movie map not available yet` مع السبب إن لم توجد نسخة سليمة؛ وإن فشل التحديث وبقيت نسخة سابقة تُخدم مع الرأس `X-Map-Stale` (لا يُخفى). الاقتراحات تُحسب في المتصفح، ولا يحفظ الخادم سجل مشاهدة. **الاختبارات**: `tests/test_r206c_movies.py`، `web/tests/movies_ui.test.mjs`.
+
 ## R-206b — الطائرات المباشرة `/api/v2/flights` (D-166، 2026-11-18)
 | المسار | الوظيفة |
 |---|---|
