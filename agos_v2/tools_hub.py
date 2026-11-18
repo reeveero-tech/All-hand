@@ -88,7 +88,7 @@ def merge(registry: List[Dict[str, Any]], status: Optional[Dict[str, Any]], repo
     out = []
     for t in registry:
         item = {k: t.get(k) for k in ("id", "item", "name", "kind", "source", "data_terms",
-                                       "repo", "license")}
+                                       "repo", "license", "page")}  # page: R-206b (D-166) web tab id
         if t.get("repo"):
             s = by_id.get(t["id"]) or {}
             base = f"https://github.com/{repo}/releases"

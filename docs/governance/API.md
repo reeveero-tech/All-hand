@@ -332,3 +332,13 @@
 | `GET /api/v2/tools` | عام (بلا جلسة، حد المعدل نفسه): سجل الأدوات مع حالة النسخ لكل مشروع مفتوح `mirror: {state: copied/not_copied_yet, upstream_state: active/archived/gone, upstream_release, snapshot_head, snapshot_at, checked_at, error, release_page, bundle_url, source_url, mirrored_releases[]}`، و`status: {source, generated_at, error}` |
 **المصدر**: `status.json` في إصدار `mirror-status` (رابط تنزيل عام، تخزين 10 دقائق، الخادم لا يستدعي GitHub API). تعذر القراءة يظهر في `status.error` وتبقى آخر نسخة سليمة. لا بيانات مستخدم ولا أسرار.
 
+## R-206b — الطائرات المباشرة `/api/v2/flights` (D-166، 2026-11-18)
+| المسار | الوظيفة |
+|---|---|
+| `GET /api/v2/flights?mode=point&lat=&lon=&radius=` | عام (بلا جلسة، حد المعدل العام): الطائرات حول نقطة؛ `radius` بالميل البحري 1..250 (الافتراضي 50)، والإحداثيات تُقرَّب لمنزلتين ليتشارك الجيران سطر التخزين نفسه |
+| `GET /api/v2/flights?mode=hex\|callsign\|reg\|type\|squawk&q=` | بحث بالرمز السداسي (`~` مسموح) أو النداء أو التسجيل أو نوع الطائرة أو رمز squawk |
+| `GET /api/v2/flights?mode=mil\|ladd\|pia` | الطائرات العسكرية / قوائم LADD وPIA (`ladd` و`pia` من adsb.lol فقط) |
+**الرد 200**: `{ok, mode, params, provider, fallback_used, errors[], count, aircraft[], fetched_at, cached, attribution{home, license, license_url, notice}}`؛ كل طائرة تحمل الحقول `hex, flight, r, t, desc, lat, lon, alt_baro, alt_geom, gs, track, baro_rate, squawk, category, emergency, dbFlags, seen, seen_pos, type` فقط (حد 3000).
+**المصادر (D-166)**: adsb.lol أولًا (ODbL 1.0)، ثم adsb.fi احتياطيًا (استخدام شخصي غير تجاري، مع ذكره ورابطه). قفل واحد لكل مصدر على مستوى الخادم = طلب واحد في الثانية، وتخزين 8 ثوانٍ، وUser-Agent معرّف.
+**الأخطاء**: 400 مدخل غير صالح (يُرفض قبل أي طلب خارجي، لأن adsb.fi يحتسب الطلبات الخاطئة)؛ 502 `no flight data source answered` مع خطأ كل مصدر في `errors` (لا قائمة فارغة توهم بعدم وجود طائرات)؛ 503 أكثر من 8 طلبات تنتظر؛ 429 حد المعدل. **الاختبارات**: `tests/test_r206b_flights.py`، `web/tests/flights_ui.test.mjs`؛ الفحص الحي `scripts/tools/flights_live_check.py` (`--url` للإنتاج).
+

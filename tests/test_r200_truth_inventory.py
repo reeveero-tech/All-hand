@@ -83,12 +83,14 @@ def test_route_parser_on_the_real_repo():
     # routes (agos_v2/gateway_api.py, same pattern) + the R-206 stream route (D-160)
     # — the prefix is applied
     # + the R-206a public tools-hub route (agos_v2/tools_hub.py, D-165)
-    assert len(rows) == 62
+    # + the R-206b public flights proxy route (agos_v2/flights.py, D-166)
+    assert len(rows) == 63
     v2 = [r for r in rows if r["path"].startswith("/api/v2/")]
     assert len([r for r in v2 if r["source"].startswith("agos_v2/accounts_api.py:")]) == 19
     keys = [r for r in v2 if r["source"].startswith("agos_v2/byok.py:")]
-    assert len(keys) == 7 and len(v2) == 31
+    assert len(keys) == 7 and len(v2) == 32
     assert [r["path"] for r in v2 if r["source"].startswith("agos_v2/tools_hub.py:")] == ["/api/v2/tools"]
+    assert [r["path"] for r in v2 if r["source"].startswith("agos_v2/flights.py:")] == ["/api/v2/flights"]
     gw = sorted(f'{r["method"]} {r["path"]}' for r in v2 if r["source"].startswith("agos_v2/gateway_api.py:"))
     assert gw == ["GET /api/v2/models", "GET /api/v2/workspaces/{workspace_id}/model-calls",
                   "POST /api/v2/workspaces/{workspace_id}/model-calls",

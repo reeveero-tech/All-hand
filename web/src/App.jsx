@@ -7,6 +7,7 @@ import Tasks from './components/Tasks.jsx'
 import ApiKeyBar from './components/ApiKeyBar.jsx'
 import Account from './components/Account.jsx'
 import Tools from './components/Tools.jsx'
+import Flights from './components/Flights.jsx'
 import { fetchSystemStatus, openEventStream } from './api.js'
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
     { id: 'agents', label: 'الوكلاء', icon: '◇' },
     { id: 'tasks', label: 'المهام', icon: '▢' },
     { id: 'tools', label: 'الأدوات', icon: '⬡' },
+    { id: 'flights', label: 'الطائرات', icon: '✈' },
     { id: 'account', label: 'الحساب', icon: '◎' },
   ]
 
@@ -95,7 +97,8 @@ export default function App() {
         {tab === 'specializations' && <Specializations status={status} />}
         {tab === 'agents' && <Agents />}
         {tab === 'tasks' && <Tasks liveEvent={liveEvent} />}
-        {tab === 'tools' && <Tools />}
+        {tab === 'tools' && <Tools onOpen={setTab} />}
+        {tab === 'flights' && <Flights />}
         {tab === 'account' && <Account />}
       </main>
     </div>

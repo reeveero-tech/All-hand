@@ -3544,6 +3544,12 @@ from agos_v2.tools_hub import build_router as _build_v2_tools  # noqa: E402
 
 app.include_router(_build_v2_tools(rate_limiter=_v2_rate_limit))
 
+# R-206b (D-165, D-166): live aircraft positions — server-side proxy to
+# adsb.lol (primary) and adsb.fi (fallback), one shared 1 req/s throttle + cache.
+from agos_v2.flights import build_router as _build_v2_flights  # noqa: E402
+
+app.include_router(_build_v2_flights(rate_limiter=_v2_rate_limit))
+
 # ---------------------------------------------------------------------------
 # Civilization auto-routing endpoints (no user-picked specialization)
 # ---------------------------------------------------------------------------

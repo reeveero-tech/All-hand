@@ -47,7 +47,7 @@ REPO_PATH_RE = re.compile(r"(?<![\w./-])((?:scripts|tests|web|docs|agent_civiliz
 SUBSYSTEMS = {
     "api": ["server.py", "agent_civilization/civilization_routes.py", "agos_v2/accounts_api.py",
             "agos_v2/byok.py", "agos_v2/gateway_api.py",
-            "agos_v2/tools_hub.py"],  # R-205 (D-154), R-206 (D-158), R-206a (D-165)
+            "agos_v2/tools_hub.py", "agos_v2/flights.py"],  # R-205 (D-154), R-206 (D-158), R-206a/b (D-165, D-166)
     "agent-runtime-real": ["agent_civilization/agents/real/real_agents.py", "agent_civilization/core/agents/real_dispatcher.py",
                            "agent_civilization/core/agents/base_agent.py"],
     "agent-runtime-specialists": ["agent_civilization/agents/real/specialist_runtime.py",
