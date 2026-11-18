@@ -3494,3 +3494,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 
 - تصحيح CI على PR #384 (الرشة 44192560561): `quality` فشل بـ ruff F811 (استيراد المثبّت `server` من `tests/test_r206_gateway.py`)؛ الإصلاح مثبّت محلي بالمعالج نفسه في `tests/test_r206_defects.py`. ‏132 اختبارًا لـR-206 تنجح محليًا و`ruff check --select F,E722` نظيف.
 - عائق دمج: `audit` يفشل على PR #384 وعلى main بسبب GHSA-fc5q-39xc-vjpf (`picomatch` ≤4.0.7، اعتماد تطوير عبر vite، لا إصلاح منشور). لا إضعاف للفحص؛ قرار مالك.
+
+## 2026-11-18 — لاحق 179: R-206 مسودة الترحيل 007 للاكتشاف (2) (D-163 مقترح)
+- جديد: `docs/sql/v2/007_model_calls_retention.sql` (‏`workspace_id` يقبل NULL و`on delete set null`؛ `model_call_record` يضيف رموز/تكلفة الفشل المحتسب لإجمالي المفتاح النشط) و`007_model_calls_retention_rollback.sql` (يعيد 006 حرفيًا؛ يحذف الصفوف بلا مساحة — فقد بيانات معلن).
+- جديد: `tests/test_r206_007_live.py` (7؛ GoTrue + PostgreSQL حقيقيان؛ 4 حمراء على 006 وحده). معدل: `.github/workflows/ci.yml` (إضافة الملف لخطوة R-204/R-205/R-206 الحية؛ لا إزالة ولا تخفيف).
+- محليًا: 7/7؛ `tests/test_r206_gateway_live.py` 26/26 مع 007 مطبق. السجل M10/031.
+- مسودة: لا تُدمج قبل قرار المالك، ولا تُطبق على الإنتاج دون موافقة صريحة منفصلة.
