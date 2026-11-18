@@ -8,6 +8,7 @@ Exit codes: 0 = consistent; 1 = violations (all listed); 2 = git/IO error.
 Implements docs/governance/STATUS_DEFINITIONS.md §3:
   1 vocabulary (six statuses only; exactly one status line per item)
   2 required evidence fields per status (M8 items, R-151+), with formats
+    (ci_conclusion=success, or required_success only under D-167 — see CI_EXCEPTIONS)
   3 done/accepted: merge_sha reachable from HEAD, subject
     "Merge pull request #<pr> from", second parent == tested_sha
   4 acceptance log really contains merge_sha, tested_sha, ci_run, "success";
@@ -65,6 +66,17 @@ STATUS_RE = re.compile(r"^- الحالة: \*\*(.+?)\*\*", re.M)
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 TESTS_RE = re.compile(r"^(\d+) passed, (\d+) skipped, (\d+) deselected$")
 NONE_RE = re.compile(r"^(none|لا شيء|لا يوجد|-)\s*$", re.I)
+# D-167 (owner decision): a run whose overall conclusion is "failure" ONLY
+# because of a listed non-required job may be recorded as
+# ci_conclusion=required_success — never implicitly. The item must name the
+# decision (ci_exception) and the failed jobs (ci_failed); every failed job must
+# be in the decision's allow-list, and the acceptance log must show every
+# required ci.yml job as "<job>=success" and every failed job as
+# "<job>=failure". Any other value or job is still rejected.
+CI_EXCEPTIONS = {
+    "D-167": {"allowed_failed": ("network",),
+              "required_jobs": ("quality", "test", "build", "docker", "audit")},
+}
 
 
 class GitError(Exception):
@@ -282,8 +294,29 @@ def check(root: str = ".") -> list[str]:
 def _check_done(root, rid, st, f, decisions) -> list[str]:
     v = []
     pr, ts, ms, run = f["pr"][1:], f["tested_sha"], f["merge_sha"], f["ci_run"]
-    if f["ci_conclusion"] != "success":
-        v.append(f"{rid}: ci_conclusion must be 'success', got '{f['ci_conclusion']}'")
+    exc_needles: list[tuple[str, str]] = []
+    if f["ci_conclusion"] == "required_success":
+        exc_id, failed = f.get("ci_exception", ""), f.get("ci_failed", "")
+        rule = CI_EXCEPTIONS.get(exc_id)
+        jobs = [j.strip() for j in failed.split(",") if j.strip()]
+        if rule is None:
+            v.append(f"{rid}: ci_conclusion 'required_success' needs ci_exception naming a"
+                     f" CI-exception decision ({', '.join(CI_EXCEPTIONS)}), got '{exc_id}'")
+        elif not re.search(rf"^#{{2,3}} {re.escape(exc_id)}\b", decisions, re.M):
+            v.append(f"{rid}: ci_exception {exc_id} not found in DECISIONS.md")
+        elif not jobs:
+            v.append(f"{rid}: ci_conclusion 'required_success' needs ci_failed (the failed jobs)")
+        else:
+            bad = [j for j in jobs if j not in rule["allowed_failed"]]
+            if bad:
+                v.append(f"{rid}: ci_failed job(s) {', '.join(bad)} not allowed by {exc_id}"
+                         f" (allowed: {', '.join(rule['allowed_failed'])})")
+            exc_needles = [("required_success", "'required_success'"), (exc_id, exc_id)]
+            exc_needles += [(f"{j}=success", f"'{j}=success'") for j in rule["required_jobs"]]
+            exc_needles += [(f"{j}=failure", f"'{j}=failure'") for j in jobs]
+    elif f["ci_conclusion"] != "success":
+        v.append(f"{rid}: ci_conclusion must be 'success' (or 'required_success' under a"
+                 f" CI-exception decision, D-167), got '{f['ci_conclusion']}'")
     if not re.fullmatch(r"\d+", run):
         v.append(f"{rid}: ci_run must be a numeric run id, got '{run}'")
     for k in ("tested_sha", "merge_sha"):
@@ -307,7 +340,7 @@ def _check_done(root, rid, st, f, decisions) -> list[str]:
     acc = _read(root, paths[0]) if paths else None
     if acc is not None:
         for needle, label in ((ms, "merge_sha"), (ts, "tested_sha"), (run, "ci_run"),
-                              ("success", "'success'")):
+                              ("success", "'success'"), *exc_needles):
             if needle not in acc:
                 v.append(f"{rid}: acceptance log {paths[0]} does not contain {label}"
                          " (a file existing is not sufficient evidence)")
@@ -326,7 +359,8 @@ def _check_done(root, rid, st, f, decisions) -> list[str]:
     if st == "accepted":
         if f["accepted_by"] != "owner":
             v.append(f"{rid}: accepted_by must be 'owner' (agents cannot self-accept)")
-        if not re.search(rf"^## {re.escape(f['decision'])}\b", decisions, re.M):
+        # D-167 batch: "##" or "###" like rule 7 (D-160..D-167 use "###").
+        if not re.search(rf"^#{{2,3}} {re.escape(f['decision'])}\b", decisions, re.M):
             v.append(f"{rid}: decision {f['decision']} not found in DECISIONS.md")
     return v
 

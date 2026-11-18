@@ -459,6 +459,77 @@ def test_m9_deps_line_tag_must_match_item(repo):
                for v in cse.check(str(repo.p)))
 
 
+# ---- D-167: required_success (owner decision, non-required job failure only) --
+
+_REQ_JOBS = ("quality", "test", "build", "docker", "audit")
+
+
+def _d167(repo, *, decision=True, log_jobs=_REQ_JOBS, failed_in_log=("network",), **over):
+    if decision:
+        _w(repo.p, "docs/governance/DECISIONS.md",
+           "## D-900: owner accepts R-151\n### D-167: required checks suffice\n")
+    jobs = " ".join(f"{j}=success" for j in log_jobs) + " " + \
+        " ".join(f"{j}=failure" for j in failed_in_log)
+    _w(repo.p, "docs/audit/acc.log",
+       f"PR #7 MERGED merge={repo.merge} head={repo.tested}\n"
+       f"run {repo.run_id} conclusion=failure -> required_success (D-167)\n{jobs}\n")
+    fields = dict(ci_conclusion="required_success", ci_exception="D-167", ci_failed="network")
+    fields.update(over)
+    repo.items["R-151"] = ("done", _with(repo, **fields))
+    return repo.run()
+
+
+def test_d167_required_success_with_full_evidence_passes(repo):
+    assert _d167(repo) == []
+
+
+def test_d167_required_success_without_exception_field_rejected(repo):
+    assert any("needs ci_exception" in v for v in _d167(repo, ci_exception=""))
+
+
+def test_d167_unknown_exception_decision_rejected(repo):
+    assert any("needs ci_exception" in v for v in _d167(repo, ci_exception="D-900"))
+
+
+def test_d167_decision_heading_must_exist(repo):
+    assert any("not found in DECISIONS.md" in v for v in _d167(repo, decision=False))
+
+
+def test_d167_failed_job_outside_allow_list_rejected(repo):
+    out = _d167(repo, ci_failed="network,test", failed_in_log=("network", "test"))
+    assert any("ci_failed job(s) test not allowed by D-167" in v for v in out)
+
+
+def test_d167_missing_failed_jobs_rejected(repo):
+    assert any("needs ci_failed" in v for v in _d167(repo, ci_failed=""))
+
+
+@pytest.mark.parametrize("job", _REQ_JOBS)
+def test_d167_log_must_show_every_required_job_success(repo, job):
+    out = _d167(repo, log_jobs=tuple(j for j in _REQ_JOBS if j != job))
+    assert any(f"does not contain '{job}=success'" in v for v in out)
+
+
+def test_d167_log_must_show_the_failed_job(repo):
+    assert any("does not contain 'network=failure'" in v for v in _d167(repo, failed_in_log=()))
+
+
+def test_rule6_decision_heading_level_three_accepted(repo):
+    _w(repo.p, "docs/governance/DECISIONS.md", "### D-900: owner accepts R-151\n")
+    repo.items["R-151"] = ("accepted", _with(repo, accepted_by="owner", decision="D-900"))
+    assert repo.run() == []
+
+
+def test_rule6_decision_in_body_text_not_a_heading_rejected(repo):
+    _w(repo.p, "docs/governance/DECISIONS.md", "see D-900 later\n#### D-900: too deep\n")
+    repo.items["R-151"] = ("accepted", _with(repo, accepted_by="owner", decision="D-900"))
+    assert any("decision D-900 not found" in v for v in repo.run())
+
+
+def test_d167_plain_failure_still_rejected(repo):
+    assert any("must be 'success'" in v for v in _d167(repo, ci_conclusion="failure"))
+
+
 # ---- CLI exit codes -----------------------------------------------------------
 
 def _cli(path):
