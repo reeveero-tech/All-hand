@@ -1,0 +1,42 @@
+# M10/035 — R-206a tools hub + mirrors (D-165), lahiq 183
+date: 2026-11-18T13:06:55Z
+branch: m10/r206a-tools-hub (base main c94385286231e3d225d0a9f69afc9282a1372958)
+
+## pytest tests/test_r206a_tools_hub.py
+
+============================== 13 passed in 0.63s ==============================
+
+## web: node --test tests/tools_ui.test.mjs; npm test (all)
+# tests 3
+# pass 3
+# fail 0
+# tests 84
+# pass 84
+# fail 0
+
+## ruff
+All checks passed! (after removing an unused import in the test)
+
+## governance tool fix: scripts/check_status_evidence.py DEPS_LINE_RE (sub-item tags)
+- with the old regex (R-\d+): tests/test_d165_subitem_deps.py -> 2 failed, 2 passed (sub-item deps line invisible)
+- with the fix: 4 passed; tests/test_r154_status_evidence.py unchanged (72 passed together)
+
+## local mirror dry run (no upload; gh release calls stubbed)
+- read_upstream: mdm active head 60a62167 latest v0.5.2; robin active head b5d4f5f5 latest v3.1; nonexistent repo -> gone
+- snapshot(robin): robin.bundle 37018257 bytes; `git clone robin.bundle` restored HEAD b5d4f5f (196 commits); robin-src.tar.gz lists robin/...
+- NOT a live run: the real workflow runs only after merge (schedule/workflow_dispatch read the default branch).
+
+== 2026-11-18T13:38:14Z full local suite after fixing map/inventory/baseline coverage (AGOS_ENV=development) ==
+FAILED tests/test_r176_load_framework.py::test_r176_k6_pinned_and_verified - ...
+FAILED tests/test_r176_load_framework.py::test_r176_smoke_load_real_and_reported
+FAILED tests/test_r176_load_framework.py::test_r176_threshold_breach_is_detected
+FAILED tests/test_r177_per_service.py::test_real_baseline_health - RuntimeErr...
+FAILED tests/test_r177_per_service.py::test_real_stop_s1_error_rate_cuts_the_load
+FAILED tests/test_r177_per_service.py::test_real_stop_s3_p95_two_windows - Ru...
+FAILED tests/test_r177_per_service.py::test_real_stop_s5_sut_crash_immediate
+FAILED tests/test_r177_per_service.py::test_negative_threshold_breach_detected
+= 8 failed, 4664 passed, 124 skipped, 18 deselected, 9 xfailed in 761.17s (0:12:41) =
+note: the 8 failures are all k6 load tests: the sandbox has no pinned k6 binary and the R-072 network guard blocks its download inside pytest; CI's job 'test' installs k6 first. Not caused by R-206a.
+== ruff F,E722 (server.py agent_civilization agos_kernel agos_v2 tests scripts/tools): All checks passed ==
+== web npm test: fail 0 ==
+== local gates: check_atomic_batch 0, check_status_evidence 0, check_no_delete 0, check_push_docs 0 ==

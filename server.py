@@ -3538,6 +3538,12 @@ async def _v2_rate_limit(request: Request) -> None:
 
 app.include_router(_build_v2_accounts(lambda: V2_ACCOUNTS, rate_limiter=_v2_rate_limit))
 
+# R-206a (D-165): the tools hub — public registry + mirror state of the tools
+# the owner asked for (copies kept in this repository's releases).
+from agos_v2.tools_hub import build_router as _build_v2_tools  # noqa: E402
+
+app.include_router(_build_v2_tools(rate_limiter=_v2_rate_limit))
+
 # ---------------------------------------------------------------------------
 # Civilization auto-routing endpoints (no user-picked specialization)
 # ---------------------------------------------------------------------------

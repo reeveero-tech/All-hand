@@ -99,7 +99,8 @@ GROUPS: List[Dict] = [
      "rationale": "YAML parse + R-156 map self-check (ASGI targets, COPY sources, workflow script references exist). "
                   "Docker image build/run and the workflows themselves are proven only by CI on the same SHA."},
     {"id": "deps-config", "title": "Dependency locks and tool config", "category": "config",
-     "rules": [r"^requirements[^/]*\.(in|lock|txt)$", r"^pytest\.ini$", r"^\.env\.example$", r"^\.gitignore$"],
+     "rules": [r"^requirements[^/]*\.(in|lock|txt)$", r"^pytest\.ini$", r"^\.env\.example$", r"^\.gitignore$",
+               r"^agos_v2/.*\.json$"],  # R-206a (D-165): runtime registry data (tools_upstreams.json)
      "rationale": "Locks must be fully hash-pinned (pip --require-hashes in CI); pytest.ini must parse; "
                   ".env.example must be KEY=VALUE lines. The installed set is what this baseline ran on."},
     {"id": "governance-data", "title": "Governance templates, specs, inventories, maps", "category": "schema",
