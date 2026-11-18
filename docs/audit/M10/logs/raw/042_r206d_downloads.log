@@ -1,0 +1,59 @@
+# M10/042 — R-206d Mister Download Manager downloads (D-165): live verification of our copy, tests and UI check
+# Branch m10/r206d-downloads, collected 2026-11-18T18:35:58Z in the sandbox.
+# Program: anefzaoui/misterdownloadmanager (GPL-3.0), a separate program with its own licence and code; AGOS only serves OUR copies.
+
+== live verification of OUR copy (release mirror-mdm-v0.5.2 of reeveero-tech/All-hand) against the upstream SHA256SUMS.txt
+# scripts/tools/mirror_upstreams.py verify_copy(): downloads every asset of our release (real HTTP), hashes it, compares with
+# the upstream SHA256SUMS.txt of tag v0.5.2. Columns: matched? size sha256[:16] name. None = not listed in the sums file.
+{"tag": "v0.5.2", "ok": true, "sums_source": "upstream:anefzaoui/misterdownloadmanager@v0.5.2/SHA256SUMS.txt", "mismatched": [], "missing": [], "verified_at": "2026-11-18T17:49:08+00:00"}
+True       1087 8f1195d55a2fd315 LICENSE-flag-icons
+True     212989 f40e00316ce0bd96 MisterDownloadManager-0.5.2-chrome-web-store.zip
+True     213341 3f00d141345fc608 MisterDownloadManager-0.5.2-extension-chromium.zip
+True     215071 cfc02e30aaadc1bb MisterDownloadManager-0.5.2-extension-firefox.xpi
+True   20777464 70bcad9677b754df MisterDownloadManager-0.5.2-linux-x86_64.AppImage
+True      71291 6cec7a261950ef50 MisterDownloadManager-0.5.2-linux-x86_64.AppImage.zsync
+True   17630732 9d330d9684a0819c MisterDownloadManager-0.5.2-linux-x86_64.deb
+True   21352954 5eee65ec52f5b1e7 MisterDownloadManager-0.5.2-linux-x86_64.rpm
+True   21355554 3327ebd6b5565186 MisterDownloadManager-0.5.2-linux-x86_64.tar.gz
+True   15510960 0217160ba08f56c5 MisterDownloadManager-0.5.2-macos-arm64-experimental.dmg
+True   17578422 1c4bbdf1450a8412 MisterDownloadManager-0.5.2-macos-x86_64-experimental.dmg
+True   19934831 0907a6c6aed5c496 MisterDownloadManager-0.5.2-portable.zip
+True   17065873 a8c9586fd6e9c638 MisterDownloadManager-0.5.2-setup.exe
+True    5140640 dfc2a3c527eb7b9a MisterDownloadManager-0.5.2-symbols-linux-x86_64.zip
+True    2455566 ee57dc5fe244f0b3 MisterDownloadManager-0.5.2-symbols-macos-arm64.zip
+True    2638603 af3f95b76c6c63f7 MisterDownloadManager-0.5.2-symbols-macos-x86_64.zip
+True    3548609 6cb0a3815492333c MisterDownloadManager-0.5.2-symbols-windows-x64.zip
+True   19933797 703c1676c90e3486 MisterDownloadManager-0.5.2-x64.zip
+None       2357 c3ef09de1e2a6356 SHA256SUMS.txt
+None        119 db27ed6cf997daaf SHA256SUMS.txt.sig
+True        417 bab8029f2779cf23 SOURCE.txt
+True        750 ef6807bcac2a46d9 countries.txt
+True      95142 7720bca0e9631111 flags.png
+True     674260 88ea4d215f752d2c ipcountry.bin.xz
+# result: 22 of 24 listed assets match; the 2 unlisted are SHA256SUMS.txt and its signature (a sums file cannot list itself). ok=true.
+# The manifest.json is uploaded to the release by the tools-mirror workflow after merge (backfill via verified_releases);
+# production GET /api/v2/downloads/mdm shows verification.state=verified only after that run (checked after merge, not here).
+
+== UI check (local preview server with the same manifest, playwright, 1400x900)
+# /tmp/dl1.png: header «Mister Download Manager v0.5.2», badge «كل الملفات طابقت مجاميع المصدر (SHA256)», sums source and time,
+#   the visitor's platform group first (Linux in the sandbox), each file with size, «مطابق» badge and its full SHA256.
+# /tmp/dl2.png: groups Windows / macOS / browser extensions / checksums, and the licence card (GPL-3.0) with source tarball,
+#   git bundle and the upstream project link. Screenshots are not committed (sandbox only).
+
+== tests (sandbox, branch m10/r206d-downloads rebased on main 23cf51fc)
+# AGOS_ENV=development pytest -q tests  (full suite)
+= 8 failed, 4737 passed, 124 skipped, 18 deselected, 9 xfailed in 753.35s (0:12:33) =
+# the 8 failures are the k6 load tests (tests/test_r176_load_framework.py, tests/test_r177_per_service.py): no k6 binary in the sandbox; CI installs k6 and runs them.
+FAILED tests/test_r176_load_framework.py::test_r176_k6_pinned_and_verified - ...
+FAILED tests/test_r176_load_framework.py::test_r176_smoke_load_real_and_reported
+FAILED tests/test_r176_load_framework.py::test_r176_threshold_breach_is_detected
+FAILED tests/test_r177_per_service.py::test_real_baseline_health - RuntimeErr...
+FAILED tests/test_r177_per_service.py::test_real_stop_s1_error_rate_cuts_the_load
+FAILED tests/test_r177_per_service.py::test_real_stop_s3_p95_two_windows - Ru...
+FAILED tests/test_r177_per_service.py::test_real_stop_s5_sut_crash_immediate
+FAILED tests/test_r177_per_service.py::test_negative_threshold_breach_detected
+# web: cd web && npm test
+# tests 98
+# pass 98
+# fail 0
+# ruff check --select F,E722 server.py agent_civilization agos_kernel agos_v2 tests scripts/tools -> All checks passed!
