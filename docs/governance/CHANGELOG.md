@@ -3544,3 +3544,4 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - معدل: `server.py` (تسجيل المسار)، `agos_v2/tools_upstreams.json` و`tools_hub.py` (حقل `page`)، `web/src/App.jsx` (تبويب «الطائرات»)، `web/src/components/Tools.jsx` (زر «افتح الأداة»)، `web/src/index.css`، قوائم التغطية (`build_entrypoint_map.py`، `build_route_inventory.py`، `check_atomic_batch.py`، test_r156، test_r200).
 - الوثائق: API.md، QUALITY.md. السجل M10/038.
 - ملاحظة: أُعيد بناء الفرع على main بعد دمج #388 (دفع بالقوة)، ففشل فحص `push-scope-docs` لحدث الدفع لأن الإيداع السابق 7f08d6f7 لم يعد موجودًا؛ هذا الإيداع دفع عادي يعطي الفحص نطاقًا صالحًا. لا تغيير في الكود.
+- الدفع اللاحق يحمل ROADMAP وPROJECT_STATE وMEMORY أيضًا (قاعدة R-187 R0).

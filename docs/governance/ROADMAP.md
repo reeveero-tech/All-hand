@@ -2430,7 +2430,7 @@
 - التقدم (لاحق 184): الكود والاختبارات جُهزت على فرع `m10/r206b-flights` قبل أن يصبح R-206a ‏`done` (قاعدة 10b)، فلم يُفتح PR.
 - معيار القبول: بيانات حية على الإنتاج، واحترام حد المعدل، وتعطل المصدر يُعلن للمستخدم ولا يُخفى.
 - الأدلة المطلوبة: اختبارات + سجل حي.
-- التقدم (لاحق 186، M10/038): بعد أن صار R-206a ‏`done` (D-167) بدأ البند. `agos_v2/flights.py` و`GET /api/v2/flights` (API.md)، `scripts/tools/flights_live_check.py`، `web/src/components/Flights.jsx` (تبويب «الطائرات»)، `tests/test_r206b_flights.py` (20)، `web/tests/flights_ui.test.mjs`. الفحص الحي من العملية نجح بالمصدرين. لم يُفحص الإنتاج بعد.
+- التقدم (لاحق 186، M10/038): بعد أن صار R-206a ‏`done` (D-167) بدأ البند. `agos_v2/flights.py` و`GET /api/v2/flights` (API.md)، `scripts/tools/flights_live_check.py`، `web/src/components/Flights.jsx` (تبويب «الطائرات»)، `tests/test_r206b_flights.py` (20)، `web/tests/flights_ui.test.mjs`. الفحص الحي من العملية نجح بالمصدرين. لم يُفحص الإنتاج بعد. — ملاحظة دفع: بعد إعادة البناء على main فشل `push-scope-docs` لحدث الدفع (الإيداع السابق 7f08d6f7 غير موجود)؛ دفع عادي لاحق مع الوثائق يصلح النطاق.
 
 #### R-206c — خريطة الأفلام واقتراحها (بناء خاص)
 - الحالة: **planned**
