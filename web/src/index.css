@@ -947,3 +947,10 @@ textarea.form-input {
 .movies-links { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
 .movies-sub { margin-top: 8px; font-size: 0.95em; }
 
+/* R-206d (D-165): downloads page */
+.downloads-page { display: flex; flex-direction: column; gap: 12px; }
+.dl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.dl-file { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); }
+.dl-file-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dl-name { font-weight: 600; direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; }
+.dl-sha { font-size: 11px; direction: ltr; overflow-wrap: anywhere; opacity: 0.75; }

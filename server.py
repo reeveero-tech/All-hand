@@ -3556,6 +3556,12 @@ from agos_v2.movies import build_router as _build_v2_movies  # noqa: E402
 
 app.include_router(_build_v2_movies(rate_limiter=_v2_rate_limit))
 
+# R-206d (D-165): download page data for Mister Download Manager — files served
+# from our verified copies (manifest.json with SHA256 per file), GPL-3.0 kept separate.
+from agos_v2.downloads import build_router as _build_v2_downloads  # noqa: E402
+
+app.include_router(_build_v2_downloads(rate_limiter=_v2_rate_limit))
+
 # ---------------------------------------------------------------------------
 # Civilization auto-routing endpoints (no user-picked specialization)
 # ---------------------------------------------------------------------------
