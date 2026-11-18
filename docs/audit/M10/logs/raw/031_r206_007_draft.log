@@ -1,0 +1,55 @@
+# M10/031 — R-206: migration 007 DRAFT (finding 2: call-log retention) — D-163 PROPOSED
+date: 2026-11-18
+branch: m10/r206-007-draft (on top of m10/r206-defects / PR #384)
+status: DRAFT — owner decision pending. NOT applied to any Supabase project. No production access used in this batch.
+
+## What 007 does (option B of M10/030 §D)
+1. agos.model_calls.workspace_id: NOT NULL dropped; FK model_calls_workspace_id_fkey -> ON DELETE SET NULL.
+   - row kept after its workspace is deleted, invisible to every user (006 RLS needs is_member(workspace_id), false for NULL), visible to service_role only.
+   - user deletion unchanged: cascade erases all their rows, kept ones included (D-155).
+2. agos.model_call_record: known tokens/cost are added to provider_keys totals for an active key whether ok or not
+   (billed failures such as empty_output now count). NULL usage adds nothing. Closes the limit declared in M10/030.
+Rollback 007_model_calls_retention_rollback.sql: DELETES rows with workspace_id NULL (documented data loss), restores
+NOT NULL + CASCADE + the 006 function body byte for byte.
+
+## Environment (local sandbox, test databases only)
+- PostgreSQL 16.2 (pgserver wheel binaries; CI uses pgvector/pgvector:pg17)
+- Supabase Auth (GoTrue) v2.197.0, the CI tarball, sha256 9daff5d1939c3142a1586e435e6e2a7a2f71534ec40ff1b196b59b83ad5678f3 OK
+- V2_SCHEMA_ADMIN_URI=postgresql://postgres:***@127.0.0.1:5432/postgres
+
+## tests/test_r206_007_live.py with 001-007 (green)
+tests/test_r206_007_live.py::test_deleting_a_workspace_keeps_its_call_rows_without_a_workspace PASSED
+tests/test_r206_007_live.py::test_a_row_without_a_workspace_is_visible_to_no_user PASSED
+tests/test_r206_007_live.py::test_deleting_the_user_still_erases_every_row_including_kept_ones PASSED
+tests/test_r206_007_live.py::test_a_new_row_still_needs_a_workspace_the_caller_belongs_to PASSED
+tests/test_r206_007_live.py::test_a_billed_empty_answer_adds_its_tokens_to_the_key PASSED
+tests/test_r206_007_live.py::test_a_failure_with_no_usage_adds_nothing PASSED
+tests/test_r206_007_live.py::test_007_rollback_restores_006_and_reapplies PASSED
+============================== 7 passed in 3.48s ===============================
+
+## same tests with 001-006 only (red proof: 007 is what changes the behaviour)
+tests/_tmp_red_007.py::test_deleting_a_workspace_keeps_its_call_rows_without_a_workspace FAILED
+tests/_tmp_red_007.py::test_a_row_without_a_workspace_is_visible_to_no_user FAILED
+tests/_tmp_red_007.py::test_deleting_the_user_still_erases_every_row_including_kept_ones FAILED
+tests/_tmp_red_007.py::test_a_new_row_still_needs_a_workspace_the_caller_belongs_to PASSED
+tests/_tmp_red_007.py::test_a_billed_empty_answer_adds_its_tokens_to_the_key FAILED
+tests/_tmp_red_007.py::test_a_failure_with_no_usage_adds_nothing PASSED
+tests/_tmp_red_007.py::test_007_rollback_restores_006_and_reapplies PASSED
+========================= 4 failed, 3 passed in 3.57s ==========================
+(the 3 passing on 006 are invariants that must hold in both: membership required for a new row; no usage adds nothing;
+the rollback test applies 007 itself)
+
+## No regression with 007 applied
+- tests/test_r206_gateway_live.py (26 tests) run on 001-007 (temporary copy, removed after): 26 passed
+- together with test_r206_gateway_live.py (001-006), test_r205_byok_live.py, test_r204_accounts_live.py,
+  test_r204_accounts_db.py, test_r202_v2_schema.py: 132 passed, 25 skipped
+  (the 25 skips are tests/test_r202_v2_schema.py needing pgvector, absent locally; they run in CI job storage)
+
+## CI
+- .github/workflows/ci.yml storage step: tests/test_r206_007_live.py added to the R-204/R-205/R-206 live list
+  (the step already fails on any skip). Nothing removed or relaxed.
+
+## Not done (owner)
+- apply 007 to production — needs explicit owner approval; then record the Supabase migration name and a read-only check
+  (confdeltype='n', attnotnull=false) as was done for 006 in M10/026.
+- QUALITY.md: section 'R-206 — مسودة 007 في job storage' (R4 of the atomic batch: CI change needs QUALITY.md).
