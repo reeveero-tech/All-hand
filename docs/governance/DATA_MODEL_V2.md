@@ -93,8 +93,8 @@
 - **`agos.model_calls`**: صف لكل استدعاء — `workspace_id` (cascade)، `user_id` (cascade إلى `auth.users`)، `key_id` (set null عند حذف المفتاح؛ NULL لمفتاح المنصة)، `key_source`، `provider`، `model`، `ok`، `reason`، `http_status`، `finish_reason`، `fallback_used`، `attempts` (jsonb)، `tokens_in/out`، `cost_usd` (numeric بلا تقريب)، `cost_source`، `provider_request_id`، `latency_ms`، `created_at`. **لا نص ولا مادة مفتاح.**
 - **الوصول**: RLS ‏select لصاحب الصف العضو بجلسة حية فقط؛ الكتابة عبر `agos.model_call_record` فقط (SECURITY DEFINER)؛ لا تعديل ولا حذف لـ`authenticated`. الدالة تضيف الرموز والتكلفة لمجاميع `provider_keys` إن كان المفتاح نشطًا والاستدعاء ناجحًا.
 
-## الترحيل 007 — مسودة: بقاء سجل الاستدعاءات بعد حذف المساحة (R-206، D-163 مقترح)
-[`docs/sql/v2/007_model_calls_retention.sql`](../sql/v2/007_model_calls_retention.sql) يُطبق بعد 006؛ تراجعه [`007_model_calls_retention_rollback.sql`](../sql/v2/007_model_calls_retention_rollback.sql). **مسودة — غير مطبقة في أي مكان سوى قواعد الاختبار.**
+## الترحيل 007 — بقاء سجل الاستدعاءات بعد حذف المساحة (R-206، D-163)
+[`docs/sql/v2/007_model_calls_retention.sql`](../sql/v2/007_model_calls_retention.sql) يُطبق بعد 006؛ تراجعه [`007_model_calls_retention_rollback.sql`](../sql/v2/007_model_calls_retention_rollback.sql). **مطبق حيًا لاحق 181** (`20261118104551 r206_007_model_calls_retention`، بموافقة المالك، أثره 0 صفوف، السجل M10/033).
 - `model_calls.workspace_id`: يقبل NULL، `on delete set null` (كان cascade). صف بلا مساحة لا يراه أي مستخدم؛ حذف المستخدم يمحوه.
 - `agos.model_call_record`: الرموز والتكلفة المعروفة تُضاف لإجمالي المفتاح النشط في النجاح والفشل.
 - التراجع يحذف الصفوف بلا مساحة ثم يعيد NOT NULL وcascade ودالة 006 حرفيًا.

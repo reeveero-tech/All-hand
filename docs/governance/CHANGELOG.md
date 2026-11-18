@@ -3505,3 +3505,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - جديد: `scripts/check_npm_audit.py` (يحكم على `npm audit --json`: يمنع كل high/critical إلا GHSA-fc5q-39xc-vjpf في `picomatch` حتى 2026-12-18) و`tests/test_d164_npm_audit_exception.py` (8).
 - معدل: `.github/workflows/ci.yml` (خطوة web/ الكاملة في job ‏`audit` تستعمل الفاحص؛ خطوة الإنتاج وpip-audit بلا تغيير)، SECURITY.md، QUALITY.md، DECISIONS.md (D-164).
 - محليًا على web/ الحالي: 5 high كلها من الثغرة نفسها ← 0 مانع؛ ثغرة أخرى أو تاريخ بعد 2026-12-18 ← rc=1. السجل M10/032.
+
+## 2026-11-18 — لاحق 181: R-206 ‏D-163 مقبول والترحيل 007 مطبق على الإنتاج
+- قرار المالك: «موافق على B، أدمج وطبّق». تحقق قبل التطبيق (قراءة فقط): 0 مستخدمين و0 صفوف؛ جسم دالة 006 على الإنتاج = جسم المستودع (md5) فالتراجع دقيق.
+- التطبيق: Management API ‏`database/migrations` باسم `r206_007_model_calls_retention` ← HTTP 200 (`20261118104551`). بعده: `workspace_id` ‏set null ويقبل NULL؛ الصلاحيات وRLS بلا تغيير؛ المستشار 0 على `agos`؛ `/health` ‏200.
+- دمج الفرع main (PR #384 ‏`5d8a7d3e`) في الفرع وحل تعارضات التوثيق (إبقاء الطرفين). السجل M10/033.
