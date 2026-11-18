@@ -52,3 +52,4 @@ the rollback test applies 007 itself)
 ## Not done (owner)
 - apply 007 to production — needs explicit owner approval; then record the Supabase migration name and a read-only check
   (confdeltype='n', attnotnull=false) as was done for 006 in M10/026.
+- QUALITY.md: section 'R-206 — مسودة 007 في job storage' (R4 of the atomic batch: CI change needs QUALITY.md).
