@@ -15,6 +15,7 @@ Rules (every violated rule is reported, not only the first):
   R2  server.py / civilization_routes.py / agos_v2/accounts_api.py / agos_v2/byok.py / agos_v2/gateway_api.py
       / agos_v2/tools_hub.py (R-206a, D-165) / agos_v2/flights.py (R-206b, D-166)
       / agos_v2/movies.py (R-206c, D-165) / agos_v2/downloads.py (R-206d, D-165)
+      / agos_v2/robin_api.py (R-206e, D-165)
                          -> docs/governance/API.md (v1 + R-204 + R-205)
   R3  agent_civilization/storage/        -> docs/governance/DATA_MODEL.md (= v1)
   R4  .github/workflows/                 -> docs/governance/QUALITY.md   (= v1)
@@ -59,7 +60,8 @@ API_RE = re.compile(r"^server\.py|agent_civilization/civilization_routes\.py"  #
                     r"|^agos_v2/tools_hub\.py"  # R-206a (D-165): the /api/v2/tools route
                     r"|^agos_v2/flights\.py"  # R-206b (D-166): the /api/v2/flights route
                     r"|^agos_v2/movies\.py"  # R-206c (D-165): the /api/v2/movies routes
-                    r"|^agos_v2/downloads\.py")  # R-206d (D-165): the /api/v2/downloads route
+                    r"|^agos_v2/downloads\.py"  # R-206d (D-165): the /api/v2/downloads route
+                    r"|^agos_v2/robin_api\.py")  # R-206e (D-165): the /api/v2/robin routes
 STORAGE_RE = re.compile(r"agent_civilization/storage/")  # v1 (unanchored, kept)
 WORKFLOW_RE = re.compile(r"^\.github/workflows/")
 RUNTIME_PY_RE = re.compile(r"^(server\.py|run\.py|(agent_civilization|agos_kernel|agos_v2)/.+\.py)$")

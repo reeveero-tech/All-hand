@@ -40,6 +40,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .auth import Identity, JwksVerifier, TokenError
 from .byok import KeyTester, KeyVault, TestLimiter, add_byok_routes
 from .gateway_api import CallLimiter, add_gateway_routes
+from .robin_api import add_robin_routes
 from .db import AccountsDB, SessionInactive
 from .gotrue import AuthUnavailable, GoTrueClient
 
@@ -612,4 +613,6 @@ def build_router(get_service: Callable[[], Optional[AccountsService]],
     # R-206 (D-158): the model gateway — same identity/RLS/no-store path
     add_gateway_routes(r, svc=svc, run=run, signed_in=signed_in, fetchall=fetchall,
                        fetchone=fetchone, uuid_of=_uuid)
+    # R-206e (D-165): Robin (dark-web OSINT) — signed-in + live session, forwarded
+    add_robin_routes(r, run=run, signed_in=signed_in)
     return r

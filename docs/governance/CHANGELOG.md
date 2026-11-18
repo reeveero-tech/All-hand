@@ -3557,3 +3557,9 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 - جديد (R-206d): `agos_v2/downloads.py` (`GET /api/v2/downloads/{tool_id}`)، `web/src/components/Downloads.jsx`، `tests/test_r206d_downloads.py`، `web/tests/downloads_ui.test.mjs`.
 - معدل: `scripts/tools/mirror_upstreams.py` (التحقق من نسختنا و`manifest.json`)، `server.py` (تسجيل المسار)، `agos_v2/tools_upstreams.json`، `web/src/App.jsx` (تبويب «التنزيلات»)، `web/src/components/Tools.jsx`، `web/src/index.css`، قوائم التغطية (`build_entrypoint_map.py`، `build_route_inventory.py`، `check_atomic_batch.py`، `test_r156_entrypoint_map.py`، `test_r200_truth_inventory.py`: 66 مسارًا، 35 في v2).
 - الوثائق: API.md، QUALITY.md. السجلان M10/041 وM10/042.
+
+## 2026-11-18 — لاحق 189: R-206d منجز (D-167) وبدء R-206e ‏Robin
+- R-206d: سجل القبول M10/043 (PR #391، دمج 29b1fe8b، تشغيل main ‏44384977779، تشغيل `tools-mirror.yml` ‏44384978605، فحص الإنتاج والمتصفح).
+- جديد (R-206e): `services/robin/Dockerfile`، `services/robin/requirements.txt`، `services/robin/start.sh`، `services/robin/app.py`، `agos_v2/robin_api.py`، `web/src/components/Robin.jsx`، `tests/test_r206e_robin.py`، `web/tests/robin_ui.test.mjs`.
+- معدل: `agos_v2/accounts_api.py` (تركيب مسارات Robin)، `web/src/App.jsx` (تبويب «Robin»)، `web/src/session.js` (`robinApi`)، `web/src/index.css` (أنماط Robin، وعرض كامل لصفحة التنزيلات)، قوائم التغطية (`build_route_inventory.py`، `build_entrypoint_map.py`، `check_atomic_batch.py`، `test_r156_entrypoint_map.py`، `test_r200_truth_inventory.py`: 69 مسارًا، 38 في v2؛ `build_test_baseline.py`).
+- الوثائق: API.md، QUALITY.md. السجلان M10/043 وM10/044.

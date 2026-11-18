@@ -357,3 +357,10 @@
 **المصادر (D-166)**: adsb.lol أولًا (ODbL 1.0)، ثم adsb.fi احتياطيًا (استخدام شخصي غير تجاري، مع ذكره ورابطه). قفل واحد لكل مصدر على مستوى الخادم = طلب واحد في الثانية، وتخزين 8 ثوانٍ، وUser-Agent معرّف.
 **الأخطاء**: 400 مدخل غير صالح (يُرفض قبل أي طلب خارجي، لأن adsb.fi يحتسب الطلبات الخاطئة)؛ 502 `no flight data source answered` مع خطأ كل مصدر في `errors` (لا قائمة فارغة توهم بعدم وجود طائرات)؛ 503 أكثر من 8 طلبات تنتظر؛ 429 حد المعدل. **الاختبارات**: `tests/test_r206b_flights.py`، `web/tests/flights_ui.test.mjs`؛ الفحص الحي `scripts/tools/flights_live_check.py` (`--url` للإنتاج).
 
+## R-206e — Robin، بحث OSINT في الويب المظلم `/api/v2/robin` (D-165، 2026-11-18)
+| المسار | الوظيفة |
+|---|---|
+| `GET /api/v2/robin/status` | عام (بلا جلسة). `{configured, reachable, service_configured, tor_bootstrapped, busy, robin_src_sha256}`؛ إن لم تُضبط الخدمة: `{configured: false, reachable: false}` |
+| `GET /api/v2/robin/models` | جلسة حية. يمرر `/models` من خدمة Robin: `{models[], presets[], limits, defaults}` (النماذج حسب المفاتيح المضبوطة في خدمة Robin) |
+| `POST /api/v2/robin/investigations` | جلسة حية، 5 في الساعة لكل مستخدم. الجسم: `query` (3–300 حرف)، `model`، `preset` (`threat_intel`/`ransomware_malware`/`corporate_espionage`)، `max_results` (10–50)، `max_scrape` (3–10)، `threads` (1–4). الرد: `{ok, record: {…, sources[], sources_dropped}, seconds}` أو `{ok: false, stage, error}` |
+**الإعداد**: `ROBIN_SERVICE_URL` ‏(https) و`ROBIN_SHARED_SECRET` (32 حرفًا على الأقل) في All-hand، والسر نفسه في خدمة Robin (يُرسل في الرأس `X-Robin-Token`). **الأخطاء**: 401 بلا جلسة؛ 503 إن لم تُضبط الخدمة أو كان السر خاطئًا؛ 502 إن تعذر الوصول إليها؛ 429 (مع `Retry-After`) لتجاوز الحد أو لأن تحقيقًا آخر يعمل؛ 422 لجسم غير صالح. لا يُحفظ أي تحقيق. **الاختبارات**: `tests/test_r206e_robin.py`، `web/tests/robin_ui.test.mjs`.

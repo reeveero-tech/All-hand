@@ -66,7 +66,8 @@ GROUPS: List[Dict] = [
      "rationale": "Generated thin shims + 20 templates: compile + import every module (each is importable by name) "
                   "and exercise through the suite in specialists mode; per-file unit tests would test the generator twice."},
     {"id": "py-runtime", "title": "Python runtime packages + server", "category": "compile/import/lint/unit/integration",
-     "rules": [r"^agent_civilization/.*\.py$", r"^agos_kernel/.*\.py$", r"^agos_v2/.*\.py$", r"^server\.py$", r"^run\.py$"],
+     "rules": [r"^agent_civilization/.*\.py$", r"^agos_kernel/.*\.py$", r"^agos_v2/.*\.py$", r"^server\.py$", r"^run\.py$",
+               r"^services/robin/.*\.py$"],  # R-206e (D-165): the Robin service wrapper
      "rationale": "Live code: compile, import each module, ruff with CI's fatal rule set, and line coverage from the "
                   "suite (which file the tests actually execute)."},
     {"id": "sql-storage", "title": "SQL schema + live storage stack", "category": "schema/integration/live",
@@ -95,7 +96,8 @@ GROUPS: List[Dict] = [
      "rationale": "npm ci, eslint --max-warnings=0, vite build (CI job 'build'), then tsc --noEmit (NOT in CI). Tested and built; "
                   "its deployment is NOT decided (Q-002)."},
     {"id": "deploy-ci", "title": "Docker, Render, CI workflows", "category": "config/static/ci",
-     "rules": [r"^Dockerfile$", r"^\.dockerignore$", r"^render\.yaml$", r"^\.github/"],
+     "rules": [r"^Dockerfile$", r"^\.dockerignore$", r"^render\.yaml$", r"^\.github/",
+               r"^services/robin/(Dockerfile|start\.sh|requirements\.txt)$"],  # R-206e (D-165): the Robin service image
      "rationale": "YAML parse + R-156 map self-check (ASGI targets, COPY sources, workflow script references exist). "
                   "Docker image build/run and the workflows themselves are proven only by CI on the same SHA."},
     {"id": "deps-config", "title": "Dependency locks and tool config", "category": "config",
