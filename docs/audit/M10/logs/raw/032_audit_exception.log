@@ -1,0 +1,29 @@
+# M10/032 — D-164: dated exception for GHSA-fc5q-39xc-vjpf in the full web/ npm audit
+date: 2026-11-18; owner decision 2026-11-18 (chosen over 'wait for upstream fix')
+branch: m10/r206-defects (PR #384)
+
+## advisory
+ghsa=GHSA-fc5q-39xc-vjpf severity=high updated=2026-11-17T15:56:44Z range=<= 4.0.7 first_patched=null
+npm view picomatch version -> 4.0.7
+
+## npm ls picomatch (web/)
+agos-civilization-web@3.0.0 /home/user/workspace/All-hand/web
+`-- vite@8.3.4
+  +-- picomatch@4.0.7
+  `-- tinyglobby@0.2.17
+    +-- fdir@6.5.0
+    | `-- picomatch@4.0.7 deduped
+    `-- picomatch@4.0.7 deduped
+
+
+## real report through the checker
+::warning::excepted until 2026-12-18: GHSA-fc5q-39xc-vjpf in picomatch (picomatch ReDoS via repeated extglobs; no upstream fix; dev-only (vite build))
+npm audit (full): {'info': 0, 'low': 0, 'moderate': 0, 'high': 5, 'critical': 0, 'total': 5} — 0 blocking, 1 note(s)
+rc=0
+
+## production-only audit (unchanged, no exception)
+found 0 vulnerabilities
+rc=0
+
+## tests
+============================== 8 passed in 0.14s ===============================

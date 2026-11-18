@@ -3494,3 +3494,8 @@ pytest 184/184 rc=0؛ ruff صفر rc=0؛ البناءان rc=0 (مباشر)؛ sc
 
 - تصحيح CI على PR #384 (الرشة 44192560561): `quality` فشل بـ ruff F811 (استيراد المثبّت `server` من `tests/test_r206_gateway.py`)؛ الإصلاح مثبّت محلي بالمعالج نفسه في `tests/test_r206_defects.py`. ‏132 اختبارًا لـR-206 تنجح محليًا و`ruff check --select F,E722` نظيف.
 - عائق دمج: `audit` يفشل على PR #384 وعلى main بسبب GHSA-fc5q-39xc-vjpf (`picomatch` ≤4.0.7، اعتماد تطوير عبر vite، لا إصلاح منشور). لا إضعاف للفحص؛ قرار مالك.
+
+## 2026-11-18 — لاحق 180: D-164 استثناء مؤرخ في تدقيق npm الكامل (قرار المالك)
+- جديد: `scripts/check_npm_audit.py` (يحكم على `npm audit --json`: يمنع كل high/critical إلا GHSA-fc5q-39xc-vjpf في `picomatch` حتى 2026-12-18) و`tests/test_d164_npm_audit_exception.py` (8).
+- معدل: `.github/workflows/ci.yml` (خطوة web/ الكاملة في job ‏`audit` تستعمل الفاحص؛ خطوة الإنتاج وpip-audit بلا تغيير)، SECURITY.md، QUALITY.md، DECISIONS.md (D-164).
+- محليًا على web/ الحالي: 5 high كلها من الثغرة نفسها ← 0 مانع؛ ثغرة أخرى أو تاريخ بعد 2026-12-18 ← rc=1. السجل M10/032.

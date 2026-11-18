@@ -356,3 +356,10 @@
 
 ## تبعية: opentelemetry-api 1.45.2 (CVE-2026-126360، 2026-11-14)
 - `pip-audit` في job ‏`audit` كشف الثغرة بعد نشرها (رفض خدمة عبر `traceparent` مشوّه، CWE-1333)؛ رُفعت النسخة في `requirements.lock` إلى 1.45.2. AGOS لا يستدعي المروِّج مباشرة، لكن الإصلاح لا يُؤجَّل. السجل `docs/audit/M10/logs/raw/016_sec_otel_cve.log`.
+
+## استثناء مؤرخ: picomatch ‏GHSA-fc5q-39xc-vjpf (D-164، قرار المالك 2026-11-18)
+- **الثغرة**: ReDoS في `picomatch` ≤4.0.7 (high)، [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf). **لا إصلاح منشور** (4.0.7 أحدث نسخة، `first_patched_version=null`). الطريق: `vite@8.3.4` و`tinyglobby@0.2.17` ← `fdir@6.5.0` ← `picomatch` — **تبعيات تطوير فقط** (البناء)، أنماطها من كتابتنا لا من المستخدم.
+- **الأثر قبل القرار**: خطوة `npm audit` الكاملة في web/ (مانعة منذ R-071) فشلت على main وعلى كل PR، فتوقف كل دمج.
+- **القرار**: استثناء **لهذه الثغرة وحدها، في `picomatch` وحده، حتى 2026-12-18**، عبر `scripts/check_npm_audit.py`: أي ثغرة high/critical أخرى، أو ظهور هذه في حزمة أخرى، أو مرور التاريخ = فشل. تدقيق الإنتاج (`--omit=dev`) وpip-audit بلا أي استثناء.
+- **الإزالة**: حين يصدر إصلاح يطبع الفاحص «no longer needed» — تُرقّى الحزمة ويُحذف الاستثناء. التجديد بعد 2026-12-18 قرار مالك جديد.
+- **الأدلة**: docs/audit/M10/logs/raw/032_audit_exception.log؛ `tests/test_d164_npm_audit_exception.py`.

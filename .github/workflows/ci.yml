@@ -288,14 +288,20 @@ jobs:
           # Blocking on critical/high in production deps (react/react-dom).
           # Dev deps are covered by the full audit below (blocking since R-071).
 
-      - name: Web dependency audit (full — blocking since R-071)
+      - name: Web dependency audit (full — blocking since R-071; one dated exception, D-164)
         working-directory: web/
         run: |
           set -o pipefail
-          npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log"
+          npm audit --audit-level=high 2>&1 | tee "$GITHUB_WORKSPACE/npm_audit_full.log" || true
+          npm audit --json > "$GITHUB_WORKSPACE/npm_audit_full.json" || true
+          python3 ../scripts/check_npm_audit.py "$GITHUB_WORKSPACE/npm_audit_full.json"
           # R-071: vite 5 -> 8 closed the two dev-only advisories (esbuild/vite) that
-          # made this step informational since R-045; it now blocks on high/critical
-          # in dev deps too. See docs/governance/SECURITY.md R-071.
+          # made this step informational since R-045; it blocks on high/critical
+          # in dev deps too. D-164 (owner, 2026-11-18): ONE exception —
+          # GHSA-fc5q-39xc-vjpf (picomatch, no upstream fix, dev-only), until
+          # 2026-12-18; any other high/critical advisory, or the date passing,
+          # fails this step. The production-only audit above has no exception.
+          # See docs/governance/SECURITY.md (D-164).
 
       # R-203 (D-152, DEL-001): the root npm audit steps went with the root app.
 
