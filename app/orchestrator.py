@@ -30,6 +30,7 @@ class Run:
     memory_space: str | None = None
     saved: bool | None = None  # None: no persistent store; False: final save failed (shown to the user)
     owner: str | None = None  # SHA-256 of the creating client's key; never sent back to clients
+    resumed: dict | None = None  # {"from": run id, "reused": [task ids]} when continuing a stopped run
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled
@@ -69,7 +70,7 @@ class Run:
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
-                "events": self.events}
+                "resumed": self.resumed, "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -150,8 +151,9 @@ async def verify(llm: LLM, task: dict, output: str) -> dict:
 
 
 class Orchestrator:
-    def __init__(self, run: Run, llm: LLM, persist=None):
+    def __init__(self, run: Run, llm: LLM, persist=None, prior: dict | None = None):
         self.run, self.llm, self.persist = run, llm, persist  # persist(): async -> bool, saves the run
+        self.prior = prior  # stored data of a stopped run to continue: its plan and verified outputs are reused
 
     async def execute(self):
         r = self.run
@@ -223,6 +225,9 @@ class Orchestrator:
 
     async def orchestrate(self, goal: str, depth: int, prefix: str) -> dict:
         r = self.run
+        p = await self._reuse_plan() if depth == 0 and self.prior else None
+        if p:
+            return await self._continue(goal, p)
         await r.emit("planning", {"scope": prefix or "root", "depth": depth})
         p = await plan(self.llm, goal, depth)
         tasks = p["tasks"]
@@ -241,9 +246,63 @@ class Orchestrator:
         await self.run_dag(tasks)
         return await self.synthesize(goal, tasks, final=(depth == 0))
 
+    async def _reuse_plan(self) -> dict | None:
+        """The root plan of the stopped run, with every task that passed verification kept as is.
+        Anything else (running, failed, skipped, pending) is reset and runs again. Sub-teams of a task
+        that did not finish are re-planned, since their partial state cannot be trusted."""
+        prior_tasks = (self.prior or {}).get("tasks") or {}
+        root = [t for t in prior_tasks.values() if not t.get("parent")]
+        if not root:
+            return None
+        ids = {t["id"] for t in root}
+        reused, tasks = [], []
+        for old in root:
+            t = {k: old.get(k) for k in ("id", "title", "role", "instructions", "acceptance", "decompose")}
+            t["depends_on"] = [d for d in (old.get("depends_on") or []) if d in ids]
+            if t["role"] not in ROLES or not t["instructions"]:
+                return None  # unknown shape: plan from scratch rather than guess
+            keep = old.get("status") == "done" and bool(old.get("output"))
+            t.update(status="done" if keep else "pending", output=old.get("output", "") if keep else "",
+                     attempts=list(old.get("attempts") or []) if keep else [], depth=0, parent=None,
+                     reused=keep)
+            tasks.append(t)
+            if keep:
+                reused.append(t["id"])
+                if t["decompose"]:  # keep the finished sub-team visible
+                    for sub in prior_tasks.values():
+                        if str(sub.get("id", "")).startswith(t["id"] + "."):
+                            self.run.tasks[sub["id"]] = sub
+        for t in tasks:
+            self.run.tasks[t["id"]] = t
+        simple = any(e.get("type") == "plan" and e.get("scope") == "root" and e.get("simple")
+                     for e in (self.prior.get("events") or []))
+        self.run.resumed = {"from": self.prior.get("id"), "reused": reused}
+        await self.run.emit("resumed", {"from": self.prior.get("id"), "reused": reused,
+                                        "remaining": [t["id"] for t in tasks if t["status"] == "pending"]})
+        return {"tasks": tasks, "simple": simple and len(tasks) == 1}
+
+    async def _continue(self, goal: str, p: dict) -> dict:
+        tasks = p["tasks"]
+        if p["simple"]:
+            t = tasks[0]
+            if t["status"] == "pending":
+                await self.run_task(t, goal, verify_it=False)
+            return {"ok": t["status"] == "done", "output": t["output"]}
+        await self.run_dag(tasks)
+        return await self.synthesize(goal, tasks, final=True)
+
     async def run_dag(self, tasks: list[dict]):
-        pending = {t["id"]: t for t in tasks}
+        pending = {t["id"]: t for t in tasks if t["status"] == "pending"}  # reused tasks are already done
         running: dict[asyncio.Task, str] = {}
+        try:
+            await self._dag_loop(pending, running)
+        finally:  # on cancel or error, stop sibling agents too: none may outlive the run (or its closed client)
+            for t in running:
+                t.cancel()
+            if running:
+                await asyncio.gather(*running, return_exceptions=True)
+
+    async def _dag_loop(self, pending: dict, running: dict):
         while pending or running:
             for tid, t in list(pending.items()):
                 deps = [self.run.tasks[d] for d in t["depends_on"]]
