@@ -28,6 +28,10 @@
 - المهام الضخمة تُسند إلى **فريق فرعي** (تخطيط متداخل بعمق مستويين) — هكذا يدير المنسق عشرات أو مئات الوكلاء في طلب واحد.
 - كل خطوة (تخطيط، إنشاء وكيل، استدعاء أداة، حكم المدقق) تُبث مباشرة إلى الواجهة.
 
+## الذاكرة
+
+يتذكر المنسق ما عرفه عنك وعن مشاريعك وقراراتك من المهام السابقة ويستخدمه في المهام الجديدة، فتعمل الطلبات المتابِعة دون إعادة شرح. لكل متصفح معرّف ذاكرة سري (يمكن نسخه إلى جهاز آخر أو تعطيله من الإعدادات)، ويمكن عرض الذاكرة وحذف عناصرها من الواجهة. لا تُحفظ المفاتيح أو كلمات المرور. التفاصيل في [docs/MEMORY_DESIGN.md](docs/MEMORY_DESIGN.md).
+
 ## مصدر الذكاء الاصطناعي (يختاره المستخدم من الإعدادات)
 
 | الخيار | متى | ملاحظات |
@@ -60,7 +64,7 @@ uvicorn app.main:app --port 8000   # ثم افتح http://localhost:8000
 
 ## متغيرات البيئة
 
-`OPENROUTER_API_KEY`، `LLM_MODEL`، `APP_ACCESS_CODE`، `SUPABASE_URL`، `SUPABASE_SERVICE_KEY`، `MAX_AGENTS_PER_RUN` (افتراضي 60)، `MAX_CONCURRENT_RUNS` (افتراضي 4)، `ALLOW_CODE_EXEC`، `FREE_LLM_ENABLED` (افتراضي 1)، `TAVILY_API_KEY` أو `BRAVE_API_KEY` (بحث ويب موثوق؛ يُنصح بأحدهما).
+`OPENROUTER_API_KEY`، `LLM_MODEL`، `APP_ACCESS_CODE`، `SUPABASE_URL`، `SUPABASE_SERVICE_KEY` (سجل المهام وجدول `memories` للذاكرة)، `MAX_AGENTS_PER_RUN` (افتراضي 60)، `MAX_CONCURRENT_RUNS` (افتراضي 4)، `ALLOW_CODE_EXEC`، `FREE_LLM_ENABLED` (افتراضي 1)، `TAVILY_API_KEY` أو `BRAVE_API_KEY` (بحث ويب موثوق؛ يُنصح بأحدهما).
 
 ## الحدود بصدق
 

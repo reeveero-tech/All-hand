@@ -43,3 +43,8 @@ button.ghost{background:transparent;border:1px solid var(--line);color:var(--tex
 .md code{background:#0c0e12;padding:1px 5px;border-radius:4px}.md a{color:var(--accent)}
 .md table{border-collapse:collapse}.md td,.md th{border:1px solid var(--line);padding:4px 8px}
 .err{color:var(--bad)}
+label.check{display:flex;gap:.5rem;align-items:center;margin:.4rem 0}
+#memList li,#memRunBody li{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding:.35rem 0;border-bottom:1px solid var(--line,#2a2f3a)}
+#memList .del{margin-inline-start:auto;padding:.15rem .6rem;font-size:.8rem}
+h2 .actions{float:left;display:inline-flex;gap:.4rem}
+h2 .actions button{font-size:.8rem;padding:.2rem .7rem}

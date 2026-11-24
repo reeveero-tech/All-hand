@@ -11,6 +11,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
+from . import memory
 from .agents import ROLES, run_agent
 from .llm import LLM, LLMError
 
@@ -26,6 +27,7 @@ class Run:
     llm_public: dict
     max_agents: int = DEFAULT_MAX_AGENTS
     can_exec: bool = False
+    memory_space: str | None = None
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled
@@ -35,6 +37,7 @@ class Run:
     verdict: dict = field(default_factory=dict)
     usage: dict = field(default_factory=dict)
     agents_spawned: int = 0
+    memory: dict = field(default_factory=lambda: {"enabled": False, "recalled": [], "saved": [], "superseded": []})
     error: str = ""
     finished_at: float | None = None
     _subs: list = field(default_factory=list, repr=False)
@@ -63,7 +66,7 @@ class Run:
 
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
-                "result": self.result, "verdict": self.verdict, "usage": self.usage, "error": self.error,
+                "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error,
                 "events": self.events}
 
 
@@ -84,6 +87,7 @@ PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء �
 - depends_on يشير فقط إلى معرفات سابقة في القائمة.
 - decompose=true فقط لمهمة ضخمة تحتاج فريقًا فرعيًا كاملًا{decompose_note}.
 - لا تضف مهمة "تجميع نهائي"؛ المنسق يجمع النتائج بنفسه.
+- إن أُرفق «سياق من مهام سابقة» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة (أرقام، قرارات، تفضيلات) صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون هذا السياق، ولا تُعِد بحث ما هو معروف إلا إن احتاج تحديثًا.
 - اكتب بلغة المستخدم."""
 
 VERIFIER = """أنت مدقق صارم ومستقل. قيّم ناتج وكيل مقابل المهمة ومعيار القبول.
@@ -150,11 +154,19 @@ class Orchestrator:
     async def execute(self):
         r = self.run
         try:
-            await r.emit("run_started", {"goal": r.goal, "llm": r.llm_public, "max_agents": r.max_agents})
-            out = await self.orchestrate(r.goal, depth=0, prefix="")
+            await r.emit("run_started", {"goal": r.goal, "llm": r.llm_public, "max_agents": r.max_agents,
+                                         "memory": bool(r.memory_space)})
+            existing = await self.recall()
+            goal = r.goal
+            if r.memory["recalled"]:
+                goal += ("\n\n---\nسياق من مهام سابقة لهذا المستخدم (من ذاكرة المنسق؛ استخدمه إن كان ذا صلة وتجاهله إن لم يكن):\n"
+                         + memory.render_context(r.memory["recalled"]))
+            out = await self.orchestrate(goal, depth=0, prefix="")
             r.result = out["output"]
             r.verdict = out.get("verdict", {})
             r.status = "done" if out["ok"] else ("partial" if out.get("partial") else "failed")
+            if r.memory_space and r.status in ("done", "partial"):
+                await self.remember(existing)
         except asyncio.CancelledError:
             r.status = "cancelled"
             await r.emit("run_cancelled", {})
@@ -165,6 +177,32 @@ class Orchestrator:
             r.usage = self.llm.usage.as_dict()
             r.finished_at = time.time()
             await r.emit("run_finished", {"status": r.status, "usage": r.usage, "agents_spawned": r.agents_spawned})
+
+    async def recall(self) -> list[dict]:
+        r = self.run
+        if not r.memory_space:
+            return []
+        r.memory["enabled"] = True
+        try:
+            existing = await memory.STORE.list(r.memory_space)
+        except Exception as e:  # noqa: BLE001  memory must never break a run
+            await r.emit("memory_error", {"stage": "recall", "error": str(e)[:200]})
+            return []
+        r.memory["recalled"] = memory.recall(r.goal, existing)
+        await r.emit("memory_recalled", {"count": len(r.memory["recalled"]), "total": len(existing),
+                                         "items": [{"kind": i["kind"], "content": i["content"][:160]} for i in r.memory["recalled"]]})
+        return existing
+
+    async def remember(self, existing: list[dict]):
+        r = self.run
+        try:
+            res = await memory.extract_and_save(self.llm, r.memory_space, r.id, r.goal, r.result, existing)
+        except Exception as e:  # noqa: BLE001
+            await r.emit("memory_error", {"stage": "save", "error": str(e)[:200]})
+            return
+        r.memory["saved"], r.memory["superseded"] = res["saved"], res["superseded"]
+        await r.emit("memory_saved", {"count": len(res["saved"]), "superseded": len(res["superseded"]),
+                                      "items": [{"kind": i["kind"], "content": i["content"][:160]} for i in res["saved"]]})
 
     async def orchestrate(self, goal: str, depth: int, prefix: str) -> dict:
         r = self.run
