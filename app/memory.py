@@ -52,7 +52,10 @@ def _norm(word: str) -> str:
         if w.startswith(p) and len(w) - len(p) >= 3:
             w = w[len(p):]
             break
-    for s in ("ات", "ون", "ين", "ها", "ه"):
+    else:  # attached prepositions/conjunctions: لمشروعي، بجدة، وسعر
+        if w[:1] in ("ب", "ل", "و", "ف", "ك") and len(w) >= 4:
+            w = w[1:]
+    for s in ("كم", "هم", "نا", "ني", "ات", "ون", "ين", "ها", "ي", "ك", "ه"):
         if w.endswith(s) and len(w) - len(s) >= 3:
             w = w[:-len(s)]
             break
@@ -184,8 +187,10 @@ def recall(goal: str, items: list[dict]) -> list[dict]:
     for s, it in rank(goal, [i for i in items if i["kind"] == "task"])[:2]:
         if s > 0.5:
             picked[it["id"]] = it
-    for it in sorted((i for i in items if i["kind"] == "profile"), key=lambda i: -int(i.get("importance") or 3))[:3]:
-        picked[it["id"]] = it
+    for kind, k in (("profile", 3), ("project", 2)):  # who the user is + what they're working on ("مشروعي")
+        for it in sorted((i for i in items if i["kind"] == kind),
+                         key=lambda i: (-int(i.get("importance") or 3), -float(i.get("created_at") or 0)))[:k]:
+            picked[it["id"]] = it
     return list(picked.values())
 
 
