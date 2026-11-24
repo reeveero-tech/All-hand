@@ -28,6 +28,7 @@ class Run:
     max_agents: int = DEFAULT_MAX_AGENTS
     can_exec: bool = False
     memory_space: str | None = None
+    owner: str | None = None  # SHA-256 of the creating client's key; never sent back to clients
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled

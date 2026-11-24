@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import asyncio
 import ctypes
+import hashlib
+import hmac
 import json
 import os
+import re
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -45,6 +48,28 @@ class RunRequest(BaseModel):
     memory_space: str | None = None  # private random id kept in the browser; None = no memory
 
 
+_RUN_ID = re.compile(r"[0-9a-f]{12}")
+
+
+def _owner(x_client_key: str | None) -> str:
+    """Every run belongs to the browser that created it. The client keeps a random secret
+    (X-Client-Key); the server keeps only its SHA-256, so nobody else can list or read the run."""
+    if not memory.valid_space(x_client_key):
+        raise HTTPException(400, "مطلوب ترويسة X-Client-Key صالحة.")
+    return hashlib.sha256(x_client_key.encode()).hexdigest()
+
+
+def _owns(data_owner: str | None, owner: str) -> bool:
+    return bool(data_owner) and hmac.compare_digest(str(data_owner), owner)
+
+
+def _live(run_id: str, owner: str) -> Run:
+    run = RUNS.get(run_id)
+    if not run or not _owns(run.owner, owner):
+        raise HTTPException(404, "غير موجود")  # same answer whether the run exists or not
+    return run
+
+
 def _running() -> int:
     return sum(1 for r in RUNS.values() if r.status == "running")
 
@@ -61,7 +86,8 @@ async def roles():
 
 
 @app.post("/api/runs", status_code=202)
-async def create_run(req: RunRequest):
+async def create_run(req: RunRequest, x_client_key: str | None = Header(default=None)):
+    owner = _owner(x_client_key)
     if _running() >= MAX_CONCURRENT_RUNS:
         raise HTTPException(429, "الخادم مشغول بمهام أخرى، حاول بعد قليل.")
     try:
@@ -73,7 +99,7 @@ async def create_run(req: RunRequest):
     cap = {"free": 25, "platform": 500}.get(cfg.provider, DEFAULT_MAX_AGENTS)
     run = Run(goal=req.goal.strip(), llm_public=cfg.public(), max_agents=min(req.max_agents or cap, cap),
               can_exec=cfg.provider == "platform" or os.environ.get("ALLOW_CODE_EXEC") == "1",
-              memory_space=req.memory_space)
+              memory_space=req.memory_space, owner=owner)
     RUNS[run.id] = run
     while len(RUNS) > MAX_LIVE:
         old_id, old = next(iter(RUNS.items()))
@@ -87,7 +113,7 @@ async def create_run(req: RunRequest):
             await Orchestrator(run, llm).execute()
         finally:
             await llm.close()
-            await store.save(run.full())
+            await store.save({**run.full(), "owner": run.owner})
             TASKS.pop(run.id, None)
 
     TASKS[run.id] = asyncio.create_task(go())
@@ -95,22 +121,28 @@ async def create_run(req: RunRequest):
 
 
 @app.get("/api/runs")
-async def list_runs():
-    return [r.summary() for r in reversed(RUNS.values())]
+async def list_runs(x_client_key: str | None = Header(default=None)):
+    owner = _owner(x_client_key)
+    return [r.summary() for r in reversed(RUNS.values()) if _owns(r.owner, owner)]
 
 
 @app.get("/api/runs/{run_id}")
-async def get_run(run_id: str):
+async def get_run(run_id: str, x_client_key: str | None = Header(default=None)):
+    owner = _owner(x_client_key)
     if run_id in RUNS:
-        return RUNS[run_id].full()
-    data = await store.load(run_id)
-    if not data:
+        return _live(run_id, owner).full()
+    if not _RUN_ID.fullmatch(run_id):
         raise HTTPException(404, "غير موجود")
+    data = await store.load(run_id)
+    if not data or not _owns(data.get("owner"), owner):  # rows saved before ownership have no owner: private
+        raise HTTPException(404, "غير موجود")
+    data.pop("owner", None)
     return data
 
 
 @app.post("/api/runs/{run_id}/cancel")
-async def cancel_run(run_id: str):
+async def cancel_run(run_id: str, x_client_key: str | None = Header(default=None)):
+    _live(run_id, _owner(x_client_key))
     t = TASKS.get(run_id)
     if not t:
         raise HTTPException(404, "لا توجد مهمة جارية بهذا المعرف")
@@ -119,10 +151,8 @@ async def cancel_run(run_id: str):
 
 
 @app.get("/api/runs/{run_id}/events")
-async def stream(run_id: str, request: Request, after: int = -1):
-    run = RUNS.get(run_id)
-    if not run:
-        raise HTTPException(404, "غير موجود")
+async def stream(run_id: str, request: Request, after: int = -1, x_client_key: str | None = Header(default=None)):
+    run = _live(run_id, _owner(x_client_key))
 
     async def gen():
         q = run.subscribe()

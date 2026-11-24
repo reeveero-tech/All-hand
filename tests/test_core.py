@@ -152,8 +152,11 @@ def test_api_validation_and_platform_gate(monkeypatch):
     c = TestClient(app)
     assert c.get("/health").json()["status"] == "ok"
     assert len(c.get("/api/roles").json()) >= 8
-    assert c.post("/api/runs", json={"goal": "x", "provider": "platform", "access_code": "wrong"}).status_code == 400
-    assert c.post("/api/runs", json={"goal": "x", "provider": "byok"}).status_code == 400
+    h = {"X-Client-Key": "cli_" + "c" * 32}
+    r = c.post("/api/runs", json={"goal": "x", "provider": "platform", "access_code": "wrong"}, headers=h)
+    assert r.status_code == 400 and "رمز الوصول" in r.json()["detail"]
+    r = c.post("/api/runs", json={"goal": "x", "provider": "byok"}, headers=h)
+    assert r.status_code == 400 and "BYOK" in r.json()["detail"]
     assert c.get("/").status_code == 200 and "All-hand" in c.get("/").text
     assert c.get("/static/app.js").status_code == 200
 
