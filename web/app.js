@@ -1,6 +1,9 @@
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const STATUS = {pending:"بانتظار", running:"قيد التنفيذ", done:"مُتحقق منها", failed:"فشلت", skipped:"لم تُنفذ"};
+const RUN_STATUS = {running: "يعمل", done: "اكتمل", partial: "اكتمل جزئيًا", failed: "فشل", cancelled: "أُوقف",
+  interrupted: "انقطع"};
+const RUN_CLASS = {running: "running", done: "done", partial: "pending", interrupted: "failed", cancelled: "pending"};
 const EXAMPLES = [
   "ادرس سوق المقاهي المختصة في جدة واقترح خطة إطلاق بميزانية 200 ألف ريال",
   "اكتب دالة Python تتحقق من صحة رقم الآيبان السعودي مع اختبارات",
@@ -148,7 +151,7 @@ const LABEL = {
   memory_error: (e) => `تعذر الوصول إلى الذاكرة: ${e.error}`,
   run_error: (e) => `خطأ: ${e.error}`,
   run_cancelled: () => "أُوقفت المهمة",
-  run_finished: (e) => `انتهى: ${e.status} — ${e.agents_spawned} وكيلًا، ${e.usage.calls} استدعاء نموذج`,
+  run_finished: (e) => `انتهى: ${RUN_STATUS[e.status] || e.status} — ${e.agents_spawned} وكيلًا، ${e.usage?.calls ?? 0} استدعاء نموذج${e.saved === false ? " — لم يُحفظ في السجل الدائم" : ""}`,
 };
 
 function onEvent(e) {
@@ -157,7 +160,7 @@ function onEvent(e) {
   if (/error|failed|skipped/.test(e.type) || e.pass === false) li.classList.add("err");
   $("#log").prepend(li);
   if (["plan", "task_finished", "task_skipped", "agent_spawned", "verified", "run_finished"].includes(e.type)) scheduleRefresh();
-  if (e.type === "run_finished") { es.close(); setTimeout(refresh, 300); }
+  if (e.type === "run_finished" && es) { es.close(); setTimeout(refresh, 300); }
 }
 function scheduleRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 400); }
 
@@ -166,7 +169,7 @@ async function refresh() {
   let r;
   try { r = await api(`/api/runs/${current}`); } catch { return; }
   const secs = ((r.finished_at || Date.now() / 1000) - r.created_at).toFixed(0);
-  $("#stats").innerHTML = [["الحالة", {running: "يعمل", done: "اكتمل", partial: "اكتمل جزئيًا", failed: "فشل", cancelled: "أُوقف"}[r.status] || r.status],
+  $("#stats").innerHTML = [["الحالة", RUN_STATUS[r.status] || r.status],
     ["وكلاء أُنشئوا", `${r.agents_spawned} / ${r.max_agents}`], ["مهام مُتحقق منها", `${r.tasks_done} / ${r.tasks_total}`],
     ["مهام فشلت", r.tasks_failed], ["الزمن", secs + " ث"], ["استدعاءات النموذج", r.usage?.calls ?? "…"]]
     .map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${k}</span></div>`).join("");
@@ -182,7 +185,13 @@ async function refresh() {
   $("#runBtn").disabled = busy; $("#cancelBtn").classList.toggle("hidden", !busy);
   if (!busy) {
     $("#result").className = "md";
-    $("#result").innerHTML = r.result ? md(r.result) : `<p class="err">${esc(r.error || "لا يوجد جواب")}</p>`;
+    const notes = [];
+    if (r.status === "interrupted") notes.push(`<p class="err">انقطعت هذه المهمة قبل أن تكتمل، لأن الخادم أُعيد تشغيله أو توقف. ما يظهر أدناه هو آخر ما حُفظ منها.</p><p><button id="rerunBtn">أعد تشغيلها بالطلب نفسه</button></p>`);
+    if (r.saved === false) notes.push('<p class="err">تنبيه: تعذر حفظ هذه المهمة في السجل الدائم، وقد تختفي إذا أُعيد تشغيل الخادم. انسخ النتيجة إن احتجتها.</p>');
+    $("#result").innerHTML = notes.join("") + (r.result ? md(r.result) : `<p class="err">${esc(r.error || "لا يوجد جواب")}</p>`);
+    const rb = $("#rerunBtn");
+    if (rb) rb.onclick = () => { $("#goal").value = r.goal; $("#runBtn").click(); };
+    if (!$("#log").children.length && r.events?.length) r.events.forEach(onEvent);
     const v = r.verdict || {};
     $("#verdict").innerHTML = v.score != null ? `<span class="badge ${v.pass ? "s-done" : "s-failed"}">تحقق نهائي ${v.score}/10</span>` : "";
     loadHistory();
@@ -221,7 +230,7 @@ $("#memClear").onclick = async () => {
 
 async function loadHistory() {
   const runs = await api("/api/runs").catch(() => []);
-  $("#history").innerHTML = runs.map((r) => `<li data-id="${r.id}"><span class="badge s-${r.status === "done" ? "done" : r.status === "running" ? "running" : "failed"}">${esc(r.status)}</span>${esc(r.goal.slice(0, 120))}<small class="muted">${r.agents_spawned} وكيل</small></li>`).join("") || '<li class="muted">لا شيء بعد</li>';
+  $("#history").innerHTML = runs.map((r) => `<li data-id="${esc(r.id)}"><span class="badge s-${RUN_CLASS[r.status] || "failed"}">${esc(RUN_STATUS[r.status] || r.status)}</span>${esc(r.goal.slice(0, 120))}<small class="muted">${r.agents_spawned} وكيل</small></li>`).join("") || '<li class="muted">لا شيء بعد</li>';
   document.querySelectorAll("#history li[data-id]").forEach((li) => (li.onclick = () => open(li.dataset.id)));
 }
 
