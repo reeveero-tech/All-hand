@@ -62,7 +62,7 @@ async def fetch_url(url: str) -> str:
 
 
 async def _ddg(query: str) -> list[dict]:
-    async with httpx.AsyncClient(timeout=15, follow_redirects=True, headers={"User-Agent": UA}) as c:
+    async with httpx.AsyncClient(timeout=8, follow_redirects=True, headers={"User-Agent": UA}) as c:
         r = await c.get("https://lite.duckduckgo.com/lite/", params={"q": query})
     if r.status_code != 200:
         return []
@@ -89,14 +89,45 @@ async def _wikipedia(query: str, lang: str) -> list[dict]:
              "snippet": _html_to_text(h.get("snippet", ""))} for h in r.json().get("query", {}).get("search", [])]
 
 
+async def _tavily(query: str) -> list[dict]:
+    async with httpx.AsyncClient(timeout=20) as c:
+        r = await c.post("https://api.tavily.com/search", json={"api_key": os.environ["TAVILY_API_KEY"],
+                                                                "query": query, "max_results": 6})
+    if r.status_code != 200:
+        return []
+    return [{"title": x.get("title", ""), "url": x.get("url", ""), "snippet": x.get("content", "")[:400]}
+            for x in r.json().get("results", [])]
+
+
+async def _brave(query: str) -> list[dict]:
+    async with httpx.AsyncClient(timeout=15) as c:
+        r = await c.get("https://api.search.brave.com/res/v1/web/search", params={"q": query, "count": 6},
+                        headers={"X-Subscription-Token": os.environ["BRAVE_API_KEY"], "Accept": "application/json"})
+    if r.status_code != 200:
+        return []
+    return [{"title": x.get("title", ""), "url": x.get("url", ""), "snippet": _html_to_text(x.get("description", ""))}
+            for x in r.json().get("web", {}).get("results", [])]
+
+
 async def web_search(query: str) -> str:
+    """Keyed providers first (TAVILY_API_KEY, BRAVE_API_KEY), then DuckDuckGo lite, then Wikipedia."""
     if not query:
         return "خطأ: استعلام فارغ."
     results, source = [], ""
-    try:
-        results, source = await _ddg(query), "DuckDuckGo"
-    except Exception:  # noqa: BLE001
-        results = []
+    chain = []
+    if os.environ.get("TAVILY_API_KEY"):
+        chain.append((_tavily, "Tavily"))
+    if os.environ.get("BRAVE_API_KEY"):
+        chain.append((_brave, "Brave"))
+    chain.append((_ddg, "DuckDuckGo"))
+    for fn, name in chain:
+        try:
+            results = await asyncio.wait_for(fn(query), timeout=20)
+        except Exception:  # noqa: BLE001
+            results = []
+        if results:
+            source = name
+            break
     if not results:
         lang = "ar" if re.search(r"[\u0600-\u06FF]", query) else "en"
         try:
