@@ -28,7 +28,7 @@ class Run:
     can_exec: bool = False
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
-    status: str = "running"  # running | done | failed | cancelled
+    status: str = "running"  # running | done | partial | failed | cancelled
     tasks: dict = field(default_factory=dict)
     events: list = field(default_factory=list)
     result: str = ""
@@ -89,7 +89,8 @@ PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء �
 VERIFIER = """أنت مدقق صارم ومستقل. قيّم ناتج وكيل مقابل المهمة ومعيار القبول.
 افحص: هل أنجز المطلوب كاملًا؟ هل فيه ادعاءات بلا دليل أو أرقام مختلقة أو تناقضات أو كود لن يعمل؟
 أعد JSON فقط: {"pass": bool, "score": 0-10, "issues": ["مشكلة محددة"], "fix": "ما يجب تصحيحه بالضبط"}
-pass=true فقط إذا score>=7 ولا توجد مشكلة جوهرية."""
+pass=true فقط إذا score>=7 ولا توجد مشكلة جوهرية.
+ملاحظة: إذا كانت البيانات المطلوبة غير متاحة فعلًا، فالناتج الذي يصرّح بذلك بوضوح ويقدّم تقديرًا معقولًا موسومًا بأنه تقدير (مع منهجه) يُعدّ مقبولًا. الذي يُرفض هو الاختلاق أو الإيهام بالدقة."""
 
 SYNTH = """أنت المنسق. اجمع نتائج فريقك في جواب نهائي واحد متماسك للمستخدم بلغته وبتنسيق Markdown.
 - لا تضف معلومات غير موجودة في النتائج.
@@ -151,7 +152,7 @@ class Orchestrator:
             out = await self.orchestrate(r.goal, depth=0, prefix="")
             r.result = out["output"]
             r.verdict = out.get("verdict", {})
-            r.status = "done" if out["ok"] else "failed"
+            r.status = "done" if out["ok"] else ("partial" if out.get("partial") else "failed")
         except asyncio.CancelledError:
             r.status = "cancelled"
             await r.emit("run_cancelled", {})
@@ -189,13 +190,16 @@ class Orchestrator:
         while pending or running:
             for tid, t in list(pending.items()):
                 deps = [self.run.tasks[d] for d in t["depends_on"]]
-                if any(d["status"] in ("failed", "skipped") for d in deps):
+                if any(d["status"] == "skipped" or (d["status"] == "failed" and not d["output"]) for d in deps):
                     t["status"] = "skipped"
                     pending.pop(tid)
-                    await self.run.emit("task_skipped", {"task": tid, "reason": "فشلت مهمة يعتمد عليها"})
-                elif all(d["status"] == "done" for d in deps):
+                    await self.run.emit("task_skipped", {"task": tid, "reason": "مهمة يعتمد عليها لم تُنتج شيئًا"})
+                elif all(d["status"] in ("done", "failed") for d in deps):
                     pending.pop(tid)
-                    ctx = "\n\n".join(f"### نتيجة {d['id']} ({d['title']})\n{d['output']}" for d in deps)
+                    ctx = "\n\n".join(
+                        f"### نتيجة {d['id']} ({d['title']})"
+                        + (" — تحذير: لم تجتز التحقق، استخدمها بحذر وصرّح بأي تقدير" if d["status"] == "failed" else "")
+                        + f"\n{d['output']}" for d in deps)
                     running[asyncio.create_task(self.run_task(t, ctx))] = tid
             if not running:
                 for t in pending.values():  # unreachable (should not happen after sanitize)
@@ -265,7 +269,7 @@ class Orchestrator:
                 {"role": "user", "content": f"طلب المستخدم:\n{goal}\n\nنتائج الفريق:\n\n" + "\n\n".join(parts)}]
         answer = await self.llm.chat(msgs, temperature=0.3, max_tokens=4000)
         if not final:
-            return {"ok": ok, "output": answer}
+            return {"ok": ok, "partial": True, "output": answer}
         check = {"id": "final", "instructions": goal,
                  "acceptance": "يجيب عن طلب المستخدم كاملًا ومتسقًا مع نتائج الفريق بلا ادعاءات مختلقة"}
         v = await verify(self.llm, check, answer)
@@ -276,4 +280,5 @@ class Orchestrator:
             answer = await self.llm.chat(msgs, temperature=0.2, max_tokens=4000)
             v = await verify(self.llm, check, answer)
             await self.run.emit("final_check", v)
-        return {"ok": ok and v["pass"], "output": answer, "verdict": v}
+        return {"ok": ok and v["pass"], "partial": v["pass"] or any(t["status"] == "done" for t in tasks),
+                "output": answer, "verdict": v}

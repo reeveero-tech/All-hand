@@ -60,12 +60,13 @@ uvicorn app.main:app --port 8000   # ثم افتح http://localhost:8000
 
 ## متغيرات البيئة
 
-`OPENROUTER_API_KEY`، `LLM_MODEL`، `APP_ACCESS_CODE`، `SUPABASE_URL`، `SUPABASE_SERVICE_KEY`، `MAX_AGENTS_PER_RUN` (افتراضي 60)، `MAX_CONCURRENT_RUNS` (افتراضي 4)، `ALLOW_CODE_EXEC`، `FREE_LLM_ENABLED` (افتراضي 1).
+`OPENROUTER_API_KEY`، `LLM_MODEL`، `APP_ACCESS_CODE`، `SUPABASE_URL`، `SUPABASE_SERVICE_KEY`، `MAX_AGENTS_PER_RUN` (افتراضي 60)، `MAX_CONCURRENT_RUNS` (افتراضي 4)، `ALLOW_CODE_EXEC`، `FREE_LLM_ENABLED` (افتراضي 1)، `TAVILY_API_KEY` أو `BRAVE_API_KEY` (بحث ويب موثوق؛ يُنصح بأحدهما).
 
 ## الحدود بصدق
 
 - الجودة تعتمد على النموذج المستخدم؛ المزود المجاني للتجربة لا للعمل الجاد.
-- البحث يستخدم DuckDuckGo ثم ويكيبيديا كبديل؛ لا يوجد محرك بحث مدفوع.
+- البحث بلا مفتاح (DuckDuckGo ثم ويكيبيديا) ضعيف، وخوادم Render تُحجب أحيانًا من DuckDuckGo. للبحث الجاد أضف `TAVILY_API_KEY` (له خطة مجانية) أو `BRAVE_API_KEY`.
+- المهمة التي لا تجتاز التحقق لا تُلغي ما يعتمد عليها: يُمرَّر ناتجها مع تحذير، وتنتهي المهمة بحالة «اكتمل جزئيًا» بدل الادعاء بالنجاح.
 - المهام الجارية في ذاكرة الخادم؛ إعادة تشغيل الخادم (Render المجاني ينام بعد 15 دقيقة) توقف أي مهمة جارية، والمنتهية تُحفظ في Supabase.
 - لا يوجد بعد: حسابات مستخدمين، ذاكرة طويلة الأمد بين المهام، موصلات خارجية (GitHub/Drive...).
 

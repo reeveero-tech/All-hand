@@ -89,8 +89,17 @@ async def test_honest_failure_and_skip_dependents():
     fake = FakeLLM(plan_of(T("a"), T("b", ["a"])), verdicts=[bad, bad, bad])
     run = await run_with(fake)
     assert run.tasks["a"]["status"] == "failed" and len(run.tasks["a"]["attempts"]) == 3
+    # b still runs on a's best-effort output (flagged unverified) instead of being dropped
+    assert run.tasks["b"]["status"] == "done"
+    assert run.status == "partial"
+
+
+async def test_dependent_skipped_when_dependency_has_no_output():
+    bad = {"pass": False, "score": 2, "issues": ["خطأ"]}
+    fake = FakeLLM(plan_of(T("a"), T("b", ["a"])), verdicts=[bad, bad, bad],
+                   agent=lambda m: json.dumps({"action": "final", "output": ""}))
+    run = await run_with(fake)
     assert run.tasks["b"]["status"] == "skipped"
-    assert run.status == "failed"
 
 
 async def test_sub_team_delegation():

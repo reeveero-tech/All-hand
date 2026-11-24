@@ -123,7 +123,7 @@ async function refresh() {
   let r;
   try { r = await api(`/api/runs/${current}`); } catch { return; }
   const secs = ((r.finished_at || Date.now() / 1000) - r.created_at).toFixed(0);
-  $("#stats").innerHTML = [["الحالة", {running: "يعمل", done: "اكتمل", failed: "فشل", cancelled: "أُوقف"}[r.status] || r.status],
+  $("#stats").innerHTML = [["الحالة", {running: "يعمل", done: "اكتمل", partial: "اكتمل جزئيًا", failed: "فشل", cancelled: "أُوقف"}[r.status] || r.status],
     ["وكلاء أُنشئوا", `${r.agents_spawned} / ${r.max_agents}`], ["مهام مُتحقق منها", `${r.tasks_done} / ${r.tasks_total}`],
     ["مهام فشلت", r.tasks_failed], ["الزمن", secs + " ث"], ["استدعاءات النموذج", r.usage?.calls ?? "…"]]
     .map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${k}</span></div>`).join("");
