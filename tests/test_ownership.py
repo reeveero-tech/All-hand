@@ -48,16 +48,16 @@ def test_other_client_cannot_read_cancel_or_stream(client):
 
 def test_history_rows_checked_for_owner(client, monkeypatch):
     c, _ = client
-    rows = {"mine": {"id": "mine", "goal": "g", "owner": main._owner(A["X-Client-Key"])},
-            "legacy": {"id": "legacy", "goal": "قديم بلا مالك"}}
+    rows = {"aaaaaaaaaaaa": {"id": "aaaaaaaaaaaa", "goal": "g", "owner": main._owner(A["X-Client-Key"])},
+            "bbbbbbbbbbbb": {"id": "bbbbbbbbbbbb", "goal": "قديم بلا مالك"}}
 
     async def load(run_id):
         return dict(rows[run_id]) if run_id in rows else None
     monkeypatch.setattr(store, "load", load)
-    assert c.get("/api/runs/mine", headers=A).json()["goal"] == "g"
-    assert "owner" not in c.get("/api/runs/mine", headers=A).json()
-    assert c.get("/api/runs/mine", headers=B).status_code == 404
-    assert c.get("/api/runs/legacy", headers=A).status_code == 404  # pre-ownership rows stay private
+    assert c.get("/api/runs/aaaaaaaaaaaa", headers=A).json()["goal"] == "g"
+    assert "owner" not in c.get("/api/runs/aaaaaaaaaaaa", headers=A).json()
+    assert c.get("/api/runs/aaaaaaaaaaaa", headers=B).status_code == 404
+    assert c.get("/api/runs/bbbbbbbbbbbb", headers=A).status_code == 404  # pre-ownership rows stay private
 
 
 def test_created_run_is_owned_and_saved_with_owner(monkeypatch):
@@ -83,24 +83,67 @@ def test_created_run_is_owned_and_saved_with_owner(monkeypatch):
     main.RUNS.clear()
 
 
+def test_invalid_run_ids_and_keys(client):
+    c, run = client
+    for bad in ("x" * 300, "a b", "..%2F..", "id.eq.x", "*"):
+        r = c.get(f"/api/runs/{bad}", headers=A)
+        assert r.status_code in (400, 404), bad
+    for key in ("", "a" * 19, "a" * 201, "cli_" + "a" * 30 + "!"):
+        assert c.get("/api/runs", headers={"X-Client-Key": key}).status_code == 400, key
+
+
+def test_owner_hash_never_returned(client):
+    c, run = client
+    body = c.get("/api/runs", headers=A).text + c.get(f"/api/runs/{run.id}", headers=A).text
+    assert run.owner not in body and A["X-Client-Key"] not in body
+
+
+def test_other_client_cancel_does_not_touch_task(client):
+    c, run = client
+    cancelled = []
+
+    class T:
+        def cancel(self):
+            cancelled.append(1)
+    main.TASKS[run.id] = T()
+    try:
+        assert c.post(f"/api/runs/{run.id}/cancel", headers=B).status_code == 404
+        assert not cancelled
+        assert c.post(f"/api/runs/{run.id}/cancel", headers=A).status_code == 200
+        assert cancelled
+    finally:
+        main.TASKS.pop(run.id, None)
+
+
 def test_private_addresses_blocked():
     for host in ("127.0.0.1", "0.0.0.0", "10.0.0.1", "169.254.169.254", "100.64.0.1", "::1"):
         assert not _is_public_host(host), host
 
 
+PUBLIC = {"public.example": "93.184.215.14", "other.example": "93.184.215.15"}
+
+
+def _mock(monkeypatch, handler, resolve=None):
+    import httpx
+    real = httpx.AsyncClient
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    monkeypatch.setattr("app.tools._resolve_public", resolve or (lambda h: PUBLIC.get(h)))
+
+
 async def test_redirect_to_internal_address_is_blocked(monkeypatch):
     import httpx
+    seen = []
 
     def handler(request: httpx.Request):
-        if request.url.host == "public.example":
+        seen.append(str(request.url))
+        if request.headers["host"] == "public.example":
             return httpx.Response(302, headers={"location": "http://169.254.169.254/latest/meta-data/"})
         return httpx.Response(200, text="SECRET-METADATA", headers={"content-type": "text/plain"})
 
-    real = httpx.AsyncClient
-    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
-    monkeypatch.setattr("app.tools._is_public_host", lambda h: h == "public.example")
+    _mock(monkeypatch, handler)
     out = await fetch_url("http://public.example/start")
     assert "ممنوعة" in out and "SECRET" not in out
+    assert len(seen) == 1  # the internal hop was never requested
 
 
 async def test_public_redirect_is_followed(monkeypatch):
@@ -111,8 +154,65 @@ async def test_public_redirect_is_followed(monkeypatch):
             return httpx.Response(301, headers={"location": "/b"})
         return httpx.Response(200, text="final page", headers={"content-type": "text/plain"})
 
-    real = httpx.AsyncClient
-    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
-    monkeypatch.setattr("app.tools._is_public_host", lambda h: True)
+    _mock(monkeypatch, handler)
     out = await fetch_url("http://public.example/a")
-    assert "final page" in out and "/b" in out
+    assert "final page" in out and "public.example/b" in out
+
+
+async def test_connection_is_pinned_to_checked_address(monkeypatch):
+    """DNS rebinding: the address that passed the check is the one we connect to."""
+    import httpx
+    hosts = []
+
+    def handler(request: httpx.Request):
+        hosts.append((request.url.host, request.headers["host"], request.extensions.get("sni_hostname")))
+        return httpx.Response(200, text="ok", headers={"content-type": "text/plain"})
+
+    calls = []
+
+    def resolve(h):
+        calls.append(h)
+        return PUBLIC.get(h)
+    _mock(monkeypatch, handler, resolve)
+    await fetch_url("https://public.example:8443/x")
+    assert calls == ["public.example"]
+    assert hosts == [("93.184.215.14", "public.example:8443", "public.example")]
+
+
+async def test_too_many_redirects(monkeypatch):
+    import httpx
+    _mock(monkeypatch, lambda r: httpx.Response(302, headers={"location": "/again"}))
+    assert "كثيرة" in await fetch_url("http://public.example/")
+
+
+async def test_redirect_to_other_scheme_or_credentials_blocked(monkeypatch):
+    import httpx
+    _mock(monkeypatch, lambda r: httpx.Response(302, headers={"location": "file:///etc/passwd"}))
+    assert "غير صالح" in await fetch_url("http://public.example/")
+    assert "غير صالح" in await fetch_url("http://user:pw@public.example/")
+    assert "غير صالح" in await fetch_url("ftp://public.example/")
+
+
+async def test_body_is_capped(monkeypatch):
+    import httpx
+    from app import tools
+    monkeypatch.setattr(tools, "MAX_BYTES", 1000)
+    _mock(monkeypatch, lambda r: httpx.Response(200, content=b"A" * 50_000, headers={"content-type": "text/plain"}))
+    out = await fetch_url("http://public.example/")
+    assert out.count("A") <= 1000
+
+
+def test_tricky_addresses_blocked():
+    import ipaddress
+    from app.tools import _ip_is_public
+    for a in ("::ffff:127.0.0.1", "::ffff:169.254.169.254", "64:ff9b::7f00:1", "64:ff9b::a9fe:a9fe",
+              "2002:7f00:1::", "2001:0:4136:e378:8000:63bf:3fff:fdd2", "fe80::1", "fc00::1", "0.0.0.0",
+              "255.255.255.255", "224.0.0.1", "192.0.0.1", "198.18.0.1"):
+        assert not _ip_is_public(ipaddress.ip_address(a)), a
+    for a in ("8.8.8.8", "::ffff:8.8.8.8", "2606:4700:4700::1111"):
+        assert _ip_is_public(ipaddress.ip_address(a)), a
+
+
+def test_hostnames_resolving_to_internal_blocked():
+    for host in ("localhost", "0x7f000001", "2130706433", "127.1", "[::1]", "", "no-such-host.invalid"):
+        assert not _is_public_host(host), host

@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -45,6 +46,9 @@ class RunRequest(BaseModel):
     access_code: str | None = None
     max_agents: int | None = Field(default=None, ge=1, le=500)
     memory_space: str | None = None  # private random id kept in the browser; None = no memory
+
+
+_RUN_ID = re.compile(r"[0-9a-f]{12}")
 
 
 def _owner(x_client_key: str | None) -> str:
@@ -127,6 +131,8 @@ async def get_run(run_id: str, x_client_key: str | None = Header(default=None)):
     owner = _owner(x_client_key)
     if run_id in RUNS:
         return _live(run_id, owner).full()
+    if not _RUN_ID.fullmatch(run_id):
+        raise HTTPException(404, "غير موجود")
     data = await store.load(run_id)
     if not data or not _owns(data.get("owner"), owner):  # rows saved before ownership have no owner: private
         raise HTTPException(404, "غير موجود")

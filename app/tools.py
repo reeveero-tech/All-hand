@@ -32,46 +32,94 @@ def _html_to_text(raw: str) -> str:
     return re.sub(r"\n\s*\n+", "\n\n", raw).strip()
 
 
-def _is_public_host(host: str) -> bool:
-    try:
-        infos = socket.getaddrinfo(host, None)
-    except socket.gaierror:
-        return False
-    for info in infos:
-        ip = ipaddress.ip_address(info[4][0])
-        if (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast
-                or ip.is_unspecified or not ip.is_global):
+_NAT64 = ipaddress.ip_network("64:ff9b::/96")
+_BLOCKED_V6 = (ipaddress.ip_network("2002::/16"), ipaddress.ip_network("2001::/32"),  # 6to4, Teredo
+               ipaddress.ip_network("64:ff9b:1::/48"))
+
+
+def _ip_is_public(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    if isinstance(ip, ipaddress.IPv6Address):
+        if ip.ipv4_mapped:
+            return _ip_is_public(ip.ipv4_mapped)
+        if ip in _NAT64:
+            return _ip_is_public(ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF))
+        if any(ip in n for n in _BLOCKED_V6):
             return False
-    return True
+    return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast
+                or ip.is_unspecified or not ip.is_global)
+
+
+def _resolve_public(host: str) -> str | None:
+    """Resolve once and return one address to connect to, or None if ANY address is non-public.
+    The caller connects to this exact address, so DNS cannot be re-pointed (rebinding) between
+    the check and the connection."""
+    try:
+        infos = socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
+    except (socket.gaierror, UnicodeError, ValueError):
+        return None
+    ips = []
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0].split("%")[0])
+        except ValueError:
+            return None
+        if not _ip_is_public(ip):
+            return None
+        ips.append(ip)
+    return str(ips[0]) if ips else None
+
+
+def _is_public_host(host: str) -> bool:
+    return _resolve_public(host) is not None
 
 
 MAX_REDIRECTS = 5
+MAX_BYTES = 2_000_000
 
 
 async def fetch_url(url: str) -> str:
-    """Read a public page as text. Every redirect hop is re-checked, so a public URL cannot
-    bounce the server into its own network (http://169.254.169.254, localhost, ...)."""
+    """Read a public page as text. Each hop (including redirects) is resolved once, checked, and
+    the connection is pinned to the checked address; the body is capped at MAX_BYTES."""
     try:
-        async with httpx.AsyncClient(timeout=20, follow_redirects=False, headers={"User-Agent": UA}) as c:
+        async with httpx.AsyncClient(timeout=20, follow_redirects=False, trust_env=False) as c:
             for _ in range(MAX_REDIRECTS + 1):
                 p = urlparse(url or "")
-                if p.scheme not in ("http", "https") or not p.hostname:
+                if p.scheme not in ("http", "https") or not p.hostname or p.username or p.password:
                     return "خطأ: رابط غير صالح (http/https فقط)."
-                if not await asyncio.to_thread(_is_public_host, p.hostname):
+                ip = await asyncio.to_thread(_resolve_public, p.hostname)
+                if not ip:
                     return "خطأ: العناوين الداخلية/الخاصة ممنوعة."
-                r = await c.get(url)
-                if r.is_redirect and r.headers.get("location"):
-                    url = str(r.url.join(r.headers["location"]))
-                    continue
+                target = httpx.URL(url)
+                host_header = target.host if target.port is None else f"{target.host}:{target.port}"
+                req = c.build_request("GET", target.copy_with(host=ip),
+                                      headers={"User-Agent": UA, "Host": host_header},
+                                      extensions={"sni_hostname": target.host})
+                r = await c.send(req, stream=True)
+                try:
+                    if r.is_redirect and r.headers.get("location"):
+                        url = str(target.join(r.headers["location"]))
+                        continue
+                    chunks, size = [], 0
+                    async for chunk in r.aiter_bytes():
+                        chunks.append(chunk)
+                        size += len(chunk)
+                        if size >= MAX_BYTES:
+                            break
+                    raw = b"".join(chunks)[:MAX_BYTES]
+                finally:
+                    await r.aclose()
                 break
             else:
                 return "خطأ: تحويلات كثيرة."
         ctype = r.headers.get("content-type", "")
-        body = r.text if ("text" in ctype or "json" in ctype or "xml" in ctype) else f"[محتوى غير نصي: {ctype}]"
+        if "text" in ctype or "json" in ctype or "xml" in ctype:
+            body = raw.decode(r.charset_encoding or "utf-8", errors="replace")
+        else:
+            body = f"[محتوى غير نصي: {ctype}]"
         text = _html_to_text(body) if "html" in ctype else body
-        return _clip(f"HTTP {r.status_code} — {r.url}\n\n{text}")
+        return _clip(f"HTTP {r.status_code} — {url}\n\n{text}")
     except Exception as e:  # noqa: BLE001
-        return f"خطأ في الجلب: {e}"
+        return f"خطأ في الجلب: {type(e).__name__}: {str(e)[:200]}"
 
 
 async def _ddg(query: str) -> list[dict]:
