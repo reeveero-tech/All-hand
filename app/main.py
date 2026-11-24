@@ -10,10 +10,11 @@ import os
 import re
 import time
 from collections import OrderedDict
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -31,7 +32,16 @@ WEB = Path(__file__).resolve().parent.parent / "web"
 MAX_LIVE = 200
 MAX_CONCURRENT_RUNS = int(os.environ.get("MAX_CONCURRENT_RUNS", "4"))
 
-app = FastAPI(title="All-hand", version="3.0.0")
+@asynccontextmanager
+async def lifespan(_app):
+    yield
+    # Shutdown (deploy/restart): record honestly that live runs were interrupted. If this process still
+    # finishes a run before it is killed, the final save overwrites this snapshot.
+    for run in [r for r in RUNS.values() if r.status == "running"]:
+        await store.save({**run.full(), "status": "interrupted", "owner": run.owner, "heartbeat_at": time.time()})
+
+
+app = FastAPI(title="All-hand", version="3.1.0", lifespan=lifespan)
 RUNS: "OrderedDict[str, Run]" = OrderedDict()
 TASKS: dict[str, asyncio.Task] = {}
 STARTED = time.time()
@@ -107,13 +117,25 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
             break
         RUNS.pop(old_id)
 
+    async def persist(final: bool = False) -> bool:
+        return await store.save({**run.full(), "owner": run.owner, "heartbeat_at": time.time()})
+
+    async def heartbeat():
+        while run.status == "running":
+            await asyncio.sleep(store.HEARTBEAT)
+            if run.status == "running":
+                await persist()
+
     async def go():
         llm = LLM(cfg)
+        beat = asyncio.create_task(heartbeat()) if store.enabled() else None
         try:
-            await Orchestrator(run, llm).execute()
+            await persist()  # visible in history (and detectable as interrupted) from the first second
+            await Orchestrator(run, llm, persist=persist if store.enabled() else None).execute()
         finally:
+            if beat:
+                beat.cancel()
             await llm.close()
-            await store.save({**run.full(), "owner": run.owner})
             TASKS.pop(run.id, None)
 
     TASKS[run.id] = asyncio.create_task(go())
@@ -122,8 +144,18 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
 
 @app.get("/api/runs")
 async def list_runs(x_client_key: str | None = Header(default=None)):
+    """The owner's runs: live ones from this process plus stored history (so a restart loses nothing)."""
     owner = _owner(x_client_key)
-    return [r.summary() for r in reversed(RUNS.values()) if _owns(r.owner, owner)]
+    live = {r.id: r.summary() for r in reversed(RUNS.values()) if _owns(r.owner, owner)}
+    stored = await store.list_for_owner(owner)
+    runs = dict(live)
+    for row in stored or []:
+        if row["id"] not in runs:
+            row["status"] = store.effective_status(row, live=False)
+            runs[row["id"]] = {k: v for k, v in row.items() if k != "heartbeat_at"}
+    out = sorted(runs.values(), key=lambda r: -(float(r.get("created_at") or 0)))
+    hist = "unavailable" if stored is None else ("supabase" if store.enabled() else "memory")
+    return JSONResponse(out, headers={"X-History": hist})
 
 
 @app.get("/api/runs/{run_id}")
@@ -137,6 +169,8 @@ async def get_run(run_id: str, x_client_key: str | None = Header(default=None)):
     if not data or not _owns(data.get("owner"), owner):  # rows saved before ownership have no owner: private
         raise HTTPException(404, "غير موجود")
     data.pop("owner", None)
+    data["status"] = store.effective_status(data, live=False)
+    data.pop("heartbeat_at", None)
     return data
 
 

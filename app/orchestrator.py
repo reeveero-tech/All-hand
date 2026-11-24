@@ -28,6 +28,7 @@ class Run:
     max_agents: int = DEFAULT_MAX_AGENTS
     can_exec: bool = False
     memory_space: str | None = None
+    saved: bool | None = None  # None: no persistent store; False: final save failed (shown to the user)
     owner: str | None = None  # SHA-256 of the creating client's key; never sent back to clients
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
@@ -67,7 +68,7 @@ class Run:
 
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
-                "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error,
+                "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
                 "events": self.events}
 
 
@@ -149,8 +150,8 @@ async def verify(llm: LLM, task: dict, output: str) -> dict:
 
 
 class Orchestrator:
-    def __init__(self, run: Run, llm: LLM):
-        self.run, self.llm = run, llm
+    def __init__(self, run: Run, llm: LLM, persist=None):
+        self.run, self.llm, self.persist = run, llm, persist  # persist(): async -> bool, saves the run
 
     async def execute(self):
         r = self.run
@@ -178,7 +179,21 @@ class Orchestrator:
         finally:
             r.usage = self.llm.usage.as_dict()
             r.finished_at = time.time()
-            await r.emit("run_finished", {"status": r.status, "usage": r.usage, "agents_spawned": r.agents_spawned})
+            # Save BEFORE announcing the end, so "finished" is never shown for a run that was not stored.
+            if self.persist:
+                r.saved = await self._persist_final()
+            await r.emit("run_finished", {"status": r.status, "usage": r.usage, "agents_spawned": r.agents_spawned,
+                                          "saved": r.saved})
+
+    async def _persist_final(self) -> bool:
+        for attempt in range(3):
+            try:
+                if await self.persist(final=True):
+                    return True
+            except Exception:  # noqa: BLE001
+                pass
+            await asyncio.sleep(0.5 * (attempt + 1))
+        return False
 
     async def recall(self) -> list[dict]:
         r = self.run
