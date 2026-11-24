@@ -61,8 +61,14 @@ function md(src) {
 let current = null, es = null, refreshTimer = null;
 const t0 = {v: 0};
 
+// Private key of this browser: the server keeps only its hash and shows you only your own tasks.
+function clientKey() {
+  let k = localStorage.getItem("ah_client_key");
+  if (!/^[A-Za-z0-9_-]{20,200}$/.test(k || "")) { k = newSpace().replace("mem_", "cli_"); localStorage.setItem("ah_client_key", k); }
+  return k;
+}
 async function api(path, opts = {}) {
-  const r = await fetch(path, {headers: {"Content-Type": "application/json"}, ...opts});
+  const r = await fetch(path, {...opts, headers: {"Content-Type": "application/json", "X-Client-Key": clientKey(), ...(opts.headers || {})}});
   const body = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(body.detail || `HTTP ${r.status}`);
   return body;
@@ -94,9 +100,33 @@ function open(id) {
   $("#log").innerHTML = ""; $("#board").innerHTML = ""; $("#verdict").textContent = "";
   $("#result").className = "md muted"; $("#result").textContent = "قيد العمل...";
   refresh();
-  es = new EventSource(`/api/runs/${id}/events`);
-  es.onmessage = (m) => onEvent(JSON.parse(m.data));
-  es.onerror = () => { es.close(); refresh(); };
+  es = streamEvents(id, onEvent, () => refresh());
+}
+
+// Server-sent events over fetch, so the private X-Client-Key header can be sent (EventSource cannot).
+function streamEvents(id, onMsg, onEnd) {
+  const ctl = new AbortController();
+  (async () => {
+    try {
+      const r = await fetch(`/api/runs/${id}/events`, {headers: {"X-Client-Key": clientKey()}, signal: ctl.signal});
+      if (!r.ok || !r.body) throw new Error(`HTTP ${r.status}`);
+      const reader = r.body.getReader(), dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const {value, done} = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, {stream: true});
+        let i;
+        while ((i = buf.indexOf("\n\n")) >= 0) {
+          const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+          const data = chunk.split("\n").filter((l) => l.startsWith("data: ")).map((l) => l.slice(6)).join("\n");
+          if (data) onMsg(JSON.parse(data));
+        }
+      }
+    } catch (e) { if (e.name === "AbortError") return; }
+    onEnd();
+  })();
+  return {close: () => ctl.abort()};
 }
 
 const LABEL = {
@@ -199,5 +229,11 @@ $("#examples").innerHTML = EXAMPLES.map((x) => `<button>${esc(x.slice(0, 38))}�
 document.querySelectorAll("#examples button").forEach((b, i) => (b.onclick = () => ($("#goal").value = EXAMPLES[i])));
 loadSettings();
 saveSettings();
+$("#clientKeyField").value = clientKey();
+$("#clientKeyField").addEventListener("change", (ev) => {
+  const v = ev.target.value.trim();
+  if (/^[A-Za-z0-9_-]{20,200}$/.test(v)) { localStorage.setItem("ah_client_key", v); loadHistory(); }
+  else { alert("المفتاح غير صالح (20 حرفًا على الأقل: حروف إنجليزية وأرقام و_ و-)."); ev.target.value = clientKey(); }
+});
 loadHistory();
 loadMemory();

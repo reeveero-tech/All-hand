@@ -39,20 +39,33 @@ def _is_public_host(host: str) -> bool:
         return False
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+        if (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast
+                or ip.is_unspecified or not ip.is_global):
             return False
     return True
 
 
+MAX_REDIRECTS = 5
+
+
 async def fetch_url(url: str) -> str:
-    p = urlparse(url or "")
-    if p.scheme not in ("http", "https") or not p.hostname:
-        return "خطأ: رابط غير صالح (http/https فقط)."
-    if not await asyncio.to_thread(_is_public_host, p.hostname):
-        return "خطأ: العناوين الداخلية/الخاصة ممنوعة."
+    """Read a public page as text. Every redirect hop is re-checked, so a public URL cannot
+    bounce the server into its own network (http://169.254.169.254, localhost, ...)."""
     try:
-        async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers={"User-Agent": UA}) as c:
-            r = await c.get(url)
+        async with httpx.AsyncClient(timeout=20, follow_redirects=False, headers={"User-Agent": UA}) as c:
+            for _ in range(MAX_REDIRECTS + 1):
+                p = urlparse(url or "")
+                if p.scheme not in ("http", "https") or not p.hostname:
+                    return "خطأ: رابط غير صالح (http/https فقط)."
+                if not await asyncio.to_thread(_is_public_host, p.hostname):
+                    return "خطأ: العناوين الداخلية/الخاصة ممنوعة."
+                r = await c.get(url)
+                if r.is_redirect and r.headers.get("location"):
+                    url = str(r.url.join(r.headers["location"]))
+                    continue
+                break
+            else:
+                return "خطأ: تحويلات كثيرة."
         ctype = r.headers.get("content-type", "")
         body = r.text if ("text" in ctype or "json" in ctype or "xml" in ctype) else f"[محتوى غير نصي: {ctype}]"
         text = _html_to_text(body) if "html" in ctype else body
