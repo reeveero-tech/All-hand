@@ -1,3 +1,0 @@
-pytest rc=0
-
-exit_code=0 (من الفحص مباشرة — python -m pytest tests/ -q، rc=0)

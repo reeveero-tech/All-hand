@@ -1,89 +1,74 @@
-# AGOS Agent Civilization
+# All-hand — منسق وكلاء الذكاء الاصطناعي
 
-AGOS is an AI-agent platform **being rebuilt** (program M10 — AGOS v2). Today
-it is a FastAPI server with 20 real specialist handlers that run real tools,
-and a monitoring web UI. The goal — a platform that plans, coordinates many
-agents and checks its own work — is **not reached yet**; see the honest
-summary below (R-200 truth inventory:
-[`docs/audit/M10/inventory/REPORT_AR.md`](docs/audit/M10/inventory/REPORT_AR.md)).
+## الهدف (بجملة واحدة)
 
-> **Start here (2026-11-11, owner decision D-150):** read
-> [`docs/governance/MEMORY.md`](docs/governance/MEMORY.md) (project memory, in
-> Arabic). The project is being rebuilt under program **M10 — AGOS v2**
-> ([roadmap](docs/governance/roadmaps/agos-v2/ROADMAP_V2_AR.md)). Every merge
-> must update the memory, roadmap and state docs in the same batch.
+تكتب طلبًا كبيرًا أو معقدًا، فيقوم **وكيل منسق** بتقسيمه إلى مهام، وينشئ لكل مهمة **وكيلًا متخصصًا** (باحث، محلل، مبرمج، كاتب، مستشار أعمال...) يعمل بالتوازي مع زملائه وبأدوات حقيقية، ثم **يتحقق مدقق مستقل** من كل ناتج ويعيده للتصحيح إن كان ناقصًا، وأخيرًا يجمع المنسق النتائج في جواب واحد ويعلن بصدق ما لم ينجح.
 
-## What is real now (honest summary)
+هذا هو الهدف الذي كتبه المالك في قرار D-150 (نوفمبر 2026)، وأُعيد بناء المستودع حوله في 2026-11-24.
 
-- 20 in-house specializations backed by deterministic runtime handlers.
-- The "1,000 local workers" are 20 handlers × 50 identical generated copies —
-  not 1,000 distinct agents.
-- 299+ open-source agent/framework entries are metadata (name, URL) only; none
-  of them is invoked by the system.
-- Chat routing picks one handler by keywords; multi-agent coordination exists
-  only in the `/civilization/plan|execute` API, which the web UI does not use.
-- Not declared production-ready.
-- Real operations include AST parsing, Python execution, SQLite execution,
-  DNS/HTTP probes, statistics, tokenization, runtime metrics, and web-backed
-  research where network access is available.
-- FastAPI backend, React dashboard, Dockerfile, and Render blueprint.
+## كيف يعمل
 
-## Run locally
-
-```bash
-pip install -r requirements.txt
-python run.py
-# or (SEC-03: without keys the server only starts in an explicit development environment)
-AGOS_ENV=development uvicorn server:app --host 0.0.0.0 --port 8000
+```
+طلب المستخدم
+   │
+   ▼
+المنسق ── يخطط ──► خطة (مهام + أدوار + اعتماديات + معيار قبول لكل مهمة)
+   │
+   ├─► وكيل باحث   (web_search, fetch_url)  ─┐
+   ├─► وكيل محلل   (run_python)              ├─► بالتوازي حين لا توجد اعتماديات
+   ├─► فريق فرعي   (منسق فرعي + وكلاؤه)     ─┘   للمهام الضخمة
+   │
+   ├─► المدقق: يقبل أو يرفض كل ناتج ← الرفض يُعاد للوكيل مع الملاحظات (حتى 3 محاولات)
+   │
+   ▼
+التجميع + تحقق نهائي ← جواب واحد، مع قسم «حدود هذا الجواب» إن فشل شيء
 ```
 
-Production (`AGOS_ENV` unset or `production`, as in `render.yaml` and the
-Dockerfile) refuses to start without `AGOS_TENANT_KEYS` and/or `AGOS_API_KEY` —
-see `docs/governance/OPERATIONS.md`.
+- كل مهمة فرعية تنشئ **وكيلًا جديدًا** بدوره وأدواته؛ عدد الوكلاء في الطلب الواحد غير ثابت ومحدود بميزانية (`max_agents`).
+- المهام الضخمة تُسند إلى **فريق فرعي** (تخطيط متداخل بعمق مستويين) — هكذا يدير المنسق عشرات أو مئات الوكلاء في طلب واحد.
+- كل خطوة (تخطيط، إنشاء وكيل، استدعاء أداة، حكم المدقق) تُبث مباشرة إلى الواجهة.
 
-Optional environment variables:
+## مصدر الذكاء الاصطناعي (يختاره المستخدم من الإعدادات)
+
+| الخيار | متى | ملاحظات |
+|---|---|---|
+| مجاني تجريبي | للتجربة فقط | Pollinations بلا مفتاح؛ بطيء (طلب واحد في المرة) ونموذجه ضعيف |
+| مفتاحي الخاص (BYOK) | الاستخدام الحقيقي | مفتاح OpenRouter أو أي واجهة متوافقة مع OpenAI؛ يُحفظ في المتصفح فقط |
+| مفتاح المنصة | للمالك | يستخدم `OPENROUTER_API_KEY` على الخادم، ويتطلب رمز الوصول `APP_ACCESS_CODE` (أو `AGOS_API_KEY` القديم) |
+
+تشغيل كود Python متاح فقط مع مفتاح المنصة أو عند ضبط `ALLOW_CODE_EXEC=1`، ويعمل في عملية معزولة بلا متغيرات بيئة وبحدود للمعالج والذاكرة والزمن.
+
+## التشغيل محليًا
 
 ```bash
-OPENROUTER_API_KEY=...   # enables LLM reasoning in addition to deterministic tools
-# without it, a public key-free LLM is used (labelled keyless:<model>; AGOS_LLM_KEYLESS=0 disables) — D-051
-LLM_MODEL=meta-llama/llama-3.3-70b-instruct:free
-SUPABASE_URL=...         # optional persistence (apply docs/sql/001_init.sql first)
-SUPABASE_SERVICE_KEY=... # server-side secret/service_role key (RLS on, no anon policies — D-039)
+pip install -r requirements-dev.txt
+pytest -q
+uvicorn app.main:app --port 8000   # ثم افتح http://localhost:8000
 ```
 
-## API flow
+## الملفات
 
-What the web UI uses (R-200 route inventory):
+| الملف | الدور |
+|---|---|
+| `app/orchestrator.py` | المنسق: التخطيط، التنفيذ المتوازي، الفرق الفرعية، التحقق، إعادة المحاولة، التجميع |
+| `app/agents.py` | الأدوار المتخصصة وحلقة الوكيل مع الأدوات |
+| `app/tools.py` | الأدوات الحقيقية: بحث ويب، قراءة صفحات، تشغيل Python معزول |
+| `app/llm.py` | الاتصال بالنماذج (BYOK / المنصة / مجاني) |
+| `app/store.py` | حفظ المهام المنتهية في Supabase (جدول `public.runs`) إن وُجدت المتغيرات |
+| `app/main.py` | واجهة API والبث المباشر |
+| `web/` | الواجهة (HTML/JS بلا خطوة بناء) |
 
-- `POST /api/chat` — the message is routed by keywords to **one** handler.
-- `POST /api/tasks` / `GET /api/tasks` — send a task to one specialization and
-  follow it.
-- `GET /api/system/status`, `/api/agents`, `/api/specializations`,
-  `/api/events` — monitoring. `total_agents` counts the 20 handlers' identical
-  copies (plus external agents); the real unit is the handler.
+## متغيرات البيئة
 
-API only (not used by the web UI):
+`OPENROUTER_API_KEY`، `LLM_MODEL`، `APP_ACCESS_CODE`، `SUPABASE_URL`، `SUPABASE_SERVICE_KEY`، `MAX_AGENTS_PER_RUN` (افتراضي 60)، `MAX_CONCURRENT_RUNS` (افتراضي 4)، `ALLOW_CODE_EXEC`، `FREE_LLM_ENABLED` (افتراضي 1).
 
-- `POST /civilization/plan` and `POST /civilization/execute` — a multi-stage
-  planner/executor with approvals.
-- `GET /civilization/registry` — the open-source registry: **metadata only**
-  (names and URLs); none of these entries is executed.
+## الحدود بصدق
 
-## Deployment
+- الجودة تعتمد على النموذج المستخدم؛ المزود المجاني للتجربة لا للعمل الجاد.
+- البحث يستخدم DuckDuckGo ثم ويكيبيديا كبديل؛ لا يوجد محرك بحث مدفوع.
+- المهام الجارية في ذاكرة الخادم؛ إعادة تشغيل الخادم (Render المجاني ينام بعد 15 دقيقة) توقف أي مهمة جارية، والمنتهية تُحفظ في Supabase.
+- لا يوجد بعد: حسابات مستخدمين، ذاكرة طويلة الأمد بين المهام، موصلات خارجية (GitHub/Drive...).
 
-Use `render.yaml` for a free Render web service or run the Dockerfile on any
-container host. Set `OPENROUTER_API_KEY` in the host environment for LLM-backed
-reasoning.
+## الأرشيف
 
-## الحوكمة (إلزامية)
-
-يتبع هذا المستودع **قاعدة الدفعة الذرية**: لا يُدفع أو يُدمج أي تغيير — كوداً أو إعدادات أو بيانات أو قراراً أو تحليلاً أو توثيقاً — إلا إذا حدّثت الدفعة نفسُها حالة المشروع وخارطة الطريق والوثائق المتأثرة.
-راجع [docs/governance/](docs/governance/) — ابدأ بـ
-[PROJECT_CHARTER.md](docs/governance/PROJECT_CHARTER.md) و
-[PROJECT_STATE.md](docs/governance/PROJECT_STATE.md) و
-[ROADMAP.md](docs/governance/ROADMAP.md).
-
-دليل التحقق وسجلات التنفيذ المحفوظة في
-[docs/audit/](docs/audit/M0/).
-
-للإفصاحات الأمنية راجع [SECURITY.md](SECURITY.md)؛ أما الوضع الأمني المقيس حالياً فموثق في [docs/governance/SECURITY.md](docs/governance/SECURITY.md).
+كل ما كان في المستودع قبل إعادة البناء (1374 إيداعًا، 2887 ملفًا) محفوظ كما هو في الفرع والوسم `archive/pre-reset-2026-11-24`. سبب إعادة البناء موثق في [`docs/RESET_REPORT.md`](docs/RESET_REPORT.md).

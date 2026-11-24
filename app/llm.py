@@ -1,0 +1,186 @@
+"""Model access: any OpenAI-compatible chat endpoint.
+
+Three ways to get a model, chosen per request:
+  - "byok":     the user's own key (OpenRouter by default, or any OpenAI-compatible base URL).
+  - "platform": the server's OPENROUTER_API_KEY, only with the owner's access code (APP_ACCESS_CODE).
+  - "free":     public keyless endpoint (Pollinations), rate limited, for trying the system.
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+import re
+from dataclasses import dataclass, field
+
+import httpx
+
+OPENROUTER_BASE = "https://openrouter.ai/api/v1"
+FREE_BASE = os.environ.get("FREE_LLM_BASE", "https://text.pollinations.ai/openai")
+FREE_MODEL = os.environ.get("FREE_LLM_MODEL", "openai")
+
+
+class LLMError(RuntimeError):
+    pass
+
+
+@dataclass
+class LLMConfig:
+    provider: str  # byok | platform | free
+    base_url: str
+    model: str
+    api_key: str | None = None
+    concurrency: int = 8
+
+    def public(self) -> dict:
+        return {"provider": self.provider, "model": self.model, "base_url": self.base_url}
+
+
+@dataclass
+class Usage:
+    calls: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    errors: int = 0
+
+    def as_dict(self) -> dict:
+        return self.__dict__.copy()
+
+
+def resolve_config(provider: str, api_key: str | None, model: str | None,
+                   base_url: str | None, access_code: str | None) -> LLMConfig:
+    provider = (provider or "free").lower()
+    if provider == "byok":
+        if not api_key:
+            raise LLMError("مطلوب مفتاح API الخاص بك (BYOK).")
+        return LLMConfig("byok", (base_url or OPENROUTER_BASE).rstrip("/"),
+                         model or "openai/gpt-4o-mini", api_key, concurrency=8)
+    if provider == "platform":
+        expected = os.environ.get("APP_ACCESS_CODE") or os.environ.get("AGOS_API_KEY")
+        key = os.environ.get("OPENROUTER_API_KEY")
+        if not expected or not access_code or access_code != expected:
+            raise LLMError("رمز الوصول غير صحيح؛ مفتاح المنصة متاح للمالك فقط.")
+        if not key:
+            raise LLMError("لا يوجد OPENROUTER_API_KEY على الخادم.")
+        return LLMConfig("platform", OPENROUTER_BASE,
+                         model or os.environ.get("LLM_MODEL", "openai/gpt-4o-mini"), key, concurrency=8)
+    if provider == "free":
+        if os.environ.get("FREE_LLM_ENABLED", "1") != "1":
+            raise LLMError("المزود المجاني معطّل على هذا الخادم.")
+        return LLMConfig("free", FREE_BASE, FREE_MODEL, None, concurrency=1)
+    raise LLMError(f"مزود غير معروف: {provider}")
+
+
+class LLM:
+    """Thin async client with a concurrency gate, retries and usage accounting."""
+
+    def __init__(self, cfg: LLMConfig, timeout: float = 120.0):
+        self.cfg = cfg
+        self.usage = Usage()
+        self._sem = asyncio.Semaphore(max(1, cfg.concurrency))
+        self._client = httpx.AsyncClient(timeout=timeout)
+
+    async def close(self):
+        await self._client.aclose()
+
+    def _url(self) -> str:
+        b = self.cfg.base_url
+        return b if b.endswith("/openai") or b.endswith("/chat/completions") else b + "/chat/completions"
+
+    async def chat(self, messages: list[dict], temperature: float = 0.3, max_tokens: int = 2000) -> str:
+        headers = {"Content-Type": "application/json"}
+        if self.cfg.api_key:
+            headers["Authorization"] = f"Bearer {self.cfg.api_key}"
+            headers["HTTP-Referer"] = "https://github.com/reeveero-tech/All-hand"
+            headers["X-Title"] = "All-hand"
+        body = {"model": self.cfg.model, "messages": messages,
+                "temperature": temperature, "max_tokens": max_tokens}
+        last = ""
+        for attempt in range(5):
+            async with self._sem:
+                try:
+                    r = await self._client.post(self._url(), headers=headers, json=body)
+                except httpx.HTTPError as e:
+                    last = f"network: {e}"
+                    r = None
+            if r is not None:
+                if r.status_code == 200:
+                    try:
+                        data = r.json()
+                        msg = data["choices"][0]["message"]
+                        text = msg.get("content") or ""
+                        calls = msg.get("tool_calls") or []
+                        if not text.strip() and calls:  # model used native tool calling: map to our protocol
+                            fn = calls[0].get("function", {})
+                            try:
+                                args = json.loads(fn.get("arguments") or "{}")
+                            except json.JSONDecodeError:
+                                args = {"query": fn.get("arguments")}
+                            text = json.dumps({"action": "tool", "tool": fn.get("name"), "input": args}, ensure_ascii=False)
+                    except Exception as e:  # noqa: BLE001
+                        last = f"bad response: {e}"
+                    else:
+                        self.usage.calls += 1
+                        u = data.get("usage") or {}
+                        self.usage.prompt_tokens += int(u.get("prompt_tokens") or 0)
+                        self.usage.completion_tokens += int(u.get("completion_tokens") or 0)
+                        if text.strip():
+                            return text
+                        last = "empty response"
+                elif r.status_code in (401, 403):
+                    self.usage.errors += 1
+                    raise LLMError(f"المزود رفض المفتاح ({r.status_code}): {r.text[:200]}")
+                else:
+                    last = f"HTTP {r.status_code}: {r.text[:200]}"
+                    if r.status_code in (402, 429):  # rate limited: back off longer
+                        await asyncio.sleep(6 * (attempt + 1))
+            await asyncio.sleep(1.5 * (attempt + 1) ** 2)
+        self.usage.errors += 1
+        raise LLMError(f"فشل استدعاء النموذج بعد عدة محاولات: {last}")
+
+    async def chat_json(self, messages: list[dict], temperature: float = 0.2, max_tokens: int = 2000) -> dict:
+        text = await self.chat(messages, temperature, max_tokens)
+        try:
+            return extract_json(text)
+        except ValueError:
+            repair = messages + [{"role": "assistant", "content": text},
+                                 {"role": "user", "content": "ردك ليس JSON صالحًا. أعد الرد نفسه ككائن JSON صالح فقط بلا أي نص آخر."}]
+            return extract_json(await self.chat(repair, 0.0, max_tokens))
+
+
+_FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.S)
+
+
+def extract_json(text: str) -> dict:
+    """Return the first JSON object found in text (handles code fences and chatter)."""
+    candidates = [m.group(1) for m in _FENCE.finditer(text)] + [text]
+    for c in candidates:
+        c = c.strip()
+        start = c.find("{")
+        while start != -1:
+            depth, in_str, esc = 0, False, False
+            for i in range(start, len(c)):
+                ch = c[i]
+                if in_str:
+                    if esc:
+                        esc = False
+                    elif ch == "\\":
+                        esc = True
+                    elif ch == '"':
+                        in_str = False
+                elif ch == '"':
+                    in_str = True
+                elif ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            obj = json.loads(c[start:i + 1])
+                            if isinstance(obj, dict):
+                                return obj
+                        except json.JSONDecodeError:
+                            pass
+                        break
+            start = c.find("{", start + 1)
+    raise ValueError("no JSON object in model output")

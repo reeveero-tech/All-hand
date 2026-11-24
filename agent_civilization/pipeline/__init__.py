@@ -1,4 +1,0 @@
-"""Pipeline orchestration package."""
-from .orchestrator import execute_plan
-
-__all__ = ["execute_plan"]
