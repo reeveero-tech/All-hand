@@ -27,16 +27,25 @@ KINDS = ("profile", "project", "decision", "finding", "task")
 
 # Nature = where an item came from and how far it can be trusted. Kind says *what* it is about;
 # nature says *who asserted it*. Only user_stated / user_confirmed may be attributed to the user.
-NATURES = ("user_stated", "user_confirmed", "task_output", "assumption", "scenario", "unverified")
-TRUST = {"user_confirmed": 5, "user_stated": 4, "task_output": 2, "assumption": 1, "unverified": 1, "scenario": 0}
+NATURES = ("user_stated", "user_confirmed", "external_source", "task_output", "inferred", "assumption", "scenario",
+           "unverified")
+TRUST = {"user_confirmed": 5, "user_stated": 4, "external_source": 3, "task_output": 2, "inferred": 1, "assumption": 1,
+         "unverified": 1, "scenario": 0}
+# Shown to the user and the planner. Derived from the nature (not from the model) so it cannot be inflated.
+CONFIDENCE = {"user_confirmed": 0.95, "user_stated": 0.9, "external_source": 0.7, "task_output": 0.5, "inferred": 0.4,
+              "assumption": 0.3, "unverified": 0.2, "scenario": 0.0}
+# Natures the user may set from the memory panel (user_stated needs a quote, external_source needs a URL).
+USER_SETTABLE = ("user_confirmed", "assumption", "scenario")
 USER_NATURES = ("user_stated", "user_confirmed")
-NATURE_LABEL = {"user_stated": "صرّح به المستخدم", "user_confirmed": "أكده المستخدم", "task_output": "نتيجة مهمة سابقة",
+NATURE_LABEL = {"user_stated": "صرّح به المستخدم", "user_confirmed": "أكده المستخدم", "external_source": "من مصدر خارجي",
+                "task_output": "نتيجة أو توصية من الفريق", "inferred": "استنتاج غير مصرّح به",
                 "assumption": "افتراض/تقدير", "scenario": "سيناريو اختباري/افتراضي", "unverified": "مصدر غير مؤكد"}
 # Cues that a request is a test, example or hypothetical. False positives only make memory more cautious.
 _HYPO = re.compile(r"(افترض|لنفترض|نفترض|بافتراض|افتراضي|سيناريو|تخيل|تخيّل|وهمي|وهمية|مثال تجريبي|بيانات اختبار|"
                    r"للاختبار|لغرض الاختبار|اختبار الذاكرة|اختبر الذاكرة|مشروع تجريبي|\bhypothetical\b|\bsuppose\b|"
                    r"\bimagine\b|\bdummy\b|\btest data\b|\bscenario\b)", re.I)
 _ESTIMATE = re.compile(r"(تقدير|تقديري|تقريب|تقريبًا|تقريبا|متوقع|[أايتن]?توقع|يُتوقع|ربما|حوالي|نحو \d|قد يصل|افتراض|\bestimate)", re.I)
+_URL = re.compile(r"https?://[^\s)\]}>\"'،]+")
 _NUM = re.compile(r"\d[\d,٬.]*")
 TABLE = os.environ.get("MEMORY_TABLE", "memories")  # override only for staging tests
 MAX_ITEMS = 500
@@ -117,6 +126,10 @@ _GENERIC_Q = {"مشروع", "خطه", "اكتب", "اريد", "ساعد", "عم�
 
 
 # ---------------- storage ----------------
+class MemoryUnavailable(RuntimeError):
+    """The memory backend refused or failed. Always surfaced to the user; never swallowed."""
+
+
 class MemoryStore:
     """Supabase table public.memories when configured, otherwise process memory."""
 
@@ -139,7 +152,7 @@ class MemoryStore:
                                 params={"space": f"eq.{sh}", "order": "created_at.desc", "limit": str(MAX_ITEMS),
                                         "select": "id,kind,content,run_id,importance,created_at"})
         if r.status_code != 200:
-            raise RuntimeError(f"memory list failed: {r.status_code} {r.text[:200]}")
+            raise MemoryUnavailable(f"memory list failed: {r.status_code} {r.text[:200]}")
         rows = r.json()
         for row in rows:  # timestamptz -> epoch seconds; legacy rows have no provenance -> unverified
             row["created_at"] = _epoch(row["created_at"])
@@ -158,7 +171,7 @@ class MemoryStore:
         async with httpx.AsyncClient(timeout=15) as c:
             r = await c.post(f"{sb.URL}/rest/v1/{TABLE}", headers={**self._h(), "Prefer": "return=minimal"}, json=rows)
         if r.status_code >= 300:
-            raise RuntimeError(f"memory add failed: {r.status_code} {r.text[:200]}")
+            raise MemoryUnavailable(f"memory add failed: {r.status_code} {r.text[:200]}")
 
     async def delete(self, space: str, ids: list[str]) -> int:
         if isinstance(ids, str):
@@ -174,7 +187,9 @@ class MemoryStore:
         async with httpx.AsyncClient(timeout=15) as c:
             r = await c.delete(f"{sb.URL}/rest/v1/{TABLE}", headers={**self._h(), "Prefer": "return=representation"},
                                params={"space": f"eq.{sh}", "id": f"in.({','.join(ids)})"})
-        return len(r.json()) if r.status_code == 200 else 0
+        if r.status_code != 200:
+            raise MemoryUnavailable(f"memory delete failed: {r.status_code} {r.text[:200]}")
+        return len(r.json())
 
     async def update(self, space: str, item_id: str, changes: dict) -> dict | None:
         """User edit from the memory panel. Returns the updated item or None if not found."""
@@ -191,7 +206,9 @@ class MemoryStore:
         async with httpx.AsyncClient(timeout=15) as c:
             r = await c.patch(f"{sb.URL}/rest/v1/{TABLE}", headers={**self._h(), "Prefer": "return=representation"},
                               params={"space": f"eq.{sh}", "id": f"eq.{item_id}"}, json=changes)
-        if r.status_code != 200 or not r.json():
+        if r.status_code != 200:
+            raise MemoryUnavailable(f"memory update failed: {r.status_code} {r.text[:200]}")
+        if not r.json():
             return None
         row = r.json()[0]
         row.pop("space", None)
@@ -205,7 +222,9 @@ class MemoryStore:
         async with httpx.AsyncClient(timeout=15) as c:
             r = await c.delete(f"{sb.URL}/rest/v1/{TABLE}", headers={**self._h(), "Prefer": "return=representation"},
                                params={"space": f"eq.{sh}"})
-        return len(r.json()) if r.status_code == 200 else 0
+        if r.status_code != 200:
+            raise MemoryUnavailable(f"memory clear failed: {r.status_code} {r.text[:200]}")
+        return len(r.json())
 
 
 META = ("nature", "subject", "evidence", "source_goal")
@@ -216,6 +235,7 @@ def normalise(it: dict) -> dict:
         it["nature"] = "unverified"
     for k in ("subject", "evidence", "source_goal"):
         it.setdefault(k, None)
+    it["confidence"] = CONFIDENCE[it["nature"]]
     return it
 
 
@@ -308,8 +328,9 @@ LABEL = {"profile": "عن المستخدم", "project": "مشروع", "decision"
 
 SECTIONS = [
     (USER_NATURES, "حقائق صرّح بها المستخدم نفسه (يجوز نسبتها إليه، مع ذكر أنها من مهمة سابقة إن لزم)"),
-    (("task_output",), "نتائج من مهام سابقة (ليست تصريحات من المستخدم: لا تقل «مشروعك» أو «قررتَ» بسببها؛ قل «في مهمة سابقة ورد أن...»)"),
-    (("assumption",), "افتراضات وتقديرات (تبقى افتراضات: اذكر أنها تقديرية ولا تبنِ عليها كأنها حقائق)"),
+    (("external_source",), "معلومات من مصادر خارجية (انسبها إلى مصدرها المذكور، لا إلى المستخدم، وقد تكون تغيّرت منذ تاريخها)"),
+    (("task_output",), "نتائج وتوصيات من مهام سابقة (ليست تصريحات من المستخدم: لا تقل «مشروعك» أو «قررتَ» بسببها؛ قل «في مهمة سابقة ورد أن...»)"),
+    (("inferred", "assumption"), "استنتاجات وافتراضات وتقديرات (تبقى افتراضات: اذكر أنها تقديرية ولا تبنِ عليها كأنها حقائق)"),
     (("scenario",), "بيانات اختبارية أو سيناريو افتراضي (ليست بيانات المستخدم إطلاقًا: لا تنسبها إليه ولا تطلب منه بيانات حقيقية بناءً عليها)"),
     (("unverified",), "معلومات قديمة مصدرها غير مؤكد (لا تنسبها للمستخدم؛ اذكر أنها غير مؤكدة أو اطلب التأكيد إن احتجتها)"),
 ]
@@ -326,7 +347,9 @@ def _line(it: dict) -> str:
     if it.get("run_id"):
         tags.append(f"مهمة {it['run_id']} · {date}")
     line = f"- [{' · '.join(tags)}] {it['content']}"
-    if it.get("evidence"):
+    if it.get("evidence") and it["nature"] == "external_source":
+        line += f" (المصدر: {it['evidence'][:200]})"
+    elif it.get("evidence"):
         line += f" (نص المستخدم: «{it['evidence'][:160]}»)"
     return line
 
@@ -358,18 +381,20 @@ EXTRACT = """أنت مسؤول ذاكرة المنسق. بعد انتهاء مه
 أعد JSON فقط:
 {"task_summary": "سطر واحد: ماذا طُلب وما الخلاصة (أرقام مهمة إن وجدت)",
  "scenario": false,
- "add": [{"kind": "profile|project|decision|finding", "nature": "user_stated|task_output|assumption|scenario",
-          "subject": "اسم قصير للمشروع أو الموضوع الذي تخصه المعلومة، أو null", "evidence": "للطبيعة user_stated فقط: اقتباس حرفي من طلب المستخدم يثبتها",
+ "add": [{"kind": "profile|project|decision|finding", "nature": "user_stated|external_source|task_output|inferred|assumption|scenario",
+          "subject": "اسم قصير للمشروع أو الموضوع الذي تخصه المعلومة، أو null", "evidence": "user_stated: اقتباس حرفي من طلب المستخدم. external_source: رابط المصدر كما ورد في الجواب",
           "content": "جملة واحدة مستقلة مفهومة وحدها", "importance": 1-5}],
  "supersede": ["معرفات عناصر قديمة صارت خاطئة أو حلّ محلها عنصر جديد عن نفس الموضوع"]}
 الطبيعة:
 - user_stated: قالها المستخدم صراحة عن نفسه أو مشروعه في طلبه. يجب أن تضع في evidence نصه الحرفي.
+- external_source: معلومة مأخوذة من مصدر خارجي (موقع، تقرير) ورد رابطه في الجواب. ضع الرابط في evidence.
+- inferred: استنتاج عن المستخدم أو مشروعه لم يصرّح به حرفيًا.
 - task_output: نتيجة أو توصية أو حساب أنتجه الفريق في الجواب (ليست قرارًا من المستخدم ولا معلومة عنه).
 - assumption: تقدير أو افتراض أو رقم تقريبي، سواء من المستخدم أو من الفريق.
 - scenario: الطلب مثال أو اختبار أو سيناريو افتراضي أو «لنفترض»، وليس وصفًا لواقع المستخدم.
 scenario=true إن كان الطلب كله اختبارًا أو مثالًا أو سيناريو افتراضيًا؛ عندها كل العناصر scenario.
 الأنواع: profile = من هو المستخدم وتفضيلاته (فقط إن قالها هو). project = مشروع ومعطياته. decision = قرار اتخذه المستخدم نفسه (توصيات الفريق ليست قرارات). finding = معلومة مفيدة مع مصدرها.
-قواعد: 0 إلى 6 عناصر، الأهم أولًا. لا تكرر ما في الذاكرة الحالية بنفس المعنى. لا تحفظ معلومات عامة بديهية.
+قواعد: اكتب task_summary وcontent بلغة طلب المستخدم. 0 إلى 6 عناصر، الأهم أولًا. لا تكرر ما في الذاكرة الحالية بنفس المعنى. لا تحفظ معلومات عامة بديهية.
 لا تحفظ أبدًا مفاتيح أو كلمات مرور أو بيانات دفع أو أرقام هويات. إن شككت في الطبيعة فاختر الأضعف (task_output أو assumption)."""
 
 
@@ -404,7 +429,7 @@ def is_scenario_request(goal: str) -> bool:
     return bool(_HYPO.search(goal or ""))
 
 
-def classify(a: dict, goal: str, scenario: bool) -> dict | None:
+def classify(a: dict, goal: str, scenario: bool, result: str = "") -> dict | None:
     """Turn one proposed item into a stored item, enforcing provenance rules in code rather than trusting the model.
 
     - In a scenario/test run, everything is scenario. Full stop.
@@ -416,10 +441,17 @@ def classify(a: dict, goal: str, scenario: bool) -> dict | None:
     if not content:
         return None
     kind = a.get("kind") if a.get("kind") in KINDS[:-1] else "finding"
-    nature = a.get("nature") if a.get("nature") in ("user_stated", "task_output", "assumption", "scenario") else "task_output"
-    evidence = _clean(a.get("evidence")) if nature == "user_stated" else None
+    nature = a.get("nature") if a.get("nature") in ("user_stated", "external_source", "task_output", "inferred",
+                                                     "assumption", "scenario") else "task_output"
+    evidence = _clean(str(a.get("evidence") or "").strip(" \"'«»“”")) if nature in ("user_stated", "external_source") else None
     if scenario:
         nature, evidence = "scenario", None
+    elif nature == "external_source":
+        urls = _URL.findall(evidence or "")
+        if not urls or urls[0].rstrip(".,") not in (result or ""):  # the source must really be in the answer
+            nature, evidence = "task_output", None
+        else:
+            evidence = urls[0].rstrip(".,")[:300]
     elif nature == "user_stated":
         backed = evidence and _flat(evidence) and _flat(evidence) in _flat(goal)
         if not backed or not _nums(content) <= _nums(goal):
@@ -470,7 +502,7 @@ async def extract_and_save(llm: LLM, space: str, run_id: str, goal: str, result:
         new.append({"kind": "task", "nature": "scenario" if scenario else "task_output", "subject": None,
                     "evidence": None, "content": summary, "importance": 3})
     for a in (out.get("add") or [])[:6]:
-        if isinstance(a, dict) and (c := classify(a, goal, scenario)):
+        if isinstance(a, dict) and (c := classify(a, goal, scenario, result)):
             new.append(c)
     for it in new:
         it.update(id=uuid.uuid4().hex[:16], run_id=run_id, created_at=now, source_goal=src)

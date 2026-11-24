@@ -191,7 +191,7 @@ async def test_assumptions_stay_assumptions_after_recall():
     assert any(i["evidence"] for i in saved)  # the user's own estimate keeps its quote
     r2, llm = await run("ما خطة متجر نفحة للعطور في رمضان؟")
     ctx = llm.planner_inputs[0]
-    assumptions = section(ctx, "افتراضات وتقديرات")
+    assumptions = section(ctx, "استنتاجات وافتراضات")
     assert "15%" in assumptions and "500" in assumptions
     assert "15%" not in section(ctx, "حقائق صرّح") and "500" not in section(ctx, "حقائق صرّح")
 

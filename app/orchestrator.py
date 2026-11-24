@@ -209,6 +209,7 @@ class Orchestrator:
         try:
             existing = await memory.STORE.list(r.memory_space)
         except Exception as e:  # noqa: BLE001  memory must never break a run
+            r.memory["error"] = f"recall: {str(e)[:200]}"
             await r.emit("memory_error", {"stage": "recall", "error": str(e)[:200]})
             return []
         r.memory["recalled"] = memory.recall(r.goal, existing, scenario=r.scenario)
@@ -222,8 +223,13 @@ class Orchestrator:
         try:
             res = await memory.extract_and_save(self.llm, r.memory_space, r.id, r.goal, r.result, existing,
                                                 scenario=r.scenario)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001  the run's answer is kept; the failure is recorded and shown
+            r.memory["error"] = f"save: {str(e)[:200]}"
             await r.emit("memory_error", {"stage": "save", "error": str(e)[:200]})
+            return
+        if res.get("error"):
+            r.memory["error"] = f"extract: {res['error'][:200]}"
+            await r.emit("memory_error", {"stage": "extract", "error": res["error"][:200]})
             return
         r.memory["saved"], r.memory["superseded"] = res["saved"], res["superseded"]
         await r.emit("memory_saved", {"count": len(res["saved"]), "superseded": len(res["superseded"]),

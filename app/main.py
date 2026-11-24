@@ -13,6 +13,7 @@ from collections import OrderedDict
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -261,6 +262,12 @@ async def stream(run_id: str, request: Request, after: int = -1, x_client_key: s
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+@app.exception_handler(memory.MemoryUnavailable)
+@app.exception_handler(httpx.HTTPError)
+async def _memory_down(request: Request, exc: Exception):
+    return JSONResponse({"detail": "تعذر الوصول إلى الذاكرة؛ لم يُنفذ الطلب. حاول لاحقًا."}, status_code=502)
+
+
 def _space(x_memory_space: str | None) -> str:
     if not memory.valid_space(x_memory_space):
         raise HTTPException(400, "مطلوب ترويسة X-Memory-Space صالحة.")
@@ -289,8 +296,8 @@ async def memory_edit(item_id: str, body: MemoryEdit, x_memory_space: str | None
             raise HTTPException(400, "المحتوى فارغ أو يشبه مفتاحًا سريًا.")
         changes.update(content=content, nature="user_confirmed")
     if body.nature is not None:
-        if body.nature not in memory.NATURES:
-            raise HTTPException(400, "طبيعة غير معروفة.")
+        if body.nature not in memory.USER_SETTABLE:
+            raise HTTPException(400, "طبيعة غير مسموحة. المتاح: تأكيد، افتراض، بيانات اختبار.")
         changes["nature"] = body.nature
     if not changes:
         raise HTTPException(400, "لا يوجد تعديل.")
