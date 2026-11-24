@@ -11,7 +11,7 @@
 | `app/agents.py` | 9 أدوار وبروتوكول JSON للأفعال (MAX_STEPS=6) | orchestrator | tools، llm | يعمل | سجل أدوات بمستوى خطورة |
 | `app/llm.py` | عميل متوافق مع OpenAI. مزوّد مجاني (Pollinations) أو BYOK أو المنصة. حساب الاستهلاك. `extract_json` | orchestrator، agents، memory | httpx | يعمل. المجاني بطيء | إعادة محاولة مع backoff، وحساب التكلفة |
 | `app/tools.py` | `web_search` (Tavily ← Brave ← DDG ← Wikipedia)، و`fetch_url` مع فحص المضيف، و`run_python` بحدود موارد | agents | httpx، subprocess | يعمل. **`run_python` عملية فرعية على الخادم نفسه بحدود rlimit فقط، ومفعّل فقط لمزوّد المنصة أو مع `ALLOW_CODE_EXEC=1`**، و`fetch_url` يثبّت العنوان ويفحص كل تحويل (#399) | المرحلة 3: تنفيذ معزول |
-| `app/store.py` | حفظ المهام وجلبها من جدول `runs` في Supabase عبر PostgREST | orchestrator، main | httpx | يعمل. **مخطط الجدول غير موجود في المستودع** | ملف `migrations/001_runs.sql` يوثق الواقع |
+| `app/store.py` | حفظ المهام وجلبها من جدول `runs` في Supabase عبر PostgREST | orchestrator، main | httpx | يعمل. **مخطط الجدول غير موجود في المستودع** | `migrations/001_baseline.sql` (#401) |
 | `app/memory.py` | ذاكرة بترتيب BM25 مع تطبيع عربي، وجدول `memories`، ومساحة عبر `X-Memory-Space` (تجزئة) | main، orchestrator | llm، httpx | يعمل. يحفظ أحيانًا معلومات تافهة | PR #398 يضيف المصدر. لاحقًا: ربطها بالمالك |
 | `app/__init__.py` | حزمة | — | — | فارغ | — |
 | `web/index.html` | الصفحة الوحيدة | المتصفح | app.js، style.css | يعمل | المرحلة 1: هيكل التطبيق وثنائية اللغة |
