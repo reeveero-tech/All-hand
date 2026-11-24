@@ -164,9 +164,10 @@ class Orchestrator:
             out = await self.orchestrate(goal, depth=0, prefix="")
             r.result = out["output"]
             r.verdict = out.get("verdict", {})
-            r.status = "done" if out["ok"] else ("partial" if out.get("partial") else "failed")
-            if r.memory_space and r.status in ("done", "partial"):
-                await self.remember(existing)
+            status = "done" if out["ok"] else ("partial" if out.get("partial") else "failed")
+            if r.memory_space and status in ("done", "partial"):
+                await self.remember(existing)  # before status flips, so clients see saved memory with the result
+            r.status = status
         except asyncio.CancelledError:
             r.status = "cancelled"
             await r.emit("run_cancelled", {})

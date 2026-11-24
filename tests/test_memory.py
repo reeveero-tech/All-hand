@@ -131,3 +131,16 @@ def test_memory_api():
     assert c.get("/api/memory", headers={"X-Memory-Space": "other_space_0123456789abcdef"}).json()["count"] == 0
     assert c.delete("/api/memory", headers=h).json()["deleted"] == 1
     assert c.post("/api/runs", json={"goal": "x", "memory_space": "bad"}).status_code == 400
+
+
+def test_attached_prefixes_and_suffixes_match():
+    assert memory.tokens("لمشروعي") == memory.tokens("مشروع")
+    assert memory.tokens("بجدة") == memory.tokens("جدة")
+    assert memory.tokens("لنقطة")[0] == memory.tokens("نقطة")[0]
+
+
+def test_followup_recalls_project_facts():
+    items = [item("مشروع مقهى في الروضة بجدة، التكاليف الثابتة 35 ألف ريال", kind="project", importance=5, id_="p"),
+             item("حساب نقطة التعادل للمقهى", kind="task", id_="t")]
+    got = {i["id"] for i in memory.recall("اكتب خطة تسويق للشهر الأول", items)}
+    assert got == {"p", "t"}
