@@ -1,16 +1,57 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0e1a" />
-    <title>AGOS — لوحة المراقبة</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>All-hand — منسق الوكلاء</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="logo">AH</span><div><h1>All-hand</h1><p>منسق يخطط ويوزع العمل على فريق وكلاء متخصصين ويتحقق من نتائجهم</p></div></div>
+  <button id="settingsBtn" class="ghost">الإعدادات</button>
+</header>
+
+<section id="settings" class="card hidden">
+  <h2>مصدر الذكاء الاصطناعي</h2>
+  <div class="radios">
+    <label><input type="radio" name="provider" value="free" checked> مجاني تجريبي <small>(Pollinations، بطيء ومحدود)</small></label>
+    <label><input type="radio" name="provider" value="byok"> مفتاحي الخاص <small>(OpenRouter أو أي واجهة متوافقة مع OpenAI)</small></label>
+    <label><input type="radio" name="provider" value="platform"> مفتاح المنصة <small>(للمالك برمز الوصول)</small></label>
+  </div>
+  <div class="grid">
+    <label data-for="byok">مفتاح API<input id="apiKey" type="password" placeholder="sk-or-..." autocomplete="off"></label>
+    <label data-for="byok">عنوان الواجهة (اختياري)<input id="baseUrl" placeholder="https://openrouter.ai/api/v1"></label>
+    <label data-for="byok platform">النموذج (اختياري)<input id="model" placeholder="openai/gpt-4o-mini"></label>
+    <label data-for="platform">رمز الوصول<input id="accessCode" type="password" autocomplete="off"></label>
+    <label>أقصى عدد وكلاء لكل مهمة<input id="maxAgents" type="number" min="1" max="500" placeholder="تلقائي"></label>
+  </div>
+  <p class="muted">المفاتيح تُحفظ في متصفحك فقط وتُرسل مع كل طلب، ولا يخزنها الخادم.</p>
+</section>
+
+<main>
+  <section class="card">
+    <textarea id="goal" rows="4" placeholder="اكتب ما تريد إنجازه... مثال: ادرس سوق المقاهي المختصة في جدة واقترح خطة إطلاق بميزانية 200 ألف ريال"></textarea>
+    <div class="row">
+      <div class="examples" id="examples"></div>
+      <div class="actions">
+        <button id="cancelBtn" class="ghost hidden">إيقاف</button>
+        <button id="runBtn">ابدأ</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="live" class="hidden">
+    <div class="stats" id="stats"></div>
+    <div class="cols">
+      <div class="card"><h2>الخطة والمهام</h2><div id="board"></div></div>
+      <div class="card"><h2>سجل العمل المباشر</h2><ol id="log"></ol></div>
+    </div>
+    <div class="card"><h2>الجواب النهائي <span id="verdict"></span></h2><div id="result" class="md muted">قيد العمل...</div></div>
+  </section>
+
+  <section class="card"><h2>المهام السابقة <small class="muted">(في ذاكرة الخادم الحالية)</small></h2><ul id="history"></ul></section>
+</main>
+<script src="/static/app.js"></script>
+</body>
 </html>

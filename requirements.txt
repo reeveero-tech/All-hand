@@ -1,9 +1,4 @@
-PyYAML
-aiohttp
-fastapi
-uvicorn[standard]
-pydantic>=2.12,<3
-python-multipart
-cryptography
-psycopg[binary]
-psycopg-pool
+fastapi==0.165.0
+uvicorn[standard]==0.54.0
+httpx==0.28.1
+pydantic==2.14.4

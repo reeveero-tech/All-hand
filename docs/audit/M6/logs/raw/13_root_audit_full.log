@@ -1,8 +1,0 @@
-$ npm audit --audit-level=high
-[cwd=.]
-returncode=0
---- stdout ---
-found 0 vulnerabilities
-
---- stderr ---
-
