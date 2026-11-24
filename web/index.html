@@ -26,6 +26,11 @@
     <label data-for="platform">رمز الوصول<input id="accessCode" type="password" autocomplete="off"></label>
     <label>أقصى عدد وكلاء لكل مهمة<input id="maxAgents" type="number" min="1" max="500" placeholder="تلقائي"></label>
   </div>
+  <h2>الذاكرة</h2>
+  <label class="check"><input type="checkbox" id="memOn" checked> استخدم الذاكرة: يتذكر المنسق ما عرفه عنك وعن مشاريعك من المهام السابقة</label>
+  <div class="grid">
+    <label>معرّف ذاكرتك السري <small class="muted">(انسخه إلى جهاز آخر لمشاركة الذاكرة)</small><input id="memSpace" autocomplete="off" spellcheck="false"></label>
+  </div>
   <p class="muted">المفاتيح تُحفظ في متصفحك فقط وتُرسل مع كل طلب، ولا يخزنها الخادم.</p>
 </section>
 
@@ -47,8 +52,13 @@
       <div class="card"><h2>الخطة والمهام</h2><div id="board"></div></div>
       <div class="card"><h2>سجل العمل المباشر</h2><ol id="log"></ol></div>
     </div>
+    <div id="memRun" class="card hidden"><h2>الذاكرة في هذه المهمة</h2><div id="memRunBody"></div></div>
     <div class="card"><h2>الجواب النهائي <span id="verdict"></span></h2><div id="result" class="md muted">قيد العمل...</div></div>
   </section>
+
+  <section class="card"><h2>ذاكرة المنسق <small class="muted" id="memCount"></small>
+    <span class="actions"><button id="memRefresh" class="ghost">تحديث</button><button id="memClear" class="ghost">مسح الكل</button></span></h2>
+    <ul id="memList"></ul></section>
 
   <section class="card"><h2>المهام السابقة <small class="muted">(في ذاكرة الخادم الحالية)</small></h2><ul id="history"></ul></section>
 </main>

@@ -9,10 +9,12 @@ const EXAMPLES = [
 ];
 
 // ---------- settings ----------
-const fields = ["apiKey", "baseUrl", "model", "accessCode", "maxAgents"];
+const fields = ["apiKey", "baseUrl", "model", "accessCode", "maxAgents", "memSpace"];
 function loadSettings() {
   const s = JSON.parse(localStorage.getItem("ah_settings") || "{}");
   fields.forEach((f) => { if (s[f]) $("#" + f).value = s[f]; });
+  $("#memOn").checked = s.memOn !== false;
+  if (!/^[A-Za-z0-9_-]{20,200}$/.test($("#memSpace").value)) $("#memSpace").value = newSpace();
   const p = s.provider || "free";
   document.querySelector(`input[name=provider][value=${p}]`).checked = true;
   syncProvider();
@@ -20,6 +22,7 @@ function loadSettings() {
 function saveSettings() {
   const s = {provider: provider()};
   fields.forEach((f) => (s[f] = $("#" + f).value.trim()));
+  s.memOn = $("#memOn").checked;
   localStorage.setItem("ah_settings", JSON.stringify(s));
 }
 const provider = () => document.querySelector("input[name=provider]:checked").value;
@@ -28,6 +31,13 @@ function syncProvider() {
 }
 document.querySelectorAll("input[name=provider]").forEach((r) => r.addEventListener("change", () => { syncProvider(); saveSettings(); }));
 fields.forEach((f) => $("#" + f).addEventListener("change", saveSettings));
+$("#memOn").addEventListener("change", () => { saveSettings(); loadMemory(); });
+$("#memSpace").addEventListener("change", loadMemory);
+function newSpace() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  return "mem_" + Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+}
+const memSpace = () => ($("#memOn").checked && /^[A-Za-z0-9_-]{20,200}$/.test($("#memSpace").value.trim()) ? $("#memSpace").value.trim() : null);
 $("#settingsBtn").onclick = () => $("#settings").classList.toggle("hidden");
 
 // ---------- markdown (small, safe: escape first) ----------
@@ -64,7 +74,7 @@ $("#runBtn").onclick = async () => {
   saveSettings();
   const s = JSON.parse(localStorage.getItem("ah_settings"));
   const body = {goal, provider: s.provider, api_key: s.apiKey || null, base_url: s.baseUrl || null,
-    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null};
+    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace()};
   $("#runBtn").disabled = true;
   try {
     const {id} = await api("/api/runs", {method: "POST", body: JSON.stringify(body)});
@@ -103,6 +113,9 @@ const LABEL = {
   agent_error: (e) => `خطأ عند ${e.agent}: ${e.error}`,
   synthesizing: () => "المنسق يجمع النتائج",
   final_check: (e) => `التحقق النهائي: ${e.pass ? "مقبول" : "مرفوض"} (${e.score}/10)`,
+  memory_recalled: (e) => `استرجع المنسق ${e.count} معلومة من الذاكرة (من أصل ${e.total})`,
+  memory_saved: (e) => `حُفظ في الذاكرة ${e.count} معلومة${e.superseded ? "، وحُذف " + e.superseded + " قديمة" : ""}`,
+  memory_error: (e) => `تعذر الوصول إلى الذاكرة: ${e.error}`,
   run_error: (e) => `خطأ: ${e.error}`,
   run_cancelled: () => "أُوقفت المهمة",
   run_finished: (e) => `انتهى: ${e.status} — ${e.agents_spawned} وكيلًا، ${e.usage.calls} استدعاء نموذج`,
@@ -143,8 +156,38 @@ async function refresh() {
     const v = r.verdict || {};
     $("#verdict").innerHTML = v.score != null ? `<span class="badge ${v.pass ? "s-done" : "s-failed"}">تحقق نهائي ${v.score}/10</span>` : "";
     loadHistory();
+    loadMemory();
+  }
+  const m = r.memory;
+  $("#memRun").classList.toggle("hidden", !m?.enabled);
+  if (m?.enabled) {
+    const li = (xs) => xs?.length ? "<ul>" + xs.map((i) => `<li><span class="badge">${esc(KIND[i.kind] || i.kind)}</span>${esc(i.content)}</li>`).join("") + "</ul>" : '<p class="muted">لا شيء</p>';
+    $("#memRunBody").innerHTML = `<h4>ما تذكّره المنسق</h4>${li(m.recalled)}<h4>ما حفظه بعد المهمة</h4>${busy ? '<p class="muted">بعد الانتهاء...</p>' : li(m.saved)}`;
   }
 }
+
+const KIND = {profile: "عنك", project: "مشروع", decision: "قرار", finding: "معلومة", task: "مهمة سابقة"};
+async function loadMemory() {
+  const sp = memSpace();
+  if (!sp) { $("#memList").innerHTML = '<li class="muted">الذاكرة معطلة من الإعدادات</li>'; $("#memCount").textContent = ""; return; }
+  let d;
+  try { d = await api("/api/memory", {headers: {"X-Memory-Space": sp}}); } catch (e) { $("#memList").innerHTML = `<li class="err">${esc(e.message)}</li>`; return; }
+  $("#memCount").textContent = `(${d.count} عنصر)`;
+  $("#memList").innerHTML = d.items.map((i) => `<li><span class="badge">${esc(KIND[i.kind] || i.kind)}</span>${esc(i.content)}
+    <small class="muted">${new Date(i.created_at * 1000).toLocaleDateString("ar-SA")}</small><button class="ghost del" data-id="${esc(i.id)}">حذف</button></li>`).join("")
+    || '<li class="muted">لا شيء بعد. سيبدأ المنسق بالتذكر بعد أول مهمة.</li>';
+  document.querySelectorAll("#memList .del").forEach((b) => (b.onclick = async () => {
+    await api(`/api/memory/${encodeURIComponent(b.dataset.id)}`, {method: "DELETE", headers: {"X-Memory-Space": sp}}).catch(() => {});
+    loadMemory();
+  }));
+}
+$("#memRefresh").onclick = loadMemory;
+$("#memClear").onclick = async () => {
+  const sp = memSpace();
+  if (!sp || !confirm("مسح كل ذاكرة المنسق؟ لا يمكن التراجع.")) return;
+  await api("/api/memory", {method: "DELETE", headers: {"X-Memory-Space": sp}}).catch(() => {});
+  loadMemory();
+};
 
 async function loadHistory() {
   const runs = await api("/api/runs").catch(() => []);
@@ -155,4 +198,6 @@ async function loadHistory() {
 $("#examples").innerHTML = EXAMPLES.map((x) => `<button>${esc(x.slice(0, 38))}…</button>`).join("");
 document.querySelectorAll("#examples button").forEach((b, i) => (b.onclick = () => ($("#goal").value = EXAMPLES[i])));
 loadSettings();
+saveSettings();
 loadHistory();
+loadMemory();

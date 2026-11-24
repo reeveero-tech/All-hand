@@ -9,12 +9,12 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import store
+from . import memory, store
 from .agents import ROLES
 from .llm import LLM, LLMError, resolve_config
 from .orchestrator import DEFAULT_MAX_AGENTS, Orchestrator, Run
@@ -42,6 +42,7 @@ class RunRequest(BaseModel):
     base_url: str | None = None
     access_code: str | None = None
     max_agents: int | None = Field(default=None, ge=1, le=500)
+    memory_space: str | None = None  # private random id kept in the browser; None = no memory
 
 
 def _running() -> int:
@@ -67,9 +68,12 @@ async def create_run(req: RunRequest):
         cfg = resolve_config(req.provider, req.api_key, req.model, req.base_url, req.access_code)
     except LLMError as e:
         raise HTTPException(400, str(e)) from e
+    if req.memory_space is not None and not memory.valid_space(req.memory_space):
+        raise HTTPException(400, "معرّف مساحة الذاكرة غير صالح.")
     cap = {"free": 25, "platform": 500}.get(cfg.provider, DEFAULT_MAX_AGENTS)
     run = Run(goal=req.goal.strip(), llm_public=cfg.public(), max_agents=min(req.max_agents or cap, cap),
-              can_exec=cfg.provider == "platform" or os.environ.get("ALLOW_CODE_EXEC") == "1")
+              can_exec=cfg.provider == "platform" or os.environ.get("ALLOW_CODE_EXEC") == "1",
+              memory_space=req.memory_space)
     RUNS[run.id] = run
     while len(RUNS) > MAX_LIVE:
         old_id, old = next(iter(RUNS.items()))
@@ -145,6 +149,28 @@ async def stream(run_id: str, request: Request, after: int = -1):
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+def _space(x_memory_space: str | None) -> str:
+    if not memory.valid_space(x_memory_space):
+        raise HTTPException(400, "مطلوب ترويسة X-Memory-Space صالحة.")
+    return x_memory_space
+
+
+@app.get("/api/memory")
+async def memory_list(x_memory_space: str | None = Header(default=None)):
+    items = await memory.STORE.list(_space(x_memory_space))
+    return {"count": len(items), "items": items}
+
+
+@app.delete("/api/memory/{item_id}")
+async def memory_delete(item_id: str, x_memory_space: str | None = Header(default=None)):
+    return {"deleted": await memory.STORE.delete(_space(x_memory_space), [item_id])}
+
+
+@app.delete("/api/memory")
+async def memory_clear(x_memory_space: str | None = Header(default=None)):
+    return {"deleted": await memory.STORE.clear(_space(x_memory_space))}
 
 
 @app.get("/")
