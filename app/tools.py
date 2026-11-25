@@ -209,7 +209,7 @@ async def _wikipedia(query: str, lang: str) -> list[dict]:
              "snippet": _html_to_text(h.get("snippet", ""))} for h in r.json().get("query", {}).get("search", [])]
 
 
-GNEWS_DECODE = 5  # Google News links are encoded; this many are resolved to the publisher's URL
+GNEWS_DECODE = 3  # Google News links are encoded; this many are resolved to the publisher's URL
 
 
 async def _gnews_decode(c: httpx.AsyncClient, link: str) -> str | None:
@@ -235,6 +235,9 @@ async def _gnews_decode(c: httpx.AsyncClient, link: str) -> str | None:
         url = json.loads(json.loads(r.text.split("\n\n", 1)[1])[0][2])[1]
     except Exception:  # noqa: BLE001
         STATS["gnews_last_error"] = f"batchexecute {r.status_code} {r.text[:80]!r}"
+        if r.status_code == 429:  # stop decoding for a while instead of hammering
+            STATS["gnews_429"] = STATS.get("gnews_429", 0) + 1
+            STATS["gnews_cool_until"] = time.monotonic() + 300
         return None
     return url if isinstance(url, str) and url.startswith("http") else None
 
@@ -254,7 +257,15 @@ async def _gnews(query: str) -> list[dict]:
         def tag(it, name):
             m = re.search(rf"<{name}[^>]*>(.*?)</{name}>", it, re.S)
             return _html_to_text(m.group(1)) if m else ""
-        urls = await asyncio.gather(*[_gnews_decode(c, tag(it, "link")) for it in items], return_exceptions=True)
+        urls: list = []
+        for it in items[:GNEWS_DECODE]:  # one at a time: parallel decodes got HTTP 429 from Render's IP
+            if STATS.get("gnews_429", 0) and time.monotonic() < STATS.get("gnews_cool_until", 0):
+                break
+            try:
+                urls.append(await _gnews_decode(c, tag(it, "link")))
+            except Exception as e:  # noqa: BLE001
+                urls.append(e)
+            await asyncio.sleep(1.0)
     bad = [u for u in urls if not isinstance(u, str)]
     if bad and len(bad) == len(urls) and isinstance(bad[0], Exception):
         STATS["gnews_last_error"] = f"decode: {type(bad[0]).__name__}"
