@@ -332,3 +332,20 @@ def apply_rejected(v: dict, lines: list[str]) -> dict:
           "أو اذكره في «بيانات مطلوبة»."]
     v["reused_rejected"] = lines[:5]
     return v
+
+
+_USER_TAG = re.compile(r"من المستخدم|صرّح به المستخدم|حسب المستخدم")
+
+
+def false_user_tags(text: str, user_text: str) -> list[str]:
+    """Lines that credit the user with figures the user never gave (a mislabeled source is a fabricated one)."""
+    user_values = values_in(user_text or "")
+    out = []
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not _USER_TAG.search(line) or re.search(r"[=×*÷]|محسوب", line):
+            continue
+        vals = [x for x in values_in(line) if x >= 10]
+        if vals and not any(_near(x, u) for x in vals for u in user_values):
+            out.append(line[:160])
+    return out

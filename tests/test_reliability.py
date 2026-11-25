@@ -433,3 +433,33 @@ def test_critique_of_rejected_figure_is_not_reuse():
 def test_disputed_but_used_is_still_reuse():
     from app import quality
     assert quality.reuses_rejected("الإيرادات السنوية (المستخدمة في الحساب) = 68 220 000 000 ريال (من طلب سابق غير موثق)", [68.22e9])
+
+
+def test_looks_truncated():
+    from app.llm import looks_truncated
+    assert looks_truncated("| العنصر | القيمة |\n|---|---|\n| **")
+    assert looks_truncated("نص ```code")
+    assert not looks_truncated("## خلاصة\nالجواب مكتمل.")
+    assert not looks_truncated("| أ | ب |\n|---|---|\n| 1 | 2 |")
+
+
+def test_chat_long_continues_on_length(monkeypatch):
+    import asyncio
+    from app.llm import LLM, LLMConfig
+    llm = LLM(LLMConfig(provider="free", base_url="https://x/openai", model="m"))
+    replies = [("الجزء الأول | **", "length"), ("بقية الجواب.", "stop")]
+
+    async def chat(messages, temperature=0.3, max_tokens=2000):
+        t, f = replies.pop(0)
+        llm.last_finish = f
+        return t
+    monkeypatch.setattr(llm, "chat", chat)
+    out = asyncio.run(llm.chat_long([{"role": "user", "content": "x"}]))
+    assert out.startswith("الجزء الأول") and out.endswith("بقية الجواب.") and not replies
+
+
+def test_false_user_tags():
+    from app import quality
+    ans = "| التحضير | 12 % | 10 800 | (من المستخدم) |\n| الميزانية | 90 000 | (من المستخدم) |\n| المجموع | 90 000 | (محسوب) |"
+    bad = quality.false_user_tags(ans, "أعد الخطة بعد تغيير الميزانية إلى 90 ألف ريال")
+    assert len(bad) == 1 and "التحضير" in bad[0]
