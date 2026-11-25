@@ -270,18 +270,42 @@ async def _gnews(query: str) -> list[dict]:
     if bad and len(bad) == len(urls) and isinstance(bad[0], Exception):
         STATS["gnews_last_error"] = f"decode: {type(bad[0]).__name__}"
     out = []
-    for it, u in zip(items, urls):
+    for i, it in enumerate(items):
+        u = urls[i] if i < len(urls) else None
+        meta = f"{tag(it, 'source')} — {tag(it, 'pubDate')}".strip(" —")
         if isinstance(u, str):
-            out.append({"title": tag(it, "title"), "url": u,
-                        "snippet": f"{tag(it, 'source')} — {tag(it, 'pubDate')}".strip(" —")})
+            out.append({"title": tag(it, "title"), "url": u, "snippet": meta})
+        elif tag(it, "link").startswith("https://news.google.com/"):
+            # the publisher URL could not be resolved from this server (HTTP 429): the headline and publisher are
+            # real and the link opens the article in a browser, but nothing of the article itself was read
+            out.append({"title": tag(it, "title"), "url": tag(it, "link"),
+                        "snippet": meta + " — عنوان خبر وناشره فقط؛ لم يُقرأ نص المقال، فلا تنسب إليه أرقامًا"})
     return out
 
 
+_tavily_gate = {"cool_until": 0.0}
+TAVILY_COOLDOWN = 600.0
+
+
 async def _tavily(query: str) -> list[dict]:
+    """Tavily search. With TAVILY_API_KEY it uses the owner's (free, 1,000 credits/month) key; without one it uses
+    Tavily's documented keyless mode (free, rate-limited, no account: docs.tavily.com/documentation/keyless)."""
+    key = os.environ.get("TAVILY_API_KEY")
+    if not key and time.monotonic() < _tavily_gate["cool_until"]:
+        STATS["tavily_skipped_cooldown"] = STATS.get("tavily_skipped_cooldown", 0) + 1
+        return []
+    headers = {"Content-Type": "application/json"}
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
+    else:
+        headers["X-Tavily-Access-Mode"] = "keyless"
+    STATS["tavily_requests"] = STATS.get("tavily_requests", 0) + 1
     async with httpx.AsyncClient(timeout=20) as c:
-        r = await c.post("https://api.tavily.com/search", json={"api_key": os.environ["TAVILY_API_KEY"],
-                                                                "query": query, "max_results": 6})
+        r = await c.post("https://api.tavily.com/search", json={"query": query, "max_results": 6}, headers=headers)
     if r.status_code != 200:
+        STATS["tavily_last_error"] = f"{r.status_code} {r.text[:120]!r}"
+        if not key:  # keyless budget spent or refused: leave it alone for a while
+            _tavily_gate["cool_until"] = time.monotonic() + TAVILY_COOLDOWN
         return []
     return [{"title": x.get("title", ""), "url": x.get("url", ""), "snippet": x.get("content", "")[:400]}
             for x in r.json().get("results", [])]
@@ -325,8 +349,12 @@ def excerpt(text: str, query: str, limit: int = 1400) -> str:
     return "\n".join(ln for _, ln in sorted(keep))
 
 
+def _readable(url: str) -> bool:
+    return not url.startswith("https://news.google.com/")
+
+
 async def _auto_read(results: list[dict], query: str) -> list[tuple[str, str]]:
-    cands = [x["url"] for x in results if x.get("url", "").startswith("http") and "wikipedia.org" not in x["url"]][:AUTO_READ + 2]
+    cands = [x["url"] for x in results if x.get("url", "").startswith("http") and "wikipedia.org" not in x["url"] and _readable(x["url"])][:AUTO_READ + 2]
 
     async def one(u):
         try:
@@ -353,7 +381,7 @@ def search_meta(result: str) -> dict:
 
 
 async def web_search(query: str) -> str:
-    """Keyed providers first (TAVILY_API_KEY, BRAVE_API_KEY), then DuckDuckGo (gated), Google News, then Wikipedia.
+    """Tavily (keyless, or the owner's free key), Brave if keyed, then DuckDuckGo (gated), Google News, then Wikipedia.
     The top results are opened and their relevant lines appended, marked as read."""
     query = re.sub(r"\s+", " ", str(query or "")).strip()[:200]
     if not query:
@@ -366,8 +394,7 @@ async def web_search(query: str) -> str:
     else:
         results, source = [], ""
         chain = []
-        if os.environ.get("TAVILY_API_KEY"):
-            chain.append((_tavily, "Tavily"))
+        chain.append((_tavily, "Tavily"))  # keyless when no key is set
         if os.environ.get("BRAVE_API_KEY"):
             chain.append((_brave, "Brave"))
         chain += [(_ddg, "DuckDuckGo"), (_ddg_html, "DuckDuckGo")]

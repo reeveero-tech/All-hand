@@ -510,3 +510,29 @@ def test_news_search_used_when_duckduckgo_blocked(monkeypatch):
     out = asyncio.run(tools.web_search("cold brew saudi"))
     assert out.startswith("المصدر: Google News") and "https://www.example-news.com/a" in out
     assert tools.search_meta(out)["provider"] == "Google News"
+
+
+def test_google_news_headline_only_is_labeled_and_not_auto_read():
+    from app import tools
+    assert not tools._readable("https://news.google.com/rss/articles/CBMi123")
+    assert tools._readable("https://www.argaam.com/ar/article/1")
+
+
+def test_tavily_keyless_header_and_cooldown(monkeypatch):
+    import asyncio, httpx
+    from app import tools
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    seen = []
+
+    async def post(self, url, json=None, headers=None):
+        seen.append(headers)
+        req = httpx.Request("POST", url)
+        if len(seen) == 1:
+            return httpx.Response(200, json={"results": [{"title": "T", "url": "https://x.example/a", "content": "c"}]}, request=req)
+        return httpx.Response(429, text="limit", request=req)
+    monkeypatch.setattr(httpx.AsyncClient, "post", post)
+    real = tools._real_tavily
+    assert asyncio.run(real("q"))[0]["url"] == "https://x.example/a"
+    assert seen[0]["X-Tavily-Access-Mode"] == "keyless" and "Authorization" not in seen[0]
+    assert asyncio.run(real("q2")) == []          # refused: cool down
+    assert asyncio.run(real("q3")) == [] and len(seen) == 2  # not retried during the cooldown

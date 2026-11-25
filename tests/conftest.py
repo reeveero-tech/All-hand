@@ -15,5 +15,8 @@ def _fresh_search_state(monkeypatch):
     async def no_news(query):  # no network in tests; a test that needs news results patches this itself
         return []
     monkeypatch.setattr(tools, "_gnews", no_news)
+    monkeypatch.setattr(tools, "_real_tavily", tools._tavily, raising=False)
+    monkeypatch.setattr(tools, "_tavily", no_news)
+    monkeypatch.setitem(tools._tavily_gate, "cool_until", 0.0)
     yield
     tools._cache.clear()
