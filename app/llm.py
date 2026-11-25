@@ -176,6 +176,7 @@ class LLM:
         self.cfg = cfg
         self.usage = Usage()
         self.last_finish = None
+        self.last_text = ""
         self._sem = asyncio.Semaphore(max(1, cfg.concurrency))
         self._client = httpx.AsyncClient(timeout=timeout)
 
@@ -286,6 +287,7 @@ class LLM:
             text += await self.chat(messages + [{"role": "assistant", "content": text[-6000:]},
                                                 {"role": "user", "content": "توقف ردك قبل اكتماله. أكمل نص JSON من الحرف الذي توقفت عنده بالضبط، "
                                                                             "بلا تكرار ولا مقدمة ولا ```."}], 0.0, max_tokens)
+        self.last_text = text
         try:
             return extract_json(text)
         except ValueError:
@@ -310,6 +312,37 @@ def looks_truncated(text: str) -> bool:
     if last.count("**") % 2:
         return True
     return bool(re.search(r"[،,:\-–(]$", last))
+
+
+def extract_objects(text: str) -> list[dict]:
+    """Every complete JSON object in text, at any nesting level (salvages the finished parts of a cut reply)."""
+    out, c = [], text or ""
+    for start in [i for i, ch in enumerate(c) if ch == "{"]:
+        depth, in_str, esc = 0, False, False
+        for i in range(start, len(c)):
+            ch = c[i]
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+            elif ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        obj = json.loads(c[start:i + 1])
+                        if isinstance(obj, dict):
+                            out.append(obj)
+                    except json.JSONDecodeError:
+                        pass
+                    break
+    return out
 
 
 def extract_json(text: str) -> dict:
