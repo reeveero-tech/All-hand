@@ -396,3 +396,22 @@ def test_free_chat_sends_within_limit_and_shrinks_on_413(monkeypatch):
     monkeypatch.setattr(llm._client, "post", post)
     out = asyncio.run(llm.chat([{"role": "system", "content": "s" * 9000}, {"role": "user", "content": "u" * 30000}]))
     assert out == "ok" and sizes[0] <= 15000 and sizes[1] < sizes[0]
+
+
+def test_planner_retries_when_reply_has_no_tasks():
+    import asyncio
+    from app.orchestrator import plan
+    from app.llm import Usage
+
+    class L:
+        usage = Usage()
+        def __init__(self):
+            self.n = 0
+        async def chat_json(self, msgs, temperature=0.2, max_tokens=2000):
+            self.n += 1
+            if self.n == 1:
+                return {"summary": "x"}
+            return {"plan": {"summary": "s", "tasks": [{"id": "t1", "title": "بحث", "role": "researcher"}]}}
+    llm = L()
+    out = asyncio.run(plan(llm, "هدف", 0))
+    assert llm.n == 2 and out["tasks"][0]["id"] == "t1"

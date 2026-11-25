@@ -183,9 +183,33 @@ async def plan(llm: LLM, goal: str, depth: int, can_exec: bool = True, follow_up
     note = "" if depth == 0 else " (غير مسموح في هذا المستوى)"
     sys = PLANNER.format(roles=role_list(can_exec), max_tasks=MAX_TASKS_PER_PLAN if depth == 0 else 5, decompose_note=note)
     user = (FOLLOW_UP_PLAN if follow_up and depth == 0 else "") + goal
-    p = await llm.chat_json([{"role": "system", "content": sys}, {"role": "user", "content": user}], max_tokens=3000)
-    return {"simple": bool(p.get("simple")) and depth == 0, "summary": str(p.get("summary", "")),
-            "tasks": _sanitize_plan(p, depth, can_exec)}
+    msgs = [{"role": "system", "content": sys}, {"role": "user", "content": user}]
+    last: Exception | None = None
+    for attempt in range(2):  # production a085661bb506: one reply had no task list and the whole run failed
+        try:
+            p = _unwrap_plan(await llm.chat_json(msgs, temperature=0.2 if attempt == 0 else 0.0, max_tokens=3000))
+            return {"simple": bool(p.get("simple")) and depth == 0, "summary": str(p.get("summary", "")),
+                    "tasks": _sanitize_plan(p, depth, can_exec)}
+        except ValueError as e:
+            last = e
+            msgs = msgs[:2] + [{"role": "user", "content": "تذكير: أعد كائن JSON واحدًا فيه المفتاح \"tasks\" قائمة مهام غير فارغة "
+                                                           "بالشكل المطلوب في التعليمات، بلا أي نص آخر."}]
+    raise last  # type: ignore[misc]
+
+
+def _unwrap_plan(p: dict) -> dict:
+    """Accept a task list the model nested under another key (e.g. {"plan": {"tasks": [...]}} or "steps")."""
+    if isinstance(p.get("tasks"), list) and p["tasks"]:
+        return p
+    for k in ("steps", "subtasks", "المهام"):
+        if isinstance(p.get(k), list) and p[k]:
+            return {**p, "tasks": p[k]}
+    for v in p.values():
+        if isinstance(v, dict):
+            inner = _unwrap_plan(v)
+            if inner.get("tasks"):
+                return {**p, **inner}
+    return p
 
 
 GOAL_CHARS = 2000

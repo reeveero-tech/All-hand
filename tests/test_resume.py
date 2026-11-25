@@ -70,7 +70,7 @@ def test_resume_with_unknown_shape_plans_from_scratch():
     prior["tasks"]["t1"]["role"] = "no-such-role"
     run = Run(goal="هدف", llm_public={})
     asyncio.run(Orchestrator(run, llm, prior=prior).execute())
-    assert llm.planned == 1 and run.resumed is None
+    assert llm.planned == 2 and run.resumed is None  # planned from scratch; an empty task list is retried once
 
 
 def _client(monkeypatch, prior):
