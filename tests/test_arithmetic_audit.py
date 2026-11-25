@@ -62,3 +62,20 @@ def test_table_without_errors_or_with_subtotals_passes():
     assert o.audit_tables(ok) == []
     mixed = "| a | b |\n|---|---|\n| x | 18 ريال / 32 ريال |\n| y | 7 |\n| total | 50 |"
     assert o.audit_tables(mixed) == []
+
+
+def test_total_written_under_a_table():
+    """Production follow-up 6e07e45bd57f, t1 (verifier 10/10): rows make 112 800 and 94 %."""
+    t = """| المرحلة | النسبة | المبلغ (ريال) |
+|---|---|---|
+| التحضير | 12 % | 14 400 |
+| تطوير | 25 % | 30 000 |
+| اختبار | 12 % | 14 400 |
+| إطلاق | 17 % | 20 400 |
+| توزيع | 21 % | 25 200 |
+| متابعة | 7 % | 8 400 |
+
+**المجموع**: 120 000 ريال (100 %)"""
+    assert sorted(x["correct"] for x in o.audit_tables(t)) == [94, 112800]
+    good = t.replace("14 400 |\n| تطوير", "21 600 |\n| تطوير").replace("12 % | 21 600", "18 % | 21 600")
+    assert [x["correct"] for x in o.audit_tables(good)] == []

@@ -322,12 +322,15 @@ def audit_tables(text: str) -> list[dict]:
     """A Markdown table row labelled 'total' must equal the sum of the rows above it, column by column
     (production: six budget lines making 110 000 under a total row of 120 000)."""
     out, block = [], []
-    for line in (text or "").splitlines() + [""]:
+    lines = (text or "").splitlines() + [""]
+    for k, line in enumerate(lines):
         if line.strip().startswith("|"):
             block.append([c.strip() for c in line.strip().strip("|").split("|")])
             continue
         rows = [r for r in block[1:] if not all(re.fullmatch(r":?-{2,}:?", c or "-") for c in r)]
         block = []
+        if rows:
+            out += _total_line_after(rows, lines[k:k + 4])
         start = 0  # a total covers the data rows since the previous total
         for i, row in enumerate(rows):
             if not row or not _TOTAL.search(row[0]):
@@ -344,6 +347,30 @@ def audit_tables(text: str) -> list[dict]:
                 if abs(got - total) > max(abs(got) * 0.01, 0.1):
                     out.append({"expr": f"صف الإجمالي في جدول: {' + '.join(_fmt(v) for v in vals)}",
                                 "stated": total, "correct": round(got, 2)})
+    return out
+
+
+def _total_line_after(rows: list[list[str]], after: list[str]) -> list[dict]:
+    """'**المجموع**: 120 000 ريال (100 %)' written just under a table with no total row (production: the
+    rows made 112 800 and 94 %). Each figure is checked against the column sum of similar size."""
+    if any(_TOTAL.search(r[0]) for r in rows if r):
+        return []
+    line = next((x for x in after if x.strip()), "")
+    if not _TOTAL.search(line):
+        return []
+    sums = []
+    for j in range(1, max(len(r) for r in rows)):
+        vals = [_cell_number(r[j]) if j < len(r) else None for r in rows]
+        if len(vals) >= 2 and all(v is not None for v in vals):
+            sums.append((vals, sum(vals)))
+    out = []
+    for n in [_num(_plain(x)) for x in re.findall(_N, line.replace("**", ""))]:
+        if not n or any(abs(t - n) <= max(abs(t) * 0.01, 0.1) for _, t in sums):
+            continue
+        near = [(vals, t) for vals, t in sums if 0.7 <= t / n <= 1.3]
+        if near:
+            vals, t = min(near, key=lambda x: abs(x[1] - n))
+            out.append({"expr": "مجموع الجدول: " + " + ".join(_fmt(v) for v in vals), "stated": n, "correct": round(t, 2)})
     return out
 
 
