@@ -348,3 +348,13 @@ def test_apply_rejected_fails_verdict_and_keeps_clean():
 def test_small_rejected_values_ignored():
     from app import quality
     assert quality.reuses_rejected("السعر 18 ريال", [18.0]) == []
+
+
+def test_mark_rejected_labels_prior_lines():
+    from types import SimpleNamespace
+    from app.orchestrator import Orchestrator
+    o = Orchestrator.__new__(Orchestrator)
+    o.run = SimpleNamespace(prior_check={"rejected": [3.79e9], "rejected_totals": []})
+    out = o.mark_rejected("الطلب السنوي 3.79 مليار كوب\nالسعر 18 ريال")
+    assert out.splitlines()[0].startswith("[مرفوض")
+    assert out.splitlines()[1] == "السعر 18 ريال"

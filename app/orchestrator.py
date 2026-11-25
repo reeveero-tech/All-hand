@@ -549,11 +549,20 @@ class Orchestrator:
         pc = self.run.prior_check or {}
         return quality.reuses_rejected(text, pc.get("rejected") or [], pc.get("rejected_totals") or [])
 
+    def mark_rejected(self, text: str) -> str:
+        """The previous answer as agents see it, with every line that carries a rejected figure labeled in place,
+        so the raw number is not copied forward as if it still stood."""
+        bad = set(self.reused_rejected(text))
+        if not bad:
+            return text
+        return "\n".join(f"[مرفوض من الدراسة السابقة — لا تستخدم أرقام هذا السطر] {ln}" if ln.strip()[:200] in bad else ln
+                         for ln in text.splitlines())
+
     def anchored(self) -> str:
         """The request as every agent and per-task verifier sees it: the user's words, any arithmetic correction,
         and, for a follow-up, what the previous turn produced (so agents build on it instead of redoing it)."""
         r = self.run
-        prev = r.context[:FOLLOW_UP_AGENT_CHARS] + ("\n[...]" if len(r.context) > FOLLOW_UP_AGENT_CHARS else "") if r.context else ""
+        prev = self.mark_rejected(r.context[:FOLLOW_UP_AGENT_CHARS]) + ("\n[...]" if len(r.context) > FOLLOW_UP_AGENT_CHARS else "") if r.context else ""
         return anchor(r.goal) + (f"\n\n{self.note}" if self.note else "") + (f"\n\n{self.prior_note}" if self.prior_note else "") \
             + (f"\n\n{prev}" if prev else "")
 
