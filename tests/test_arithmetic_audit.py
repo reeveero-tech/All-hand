@@ -38,3 +38,27 @@ def test_agent_with_wrong_sum_is_retried_with_the_correction():
     a = run.tasks["a"]
     assert a["status"] == "done" and len(a["attempts"]) == 2 and a["attempts"][0]["verdict"]["pass"] is False
     assert "110,000" in seen[1]
+
+
+TABLE = """| بند | مبلغ (ريال) | % |
+|------|------|------|
+| تخطيط | 12 000 | 10 % |
+| تطوير | 30 000 | 25 % |
+| اختبار | 15 000 | 12.5 % |
+| إطلاق | 20 000 | 16.7 % |
+| توزيع | 25 000 | 20.8 % |
+| متابعة | 8 000 | 6.7 % |
+| **إجمالي** | **120 000** | 100 % |"""
+
+
+def test_table_total_row_is_checked():
+    e = o.audit_tables(TABLE)
+    assert [x["correct"] for x in e] == [110000, 91.7]
+    assert o.apply_audit({"pass": True, "score": 9, "issues": []}, TABLE)["pass"] is False
+
+
+def test_table_without_errors_or_with_subtotals_passes():
+    ok = "| a | b |\n|---|---|\n| x | 5 |\n| y | 7 |\n| المجموع الفرعي | 12 |\n| z | 1 |\n| w | 2 |\n| الإجمالي | 3 |"
+    assert o.audit_tables(ok) == []
+    mixed = "| a | b |\n|---|---|\n| x | 18 ريال / 32 ريال |\n| y | 7 |\n| total | 50 |"
+    assert o.audit_tables(mixed) == []

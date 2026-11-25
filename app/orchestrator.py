@@ -310,9 +310,46 @@ def audit_arithmetic(text: str, limit: int = 40) -> list[dict]:
     return out
 
 
+_TOTAL = re.compile(r"إجمالي|الإجمالي|المجموع|مجموع|total", re.I)
+
+
+def _cell_number(cell: str) -> float | None:
+    found = re.findall(_N, cell.replace("**", ""))
+    return _num(_plain(found[0])) if len(found) == 1 else None
+
+
+def audit_tables(text: str) -> list[dict]:
+    """A Markdown table row labelled 'total' must equal the sum of the rows above it, column by column
+    (production: six budget lines making 110 000 under a total row of 120 000)."""
+    out, block = [], []
+    for line in (text or "").splitlines() + [""]:
+        if line.strip().startswith("|"):
+            block.append([c.strip() for c in line.strip().strip("|").split("|")])
+            continue
+        rows = [r for r in block[1:] if not all(re.fullmatch(r":?-{2,}:?", c or "-") for c in r)]
+        block = []
+        start = 0  # a total covers the data rows since the previous total
+        for i, row in enumerate(rows):
+            if not row or not _TOTAL.search(row[0]):
+                continue
+            above, start = rows[start:i], i + 1
+            if len(above) < 2:
+                continue
+            for j in range(1, len(row)):
+                total = _cell_number(row[j])
+                vals = [_cell_number(r[j]) if j < len(r) else None for r in above]
+                if total is None or any(v is None for v in vals):
+                    continue
+                got = sum(vals)
+                if abs(got - total) > max(abs(got) * 0.01, 0.1):
+                    out.append({"expr": f"صف الإجمالي في جدول: {' + '.join(_fmt(v) for v in vals)}",
+                                "stated": total, "correct": round(got, 2)})
+    return out
+
+
 def apply_audit(v: dict, output: str) -> dict:
     """Arithmetic errors found by the exact audit fail the output whatever the model-verifier said."""
-    errs = audit_arithmetic(output)
+    errs = audit_arithmetic(output) + audit_tables(output)
     if not errs:
         return v
     issues = [f"خطأ حسابي تحقق منه النظام بالحاسبة: {e['expr']} = {_fmt(e['stated'])} في الناتج، والصحيح {_fmt(e['correct'])}"
