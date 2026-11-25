@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
@@ -70,6 +71,11 @@ def system_prompt(role: Role, can_exec: bool) -> str:
 {_research_rules(tools)}حد أقصى {MAX_STEPS} خطوات؛ سلّم قبل نفادها."""
 
 
+def _looks_like_call(text: str) -> bool:
+    head = re.sub(r"^```(?:json)?\s*", "", (text or "").lstrip())[:200]
+    return head.startswith("{") and re.search(r'"action"\s*:\s*"tool"', head) is not None
+
+
 EmitFn = Callable[[str, dict], Awaitable[None]]
 
 
@@ -93,6 +99,11 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
             msg = await llm.chat_json(messages, temperature=0.3, max_tokens=2500)
         except ValueError:
             raw = await llm.chat(messages)
+            if _looks_like_call(raw):  # a cut-off tool call is not an answer (found on production: it was handed in)
+                messages += [{"role": "assistant", "content": raw[:1500]},
+                             {"role": "user", "content": "ردك السابق استدعاء أداة غير مكتمل أو غير صالح. أرسل JSON صالحًا وأقصر "
+                                                         "(قسّم الحساب الطويل على أكثر من استدعاء)، أو سلّم النتيجة بالشكل final."}]
+                continue
             return {"output": raw, "confidence": 0.3, "sources": sources([]), "read": list(read), "steps": steps}
         action = msg.get("action")
         if action == "tool" and steps < MAX_STEPS:
