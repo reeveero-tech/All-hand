@@ -16,6 +16,10 @@ from urllib.parse import quote_plus, urlparse, parse_qs, unquote
 
 import httpx
 
+from .research import extract as rx
+from .research import registry, specialized
+from .research.registry import content_hash
+
 UA = "Mozilla/5.0 (compatible; All-hand-agent/1.0; +https://github.com/reeveero-tech/All-hand)"
 MAX_OUT = 6000
 
@@ -77,6 +81,25 @@ def _is_public_host(host: str) -> bool:
 
 MAX_REDIRECTS = 5
 MAX_BYTES = 2_000_000
+PAGE_MARK = "[الصفحة: "
+TABLES_BUDGET = 2000
+
+
+def fetch_meta(result: str, asked: str = "") -> dict:
+    """What a fetch_url call really got, for the evidence ledger: status, failure class, page facts."""
+    from .research.evidence import classify_failure
+    first = (result or "").split("\n", 1)[0]
+    m = re.match(r"HTTP (\d{3}) — (\S+)", first)
+    page = {"url": m.group(2) if m else str(asked or "")[:500], "status": int(m.group(1)) if m else None,
+            "failure": classify_failure(result)}
+    pm = re.search(re.escape(PAGE_MARK) + r"([^\n]*)\]", result or "")
+    if pm:
+        for part in pm.group(1).split(" | "):
+            k, _, v = part.partition(": ")
+            key = {"الناشر": "publisher", "تاريخ النشر": "published", "جداول": "tables", "بصمة": "hash"}.get(k.strip())
+            if key:
+                page[key] = v.strip()
+    return page
 
 
 async def fetch_url(url: str, max_chars: int = MAX_OUT) -> str:
@@ -118,8 +141,19 @@ async def fetch_url(url: str, max_chars: int = MAX_OUT) -> str:
             body = raw.decode(r.charset_encoding or "utf-8", errors="replace")
         else:
             body = f"[محتوى غير نصي: {ctype}]"
-        text = _html_to_text(body) if "html" in ctype else body
-        return _clip(f"HTTP {r.status_code} — {url}\n\n{text}", max_chars)
+        if "html" not in ctype:
+            return _clip(f"HTTP {r.status_code} — {url}\n\n{body}", max_chars)
+        text = _html_to_text(body)
+        info = rx.extract(body)  # what the page states about itself, verbatim: dates, publisher, tables, offers
+        head = [f"HTTP {r.status_code} — {url}"]
+        line = rx.summary_line(info)
+        head.append(PAGE_MARK + " | ".join([x for x in (line,) if x] + [f"جداول: {len(info['tables'])}", f"بصمة: {content_hash(text)}"]) + "]")
+        if info["offers"]:
+            head.append("عروض منظمة في الصفحة (Schema.org): " + "؛ ".join(
+                f"{o['name']} = {o['price']} {o['currency']}".strip() for o in info["offers"][:8]))
+        if info["tables"]:
+            head.append(rx.tables_markdown(info["tables"], TABLES_BUDGET))
+        return _clip("\n".join(head) + "\n\n" + text, max_chars)
     except Exception as e:  # noqa: BLE001
         return f"خطأ في الجلب: {type(e).__name__}: {str(e)[:200]}"
 
@@ -279,7 +313,7 @@ async def _gnews(query: str) -> list[dict]:
             # the publisher URL could not be resolved from this server (HTTP 429): the headline and publisher are
             # real and the link opens the article in a browser, but nothing of the article itself was read
             out.append({"title": tag(it, "title"), "url": tag(it, "link"),
-                        "snippet": meta + " — عنوان خبر وناشره فقط؛ لم يُقرأ نص المقال، فلا تنسب إليه أرقامًا"})
+                        "snippet": meta + f" — {HEADLINE_ONLY}؛ لم يُقرأ نص المقال، فلا تنسب إليه أرقامًا"})
     return out
 
 
@@ -319,6 +353,21 @@ async def _brave(query: str) -> list[dict]:
         return []
     return [{"title": x.get("title", ""), "url": x.get("url", ""), "snippet": _html_to_text(x.get("description", ""))}
             for x in r.json().get("web", {}).get("results", [])]
+
+
+def _register_general():
+    """General web providers, looked up at call time so a replaced function (tests, reload) is the one used."""
+    registry.register("Tavily", "web", lambda q: _tavily(q), keyless=not os.environ.get("TAVILY_API_KEY"),
+                      note="keyless mode is rate-limited per IP (daily cap)")
+    registry.register("Brave", "web", lambda q: _brave(q), keyless=False)
+    registry.register("DuckDuckGo", "web", lambda q: _ddg(q), reraise=(_Blocked,), note="gated: spaced requests, cooldown after a refusal")
+    registry.register("DuckDuckGo HTML", "web", lambda q: _ddg_html(q), reraise=(_Blocked,))
+    registry.register("Google News", "news", lambda q: _gnews(q), note="headlines; publisher link decoded when allowed")
+    registry.register("Wikipedia", "encyclopedia", lambda q: _wikipedia(q, "ar" if re.search(r"[\u0600-\u06FF]", q) else "en"))
+    specialized.register_all()
+
+
+_register_general()
 
 
 AUTO_READ = int(os.environ.get("SEARCH_AUTO_READ", "2"))  # pages opened per search, so results are read, not just listed
@@ -372,12 +421,45 @@ async def _auto_read(results: list[dict], query: str) -> list[tuple[str, str]]:
     return out
 
 
+VIA = "   — عبر: "
+
+
+def _result_line(i: int, r: dict, many: bool) -> str:
+    line = f"{i}. {r['title']}\n   {r['url']}\n   {r['snippet']}"
+    if many and r.get("provider"):
+        line += f"\n{VIA}{', '.join([r['provider']] + list(r.get('also_found_by') or []))}"
+    return line
+
+
+HEADLINE_ONLY = "عنوان خبر وناشره فقط"
+
+
+def found_links(result: str) -> list[dict]:
+    """Links a search listed (discovered, not read), with the provider that found each one."""
+    m = re.match(r"المصدر: ([^\n]+)", result or "")
+    if not m:
+        return []
+    default = m.group(1).split(" — ")[0].split(" + ")[0].strip()
+    body = (result or "").split("\nمقتطفات من صفحات فتحها النظام فعلًا", 1)[0]
+    out = []
+    for blk in re.split(r"(?m)^(?=\d+\. )", body)[1:]:
+        ls = blk.split("\n")
+        url = ls[1].strip() if len(ls) > 1 else ""
+        if not url.startswith("http"):
+            continue
+        via = next((x[len(VIA):] for x in ls if x.startswith(VIA)), "")
+        provs = [p.strip() for p in via.split(",") if p.strip()] or [default]
+        out.append({"url": url[:500], "title": re.sub(r"^\d+\. ", "", ls[0])[:120], "provider": provs[0],
+                    "also": provs[1:], "headline_only": HEADLINE_ONLY in blk})
+    return out[:20]
+
+
 def search_meta(result: str) -> dict:
     """What a web_search returned, for the run's research measurements."""
     m = re.match(r"المصدر: ([^\n]+)", result or "")
     return {"provider": m.group(1).strip() if m else None,
             "results": len(re.findall(r"(?m)^\d+\. ", result or "")) if m else 0,
-            "read": re.findall(re.escape(READ_MARK) + r"([^\]\s]+)\]", result or "")}
+            "read": re.findall(re.escape(READ_MARK) + r"([^\]\s]+)\]", result or ""), "found": found_links(result)}
 
 
 async def web_search(query: str) -> str:
@@ -393,29 +475,37 @@ async def web_search(query: str) -> str:
         results, source = hit[1], hit[2]
     else:
         results, source = [], ""
-        chain = []
-        chain.append((_tavily, "Tavily"))  # keyless when no key is set
+        chain = ["Tavily"]  # keyless when no key is set
         if os.environ.get("BRAVE_API_KEY"):
-            chain.append((_brave, "Brave"))
-        chain += [(_ddg, "DuckDuckGo"), (_ddg_html, "DuckDuckGo")]
-        for fn, name in chain:
+            chain.append("Brave")
+        chain += ["DuckDuckGo", "DuckDuckGo HTML"]
+        extra = [n for n in specialized.available("web")]  # e.g. a self-hosted SearXNG, asked at the same time
+        side = asyncio.ensure_future(registry.fan_out(extra, query)) if extra else None
+        for name in chain:
             try:
-                results = await asyncio.wait_for(fn(query), timeout=45)
+                results = await registry.call(registry.REGISTRY[name], query, timeout=45)
             except _Blocked:
                 results = []
-                if name == "DuckDuckGo":
-                    break  # the gate is closed for both endpoints
-            except Exception:  # noqa: BLE001
+                break  # the gate is closed for both DuckDuckGo endpoints
+            except registry.Skipped:
                 results = []
             if results:
-                source = name
+                source = name.replace(" HTML", "")
                 break
+        if side:
+            got = {n: r for n, r in (await side).items() if r}
+            if got:
+                results = registry.merge([results] + list(got.values()))
+                source = " + ".join([source] * bool(source) + list(got))
         if not results:  # DuckDuckGo refuses many server IPs: news search is keyless and opens real articles
             try:
-                results = await asyncio.wait_for(_gnews(query), timeout=45)
+                gn = registry.REGISTRY["Google News"]
+                results = await registry.call(gn, query, timeout=45)
                 STATS["gnews_requests"] += 1
                 if not results and len(_terms(query)) > 3:  # news search needs most words; long copied text finds nothing
-                    results = await asyncio.wait_for(_gnews(" ".join(_terms(query)[:3])), timeout=45)
+                    results = await registry.call(gn, " ".join(_terms(query)[:3]), timeout=45)
+            except registry.Skipped:
+                results = []
             except Exception as e:  # noqa: BLE001
                 STATS["gnews_last_error"] = type(e).__name__
                 results = []
@@ -425,9 +515,12 @@ async def web_search(query: str) -> str:
         if not results:
             lang = "ar" if re.search(r"[\u0600-\u06FF]", query) else "en"
             try:
-                results, source = await _wikipedia(query, lang), f"Wikipedia ({lang})"
+                wp = registry.REGISTRY["Wikipedia"]
+                results, source = await registry.call(wp, query), f"Wikipedia ({lang})"
                 if not results and len(_terms(query)) > 2:  # its search needs every word; retry with the main ones
-                    results = await _wikipedia(" ".join(_terms(query)[:2]), lang)
+                    results = await registry.call(wp, " ".join(_terms(query)[:2]))
+            except registry.Skipped:
+                results = []
             except Exception as e:  # noqa: BLE001
                 return f"خطأ في البحث: {e}"
             if results:
@@ -437,7 +530,7 @@ async def web_search(query: str) -> str:
     if not results:
         keyed = os.environ.get("TAVILY_API_KEY") or os.environ.get("BRAVE_API_KEY")
         return "لا نتائج." + ("" if keyed else " (محرك البحث المجاني يرفض الطلبات مؤقتًا؛ لا تكرر البحث نفسه. افتح رابطًا معروفًا بـ fetch_url إن كان متاحًا لك، أو استخدم world_bank للبيانات السكانية والاقتصادية.)")
-    lines = [f"المصدر: {source}"] + [f"{i}. {r['title']}\n   {r['url']}\n   {r['snippet']}" for i, r in enumerate(results, 1)]
+    lines = [f"المصدر: {source}"] + [_result_line(i, r, " + " in source) for i, r in enumerate(results, 1)]
     read = await _auto_read(results, query) if AUTO_READ else []
     if read:
         lines.append("\nمقتطفات من صفحات فتحها النظام فعلًا (استشهد بالرابط عند استخدام رقم منها):")
@@ -575,10 +668,33 @@ async def calculate(program: str) -> str:
     return _clip("\n".join(out))
 
 
+async def research_sources(spec: str) -> str:
+    """Specialized sources asked at the same time: academic (Crossref, arXiv, OpenAlex if keyed) or code (GitHub).
+    Input: '<kind>: <query>', e.g. 'academic: coffee consumption Saudi Arabia'. Lists results; it does not read them."""
+    kind, _, q = str(spec or "").partition(":")
+    kind, q = kind.strip().lower(), re.sub(r"\s+", " ", q).strip()[:200]
+    if kind not in specialized.KINDS or not q:
+        return "خطأ: المدخل «النوع: الاستعلام»، والأنواع: academic أو code. مثال: academic: coffee market Saudi Arabia"
+    names = specialized.available(kind)
+    if not names:
+        return f"لا مصادر مفعّلة للنوع {kind}."
+    got = await registry.fan_out(names, q)
+    ok = [n for n, r in got.items() if r]
+    if not ok:
+        why = "؛ ".join(f"{n}: {'مُعطّل مؤقتًا بعد أخطاء متتالية' if r is None else 'لا نتائج أو خطأ'}" for n, r in got.items())
+        return f"لا نتائج. ({why})"
+    results = registry.merge([got[n] for n in ok])[:10]
+    lines = [f"المصدر: {' + '.join(ok)}"] + [_result_line(i, r, True) for i, r in enumerate(results, 1)]
+    lines.append("\nهذه قوائم من فهارس متخصصة (عناوين وملخصات)، لا نصوص قُرئت؛ افتح الرابط بـ fetch_url قبل الاستشهاد برقم منه.")
+    return _clip("\n".join(lines), 6000)
+
+
 TOOLS = {
     "web_search": {"fn": web_search, "arg": "query", "desc": "بحث في الويب. المدخل: {\"query\": \"...\"}"},
     "world_bank": {"fn": world_bank, "arg": "query",
                    "desc": "بيانات رسمية من البنك الدولي (سكان، دخل، تضخم...). المدخل: {\"query\": \"SAU SP.POP.TOTL\"}. رموز مفيدة: SP.POP.TOTL السكان، SP.URB.TOTL سكان المدن، NY.GDP.PCAP.CD نصيب الفرد من الناتج بالدولار، FP.CPI.TOTL.ZG التضخم، SP.POP.1564.TO السكان 15-64"},
+    "research_sources": {"fn": research_sources, "arg": "query",
+                         "desc": "بحث في مصادر متخصصة معًا: أوراق علمية (Crossref وarXiv) أو مستودعات برمجيات (GitHub). المدخل: {\"query\": \"academic: coffee consumption Saudi Arabia\"} أو {\"query\": \"code: web crawler\"}"},
     "fetch_url": {"fn": fetch_url, "arg": "url", "desc": "قراءة صفحة ويب كنص. المدخل: {\"url\": \"https://...\"}"},
     "calculate": {"fn": calculate, "arg": "program",
                   "desc": "حاسبة دقيقة (ليست كودًا): أسطر بصيغة name = expression أو تعبيرات، بأرقام و+ - * / // % ** وround/min/max/abs/sum. مثال: {\"program\": \"units = 5000\\nprice = 9.5\\nrevenue = units * price\"}"},

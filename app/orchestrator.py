@@ -12,6 +12,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
+from .research import evidence
 from . import memory, quality
 from .agents import ROLES, run_agent
 from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip, extract_objects, looks_truncated
@@ -472,7 +473,14 @@ def research_stats(r: Run) -> dict:
             "sources_in_answer": sum(1 for u in in_answer if norm(u) in read_n),
             "links_not_read": [u for u in in_answer if norm(u) not in read_n][:20],
             "numeric_lines": len(numeric), "numeric_lines_untagged": sum(1 for ln in numeric if not _TAGGED.search(ln)),
-            "research_tasks": sum(1 for t in r.tasks.values() if t.get("role") == "researcher")}
+            "research_tasks": sum(1 for t in r.tasks.values() if t.get("role") == "researcher"),
+            "evidence": _evidence_summary(r)}
+
+
+def _evidence_summary(r: Run) -> dict:
+    """Funnel from the evidence ledger: how many URLs reached each stage, why the others failed."""
+    led = evidence.build(r.events, r.result or "")
+    return {k: led[k] for k in ("counts", "failures", "duplicate_content", "independent_domains_read", "headline_only")}
 
 
 class Orchestrator:
