@@ -157,6 +157,7 @@ const LABEL = {
   task_finished: (e) => `المهمة ${e.task}: ${STATUS[e.status]}${e.reason ? " — " + e.reason : ""}`,
   task_skipped: (e) => `تخطي ${e.task}: ${e.reason}`,
   agent_error: (e) => `خطأ عند ${e.agent}: ${e.error}`,
+  memory_skipped: (e) => `لم يُحفظ شيء في الذاكرة: ${e.reason}`,
   synthesizing: (e) => e.unverified ? "لم تجتز أي مهمة التحقق؛ المنسق يكتب مسودة موسومة بأنها غير متحقق منها" : "المنسق يجمع النتائج",
   final_check: (e) => `التحقق النهائي: ${e.pass ? "مقبول" : "مرفوض"} (${e.score}/10)`,
   memory_recalled: (e) => `استرجع المنسق ${e.count} معلومة من الذاكرة (من أصل ${e.total})`,

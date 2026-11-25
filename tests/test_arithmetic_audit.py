@@ -79,3 +79,30 @@ def test_total_written_under_a_table():
     assert sorted(x["correct"] for x in o.audit_tables(t)) == [94, 112800]
     good = t.replace("14 400 |\n| تطوير", "21 600 |\n| تطوير").replace("12 % | 21 600", "18 % | 21 600")
     assert [x["correct"] for x in o.audit_tables(good)] == []
+
+
+def test_answer_with_proven_arithmetic_error_is_not_remembered(monkeypatch):
+    from app import memory
+    saved = []
+
+    class Store:
+        async def list(self, space):
+            return []
+    monkeypatch.setattr(memory, "STORE", Store())
+
+    async def fake_save(*a, **k):
+        saved.append(1)
+        return {"saved": [], "superseded": []}
+    monkeypatch.setattr(memory, "extract_and_save", fake_save)
+
+    class F(FakeLLM):
+        async def chat(self, messages, temperature=0.3, max_tokens=2000):
+            if messages[0]["content"].startswith("أنت المنسق. اجمع"):
+                return TABLE
+            return await super().chat(messages, temperature, max_tokens)
+
+    run = o.Run(goal="هدف", llm_public={}, memory_space="s" * 32)
+    asyncio.run(o.Orchestrator(run, F(plan_of(T("a"), T("b")))).execute())
+    assert run.verdict.get("arithmetic") and run.status == "partial"
+    assert saved == [] and run.memory.get("skipped")
+    assert len({i for i in run.verdict["issues"] if "خطأ حسابي" in i}) == len([i for i in run.verdict["issues"] if "خطأ حسابي" in i])

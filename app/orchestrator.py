@@ -128,6 +128,7 @@ VERIFIER = """أنت مدقق صارم ومستقل. قيّم ناتج وكيل 
 pass=true فقط إذا score>=7 ولا توجد مشكلة جوهرية.
 ملاحظة: إذا كانت البيانات المطلوبة غير متاحة فعلًا، فالناتج الذي يصرّح بذلك بوضوح ويقدّم تقديرًا معقولًا موسومًا بأنه تقدير (مع منهجه) يُعدّ مقبولًا. الذي يُرفض هو الاختلاق أو الإيهام بالدقة. ويُرفض أيضًا ترك المهمة بلا إنجاز بحجة نقص البيانات إن كان التقدير الموسوم ممكنًا.
 تحقق من صحة المعادلات والحسابات بنفسك؛ الخطأ الحسابي مشكلة جوهرية.
+افحص معقولية الأرقام لا صحة حسابها فقط: عائد استثمار بآلاف بالمئة، أو طلب سنوي يتجاوز ما يستهلكه سكان البلد، أو إيرادات بمليارات من ميزانية صغيرة، كلها مشكلة جوهرية حتى لو وُسمت «تقديرًا».
 الحقل الموسوم «غير متاح» لأن بياناته لا تُنشر علنًا ليس نقصًا جوهريًا ما دام الناتج قدّم ما يمكن إثباته. الرقم الدقيق بلا مصدر مفتوح أسوأ من «غير متاح»."""
 
 SYNTH = """أنت المنسق. اجمع نتائج فريقك في جواب نهائي واحد متماسك للمستخدم بلغته وبتنسيق Markdown.
@@ -376,7 +377,11 @@ def _total_line_after(rows: list[list[str]], after: list[str]) -> list[dict]:
 
 def apply_audit(v: dict, output: str) -> dict:
     """Arithmetic errors found by the exact audit fail the output whatever the model-verifier said."""
-    errs = audit_arithmetic(output) + audit_tables(output)
+    errs, seen = [], set()
+    for e in audit_arithmetic(output) + audit_tables(output):  # the same table repeated is one error
+        if (e["expr"], e["stated"]) not in seen:
+            seen.add((e["expr"], e["stated"]))
+            errs.append(e)
     if not errs:
         return v
     issues = [f"خطأ حسابي تحقق منه النظام بالحاسبة: {e['expr']} = {_fmt(e['stated'])} في الناتج، والصحيح {_fmt(e['correct'])}"
@@ -419,7 +424,11 @@ class Orchestrator:
             status = "done" if out["ok"] else ("partial" if out.get("partial") else
                                                "cancelled" if out.get("rejected") else "failed")
             if r.memory_space and status in ("done", "partial") and not out.get("rejected"):
-                await self.remember(existing)  # before status flips, so clients see saved memory with the result
+                if r.verdict.get("arithmetic"):  # a proven calculation error must not become a remembered "finding"
+                    r.memory["skipped"] = "أخطاء حسابية في الجواب النهائي"
+                    await r.emit("memory_skipped", {"reason": r.memory["skipped"]})
+                else:
+                    await self.remember(existing)  # before status flips, so clients see saved memory with the result
             r.status = status
         except asyncio.CancelledError:
             if r.status == "interrupted":  # server shutdown, not the user
