@@ -18,7 +18,7 @@ def test_agents_and_verifiers_see_the_goal():
             sys = messages[0]["content"]
             if sys.startswith("أنت مدقق"):
                 seen["verifier"].append(messages[-1]["content"])
-            elif not sys.startswith("أنت المنسق"):
+            elif not sys.startswith(("أنت المنسق", "استخرج")):
                 seen["agent"].append(messages[1]["content"])
             return await super().chat(messages, temperature, max_tokens)
 
@@ -35,3 +35,7 @@ def test_anchor_is_bounded():
 
 def test_planner_is_told_about_dependencies():
     assert "يجب أن تذكرها في depends_on" in orchestrator.PLANNER
+
+
+def test_planner_knows_agents_cannot_make_files():
+    assert "لا يملكون أداة لإنشاء ملفات PDF" in orchestrator.PLANNER

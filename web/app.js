@@ -140,6 +140,11 @@ const LABEL = {
   resumed: (e) => `استكمال المهمة ${e.from}: إعادة استخدام ${e.reused.length} مهمة مُتحقق منها، وتنفيذ ${e.remaining.length}`,
   run_started: (e) => `بدأ المنسق (${e.llm.provider}: ${e.llm.model})، ميزانية ${e.max_agents} وكيلًا`,
   planning: (e) => `المنسق يخطط${e.scope !== "root" ? " لفريق فرعي " + e.scope : ""}`,
+  goal_checked: (e) => {
+    const bad = e.checks.filter((c) => !c.ok);
+    return bad.length ? "تدقيق حسابي لأرقام طلبك: " + bad.map((c) => `«${c.text}» — الصحيح ${c.expr} = ${c.correct.toLocaleString("ar")} ${c.unit}`).join("؛ ")
+      : `تدقيق حسابي لأرقام طلبك: ${e.checks.length} علاقة صحيحة`;
+  },
   plan_awaiting_approval: () => "الخطة جاهزة وتنتظر اعتمادك؛ لن يعمل أي وكيل قبل قرارك",
   plan_decision: (e) => ({approve: `اعتمدتَ الخطة${e.dropped?.length ? "، وأزلت " + e.dropped.join("، ") : ""}${e.note ? "، مع ملاحظة: " + e.note : ""}`,
     reject: "رفضتَ الخطة؛ لن يُنفَّذ شيء", timeout: "انتهت مهلة الاعتماد دون قرار؛ لم يُنفَّذ شيء"})[e.action] || e.action,
@@ -152,7 +157,7 @@ const LABEL = {
   task_finished: (e) => `المهمة ${e.task}: ${STATUS[e.status]}${e.reason ? " — " + e.reason : ""}`,
   task_skipped: (e) => `تخطي ${e.task}: ${e.reason}`,
   agent_error: (e) => `خطأ عند ${e.agent}: ${e.error}`,
-  synthesizing: () => "المنسق يجمع النتائج",
+  synthesizing: (e) => e.unverified ? "لم تجتز أي مهمة التحقق؛ المنسق يكتب مسودة موسومة بأنها غير متحقق منها" : "المنسق يجمع النتائج",
   final_check: (e) => `التحقق النهائي: ${e.pass ? "مقبول" : "مرفوض"} (${e.score}/10)`,
   memory_recalled: (e) => `استرجع المنسق ${e.count} معلومة من الذاكرة (من أصل ${e.total})`,
   memory_saved: (e) => `حُفظ في الذاكرة ${e.count} معلومة${e.superseded ? "، وحُذف " + e.superseded + " قديمة" : ""}`,
@@ -223,7 +228,7 @@ async function refresh() {
     if (sb) sb.onclick = () => { $("#goal").value = r.goal; startRun(r.id); };
     if (!$("#log").children.length && r.events?.length) r.events.forEach(onEvent);
     const v = r.verdict || {};
-    $("#verdict").innerHTML = v.score != null ? `<span class="badge ${v.pass ? "s-done" : "s-failed"}">تحقق نهائي ${v.score}/10</span>` : "";
+    $("#verdict").innerHTML = v.draft ? `<span class="badge s-failed">مسودة غير متحقق منها</span>` : v.score != null ? `<span class="badge ${v.pass ? "s-done" : "s-failed"}">تحقق نهائي ${v.score}/10</span>` : "";
     loadHistory();
     loadMemory();
   }

@@ -71,7 +71,15 @@ def to_markdown(run: dict) -> str:
         out.append(f"- **متابعة للمهمة:** `{run['follow_up_of']}`")
     if run.get("scenario"):
         out.append("- **تنبيه:** مهمة تجريبية/افتراضية؛ معطياتها ليست حقائق عن المستخدم.")
-    out += ["", "## الطلب", "", (run.get("goal") or "").strip(), "", "## الجواب النهائي", "",
+    out += ["", "## الطلب", "", (run.get("goal") or "").strip(), ""]
+    checks = run.get("goal_checks") or []
+    if checks:
+        out += ["### تدقيق أرقام الطلب (محسوبة بالحاسبة الدقيقة)", ""]
+        for c in checks:
+            mark = "صحيح" if c.get("ok") else f"خطأ: المذكور {c.get('stated'):,} والصحيح {c.get('correct'):,} {c.get('unit', '')}"
+            out.append(f"- «{_cell(c.get('text'))}» — `{_cell(c.get('expr'))}` — {mark}")
+        out.append("")
+    out += ["## الجواب النهائي", "",
             (run.get("result") or "").strip() or "_لا يوجد جواب نهائي._", ""]
     if tasks:
         out += ["## الخطة وما نُفذ منها", "", "| المهمة | الدور | الحالة | تقييم المدقق | المحاولات |", "|---|---|---|---|---|"]

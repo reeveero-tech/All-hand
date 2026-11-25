@@ -139,6 +139,24 @@ async def _ddg(query: str) -> list[dict]:
     return out
 
 
+async def _ddg_html(query: str) -> list[dict]:
+    """Second DuckDuckGo endpoint: when lite answers 202 (bot check) this one sometimes still works."""
+    async with httpx.AsyncClient(timeout=8, follow_redirects=True, headers={"User-Agent": UA}) as c:
+        r = await c.post("https://html.duckduckgo.com/html/", data={"q": query})
+    if r.status_code != 200:
+        return []
+    links = re.findall(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', r.text, re.S)
+    snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', r.text, re.S)
+    out = []
+    for i, (href, title) in enumerate(links[:6]):
+        href = html.unescape(href)
+        if "uddg=" in href:
+            href = unquote(parse_qs(urlparse(href).query).get("uddg", [href])[0])
+        out.append({"title": _html_to_text(title), "url": href,
+                    "snippet": _html_to_text(snippets[i]) if i < len(snippets) else ""})
+    return out
+
+
 async def _wikipedia(query: str, lang: str) -> list[dict]:
     url = (f"https://{lang}.wikipedia.org/w/api.php?action=query&list=search&format=json"
            f"&srlimit=5&srsearch={quote_plus(query)}")
@@ -180,7 +198,7 @@ async def web_search(query: str) -> str:
         chain.append((_tavily, "Tavily"))
     if os.environ.get("BRAVE_API_KEY"):
         chain.append((_brave, "Brave"))
-    chain.append((_ddg, "DuckDuckGo"))
+    chain += [(_ddg, "DuckDuckGo"), (_ddg_html, "DuckDuckGo")]
     for fn, name in chain:
         try:
             results = await asyncio.wait_for(fn(query), timeout=20)
@@ -196,7 +214,8 @@ async def web_search(query: str) -> str:
         except Exception as e:  # noqa: BLE001
             return f"خطأ في البحث: {e}"
     if not results:
-        return "لا نتائج."
+        keyed = os.environ.get("TAVILY_API_KEY") or os.environ.get("BRAVE_API_KEY")
+        return "لا نتائج." + ("" if keyed else " (البحث المجاني بلا مفتاح يُحجب كثيرًا من الخوادم؛ جرّب استعلامًا أقصر أو افتح رابطًا معروفًا بـ fetch_url إن كان متاحًا لك.)")
     lines = [f"المصدر: {source}"] + [f"{i}. {r['title']}\n   {r['url']}\n   {r['snippet']}" for i, r in enumerate(results, 1)]
     return _clip("\n".join(lines))
 
