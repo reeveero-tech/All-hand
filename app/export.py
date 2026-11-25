@@ -23,15 +23,29 @@ def _cell(s) -> str:
     return str(s or "").replace("|", "\\|").replace("\n", " ")
 
 
-def sources(run: dict) -> list[str]:
-    seen: list[str] = []
+def _kept(t: dict) -> list[dict]:
+    """The attempts whose output the run actually used: the passing one, or the one kept for a failed task."""
+    atts = t.get("attempts") or []
+    if t.get("best_attempt"):
+        return atts[t["best_attempt"] - 1:t["best_attempt"]]
+    return atts[-1:]
+
+
+def sources(run: dict) -> tuple[list[str], list[str]]:
+    """(pages an agent really opened, links cited without being opened), from the attempts that were used."""
+    read: list[str] = []
+    cited: list[str] = []
     for t in (run.get("tasks") or {}).values():
-        for a in t.get("attempts") or []:
+        for a in _kept(t):
+            for s in a.get("read") or []:
+                s = str(s).strip()
+                if _URL.match(s) and s not in read:
+                    read.append(s)
             for s in a.get("sources") or []:
                 s = str(s).strip()
-                if _URL.match(s) and s not in seen:
-                    seen.append(s)
-    return seen
+                if _URL.match(s) and s not in cited:
+                    cited.append(s)
+    return read, [u for u in cited if u not in read]
 
 
 def last_score(t: dict):
@@ -67,8 +81,14 @@ def to_markdown(run: dict) -> str:
                        f"{TASK.get(t.get('status'), t.get('status'))} | {str(s) + '/10' if s is not None else '-'} | "
                        f"{len(t.get('attempts') or [])} |")
         out.append("")
-    src = sources(run)
-    out += ["## المصادر", ""] + ([f"{i}. {u}" for i, u in enumerate(src, 1)] or ["لم يسجل الوكلاء أي رابط مصدر."]) + [""]
+    read, cited = sources(run)
+    out += ["## المصادر", ""]
+    if read:
+        out += ["صفحات فتحها الوكلاء فعلًا:", ""] + [f"{i}. {u}" for i, u in enumerate(read, 1)] + [""]
+    if cited:
+        out += ["روابط ذكرها الوكلاء دون أن يفتحوها (لم يُتحقق منها):", ""] + [f"- {u}" for u in cited] + [""]
+    if not read and not cited:
+        out += ["لم يسجل الوكلاء أي رابط مصدر.", ""]
     gaps = [t for t in tasks if t.get("status") != "done"]
     issues = [i for i in (v.get("issues") or []) if i]
     out += ["## حدود هذا التقرير", ""]

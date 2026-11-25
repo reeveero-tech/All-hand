@@ -101,6 +101,7 @@ PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء �
 - كل مهمة تبني على ناتج مهمة أخرى (خطة أو تقرير مالي أو توصية تعتمد على بحث أو تحليل) يجب أن تذكرها في depends_on، وإلا لن ترى نتائجها. الاستقلال فقط للمهام التي لا تحتاج نواتج غيرها فعلًا.
 - لا تجعل المهام سلسلة واحدة بلا داعٍ: اجعل جمع المعلومات المستقلة مهام متوازية (مثل المنافسين، والأسعار، والطلب)، واجعل كل مهمة تعتمد فقط على ما تحتاج ناتجه.
 - اذكر في تعليمات كل مهمة موضوع الطلب ومعطياته الأساسية (المنتج، السوق، الميزانية...) صراحةً.
+- اجعل معيار القبول قابلًا للتحقق بما يُنشر علنًا عادة. لا تشترط بيانات لا تُنشر غالبًا (كحصص السوق الدقيقة أو مبيعات المنافسين)؛ اطلب بدلها «تقديرًا موسومًا بمنهجه أو غير متاح».
 - decompose=true فقط لمهمة ضخمة تحتاج فريقًا فرعيًا كاملًا{decompose_note}.
 - لا تضف مهمة "تجميع نهائي"؛ المنسق يجمع النتائج بنفسه.
 - إن أُرفق «سياق من ذاكرة المنسق» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون هذا السياق، وانقل معها وسمها كما هو (صرّح به المستخدم / نتيجة مهمة سابقة / افتراض / سيناريو اختباري / غير مؤكد). لا تحوّل نتيجة مهمة أو افتراضًا أو سيناريو إلى «معطيات المستخدم».
@@ -112,7 +113,8 @@ VERIFIER = """أنت مدقق صارم ومستقل. قيّم ناتج وكيل 
 أعد JSON فقط: {"pass": bool, "score": 0-10, "issues": ["مشكلة محددة"], "fix": "ما يجب تصحيحه بالضبط"}
 pass=true فقط إذا score>=7 ولا توجد مشكلة جوهرية.
 ملاحظة: إذا كانت البيانات المطلوبة غير متاحة فعلًا، فالناتج الذي يصرّح بذلك بوضوح ويقدّم تقديرًا معقولًا موسومًا بأنه تقدير (مع منهجه) يُعدّ مقبولًا. الذي يُرفض هو الاختلاق أو الإيهام بالدقة. ويُرفض أيضًا ترك المهمة بلا إنجاز بحجة نقص البيانات إن كان التقدير الموسوم ممكنًا.
-تحقق من صحة المعادلات والحسابات بنفسك؛ الخطأ الحسابي مشكلة جوهرية."""
+تحقق من صحة المعادلات والحسابات بنفسك؛ الخطأ الحسابي مشكلة جوهرية.
+الحقل الموسوم «غير متاح» لأن بياناته لا تُنشر علنًا ليس نقصًا جوهريًا ما دام الناتج قدّم ما يمكن إثباته. الرقم الدقيق بلا مصدر مفتوح أسوأ من «غير متاح»."""
 
 SYNTH = """أنت المنسق. اجمع نتائج فريقك في جواب نهائي واحد متماسك للمستخدم بلغته وبتنسيق Markdown.
 - لا تضف معلومات غير موجودة في النتائج.
@@ -162,8 +164,12 @@ def anchor(goal: str) -> str:
     return g[:GOAL_CHARS] + ("…" if len(g) > GOAL_CHARS else "")
 
 
-async def verify(llm: LLM, task: dict, output: str, goal: str = "") -> dict:
+async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list | None = None) -> dict:
     head = f"طلب المستخدم الأصلي (ارفض الناتج إن خرج عن موضوعه أو منتجه أو أرقامه):\n{anchor(goal)}\n\n" if goal else ""
+    if read is not None:  # what the agent really opened, so claimed-but-unread links and figures can be judged
+        head += ("صفحات فتحها الوكيل فعلًا بأداة القراءة: " + ("، ".join(read[:15]) if read else "لا شيء") +
+                 "\nأي رقم دقيق (حصة سوقية، حجم سوق، سعر) منسوب لرابط ليس في هذه القائمة ولا في سياق المهمة يُعدّ غير مثبت؛ "
+                 "وإن قُدّم كحقيقة فهو اختلاق جوهري.\n\n")
     try:
         v = await llm.chat_json([{"role": "system", "content": VERIFIER}, {"role": "user", "content":
                                  head + f"المهمة: {task['instructions']}\nمعيار القبول: {task['acceptance']}\n\nالناتج:\n{output[:12000]}"}],
@@ -173,6 +179,15 @@ async def verify(llm: LLM, task: dict, output: str, goal: str = "") -> dict:
     score = float(v.get("score") or 0)
     return {"pass": bool(v.get("pass")) and score >= 7, "score": score,
             "issues": [str(x) for x in (v.get("issues") or [])][:6], "fix": str(v.get("fix") or "")}
+
+
+def pick_best(attempts: list[dict]) -> int | None:
+    """Index of the attempt to keep when none passed: highest verifier score, then most pages really
+    read, then the earliest (retries under pressure tend to fill gaps with invented figures)."""
+    scored = [(i, a) for i, a in enumerate(attempts) if a.get("output") and "verdict" in a]
+    if not scored:
+        return None
+    return max(scored, key=lambda x: (float(x[1]["verdict"].get("score") or 0), len(x[1].get("read") or []), -x[0]))[0]
 
 
 class Orchestrator:
@@ -436,9 +451,11 @@ class Orchestrator:
                 await r.emit("agent_error", {"task": t["id"], "agent": agent_id, "error": str(e)})
                 continue
             t["output"] = res["output"]
-            v = await verify(self.llm, t, res["output"], r.goal) if verify_it else {"pass": True, "score": None, "issues": []}
+            read = res.get("read") if "fetch_url" in role.tools else None
+            v = await verify(self.llm, t, res["output"], r.goal, read) if verify_it else {"pass": True, "score": None, "issues": []}
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
-                                  "sources": res["sources"], "verdict": v})
+                                  "sources": res["sources"], "read": res.get("read") or [], "verdict": v,
+                                  "output": res["output"]})
             await r.emit("verified", {"task": t["id"], "agent": agent_id, **v})
             if v["pass"]:
                 t["status"] = "done"
@@ -446,7 +463,11 @@ class Orchestrator:
                 return
             feedback = "\n".join(f"- {i}" for i in v["issues"]) + (f"\nالمطلوب: {v['fix']}" if v.get("fix") else "")
         t["status"] = "failed"
-        await r.emit("task_finished", {"task": t["id"], "status": "failed", "attempts": len(t["attempts"])})
+        best = pick_best(t["attempts"])
+        if best is not None:  # not simply the last one: a later attempt can be worse (e.g. invents figures)
+            t["output"], t["best_attempt"] = t["attempts"][best]["output"], best + 1
+        await r.emit("task_finished", {"task": t["id"], "status": "failed", "attempts": len(t["attempts"]),
+                                       "kept_attempt": t.get("best_attempt")})
 
     async def synthesize(self, goal: str, tasks: list[dict], final: bool) -> dict:
         parts = []
