@@ -77,13 +77,14 @@ async function api(path, opts = {}) {
   return body;
 }
 
-$("#runBtn").onclick = async () => {
+$("#runBtn").onclick = () => startRun();
+async function startRun(resumeFrom = null) {
   const goal = $("#goal").value.trim();
   if (!goal) return $("#goal").focus();
   saveSettings();
   const s = JSON.parse(localStorage.getItem("ah_settings"));
   const body = {goal, provider: s.provider, api_key: s.apiKey || null, base_url: s.baseUrl || null,
-    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace()};
+    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace(), resume_from: resumeFrom};
   $("#runBtn").disabled = true;
   try {
     const {id} = await api("/api/runs", {method: "POST", body: JSON.stringify(body)});
@@ -93,7 +94,7 @@ $("#runBtn").onclick = async () => {
     if (/مفتاح|رمز|key/i.test(e.message)) $("#settings").classList.remove("hidden");
     $("#runBtn").disabled = false;
   }
-};
+}
 $("#cancelBtn").onclick = () => current && api(`/api/runs/${current}/cancel`, {method: "POST"}).catch(() => {});
 
 function open(id) {
@@ -133,6 +134,7 @@ function streamEvents(id, onMsg, onEnd) {
 }
 
 const LABEL = {
+  resumed: (e) => `استكمال المهمة ${e.from}: إعادة استخدام ${e.reused.length} مهمة مُتحقق منها، وتنفيذ ${e.remaining.length}`,
   run_started: (e) => `بدأ المنسق (${e.llm.provider}: ${e.llm.model})، ميزانية ${e.max_agents} وكيلًا`,
   planning: (e) => `المنسق يخطط${e.scope !== "root" ? " لفريق فرعي " + e.scope : ""}`,
   plan: (e) => `خطة${e.scope !== "root" ? " فرعية" : ""}: ${e.tasks.length} مهام — ${e.summary}`,
@@ -176,7 +178,7 @@ async function refresh() {
   $("#board").innerHTML = Object.values(r.tasks).map((t) => {
     const last = t.attempts.at(-1)?.verdict;
     return `<div class="task ${t.depth ? "sub" : ""}"><header><span class="badge">${esc(t.id)}</span><span class="title">${esc(t.title)}</span>
-      <span class="badge">${esc(t.role)}</span><span class="badge s-${t.status}">${STATUS[t.status] || t.status}</span></header>
+      <span class="badge">${esc(t.role)}</span><span class="badge s-${t.status}">${STATUS[t.status] || t.status}</span>${t.reused ? '<span class="badge">من التشغيل السابق</span>' : ""}</header>
       <div class="meta">${t.decompose ? "فريق فرعي · " : ""}${t.depends_on.length ? "يعتمد على: " + esc(t.depends_on.join("، ")) + " · " : ""}محاولات: ${t.attempts.length}${last && last.score != null ? ` · تقييم المدقق: ${last.score}/10` : ""}</div>
       ${last && !last.pass && last.issues?.length ? `<div class="meta err">${esc(last.issues.join(" · "))}</div>` : ""}
       ${t.output ? `<details><summary>الناتج</summary><div class="md">${md(t.output)}</div></details>` : ""}</div>`;
@@ -186,11 +188,19 @@ async function refresh() {
   if (!busy) {
     $("#result").className = "md";
     const notes = [];
-    if (r.status === "interrupted") notes.push(`<p class="err">انقطعت هذه المهمة قبل أن تكتمل، لأن الخادم أُعيد تشغيله أو توقف. ما يظهر أدناه هو آخر ما حُفظ منها.</p><p><button id="rerunBtn">أعد تشغيلها بالطلب نفسه</button></p>`);
+    if (r.status === "interrupted") notes.push('<p class="err">انقطعت هذه المهمة قبل أن تكتمل، لأن الخادم أُعيد تشغيله أو توقف. ما يظهر أدناه هو آخر ما حُفظ منها.</p>');
+    if (["interrupted", "failed", "partial", "cancelled"].includes(r.status)) {
+      const kept = Object.values(r.tasks || {}).filter((t) => !t.parent && t.status === "done").length;
+      notes.push(`<p><button id="resumeBtn">أكمل من حيث توقفت</button> <button id="rerunBtn" class="ghost">ابدأ من جديد</button>
+        <small class="muted">${kept ? `الاستكمال يحتفظ بـ ${kept} من المهام التي اجتازت التحقق ويعيد الباقي.` : "لا توجد مهام مكتملة لإعادة استخدامها؛ الاستكمال سيعيد كل المهام بالخطة نفسها."}</small></p>`);
+    }
+    if (r.resumed) notes.push(`<p class="muted">استُكملت من المهمة ${esc(r.resumed.from)}، وأُعيد استخدام ${r.resumed.reused.length} مهمة مُتحقق منها.</p>`);
     if (r.saved === false) notes.push('<p class="err">تنبيه: تعذر حفظ هذه المهمة في السجل الدائم، وقد تختفي إذا أُعيد تشغيل الخادم. انسخ النتيجة إن احتجتها.</p>');
     $("#result").innerHTML = notes.join("") + (r.result ? md(r.result) : `<p class="err">${esc(r.error || "لا يوجد جواب")}</p>`);
     const rb = $("#rerunBtn");
-    if (rb) rb.onclick = () => { $("#goal").value = r.goal; $("#runBtn").click(); };
+    if (rb) rb.onclick = () => { $("#goal").value = r.goal; startRun(); };
+    const sb = $("#resumeBtn");
+    if (sb) sb.onclick = () => { $("#goal").value = r.goal; startRun(r.id); };
     if (!$("#log").children.length && r.events?.length) r.events.forEach(onEvent);
     const v = r.verdict || {};
     $("#verdict").innerHTML = v.score != null ? `<span class="badge ${v.pass ? "s-done" : "s-failed"}">تحقق نهائي ${v.score}/10</span>` : "";

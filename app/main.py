@@ -56,6 +56,7 @@ class RunRequest(BaseModel):
     access_code: str | None = None
     max_agents: int | None = Field(default=None, ge=1, le=500)
     memory_space: str | None = None  # private random id kept in the browser; None = no memory
+    resume_from: str | None = None  # id of one of your stopped runs: reuse its plan and verified outputs
 
 
 _RUN_ID = re.compile(r"[0-9a-f]{12}")
@@ -78,6 +79,28 @@ def _live(run_id: str, owner: str) -> Run:
     if not run or not _owns(run.owner, owner):
         raise HTTPException(404, "غير موجود")  # same answer whether the run exists or not
     return run
+
+
+RESUMABLE = {"interrupted", "failed", "partial", "cancelled"}
+
+
+async def _resumable(run_id: str, owner: str) -> dict:
+    """Stored data of the caller's own stopped run. Same 404 for missing and foreign runs."""
+    if run_id in RUNS:
+        live = _live(run_id, owner)
+        if live.status == "running":
+            raise HTTPException(409, "هذه المهمة ما زالت تعمل.")
+        data = live.full()
+    else:
+        if not _RUN_ID.fullmatch(run_id):
+            raise HTTPException(404, "غير موجود")
+        data = await store.load(run_id)
+        if not data or not _owns(data.get("owner"), owner):
+            raise HTTPException(404, "غير موجود")
+        data = {**data, "status": store.effective_status(data, live=False)}
+    if data.get("status") not in RESUMABLE:
+        raise HTTPException(409, "لا يمكن استكمال مهمة اكتملت أو ما زالت تعمل.")
+    return data
 
 
 def _running() -> int:
@@ -106,8 +129,9 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
         raise HTTPException(400, str(e)) from e
     if req.memory_space is not None and not memory.valid_space(req.memory_space):
         raise HTTPException(400, "معرّف مساحة الذاكرة غير صالح.")
+    prior = await _resumable(req.resume_from, owner) if req.resume_from else None
     cap = {"free": 25, "platform": 500}.get(cfg.provider, DEFAULT_MAX_AGENTS)
-    run = Run(goal=req.goal.strip(), llm_public=cfg.public(), max_agents=min(req.max_agents or cap, cap),
+    run = Run(goal=prior["goal"] if prior else req.goal.strip(), llm_public=cfg.public(), max_agents=min(req.max_agents or cap, cap),
               can_exec=cfg.provider == "platform" or os.environ.get("ALLOW_CODE_EXEC") == "1",
               memory_space=req.memory_space, owner=owner)
     RUNS[run.id] = run
@@ -131,7 +155,8 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
         beat = asyncio.create_task(heartbeat()) if store.enabled() else None
         try:
             await persist()  # visible in history (and detectable as interrupted) from the first second
-            await Orchestrator(run, llm, persist=persist if store.enabled() else None).execute()
+            await Orchestrator(run, llm, persist=persist if store.enabled() else None,
+                               prior=prior).execute()
         finally:
             if beat:
                 beat.cancel()
