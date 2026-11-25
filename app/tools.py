@@ -217,8 +217,14 @@ async def _gnews_decode(c: httpx.AsyncClient, link: str) -> str | None:
     gid = link.split("/articles/", 1)[-1].split("?", 1)[0]
     if not gid:
         return None
-    h = (await c.get(f"https://news.google.com/rss/articles/{gid}")).text
-    sg, ts = re.search(r'data-n-a-sg="([^"]+)"', h), re.search(r'data-n-a-ts="([^"]+)"', h)
+    sg = ts = None
+    for path in (f"https://news.google.com/rss/articles/{gid}", f"https://news.google.com/articles/{gid}"):
+        page = await c.get(path)
+        h = page.text
+        sg, ts = re.search(r'data-n-a-sg="([^"]+)"', h), re.search(r'data-n-a-ts="([^"]+)"', h)
+        if sg and ts:
+            break
+        STATS["gnews_last_error"] = f"article page {page.status_code} {str(page.url)[:70]} len={len(h)}"
     if not (sg and ts):
         return None
     req = [[["Fbv4je", f'["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],'
@@ -228,6 +234,7 @@ async def _gnews_decode(c: httpx.AsyncClient, link: str) -> str | None:
     try:
         url = json.loads(json.loads(r.text.split("\n\n", 1)[1])[0][2])[1]
     except Exception:  # noqa: BLE001
+        STATS["gnews_last_error"] = f"batchexecute {r.status_code} {r.text[:80]!r}"
         return None
     return url if isinstance(url, str) and url.startswith("http") else None
 
@@ -249,8 +256,8 @@ async def _gnews(query: str) -> list[dict]:
             return _html_to_text(m.group(1)) if m else ""
         urls = await asyncio.gather(*[_gnews_decode(c, tag(it, "link")) for it in items], return_exceptions=True)
     bad = [u for u in urls if not isinstance(u, str)]
-    if bad and len(bad) == len(urls):
-        STATS["gnews_last_error"] = f"decode: {type(bad[0]).__name__ if isinstance(bad[0], Exception) else 'no url'}"
+    if bad and len(bad) == len(urls) and isinstance(bad[0], Exception):
+        STATS["gnews_last_error"] = f"decode: {type(bad[0]).__name__}"
     out = []
     for it, u in zip(items, urls):
         if isinstance(u, str):
