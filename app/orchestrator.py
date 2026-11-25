@@ -535,6 +535,7 @@ class Orchestrator:
         user_text = r.goal + "\n" + r.context.split("النتيجة السابقة:", 1)[0]
         answer_totals = [e["stated"] for e in audit_arithmetic(answer) + audit_tables(answer)]  # re-audited: older runs had no table check
         totals = [float(x) for x in pc.get("known_rejected_totals") or []] + answer_totals
+        rejected, totals = list(dict.fromkeys(rejected)), list(dict.fromkeys(totals))
         pc.update(issues=p["issues"], figures=p["figures"], rejected=rejected, rejected_totals=totals,
                   ledger=quality.prior_ledger(answer, user_text, rejected, rejected_totals=totals))
         r.prior_check = pc
@@ -543,6 +544,10 @@ class Orchestrator:
             counts[it["tag"]] = counts.get(it["tag"], 0) + 1
         await r.emit("prior_checked", {"counts": counts, "issues": [i["reason"] for i in p["issues"]][:6],
                                        "rejected": rejected[:10], "rejected_totals": totals[:10]})
+
+    def reused_rejected(self, text: str) -> list[str]:
+        pc = self.run.prior_check or {}
+        return quality.reuses_rejected(text, pc.get("rejected") or [], pc.get("rejected_totals") or [])
 
     def anchored(self) -> str:
         """The request as every agent and per-task verifier sees it: the user's words, any arithmetic correction,
@@ -760,7 +765,11 @@ class Orchestrator:
             agent_id = f"{role.id}#{r.agents_spawned}"
             await r.emit("agent_spawned", {"task": t["id"], "agent": agent_id, "role": role.name, "attempt": attempt})
 
-            async def emit(type_, data, _a=agent_id):
+            calls: list[str] = []
+
+            async def emit(type_, data, _a=agent_id, _c=calls):
+                if type_ == "tool_call" and data.get("tool") == "calculate":
+                    _c.append(str((data.get("input") or {}).get("program", "")))
                 await r.emit(type_, {"task": t["id"], "agent": _a, **data})
 
             instr = t["instructions"] + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
@@ -777,6 +786,7 @@ class Orchestrator:
             v = await verify(self.llm, t, res["output"], self.anchored(), read) if verify_it else {"pass": True, "score": None, "issues": []}
             if verify_it:
                 v = apply_audit(v, res["output"])
+                v = quality.apply_rejected(v, self.reused_rejected(res["output"] + "\n" + "\n".join(calls)))
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
                                   "sources": res["sources"], "read": res.get("read") or [], "verdict": v,
                                   "output": res["output"]})
@@ -795,6 +805,7 @@ class Orchestrator:
 
     async def final_verdict(self, check: dict, answer: str) -> dict:
         v = apply_audit(await verify(self.llm, check, answer), answer)
+        v = quality.apply_rejected(v, self.reused_rejected(answer))
         return quality.apply_plausibility(v, await quality.check_plausibility(self.llm, answer))
 
     async def synthesize(self, goal: str, tasks: list[dict], final: bool) -> dict:

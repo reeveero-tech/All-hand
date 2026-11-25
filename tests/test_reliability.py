@@ -324,3 +324,27 @@ def test_export_shows_research_measurements_and_inheritance():
                                    "pages_read": 4, "sources_in_answer": 2, "numeric_lines": 9, "numeric_lines_untagged": 1},
                       "prior_check": {"issues": [], "ledger": [{"line": "l", "tag": "rejected"}]}})
     assert "صفحات قُرئت فعلًا: 4" in md and "طلب غير معقول" in md and "مرفوض — ثبت خطؤه" in md
+
+
+def test_reuses_rejected_flags_carried_forward_figure():
+    from app import quality
+    text = "الإيرادات = 3,790,000,000 × 18\nالطلب 3.79 مليار كوب (مرفوض، لا يُستخدم)\nالميزانية 90,000 ريال\nالمجموع 112,800 ريال\nبند التسويق 112,800 ريال"
+    lines = quality.reuses_rejected(text, [3.79e9, 604000.0], [112800.0])
+    assert any("3,790,000,000" in l for l in lines)
+    assert not any("مرفوض" in l for l in lines)
+    assert any(l.startswith("المجموع") for l in lines)
+    assert not any("التسويق" in l for l in lines)  # same figure, not stated as a total
+    assert "الميزانية 90,000 ريال" not in lines
+
+
+def test_apply_rejected_fails_verdict_and_keeps_clean():
+    from app import quality
+    ok = {"pass": True, "score": 9, "issues": []}
+    assert quality.apply_rejected(ok, []) == ok
+    v = quality.apply_rejected(ok, ["revenue = 3790000000 * 18"])
+    assert v["pass"] is False and v["score"] <= 4 and v["reused_rejected"]
+
+
+def test_small_rejected_values_ignored():
+    from app import quality
+    assert quality.reuses_rejected("السعر 18 ريال", [18.0]) == []
