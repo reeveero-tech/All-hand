@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 from . import memory, quality
 from .agents import ROLES, run_agent
-from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip, looks_truncated
+from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip, extract_objects, looks_truncated
 
 MAX_DEPTH = 2
 MAX_TASKS_PER_PLAN = 10
@@ -123,6 +123,7 @@ PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء �
 - اجعل معيار القبول قابلًا للتحقق بما يُنشر علنًا عادة. لا تشترط بيانات لا تُنشر غالبًا (كحصص السوق الدقيقة أو مبيعات المنافسين)؛ اطلب بدلها «تقديرًا موسومًا بمنهجه أو غير متاح».
 - decompose=true فقط لمهمة ضخمة تحتاج فريقًا فرعيًا كاملًا{decompose_note}.
 - لا تضف مهمة "تجميع نهائي"؛ المنسق يجمع النتائج بنفسه.
+- اختصر: التعليمات في 350 حرفًا كحد أقصى، ومعيار القبول في 150 حرفًا (الرد الطويل يُقطع).
 - الوكلاء ينتجون نصًا بتنسيق Markdown (جداول وعناوين)، ولا يملكون أداة لإنشاء ملفات PDF أو Word أو صور أو رسوم بيانية. لا تشترط في معيار القبول ملفًا أو رسمًا؛ إن طلب المستخدم «ملفًا نهائيًا» فالنظام يصدّر الجواب المجمّع تقريرًا قابلًا للتنزيل تلقائيًا.
 - إن أُرفق «سياق من ذاكرة المنسق» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون سياق الذاكرة، وانقل معها وسمها كما هو (صرّح به المستخدم / نتيجة مهمة سابقة / افتراض / سيناريو اختباري / غير مؤكد). لا تحوّل نتيجة مهمة أو افتراضًا أو سيناريو إلى «معطيات المستخدم».
 - إن أُرفق «سياق المحادثة السابقة» فهذا طلب متابعة: ابنِ على النتيجة السابقة، وانقل منها ما يلزم صراحةً إلى تعليمات المهام، ولا تُعِد إنجاز ما لم يتغير، واجعل المهام تركز على ما طلب المستخدم تغييره.
@@ -188,6 +189,11 @@ async def plan(llm: LLM, goal: str, depth: int, can_exec: bool = True, follow_up
     for attempt in range(2):  # production a085661bb506: one reply had no task list and the whole run failed
         try:
             p = _unwrap_plan(await llm.chat_json(msgs, temperature=0.2 if attempt == 0 else 0.0, max_tokens=3000))
+            if not p.get("tasks"):  # a cut reply: keep every complete task object it did finish
+                found = [o_ for o_ in extract_objects(getattr(llm, "last_text", "") or "") if o_.get("id") and o_.get("role")]
+                uniq = list({str(t_["id"]): t_ for t_ in found}.values())
+                if len(uniq) >= 2:
+                    p = {"simple": False, "summary": p.get("summary", ""), "tasks": uniq}
             return {"simple": bool(p.get("simple")) and depth == 0, "summary": str(p.get("summary", "")),
                     "tasks": _sanitize_plan(p, depth, can_exec)}
         except ValueError as e:

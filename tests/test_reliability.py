@@ -478,3 +478,19 @@ def test_chat_json_continues_cut_json(monkeypatch):
     monkeypatch.setattr(llm, "chat", chat)
     out = asyncio.run(llm.chat_json([{"role": "user", "content": "x"}]))
     assert [t["id"] for t in out["tasks"]] == ["t1", "t2"]
+
+
+def test_planner_salvages_tasks_from_cut_reply():
+    import asyncio
+    from app.orchestrator import plan
+    from app.llm import Usage, extract_json
+    cut = '{"simple": false, "summary": "s", "tasks": [{"id": "t1", "title": "أ", "role": "researcher"}, {"id": "t2", "title": "ب", "role": "writer", "depends_on": ["t1"]}, {"id": "t3", "ti'
+
+    class L:
+        usage = Usage()
+        last_text = ""
+        async def chat_json(self, msgs, temperature=0.2, max_tokens=2000):
+            self.last_text = cut
+            return extract_json(cut)  # the first complete object is a task, as on production
+    out = asyncio.run(plan(L(), "هدف", 0))
+    assert [t["id"] for t in out["tasks"]] == ["t1", "t2"] and out["tasks"][1]["depends_on"] == ["t1"]
