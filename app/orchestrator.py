@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 from . import memory, quality
 from .agents import ROLES, run_agent
-from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip
+from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip, looks_truncated
 
 MAX_DEPTH = 2
 MAX_TASKS_PER_PLAN = 10
@@ -143,7 +143,7 @@ SYNTH = """أنت المنسق. اجمع نتائج فريقك في جواب ن�
 - إن فشلت مهام أو لم تُتحقق، اذكر ذلك بصدق في قسم قصير "حدود هذا الجواب".
 - إذا كان في النتائج تقدير موسوم، استخدمه لتقديم جواب عملي (أرقام وسيناريوهات) مع إبقاء وسم التقدير.
 - إن أُرفق سياق من ذاكرة المنسق فاحترم وسم كل معلومة: انسب للمستخدم («مشروعك»، «قررتَ») فقط ما وُسم بأنه صرّح به أو أكده. ما سواه قدّمه كما هو: «في مهمة سابقة ورد أن...» أو «بافتراض أن...» أو «في السيناريو الاختباري...». لا تطلب من المستخدم بيانات حقيقية (كالسيولة) عن مشروع لم يصرّح أنه مشروعه. إن احتجت معلومة مصدرها غير مؤكد فاذكر ذلك أو اطلب التأكيد.
-- أبقِ وسم كل رقم مهم كما ورد في النتائج: (المصدر: رابط) أو (من المستخدم) أو (محسوب) أو (تقدير) أو (افتراض). لا تحذف الروابط.
+- أبقِ وسم كل رقم مهم كما ورد في النتائج: (المصدر: رابط) أو (من المستخدم) أو (محسوب) أو (تقدير) أو (افتراض). لا تحذف الروابط. لا تسِم رقمًا «من المستخدم» إلا إن ذكره المستخدم نفسه في طلبه؛ ما ورد في دراسة سابقة يوسم (من الدراسة السابقة) مع وسمه الأصلي.
 - إن نقصت بيانات لازمة لقرار موثوق فأضف قسمًا قصيرًا «بيانات مطلوبة» يحدد ما يلزم ومن أين يمكن الحصول عليه.
 - إن أُرفق «سجل معلومات النتيجة السابقة» فلا تستخدم ما وُسم فيه مرفوضًا، واذكر في «حدود هذا الجواب» ما استُبعد ولماذا."""
 
@@ -183,9 +183,33 @@ async def plan(llm: LLM, goal: str, depth: int, can_exec: bool = True, follow_up
     note = "" if depth == 0 else " (غير مسموح في هذا المستوى)"
     sys = PLANNER.format(roles=role_list(can_exec), max_tasks=MAX_TASKS_PER_PLAN if depth == 0 else 5, decompose_note=note)
     user = (FOLLOW_UP_PLAN if follow_up and depth == 0 else "") + goal
-    p = await llm.chat_json([{"role": "system", "content": sys}, {"role": "user", "content": user}], max_tokens=3000)
-    return {"simple": bool(p.get("simple")) and depth == 0, "summary": str(p.get("summary", "")),
-            "tasks": _sanitize_plan(p, depth, can_exec)}
+    msgs = [{"role": "system", "content": sys}, {"role": "user", "content": user}]
+    last: Exception | None = None
+    for attempt in range(2):  # production a085661bb506: one reply had no task list and the whole run failed
+        try:
+            p = _unwrap_plan(await llm.chat_json(msgs, temperature=0.2 if attempt == 0 else 0.0, max_tokens=3000))
+            return {"simple": bool(p.get("simple")) and depth == 0, "summary": str(p.get("summary", "")),
+                    "tasks": _sanitize_plan(p, depth, can_exec)}
+        except ValueError as e:
+            last = e
+            msgs = msgs[:2] + [{"role": "user", "content": "تذكير: أعد كائن JSON واحدًا فيه المفتاح \"tasks\" قائمة مهام غير فارغة "
+                                                           "بالشكل المطلوب في التعليمات، بلا أي نص آخر."}]
+    raise last  # type: ignore[misc]
+
+
+def _unwrap_plan(p: dict) -> dict:
+    """Accept a task list the model nested under another key (e.g. {"plan": {"tasks": [...]}} or "steps")."""
+    if isinstance(p.get("tasks"), list) and p["tasks"]:
+        return p
+    for k in ("steps", "subtasks", "المهام"):
+        if isinstance(p.get(k), list) and p[k]:
+            return {**p, "tasks": p[k]}
+    for v in p.values():
+        if isinstance(v, dict):
+            inner = _unwrap_plan(v)
+            if inner.get("tasks"):
+                return {**p, **inner}
+    return p
 
 
 GOAL_CHARS = 2000
@@ -814,8 +838,22 @@ class Orchestrator:
         await r.emit("task_finished", {"task": t["id"], "status": "failed", "attempts": len(t["attempts"]),
                                        "kept_attempt": t.get("best_attempt")})
 
+    async def _long(self, msgs: list[dict], temperature: float) -> str:
+        if hasattr(self.llm, "chat_long"):
+            return await self.llm.chat_long(msgs, temperature=temperature, max_tokens=4000)
+        return await self.llm.chat(msgs, temperature=temperature, max_tokens=4000)
+
     async def final_verdict(self, check: dict, answer: str) -> dict:
         v = apply_audit(await verify(self.llm, check, answer), answer)
+        r = self.run
+        mis = quality.false_user_tags(answer, r.goal + "\n" + (r.context or "").split("النتيجة السابقة:", 1)[0])
+        if mis:  # production 5e071b86edaa: budget shares the user never gave were labeled «من المستخدم»
+            v = {**v, "pass": False, "score": min(v.get("score") or 0, 5),
+                 "issues": list(v.get("issues") or []) + ["وُسمت أرقام بأنها «من المستخدم» والمستخدم لم يذكرها: " + " ؛ ".join(mis[:3])
+                                                         + " — صحّح الوسم (محسوب/افتراض/من الدراسة السابقة)."]}
+        if looks_truncated(answer):  # production 5e071b86edaa: an answer cut mid-table passed with 10/10
+            v = {**v, "pass": False, "score": min(v.get("score") or 0, 4),
+                 "issues": list(v.get("issues") or []) + ["الجواب مقطوع قبل اكتماله (ينتهي وسط جدول أو جملة)."]}
         v = quality.apply_rejected(v, self.reused_rejected(answer))
         return quality.apply_plausibility(v, await quality.check_plausibility(self.llm, answer))
 
@@ -853,7 +891,7 @@ class Orchestrator:
             g, g_parts = goal, parts
         msgs = [{"role": "system", "content": SYNTH},
                 {"role": "user", "content": f"طلب المستخدم:\n{g}\n\nنتائج الفريق:\n\n" + "\n\n".join(g_parts)}]
-        answer = await self.llm.chat(msgs, temperature=0.3, max_tokens=4000)
+        answer = await self._long(msgs, 0.3)
         if not final:
             return {"ok": ok, "partial": True, "output": answer}
         check = {"id": "final", "instructions": goal + (
@@ -865,7 +903,7 @@ class Orchestrator:
             msgs += [{"role": "assistant", "content": answer},
                      {"role": "user", "content": "المدقق رفض الجواب:\n" + "\n".join(v["issues"]) + f"\n{v.get('fix', '')}\nأعد كتابة الجواب النهائي مصححًا. "
                       "إن كان رقم غير معقول مبنيًا على تقدير لا تملك بيانات لتصحيحه، فاحذفه وما بُني عليه وصرّح بأن البيانات لا تكفي بدل اختلاق بديل."}]
-            answer = await self.llm.chat(msgs, temperature=0.2, max_tokens=4000)
+            answer = await self._long(msgs, 0.2)
             v = await self.final_verdict(check, answer)
             await self.run.emit("final_check", v)
         return {"ok": ok and v["pass"], "partial": v["pass"] or any(t["status"] == "done" for t in tasks),

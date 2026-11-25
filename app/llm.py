@@ -174,6 +174,7 @@ class LLM:
     def __init__(self, cfg: LLMConfig, timeout: float = 120.0):
         self.cfg = cfg
         self.usage = Usage()
+        self.last_finish = None
         self._sem = asyncio.Semaphore(max(1, cfg.concurrency))
         self._client = httpx.AsyncClient(timeout=timeout)
 
@@ -210,8 +211,10 @@ class LLM:
                 if r.status_code == 200:
                     try:
                         data = r.json()
-                        msg = data["choices"][0]["message"]
+                        choice = data["choices"][0]
+                        msg = choice["message"]
                         text = msg.get("content") or ""
+                        self.last_finish = choice.get("finish_reason")
                         calls = msg.get("tool_calls") or []
                         if not text.strip() and calls:  # model used native tool calling: map to our protocol
                             fn = calls[0].get("function", {})
@@ -261,6 +264,19 @@ class LLM:
         self.usage.errors += 1
         raise LLMError(f"فشل استدعاء النموذج بعد عدة محاولات: {last}")
 
+    async def chat_long(self, messages: list[dict], temperature: float = 0.3, max_tokens: int = 4000, parts: int = 3) -> str:
+        """A long answer: when the provider stops at its output limit, ask it to continue where it stopped."""
+        text = piece = await self.chat(messages, temperature, max_tokens)
+        for _ in range(parts - 1):
+            if getattr(self, "last_finish", None) != "length" and not looks_truncated(piece):
+                break
+            more = await self.chat(messages + [{"role": "assistant", "content": text[-6000:]},
+                                               {"role": "user", "content": "توقف ردك قبل اكتماله. أكمل من حيث توقفت بالضبط، "
+                                                                           "بلا تكرار ولا مقدمة."}], temperature, max_tokens)
+            piece = more
+            text = text.rstrip() + ("\n" if text.rstrip().endswith("|") else "") + more.lstrip()
+        return text
+
     async def chat_json(self, messages: list[dict], temperature: float = 0.2, max_tokens: int = 2000) -> dict:
         text = await self.chat(messages, temperature, max_tokens)
         try:
@@ -272,6 +288,21 @@ class LLM:
 
 
 _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.S)
+
+
+def looks_truncated(text: str) -> bool:
+    """A reply that stops mid-structure: an open table row or bold marker, an unclosed code fence, or a dangling word."""
+    t = (text or "").rstrip()
+    if not t:
+        return True
+    last = t.splitlines()[-1].strip()
+    if t.count("```") % 2:
+        return True
+    if last.startswith("|") and not last.endswith("|"):
+        return True
+    if last.count("**") % 2:
+        return True
+    return bool(re.search(r"[،,:\-–(]$", last))
 
 
 def extract_json(text: str) -> dict:

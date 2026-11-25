@@ -396,3 +396,70 @@ def test_free_chat_sends_within_limit_and_shrinks_on_413(monkeypatch):
     monkeypatch.setattr(llm._client, "post", post)
     out = asyncio.run(llm.chat([{"role": "system", "content": "s" * 9000}, {"role": "user", "content": "u" * 30000}]))
     assert out == "ok" and sizes[0] <= 15000 and sizes[1] < sizes[0]
+
+
+def test_planner_retries_when_reply_has_no_tasks():
+    import asyncio
+    from app.orchestrator import plan
+    from app.llm import Usage
+
+    class L:
+        usage = Usage()
+        def __init__(self):
+            self.n = 0
+        async def chat_json(self, msgs, temperature=0.2, max_tokens=2000):
+            self.n += 1
+            if self.n == 1:
+                return {"summary": "x"}
+            return {"plan": {"summary": "s", "tasks": [{"id": "t1", "title": "بحث", "role": "researcher"}]}}
+    llm = L()
+    out = asyncio.run(plan(llm, "هدف", 0))
+    assert llm.n == 2 and out["tasks"][0]["id"] == "t1"
+
+
+def test_calculate_joins_multiline_brackets():
+    import asyncio
+    from app.tools import calculate
+    out = asyncio.run(calculate("shares = [\n0.12,\n0.25\n]\ntotal = sum(shares) * 90000"))
+    assert "خطأ" not in out and "33,300" in out
+
+
+def test_critique_of_rejected_figure_is_not_reuse():
+    from app import quality
+    assert quality.reuses_rejected("الإيرادات السابقة (68 220 000 000 ريال) لا توجد لها أي مصدر موثق.", [68.22e9]) == []
+    assert quality.reuses_rejected("حجم الطلب 3.79 مليار كوب (من المستخدم)", [3.79e9])
+
+
+def test_disputed_but_used_is_still_reuse():
+    from app import quality
+    assert quality.reuses_rejected("الإيرادات السنوية (المستخدمة في الحساب) = 68 220 000 000 ريال (من طلب سابق غير موثق)", [68.22e9])
+
+
+def test_looks_truncated():
+    from app.llm import looks_truncated
+    assert looks_truncated("| العنصر | القيمة |\n|---|---|\n| **")
+    assert looks_truncated("نص ```code")
+    assert not looks_truncated("## خلاصة\nالجواب مكتمل.")
+    assert not looks_truncated("| أ | ب |\n|---|---|\n| 1 | 2 |")
+
+
+def test_chat_long_continues_on_length(monkeypatch):
+    import asyncio
+    from app.llm import LLM, LLMConfig
+    llm = LLM(LLMConfig(provider="free", base_url="https://x/openai", model="m"))
+    replies = [("الجزء الأول | **", "length"), ("بقية الجواب.", "stop")]
+
+    async def chat(messages, temperature=0.3, max_tokens=2000):
+        t, f = replies.pop(0)
+        llm.last_finish = f
+        return t
+    monkeypatch.setattr(llm, "chat", chat)
+    out = asyncio.run(llm.chat_long([{"role": "user", "content": "x"}]))
+    assert out.startswith("الجزء الأول") and out.endswith("بقية الجواب.") and not replies
+
+
+def test_false_user_tags():
+    from app import quality
+    ans = "| التحضير | 12 % | 10 800 | (من المستخدم) |\n| الميزانية | 90 000 | (من المستخدم) |\n| المجموع | 90 000 | (محسوب) |"
+    bad = quality.false_user_tags(ans, "أعد الخطة بعد تغيير الميزانية إلى 90 ألف ريال")
+    assert len(bad) == 1 and "التحضير" in bad[0]

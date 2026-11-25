@@ -285,12 +285,20 @@ def render_ledger(items: list[dict], issues: list[dict], max_chars: int = 3000) 
     if rest:
         parts.append("بقية الأسطر: " + "، ".join(f"{TAGS[k].split(' —')[0]} {v}" for k, v in rest.items())
                      + " — لا تُعامل كحقائق دون إعادة فحص.")
+    if any(it["tag"] == "rejected" for it in items) or any(i["severity"] == "error" for i in issues):
+        parts.append("إن احتجت إيرادًا أو عائدًا وتقدير الطلب السابق مرفوض: لا تشتقه من الأرقام المرفوضة. ابنِه من حدود الميزانية "
+                     "(عدد الوحدات التي تموّلها الميزانية = الميزانية المخصصة للإنتاج ÷ تكلفة الوحدة) وسعر بمصدر أو موسوم، "
+                     "في سيناريوهات (متحفظ/متوسط/متفائل) موسومة «افتراض»، أو اذكر ما يلزم في «بيانات مطلوبة».")
     parts.append("قواعد: لا تنقل سطرًا مرفوضًا أو غير مؤكد كحقيقة؛ لا ترث تقديرات الطلب أو الإيرادات دون إعادة فحص أساسها؛ "
                  "إن غيّر المستخدم معطًى (كالميزانية) فالقيمة الجديدة تحل محل القديمة في كل حساب، والقديمة سجل تاريخي فقط.")
     return "\n".join(parts)
 
 
-_MARKED_REJECTED = re.compile(r"مرفوض|مستبعد|غير معقول|غير موثوق|لا يُستخدم|لا يستخدم|ثبت خطؤ|استُبعد|rejected", re.I)
+_MARKED_REJECTED = re.compile(r"مرفوض|مستبعد|غير معقول|لا يُستخدم|لا يستخدم|ثبت خطؤ|استُبعد|rejected", re.I)
+
+
+_DISPUTED = re.compile(r"غير موثوق|غير موثق|بلا مصدر|لا توجد لها|لا يوجد لها|لا مصدر", re.I)
+_COMPUTES = re.compile(r"[=×*÷]|المستخدمة? في الحساب|نعتمد|اعتمدنا", re.I)
 
 
 def reuses_rejected(text: str, rejected: list[float], rejected_totals: list[float] = ()) -> list[str]:
@@ -301,6 +309,8 @@ def reuses_rejected(text: str, rejected: list[float], rejected_totals: list[floa
     for raw in (text or "").splitlines():
         line = raw.strip()
         if not line or _MARKED_REJECTED.search(line):
+            continue
+        if _DISPUTED.search(line) and not _COMPUTES.search(line):  # disputes the figure without building on it
             continue
         vals = values_in(line)
         hit = any(_near(x, r) for x in vals for r in rej) or (
@@ -322,3 +332,20 @@ def apply_rejected(v: dict, lines: list[str]) -> dict:
           "أو اذكره في «بيانات مطلوبة»."]
     v["reused_rejected"] = lines[:5]
     return v
+
+
+_USER_TAG = re.compile(r"من المستخدم|صرّح به المستخدم|حسب المستخدم")
+
+
+def false_user_tags(text: str, user_text: str) -> list[str]:
+    """Lines that credit the user with figures the user never gave (a mislabeled source is a fabricated one)."""
+    user_values = values_in(user_text or "")
+    out = []
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not _USER_TAG.search(line) or re.search(r"[=×*÷]|محسوب", line):
+            continue
+        vals = [x for x in values_in(line) if x >= 10]
+        if vals and not any(_near(x, u) for x in vals for u in user_values):
+            out.append(line[:160])
+    return out
