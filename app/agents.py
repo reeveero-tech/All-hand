@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable
 
 from .llm import LLM, LLMError
-from .tools import READ_MARK, TOOLS, call_tool, search_meta
+from .tools import READ_MARK, TOOLS, call_tool, fetch_meta, search_meta
 
 
 @dataclass(frozen=True)
@@ -20,7 +20,7 @@ class Role:
 
 ROLES: dict[str, Role] = {r.id: r for r in [
     Role("researcher", "باحث", "يجمع المعلومات من الويب ويستشهد بالروابط. لا يخترع حقائق؛ إن لم يجد يقول ذلك.",
-         ("web_search", "fetch_url", "world_bank")),
+         ("web_search", "research_sources", "fetch_url", "world_bank")),
     Role("analyst", "محلل بيانات", "يحلل الأرقام والبيانات ويحسب بدقة بأداة الحساب بدل الحساب الذهني.",
          ("calculate", "run_python", "web_search", "world_bank")),
     Role("coder", "مبرمج", "يكتب كودًا صحيحًا وكاملًا ويختبره بتشغيله فعليًا قبل التسليم.", ("run_python",)),
@@ -55,6 +55,11 @@ def _research_rules(tools: tuple[str, ...]) -> str:
     if "fetch_url" in tools:
         rules += "افتح بـ fetch_url أهم رابط أو رابطين قبل أن تحكم بنقص البيانات، واستخرج منها الأرقام بنفسك.\n"
     rules += "web_search يفتح تلقائيًا أهم الصفحات ويضيف مقتطفاتها بعد «[قُرئت: الرابط]»؛ هذه صفحات قُرئت فعلًا فاستشهد بروابطها. لا تكرر الاستعلام نفسه.\n"
+    if "fetch_url" in tools:
+        rules += ("fetch_url يضيف سطر «[الصفحة: الناشر، تاريخ النشر، آخر تحديث، عدد الجداول]» والجداول والعروض المنظمة كما هي في الصفحة؛ "
+                  "اذكر تاريخ المصدر مع كل رقم تأخذه منه، وانقل أرقام الجداول كما وردت دون تقريب.\n")
+    if "research_sources" in tools:
+        rules += "للدراسات والأوراق العلمية استخدم research_sources بـ «academic: ...»؛ نتائجه قوائم لا نصوص مقروءة.\n"
     if "world_bank" in tools:
         rules += "للسكان والدخل والتضخم استخدم world_bank (بيانات رسمية بمصدر) بدل التخمين.\n"
     return rules
@@ -116,9 +121,14 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
             name, args = msg.get("tool", ""), msg.get("input", {})
             await emit("tool_call", {"tool": name, "input": args, "why": msg.get("why", "")})
             result = await call_tool(name, args, allowed)
-            meta = search_meta(result) if name == "web_search" else {}
-            if name == "fetch_url" and result.startswith("HTTP 2"):
-                meta = {"read": [result.split("\n", 1)[0].split(" — ", 1)[-1].strip()]}
+            meta = search_meta(result) if name in ("web_search", "research_sources") else {}
+            if name == "research_sources":
+                meta["read"] = []  # index listings: discovered, not read
+            if name == "fetch_url":
+                page = fetch_meta(result, (args.get("url") if isinstance(args, dict) else args) or "")
+                meta = {"page": page}
+                if not page["failure"]:
+                    meta["read"] = [page["url"]]
             elif name == "world_bank" and result.startswith(READ_MARK):
                 meta = {"read": [result[len(READ_MARK):].split("]", 1)[0]]}
             await emit("tool_result", {"tool": name, "preview": result[:400], **meta})

@@ -68,7 +68,10 @@ def test_search_is_cached_and_top_pages_are_read(monkeypatch):
     b = asyncio.run(tools.web_search("سعر  قهوة المراعي الباردة"))
     assert len(calls) == 1 and a == b
     meta = tools.search_meta(a)
+    found = meta.pop("found")
     assert meta == {"provider": "DuckDuckGo", "results": 3, "read": ["https://shop.example/a"]}
+    assert [f["url"] for f in found] == ["https://shop.example/a", "https://ar.wikipedia.org/wiki/x", "https://bad.example/b"]
+    assert all(f["provider"] == "DuckDuckGo" and not f["headline_only"] for f in found)
     assert "4.5 ريال" in a and "تواصل معنا" not in a
 
 

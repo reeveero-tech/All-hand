@@ -18,5 +18,8 @@ def _fresh_search_state(monkeypatch):
     monkeypatch.setattr(tools, "_real_tavily", tools._tavily, raising=False)
     monkeypatch.setattr(tools, "_tavily", no_news)
     monkeypatch.setitem(tools._tavily_gate, "cool_until", 0.0)
+    for p in tools.registry.REGISTRY.values():  # circuit breakers and counters are process-wide too
+        p.fails, p.open_until, p.last_error = 0, 0.0, ""
+        p.stats = {k: 0 for k in p.stats}
     yield
     tools._cache.clear()

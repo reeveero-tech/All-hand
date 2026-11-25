@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import export, memory, store, tools
+from .research import evidence
 from .agents import ROLES
 from .llm import LLM, LLMError, resolve_config
 from .orchestrator import DEFAULT_MAX_AGENTS, Orchestrator, Run
@@ -173,7 +174,8 @@ def _running() -> int:
 async def health():
     return {"status": "ok", "uptime_s": round(time.time() - STARTED), "runs_live": _running(),
             "history": "supabase" if store.enabled() else "memory",
-            "search": {k: v for k, v in tools.STATS.items()}}  # counters and the last provider error (no secrets)
+            "search": {k: v for k, v in tools.STATS.items()},  # counters and the last provider error (no secrets)
+            "providers": tools.registry.health()}  # per provider: breaker state, requests, results, errors  # counters and the last provider error (no secrets)
 
 
 @app.get("/api/roles")
@@ -285,6 +287,15 @@ async def export_run(run_id: str, x_client_key: str | None = Header(default=None
     data.pop("owner", None)
     return Response(export.to_markdown(data), media_type="text/markdown; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="all-hand-{run_id}.md"'})
+
+
+@app.get("/api/runs/{run_id}/evidence")
+async def run_evidence(run_id: str, x_client_key: str | None = Header(default=None)):
+    """The run's evidence ledger, rebuilt from its recorded tool results (only the owner; same 404 otherwise):
+    each URL with the furthest stage it really reached (discovered, opened, extracted, relevant, cited),
+    who found it, failure reasons, page dates and table counts."""
+    data = await _own_run(run_id, _owner(x_client_key))
+    return evidence.build(data.get("events") or [], data.get("result") or "")
 
 
 @app.post("/api/runs/{run_id}/plan")
