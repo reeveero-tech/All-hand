@@ -422,3 +422,9 @@ def test_calculate_joins_multiline_brackets():
     from app.tools import calculate
     out = asyncio.run(calculate("shares = [\n0.12,\n0.25\n]\ntotal = sum(shares) * 90000"))
     assert "خطأ" not in out and "33,300" in out
+
+
+def test_critique_of_rejected_figure_is_not_reuse():
+    from app import quality
+    assert quality.reuses_rejected("الإيرادات السابقة (68 220 000 000 ريال) لا توجد لها أي مصدر موثق.", [68.22e9]) == []
+    assert quality.reuses_rejected("حجم الطلب 3.79 مليار كوب (من المستخدم)", [3.79e9])

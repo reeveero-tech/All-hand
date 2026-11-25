@@ -294,7 +294,7 @@ def render_ledger(items: list[dict], issues: list[dict], max_chars: int = 3000) 
     return "\n".join(parts)
 
 
-_MARKED_REJECTED = re.compile(r"مرفوض|مستبعد|غير معقول|غير موثوق|لا يُستخدم|لا يستخدم|ثبت خطؤ|استُبعد|rejected", re.I)
+_MARKED_REJECTED = re.compile(r"مرفوض|مستبعد|غير معقول|غير موثوق|غير موثق|بلا مصدر|لا توجد لها|لا يوجد لها|لا يُستخدم|لا يستخدم|ثبت خطؤ|استُبعد|rejected", re.I)
 
 
 def reuses_rejected(text: str, rejected: list[float], rejected_totals: list[float] = ()) -> list[str]:
