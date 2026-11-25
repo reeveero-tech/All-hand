@@ -80,3 +80,29 @@ def test_rate_limits_do_not_spend_ordinary_attempts(monkeypatch):
         finally:
             await c.close()
     assert asyncio.run(go()) == "وصل" and len(n) == 7
+
+
+def test_output_token_limit_retries_with_a_larger_budget(monkeypatch):
+    """Production (978e636a8163, t4): the reasoning model spent all 2500 tokens thinking, HTTP 400 twice."""
+    import json as _json
+    budgets = []
+
+    def handler(req):
+        budgets.append(_json.loads(req.content)["max_tokens"])
+        if len(budgets) < 3:
+            return httpx.Response(400, text='{"error":{"message":"The model exhausted its output token limit","code":"output_token_limit_exceeded"}}')
+        return httpx.Response(200, json={"choices": [{"message": {"content": "تم"}}]})
+
+    async def fake_sleep(s):
+        pass
+    monkeypatch.setattr(L.asyncio, "sleep", fake_sleep)
+
+    async def go():
+        c = L.LLM(L.LLMConfig("free", "https://tokens.invalid", "m", None, concurrency=1))
+        c._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        try:
+            return await c.chat([{"role": "user", "content": "x"}], max_tokens=2500)
+        finally:
+            await c.close()
+    assert asyncio.run(go()) == "تم"
+    assert budgets == [2500, 5000, 10000]
