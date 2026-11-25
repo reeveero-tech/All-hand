@@ -84,7 +84,7 @@ async function startRun(resumeFrom = null, followUpOf = null, followGoal = null)
   saveSettings();
   const s = JSON.parse(localStorage.getItem("ah_settings"));
   const body = {goal, provider: s.provider, api_key: s.apiKey || null, base_url: s.baseUrl || null,
-    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace(), scenario: $("#scenario").checked, resume_from: resumeFrom, follow_up_of: followUpOf};
+    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace(), scenario: $("#scenario").checked, approve_plan: $("#approvePlan").checked && !resumeFrom, resume_from: resumeFrom, follow_up_of: followUpOf};
   $("#runBtn").disabled = true;
   try {
     const {id} = await api("/api/runs", {method: "POST", body: JSON.stringify(body)});
@@ -140,6 +140,9 @@ const LABEL = {
   resumed: (e) => `استكمال المهمة ${e.from}: إعادة استخدام ${e.reused.length} مهمة مُتحقق منها، وتنفيذ ${e.remaining.length}`,
   run_started: (e) => `بدأ المنسق (${e.llm.provider}: ${e.llm.model})، ميزانية ${e.max_agents} وكيلًا`,
   planning: (e) => `المنسق يخطط${e.scope !== "root" ? " لفريق فرعي " + e.scope : ""}`,
+  plan_awaiting_approval: () => "الخطة جاهزة وتنتظر اعتمادك؛ لن يعمل أي وكيل قبل قرارك",
+  plan_decision: (e) => ({approve: `اعتمدتَ الخطة${e.dropped?.length ? "، وأزلت " + e.dropped.join("، ") : ""}${e.note ? "، مع ملاحظة: " + e.note : ""}`,
+    reject: "رفضتَ الخطة؛ لن يُنفَّذ شيء", timeout: "انتهت مهلة الاعتماد دون قرار؛ لم يُنفَّذ شيء"})[e.action] || e.action,
   plan: (e) => `خطة${e.scope !== "root" ? " فرعية" : ""}: ${e.tasks.length} مهام — ${e.summary}`,
   agent_spawned: (e) => `أُنشئ الوكيل ${e.agent} (${e.role}) للمهمة ${e.task}${e.attempt > 1 ? " — محاولة " + e.attempt : ""}`,
   tool_call: (e) => `${e.agent} يستخدم ${e.tool}: ${JSON.stringify(e.input).slice(0, 140)}`,
@@ -164,7 +167,7 @@ function onEvent(e) {
   li.innerHTML = `<span class="t">${e.t.toFixed(1)}s</span>${esc((LABEL[e.type] || (() => e.type))(e))}`;
   if (/error|failed|skipped/.test(e.type) || e.pass === false) li.classList.add("err");
   $("#log").prepend(li);
-  if (["plan", "task_finished", "task_skipped", "agent_spawned", "verified", "run_finished"].includes(e.type)) scheduleRefresh();
+  if (["plan", "plan_awaiting_approval", "plan_decision", "task_finished", "task_skipped", "agent_spawned", "verified", "run_finished"].includes(e.type)) scheduleRefresh();
   if (e.type === "run_finished" && es) { es.close(); setTimeout(refresh, 300); }
 }
 function scheduleRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refresh, 400); }
@@ -187,6 +190,7 @@ async function refresh() {
       ${t.output ? `<details><summary>الناتج</summary><div class="md">${md(t.output)}</div></details>` : ""}</div>`;
   }).join("") || '<p class="muted">المنسق يخطط...</p>';
   const busy = r.status === "running";
+  renderApproval(r);
   $("#runBtn").disabled = busy; $("#cancelBtn").classList.toggle("hidden", !busy);
   if (!busy) {
     $("#result").className = "md";
@@ -229,6 +233,27 @@ async function refresh() {
     const li = (xs) => xs?.length ? "<ul>" + xs.map((i) => `<li>${memLine(i)}</li>`).join("") + "</ul>" : '<p class="muted">لا شيء</p>';
     $("#memRunBody").innerHTML = `${m.error ? `<p class="err">تعذر عمل الذاكرة في هذه المهمة (${esc(m.error)}). الجواب محفوظ، لكن لم يُحفظ شيء جديد في الذاكرة.</p>` : ""}<h4>ما تذكّره المنسق</h4>${li(m.recalled)}<h4>ما حفظه بعد المهمة</h4>${busy ? '<p class="muted">بعد الانتهاء...</p>' : li(m.saved)}`;
   }
+}
+
+function renderApproval(r) {
+  const card = $("#approvalCard"), waiting = r.status === "running" && r.awaiting === "plan";
+  card.classList.toggle("hidden", !waiting);
+  if (!waiting || card.dataset.run === r.id) return;
+  card.dataset.run = r.id; $("#approvalNote").value = ""; $("#approvalMsg").textContent = "";
+  $("#approvalTasks").innerHTML = Object.values(r.tasks).filter((t) => !t.parent).map((t) =>
+    `<li><label class="check"><input type="checkbox" checked data-id="${esc(t.id)}"> <b>${esc(t.id)}</b> ${esc(t.title)} <span class="badge">${esc(t.role)}</span>${t.depends_on.length ? ` <small class="muted">يعتمد على ${esc(t.depends_on.join("، "))}</small>` : ""}</label>
+      <details><summary class="muted">التعليمات ومعيار القبول</summary><p>${esc(t.instructions)}</p><p class="muted">القبول: ${esc(t.acceptance)}</p></details></li>`).join("");
+  const send = async (action) => {
+    const drop = [...document.querySelectorAll("#approvalTasks input:not(:checked)")].map((i) => i.dataset.id);
+    $("#approveBtn").disabled = $("#rejectBtn").disabled = true;
+    try {
+      await api(`/api/runs/${r.id}/plan`, {method: "POST", body: JSON.stringify({action, drop, note: $("#approvalNote").value || null})});
+      card.classList.add("hidden"); scheduleRefresh();
+    } catch (e) { $("#approvalMsg").textContent = e.message; }
+    $("#approveBtn").disabled = $("#rejectBtn").disabled = false;
+  };
+  $("#approveBtn").onclick = () => send("approve");
+  $("#rejectBtn").onclick = () => send("reject");
 }
 
 const KIND = {profile: "عنك", project: "مشروع", decision: "قرار", finding: "معلومة", task: "مهمة سابقة", note: "تنبيه"};

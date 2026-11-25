@@ -45,6 +45,7 @@
       <div class="examples" id="examples"></div>
       <div class="actions">
         <label class="check" title="لن يُنسب إليك أي شيء من هذه المهمة: يُحفظ كسيناريو اختباري ولا يُستخدم في مهامك الحقيقية"><input type="checkbox" id="scenario"> مهمة تجريبية أو افتراضية</label>
+        <label class="check" title="يتوقف المنسق بعد إعداد الخطة حتى تعتمدها أو تعدّلها أو ترفضها؛ لا يعمل أي وكيل قبل قرارك"><input type="checkbox" id="approvePlan"> اعرض الخطة عليّ قبل التنفيذ</label>
         <button id="cancelBtn" class="ghost hidden">إيقاف</button>
         <button id="runBtn">ابدأ</button>
       </div>
@@ -53,6 +54,12 @@
 
   <section id="live" class="hidden">
     <div class="stats" id="stats"></div>
+    <div id="approvalCard" class="card hidden"><h2>الخطة بانتظار قرارك</h2>
+      <p class="muted">لم يبدأ أي وكيل بعد. أزل علامة أي مهمة لا تريدها، وأضف ملاحظة إن أردت تُلزم بها كل الوكلاء.</p>
+      <ul id="approvalTasks" class="plain"></ul>
+      <textarea id="approvalNote" rows="2" maxlength="2000" placeholder="ملاحظة اختيارية: مثال «اعتمد مدينة جدة فقط» أو «الميزانية لا تتجاوز 150 ألف»"></textarea>
+      <p><button id="approveBtn">اعتمد الخطة ونفّذ</button> <button id="rejectBtn" class="ghost">ارفض الخطة</button> <small id="approvalMsg" class="muted"></small></p>
+    </div>
     <div class="cols">
       <div class="card"><h2>الخطة والمهام</h2><div id="board"></div></div>
       <div class="card"><h2>سجل العمل المباشر</h2><ol id="log"></ol></div>
