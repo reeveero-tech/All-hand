@@ -31,6 +31,7 @@ class LLMConfig:
     model: str
     api_key: str | None = None
     concurrency: int = 8
+    min_interval: float = 0.0  # seconds between request starts, shared by every run (the free limit is per server IP)
 
     def public(self) -> dict:
         return {"provider": self.provider, "model": self.model, "base_url": self.base_url}
@@ -67,7 +68,8 @@ def resolve_config(provider: str, api_key: str | None, model: str | None,
     if provider == "free":
         if os.environ.get("FREE_LLM_ENABLED", "1") != "1":
             raise LLMError("المزود المجاني معطّل على هذا الخادم.")
-        return LLMConfig("free", FREE_BASE, FREE_MODEL, None, concurrency=1)
+        return LLMConfig("free", FREE_BASE, FREE_MODEL, None, concurrency=1,
+                         min_interval=float(os.environ.get("FREE_LLM_INTERVAL", "46")))
     raise LLMError(f"مزود غير معروف: {provider}")
 
 
@@ -85,6 +87,45 @@ def retry_after(r: httpx.Response, default: float) -> float:
             pass
     m = re.search(r"retry after (\d+(?:\.\d+)?)\s*s", r.text or "", re.I)
     return min(RETRY_CAP, float(m.group(1)) + 1) if m else min(RETRY_CAP, default)
+
+
+RATE_RETRIES = 8  # rate-limit rejections tolerated per call, on top of the ordinary attempts
+
+
+class Pacer:
+    """Spaces request starts to one per `interval` seconds across the whole process, and lets a
+    rate-limit answer push the next slot back. Without it, queued agents fire back to back and every
+    one of them is rejected by a per-IP limit."""
+
+    def __init__(self, interval: float):
+        self.interval, self.next_at, self._lock = interval, 0.0, asyncio.Lock()
+
+    async def slot(self):
+        async with self._lock:
+            loop = asyncio.get_running_loop()
+            delay = self.next_at - loop.time()
+            if delay > 0:
+                await asyncio.sleep(delay)
+            self.next_at = loop.time() + self.interval
+
+    def push_back(self, seconds: float):
+        self.next_at = max(self.next_at, asyncio.get_running_loop().time() + seconds)
+
+
+_PACERS: dict[tuple, Pacer] = {}
+
+
+def pacer_for(cfg: LLMConfig) -> Pacer | None:
+    if cfg.min_interval <= 0:
+        return None
+    try:
+        loop = id(asyncio.get_running_loop())
+    except RuntimeError:
+        loop = 0
+    key = (cfg.base_url, loop)  # one per endpoint and event loop (locks are loop-bound)
+    if key not in _PACERS:
+        _PACERS[key] = Pacer(cfg.min_interval)
+    return _PACERS[key]
 
 
 class LLM:
@@ -111,9 +152,12 @@ class LLM:
             headers["X-Title"] = "All-hand"
         body = {"model": self.cfg.model, "messages": messages,
                 "temperature": temperature, "max_tokens": max_tokens}
-        last = ""
-        for attempt in range(5):
+        last, attempt, limited = "", 0, 0
+        pacer = pacer_for(self.cfg)
+        while attempt < 5:
             async with self._sem:
+                if pacer:
+                    await pacer.slot()
                 try:
                     r = await self._client.post(self._url(), headers=headers, json=body)
                 except httpx.HTTPError as e:
@@ -149,9 +193,18 @@ class LLM:
                 else:
                     last = f"HTTP {r.status_code}: {r.text[:200]}"
                     if r.status_code in (402, 429):  # rate limited: wait as long as the provider asks
-                        await asyncio.sleep(retry_after(r, default=6 * (attempt + 1)))
+                        wait = retry_after(r, default=6 * (attempt + 1))
+                        limited += 1
+                        if pacer:  # everyone waits, not just this call; don't spend an ordinary attempt
+                            pacer.push_back(wait)
+                            if limited <= RATE_RETRIES:
+                                continue
+                        else:
+                            await asyncio.sleep(wait)
+                        attempt += 1
                         continue
-            await asyncio.sleep(1.5 * (attempt + 1) ** 2)
+            attempt += 1
+            await asyncio.sleep(1.5 * attempt ** 2)
         self.usage.errors += 1
         raise LLMError(f"فشل استدعاء النموذج بعد عدة محاولات: {last}")
 
