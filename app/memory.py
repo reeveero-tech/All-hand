@@ -393,8 +393,8 @@ EXTRACT = """أنت مسؤول ذاكرة المنسق. بعد انتهاء مه
 - assumption: تقدير أو افتراض أو رقم تقريبي، سواء من المستخدم أو من الفريق.
 - scenario: الطلب مثال أو اختبار أو سيناريو افتراضي أو «لنفترض»، وليس وصفًا لواقع المستخدم.
 scenario=true إن كان الطلب كله اختبارًا أو مثالًا أو سيناريو افتراضيًا؛ عندها كل العناصر scenario.
-الأنواع: profile = من هو المستخدم وتفضيلاته (فقط إن قالها هو). project = مشروع ومعطياته. decision = قرار اتخذه المستخدم نفسه (توصيات الفريق ليست قرارات). finding = معلومة مفيدة مع مصدرها.
-قواعد: اكتب task_summary وcontent بلغة طلب المستخدم. 0 إلى 6 عناصر، الأهم أولًا. لا تكرر ما في الذاكرة الحالية بنفس المعنى. لا تحفظ معلومات عامة بديهية.
+الأنواع: profile = من هو المستخدم نفسه وتفضيلاته (فقط إن قالها هو). project = مشروع أو متجر أو منتج ومعطياته (اسمه، مدينته، ميزانيته) حتى لو كان للمستخدم. decision = قرار اتخذه المستخدم نفسه (توصيات الفريق ليست قرارات). finding = معلومة مفيدة مع مصدرها.
+قواعد: اكتب task_summary وcontent بلغة طلب المستخدم. 0 إلى 6 عناصر، الأهم أولًا. لا تكرر ما في الذاكرة الحالية بنفس المعنى. لا تحفظ معلومات عامة بديهية، ولا تحفظ عبارات «لم نجد / لا تتوفر معلومات».
 لا تحفظ أبدًا مفاتيح أو كلمات مرور أو بيانات دفع أو أرقام هويات. إن شككت في الطبيعة فاختر الأضعف (task_output أو assumption)."""
 
 
@@ -429,6 +429,12 @@ def is_scenario_request(goal: str) -> bool:
     return bool(_HYPO.search(goal or ""))
 
 
+# "Nothing found" is not knowledge: remembering it only crowds out real items.
+_EMPTY = re.compile(r"(لا\s+(أملك|املك|تتوفر|تتوافر|توجد|يوجد|تتاح)\s+(لدي\s+|لدينا\s+)?(أي\s+)?(معلومات|بيانات)"
+                    r"|لم\s+(أجد|نجد|يجد|يتم\s+العثور|تتوفر|تتوافر|تُذكر|تذكر)\b|^غير\s+متاح|^غير\s+معروف"
+                    r"|\bno\s+(information|data)\b|\bnot\s+(found|available)\b|\bunknown\b)", re.I)
+
+
 def classify(a: dict, goal: str, scenario: bool, result: str = "") -> dict | None:
     """Turn one proposed item into a stored item, enforcing provenance rules in code rather than trusting the model.
 
@@ -438,9 +444,11 @@ def classify(a: dict, goal: str, scenario: bool, result: str = "") -> dict | Non
     - Estimates stay assumptions. profile/decision can only come from the user.
     """
     content = _clean(a.get("content"))
-    if not content:
+    if not content or _EMPTY.search(content):
         return None
     kind = a.get("kind") if a.get("kind") in KINDS[:-1] else "finding"
+    if kind == "profile" and a.get("subject") not in (None, "null", ""):
+        kind = "project"  # about a named store/product/project, not about the person
     nature = a.get("nature") if a.get("nature") in ("user_stated", "external_source", "task_output", "inferred",
                                                      "assumption", "scenario") else "task_output"
     evidence = _clean(str(a.get("evidence") or "").strip(" \"'«»“”")) if nature in ("user_stated", "external_source") else None
