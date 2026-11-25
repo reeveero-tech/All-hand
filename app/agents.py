@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable
 
 from .llm import LLM, LLMError
-from .tools import TOOLS, call_tool
+from .tools import READ_MARK, TOOLS, call_tool, search_meta
 
 
 @dataclass(frozen=True)
@@ -20,14 +20,14 @@ class Role:
 
 ROLES: dict[str, Role] = {r.id: r for r in [
     Role("researcher", "باحث", "يجمع المعلومات من الويب ويستشهد بالروابط. لا يخترع حقائق؛ إن لم يجد يقول ذلك.",
-         ("web_search", "fetch_url")),
+         ("web_search", "fetch_url", "world_bank")),
     Role("analyst", "محلل بيانات", "يحلل الأرقام والبيانات ويحسب بدقة بأداة الحساب بدل الحساب الذهني.",
-         ("calculate", "run_python", "web_search")),
+         ("calculate", "run_python", "web_search", "world_bank")),
     Role("coder", "مبرمج", "يكتب كودًا صحيحًا وكاملًا ويختبره بتشغيله فعليًا قبل التسليم.", ("run_python",)),
     Role("writer", "كاتب", "يكتب نصوصًا واضحة ومنظمة بلغة المستخدم: مقالات، رسائل، ملخصات، تقارير وخطط. يتحقق من كل رقم يكتبه بأداة الحساب.",
          ("calculate",)),
     Role("strategist", "مستشار أعمال", "يحلل الأسواق والمنافسين ونماذج العمل ويقدم توصيات عملية قابلة للتنفيذ.",
-         ("web_search", "fetch_url", "calculate", "run_python")),
+         ("web_search", "fetch_url", "world_bank", "calculate", "run_python")),
     Role("teacher", "معلّم", "يشرح المفاهيم خطوة بخطوة بأمثلة، ويتحقق من صحة ما يشرحه.", ("run_python",)),
     Role("designer", "مصمم منتجات", "يصمم تجربة المستخدم وهياكل الصفحات والمواصفات والمتطلبات.", ()),
     Role("translator", "مترجم", "يترجم بدقة مع الحفاظ على المعنى والمصطلحات.", ()),
@@ -37,6 +37,9 @@ ROLES: dict[str, Role] = {r.id: r for r in [
 MAX_STEPS = 6
 CALC_RULE = ("كل رقم مشتق (مجموع، نسبة، تحويل عملة، تكلفة وحدة، نقطة تعادل) احسبه بأداة calculate ولا تحسبه ذهنيًا، حتى لو بدت الأرقام بسيطة؛ النظام يعيد حساب كل معادلة تكتبها ويرفض الناتج إن أخطأت. "
              "إن وجدت في الطلب أو في نتائج زملائك رقمًا خاطئًا حسابيًا فصحّحه وصرّح بالتصحيح.\n")
+TAG_RULE = ("وسم كل رقم مهم بمصدره بجانبه: (المصدر: الرابط الذي قرأته) أو (من المستخدم) أو (محسوب: المعادلة) أو (تقدير: المنهج والمدخلات) "
+            "أو (افتراض). لا تبنِ حجم طلب أو إيرادات على رقم بلا وسم، وتأكد أن التقدير معقول بالنسبة لعدد السكان والميزانية "
+            "(مثلًا: الطلب السنوي ÷ السكان ÷ 365 = استهلاك الفرد اليومي). إن لم تكفِ البيانات لتقدير معقول فقل ذلك واذكر ما يلزم.\n")
 
 
 def _tool_help(tools: tuple[str, ...]) -> str:
@@ -51,6 +54,9 @@ def _research_rules(tools: tuple[str, ...]) -> str:
     rules = "نتائج web_search عناوين ومقتطفات قصيرة. لا تكتب «لم أجد معلومات» وفي نتائجك روابط ذات صلة: قدّم ما فيها (الاسم، السعر، الرابط) وضع «غير متاح» للحقل الناقص. إن تكرر «لا نتائج» فبسّط الاستعلام (كلمتان أو ثلاث) أو جرّب الإنجليزية.\n"
     if "fetch_url" in tools:
         rules += "افتح بـ fetch_url أهم رابط أو رابطين قبل أن تحكم بنقص البيانات، واستخرج منها الأرقام بنفسك.\n"
+    rules += "web_search يفتح تلقائيًا أهم الصفحات ويضيف مقتطفاتها بعد «[قُرئت: الرابط]»؛ هذه صفحات قُرئت فعلًا فاستشهد بروابطها. لا تكرر الاستعلام نفسه.\n"
+    if "world_bank" in tools:
+        rules += "للسكان والدخل والتضخم استخدم world_bank (بيانات رسمية بمصدر) بدل التخمين.\n"
     return rules
 
 
@@ -66,7 +72,7 @@ def system_prompt(role: Role, can_exec: bool) -> str:
 1) لاستدعاء أداة: {{"action": "tool", "tool": "<name>", "input": {{...}}, "why": "سبب قصير"}}
 2) للتسليم النهائي: {{"action": "final", "output": "<النتيجة كاملة بتنسيق Markdown>", "confidence": 0-1, "sources": ["روابط إن وجدت"]}}
 
-{CALC_RULE if "calculate" in tools else ""}قواعد: استخدم لغة المستخدم. لا تختلق مصادر أو أرقامًا. إن تعذر إنجاز جزء فاذكر ذلك صراحة في الناتج.
+{CALC_RULE if "calculate" in tools else ""}{TAG_RULE}قواعد: استخدم لغة المستخدم. لا تختلق مصادر أو أرقامًا. إن تعذر إنجاز جزء فاذكر ذلك صراحة في الناتج.
 إذا نقصت بيانات لازمة لإكمال المهمة فلا تتوقف: استخدم أفضل تقدير معقول مبني على ما وجدته (مثل نطاق أسعار من قوائم فعلية)، واذكر بوضوح أنه تقدير ومن أين جاء، وأكمل العمل به (مثلًا احسب بالنطاق الأدنى والأعلى).
 {_research_rules(tools)}حد أقصى {MAX_STEPS} خطوات؛ سلّم قبل نفادها."""
 
@@ -110,9 +116,15 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
             name, args = msg.get("tool", ""), msg.get("input", {})
             await emit("tool_call", {"tool": name, "input": args, "why": msg.get("why", "")})
             result = await call_tool(name, args, allowed)
-            await emit("tool_result", {"tool": name, "preview": result[:400]})
+            meta = search_meta(result) if name == "web_search" else {}
             if name == "fetch_url" and result.startswith("HTTP 2"):
-                read.append(result.split("\n", 1)[0].split(" — ", 1)[-1].strip())
+                meta = {"read": [result.split("\n", 1)[0].split(" — ", 1)[-1].strip()]}
+            elif name == "world_bank" and result.startswith(READ_MARK):
+                meta = {"read": [result[len(READ_MARK):].split("]", 1)[0]]}
+            await emit("tool_result", {"tool": name, "preview": result[:400], **meta})
+            for u in meta.get("read") or []:
+                if u not in read:
+                    read.append(u)
             messages += [{"role": "assistant", "content": json.dumps(msg, ensure_ascii=False)},
                          {"role": "user", "content": f"نتيجة الأداة {name}:\n{result}\n\nتابع وفق البروتوكول."}]
             continue

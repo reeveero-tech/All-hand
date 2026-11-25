@@ -12,7 +12,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 
-from . import memory
+from . import memory, quality
 from .agents import ROLES, run_agent
 from .llm import LLM, LLMError
 
@@ -40,6 +40,8 @@ class Run:
     awaiting: str | None = None  # "plan" while waiting for that decision (status stays "running")
     plan_decision: dict | None = None  # what the owner decided: {"action", "dropped", "note", "at"}
     scenario: bool = False  # user marked this run as a test/hypothetical: nothing it learns is about the user
+    research: dict | None = None  # per-run measurements: searches, results, pages really read, sources in the answer
+    prior_check: dict | None = None  # follow-up: the previous answer's figures, checked and classified
     goal_checks: list | None = None  # arithmetic the user stated in the request, recomputed exactly (None: not checked)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
@@ -82,7 +84,8 @@ class Run:
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
-                "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "goal_checks": self.goal_checks, "events": self.events}
+                "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "goal_checks": self.goal_checks,
+                "research": self.research, "prior_check": self.prior_check, "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -96,7 +99,10 @@ def role_list(can_exec: bool = True) -> str:
 
 FOLLOW_UP_PLAN = ("هذا طلب متابعة، ونتيجة المهمة السابقة مرفقة أدناه ويراها كل وكيل. لا تخطط لإعادة البحث أو التحليل الذي أُنجز؛ "
                   "خطط فقط لما يتطلبه التغيير الذي طلبه المستخدم الآن (غالبًا مهمة إلى ثلاث مهام)، ولا تضف بحثًا جديدًا إلا إن طلبه صراحةً "
-                  "أو كانت النتيجة السابقة تخلو تمامًا مما يلزم.\n\n")
+                  "أو كانت النتيجة السابقة تخلو تمامًا مما يلزم.\n"
+                  "إن غيّر المستخدم معطًى (كالميزانية) فاكتب في تعليمات كل مهمة القيمة الجديدة وأنها تحل محل القديمة، "
+                  "واطلب إعادة حساب كل ما يتأثر بها. التزم بـ«سجل معلومات النتيجة السابقة»: ما وُسم مرفوضًا لا يُستخدم، "
+                  "وتقديرات الطلب والإيرادات تُعاد مراجعة أساسها قبل البناء عليها؛ إن كان أساسها مرفوضًا فخطط لمهمة تعيد تقديرها بمصدر.\n\n")
 
 PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء اصطناعي. حوّل طلب المستخدم إلى خطة تنفيذ.
 الأدوار المتاحة:
@@ -136,7 +142,10 @@ SYNTH = """أنت المنسق. اجمع نتائج فريقك في جواب ن�
 - احتفظ بالروابط والمصادر.
 - إن فشلت مهام أو لم تُتحقق، اذكر ذلك بصدق في قسم قصير "حدود هذا الجواب".
 - إذا كان في النتائج تقدير موسوم، استخدمه لتقديم جواب عملي (أرقام وسيناريوهات) مع إبقاء وسم التقدير.
-- إن أُرفق سياق من ذاكرة المنسق فاحترم وسم كل معلومة: انسب للمستخدم («مشروعك»، «قررتَ») فقط ما وُسم بأنه صرّح به أو أكده. ما سواه قدّمه كما هو: «في مهمة سابقة ورد أن...» أو «بافتراض أن...» أو «في السيناريو الاختباري...». لا تطلب من المستخدم بيانات حقيقية (كالسيولة) عن مشروع لم يصرّح أنه مشروعه. إن احتجت معلومة مصدرها غير مؤكد فاذكر ذلك أو اطلب التأكيد."""
+- إن أُرفق سياق من ذاكرة المنسق فاحترم وسم كل معلومة: انسب للمستخدم («مشروعك»، «قررتَ») فقط ما وُسم بأنه صرّح به أو أكده. ما سواه قدّمه كما هو: «في مهمة سابقة ورد أن...» أو «بافتراض أن...» أو «في السيناريو الاختباري...». لا تطلب من المستخدم بيانات حقيقية (كالسيولة) عن مشروع لم يصرّح أنه مشروعه. إن احتجت معلومة مصدرها غير مؤكد فاذكر ذلك أو اطلب التأكيد.
+- أبقِ وسم كل رقم مهم كما ورد في النتائج: (المصدر: رابط) أو (من المستخدم) أو (محسوب) أو (تقدير) أو (افتراض). لا تحذف الروابط.
+- إن نقصت بيانات لازمة لقرار موثوق فأضف قسمًا قصيرًا «بيانات مطلوبة» يحدد ما يلزم ومن أين يمكن الحصول عليه.
+- إن أُرفق «سجل معلومات النتيجة السابقة» فلا تستخدم ما وُسم فيه مرفوضًا، واذكر في «حدود هذا الجواب» ما استُبعد ولماذا."""
 
 DRAFT_RULE = """
 - كل نتائج الفريق هنا رُفضت من المدقق. ابدأ الجواب بسطر واضح: «مسودة غير متحقق منها: لم تجتز أي مهمة التحقق»، ثم قسم «لماذا رُفضت» يلخص أسباب الرفض المذكورة.
@@ -400,6 +409,40 @@ def pick_best(attempts: list[dict]) -> int | None:
     return max(scored, key=lambda x: (float(x[1]["verdict"].get("score") or 0), len(x[1].get("read") or []), -x[0]))[0]
 
 
+_URL = re.compile(r"https?://[^\s)\]>»\"'|،,]+")
+_TAGGED = re.compile(r"https?://|المصدر|مصدر:|من المستخدم|محسوب|تقدير|افتراض|غير متاح|=")
+
+
+def research_stats(r: Run) -> dict:
+    """Measured from what really happened in the run, not from what agents claim."""
+    calls = [e for e in r.events if e.get("type") == "tool_call" and e.get("tool") == "web_search"]
+    results = [e for e in r.events if e.get("type") == "tool_result" and e.get("tool") == "web_search"]
+    providers: dict = {}
+    for e in results:
+        p = (e.get("provider") or "لا نتائج").split(" — ")[0]
+        providers[p] = providers.get(p, 0) + 1
+    read = []
+    for e in r.events:
+        if e.get("type") == "tool_result":
+            for u in e.get("read") or []:
+                if u not in read:
+                    read.append(u)
+    norm = lambda u: u.rstrip("/.").lower()  # noqa: E731
+    in_answer = list(dict.fromkeys(u.rstrip(".") for u in _URL.findall(r.result or "")))
+    read_n = {norm(u) for u in read}
+    numeric = [ln for ln in (r.result or "").splitlines()
+               if not ln.lstrip().startswith("#") and re.search(r"\d", re.sub(r"^\s*(?:[-*]|\d+[.)])\s+", "", _URL.sub("", ln)))
+               and not re.fullmatch(r"[\s|:\-]*", ln)]
+    return {"search_calls": len(calls), "search_ok": sum(1 for e in results if e.get("results")),
+            "results": sum(int(e.get("results") or 0) for e in results), "providers": providers,
+            "pages_read": len(read), "read": read[:40],
+            "fetch_calls": sum(1 for e in r.events if e.get("type") == "tool_call" and e.get("tool") == "fetch_url"),
+            "sources_in_answer": sum(1 for u in in_answer if norm(u) in read_n),
+            "links_not_read": [u for u in in_answer if norm(u) not in read_n][:20],
+            "numeric_lines": len(numeric), "numeric_lines_untagged": sum(1 for ln in numeric if not _TAGGED.search(ln)),
+            "research_tasks": sum(1 for t in r.tasks.values() if t.get("role") == "researcher")}
+
+
 class Orchestrator:
     def __init__(self, run: Run, llm: LLM, persist=None, prior: dict | None = None):
         self.run, self.llm, self.persist = run, llm, persist  # persist(): async -> bool, saves the run
@@ -415,7 +458,20 @@ class Orchestrator:
                 r.goal_checks = await check_goal_numbers(self.llm, r.goal)
                 if r.goal_checks:
                     await r.emit("goal_checked", {"checks": r.goal_checks})
-            goal = r.goal + (f"\n\n---\n{self.note}" if self.note else "") + (f"\n\n---\n{r.context}" if r.context else "")
+            if r.context:
+                await self.check_prior()
+            goal = r.goal + (f"\n\n---\n{self.note}" if self.note else "") + (f"\n\n---\n{self.prior_note}" if self.prior_note else "") \
+                + (f"\n\n---\n{r.context}" if r.context else "")
+            rejected = (r.prior_check or {}).get("rejected") or []
+            totals = (r.prior_check or {}).get("rejected_totals") or []
+            if (rejected or totals) and r.memory["recalled"]:  # a remembered figure proven wrong is not handed back as a finding
+                keep = [i for i in r.memory["recalled"]
+                        if quality.classify_line(i.get("content", ""), [], rejected, totals) != "rejected"]
+                dropped = [i for i in r.memory["recalled"] if i not in keep]
+                if dropped:
+                    r.memory["recalled"], r.memory["excluded"] = keep, [{"content": i["content"][:160]} for i in dropped]
+                    await r.emit("memory_excluded", {"count": len(dropped), "reason": "تحتوي أرقامًا ثبت خطؤها في النتيجة السابقة",
+                                                     "items": r.memory["excluded"]})
             if r.memory["recalled"]:
                 goal += "\n\n---\n" + memory.render_context(r.memory["recalled"])
             out = await self.orchestrate(goal, depth=0, prefix="")
@@ -423,9 +479,17 @@ class Orchestrator:
             r.verdict = out.get("verdict", {})
             status = "done" if out["ok"] else ("partial" if out.get("partial") else
                                                "cancelled" if out.get("rejected") else "failed")
+            r.research = research_stats(r)
+            await r.emit("research_stats", r.research)
+            if status == "done" and r.research["research_tasks"] and not r.research["pages_read"]:
+                # a study whose researchers opened nothing is not a verified study, whatever the verifiers said
+                status = "partial"
+                r.verdict = {**r.verdict, "pass": False, "issues": ["لم تُقرأ أي صفحة مصدر فعليًا في مهام البحث؛ الأرقام غير مثبتة."]
+                             + list(r.verdict.get("issues") or [])}
+            bad_figures = [i for i in r.verdict.get("plausibility") or [] if i.get("severity") == "error"]
             if r.memory_space and status in ("done", "partial") and not out.get("rejected"):
-                if r.verdict.get("arithmetic"):  # a proven calculation error must not become a remembered "finding"
-                    r.memory["skipped"] = "أخطاء حسابية في الجواب النهائي"
+                if r.verdict.get("arithmetic") or bad_figures:  # a proven error must not become a remembered "finding"
+                    r.memory["skipped"] = "أخطاء حسابية في الجواب النهائي" if r.verdict.get("arithmetic") else "أرقام غير معقولة في الجواب النهائي"
                     await r.emit("memory_skipped", {"reason": r.memory["skipped"]})
                 else:
                     await self.remember(existing)  # before status flips, so clients see saved memory with the result
@@ -452,12 +516,41 @@ class Orchestrator:
     def note(self) -> str:
         return checks_note(self.run.goal_checks)
 
+    @property
+    def prior_note(self) -> str:
+        pc = self.run.prior_check or {}
+        return quality.render_ledger(pc.get("ledger") or [], pc.get("issues") or [])
+
+    async def check_prior(self):
+        """Follow-up: check the previous answer's figures and classify each line, once (a resumed run keeps it).
+        What was proven wrong there is marked rejected, so it is not carried forward as a fact."""
+        r = self.run
+        pc = dict(r.prior_check or {})
+        if "ledger" in pc:
+            return
+        answer = r.context.split("النتيجة السابقة:\n", 1)[-1]
+        p = await quality.check_plausibility(self.llm, answer)
+        rejected = [float(x) for x in pc.get("known_rejected") or []]
+        rejected += [x for i in p["issues"] if i["severity"] == "error" for x in i.get("values") or []]
+        user_text = r.goal + "\n" + r.context.split("النتيجة السابقة:", 1)[0]
+        answer_totals = [e["stated"] for e in audit_arithmetic(answer) + audit_tables(answer)]  # re-audited: older runs had no table check
+        totals = [float(x) for x in pc.get("known_rejected_totals") or []] + answer_totals
+        pc.update(issues=p["issues"], figures=p["figures"], rejected=rejected, rejected_totals=totals,
+                  ledger=quality.prior_ledger(answer, user_text, rejected, rejected_totals=totals))
+        r.prior_check = pc
+        counts: dict = {}
+        for it in pc["ledger"]:
+            counts[it["tag"]] = counts.get(it["tag"], 0) + 1
+        await r.emit("prior_checked", {"counts": counts, "issues": [i["reason"] for i in p["issues"]][:6],
+                                       "rejected": rejected[:10], "rejected_totals": totals[:10]})
+
     def anchored(self) -> str:
         """The request as every agent and per-task verifier sees it: the user's words, any arithmetic correction,
         and, for a follow-up, what the previous turn produced (so agents build on it instead of redoing it)."""
         r = self.run
         prev = r.context[:FOLLOW_UP_AGENT_CHARS] + ("\n[...]" if len(r.context) > FOLLOW_UP_AGENT_CHARS else "") if r.context else ""
-        return anchor(r.goal) + (f"\n\n{self.note}" if self.note else "") + (f"\n\n{prev}" if prev else "")
+        return anchor(r.goal) + (f"\n\n{self.note}" if self.note else "") + (f"\n\n{self.prior_note}" if self.prior_note else "") \
+            + (f"\n\n{prev}" if prev else "")
 
     async def _persist_final(self) -> bool:
         for attempt in range(3):
@@ -680,7 +773,7 @@ class Orchestrator:
                 await r.emit("agent_error", {"task": t["id"], "agent": agent_id, "error": str(e)})
                 continue
             t["output"] = res["output"]
-            read = res.get("read") if "fetch_url" in role.tools else None
+            read = res.get("read") if {"fetch_url", "web_search", "world_bank"} & set(role.tools) else None
             v = await verify(self.llm, t, res["output"], self.anchored(), read) if verify_it else {"pass": True, "score": None, "issues": []}
             if verify_it:
                 v = apply_audit(v, res["output"])
@@ -699,6 +792,10 @@ class Orchestrator:
             t["output"], t["best_attempt"] = t["attempts"][best]["output"], best + 1
         await r.emit("task_finished", {"task": t["id"], "status": "failed", "attempts": len(t["attempts"]),
                                        "kept_attempt": t.get("best_attempt")})
+
+    async def final_verdict(self, check: dict, answer: str) -> dict:
+        v = apply_audit(await verify(self.llm, check, answer), answer)
+        return quality.apply_plausibility(v, await quality.check_plausibility(self.llm, answer))
 
     async def synthesize(self, goal: str, tasks: list[dict], final: bool) -> dict:
         parts = []
@@ -734,13 +831,14 @@ class Orchestrator:
         check = {"id": "final", "instructions": goal + (
                      "\n\nيجب أن يذكر الجواب التصحيح الحسابي صراحةً." if self.note else ""),
                  "acceptance": "يجيب عن طلب المستخدم كاملًا ومتسقًا مع نتائج الفريق بلا ادعاءات مختلقة"}
-        v = apply_audit(await verify(self.llm, check, answer), answer)
+        v = await self.final_verdict(check, answer)
         await self.run.emit("final_check", v)
         if not v["pass"] and v.get("issues"):
             msgs += [{"role": "assistant", "content": answer},
-                     {"role": "user", "content": "المدقق رفض الجواب:\n" + "\n".join(v["issues"]) + f"\n{v.get('fix', '')}\nأعد كتابة الجواب النهائي مصححًا."}]
+                     {"role": "user", "content": "المدقق رفض الجواب:\n" + "\n".join(v["issues"]) + f"\n{v.get('fix', '')}\nأعد كتابة الجواب النهائي مصححًا. "
+                      "إن كان رقم غير معقول مبنيًا على تقدير لا تملك بيانات لتصحيحه، فاحذفه وما بُني عليه وصرّح بأن البيانات لا تكفي بدل اختلاق بديل."}]
             answer = await self.llm.chat(msgs, temperature=0.2, max_tokens=4000)
-            v = apply_audit(await verify(self.llm, check, answer), answer)
+            v = await self.final_verdict(check, answer)
             await self.run.emit("final_check", v)
         return {"ok": ok and v["pass"], "partial": v["pass"] or any(t["status"] == "done" for t in tasks),
                 "output": answer, "verdict": v}

@@ -11,7 +11,7 @@ from tests.test_core import FakeLLM, T, plan_of
 
 A = {"X-Client-Key": "cli_" + "a" * 32}
 B = {"X-Client-Key": "cli_" + "b" * 32}
-PLAN = plan_of(T("t1", role="researcher"), T("t2", deps=["t1"]), T("t3", deps=["t1"]))
+PLAN = plan_of(T("t1", role="analyst"), T("t2", deps=["t1"]), T("t3", deps=["t1"]))
 
 
 class Spy(FakeLLM):
