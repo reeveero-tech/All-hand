@@ -25,6 +25,45 @@ class LLMError(RuntimeError):
     pass
 
 
+FREE_PROMPT_CHARS = int(os.environ.get("FREE_PROMPT_CHARS", "15000"))  # the free API rejects prompts over 16,000 characters (HTTP 413)
+
+
+def _clip(text: str, n: int) -> str:
+    """Keep the head and the tail (instructions usually open a message, the latest data closes it)."""
+    if len(text) <= n:
+        return text
+    if n < 200:
+        return text[:n]
+    head = int(n * 0.6)
+    return text[:head] + "\n[...اختُصر هنا لحدود طول الطلب؛ ليس نقصًا في الأصل...]\n" + text[-(n - head - 70):]
+
+
+def fit_messages(messages: list[dict], budget: int) -> list[dict]:
+    """Shrink a conversation to a character budget without losing the system prompt or the latest turn:
+    older middle turns are shortened first, then dropped, then the remaining messages are clipped evenly."""
+    msgs = [dict(m) for m in messages]
+    size = lambda: sum(len(str(m.get("content") or "")) for m in msgs)  # noqa: E731
+    if size() <= budget:
+        return msgs
+    for i in range(1, len(msgs) - 1):  # older turns: short versions
+        if size() <= budget:
+            return msgs
+        msgs[i]["content"] = _clip(str(msgs[i].get("content") or ""), 1200)
+    while size() > budget and len(msgs) > 3:  # still too long: drop the oldest middle turn (keep the task message)
+        del msgs[2]
+    if size() > budget:
+        share = max(300, budget // len(msgs))
+        over = size() - budget
+        for m in sorted(msgs, key=lambda m: -len(str(m.get("content") or ""))):
+            if over <= 0:
+                break
+            c = str(m.get("content") or "")
+            cut = min(over, max(0, len(c) - share))
+            m["content"] = _clip(c, len(c) - cut)
+            over -= cut
+    return msgs
+
+
 @dataclass
 class LLMConfig:
     provider: str  # byok | platform | free
@@ -151,6 +190,9 @@ class LLM:
             headers["Authorization"] = f"Bearer {self.cfg.api_key}"
             headers["HTTP-Referer"] = "https://github.com/reeveero-tech/All-hand"
             headers["X-Title"] = "All-hand"
+        budget = FREE_PROMPT_CHARS if self.cfg.provider == "free" else 0
+        if budget:
+            messages = fit_messages(messages, budget)
         body = {"model": self.cfg.model, "messages": messages,
                 "temperature": temperature, "max_tokens": max_tokens}
         last, attempt, limited = "", 0, 0
@@ -196,6 +238,11 @@ class LLM:
                     if r.status_code == 400 and "output_token_limit" in r.text and body["max_tokens"] < MAX_OUTPUT_TOKENS:
                         # reasoning models can spend the whole budget thinking (production: the writer failed 2/2)
                         body["max_tokens"] = min(MAX_OUTPUT_TOKENS, body["max_tokens"] * 2)
+                        attempt += 1
+                        continue
+                    if r.status_code == 413 and budget > 4000:  # still too long for the provider: shrink and retry
+                        budget = int(budget * 0.75)
+                        body["messages"] = fit_messages(messages, budget)
                         attempt += 1
                         continue
                     if r.status_code in (402, 429):  # rate limited: wait as long as the provider asks

@@ -324,3 +324,75 @@ def test_export_shows_research_measurements_and_inheritance():
                                    "pages_read": 4, "sources_in_answer": 2, "numeric_lines": 9, "numeric_lines_untagged": 1},
                       "prior_check": {"issues": [], "ledger": [{"line": "l", "tag": "rejected"}]}})
     assert "صفحات قُرئت فعلًا: 4" in md and "طلب غير معقول" in md and "مرفوض — ثبت خطؤه" in md
+
+
+def test_reuses_rejected_flags_carried_forward_figure():
+    from app import quality
+    text = "الإيرادات = 3,790,000,000 × 18\nالطلب 3.79 مليار كوب (مرفوض، لا يُستخدم)\nالميزانية 90,000 ريال\nالمجموع 112,800 ريال\nبند التسويق 112,800 ريال"
+    lines = quality.reuses_rejected(text, [3.79e9, 604000.0], [112800.0])
+    assert any("3,790,000,000" in l for l in lines)
+    assert not any("مرفوض" in l for l in lines)
+    assert any(l.startswith("المجموع") for l in lines)
+    assert not any("التسويق" in l for l in lines)  # same figure, not stated as a total
+    assert "الميزانية 90,000 ريال" not in lines
+
+
+def test_apply_rejected_fails_verdict_and_keeps_clean():
+    from app import quality
+    ok = {"pass": True, "score": 9, "issues": []}
+    assert quality.apply_rejected(ok, []) == ok
+    v = quality.apply_rejected(ok, ["revenue = 3790000000 * 18"])
+    assert v["pass"] is False and v["score"] <= 4 and v["reused_rejected"]
+
+
+def test_small_rejected_values_ignored():
+    from app import quality
+    assert quality.reuses_rejected("السعر 18 ريال", [18.0]) == []
+
+
+def test_mark_rejected_labels_prior_lines():
+    from types import SimpleNamespace
+    from app.orchestrator import Orchestrator
+    o = Orchestrator.__new__(Orchestrator)
+    o.run = SimpleNamespace(prior_check={"rejected": [3.79e9], "rejected_totals": []})
+    out = o.mark_rejected("الطلب السنوي 3.79 مليار كوب\nالسعر 18 ريال")
+    assert out.splitlines()[0].startswith("[مرفوض")
+    assert out.splitlines()[1] == "السعر 18 ريال"
+
+
+def test_fit_messages_respects_budget_and_keeps_ends():
+    from app.llm import fit_messages
+    msgs = [{"role": "system", "content": "S" * 5000}, {"role": "user", "content": "TASK " + "u" * 6000}]
+    msgs += [{"role": "assistant" if i % 2 else "user", "content": f"turn{i} " + "x" * 4000} for i in range(8)]
+    msgs.append({"role": "user", "content": "LATEST " + "y" * 3000})
+    out = fit_messages(msgs, 15000)
+    assert sum(len(m["content"]) for m in out) <= 15000
+    assert out[0]["role"] == "system" and out[-1]["content"].startswith("LATEST")
+    assert out[1]["content"].startswith("TASK")
+    small = [{"role": "user", "content": "hi"}]
+    assert fit_messages(small, 15000) == small
+
+
+def test_fit_messages_single_huge_message():
+    from app.llm import fit_messages
+    out = fit_messages([{"role": "system", "content": "a" * 10000}, {"role": "user", "content": "b" * 30000}], 15000)
+    assert sum(len(m["content"]) for m in out) <= 15000
+
+
+def test_free_chat_sends_within_limit_and_shrinks_on_413(monkeypatch):
+    import asyncio, httpx
+    from app.llm import LLM, LLMConfig
+    sizes = []
+
+    async def post(url, headers=None, json=None):
+        n = sum(len(m["content"]) for m in json["messages"])
+        sizes.append(n)
+        req = httpx.Request("POST", url)
+        if len(sizes) == 1:
+            return httpx.Response(413, text='{"error":"PAYLOAD_TOO_LARGE"}', request=req)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}]}, request=req)
+
+    llm = LLM(LLMConfig(provider="free", base_url="https://x/openai", model="m"))
+    monkeypatch.setattr(llm._client, "post", post)
+    out = asyncio.run(llm.chat([{"role": "system", "content": "s" * 9000}, {"role": "user", "content": "u" * 30000}]))
+    assert out == "ok" and sizes[0] <= 15000 and sizes[1] < sizes[0]

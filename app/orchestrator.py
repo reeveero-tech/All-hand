@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 from . import memory, quality
 from .agents import ROLES, run_agent
-from .llm import LLM, LLMError
+from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip
 
 MAX_DEPTH = 2
 MAX_TASKS_PER_PLAN = 10
@@ -200,7 +200,7 @@ def anchor(goal: str) -> str:
 
 async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list | None = None) -> dict:
     head = (f"طلب المستخدم الأصلي (ارفض الناتج إن خرج عن موضوعه أو منتجه أو أرقامه، أو أعاد رقمًا ثبت خطؤه في "
-            f"التنبيه الحسابي دون تصحيحه):\n{goal[:GOAL_CHARS + FOLLOW_UP_AGENT_CHARS + 2000]}\n\n"
+            f"التنبيه الحسابي دون تصحيحه):\n{_clip(goal, 4500)}\n\n"
             "تنبيه: هذا ناتج مهمة فرعية واحدة من خطة فيها مهام أخرى. قيّمه مقابل «المهمة» و«معيار القبول» أدناه فقط، "
             "ولا تعدّ غياب أجزاء الطلب التي لا تطلبها هذه المهمة نقصًا.\n\n") if goal else ""
     if read is not None:  # what the agent really opened, so claimed-but-unread links and figures can be judged
@@ -209,7 +209,9 @@ async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list |
                  "وإن قُدّم كحقيقة فهو اختلاق جوهري.\n\n")
     try:
         v = await llm.chat_json([{"role": "system", "content": VERIFIER}, {"role": "user", "content":
-                                 head + f"المهمة: {task['instructions']}\nمعيار القبول: {task['acceptance']}\n\nالناتج:\n{output[:12000]}"}],
+                                 head + f"المهمة: {task['instructions'][:3000]}\nمعيار القبول: {task['acceptance'][:800]}\n\nالناتج:\n"
+                                 + _clip(output, max(3000, min(12000, FREE_PROMPT_CHARS - len(VERIFIER) - len(head)
+                                                               - min(len(task['instructions']), 3000) - 1200)))}],
                                 temperature=0.0, max_tokens=800)
     except (ValueError, LLMError) as e:
         return {"pass": False, "score": 0, "issues": [f"تعذر التحقق: {e}"], "fix": ""}
@@ -535,6 +537,7 @@ class Orchestrator:
         user_text = r.goal + "\n" + r.context.split("النتيجة السابقة:", 1)[0]
         answer_totals = [e["stated"] for e in audit_arithmetic(answer) + audit_tables(answer)]  # re-audited: older runs had no table check
         totals = [float(x) for x in pc.get("known_rejected_totals") or []] + answer_totals
+        rejected, totals = list(dict.fromkeys(rejected)), list(dict.fromkeys(totals))
         pc.update(issues=p["issues"], figures=p["figures"], rejected=rejected, rejected_totals=totals,
                   ledger=quality.prior_ledger(answer, user_text, rejected, rejected_totals=totals))
         r.prior_check = pc
@@ -544,11 +547,24 @@ class Orchestrator:
         await r.emit("prior_checked", {"counts": counts, "issues": [i["reason"] for i in p["issues"]][:6],
                                        "rejected": rejected[:10], "rejected_totals": totals[:10]})
 
+    def reused_rejected(self, text: str) -> list[str]:
+        pc = self.run.prior_check or {}
+        return quality.reuses_rejected(text, pc.get("rejected") or [], pc.get("rejected_totals") or [])
+
+    def mark_rejected(self, text: str) -> str:
+        """The previous answer as agents see it, with every line that carries a rejected figure labeled in place,
+        so the raw number is not copied forward as if it still stood."""
+        bad = set(self.reused_rejected(text))
+        if not bad:
+            return text
+        return "\n".join(f"[مرفوض من الدراسة السابقة — لا تستخدم أرقام هذا السطر] {ln}" if ln.strip()[:200] in bad else ln
+                         for ln in text.splitlines())
+
     def anchored(self) -> str:
         """The request as every agent and per-task verifier sees it: the user's words, any arithmetic correction,
         and, for a follow-up, what the previous turn produced (so agents build on it instead of redoing it)."""
         r = self.run
-        prev = r.context[:FOLLOW_UP_AGENT_CHARS] + ("\n[...]" if len(r.context) > FOLLOW_UP_AGENT_CHARS else "") if r.context else ""
+        prev = self.mark_rejected(r.context[:FOLLOW_UP_AGENT_CHARS]) + ("\n[...]" if len(r.context) > FOLLOW_UP_AGENT_CHARS else "") if r.context else ""
         return anchor(r.goal) + (f"\n\n{self.note}" if self.note else "") + (f"\n\n{self.prior_note}" if self.prior_note else "") \
             + (f"\n\n{prev}" if prev else "")
 
@@ -760,7 +776,11 @@ class Orchestrator:
             agent_id = f"{role.id}#{r.agents_spawned}"
             await r.emit("agent_spawned", {"task": t["id"], "agent": agent_id, "role": role.name, "attempt": attempt})
 
-            async def emit(type_, data, _a=agent_id):
+            calls: list[str] = []
+
+            async def emit(type_, data, _a=agent_id, _c=calls):
+                if type_ == "tool_call" and data.get("tool") == "calculate":
+                    _c.append(str((data.get("input") or {}).get("program", "")))
                 await r.emit(type_, {"task": t["id"], "agent": _a, **data})
 
             instr = t["instructions"] + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
@@ -777,6 +797,7 @@ class Orchestrator:
             v = await verify(self.llm, t, res["output"], self.anchored(), read) if verify_it else {"pass": True, "score": None, "issues": []}
             if verify_it:
                 v = apply_audit(v, res["output"])
+                v = quality.apply_rejected(v, self.reused_rejected(res["output"] + "\n" + "\n".join(calls)))
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
                                   "sources": res["sources"], "read": res.get("read") or [], "verdict": v,
                                   "output": res["output"]})
@@ -795,6 +816,7 @@ class Orchestrator:
 
     async def final_verdict(self, check: dict, answer: str) -> dict:
         v = apply_audit(await verify(self.llm, check, answer), answer)
+        v = quality.apply_rejected(v, self.reused_rejected(answer))
         return quality.apply_plausibility(v, await quality.check_plausibility(self.llm, answer))
 
     async def synthesize(self, goal: str, tasks: list[dict], final: bool) -> dict:
@@ -823,8 +845,14 @@ class Orchestrator:
             return {"ok": False, "output": answer, "verdict": {"pass": False, "score": None, "draft": True,
                                                                "issues": ["لم تجتز أي مهمة التحقق؛ هذا الجواب مسودة غير متحقق منها."]}}
         await self.run.emit("synthesizing", {"final": final})
+        if getattr(getattr(self.llm, "cfg", None), "provider", "") == "free" and parts:  # every result keeps a fair share instead of losing the middle
+            g = _clip(goal, 5000)
+            share = max(800, (FREE_PROMPT_CHARS - len(SYNTH) - len(g) - 600) // len(parts))
+            g_parts = [_clip(p_, share) for p_ in parts]
+        else:
+            g, g_parts = goal, parts
         msgs = [{"role": "system", "content": SYNTH},
-                {"role": "user", "content": f"طلب المستخدم:\n{goal}\n\nنتائج الفريق:\n\n" + "\n\n".join(parts)}]
+                {"role": "user", "content": f"طلب المستخدم:\n{g}\n\nنتائج الفريق:\n\n" + "\n\n".join(g_parts)}]
         answer = await self.llm.chat(msgs, temperature=0.3, max_tokens=4000)
         if not final:
             return {"ok": ok, "partial": True, "output": answer}

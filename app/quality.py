@@ -259,15 +259,66 @@ def prior_ledger(answer: str, user_text: str, rejected: list[float], limit: int 
     return out
 
 
-def render_ledger(items: list[dict], issues: list[dict]) -> str:
+def render_ledger(items: list[dict], issues: list[dict], max_chars: int = 3000) -> str:
+    """Compact: the free model takes ~16k characters per call, and the previous answer itself (with rejected
+    lines labeled in place) follows this note. So list what is rejected or sourced, and only count the rest."""
     if not items and not issues:
         return ""
     parts = ["سجل معلومات النتيجة السابقة (صنّفه النظام آليًا؛ التزم بوسم كل سطر):"]
     for i in issues:
         if i["severity"] == "error":
-            parts.append(f"- مرفوض: {i['reason']}")
+            parts.append(f"- مرفوض: {i['reason'][:300]}")
+    order = {"rejected": 0, "sourced": 1, "user": 2, "calculated": 3, "estimate": 4, "assumption": 5, "uncertain": 6}
+    counts: dict = {}
     for it in items:
-        parts.append(f"- [{TAGS[it['tag']]}] {it['line']}")
+        counts[it["tag"]] = counts.get(it["tag"], 0) + 1
+    listed = 0
+    for it in sorted(items, key=lambda it: order.get(it["tag"], 9)):
+        if it["tag"] not in ("rejected", "sourced", "user"):
+            continue
+        line = f"- [{TAGS[it['tag']]}] {it['line'][:160]}"
+        if sum(map(len, parts)) + len(line) > max_chars - 600:
+            break
+        parts.append(line)
+        listed += 1
+    rest = {k: v for k, v in counts.items() if k not in ("rejected", "sourced", "user")}
+    if rest:
+        parts.append("بقية الأسطر: " + "، ".join(f"{TAGS[k].split(' —')[0]} {v}" for k, v in rest.items())
+                     + " — لا تُعامل كحقائق دون إعادة فحص.")
     parts.append("قواعد: لا تنقل سطرًا مرفوضًا أو غير مؤكد كحقيقة؛ لا ترث تقديرات الطلب أو الإيرادات دون إعادة فحص أساسها؛ "
                  "إن غيّر المستخدم معطًى (كالميزانية) فالقيمة الجديدة تحل محل القديمة في كل حساب، والقديمة سجل تاريخي فقط.")
     return "\n".join(parts)
+
+
+_MARKED_REJECTED = re.compile(r"مرفوض|مستبعد|غير معقول|غير موثوق|لا يُستخدم|لا يستخدم|ثبت خطؤ|استُبعد|rejected", re.I)
+
+
+def reuses_rejected(text: str, rejected: list[float], rejected_totals: list[float] = ()) -> list[str]:
+    """Lines that build on a figure already proven wrong (a follow-up must not carry it forward).
+    A line that names the figure only to say it is rejected is fine; tiny values are ignored (too common to tell)."""
+    rej = [r for r in rejected if abs(r) >= 100]
+    out = []
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not line or _MARKED_REJECTED.search(line):
+            continue
+        vals = values_in(line)
+        hit = any(_near(x, r) for x in vals for r in rej) or (
+            rejected_totals and _TOTAL_LINE.search(line) and any(_near(x, r) for x in vals for r in rejected_totals if abs(r) >= 100))
+        if hit:
+            out.append(line[:200])
+    return list(dict.fromkeys(out))
+
+
+def apply_rejected(v: dict, lines: list[str]) -> dict:
+    if not lines:
+        return v
+    v = dict(v)
+    v["pass"] = False
+    v["score"] = min(v.get("score") or 0, 4)
+    v["issues"] = list(v.get("issues") or []) + [
+        "استُخدم رقم ثبت في الدراسة السابقة أنه خاطئ أو غير معقول: " + " ؛ ".join(lines[:3])
+        + " — احذفه، ولا تبنِ عليه إيرادًا أو عائدًا؛ استخدم رقمًا بمصدر مقروء، أو افتراضًا موسومًا «افتراض» بسيناريوهات، "
+          "أو اذكره في «بيانات مطلوبة»."]
+    v["reused_rejected"] = lines[:5]
+    return v
