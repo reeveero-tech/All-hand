@@ -270,10 +270,16 @@ async def _gnews(query: str) -> list[dict]:
     if bad and len(bad) == len(urls) and isinstance(bad[0], Exception):
         STATS["gnews_last_error"] = f"decode: {type(bad[0]).__name__}"
     out = []
-    for it, u in zip(items, urls):
+    for i, it in enumerate(items):
+        u = urls[i] if i < len(urls) else None
+        meta = f"{tag(it, 'source')} — {tag(it, 'pubDate')}".strip(" —")
         if isinstance(u, str):
-            out.append({"title": tag(it, "title"), "url": u,
-                        "snippet": f"{tag(it, 'source')} — {tag(it, 'pubDate')}".strip(" —")})
+            out.append({"title": tag(it, "title"), "url": u, "snippet": meta})
+        elif tag(it, "link").startswith("https://news.google.com/"):
+            # the publisher URL could not be resolved from this server (HTTP 429): the headline and publisher are
+            # real and the link opens the article in a browser, but nothing of the article itself was read
+            out.append({"title": tag(it, "title"), "url": tag(it, "link"),
+                        "snippet": meta + " — عنوان خبر وناشره فقط؛ لم يُقرأ نص المقال، فلا تنسب إليه أرقامًا"})
     return out
 
 
@@ -325,8 +331,12 @@ def excerpt(text: str, query: str, limit: int = 1400) -> str:
     return "\n".join(ln for _, ln in sorted(keep))
 
 
+def _readable(url: str) -> bool:
+    return not url.startswith("https://news.google.com/")
+
+
 async def _auto_read(results: list[dict], query: str) -> list[tuple[str, str]]:
-    cands = [x["url"] for x in results if x.get("url", "").startswith("http") and "wikipedia.org" not in x["url"]][:AUTO_READ + 2]
+    cands = [x["url"] for x in results if x.get("url", "").startswith("http") and "wikipedia.org" not in x["url"] and _readable(x["url"])][:AUTO_READ + 2]
 
     async def one(u):
         try:

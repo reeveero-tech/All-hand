@@ -510,3 +510,9 @@ def test_news_search_used_when_duckduckgo_blocked(monkeypatch):
     out = asyncio.run(tools.web_search("cold brew saudi"))
     assert out.startswith("المصدر: Google News") and "https://www.example-news.com/a" in out
     assert tools.search_meta(out)["provider"] == "Google News"
+
+
+def test_google_news_headline_only_is_labeled_and_not_auto_read():
+    from app import tools
+    assert not tools._readable("https://news.google.com/rss/articles/CBMi123")
+    assert tools._readable("https://www.argaam.com/ar/article/1")
