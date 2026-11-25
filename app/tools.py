@@ -234,9 +234,76 @@ async def run_python(code: str) -> str:
     return _clip(res)
 
 
+_CALC_FUNCS = {"round": round, "min": min, "max": max, "abs": abs, "sum": lambda *a: sum(a[0] if len(a) == 1 else a)}
+_CALC_OPS = {"Add": lambda a, b: a + b, "Sub": lambda a, b: a - b, "Mult": lambda a, b: a * b,
+             "Div": lambda a, b: a / b, "FloorDiv": lambda a, b: a // b, "Mod": lambda a, b: a % b}
+CALC_MAX_LINES = 60
+
+
+def _calc_eval(node, env: dict):
+    import ast
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
+        return node.value
+    if isinstance(node, ast.Name):
+        if node.id not in env:
+            raise ValueError(f"اسم غير معرّف: {node.id}")
+        return env[node.id]
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+        v = _calc_eval(node.operand, env)
+        return -v if isinstance(node.op, ast.USub) else v
+    if isinstance(node, ast.BinOp):
+        a, b = _calc_eval(node.left, env), _calc_eval(node.right, env)
+        if isinstance(node.op, ast.Pow):
+            if abs(b) > 100 or abs(a) > 1e12:
+                raise ValueError("أس كبير جدًا")
+            return a ** b
+        op = _CALC_OPS.get(type(node.op).__name__)
+        if not op:
+            raise ValueError("عملية غير مسموحة")
+        return op(a, b)
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return [_calc_eval(e, env) for e in node.elts]
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in _CALC_FUNCS and not node.keywords:
+        return _CALC_FUNCS[node.func.id](*[_calc_eval(a, env) for a in node.args])
+    raise ValueError("تعبير غير مسموح (أرقام وعمليات حسابية وround/min/max/abs/sum فقط)")
+
+
+async def calculate(program: str) -> str:
+    """Exact arithmetic without running code: lines of `name = expression` or bare expressions.
+    Safe on any server (no code execution), so the free provider can calculate too."""
+    import ast
+    lines = [ln.strip() for ln in str(program or "").replace(";", "\n").splitlines() if ln.strip() and not ln.strip().startswith("#")]
+    if not lines:
+        return "خطأ: لا توجد عمليات."
+    env, out = {}, []
+    for ln in lines[:CALC_MAX_LINES]:
+        try:
+            name, expr = (None, ln)
+            m = re.match(r"^([A-Za-z_\u0600-\u06FF][\w\u0600-\u06FF]*)\s*=(?!=)\s*(.+)$", ln)
+            if m:
+                name, expr = m.group(1), m.group(2)
+            if len(expr) > 400:
+                raise ValueError("تعبير طويل جدًا")
+            v = _calc_eval(ast.parse(re.sub(r"(?<=\d),(?=\d{3}(?!\d))", "", expr.replace("×", "*").replace("÷", "/")), mode="eval").body, env)
+            if isinstance(v, float):
+                v = round(v, 6)
+            if name:
+                env[name] = v
+            out.append(f"{name or expr} = {v:,}" if not isinstance(v, list) else f"{name or expr} = {v}")
+        except ZeroDivisionError:
+            out.append(f"{ln} → خطأ: قسمة على صفر")
+        except (ValueError, SyntaxError, TypeError, OverflowError) as e:
+            out.append(f"{ln} → خطأ: {e}")
+    if len(lines) > CALC_MAX_LINES:
+        out.append(f"...تُجوهلت {len(lines) - CALC_MAX_LINES} سطرًا")
+    return _clip("\n".join(out))
+
+
 TOOLS = {
     "web_search": {"fn": web_search, "arg": "query", "desc": "بحث في الويب. المدخل: {\"query\": \"...\"}"},
     "fetch_url": {"fn": fetch_url, "arg": "url", "desc": "قراءة صفحة ويب كنص. المدخل: {\"url\": \"https://...\"}"},
+    "calculate": {"fn": calculate, "arg": "program",
+                  "desc": "حاسبة دقيقة (ليست كودًا): أسطر بصيغة name = expression أو تعبيرات، بأرقام و+ - * / // % ** وround/min/max/abs/sum. مثال: {\"program\": \"units = 5000\\nprice = 9.5\\nrevenue = units * price\"}"},
     "run_python": {"fn": run_python, "arg": "code",
                    "desc": "تشغيل كود Python 3 معزول (لا شبكة مضمونة، 20 ثانية). اطبع النتائج بـprint. المدخل: {\"code\": \"...\"}"},
 }
