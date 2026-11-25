@@ -45,3 +45,10 @@ def test_per_task_verifier_is_scoped_to_its_task():
 
     asyncio.run(orchestrator.verify(L(), {"instructions": "احسب التكاليف", "acceptance": "جدول"}, "x", goal="ادرس السوق"))
     assert "مهمة فرعية واحدة" in seen[0]
+
+
+def test_follow_up_of_a_draft_says_it_is_unverified():
+    from app.main import follow_up_context
+    ctx = follow_up_context({"id": "x", "goal": "g", "status": "failed", "result": "مسودة",
+                             "verdict": {"draft": True}})
+    assert "لم يتحقق منها المدقق" in ctx

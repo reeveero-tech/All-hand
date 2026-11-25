@@ -135,6 +135,8 @@ def follow_up_context(prev: dict) -> str:
                               if t.get("status") == "done" and t.get("output"))
     note = {"done": "", "partial": " (اكتملت جزئيًا)", "failed": " (فشلت)", "cancelled": " (أوقفها المستخدم)",
             "interrupted": " (انقطعت قبل اكتمالها)"}.get(prev.get("status"), "")
+    if (prev.get("verdict") or {}).get("draft"):
+        note += " — نتيجتها مسودة لم يتحقق منها المدقق، فلا تعامل أرقامها كحقائق"
     if len(answer) > CONTEXT_CHARS:
         answer = answer[:CONTEXT_CHARS] + "\n\n[... اختُصرت بقية النتيجة السابقة]"
     return (f"سياق المحادثة السابقة (هذا طلب متابعة للمهمة {prev.get('id')}{note}):\n"
