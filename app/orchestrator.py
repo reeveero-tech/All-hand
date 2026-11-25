@@ -840,7 +840,7 @@ class Orchestrator:
 
     async def _long(self, msgs: list[dict], temperature: float) -> str:
         if hasattr(self.llm, "chat_long"):
-            return await self.llm.chat_long(msgs, temperature=temperature, max_tokens=4000)
+            return await self.llm.chat_long(msgs, temperature=temperature, max_tokens=4000, parts=5)
         return await self.llm.chat(msgs, temperature=temperature, max_tokens=4000)
 
     async def final_verdict(self, check: dict, answer: str) -> dict:

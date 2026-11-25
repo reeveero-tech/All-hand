@@ -463,3 +463,18 @@ def test_false_user_tags():
     ans = "| التحضير | 12 % | 10 800 | (من المستخدم) |\n| الميزانية | 90 000 | (من المستخدم) |\n| المجموع | 90 000 | (محسوب) |"
     bad = quality.false_user_tags(ans, "أعد الخطة بعد تغيير الميزانية إلى 90 ألف ريال")
     assert len(bad) == 1 and "التحضير" in bad[0]
+
+
+def test_chat_json_continues_cut_json(monkeypatch):
+    import asyncio
+    from app.llm import LLM, LLMConfig
+    llm = LLM(LLMConfig(provider="free", base_url="https://x/openai", model="m"))
+    replies = [('{"simple": false, "tasks": [{"id": "t1", "title": "بحث"}, {"id": "t2", "ti', "length"), ('tle": "كتابة"}]}', "stop")]
+
+    async def chat(messages, temperature=0.3, max_tokens=2000):
+        t, f = replies.pop(0)
+        llm.last_finish = f
+        return t
+    monkeypatch.setattr(llm, "chat", chat)
+    out = asyncio.run(llm.chat_json([{"role": "user", "content": "x"}]))
+    assert [t["id"] for t in out["tasks"]] == ["t1", "t2"]

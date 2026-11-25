@@ -25,6 +25,7 @@ class LLMError(RuntimeError):
     pass
 
 
+JSON_CONTINUATIONS = 3
 FREE_PROMPT_CHARS = int(os.environ.get("FREE_PROMPT_CHARS", "15000"))  # the free API rejects prompts over 16,000 characters (HTTP 413)
 
 
@@ -279,6 +280,12 @@ class LLM:
 
     async def chat_json(self, messages: list[dict], temperature: float = 0.2, max_tokens: int = 2000) -> dict:
         text = await self.chat(messages, temperature, max_tokens)
+        for _ in range(JSON_CONTINUATIONS):  # the free API stops replies at ~2,500 characters (finish_reason=length);
+            if getattr(self, "last_finish", None) != "length":  # a cut JSON would parse to an inner object (a2085661bb506)
+                break
+            text += await self.chat(messages + [{"role": "assistant", "content": text[-6000:]},
+                                                {"role": "user", "content": "توقف ردك قبل اكتماله. أكمل نص JSON من الحرف الذي توقفت عنده بالضبط، "
+                                                                            "بلا تكرار ولا مقدمة ولا ```."}], 0.0, max_tokens)
         try:
             return extract_json(text)
         except ValueError:
