@@ -84,7 +84,7 @@ async function startRun(resumeFrom = null) {
   saveSettings();
   const s = JSON.parse(localStorage.getItem("ah_settings"));
   const body = {goal, provider: s.provider, api_key: s.apiKey || null, base_url: s.baseUrl || null,
-    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace(), resume_from: resumeFrom};
+    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace(), scenario: $("#scenario").checked, resume_from: resumeFrom};
   $("#runBtn").disabled = true;
   try {
     const {id} = await api("/api/runs", {method: "POST", body: JSON.stringify(body)});
@@ -151,7 +151,7 @@ const LABEL = {
   final_check: (e) => `التحقق النهائي: ${e.pass ? "مقبول" : "مرفوض"} (${e.score}/10)`,
   memory_recalled: (e) => `استرجع المنسق ${e.count} معلومة من الذاكرة (من أصل ${e.total})`,
   memory_saved: (e) => `حُفظ في الذاكرة ${e.count} معلومة${e.superseded ? "، وحُذف " + e.superseded + " قديمة" : ""}`,
-  memory_error: (e) => `تعذر الوصول إلى الذاكرة: ${e.error}`,
+  memory_error: (e) => `تعذر ${({recall: "استرجاع", save: "حفظ", extract: "استخراج"})[e.stage] || "عمل"} الذاكرة: ${e.error}`,
   run_error: (e) => `خطأ: ${e.error}`,
   run_cancelled: () => "أُوقفت المهمة",
   run_finished: (e) => `انتهى: ${RUN_STATUS[e.status] || e.status} — ${e.agents_spawned} وكيلًا، ${e.usage?.calls ?? 0} استدعاء نموذج${e.saved === false ? " — لم يُحفظ في السجل الدائم" : ""}`,
@@ -211,31 +211,51 @@ async function refresh() {
   const m = r.memory;
   $("#memRun").classList.toggle("hidden", !m?.enabled);
   if (m?.enabled) {
-    const li = (xs) => xs?.length ? "<ul>" + xs.map((i) => `<li><span class="badge">${esc(KIND[i.kind] || i.kind)}</span>${esc(i.content)}</li>`).join("") + "</ul>" : '<p class="muted">لا شيء</p>';
-    $("#memRunBody").innerHTML = `<h4>ما تذكّره المنسق</h4>${li(m.recalled)}<h4>ما حفظه بعد المهمة</h4>${busy ? '<p class="muted">بعد الانتهاء...</p>' : li(m.saved)}`;
+    const li = (xs) => xs?.length ? "<ul>" + xs.map((i) => `<li>${memLine(i)}</li>`).join("") + "</ul>" : '<p class="muted">لا شيء</p>';
+    $("#memRunBody").innerHTML = `${m.error ? `<p class="err">تعذر عمل الذاكرة في هذه المهمة (${esc(m.error)}). الجواب محفوظ، لكن لم يُحفظ شيء جديد في الذاكرة.</p>` : ""}<h4>ما تذكّره المنسق</h4>${li(m.recalled)}<h4>ما حفظه بعد المهمة</h4>${busy ? '<p class="muted">بعد الانتهاء...</p>' : li(m.saved)}`;
   }
 }
 
-const KIND = {profile: "عنك", project: "مشروع", decision: "قرار", finding: "معلومة", task: "مهمة سابقة"};
+const KIND = {profile: "عنك", project: "مشروع", decision: "قرار", finding: "معلومة", task: "مهمة سابقة", note: "تنبيه"};
+const NATURE = {user_stated: ["قلتَه أنت", "s-done"], user_confirmed: ["أكدتَه", "s-done"], external_source: ["مصدر خارجي", "s-running"],
+  task_output: ["نتيجة/توصية الفريق", "s-running"], inferred: ["استنتاج", "s-pending"], assumption: ["افتراض/تقدير", "s-pending"],
+  scenario: ["اختباري", "s-failed"], unverified: ["مصدر غير مؤكد", "s-pending"]};
+const conf = (i) => i.confidence != null ? `<small class="muted" title="درجة الثقة تُحسب من طبيعة المعلومة">ثقة ${Math.round(i.confidence * 100)}%</small>` : "";
+const safeUrl = (u) => /^https?:\/\//i.test(u || "") ? u : null;
+const proof = (i) => !i.evidence ? "" : i.nature === "external_source" && safeUrl(i.evidence)
+  ? `<small class="muted">المصدر: <a href="${esc(i.evidence)}" target="_blank" rel="noopener noreferrer">${esc(i.evidence.slice(0, 80))}</a></small>`
+  : `<small class="muted">نصك: «${esc(i.evidence)}»</small>`;
+const natureBadge = (n) => `<span class="badge ${(NATURE[n] || NATURE.unverified)[1]}">${(NATURE[n] || NATURE.unverified)[0]}</span>`;
+const memLine = (i) => `${natureBadge(i.nature)}<span class="badge">${esc(KIND[i.kind] || i.kind)}</span>${i.subject ? `<span class="badge">${esc(i.subject)}</span>` : ""}${esc(i.content)}`;
 async function loadMemory() {
   const sp = memSpace();
   if (!sp) { $("#memList").innerHTML = '<li class="muted">الذاكرة معطلة من الإعدادات</li>'; $("#memCount").textContent = ""; return; }
   let d;
   try { d = await api("/api/memory", {headers: {"X-Memory-Space": sp}}); } catch (e) { $("#memList").innerHTML = `<li class="err">${esc(e.message)}</li>`; return; }
   $("#memCount").textContent = `(${d.count} عنصر)`;
-  $("#memList").innerHTML = d.items.map((i) => `<li><span class="badge">${esc(KIND[i.kind] || i.kind)}</span>${esc(i.content)}
-    <small class="muted">${new Date(i.created_at * 1000).toLocaleDateString("ar-SA")}</small><button class="ghost del" data-id="${esc(i.id)}">حذف</button></li>`).join("")
+  $("#memList").innerHTML = d.items.map((i) => `<li>${memLine(i)}
+    <small class="muted" title="${esc(i.source_goal || "")}">${new Date(i.created_at * 1000).toLocaleDateString("ar-SA")}${i.run_id ? " · مهمة " + esc(i.run_id) : ""}</small>
+    ${conf(i)} ${proof(i)}
+    <span class="mem-actions"><button class="ghost edit" data-id="${esc(i.id)}">تعديل</button>${i.nature !== "scenario" ? `<button class="ghost test" data-id="${esc(i.id)}">بيانات اختبار</button>` : ""}<button class="ghost del" data-id="${esc(i.id)}">حذف</button></span></li>`).join("")
     || '<li class="muted">لا شيء بعد. سيبدأ المنسق بالتذكر بعد أول مهمة.</li>';
   document.querySelectorAll("#memList .del").forEach((b) => (b.onclick = async () => {
-    await api(`/api/memory/${encodeURIComponent(b.dataset.id)}`, {method: "DELETE", headers: {"X-Memory-Space": sp}}).catch(() => {});
+    await api(`/api/memory/${encodeURIComponent(b.dataset.id)}`, {method: "DELETE", headers: {"X-Memory-Space": sp}}).catch((e) => alert("لم يُحذف: " + e.message));
     loadMemory();
   }));
+  const patch = (id, body) => api(`/api/memory/${encodeURIComponent(id)}`, {method: "PATCH", body: JSON.stringify(body),
+    headers: {"X-Memory-Space": sp, "Content-Type": "application/json"}}).catch((e) => alert(e.message)).then(loadMemory);
+  document.querySelectorAll("#memList .edit").forEach((b) => (b.onclick = () => {
+    const it = d.items.find((x) => x.id === b.dataset.id);
+    const v = prompt("صحّح المعلومة (ستُعلَّم بأنك أكدتها):", it.content);
+    if (v && v.trim() !== it.content) patch(it.id, {content: v.trim()});
+  }));
+  document.querySelectorAll("#memList .test").forEach((b) => (b.onclick = () => patch(b.dataset.id, {nature: "scenario"})));
 }
 $("#memRefresh").onclick = loadMemory;
 $("#memClear").onclick = async () => {
   const sp = memSpace();
   if (!sp || !confirm("مسح كل ذاكرة المنسق؟ لا يمكن التراجع.")) return;
-  await api("/api/memory", {method: "DELETE", headers: {"X-Memory-Space": sp}}).catch(() => {});
+  await api("/api/memory", {method: "DELETE", headers: {"X-Memory-Space": sp}}).catch((e) => alert("لم يُمسح: " + e.message));
   loadMemory();
 };
 

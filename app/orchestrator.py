@@ -31,6 +31,7 @@ class Run:
     saved: bool | None = None  # None: no persistent store; False: final save failed (shown to the user)
     owner: str | None = None  # SHA-256 of the creating client's key; never sent back to clients
     resumed: dict | None = None  # {"from": run id, "reused": [task ids]} when continuing a stopped run
+    scenario: bool = False  # user marked this run as a test/hypothetical: nothing it learns is about the user
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled | interrupted (server shutdown)
@@ -70,7 +71,7 @@ class Run:
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
-                "resumed": self.resumed, "events": self.events}
+                "resumed": self.resumed, "scenario": self.scenario, "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -90,7 +91,7 @@ PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء �
 - depends_on يشير فقط إلى معرفات سابقة في القائمة.
 - decompose=true فقط لمهمة ضخمة تحتاج فريقًا فرعيًا كاملًا{decompose_note}.
 - لا تضف مهمة "تجميع نهائي"؛ المنسق يجمع النتائج بنفسه.
-- إن أُرفق «سياق من مهام سابقة» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة (أرقام، قرارات، تفضيلات) صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون هذا السياق، ولا تُعِد بحث ما هو معروف إلا إن احتاج تحديثًا.
+- إن أُرفق «سياق من ذاكرة المنسق» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون هذا السياق، وانقل معها وسمها كما هو (صرّح به المستخدم / نتيجة مهمة سابقة / افتراض / سيناريو اختباري / غير مؤكد). لا تحوّل نتيجة مهمة أو افتراضًا أو سيناريو إلى «معطيات المستخدم».
 - اكتب بلغة المستخدم."""
 
 VERIFIER = """أنت مدقق صارم ومستقل. قيّم ناتج وكيل مقابل المهمة ومعيار القبول.
@@ -104,7 +105,8 @@ SYNTH = """أنت المنسق. اجمع نتائج فريقك في جواب ن�
 - لا تضف معلومات غير موجودة في النتائج.
 - احتفظ بالروابط والمصادر.
 - إن فشلت مهام أو لم تُتحقق، اذكر ذلك بصدق في قسم قصير "حدود هذا الجواب".
-- إذا كان في النتائج تقدير موسوم، استخدمه لتقديم جواب عملي (أرقام وسيناريوهات) مع إبقاء وسم التقدير."""
+- إذا كان في النتائج تقدير موسوم، استخدمه لتقديم جواب عملي (أرقام وسيناريوهات) مع إبقاء وسم التقدير.
+- إن أُرفق سياق من ذاكرة المنسق فاحترم وسم كل معلومة: انسب للمستخدم («مشروعك»، «قررتَ») فقط ما وُسم بأنه صرّح به أو أكده. ما سواه قدّمه كما هو: «في مهمة سابقة ورد أن...» أو «بافتراض أن...» أو «في السيناريو الاختباري...». لا تطلب من المستخدم بيانات حقيقية (كالسيولة) عن مشروع لم يصرّح أنه مشروعه. إن احتجت معلومة مصدرها غير مؤكد فاذكر ذلك أو اطلب التأكيد."""
 
 
 def _sanitize_plan(plan: dict, depth: int) -> list[dict]:
@@ -163,8 +165,7 @@ class Orchestrator:
             existing = await self.recall()
             goal = r.goal
             if r.memory["recalled"]:
-                goal += ("\n\n---\nسياق من مهام سابقة لهذا المستخدم (من ذاكرة المنسق؛ استخدمه إن كان ذا صلة وتجاهله إن لم يكن):\n"
-                         + memory.render_context(r.memory["recalled"]))
+                goal += "\n\n---\n" + memory.render_context(r.memory["recalled"])
             out = await self.orchestrate(goal, depth=0, prefix="")
             r.result = out["output"]
             r.verdict = out.get("verdict", {})
@@ -208,23 +209,33 @@ class Orchestrator:
         try:
             existing = await memory.STORE.list(r.memory_space)
         except Exception as e:  # noqa: BLE001  memory must never break a run
+            r.memory["error"] = f"recall: {str(e)[:200]}"
             await r.emit("memory_error", {"stage": "recall", "error": str(e)[:200]})
             return []
-        r.memory["recalled"] = memory.recall(r.goal, existing)
+        r.memory["recalled"] = memory.recall(r.goal, existing, scenario=r.scenario)
         await r.emit("memory_recalled", {"count": len(r.memory["recalled"]), "total": len(existing),
-                                         "items": [{"kind": i["kind"], "content": i["content"][:160]} for i in r.memory["recalled"]]})
+                                         "items": [{"kind": i["kind"], "nature": i["nature"], "subject": i.get("subject"),
+                                                    "content": i["content"][:160]} for i in r.memory["recalled"]]})
         return existing
 
     async def remember(self, existing: list[dict]):
         r = self.run
         try:
-            res = await memory.extract_and_save(self.llm, r.memory_space, r.id, r.goal, r.result, existing)
-        except Exception as e:  # noqa: BLE001
+            res = await memory.extract_and_save(self.llm, r.memory_space, r.id, r.goal, r.result, existing,
+                                                scenario=r.scenario)
+        except Exception as e:  # noqa: BLE001  the run's answer is kept; the failure is recorded and shown
+            r.memory["error"] = f"save: {str(e)[:200]}"
             await r.emit("memory_error", {"stage": "save", "error": str(e)[:200]})
+            return
+        if res.get("error"):
+            r.memory["error"] = f"extract: {res['error'][:200]}"
+            await r.emit("memory_error", {"stage": "extract", "error": res["error"][:200]})
             return
         r.memory["saved"], r.memory["superseded"] = res["saved"], res["superseded"]
         await r.emit("memory_saved", {"count": len(res["saved"]), "superseded": len(res["superseded"]),
-                                      "items": [{"kind": i["kind"], "content": i["content"][:160]} for i in res["saved"]]})
+                                      "scenario": res.get("scenario", False),
+                                      "items": [{"kind": i["kind"], "nature": i["nature"], "subject": i.get("subject"),
+                                                 "content": i["content"][:160]} for i in res["saved"]]})
 
     async def orchestrate(self, goal: str, depth: int, prefix: str) -> dict:
         r = self.run

@@ -10,8 +10,9 @@ from app.orchestrator import Orchestrator, Run
 SPACE = "mem_test_space_0123456789abcdef"
 
 
-def item(content, kind="finding", importance=3, age_days=0, id_=None):
-    return {"id": id_ or content[:8], "kind": kind, "content": content, "run_id": "r",
+def item(content, kind="finding", importance=3, age_days=0, id_=None, nature="user_stated", subject=None):
+    return {"id": id_ or content[:8], "kind": kind, "content": content, "run_id": "r", "nature": nature,
+            "subject": subject, "evidence": None, "source_goal": None,
             "importance": importance, "created_at": time.time() - age_days * 86400}
 
 
@@ -81,10 +82,13 @@ class MemLLM:
 async def test_memory_round_trip_through_orchestrator():
     memory.STORE._mem.clear()
     first = MemLLM(lambda m: {"task_summary": "دراسة مقهى مختص في جدة بتكاليف ثابتة 35 ألف ريال",
-                              "add": [{"kind": "project", "content": "مشروع مقهى مختص في جدة، التكاليف الثابتة 35 ألف ريال شهريًا", "importance": 5},
-                                      {"kind": "profile", "content": "المستخدم صاحب عمل في جدة", "importance": 4},
+                              "add": [{"kind": "project", "nature": "user_stated", "subject": "مقهى جدة",
+                                       "evidence": "تكاليفه الثابتة 35 ألف ريال شهريًا",
+                                       "content": "مشروع مقهى مختص في جدة، التكاليف الثابتة 35 ألف ريال شهريًا", "importance": 5},
+                                      {"kind": "profile", "nature": "user_stated", "evidence": "أملك مقهى مختصًا في جدة",
+                                       "content": "المستخدم صاحب مقهى في جدة", "importance": 4},
                                       {"kind": "finding", "content": "secret sk-or-v1-abcdefghijklmnopqrst", "importance": 2}]})
-    r1 = Run(goal="ادرس مقهى مختص في جدة", llm_public={}, memory_space=SPACE)
+    r1 = Run(goal="أملك مقهى مختصًا في جدة، تكاليفه الثابتة 35 ألف ريال شهريًا. ادرس وضعه", llm_public={}, memory_space=SPACE)
     await Orchestrator(r1, first).execute()
     assert len(r1.memory["saved"]) == 3  # summary + 2 (secret dropped)
     assert any(e["type"] == "memory_saved" for e in r1.events)
@@ -101,7 +105,8 @@ async def test_supersede_replaces_outdated_item():
     await memory.STORE.add(SPACE, [item("ميزانية المقهى 200 ألف ريال", kind="project", id_="old1")])
     existing = await memory.STORE.list(SPACE)
     fake = MemLLM(lambda m: {"task_summary": "تحديث الميزانية",
-                             "add": [{"kind": "project", "content": "ميزانية المقهى صارت 300 ألف ريال", "importance": 5}],
+                             "add": [{"kind": "project", "nature": "user_stated", "evidence": "الميزانية صارت 300 ألف",
+                                      "content": "ميزانية المقهى صارت 300 ألف ريال", "importance": 5}],
                              "supersede": ["old1", "not-a-real-id"]})
     res = await memory.extract_and_save(fake, SPACE, "r2", "الميزانية صارت 300 ألف", "تم", existing)
     contents = [i["content"] for i in await memory.STORE.list(SPACE)]
@@ -140,7 +145,8 @@ def test_attached_prefixes_and_suffixes_match():
 
 
 def test_followup_recalls_project_facts():
-    items = [item("مشروع مقهى في الروضة بجدة، التكاليف الثابتة 35 ألف ريال", kind="project", importance=5, id_="p"),
-             item("حساب نقطة التعادل للمقهى", kind="task", id_="t")]
+    items = [item("مشروع مقهى في الروضة بجدة، التكاليف الثابتة 35 ألف ريال", kind="project", importance=5, id_="p",
+                  subject="مقهى الروضة"),
+             item("حساب نقطة التعادل للمقهى", kind="task", id_="t", nature="task_output")]
     got = {i["id"] for i in memory.recall("اكتب خطة تسويق للشهر الأول", items)}
     assert got == {"p", "t"}

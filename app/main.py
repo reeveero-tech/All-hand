@@ -13,6 +13,7 @@ from collections import OrderedDict
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -71,6 +72,12 @@ class RunRequest(BaseModel):
     max_agents: int | None = Field(default=None, ge=1, le=500)
     memory_space: str | None = None  # private random id kept in the browser; None = no memory
     resume_from: str | None = None  # id of one of your stopped runs: reuse its plan and verified outputs
+    scenario: bool = False  # test / hypothetical run: memory keeps it, but never as facts about the user
+
+
+class MemoryEdit(BaseModel):
+    content: str | None = Field(default=None, max_length=400)
+    nature: str | None = None
 
 
 _RUN_ID = re.compile(r"[0-9a-f]{12}")
@@ -147,7 +154,8 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
     cap = {"free": 25, "platform": 500}.get(cfg.provider, DEFAULT_MAX_AGENTS)
     run = Run(goal=prior["goal"] if prior else req.goal.strip(), llm_public=cfg.public(), max_agents=min(req.max_agents or cap, cap),
               can_exec=cfg.provider == "platform" or os.environ.get("ALLOW_CODE_EXEC") == "1",
-              memory_space=req.memory_space, owner=owner)
+              memory_space=req.memory_space, owner=owner,
+              scenario=req.scenario or bool(prior and prior.get("scenario")))  # a resumed test run stays a test
     RUNS[run.id] = run
     while len(RUNS) > MAX_LIVE:
         old_id, old = next(iter(RUNS.items()))
@@ -254,6 +262,12 @@ async def stream(run_id: str, request: Request, after: int = -1, x_client_key: s
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+@app.exception_handler(memory.MemoryUnavailable)
+@app.exception_handler(httpx.HTTPError)
+async def _memory_down(request: Request, exc: Exception):
+    return JSONResponse({"detail": "تعذر الوصول إلى الذاكرة؛ لم يُنفذ الطلب. حاول لاحقًا."}, status_code=502)
+
+
 def _space(x_memory_space: str | None) -> str:
     if not memory.valid_space(x_memory_space):
         raise HTTPException(400, "مطلوب ترويسة X-Memory-Space صالحة.")
@@ -269,6 +283,28 @@ async def memory_list(x_memory_space: str | None = Header(default=None)):
 @app.delete("/api/memory/{item_id}")
 async def memory_delete(item_id: str, x_memory_space: str | None = Header(default=None)):
     return {"deleted": await memory.STORE.delete(_space(x_memory_space), [item_id])}
+
+
+@app.patch("/api/memory/{item_id}")
+async def memory_edit(item_id: str, body: MemoryEdit, x_memory_space: str | None = Header(default=None)):
+    """User correction. Editing content means the user vouches for it (user_confirmed) unless they pick a nature."""
+    space = _space(x_memory_space)
+    changes = {}
+    if body.content is not None:
+        content = memory._clean(body.content)
+        if not content:
+            raise HTTPException(400, "المحتوى فارغ أو يشبه مفتاحًا سريًا.")
+        changes.update(content=content, nature="user_confirmed")
+    if body.nature is not None:
+        if body.nature not in memory.USER_SETTABLE:
+            raise HTTPException(400, "طبيعة غير مسموحة. المتاح: تأكيد، افتراض، بيانات اختبار.")
+        changes["nature"] = body.nature
+    if not changes:
+        raise HTTPException(400, "لا يوجد تعديل.")
+    item = await memory.STORE.update(space, item_id, changes)
+    if not item:
+        raise HTTPException(404, "العنصر غير موجود.")
+    return item
 
 
 @app.delete("/api/memory")

@@ -28,3 +28,14 @@ def test_migration_is_idempotent_and_non_destructive():
     low = SQL.lower()
     assert "drop " not in low and "delete " not in low and "truncate" not in low
     assert low.count("create table if not exists") == 2
+
+
+def test_baseline_plus_provenance_cover_every_memory_column_written():
+    from app import memory
+    sql_002 = (Path(__file__).resolve().parents[1] / "migrations" / "002_memory_provenance.sql").read_text().lower()
+    added = set(re.findall(r"add column if not exists (\w+)", sql_002))
+    written = {"id", "kind", "content", "run_id", "importance", "space", "created_at", *memory.META}
+    assert written <= _columns("memories") | added
+    for n in memory.NATURES:  # every nature the code can write passes the CHECK constraint
+        assert f"'{n}'" in sql_002
+    assert "drop column" not in sql_002.split("-- rollback")[0]
