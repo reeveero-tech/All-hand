@@ -35,3 +35,7 @@ def test_anchor_is_bounded():
 
 def test_planner_is_told_about_dependencies():
     assert "يجب أن تذكرها في depends_on" in orchestrator.PLANNER
+
+
+def test_planner_knows_agents_cannot_make_files():
+    assert "لا يملكون أداة لإنشاء ملفات PDF" in orchestrator.PLANNER
