@@ -74,6 +74,13 @@ class RunRequest(BaseModel):
     follow_up_of: str | None = None  # id of one of your finished runs: continue that conversation
     resume_from: str | None = None  # id of one of your stopped runs: reuse its plan and verified outputs
     scenario: bool = False  # test / hypothetical run: memory keeps it, but never as facts about the user
+    approve_plan: bool = False  # show the plan and wait for the owner's approval before any agent works
+
+
+class PlanDecision(BaseModel):
+    action: str = Field(pattern="^(approve|reject)$")
+    drop: list[str] = Field(default_factory=list, max_length=50)  # task ids to leave out
+    note: str | None = Field(default=None, max_length=2000)  # an instruction every agent must follow
 
 
 class MemoryEdit(BaseModel):
@@ -179,7 +186,7 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
     cap = {"free": 25, "platform": 500}.get(cfg.provider, DEFAULT_MAX_AGENTS)
     run = Run(goal=prior["goal"] if prior else req.goal.strip(), llm_public=cfg.public(), max_agents=min(req.max_agents or cap, cap),
               can_exec=cfg.provider == "platform" or os.environ.get("ALLOW_CODE_EXEC") == "1",
-              memory_space=req.memory_space, owner=owner,
+              memory_space=req.memory_space, owner=owner, approve_plan=req.approve_plan and not prior,
               scenario=req.scenario or any(bool(d and d.get("scenario")) for d in (prior, prev)))  # tests stay tests
     if prior:  # resume keeps the conversation it belonged to
         run.follow_up_of, run.thread_id, run.context = prior.get("follow_up_of"), prior.get("thread_id"), prior.get("context") or ""
@@ -259,6 +266,21 @@ async def export_run(run_id: str, x_client_key: str | None = Header(default=None
     data.pop("owner", None)
     return Response(export.to_markdown(data), media_type="text/markdown; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="all-hand-{run_id}.md"'})
+
+
+@app.post("/api/runs/{run_id}/plan")
+async def decide_plan(run_id: str, d: PlanDecision, x_client_key: str | None = Header(default=None)):
+    """The owner approves (optionally dropping tasks and adding a note) or rejects a plan that is waiting."""
+    run = _live(run_id, _owner(x_client_key))
+    if run.awaiting != "plan" or not run._decision or run._decision.is_set():
+        raise HTTPException(409, "لا توجد خطة تنتظر قرارك في هذه المهمة.")
+    root = {t["id"] for t in run.tasks.values() if not t.get("parent")}
+    drop = [x for x in d.drop if x in root]
+    if d.action == "approve" and len(drop) >= len(root):
+        raise HTTPException(400, "لا يمكن اعتماد خطة بلا مهام؛ ارفضها بدلًا من ذلك.")
+    run.plan_decision = {"action": d.action, "dropped": drop, "note": (d.note or "").strip() or None, "at": time.time()}
+    run._decision.set()
+    return {"ok": True, "decision": run.plan_decision}
 
 
 @app.post("/api/runs/{run_id}/cancel")

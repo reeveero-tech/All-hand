@@ -18,6 +18,7 @@ from .llm import LLM, LLMError
 MAX_DEPTH = 2
 MAX_TASKS_PER_PLAN = 10
 MAX_ATTEMPTS = 3
+APPROVAL_TIMEOUT = float(os.environ.get("PLAN_APPROVAL_TIMEOUT", "1800"))  # seconds a plan waits for its owner
 DEFAULT_MAX_AGENTS = int(os.environ.get("MAX_AGENTS_PER_RUN", "60"))
 
 
@@ -34,6 +35,9 @@ class Run:
     thread_id: str | None = None  # first run of the conversation; every follow-up shares it
     context: str = ""  # what the previous run produced, given to the planner (kept so resume rebuilds it)
     resumed: dict | None = None  # {"from": run id, "reused": [task ids]} when continuing a stopped run
+    approve_plan: bool = False  # pause after planning until the owner approves, edits or rejects the plan
+    awaiting: str | None = None  # "plan" while waiting for that decision (status stays "running")
+    plan_decision: dict | None = None  # what the owner decided: {"action", "dropped", "note", "at"}
     scenario: bool = False  # user marked this run as a test/hypothetical: nothing it learns is about the user
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
@@ -48,6 +52,7 @@ class Run:
     error: str = ""
     finished_at: float | None = None
     _subs: list = field(default_factory=list, repr=False)
+    _decision: asyncio.Event | None = field(default=None, repr=False)
 
     async def emit(self, type_: str, data: dict):
         ev = {"seq": len(self.events), "t": round(time.time() - self.created_at, 2), "type": type_, **data}
@@ -67,7 +72,7 @@ class Run:
     def summary(self) -> dict:
         return {"id": self.id, "goal": self.goal, "status": self.status, "created_at": self.created_at,
                 "finished_at": self.finished_at, "agents_spawned": self.agents_spawned,
-                "thread_id": self.thread_id, "follow_up_of": self.follow_up_of,
+                "thread_id": self.thread_id, "follow_up_of": self.follow_up_of, "awaiting": self.awaiting,
                 "tasks_total": len(self.tasks),
                 "tasks_done": sum(1 for t in self.tasks.values() if t["status"] == "done"),
                 "tasks_failed": sum(1 for t in self.tasks.values() if t["status"] in ("failed", "skipped"))}
@@ -75,7 +80,7 @@ class Run:
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
-                "resumed": self.resumed, "context": self.context, "scenario": self.scenario, "events": self.events}
+                "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -186,8 +191,9 @@ class Orchestrator:
             out = await self.orchestrate(goal, depth=0, prefix="")
             r.result = out["output"]
             r.verdict = out.get("verdict", {})
-            status = "done" if out["ok"] else ("partial" if out.get("partial") else "failed")
-            if r.memory_space and status in ("done", "partial"):
+            status = "done" if out["ok"] else ("partial" if out.get("partial") else
+                                               "cancelled" if out.get("rejected") else "failed")
+            if r.memory_space and status in ("done", "partial") and not out.get("rejected"):
                 await self.remember(existing)  # before status flips, so clients see saved memory with the result
             r.status = status
         except asyncio.CancelledError:
@@ -270,12 +276,48 @@ class Orchestrator:
         await r.emit("plan", {"scope": prefix or "root", "summary": p["summary"], "simple": p["simple"],
                               "tasks": [{k: t[k] for k in ("id", "title", "role", "depends_on", "decompose")} for t in tasks]})
 
+        if depth == 0 and r.approve_plan and not (p["simple"] and len(tasks) == 1):
+            tasks = await self._await_approval(tasks)
+            if not tasks:
+                return {"ok": False, "output": "رفضتَ الخطة، فلم يُنفَّذ شيء.", "rejected": True}
+
         if p["simple"] and len(tasks) == 1:
             await self.run_task(tasks[0], goal, verify_it=False)
             return {"ok": tasks[0]["status"] == "done", "output": tasks[0]["output"]}
 
         await self.run_dag(tasks)
         return await self.synthesize(goal, tasks, final=(depth == 0))
+
+    async def _await_approval(self, tasks: list[dict]) -> list[dict]:
+        """Wait for the owner's decision on the root plan. Approve runs it (minus dropped tasks, with the
+        owner's note given to every agent); reject or no answer in time runs nothing."""
+        r = self.run
+        r.awaiting, r._decision = "plan", asyncio.Event()
+        await r.emit("plan_awaiting_approval", {"timeout_s": APPROVAL_TIMEOUT})
+        if self.persist:
+            await self.persist()
+        try:
+            await asyncio.wait_for(r._decision.wait(), APPROVAL_TIMEOUT)
+        except asyncio.TimeoutError:
+            r.plan_decision = {"action": "timeout", "at": time.time()}
+        finally:
+            r.awaiting = None
+        d = r.plan_decision or {}
+        await r.emit("plan_decision", {k: d.get(k) for k in ("action", "dropped", "note")})
+        if d.get("action") != "approve":
+            for t in tasks:
+                t["status"] = "skipped"
+            return []
+        dropped = set(d.get("dropped") or [])
+        keep = [t for t in tasks if t["id"] not in dropped]
+        for t in tasks:
+            if t["id"] in dropped:
+                r.tasks.pop(t["id"], None)
+        for t in keep:
+            t["depends_on"] = [x for x in t["depends_on"] if x not in dropped]
+            if d.get("note"):
+                t["instructions"] += f"\n\nملاحظة المستخدم عند اعتماد الخطة (ملزمة): {d['note']}"
+        return keep
 
     async def _reuse_plan(self) -> dict | None:
         """The root plan of the stopped run, with every task that passed verification kept as is.
