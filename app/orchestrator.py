@@ -93,6 +93,8 @@ PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء �
 - simple=true ومهمة واحدة بدور assistant للتحية والأسئلة البسيطة.
 - غير ذلك: من 2 إلى {max_tasks} مهام، أقل عدد كافٍ. اجعل المهام المستقلة متوازية (depends_on فارغ).
 - depends_on يشير فقط إلى معرفات سابقة في القائمة.
+- كل مهمة تبني على ناتج مهمة أخرى (خطة أو تقرير مالي أو توصية تعتمد على بحث أو تحليل) يجب أن تذكرها في depends_on، وإلا لن ترى نتائجها. الاستقلال فقط للمهام التي لا تحتاج نواتج غيرها فعلًا.
+- اذكر في تعليمات كل مهمة موضوع الطلب ومعطياته الأساسية (المنتج، السوق، الميزانية...) صراحةً.
 - decompose=true فقط لمهمة ضخمة تحتاج فريقًا فرعيًا كاملًا{decompose_note}.
 - لا تضف مهمة "تجميع نهائي"؛ المنسق يجمع النتائج بنفسه.
 - إن أُرفق «سياق من ذاكرة المنسق» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون هذا السياق، وانقل معها وسمها كما هو (صرّح به المستخدم / نتيجة مهمة سابقة / افتراض / سيناريو اختباري / غير مؤكد). لا تحوّل نتيجة مهمة أو افتراضًا أو سيناريو إلى «معطيات المستخدم».
@@ -145,10 +147,20 @@ async def plan(llm: LLM, goal: str, depth: int) -> dict:
             "tasks": _sanitize_plan(p, depth)}
 
 
-async def verify(llm: LLM, task: dict, output: str) -> dict:
+GOAL_CHARS = 2000
+
+
+def anchor(goal: str) -> str:
+    """The user's own request, shown to every agent and verifier so a task can't drift off-topic."""
+    g = goal.strip()
+    return g[:GOAL_CHARS] + ("…" if len(g) > GOAL_CHARS else "")
+
+
+async def verify(llm: LLM, task: dict, output: str, goal: str = "") -> dict:
+    head = f"طلب المستخدم الأصلي (ارفض الناتج إن خرج عن موضوعه أو منتجه أو أرقامه):\n{anchor(goal)}\n\n" if goal else ""
     try:
         v = await llm.chat_json([{"role": "system", "content": VERIFIER}, {"role": "user", "content":
-                                 f"المهمة: {task['instructions']}\nمعيار القبول: {task['acceptance']}\n\nالناتج:\n{output[:12000]}"}],
+                                 head + f"المهمة: {task['instructions']}\nمعيار القبول: {task['acceptance']}\n\nالناتج:\n{output[:12000]}"}],
                                 temperature=0.0, max_tokens=800)
     except (ValueError, LLMError) as e:
         return {"pass": False, "score": 0, "issues": [f"تعذر التحقق: {e}"], "fix": ""}
@@ -372,14 +384,16 @@ class Orchestrator:
                 await r.emit(type_, {"task": t["id"], "agent": _a, **data})
 
             instr = t["instructions"] + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
+            ctx = (f"طلب المستخدم الأصلي (للسياق؛ نفّذ مهمتك أنت فقط والتزم بموضوعه وأرقامه):\n{anchor(r.goal)}"
+                   + (f"\n\n{context}" if context else ""))
             try:
-                res = await run_agent(self.llm, role, instr, context, emit, r.can_exec)
+                res = await run_agent(self.llm, role, instr, ctx, emit, r.can_exec)
             except LLMError as e:
                 t["attempts"].append({"agent": agent_id, "error": str(e)})
                 await r.emit("agent_error", {"task": t["id"], "agent": agent_id, "error": str(e)})
                 continue
             t["output"] = res["output"]
-            v = await verify(self.llm, t, res["output"]) if verify_it else {"pass": True, "score": None, "issues": []}
+            v = await verify(self.llm, t, res["output"], r.goal) if verify_it else {"pass": True, "score": None, "issues": []}
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
                                   "sources": res["sources"], "verdict": v})
             await r.emit("verified", {"task": t["id"], "agent": agent_id, **v})

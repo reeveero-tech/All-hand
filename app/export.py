@@ -1,0 +1,88 @@
+"""Turn a run into a standalone report file the user can keep (Markdown), built only from what the
+run actually recorded: the answer, the plan, each task's verification, its sources and its limits."""
+from __future__ import annotations
+
+import datetime as dt
+import re
+
+STATUS = {"done": "اكتملت", "partial": "اكتملت جزئيًا", "failed": "فشلت", "cancelled": "أوقفها المستخدم",
+          "interrupted": "انقطعت", "running": "ما زالت تعمل"}
+TASK = {"done": "مُتحقق منها", "failed": "لم تجتز التحقق", "skipped": "لم تُنفذ", "pending": "لم تبدأ",
+        "running": "لم تكتمل"}
+_URL = re.compile(r"^https?://", re.I)
+
+
+def _when(ts) -> str:
+    try:
+        return dt.datetime.fromtimestamp(float(ts), dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    except (TypeError, ValueError):
+        return "-"
+
+
+def _cell(s) -> str:
+    return str(s or "").replace("|", "\\|").replace("\n", " ")
+
+
+def sources(run: dict) -> list[str]:
+    seen: list[str] = []
+    for t in (run.get("tasks") or {}).values():
+        for a in t.get("attempts") or []:
+            for s in a.get("sources") or []:
+                s = str(s).strip()
+                if _URL.match(s) and s not in seen:
+                    seen.append(s)
+    return seen
+
+
+def last_score(t: dict):
+    for a in reversed(t.get("attempts") or []):
+        v = a.get("verdict") or {}
+        if v.get("score") is not None:
+            return v["score"]
+    return None
+
+
+def to_markdown(run: dict) -> str:
+    tasks = list((run.get("tasks") or {}).values())
+    v = run.get("verdict") or {}
+    llm = run.get("llm") or {}
+    out = [f"# {run.get('goal', '').strip().splitlines()[0][:200] if run.get('goal') else 'مهمة'}", "",
+           f"- **المعرّف:** `{run.get('id')}`",
+           f"- **الحالة:** {STATUS.get(run.get('status'), run.get('status'))}",
+           f"- **البدء:** {_when(run.get('created_at'))} — **الانتهاء:** {_when(run.get('finished_at'))}",
+           f"- **النموذج:** {llm.get('provider', '-')} / {llm.get('model', '-')}",
+           f"- **الوكلاء الذين عملوا:** {run.get('agents_spawned', 0)}",
+           f"- **التحقق النهائي:** {str(v.get('score')) + '/10' if v.get('score') is not None else 'لم يُجرَ'}"]
+    if run.get("follow_up_of"):
+        out.append(f"- **متابعة للمهمة:** `{run['follow_up_of']}`")
+    if run.get("scenario"):
+        out.append("- **تنبيه:** مهمة تجريبية/افتراضية؛ معطياتها ليست حقائق عن المستخدم.")
+    out += ["", "## الطلب", "", (run.get("goal") or "").strip(), "", "## الجواب النهائي", "",
+            (run.get("result") or "").strip() or "_لا يوجد جواب نهائي._", ""]
+    if tasks:
+        out += ["## الخطة وما نُفذ منها", "", "| المهمة | الدور | الحالة | تقييم المدقق | المحاولات |", "|---|---|---|---|---|"]
+        for t in tasks:
+            s = last_score(t)
+            out.append(f"| {_cell(t.get('id'))} — {_cell(t.get('title'))} | {_cell(t.get('role'))} | "
+                       f"{TASK.get(t.get('status'), t.get('status'))} | {str(s) + '/10' if s is not None else '-'} | "
+                       f"{len(t.get('attempts') or [])} |")
+        out.append("")
+    src = sources(run)
+    out += ["## المصادر", ""] + ([f"{i}. {u}" for i, u in enumerate(src, 1)] or ["لم يسجل الوكلاء أي رابط مصدر."]) + [""]
+    gaps = [t for t in tasks if t.get("status") != "done"]
+    issues = [i for i in (v.get("issues") or []) if i]
+    out += ["## حدود هذا التقرير", ""]
+    if not gaps and not issues and run.get("status") == "done":
+        out.append("كل المهام اجتازت التحقق، ولم يسجل المدقق النهائي ملاحظات.")
+    for t in gaps:
+        out.append(f"- المهمة {t.get('id')} ({t.get('title')}): {TASK.get(t.get('status'), t.get('status'))}.")
+    for i in issues:
+        out.append(f"- ملاحظة المدقق النهائي: {i}")
+    out += ["- التقرير مبني فقط على ما سجله التشغيل؛ تحقّق من الأرقام الحساسة قبل اتخاذ قرار.", ""]
+    done = [t for t in tasks if t.get("output")]
+    if done:
+        out += ["## ملحق: ناتج كل مهمة", ""]
+        for t in done:
+            out += [f"### {t.get('id')} — {t.get('title')} ({TASK.get(t.get('status'), t.get('status'))})", "",
+                    str(t.get("output")).strip(), ""]
+    return "\n".join(out).rstrip() + "\n"

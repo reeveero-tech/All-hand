@@ -104,6 +104,7 @@ function open(id) {
   $("#log").innerHTML = ""; $("#board").innerHTML = ""; $("#verdict").textContent = "";
   $("#result").className = "md muted"; $("#result").textContent = "قيد العمل...";
   $("#followCard").classList.add("hidden");
+  $("#exportBtn").classList.add("hidden");
   refresh();
   es = streamEvents(id, onEvent, () => refresh());
 }
@@ -205,6 +206,15 @@ async function refresh() {
     if (rb) rb.onclick = () => { $("#goal").value = r.goal; startRun(); };
     $("#followCard").classList.toggle("hidden", !r.result && !Object.values(r.tasks || {}).some((t) => t.status === "done"));
     $("#followBtn").onclick = () => { const g = $("#followGoal").value; if (g.trim()) { $("#followGoal").value = ""; startRun(null, r.id, g); } };
+    $("#exportBtn").classList.remove("hidden");
+    $("#exportBtn").onclick = async () => {
+      try {
+        const res = await fetch(`/api/runs/${r.id}/export`, {headers: {"X-Client-Key": clientKey()}});
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const url = URL.createObjectURL(await res.blob()), a = document.createElement("a");
+        a.href = url; a.download = `all-hand-${r.id}.md`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (e) { alert("تعذر تنزيل التقرير: " + e.message); }
+    };
     const sb = $("#resumeBtn");
     if (sb) sb.onclick = () => { $("#goal").value = r.goal; startRun(r.id); };
     if (!$("#log").children.length && r.events?.length) r.events.forEach(onEvent);

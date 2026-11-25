@@ -36,3 +36,47 @@ def test_chat_waits_for_free_limit_then_succeeds(monkeypatch):
             await c.close()
     assert asyncio.run(go()) == "تم"
     assert waits == [32] and len(calls) == 2  # waited what the provider asked, no extra blind backoff
+
+
+def _client(handler, interval):
+    c = L.LLM(L.LLMConfig("free", f"https://pace-{interval}.invalid", "m", None, concurrency=1, min_interval=interval))
+    c._client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    return c
+
+
+def test_pacer_spaces_parallel_calls():
+    """Several agents asking at once must not hit a per-IP limit back to back."""
+    times = []
+
+    def handler(req):
+        times.append(asyncio.get_event_loop().time())
+        return httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}]})
+
+    async def go():
+        a, b = _client(handler, 0.2), _client(handler, 0.2)  # two runs share one pacer
+        try:
+            await asyncio.gather(*(c.chat([{"role": "user", "content": "x"}]) for c in (a, b, a)))
+        finally:
+            await a.close(); await b.close()
+    asyncio.run(go())
+    gaps = [y - x for x, y in zip(times, times[1:])]
+    assert len(times) == 3 and all(g >= 0.18 for g in gaps)
+
+
+def test_rate_limits_do_not_spend_ordinary_attempts(monkeypatch):
+    monkeypatch.setattr(L, "RETRY_CAP", 0.01)
+    n = []
+
+    def handler(req):
+        n.append(1)
+        if len(n) <= 6:  # more rejections than the 5 ordinary attempts
+            return httpx.Response(402, text="Free limit reached. Retry after 40s")
+        return httpx.Response(200, json={"choices": [{"message": {"content": "وصل"}}]})
+
+    async def go():
+        c = _client(handler, 0.001)
+        try:
+            return await c.chat([{"role": "user", "content": "x"}])
+        finally:
+            await c.close()
+    assert asyncio.run(go()) == "وصل" and len(n) == 7
