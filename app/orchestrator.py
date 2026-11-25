@@ -278,6 +278,50 @@ def checks_note(checks: list[dict] | None) -> str:
             "\nاستخدم القيمة الصحيحة، ولا تكرر القيمة الخاطئة إلا لتذكر أنها صُححت، وصرّح بالتصحيح للمستخدم.")
 
 
+_N = r"\d{1,3}(?:[ \u202f\u00a0,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?"
+_OP = r"(?:\s*[+−×*/÷]\s*|\s+-\s+)"  # a bare hyphen (5-12) is a range, not a minus
+_EQ = re.compile(rf"(?<![\d.])((?:{_N})\s*%?(?:{_OP}\(?\s*(?:{_N})\s*%?\s*\)?)+)\s*=\s*\**\s*({_N})(\s*%)?")
+
+
+_QUOTED_WRONG = re.compile(r"خطأ|خاطئ|غير صحيح|الصحيح|تصحيح|صُ?ح[ّ]?ح|بدلًا من|بدلاً من|بدل")
+
+
+def _plain(n: str) -> str:
+    return re.sub(r"[ \u202f\u00a0,]", "", n)
+
+
+def audit_arithmetic(text: str, limit: int = 40) -> list[dict]:
+    """Every 'a + b ... = c' written in an output, recomputed exactly. Models (and verifiers) miss these:
+    on production a plan summed six items to 120,000 when they make 110,000, and the verifier gave it 8/10."""
+    out = []
+    for m in list(_EQ.finditer(text or ""))[:limit]:
+        left, right, pct = m.group(1), m.group(2), m.group(3)
+        expr = re.sub(_N, lambda x: _plain(x.group(0)), left).replace("−", "-")
+        expr = expr.replace("%", "") if pct else re.sub(r"\s*%", "/100", expr)  # 10 % × 120 000 = 12 000
+        got = _exact(expr)
+        stated = _num(_plain(right))
+        if got is None or stated is None:
+            continue
+        near = (text or "")[max(0, m.start() - 80):m.end() + 80]
+        if _QUOTED_WRONG.search(near):  # the output is quoting a wrong figure in order to correct it
+            continue
+        if abs(got - stated) > max(abs(got) * 0.005, 0.01):
+            out.append({"expr": left.strip()[:160], "stated": stated, "correct": round(got, 2)})
+    return out
+
+
+def apply_audit(v: dict, output: str) -> dict:
+    """Arithmetic errors found by the exact audit fail the output whatever the model-verifier said."""
+    errs = audit_arithmetic(output)
+    if not errs:
+        return v
+    issues = [f"خطأ حسابي تحقق منه النظام بالحاسبة: {e['expr']} = {_fmt(e['stated'])} في الناتج، والصحيح {_fmt(e['correct'])}"
+              for e in errs[:4]]
+    return {**v, "pass": False, "score": min(float(v.get("score") or 0), 4.0), "issues": issues + list(v.get("issues") or []),
+            "fix": "صحّح الحسابات المذكورة بأداة calculate وحدّث كل ما يعتمد عليها. " + str(v.get("fix") or ""),
+            "arithmetic": errs}
+
+
 def pick_best(attempts: list[dict]) -> int | None:
     """Index of the attempt to keep when none passed: highest verifier score, then most pages really
     read, then the earliest (retries under pressure tend to fill gaps with invented figures)."""
@@ -565,6 +609,8 @@ class Orchestrator:
             t["output"] = res["output"]
             read = res.get("read") if "fetch_url" in role.tools else None
             v = await verify(self.llm, t, res["output"], self.anchored(), read) if verify_it else {"pass": True, "score": None, "issues": []}
+            if verify_it:
+                v = apply_audit(v, res["output"])
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
                                   "sources": res["sources"], "read": res.get("read") or [], "verdict": v,
                                   "output": res["output"]})
@@ -615,13 +661,13 @@ class Orchestrator:
         check = {"id": "final", "instructions": goal + (
                      "\n\nيجب أن يذكر الجواب التصحيح الحسابي صراحةً." if self.note else ""),
                  "acceptance": "يجيب عن طلب المستخدم كاملًا ومتسقًا مع نتائج الفريق بلا ادعاءات مختلقة"}
-        v = await verify(self.llm, check, answer)
+        v = apply_audit(await verify(self.llm, check, answer), answer)
         await self.run.emit("final_check", v)
         if not v["pass"] and v.get("issues"):
             msgs += [{"role": "assistant", "content": answer},
                      {"role": "user", "content": "المدقق رفض الجواب:\n" + "\n".join(v["issues"]) + f"\n{v.get('fix', '')}\nأعد كتابة الجواب النهائي مصححًا."}]
             answer = await self.llm.chat(msgs, temperature=0.2, max_tokens=4000)
-            v = await verify(self.llm, check, answer)
+            v = apply_audit(await verify(self.llm, check, answer), answer)
             await self.run.emit("final_check", v)
         return {"ok": ok and v["pass"], "partial": v["pass"] or any(t["status"] == "done" for t in tasks),
                 "output": answer, "verdict": v}
