@@ -178,3 +178,30 @@ def test_memory_api_backend_failure_is_a_clear_502(monkeypatch):
 def test_saved_run_never_contains_the_memory_space():
     r = Run(goal="g", llm_public={}, memory_space=SPACE_A)
     assert SPACE_A not in json.dumps(r.full(), ensure_ascii=False)
+
+
+def test_resumed_scenario_run_stays_a_scenario(monkeypatch):
+    """Resuming a test/hypothetical run must not turn what it learns into facts about the user."""
+    import asyncio as _a
+    from fastapi.testclient import TestClient
+    from app import main, store
+    key = {"X-Client-Key": "cli_" + "s" * 32}
+    prior = {"id": "aaaabbbbcccc", "goal": "سيناريو", "owner": main._owner(key["X-Client-Key"]),
+             "status": "interrupted", "scenario": True, "tasks": {}, "events": []}
+
+    async def load(run_id):
+        return dict(prior)
+    monkeypatch.setattr(store, "load", load)
+    monkeypatch.setattr(main, "resolve_config", lambda *a: type("C", (), {"provider": "free", "public": lambda s: {}})())
+    seen = []
+
+    class Orch:
+        def __init__(self, run, llm, persist=None, prior=None):
+            seen.append(run.scenario)
+        async def execute(self):
+            pass
+    monkeypatch.setattr(main, "Orchestrator", Orch)
+    monkeypatch.setattr(main, "LLM", lambda cfg: type("L", (), {"close": lambda s: _a.sleep(0)})())
+    main.RUNS.clear()
+    r = TestClient(main.app).post("/api/runs", json={"goal": "x", "resume_from": "aaaabbbbcccc"}, headers=key)
+    assert r.status_code == 202 and seen == [True]
