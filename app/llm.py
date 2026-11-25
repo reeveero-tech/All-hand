@@ -71,6 +71,22 @@ def resolve_config(provider: str, api_key: str | None, model: str | None,
     raise LLMError(f"مزود غير معروف: {provider}")
 
 
+RETRY_CAP = 75.0  # never wait longer than this for one retry
+
+
+def retry_after(r: httpx.Response, default: float) -> float:
+    """Seconds to wait before retrying a rate-limited call: the Retry-After header, else a
+    'retry after Ns' hint in the body (the free provider sends one), else the default."""
+    for raw in (r.headers.get("retry-after"), ):
+        try:
+            if raw is not None:
+                return min(RETRY_CAP, float(raw) + 1)
+        except ValueError:
+            pass
+    m = re.search(r"retry after (\d+(?:\.\d+)?)\s*s", r.text or "", re.I)
+    return min(RETRY_CAP, float(m.group(1)) + 1) if m else min(RETRY_CAP, default)
+
+
 class LLM:
     """Thin async client with a concurrency gate, retries and usage accounting."""
 
@@ -132,8 +148,9 @@ class LLM:
                     raise LLMError(f"المزود رفض المفتاح ({r.status_code}): {r.text[:200]}")
                 else:
                     last = f"HTTP {r.status_code}: {r.text[:200]}"
-                    if r.status_code in (402, 429):  # rate limited: back off longer
-                        await asyncio.sleep(6 * (attempt + 1))
+                    if r.status_code in (402, 429):  # rate limited: wait as long as the provider asks
+                        await asyncio.sleep(retry_after(r, default=6 * (attempt + 1)))
+                        continue
             await asyncio.sleep(1.5 * (attempt + 1) ** 2)
         self.usage.errors += 1
         raise LLMError(f"فشل استدعاء النموذج بعد عدة محاولات: {last}")
