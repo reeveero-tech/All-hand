@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -39,6 +40,7 @@ class Run:
     awaiting: str | None = None  # "plan" while waiting for that decision (status stays "running")
     plan_decision: dict | None = None  # what the owner decided: {"action", "dropped", "note", "at"}
     scenario: bool = False  # user marked this run as a test/hypothetical: nothing it learns is about the user
+    goal_checks: list | None = None  # arithmetic the user stated in the request, recomputed exactly (None: not checked)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled | interrupted (server shutdown)
@@ -80,7 +82,7 @@ class Run:
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
-                "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "events": self.events}
+                "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "goal_checks": self.goal_checks, "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -166,7 +168,8 @@ def anchor(goal: str) -> str:
 
 
 async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list | None = None) -> dict:
-    head = f"طلب المستخدم الأصلي (ارفض الناتج إن خرج عن موضوعه أو منتجه أو أرقامه):\n{anchor(goal)}\n\n" if goal else ""
+    head = (f"طلب المستخدم الأصلي (ارفض الناتج إن خرج عن موضوعه أو منتجه أو أرقامه، أو أعاد رقمًا ثبت خطؤه في "
+            f"التنبيه الحسابي دون تصحيحه):\n{goal[:GOAL_CHARS + 2000]}\n\n") if goal else ""
     if read is not None:  # what the agent really opened, so claimed-but-unread links and figures can be judged
         head += ("صفحات فتحها الوكيل فعلًا بأداة القراءة: " + ("، ".join(read[:15]) if read else "لا شيء") +
                  "\nأي رقم دقيق (حصة سوقية، حجم سوق، سعر) منسوب لرابط ليس في هذه القائمة ولا في سياق المهمة يُعدّ غير مثبت؛ "
@@ -180,6 +183,76 @@ async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list |
     score = float(v.get("score") or 0)
     return {"pass": bool(v.get("pass")) and score >= 7, "score": score,
             "issues": [str(x) for x in (v.get("issues") or [])][:6], "fix": str(v.get("fix") or "")}
+
+
+NUMCHECK = """استخرج من نص المستخدم العلاقات الحسابية الصريحة التي يذكرها هو نفسه: تحويل عملة بسعر صرف مذكور في النص، مجموع أو فرق، نسبة من مبلغ، سعر في كمية.
+- لا تخترع علاقة ولا سعر صرف غير مذكور. لا تقيّم صحة العلاقة؛ اكتب فقط كيف تُحسب القيمة التي ادعاها المستخدم من بقية أرقامه.
+- expr تعبير بالأرقام فقط (+ - * / وأقواس) يعطي القيمة الصحيحة للمقدار الذي ذكر المستخدم قيمته في stated.
+- انتبه للاتجاه: «X ريال أي Y دولار بسعر صرف R ريال للدولار» تعني expr = "X / R".
+أعد JSON فقط: {"claims": [{"text": "العبارة كما وردت", "expr": "...", "stated": رقم, "unit": "وحدة المقدار"}]}
+مثال: «ميزانية 500 ريال (أي 200 دولار بسعر 3.75)» -> {"claims": [{"text": "500 ريال أي 200 دولار بسعر 3.75", "expr": "500 / 3.75", "stated": 200, "unit": "دولار"}]}
+إن لم توجد علاقة حسابية صريحة فأعد {"claims": []}."""
+
+
+def _num(x) -> float | None:
+    try:
+        return float(str(x).replace(",", "").replace("\u066c", "").replace("\u202f", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _exact(expr: str) -> float | None:
+    """Evaluate a plain arithmetic expression with the calculator's whitelist (no code runs)."""
+    import ast
+    from .tools import _calc_eval
+    e = re.sub(r"(?<=\d),(?=\d{3}(?!\d))", "", str(expr or "")).replace("×", "*").replace("÷", "/")
+    if not e or len(e) > 200 or not re.fullmatch(r"[\d\s.+\-*/()]+", e):
+        return None
+    try:
+        v = _calc_eval(ast.parse(e, mode="eval").body, {})
+    except (ValueError, SyntaxError, TypeError, ZeroDivisionError, OverflowError):
+        return None
+    return float(v) if isinstance(v, (int, float)) else None
+
+
+def grade_claims(claims) -> list[dict]:
+    """The model only transcribes the user's arithmetic; the result is computed exactly, never by the model."""
+    out = []
+    for c in (claims if isinstance(claims, list) else [])[:8]:
+        if not isinstance(c, dict):
+            continue
+        stated, correct = _num(c.get("stated")), _exact(c.get("expr"))
+        if stated is None or correct is None:
+            continue
+        ok = abs(correct - stated) <= max(abs(correct) * 0.01, 0.5)
+        out.append({"text": str(c.get("text") or "")[:200], "expr": str(c.get("expr"))[:200], "stated": stated,
+                    "correct": round(correct, 2), "unit": str(c.get("unit") or "")[:30], "ok": ok})
+    return out
+
+
+async def check_goal_numbers(llm: LLM, goal: str) -> list[dict]:
+    if not re.search(r"[\d\u0660-\u0669]{2,}", goal):
+        return []
+    try:
+        p = await llm.chat_json([{"role": "system", "content": NUMCHECK}, {"role": "user", "content": goal[:GOAL_CHARS]}],
+                                temperature=0.0, max_tokens=600)
+    except (ValueError, LLMError):
+        return []
+    return grade_claims(p.get("claims"))
+
+
+def _fmt(x: float) -> str:
+    return f"{x:,.2f}".rstrip("0").rstrip(".")
+
+
+def checks_note(checks: list[dict] | None) -> str:
+    bad = [c for c in (checks or []) if not c["ok"]]
+    if not bad:
+        return ""
+    lines = [f"- ورد في الطلب «{c['text']}»: القيمة المذكورة {_fmt(c['stated'])} {c['unit']}، والصحيح {c['expr']} = "
+             f"{_fmt(c['correct'])} {c['unit']}." for c in bad]
+    return ("تنبيه حسابي (أعاد النظام حساب أرقام الطلب بالحاسبة الدقيقة): في الطلب خطأ حسابي.\n" + "\n".join(lines) +
+            "\nاستخدم القيمة الصحيحة، ولا تكرر القيمة الخاطئة إلا لتذكر أنها صُححت، وصرّح بالتصحيح للمستخدم.")
 
 
 def pick_best(attempts: list[dict]) -> int | None:
@@ -202,7 +275,11 @@ class Orchestrator:
             await r.emit("run_started", {"goal": r.goal, "llm": r.llm_public, "max_agents": r.max_agents,
                                          "memory": bool(r.memory_space)})
             existing = await self.recall()
-            goal = r.goal + (f"\n\n---\n{r.context}" if r.context else "")
+            if r.goal_checks is None:  # a resumed run keeps the checks it already made
+                r.goal_checks = await check_goal_numbers(self.llm, r.goal)
+                if r.goal_checks:
+                    await r.emit("goal_checked", {"checks": r.goal_checks})
+            goal = r.goal + (f"\n\n---\n{self.note}" if self.note else "") + (f"\n\n---\n{r.context}" if r.context else "")
             if r.memory["recalled"]:
                 goal += "\n\n---\n" + memory.render_context(r.memory["recalled"])
             out = await self.orchestrate(goal, depth=0, prefix="")
@@ -230,6 +307,13 @@ class Orchestrator:
                 r.saved = await self._persist_final()
             await r.emit("run_finished", {"status": r.status, "usage": r.usage, "agents_spawned": r.agents_spawned,
                                           "saved": r.saved})
+
+    @property
+    def note(self) -> str:
+        return checks_note(self.run.goal_checks)
+
+    def anchored(self) -> str:
+        return anchor(self.run.goal) + (f"\n\n{self.note}" if self.note else "")
 
     async def _persist_final(self) -> bool:
         for attempt in range(3):
@@ -443,7 +527,7 @@ class Orchestrator:
                 await r.emit(type_, {"task": t["id"], "agent": _a, **data})
 
             instr = t["instructions"] + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
-            ctx = (f"طلب المستخدم الأصلي (للسياق؛ نفّذ مهمتك أنت فقط والتزم بموضوعه وأرقامه):\n{anchor(r.goal)}"
+            ctx = (f"طلب المستخدم الأصلي (للسياق؛ نفّذ مهمتك أنت فقط والتزم بموضوعه وأرقامه بعد أي تصحيح حسابي مذكور):\n{self.anchored()}"
                    + (f"\n\n{context}" if context else ""))
             try:
                 res = await run_agent(self.llm, role, instr, ctx, emit, r.can_exec)
@@ -453,7 +537,7 @@ class Orchestrator:
                 continue
             t["output"] = res["output"]
             read = res.get("read") if "fetch_url" in role.tools else None
-            v = await verify(self.llm, t, res["output"], r.goal, read) if verify_it else {"pass": True, "score": None, "issues": []}
+            v = await verify(self.llm, t, res["output"], self.anchored(), read) if verify_it else {"pass": True, "score": None, "issues": []}
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
                                   "sources": res["sources"], "read": res.get("read") or [], "verdict": v,
                                   "output": res["output"]})
@@ -484,7 +568,8 @@ class Orchestrator:
         answer = await self.llm.chat(msgs, temperature=0.3, max_tokens=4000)
         if not final:
             return {"ok": ok, "partial": True, "output": answer}
-        check = {"id": "final", "instructions": goal,
+        check = {"id": "final", "instructions": goal + (
+                     "\n\nيجب أن يذكر الجواب التصحيح الحسابي صراحةً." if self.note else ""),
                  "acceptance": "يجيب عن طلب المستخدم كاملًا ومتسقًا مع نتائج الفريق بلا ادعاءات مختلقة"}
         v = await verify(self.llm, check, answer)
         await self.run.emit("final_check", v)

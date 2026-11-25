@@ -190,6 +190,7 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
               scenario=req.scenario or any(bool(d and d.get("scenario")) for d in (prior, prev)))  # tests stay tests
     if prior:  # resume keeps the conversation it belonged to
         run.follow_up_of, run.thread_id, run.context = prior.get("follow_up_of"), prior.get("thread_id"), prior.get("context") or ""
+        run.goal_checks = prior.get("goal_checks")
     elif prev:
         run.follow_up_of = prev["id"]
         run.thread_id = prev.get("thread_id") or prev["id"]

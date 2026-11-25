@@ -18,7 +18,7 @@ def test_agents_and_verifiers_see_the_goal():
             sys = messages[0]["content"]
             if sys.startswith("أنت مدقق"):
                 seen["verifier"].append(messages[-1]["content"])
-            elif not sys.startswith("أنت المنسق"):
+            elif not sys.startswith(("أنت المنسق", "استخرج")):
                 seen["agent"].append(messages[1]["content"])
             return await super().chat(messages, temperature, max_tokens)
 
