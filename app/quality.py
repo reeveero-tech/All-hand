@@ -294,7 +294,11 @@ def render_ledger(items: list[dict], issues: list[dict], max_chars: int = 3000) 
     return "\n".join(parts)
 
 
-_MARKED_REJECTED = re.compile(r"مرفوض|مستبعد|غير معقول|غير موثوق|غير موثق|بلا مصدر|لا توجد لها|لا يوجد لها|لا يُستخدم|لا يستخدم|ثبت خطؤ|استُبعد|rejected", re.I)
+_MARKED_REJECTED = re.compile(r"مرفوض|مستبعد|غير معقول|لا يُستخدم|لا يستخدم|ثبت خطؤ|استُبعد|rejected", re.I)
+
+
+_DISPUTED = re.compile(r"غير موثوق|غير موثق|بلا مصدر|لا توجد لها|لا يوجد لها|لا مصدر", re.I)
+_COMPUTES = re.compile(r"[=×*÷]|المستخدمة? في الحساب|نعتمد|اعتمدنا", re.I)
 
 
 def reuses_rejected(text: str, rejected: list[float], rejected_totals: list[float] = ()) -> list[str]:
@@ -305,6 +309,8 @@ def reuses_rejected(text: str, rejected: list[float], rejected_totals: list[floa
     for raw in (text or "").splitlines():
         line = raw.strip()
         if not line or _MARKED_REJECTED.search(line):
+            continue
+        if _DISPUTED.search(line) and not _COMPUTES.search(line):  # disputes the figure without building on it
             continue
         vals = values_in(line)
         hit = any(_near(x, r) for x in vals for r in rej) or (

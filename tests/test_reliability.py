@@ -428,3 +428,8 @@ def test_critique_of_rejected_figure_is_not_reuse():
     from app import quality
     assert quality.reuses_rejected("الإيرادات السابقة (68 220 000 000 ريال) لا توجد لها أي مصدر موثق.", [68.22e9]) == []
     assert quality.reuses_rejected("حجم الطلب 3.79 مليار كوب (من المستخدم)", [3.79e9])
+
+
+def test_disputed_but_used_is_still_reuse():
+    from app import quality
+    assert quality.reuses_rejected("الإيرادات السنوية (المستخدمة في الحساب) = 68 220 000 000 ريال (من طلب سابق غير موثق)", [68.22e9])
