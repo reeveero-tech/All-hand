@@ -10,6 +10,7 @@ import resource
 import socket
 import sys
 import tempfile
+import time
 from urllib.parse import quote_plus, urlparse, parse_qs, unquote
 
 import httpx
@@ -77,7 +78,7 @@ MAX_REDIRECTS = 5
 MAX_BYTES = 2_000_000
 
 
-async def fetch_url(url: str) -> str:
+async def fetch_url(url: str, max_chars: int = MAX_OUT) -> str:
     """Read a public page as text. Each hop (including redirects) is resolved once, checked, and
     the connection is pinned to the checked address; the body is capped at MAX_BYTES."""
     try:
@@ -117,20 +118,59 @@ async def fetch_url(url: str) -> str:
         else:
             body = f"[محتوى غير نصي: {ctype}]"
         text = _html_to_text(body) if "html" in ctype else body
-        return _clip(f"HTTP {r.status_code} — {url}\n\n{text}")
+        return _clip(f"HTTP {r.status_code} — {url}\n\n{text}", max_chars)
     except Exception as e:  # noqa: BLE001
         return f"خطأ في الجلب: {type(e).__name__}: {str(e)[:200]}"
 
 
+# DuckDuckGo answers a burst of requests from one server with 202 (bot check) and then keeps refusing for
+# minutes, and probing during the block extends it (measured 2026-11-25: 10/10 sequential queries spaced 1-2 s
+# succeeded; about eight back-to-back ones triggered a block lasting more than 5 minutes). Parallel agents
+# produced exactly that burst. So every DuckDuckGo request goes through one gate: spaced, cached, and after a
+# refusal it is not called again until the cooldown passes (other providers answer meanwhile).
+DDG_INTERVAL = float(os.environ.get("DDG_INTERVAL_S", "2.5"))
+DDG_COOLDOWN = float(os.environ.get("DDG_COOLDOWN_S", "600"))
+CACHE_TTL = 3600
+_ddg_gate = {"lock": None, "next": 0.0, "cool_until": 0.0}
+_cache: dict[str, tuple[float, list, str]] = {}
+STATS = {"ddg_requests": 0, "ddg_blocked": 0, "ddg_skipped_cooldown": 0, "cache_hits": 0}
+
+
+class _Blocked(Exception):
+    pass
+
+
+async def _ddg_request(send):
+    if _ddg_gate["lock"] is None:
+        _ddg_gate["lock"] = asyncio.Lock()
+    async with _ddg_gate["lock"]:
+        now = time.monotonic()
+        if now < _ddg_gate["cool_until"]:
+            STATS["ddg_skipped_cooldown"] += 1
+            raise _Blocked()
+        if now < _ddg_gate["next"]:
+            await asyncio.sleep(_ddg_gate["next"] - now)
+        STATS["ddg_requests"] += 1
+        try:
+            r = await send()
+        finally:
+            _ddg_gate["next"] = time.monotonic() + DDG_INTERVAL
+        if r.status_code in (202, 403, 429):
+            STATS["ddg_blocked"] += 1
+            _ddg_gate["cool_until"] = time.monotonic() + DDG_COOLDOWN
+            raise _Blocked()
+        return r
+
+
 async def _ddg(query: str) -> list[dict]:
-    async with httpx.AsyncClient(timeout=8, follow_redirects=True, headers={"User-Agent": UA}) as c:
-        r = await c.get("https://lite.duckduckgo.com/lite/", params={"q": query})
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True, headers={"User-Agent": UA}) as c:
+        r = await _ddg_request(lambda: c.get("https://lite.duckduckgo.com/lite/", params={"q": query}))
     if r.status_code != 200:
         return []
     links = re.findall(r"<a[^>]+href=\"([^\"]+)\"[^>]*class='result-link'[^>]*>(.*?)</a>", r.text, re.S)
     snippets = re.findall(r"<td class='result-snippet'>(.*?)</td>", r.text, re.S)
     out = []
-    for i, (href, title) in enumerate(links[:6]):
+    for i, (href, title) in enumerate(links[:8]):
         href = html.unescape(href)
         if "uddg=" in href:
             href = unquote(parse_qs(urlparse(href).query).get("uddg", [href])[0])
@@ -140,15 +180,15 @@ async def _ddg(query: str) -> list[dict]:
 
 
 async def _ddg_html(query: str) -> list[dict]:
-    """Second DuckDuckGo endpoint: when lite answers 202 (bot check) this one sometimes still works."""
-    async with httpx.AsyncClient(timeout=8, follow_redirects=True, headers={"User-Agent": UA}) as c:
-        r = await c.post("https://html.duckduckgo.com/html/", data={"q": query})
+    """Second DuckDuckGo endpoint, behind the same gate."""
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True, headers={"User-Agent": UA}) as c:
+        r = await _ddg_request(lambda: c.post("https://html.duckduckgo.com/html/", data={"q": query}))
     if r.status_code != 200:
         return []
     links = re.findall(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', r.text, re.S)
     snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', r.text, re.S)
     out = []
-    for i, (href, title) in enumerate(links[:6]):
+    for i, (href, title) in enumerate(links[:8]):
         href = html.unescape(href)
         if "uddg=" in href:
             href = unquote(parse_qs(urlparse(href).query).get("uddg", [href])[0])
@@ -188,36 +228,139 @@ async def _brave(query: str) -> list[dict]:
             for x in r.json().get("web", {}).get("results", [])]
 
 
+AUTO_READ = int(os.environ.get("SEARCH_AUTO_READ", "2"))  # pages opened per search, so results are read, not just listed
+READ_MARK = "[قُرئت: "
+_STOP = set("في من على إلى عن مع the and for of in to a an سعر".split())
+
+
+def _terms(query: str) -> list[str]:
+    return [w for w in re.findall(r"[\w\u0600-\u06FF]{3,}", query.lower()) if w not in _STOP]
+
+
+def excerpt(text: str, query: str, limit: int = 1400) -> str:
+    """The parts of a page worth handing to an agent: lines with figures and the query's words, in page order."""
+    terms = _terms(query)
+    lines = [ln.strip() for ln in re.split(r"\n+|(?<=[.!؟?])\s+", text) if 25 <= len(ln.strip()) <= 400]
+    scored = []
+    for i, ln in enumerate(lines):
+        low = ln.lower()
+        score = sum(1 for t in terms if t in low) * 2 + (2 if re.search(r"\d", ln) else 0)
+        if score >= 3:
+            scored.append((score, i, ln))
+    keep, size = [], 0
+    for score, i, ln in sorted(scored, key=lambda x: (-x[0], x[1])):
+        if size + len(ln) > limit:
+            continue
+        keep.append((i, ln))
+        size += len(ln)
+    return "\n".join(ln for _, ln in sorted(keep))
+
+
+async def _auto_read(results: list[dict], query: str) -> list[tuple[str, str]]:
+    cands = [x["url"] for x in results if x.get("url", "").startswith("http") and "wikipedia.org" not in x["url"]][:AUTO_READ + 2]
+
+    async def one(u):
+        try:
+            return u, await asyncio.wait_for(fetch_url(u, 80000), timeout=20)
+        except Exception:  # noqa: BLE001
+            return u, ""
+    got = await asyncio.gather(*[one(u) for u in cands])
+    out = []
+    for u, page in got:
+        if len(out) >= AUTO_READ or not page.startswith("HTTP 2"):
+            continue
+        ex = excerpt(page.split("\n", 1)[-1], query)
+        if len(ex) >= 40:
+            out.append((u, ex))
+    return out
+
+
+def search_meta(result: str) -> dict:
+    """What a web_search returned, for the run's research measurements."""
+    m = re.match(r"المصدر: ([^\n]+)", result or "")
+    return {"provider": m.group(1).strip() if m else None,
+            "results": len(re.findall(r"(?m)^\d+\. ", result or "")) if m else 0,
+            "read": re.findall(re.escape(READ_MARK) + r"([^\]\s]+)\]", result or "")}
+
+
 async def web_search(query: str) -> str:
-    """Keyed providers first (TAVILY_API_KEY, BRAVE_API_KEY), then DuckDuckGo lite, then Wikipedia."""
+    """Keyed providers first (TAVILY_API_KEY, BRAVE_API_KEY), then DuckDuckGo (gated), then Wikipedia.
+    The top results are opened and their relevant lines appended, marked as read."""
+    query = re.sub(r"\s+", " ", str(query or "")).strip()[:200]
     if not query:
         return "خطأ: استعلام فارغ."
-    results, source = [], ""
-    chain = []
-    if os.environ.get("TAVILY_API_KEY"):
-        chain.append((_tavily, "Tavily"))
-    if os.environ.get("BRAVE_API_KEY"):
-        chain.append((_brave, "Brave"))
-    chain += [(_ddg, "DuckDuckGo"), (_ddg_html, "DuckDuckGo")]
-    for fn, name in chain:
-        try:
-            results = await asyncio.wait_for(fn(query), timeout=20)
-        except Exception:  # noqa: BLE001
-            results = []
+    key = query.lower()
+    hit = _cache.get(key)
+    if hit and time.monotonic() - hit[0] < CACHE_TTL:
+        STATS["cache_hits"] += 1
+        results, source = hit[1], hit[2]
+    else:
+        results, source = [], ""
+        chain = []
+        if os.environ.get("TAVILY_API_KEY"):
+            chain.append((_tavily, "Tavily"))
+        if os.environ.get("BRAVE_API_KEY"):
+            chain.append((_brave, "Brave"))
+        chain += [(_ddg, "DuckDuckGo"), (_ddg_html, "DuckDuckGo")]
+        for fn, name in chain:
+            try:
+                results = await asyncio.wait_for(fn(query), timeout=45)
+            except _Blocked:
+                results = []
+                if name == "DuckDuckGo":
+                    break  # the gate is closed for both endpoints
+            except Exception:  # noqa: BLE001
+                results = []
+            if results:
+                source = name
+                break
+        if not results:
+            lang = "ar" if re.search(r"[\u0600-\u06FF]", query) else "en"
+            try:
+                results, source = await _wikipedia(query, lang), f"Wikipedia ({lang})"
+                if not results and len(_terms(query)) > 2:  # its search needs every word; retry with the main ones
+                    results = await _wikipedia(" ".join(_terms(query)[:2]), lang)
+            except Exception as e:  # noqa: BLE001
+                return f"خطأ في البحث: {e}"
+            if results:
+                source += " — بحث موسوعي احتياطي؛ النتائج قد لا تجيب عن السؤال"
         if results:
-            source = name
-            break
-    if not results:
-        lang = "ar" if re.search(r"[\u0600-\u06FF]", query) else "en"
-        try:
-            results, source = await _wikipedia(query, lang), f"Wikipedia ({lang})"
-        except Exception as e:  # noqa: BLE001
-            return f"خطأ في البحث: {e}"
+            _cache[key] = (time.monotonic(), results, source)
     if not results:
         keyed = os.environ.get("TAVILY_API_KEY") or os.environ.get("BRAVE_API_KEY")
-        return "لا نتائج." + ("" if keyed else " (البحث المجاني بلا مفتاح يُحجب كثيرًا من الخوادم؛ جرّب استعلامًا أقصر أو افتح رابطًا معروفًا بـ fetch_url إن كان متاحًا لك.)")
+        return "لا نتائج." + ("" if keyed else " (محرك البحث المجاني يرفض الطلبات مؤقتًا؛ لا تكرر البحث نفسه. افتح رابطًا معروفًا بـ fetch_url إن كان متاحًا لك، أو استخدم world_bank للبيانات السكانية والاقتصادية.)")
     lines = [f"المصدر: {source}"] + [f"{i}. {r['title']}\n   {r['url']}\n   {r['snippet']}" for i, r in enumerate(results, 1)]
-    return _clip("\n".join(lines))
+    read = await _auto_read(results, query) if AUTO_READ else []
+    if read:
+        lines.append("\nمقتطفات من صفحات فتحها النظام فعلًا (استشهد بالرابط عند استخدام رقم منها):")
+        lines += [f"{READ_MARK}{u}]\n{ex}" for u, ex in read]
+    return _clip("\n".join(lines), 8000)
+
+
+WB_URL = "https://api.worldbank.org/v2/country/{c}/indicator/{i}?format=json&mrv=3"
+
+
+async def world_bank(spec: str) -> str:
+    """Official World Bank indicator values (keyless, reliable): '<ISO3 country> <indicator code>'."""
+    parts = re.findall(r"[A-Za-z0-9._]+", str(spec or ""))
+    if len(parts) < 2 or not re.fullmatch(r"[A-Za-z]{2,3}", parts[0]):
+        return "خطأ: المدخل «رمز الدولة ورمز المؤشر»، مثل: SAU SP.POP.TOTL"
+    country, ind = parts[0].upper(), parts[1].upper()
+    url = WB_URL.format(c=country, i=ind)
+    try:
+        async with httpx.AsyncClient(timeout=15, headers={"User-Agent": UA}) as c:
+            r = await c.get(url)
+        data = r.json()
+    except Exception as e:  # noqa: BLE001
+        return f"خطأ في الجلب: {type(e).__name__}"
+    rows = data[1] if isinstance(data, list) and len(data) > 1 and isinstance(data[1], list) else []
+    vals = [x for x in rows if x.get("value") is not None]
+    if not vals:
+        return f"لا بيانات للمؤشر {ind} في {country}."
+    name = vals[0]["indicator"]["value"]
+    page = f"https://data.worldbank.org/indicator/{ind}?locations={vals[0]['country']['id']}"
+    body = "\n".join(f"- {x['date']}: {x['value']:,}" for x in vals)
+    return f"{READ_MARK}{page}]\nالبنك الدولي — {name} ({vals[0]['country']['value']}):\n{body}\nالمصدر: {page}"
 
 
 def _limits():  # runs in the child before exec
@@ -320,6 +463,8 @@ async def calculate(program: str) -> str:
 
 TOOLS = {
     "web_search": {"fn": web_search, "arg": "query", "desc": "بحث في الويب. المدخل: {\"query\": \"...\"}"},
+    "world_bank": {"fn": world_bank, "arg": "query",
+                   "desc": "بيانات رسمية من البنك الدولي (سكان، دخل، تضخم...). المدخل: {\"query\": \"SAU SP.POP.TOTL\"}. رموز مفيدة: SP.POP.TOTL السكان، SP.URB.TOTL سكان المدن، NY.GDP.PCAP.CD نصيب الفرد من الناتج بالدولار، FP.CPI.TOTL.ZG التضخم، SP.POP.1564.TO السكان 15-64"},
     "fetch_url": {"fn": fetch_url, "arg": "url", "desc": "قراءة صفحة ويب كنص. المدخل: {\"url\": \"https://...\"}"},
     "calculate": {"fn": calculate, "arg": "program",
                   "desc": "حاسبة دقيقة (ليست كودًا): أسطر بصيغة name = expression أو تعبيرات، بأرقام و+ - * / // % ** وround/min/max/abs/sum. مثال: {\"program\": \"units = 5000\\nprice = 9.5\\nrevenue = units * price\"}"},
@@ -335,4 +480,6 @@ async def call_tool(name: str, args: dict, allowed: set[str]) -> str:
     val = args.get(spec["arg"]) if isinstance(args, dict) else args
     if val is None and isinstance(args, dict) and len(args) == 1:
         val = next(iter(args.values()))
+    if val is None and isinstance(args, dict) and name == "world_bank":
+        val = " ".join(str(args.get(k) or "") for k in ("country", "indicator"))
     return await spec["fn"](str(val or ""))

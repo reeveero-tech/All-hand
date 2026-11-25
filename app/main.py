@@ -143,6 +143,16 @@ def follow_up_context(prev: dict) -> str:
             f"الطلب السابق: {prev.get('goal')}\n\nالنتيجة السابقة:\n{answer or '(لا توجد نتيجة)'}")
 
 
+def known_rejected(prev: dict) -> list[float]:
+    """Figures the previous run's own final check proved wrong (arithmetic or plausibility)."""
+    v = prev.get("verdict") or {}
+    out = [float(e["stated"]) for e in v.get("arithmetic") or [] if isinstance(e.get("stated"), (int, float))]
+    for i in v.get("plausibility") or []:
+        if i.get("severity") == "error":
+            out += [float(x) for x in i.get("values") or [] if isinstance(x, (int, float))]
+    return out[:30]
+
+
 async def _resumable(run_id: str, owner: str) -> dict:
     """Stored data of the caller's own stopped run."""
     data = await _own_run(run_id, owner)
@@ -193,10 +203,12 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
     if prior:  # resume keeps the conversation it belonged to
         run.follow_up_of, run.thread_id, run.context = prior.get("follow_up_of"), prior.get("thread_id"), prior.get("context") or ""
         run.goal_checks = prior.get("goal_checks")
+        run.prior_check = prior.get("prior_check")
     elif prev:
         run.follow_up_of = prev["id"]
         run.thread_id = prev.get("thread_id") or prev["id"]
         run.context = follow_up_context(prev)
+        run.prior_check = {"from": prev["id"], "known_rejected": known_rejected(prev)}
     RUNS[run.id] = run
     while len(RUNS) > MAX_LIVE:
         old_id, old = next(iter(RUNS.items()))

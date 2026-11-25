@@ -27,4 +27,4 @@ def test_empty_search_explains(monkeypatch):
         return []
     for f in ("_ddg", "_ddg_html", "_wikipedia"):
         monkeypatch.setattr(tools, f, none)
-    assert "يُحجب" in asyncio.run(tools.web_search("قهوة"))
+    assert "يرفض" in asyncio.run(tools.web_search("قهوة"))

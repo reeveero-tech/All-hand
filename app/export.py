@@ -89,6 +89,27 @@ def to_markdown(run: dict) -> str:
                        f"{TASK.get(t.get('status'), t.get('status'))} | {str(s) + '/10' if s is not None else '-'} | "
                        f"{len(t.get('attempts') or [])} |")
         out.append("")
+    pc = run.get("prior_check") or {}
+    if pc.get("ledger") is not None:
+        from .quality import TAGS
+        out += ["## ما ورثته هذه المتابعة من النتيجة السابقة", ""]
+        for i in pc.get("issues") or []:
+            out.append(f"- {'مرفوض' if i.get('severity') == 'error' else 'تنبيه'}: {_cell(i.get('reason'))}")
+        counts: dict = {}
+        for it in pc.get("ledger") or []:
+            counts[it["tag"]] = counts.get(it["tag"], 0) + 1
+        out += [f"- {TAGS.get(k, k)}: {n} سطرًا" for k, n in counts.items()] + [""]
+    plaus = v.get("plausibility") or []
+    if plaus:
+        out += ["## فحص معقولية الأرقام في الجواب النهائي", ""]
+        out += [f"- {'خطأ' if i.get('severity') == 'error' else 'تنبيه'}: {_cell(i.get('reason'))}" for i in plaus] + [""]
+    rs = run.get("research") or {}
+    if rs:
+        out += ["## قياس البحث في هذا التشغيل", "",
+                f"- عمليات البحث: {rs.get('search_calls', 0)}، أعادت نتائج: {rs.get('search_ok', 0)}، مجموع النتائج: {rs.get('results', 0)}",
+                f"- المحركات: " + ("، ".join(f"{k} ({n})" for k, n in (rs.get("providers") or {}).items()) or "-"),
+                f"- صفحات قُرئت فعلًا: {rs.get('pages_read', 0)}؛ منها مذكور في الجواب: {rs.get('sources_in_answer', 0)}",
+                f"- أسطر رقمية في الجواب: {rs.get('numeric_lines', 0)}، بلا وسم مصدر أو تقدير: {rs.get('numeric_lines_untagged', 0)}", ""]
     read, cited = sources(run)
     out += ["## المصادر", ""]
     if read:
