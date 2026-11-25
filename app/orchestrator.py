@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 from . import memory, quality
 from .agents import ROLES, run_agent
-from .llm import LLM, LLMError
+from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip
 
 MAX_DEPTH = 2
 MAX_TASKS_PER_PLAN = 10
@@ -200,7 +200,7 @@ def anchor(goal: str) -> str:
 
 async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list | None = None) -> dict:
     head = (f"طلب المستخدم الأصلي (ارفض الناتج إن خرج عن موضوعه أو منتجه أو أرقامه، أو أعاد رقمًا ثبت خطؤه في "
-            f"التنبيه الحسابي دون تصحيحه):\n{goal[:GOAL_CHARS + FOLLOW_UP_AGENT_CHARS + 2000]}\n\n"
+            f"التنبيه الحسابي دون تصحيحه):\n{_clip(goal, 4500)}\n\n"
             "تنبيه: هذا ناتج مهمة فرعية واحدة من خطة فيها مهام أخرى. قيّمه مقابل «المهمة» و«معيار القبول» أدناه فقط، "
             "ولا تعدّ غياب أجزاء الطلب التي لا تطلبها هذه المهمة نقصًا.\n\n") if goal else ""
     if read is not None:  # what the agent really opened, so claimed-but-unread links and figures can be judged
@@ -209,7 +209,9 @@ async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list |
                  "وإن قُدّم كحقيقة فهو اختلاق جوهري.\n\n")
     try:
         v = await llm.chat_json([{"role": "system", "content": VERIFIER}, {"role": "user", "content":
-                                 head + f"المهمة: {task['instructions']}\nمعيار القبول: {task['acceptance']}\n\nالناتج:\n{output[:12000]}"}],
+                                 head + f"المهمة: {task['instructions'][:3000]}\nمعيار القبول: {task['acceptance'][:800]}\n\nالناتج:\n"
+                                 + _clip(output, max(3000, min(12000, FREE_PROMPT_CHARS - len(VERIFIER) - len(head)
+                                                               - min(len(task['instructions']), 3000) - 1200)))}],
                                 temperature=0.0, max_tokens=800)
     except (ValueError, LLMError) as e:
         return {"pass": False, "score": 0, "issues": [f"تعذر التحقق: {e}"], "fix": ""}
@@ -843,8 +845,14 @@ class Orchestrator:
             return {"ok": False, "output": answer, "verdict": {"pass": False, "score": None, "draft": True,
                                                                "issues": ["لم تجتز أي مهمة التحقق؛ هذا الجواب مسودة غير متحقق منها."]}}
         await self.run.emit("synthesizing", {"final": final})
+        if getattr(getattr(self.llm, "cfg", None), "provider", "") == "free" and parts:  # every result keeps a fair share instead of losing the middle
+            g = _clip(goal, 5000)
+            share = max(800, (FREE_PROMPT_CHARS - len(SYNTH) - len(g) - 600) // len(parts))
+            g_parts = [_clip(p_, share) for p_ in parts]
+        else:
+            g, g_parts = goal, parts
         msgs = [{"role": "system", "content": SYNTH},
-                {"role": "user", "content": f"طلب المستخدم:\n{goal}\n\nنتائج الفريق:\n\n" + "\n\n".join(parts)}]
+                {"role": "user", "content": f"طلب المستخدم:\n{g}\n\nنتائج الفريق:\n\n" + "\n\n".join(g_parts)}]
         answer = await self.llm.chat(msgs, temperature=0.3, max_tokens=4000)
         if not final:
             return {"ok": ok, "partial": True, "output": answer}
