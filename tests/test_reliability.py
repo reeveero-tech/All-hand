@@ -494,3 +494,19 @@ def test_planner_salvages_tasks_from_cut_reply():
             return extract_json(cut)  # the first complete object is a task, as on production
     out = asyncio.run(plan(L(), "هدف", 0))
     assert [t["id"] for t in out["tasks"]] == ["t1", "t2"] and out["tasks"][1]["depends_on"] == ["t1"]
+
+
+def test_news_search_used_when_duckduckgo_blocked(monkeypatch):
+    import asyncio
+    from app import tools
+
+    async def blocked(q):
+        raise tools._Blocked()
+
+    async def news(q):
+        return [{"title": "Cold brew demand in Saudi cafes", "url": "https://www.example-news.com/a", "snippet": "Example — Mon"}]
+    monkeypatch.setattr(tools, "_ddg", blocked)
+    monkeypatch.setattr(tools, "_gnews", news)
+    out = asyncio.run(tools.web_search("cold brew saudi"))
+    assert out.startswith("المصدر: Google News") and "https://www.example-news.com/a" in out
+    assert tools.search_meta(out)["provider"] == "Google News"
