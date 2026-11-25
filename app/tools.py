@@ -236,9 +236,11 @@ async def _gnews(query: str) -> list[dict]:
     """Google News RSS (keyless): recent articles, useful for markets, launches and competitors."""
     ar = bool(re.search(r"[\u0600-\u06FF]", query))
     loc = "hl=ar&gl=SA&ceid=SA:ar" if ar else "hl=en-US&gl=US&ceid=US:en"
-    async with httpx.AsyncClient(timeout=15, headers={"User-Agent": UA}, follow_redirects=True) as c:
+    async with httpx.AsyncClient(timeout=15, headers={"User-Agent": UA}, follow_redirects=True,
+                                 cookies={"CONSENT": "YES+cb", "SOCS": "CAI"}) as c:  # EU IPs get a consent page otherwise
         r = await c.get(f"https://news.google.com/rss/search?q={quote_plus(query)}&{loc}")
-        if r.status_code != 200:
+        if r.status_code != 200 or "<item>" not in r.text:
+            STATS["gnews_last_error"] = f"rss {r.status_code} {str(r.url)[:60]}"
             return []
         items = re.findall(r"<item>(.*?)</item>", r.text, re.S)[:GNEWS_DECODE]
 
@@ -246,6 +248,9 @@ async def _gnews(query: str) -> list[dict]:
             m = re.search(rf"<{name}[^>]*>(.*?)</{name}>", it, re.S)
             return _html_to_text(m.group(1)) if m else ""
         urls = await asyncio.gather(*[_gnews_decode(c, tag(it, "link")) for it in items], return_exceptions=True)
+    bad = [u for u in urls if not isinstance(u, str)]
+    if bad and len(bad) == len(urls):
+        STATS["gnews_last_error"] = f"decode: {type(bad[0]).__name__ if isinstance(bad[0], Exception) else 'no url'}"
     out = []
     for it, u in zip(items, urls):
         if isinstance(u, str):
@@ -364,10 +369,12 @@ async def web_search(query: str) -> str:
             try:
                 results = await asyncio.wait_for(_gnews(query), timeout=45)
                 STATS["gnews_requests"] += 1
-            except Exception:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001
+                STATS["gnews_last_error"] = type(e).__name__
                 results = []
             if results:
                 source = "Google News"
+                STATS["gnews_ok"] = STATS.get("gnews_ok", 0) + 1
         if not results:
             lang = "ar" if re.search(r"[\u0600-\u06FF]", query) else "en"
             try:

@@ -19,7 +19,7 @@ from fastapi.responses import Response, FileResponse, JSONResponse, StreamingRes
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import export, memory, store
+from . import export, memory, store, tools
 from .agents import ROLES
 from .llm import LLM, LLMError, resolve_config
 from .orchestrator import DEFAULT_MAX_AGENTS, Orchestrator, Run
@@ -172,7 +172,8 @@ def _running() -> int:
 @app.get("/health")
 async def health():
     return {"status": "ok", "uptime_s": round(time.time() - STARTED), "runs_live": _running(),
-            "history": "supabase" if store.enabled() else "memory"}
+            "history": "supabase" if store.enabled() else "memory",
+            "search": {k: v for k, v in tools.STATS.items()}}  # counters and the last provider error (no secrets)
 
 
 @app.get("/api/roles")
