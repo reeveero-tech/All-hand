@@ -463,8 +463,10 @@ class Orchestrator:
             goal = r.goal + (f"\n\n---\n{self.note}" if self.note else "") + (f"\n\n---\n{self.prior_note}" if self.prior_note else "") \
                 + (f"\n\n---\n{r.context}" if r.context else "")
             rejected = (r.prior_check or {}).get("rejected") or []
-            if rejected and r.memory["recalled"]:  # a remembered figure proven wrong is not handed back as a finding
-                keep = [i for i in r.memory["recalled"] if quality.classify_line(i.get("content", ""), [], rejected) != "rejected"]
+            totals = (r.prior_check or {}).get("rejected_totals") or []
+            if (rejected or totals) and r.memory["recalled"]:  # a remembered figure proven wrong is not handed back as a finding
+                keep = [i for i in r.memory["recalled"]
+                        if quality.classify_line(i.get("content", ""), [], rejected, totals) != "rejected"]
                 dropped = [i for i in r.memory["recalled"] if i not in keep]
                 if dropped:
                     r.memory["recalled"], r.memory["excluded"] = keep, [{"content": i["content"][:160]} for i in dropped]
@@ -531,14 +533,16 @@ class Orchestrator:
         rejected = [float(x) for x in pc.get("known_rejected") or []]
         rejected += [x for i in p["issues"] if i["severity"] == "error" for x in i.get("values") or []]
         user_text = r.goal + "\n" + r.context.split("النتيجة السابقة:", 1)[0]
-        pc.update(issues=p["issues"], figures=p["figures"], rejected=rejected,
-                  ledger=quality.prior_ledger(answer, user_text, rejected))
+        answer_totals = [e["stated"] for e in audit_arithmetic(answer) + audit_tables(answer)]  # re-audited: older runs had no table check
+        totals = [float(x) for x in pc.get("known_rejected_totals") or []] + answer_totals
+        pc.update(issues=p["issues"], figures=p["figures"], rejected=rejected, rejected_totals=totals,
+                  ledger=quality.prior_ledger(answer, user_text, rejected, rejected_totals=totals))
         r.prior_check = pc
         counts: dict = {}
         for it in pc["ledger"]:
             counts[it["tag"]] = counts.get(it["tag"], 0) + 1
         await r.emit("prior_checked", {"counts": counts, "issues": [i["reason"] for i in p["issues"]][:6],
-                                       "rejected": rejected[:10]})
+                                       "rejected": rejected[:10], "rejected_totals": totals[:10]})
 
     def anchored(self) -> str:
         """The request as every agent and per-task verifier sees it: the user's words, any arithmetic correction,

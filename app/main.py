@@ -143,14 +143,16 @@ def follow_up_context(prev: dict) -> str:
             f"الطلب السابق: {prev.get('goal')}\n\nالنتيجة السابقة:\n{answer or '(لا توجد نتيجة)'}")
 
 
-def known_rejected(prev: dict) -> list[float]:
-    """Figures the previous run's own final check proved wrong (arithmetic or plausibility)."""
+def known_rejected(prev: dict) -> dict:
+    """Figures the previous run's own final check proved wrong: implausible values anywhere they appear,
+    wrong totals and equation results where they are stated as such."""
     v = prev.get("verdict") or {}
-    out = [float(e["stated"]) for e in v.get("arithmetic") or [] if isinstance(e.get("stated"), (int, float))]
+    totals = [float(e["stated"]) for e in v.get("arithmetic") or [] if isinstance(e.get("stated"), (int, float))]
+    values = []
     for i in v.get("plausibility") or []:
         if i.get("severity") == "error":
-            out += [float(x) for x in i.get("values") or [] if isinstance(x, (int, float))]
-    return out[:30]
+            values += [float(x) for x in i.get("values") or [] if isinstance(x, (int, float))]
+    return {"values": values[:30], "totals": totals[:30]}
 
 
 async def _resumable(run_id: str, owner: str) -> dict:
@@ -208,7 +210,8 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
         run.follow_up_of = prev["id"]
         run.thread_id = prev.get("thread_id") or prev["id"]
         run.context = follow_up_context(prev)
-        run.prior_check = {"from": prev["id"], "known_rejected": known_rejected(prev)}
+        kr = known_rejected(prev)
+        run.prior_check = {"from": prev["id"], "known_rejected": kr["values"], "known_rejected_totals": kr["totals"]}
     RUNS[run.id] = run
     while len(RUNS) > MAX_LIVE:
         old_id, old = next(iter(RUNS.items()))

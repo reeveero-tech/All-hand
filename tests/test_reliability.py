@@ -279,7 +279,41 @@ def test_known_rejected_comes_from_the_previous_final_check():
     from app.main import known_rejected
     prev = {"verdict": {"arithmetic": [{"expr": "a", "stated": 112800, "correct": 106032}],
                         "plausibility": [{"severity": "error", "values": [604000]}, {"severity": "warning", "values": [7]}]}}
-    assert known_rejected(prev) == [112800.0, 604000.0]
+    assert known_rejected(prev) == {"values": [604000.0], "totals": [112800.0]}
+
+
+def test_wrong_total_rejected_only_where_stated_as_total():
+    text = "| توزيع | 20,000 |\n**المجموع**: 20,000 ريال\nإيجار 20,000 ريال"
+    tags = [it["tag"] for it in quality.prior_ledger(text, "", [], rejected_totals=[20000])]
+    assert tags == ["uncertain", "rejected", "uncertain"]
+
+
+def test_follow_up_reaudits_previous_tables_and_drops_wrong_memory():
+    llm = FollowLLM()
+    run = Run(goal="أعد الخطة بميزانية 120 ألف ريال", llm_public={})
+    prev = "| بند | ريال |\n|---|---|\n| أ | 50,000 |\n| ب | 62,800 |\n\n**المجموع**: 120,000 ريال"
+    run.context = "سياق المحادثة السابقة:\nالطلب السابق: خطة\n\nالنتيجة السابقة:\n" + prev
+    run.prior_check = {"from": "abc", "known_rejected": [], "known_rejected_totals": [112800.0]}
+    run.memory_space = "s"
+    run.memory["recalled"] = []
+
+    async def go():
+        o = Orchestrator(run, llm)
+
+        async def recall():
+            run.memory["recalled"] = [{"kind": "fact", "nature": "task_result", "content": "مجموع الميزانية 112,800 ريال"},
+                                      {"kind": "fact", "nature": "user_stated", "content": "المنتج قهوة باردة"}]
+            return []
+        o.recall = recall
+
+        async def remember(existing):
+            pass
+        o.remember = remember
+        await o.execute()
+    asyncio.run(go())
+    assert 120000 in run.prior_check["rejected_totals"]  # 50,000 + 62,800 = 112,800, not 120,000
+    assert [i["content"] for i in run.memory["recalled"]] == ["المنتج قهوة باردة"]
+    assert any(e["type"] == "memory_excluded" for e in run.events)
 
 
 def test_export_shows_research_measurements_and_inheritance():

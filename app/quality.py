@@ -157,13 +157,18 @@ async def check_plausibility(llm: LLM, text: str) -> dict:
         try:
             judgment = await llm.chat_json([{"role": "system", "content": DEMAND_JUDGE}, {"role": "user", "content":
                 f"المنتج/الفئة: {product or '(كما في النص)'}\nالبلد: {fig.get('country_iso3') or '-'}\n"
-                f"الوحدة: {fig.get('market_unit') or 'وحدة'}\n\nمقتطف من النص لتحديد الفئة:\n{text[:1500]}"}], temperature=0.0, max_tokens=300)
+                f"الوحدة: {fig.get('market_unit') or 'وحدة'}\n\nعنوان النص (لتحديد الفئة فقط):\n{_no_digits(text)[:300]}"}],
+                temperature=0.0, max_tokens=300)  # no figures from the text: the judge must not anchor on the estimate it judges
         except (ValueError, LLMError):
             judgment = None
     issues = check_figures(fig, pop, pop_src, judgment)
     return {"figures": {k: fig.get(k) for k in (*FIELDS, "product", "market_unit", "market_basis", "country_iso3", "currency")},
             "demand_judgment": judgment,
             "issues": issues, "errors": sum(1 for i in issues if i["severity"] == "error")}
+
+
+def _no_digits(text: str) -> str:
+    return re.sub(r"[\d\u0660-\u0669][\d\u0660-\u0669,.\s%]*", "…", text or "")
 
 
 async def _wb_population(iso3: str) -> tuple[float | None, str | None]:
@@ -217,10 +222,15 @@ def _near(a: float, b: float) -> bool:
     return abs(a - b) <= max(abs(b) * 0.01, 0.5)
 
 
-def classify_line(line: str, user_values: list[float], rejected: list[float]) -> str:
+_TOTAL_LINE = re.compile(r"إجمالي|الإجمالي|المجموع|مجموع|total|=", re.I)
+
+
+def classify_line(line: str, user_values: list[float], rejected: list[float], rejected_totals: list[float] = ()) -> str:
     vals = values_in(line)
     if any(_near(x, r) for x in vals for r in rejected):
         return "rejected"
+    if rejected_totals and _TOTAL_LINE.search(line) and any(_near(x, r) for x in vals for r in rejected_totals):
+        return "rejected"  # a wrong total is wrong where it is stated as a total, not in every row that shares the figure
     if re.search(r"https?://|المصدر:|\(مصدر", line):
         return "sourced"
     if re.search(r"افتراض|نفترض|بافتراض|assum", line, re.I):
@@ -234,7 +244,8 @@ def classify_line(line: str, user_values: list[float], rejected: list[float]) ->
     return "uncertain"
 
 
-def prior_ledger(answer: str, user_text: str, rejected: list[float], limit: int = 40) -> list[dict]:
+def prior_ledger(answer: str, user_text: str, rejected: list[float], limit: int = 40,
+                 rejected_totals: list[float] = ()) -> list[dict]:
     """Every line of the previous answer that carries a figure, with what it may be used as."""
     user_values = values_in(user_text or "")
     out = []
@@ -242,7 +253,7 @@ def prior_ledger(answer: str, user_text: str, rejected: list[float], limit: int 
         line = raw.strip().strip("|").strip()
         if not line or not any(x >= 10 for x in values_in(line)):
             continue
-        out.append({"line": re.sub(r"\s*\|\s*", " | ", line)[:220], "tag": classify_line(line, user_values, rejected)})
+        out.append({"line": re.sub(r"\s*\|\s*", " | ", line)[:220], "tag": classify_line(line, user_values, rejected, rejected_totals)})
         if len(out) >= limit:
             break
     return out
