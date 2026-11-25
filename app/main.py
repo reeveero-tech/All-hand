@@ -71,6 +71,7 @@ class RunRequest(BaseModel):
     access_code: str | None = None
     max_agents: int | None = Field(default=None, ge=1, le=500)
     memory_space: str | None = None  # private random id kept in the browser; None = no memory
+    follow_up_of: str | None = None  # id of one of your finished runs: continue that conversation
     resume_from: str | None = None  # id of one of your stopped runs: reuse its plan and verified outputs
     scenario: bool = False  # test / hypothetical run: memory keeps it, but never as facts about the user
 
@@ -103,22 +104,41 @@ def _live(run_id: str, owner: str) -> Run:
 
 
 RESUMABLE = {"interrupted", "failed", "partial", "cancelled"}
+CONTEXT_CHARS = 8000  # how much of the previous answer a follow-up carries
+
+
+async def _own_run(run_id: str, owner: str) -> dict:
+    """Data of one of the caller's runs, live or stored. Same 404 for missing and foreign runs."""
+    if run_id in RUNS:
+        return _live(run_id, owner).full()
+    if not _RUN_ID.fullmatch(run_id):
+        raise HTTPException(404, "غير موجود")
+    data = await store.load(run_id)
+    if not data or not _owns(data.get("owner"), owner):
+        raise HTTPException(404, "غير موجود")
+    return {**data, "status": store.effective_status(data, live=False)}
+
+
+def follow_up_context(prev: dict) -> str:
+    """What a follow-up needs from the previous turn: the request, its status, and its answer
+    (or, if it has no answer, the outputs of the subtasks that passed verification)."""
+    answer = (prev.get("result") or "").strip()
+    if not answer:
+        answer = "\n\n".join(f"### {t.get('title')}\n{t.get('output')}" for t in (prev.get("tasks") or {}).values()
+                              if t.get("status") == "done" and t.get("output"))
+    note = {"done": "", "partial": " (اكتملت جزئيًا)", "failed": " (فشلت)", "cancelled": " (أوقفها المستخدم)",
+            "interrupted": " (انقطعت قبل اكتمالها)"}.get(prev.get("status"), "")
+    if len(answer) > CONTEXT_CHARS:
+        answer = answer[:CONTEXT_CHARS] + "\n\n[... اختُصرت بقية النتيجة السابقة]"
+    return (f"سياق المحادثة السابقة (هذا طلب متابعة للمهمة {prev.get('id')}{note}):\n"
+            f"الطلب السابق: {prev.get('goal')}\n\nالنتيجة السابقة:\n{answer or '(لا توجد نتيجة)'}")
 
 
 async def _resumable(run_id: str, owner: str) -> dict:
-    """Stored data of the caller's own stopped run. Same 404 for missing and foreign runs."""
-    if run_id in RUNS:
-        live = _live(run_id, owner)
-        if live.status == "running":
-            raise HTTPException(409, "هذه المهمة ما زالت تعمل.")
-        data = live.full()
-    else:
-        if not _RUN_ID.fullmatch(run_id):
-            raise HTTPException(404, "غير موجود")
-        data = await store.load(run_id)
-        if not data or not _owns(data.get("owner"), owner):
-            raise HTTPException(404, "غير موجود")
-        data = {**data, "status": store.effective_status(data, live=False)}
+    """Stored data of the caller's own stopped run."""
+    data = await _own_run(run_id, owner)
+    if data.get("status") == "running":
+        raise HTTPException(409, "هذه المهمة ما زالت تعمل.")
     if data.get("status") not in RESUMABLE:
         raise HTTPException(409, "لا يمكن استكمال مهمة اكتملت أو ما زالت تعمل.")
     return data
@@ -150,12 +170,23 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
         raise HTTPException(400, str(e)) from e
     if req.memory_space is not None and not memory.valid_space(req.memory_space):
         raise HTTPException(400, "معرّف مساحة الذاكرة غير صالح.")
+    if req.resume_from and req.follow_up_of:
+        raise HTTPException(400, "اختر الاستكمال أو المتابعة، لا الاثنين.")
     prior = await _resumable(req.resume_from, owner) if req.resume_from else None
+    prev = await _own_run(req.follow_up_of, owner) if req.follow_up_of else None
+    if prev and prev.get("status") == "running":
+        raise HTTPException(409, "انتظر حتى تنتهي المهمة السابقة ثم تابع.")
     cap = {"free": 25, "platform": 500}.get(cfg.provider, DEFAULT_MAX_AGENTS)
     run = Run(goal=prior["goal"] if prior else req.goal.strip(), llm_public=cfg.public(), max_agents=min(req.max_agents or cap, cap),
               can_exec=cfg.provider == "platform" or os.environ.get("ALLOW_CODE_EXEC") == "1",
               memory_space=req.memory_space, owner=owner,
-              scenario=req.scenario or bool(prior and prior.get("scenario")))  # a resumed test run stays a test
+              scenario=req.scenario or any(bool(d and d.get("scenario")) for d in (prior, prev)))  # tests stay tests
+    if prior:  # resume keeps the conversation it belonged to
+        run.follow_up_of, run.thread_id, run.context = prior.get("follow_up_of"), prior.get("thread_id"), prior.get("context") or ""
+    elif prev:
+        run.follow_up_of = prev["id"]
+        run.thread_id = prev.get("thread_id") or prev["id"]
+        run.context = follow_up_context(prev)
     RUNS[run.id] = run
     while len(RUNS) > MAX_LIVE:
         old_id, old = next(iter(RUNS.items()))
