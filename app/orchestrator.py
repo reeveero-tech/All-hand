@@ -33,7 +33,7 @@ class Run:
     resumed: dict | None = None  # {"from": run id, "reused": [task ids]} when continuing a stopped run
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
-    status: str = "running"  # running | done | partial | failed | cancelled
+    status: str = "running"  # running | done | partial | failed | cancelled | interrupted (server shutdown)
     tasks: dict = field(default_factory=dict)
     events: list = field(default_factory=list)
     result: str = ""
@@ -173,8 +173,11 @@ class Orchestrator:
                 await self.remember(existing)  # before status flips, so clients see saved memory with the result
             r.status = status
         except asyncio.CancelledError:
-            r.status = "cancelled"
-            await r.emit("run_cancelled", {})
+            if r.status == "interrupted":  # server shutdown, not the user
+                await r.emit("run_interrupted", {})
+            else:
+                r.status = "cancelled"
+                await r.emit("run_cancelled", {})
         except Exception as e:  # noqa: BLE001
             r.status, r.error = "failed", str(e)
             await r.emit("run_error", {"error": str(e)})

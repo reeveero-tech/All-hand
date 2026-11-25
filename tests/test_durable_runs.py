@@ -166,3 +166,41 @@ async def test_list_for_owner_filters_on_owner_in_the_query(monkeypatch):
     rows = await store.list_for_owner(OA)
     assert seen[0]["data->>owner"] == f"eq.{OA}" and seen[0]["order"] == "data->created_at.desc"
     assert rows[0]["id"] == "x1" and set(rows[0]) == set(store.SUMMARY)
+
+
+def test_shutdown_saves_runs_as_interrupted_not_cancelled(monkeypatch):
+    """A deploy/restart must be recorded as 'interrupted' (resumable), never as a user cancel."""
+    saved = []
+
+    async def save(data):
+        saved.append((data["status"], data.get("owner")))
+        return True
+    monkeypatch.setattr(store, "save", save)
+
+    class Hang(FakeLLM):
+        async def chat(self, messages, *a, **k):
+            await asyncio.sleep(30)
+
+    async def go():
+        main.RUNS.clear(); main.TASKS.clear()
+        run = Run(goal="g", llm_public={}, owner=OA)
+        main.RUNS[run.id] = run
+
+        async def persist(final=False):
+            return await store.save({**run.full(), "owner": run.owner})
+        main.TASKS[run.id] = asyncio.create_task(Orchestrator(run, Hang(), persist=persist).execute())
+        await asyncio.sleep(0.05)
+        await main.shutdown_runs(wait=2)
+        return run
+    run = asyncio.run(go())
+    assert run.status == "interrupted" and run.saved is True
+    assert saved and all(s == ("interrupted", OA) for s in saved)
+    assert any(e["type"] == "run_interrupted" for e in run.events)
+    assert not any(e["type"] == "run_cancelled" for e in run.events)
+
+
+def test_dockerfile_execs_uvicorn():
+    """Without exec, sh is PID 1, swallows SIGTERM, and the shutdown handler never runs."""
+    from pathlib import Path
+    cmd = [l for l in Path("Dockerfile").read_text().splitlines() if l.startswith("CMD")][0]
+    assert "exec uvicorn" in cmd

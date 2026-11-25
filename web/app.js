@@ -134,6 +134,7 @@ function streamEvents(id, onMsg, onEnd) {
 }
 
 const LABEL = {
+  run_interrupted: () => "انقطع التشغيل لأن الخادم يُعاد تشغيله؛ يمكنك استكماله لاحقًا",
   resumed: (e) => `استكمال المهمة ${e.from}: إعادة استخدام ${e.reused.length} مهمة مُتحقق منها، وتنفيذ ${e.remaining.length}`,
   run_started: (e) => `بدأ المنسق (${e.llm.provider}: ${e.llm.model})، ميزانية ${e.max_agents} وكيلًا`,
   planning: (e) => `المنسق يخطط${e.scope !== "root" ? " لفريق فرعي " + e.scope : ""}`,
