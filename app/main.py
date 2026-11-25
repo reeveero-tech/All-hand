@@ -37,8 +37,22 @@ async def lifespan(_app):
     yield
     # Shutdown (deploy/restart): record honestly that live runs were interrupted. If this process still
     # finishes a run before it is killed, the final save overwrites this snapshot.
-    for run in [r for r in RUNS.values() if r.status == "running"]:
-        await store.save({**run.full(), "status": "interrupted", "owner": run.owner, "heartbeat_at": time.time()})
+    await shutdown_runs()
+
+
+async def shutdown_runs(wait: float = 10):
+    """Mark live runs interrupted, stop them, and save them as interrupted (never as user-cancelled)."""
+    live = [r for r in RUNS.values() if r.status == "running"]
+    for run in live:
+        run.status = "interrupted"
+    tasks = [TASKS[r.id] for r in live if r.id in TASKS]
+    for t in tasks:
+        t.cancel()
+    if tasks:
+        await asyncio.wait(tasks, timeout=wait)  # their own final save runs here
+    for run in live:
+        if run.saved is not True:
+            await store.save({**run.full(), "owner": run.owner, "heartbeat_at": time.time()})
 
 
 app = FastAPI(title="All-hand", version="3.1.0", lifespan=lifespan)

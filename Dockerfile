@@ -8,4 +8,5 @@ RUN useradd --system --uid 10001 --home-dir /nonexistent --shell /usr/sbin/nolog
 USER agent
 ENV PORT=8000
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# exec: uvicorn must be PID 1 so it receives SIGTERM on deploy and can record interrupted runs.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --timeout-graceful-shutdown 20"]
