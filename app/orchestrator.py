@@ -86,6 +86,17 @@ class Run:
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
+NO_EXEC = " (تشغيل الكود معطّل على هذا الخادم: لا تختر هذا الدور؛ للحسابات اختر analyst الذي يملك حاسبة دقيقة)"
+
+
+def role_list(can_exec: bool = True) -> str:
+    return "\n".join(f"- {r.id}: {r.name} — {r.mission}" + ("" if can_exec or "run_python" not in r.tools or len(r.tools) > 1
+                                                          else NO_EXEC) for r in ROLES.values())
+
+
+FOLLOW_UP_PLAN = ("هذا طلب متابعة، ونتيجة المهمة السابقة مرفقة أدناه ويراها كل وكيل. لا تخطط لإعادة البحث أو التحليل الذي أُنجز؛ "
+                  "خطط فقط لما يتطلبه التغيير الذي طلبه المستخدم الآن (غالبًا مهمة إلى ثلاث مهام)، ولا تضف بحثًا جديدًا إلا إن طلبه صراحةً "
+                  "أو كانت النتيجة السابقة تخلو تمامًا مما يلزم.\n\n")
 
 PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء اصطناعي. حوّل طلب المستخدم إلى خطة تنفيذ.
 الأدوار المتاحة:
@@ -107,7 +118,7 @@ PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء �
 - decompose=true فقط لمهمة ضخمة تحتاج فريقًا فرعيًا كاملًا{decompose_note}.
 - لا تضف مهمة "تجميع نهائي"؛ المنسق يجمع النتائج بنفسه.
 - الوكلاء ينتجون نصًا بتنسيق Markdown (جداول وعناوين)، ولا يملكون أداة لإنشاء ملفات PDF أو Word أو صور أو رسوم بيانية. لا تشترط في معيار القبول ملفًا أو رسمًا؛ إن طلب المستخدم «ملفًا نهائيًا» فالنظام يصدّر الجواب المجمّع تقريرًا قابلًا للتنزيل تلقائيًا.
-- إن أُرفق «سياق من ذاكرة المنسق» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون هذا السياق، وانقل معها وسمها كما هو (صرّح به المستخدم / نتيجة مهمة سابقة / افتراض / سيناريو اختباري / غير مؤكد). لا تحوّل نتيجة مهمة أو افتراضًا أو سيناريو إلى «معطيات المستخدم».
+- إن أُرفق «سياق من ذاكرة المنسق» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون سياق الذاكرة، وانقل معها وسمها كما هو (صرّح به المستخدم / نتيجة مهمة سابقة / افتراض / سيناريو اختباري / غير مؤكد). لا تحوّل نتيجة مهمة أو افتراضًا أو سيناريو إلى «معطيات المستخدم».
 - إن أُرفق «سياق المحادثة السابقة» فهذا طلب متابعة: ابنِ على النتيجة السابقة، وانقل منها ما يلزم صراحةً إلى تعليمات المهام، ولا تُعِد إنجاز ما لم يتغير، واجعل المهام تركز على ما طلب المستخدم تغييره.
 - اكتب بلغة المستخدم."""
 
@@ -133,7 +144,7 @@ DRAFT_RULE = """
 - اختم بما يلزم للحصول على نتيجة موثوقة (مصادر بيانات، معلومات من المستخدم)."""
 
 
-def _sanitize_plan(plan: dict, depth: int) -> list[dict]:
+def _sanitize_plan(plan: dict, depth: int, can_exec: bool = True) -> list[dict]:
     raw = plan.get("tasks") or []
     if not isinstance(raw, list) or not raw:
         raise ValueError("الخطة بلا مهام")
@@ -145,6 +156,8 @@ def _sanitize_plan(plan: dict, depth: int) -> list[dict]:
         if tid in seen:
             tid = f"{tid}_{i}"
         role = t.get("role") if t.get("role") in ROLES else "assistant"
+        if not can_exec and ROLES[role].tools == ("run_python",):
+            role = "analyst"  # its only tool is disabled here; the analyst calculates without running code
         deps = [str(d).replace(".", "_") for d in (t.get("depends_on") or []) if str(d).replace(".", "_") in seen]
         tasks.append({"id": tid, "title": str(t.get("title") or tid)[:120], "role": role,
                       "instructions": str(t.get("instructions") or t.get("title") or ""),
@@ -156,15 +169,17 @@ def _sanitize_plan(plan: dict, depth: int) -> list[dict]:
     return tasks
 
 
-async def plan(llm: LLM, goal: str, depth: int) -> dict:
+async def plan(llm: LLM, goal: str, depth: int, can_exec: bool = True, follow_up: bool = False) -> dict:
     note = "" if depth == 0 else " (غير مسموح في هذا المستوى)"
-    sys = PLANNER.format(roles=ROLE_LIST, max_tasks=MAX_TASKS_PER_PLAN if depth == 0 else 5, decompose_note=note)
-    p = await llm.chat_json([{"role": "system", "content": sys}, {"role": "user", "content": goal}], max_tokens=3000)
+    sys = PLANNER.format(roles=role_list(can_exec), max_tasks=MAX_TASKS_PER_PLAN if depth == 0 else 5, decompose_note=note)
+    user = (FOLLOW_UP_PLAN if follow_up and depth == 0 else "") + goal
+    p = await llm.chat_json([{"role": "system", "content": sys}, {"role": "user", "content": user}], max_tokens=3000)
     return {"simple": bool(p.get("simple")) and depth == 0, "summary": str(p.get("summary", "")),
-            "tasks": _sanitize_plan(p, depth)}
+            "tasks": _sanitize_plan(p, depth, can_exec)}
 
 
 GOAL_CHARS = 2000
+FOLLOW_UP_AGENT_CHARS = 6000
 
 
 def anchor(goal: str) -> str:
@@ -175,7 +190,7 @@ def anchor(goal: str) -> str:
 
 async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list | None = None) -> dict:
     head = (f"طلب المستخدم الأصلي (ارفض الناتج إن خرج عن موضوعه أو منتجه أو أرقامه، أو أعاد رقمًا ثبت خطؤه في "
-            f"التنبيه الحسابي دون تصحيحه):\n{goal[:GOAL_CHARS + 2000]}\n\n"
+            f"التنبيه الحسابي دون تصحيحه):\n{goal[:GOAL_CHARS + FOLLOW_UP_AGENT_CHARS + 2000]}\n\n"
             "تنبيه: هذا ناتج مهمة فرعية واحدة من خطة فيها مهام أخرى. قيّمه مقابل «المهمة» و«معيار القبول» أدناه فقط، "
             "ولا تعدّ غياب أجزاء الطلب التي لا تطلبها هذه المهمة نقصًا.\n\n") if goal else ""
     if read is not None:  # what the agent really opened, so claimed-but-unread links and figures can be judged
@@ -321,7 +336,11 @@ class Orchestrator:
         return checks_note(self.run.goal_checks)
 
     def anchored(self) -> str:
-        return anchor(self.run.goal) + (f"\n\n{self.note}" if self.note else "")
+        """The request as every agent and per-task verifier sees it: the user's words, any arithmetic correction,
+        and, for a follow-up, what the previous turn produced (so agents build on it instead of redoing it)."""
+        r = self.run
+        prev = r.context[:FOLLOW_UP_AGENT_CHARS] + ("\n[...]" if len(r.context) > FOLLOW_UP_AGENT_CHARS else "") if r.context else ""
+        return anchor(r.goal) + (f"\n\n{self.note}" if self.note else "") + (f"\n\n{prev}" if prev else "")
 
     async def _persist_final(self) -> bool:
         for attempt in range(3):
@@ -375,7 +394,7 @@ class Orchestrator:
         if p:
             return await self._continue(goal, p)
         await r.emit("planning", {"scope": prefix or "root", "depth": depth})
-        p = await plan(self.llm, goal, depth)
+        p = await plan(self.llm, goal, depth, r.can_exec, follow_up=bool(r.context))
         tasks = p["tasks"]
         for t in tasks:
             t["id"] = prefix + t["id"]
