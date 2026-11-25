@@ -434,7 +434,13 @@ async def calculate(program: str) -> str:
     """Exact arithmetic without running code: lines of `name = expression` or bare expressions.
     Safe on any server (no code execution), so the free provider can calculate too."""
     import ast
-    lines = [ln.strip() for ln in str(program or "").replace(";", "\n").splitlines() if ln.strip() and not ln.strip().startswith("#")]
+    raw = [ln.strip() for ln in str(program or "").replace(";", "\n").splitlines() if ln.strip() and not ln.strip().startswith("#")]
+    lines: list[str] = []
+    for ln in raw:  # a bracket left open continues on the next line (agents write multi-line lists and dicts)
+        if lines and sum(lines[-1].count(o) - lines[-1].count(c) for o, c in ("()", "[]", "{}")) > 0:
+            lines[-1] += " " + ln
+        else:
+            lines.append(ln)
     if not lines:
         return "خطأ: لا توجد عمليات."
     env, out = {}, []

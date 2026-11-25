@@ -415,3 +415,10 @@ def test_planner_retries_when_reply_has_no_tasks():
     llm = L()
     out = asyncio.run(plan(llm, "هدف", 0))
     assert llm.n == 2 and out["tasks"][0]["id"] == "t1"
+
+
+def test_calculate_joins_multiline_brackets():
+    import asyncio
+    from app.tools import calculate
+    out = asyncio.run(calculate("shares = [\n0.12,\n0.25\n]\ntotal = sum(shares) * 90000"))
+    assert "خطأ" not in out and "33,300" in out
