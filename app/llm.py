@@ -18,6 +18,7 @@ import httpx
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 FREE_BASE = os.environ.get("FREE_LLM_BASE", "https://text.pollinations.ai/openai")
 FREE_MODEL = os.environ.get("FREE_LLM_MODEL", "openai")
+MAX_OUTPUT_TOKENS = int(os.environ.get("LLM_MAX_OUTPUT_TOKENS", "12000"))  # ceiling when a reply runs out of tokens
 
 
 class LLMError(RuntimeError):
@@ -192,6 +193,11 @@ class LLM:
                     raise LLMError(f"المزود رفض المفتاح ({r.status_code}): {r.text[:200]}")
                 else:
                     last = f"HTTP {r.status_code}: {r.text[:200]}"
+                    if r.status_code == 400 and "output_token_limit" in r.text and body["max_tokens"] < MAX_OUTPUT_TOKENS:
+                        # reasoning models can spend the whole budget thinking (production: the writer failed 2/2)
+                        body["max_tokens"] = min(MAX_OUTPUT_TOKENS, body["max_tokens"] * 2)
+                        attempt += 1
+                        continue
                     if r.status_code in (402, 429):  # rate limited: wait as long as the provider asks
                         wait = retry_after(r, default=6 * (attempt + 1))
                         limited += 1
