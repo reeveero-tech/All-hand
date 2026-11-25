@@ -369,6 +369,8 @@ async def web_search(query: str) -> str:
             try:
                 results = await asyncio.wait_for(_gnews(query), timeout=45)
                 STATS["gnews_requests"] += 1
+                if not results and len(_terms(query)) > 3:  # news search needs most words; long copied text finds nothing
+                    results = await asyncio.wait_for(_gnews(" ".join(_terms(query)[:3])), timeout=45)
             except Exception as e:  # noqa: BLE001
                 STATS["gnews_last_error"] = type(e).__name__
                 results = []
