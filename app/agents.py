@@ -41,6 +41,15 @@ def _tool_help(tools: tuple[str, ...]) -> str:
     return "\n".join(f"- {t}: {TOOLS[t]['desc']}" for t in tools)
 
 
+def _research_rules(tools: tuple[str, ...]) -> str:
+    if "web_search" not in tools:
+        return ""
+    rules = "نتائج web_search عناوين ومقتطفات قصيرة. لا تكتب «لم أجد معلومات» وفي نتائجك روابط ذات صلة: قدّم ما فيها (الاسم، السعر، الرابط) وضع «غير متاح» للحقل الناقص. إن تكرر «لا نتائج» فبسّط الاستعلام (كلمتان أو ثلاث) أو جرّب الإنجليزية.\n"
+    if "fetch_url" in tools:
+        rules += "افتح بـ fetch_url أهم رابط أو رابطين قبل أن تحكم بنقص البيانات، واستخرج منها الأرقام بنفسك.\n"
+    return rules
+
+
 def system_prompt(role: Role, can_exec: bool) -> str:
     tools = tuple(t for t in role.tools if can_exec or t != "run_python")
     return f"""أنت وكيل متخصص ضمن فريق يديره منسق. دورك: {role.name}.
@@ -55,7 +64,7 @@ def system_prompt(role: Role, can_exec: bool) -> str:
 
 قواعد: استخدم لغة المستخدم. لا تختلق مصادر أو أرقامًا. إن تعذر إنجاز جزء فاذكر ذلك صراحة في الناتج.
 إذا نقصت بيانات لازمة لإكمال المهمة فلا تتوقف: استخدم أفضل تقدير معقول مبني على ما وجدته (مثل نطاق أسعار من قوائم فعلية)، واذكر بوضوح أنه تقدير ومن أين جاء، وأكمل العمل به (مثلًا احسب بالنطاق الأدنى والأعلى).
-حد أقصى {MAX_STEPS} خطوات؛ سلّم قبل نفادها."""
+{_research_rules(tools)}حد أقصى {MAX_STEPS} خطوات؛ سلّم قبل نفادها."""
 
 
 EmitFn = Callable[[str, dict], Awaitable[None]]
@@ -67,31 +76,41 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
     allowed = {t for t in role.tools if can_exec or t != "run_python"}
     messages = [{"role": "system", "content": system_prompt(role, can_exec)},
                 {"role": "user", "content": f"المهمة:\n{task}\n\nسياق من المنسق ونتائج زملائك:\n{context or '(لا يوجد)'}"}]
-    steps = 0
+    steps, read = 0, []  # read: pages fetch_url actually returned (HTTP 2xx), kept as sources whatever the model claims
+
+    def sources(claimed) -> list[str]:
+        out = []
+        for u in read + [str(x) for x in (claimed if isinstance(claimed, list) else [])]:
+            if u not in out:
+                out.append(u)
+        return out[:30]
+
     for steps in range(1, MAX_STEPS + 1):
         try:
             msg = await llm.chat_json(messages, temperature=0.3, max_tokens=2500)
         except ValueError:
             raw = await llm.chat(messages)
-            return {"output": raw, "confidence": 0.3, "sources": [], "steps": steps}
+            return {"output": raw, "confidence": 0.3, "sources": sources([]), "steps": steps}
         action = msg.get("action")
         if action == "tool" and steps < MAX_STEPS:
             name, args = msg.get("tool", ""), msg.get("input", {})
             await emit("tool_call", {"tool": name, "input": args, "why": msg.get("why", "")})
             result = await call_tool(name, args, allowed)
             await emit("tool_result", {"tool": name, "preview": result[:400]})
+            if name == "fetch_url" and result.startswith("HTTP 2"):
+                read.append(result.split("\n", 1)[0].split(" — ", 1)[-1].strip())
             messages += [{"role": "assistant", "content": json.dumps(msg, ensure_ascii=False)},
                          {"role": "user", "content": f"نتيجة الأداة {name}:\n{result}\n\nتابع وفق البروتوكول."}]
             continue
         if action == "final" or "output" in msg:
             return {"output": str(msg.get("output", "")), "confidence": float(msg.get("confidence") or 0.5),
-                    "sources": msg.get("sources") or [], "steps": steps}
+                    "sources": sources(msg.get("sources")), "steps": steps}
         messages += [{"role": "assistant", "content": json.dumps(msg, ensure_ascii=False)},
                      {"role": "user", "content": "استدعِ أداة أو سلّم النتيجة النهائية بالشكل المحدد."}]
     messages.append({"role": "user", "content": "نفدت الخطوات. سلّم الآن أفضل نتيجة لديك بالشكل final."})
     try:
         msg = await llm.chat_json(messages)
         return {"output": str(msg.get("output", "")), "confidence": float(msg.get("confidence") or 0.4),
-                "sources": msg.get("sources") or [], "steps": steps}
+                "sources": sources(msg.get("sources")), "steps": steps}
     except (ValueError, LLMError) as e:
-        return {"output": f"تعذر الإنجاز: {e}", "confidence": 0.0, "sources": [], "steps": steps}
+        return {"output": f"تعذر الإنجاز: {e}", "confidence": 0.0, "sources": sources([]), "steps": steps}
