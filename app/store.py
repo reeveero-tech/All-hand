@@ -18,7 +18,7 @@ HEARTBEAT = 20  # seconds between progress saves of a running run
 STALE = 90  # a "running" row whose heartbeat is older than this, and that is not live here, is interrupted
 LIST_LIMIT = 50
 SUMMARY = ("id", "goal", "status", "agents_spawned", "created_at", "finished_at", "heartbeat_at",
-           "tasks_total", "tasks_done", "tasks_failed")
+           "tasks_total", "tasks_done", "tasks_failed", "thread_id", "follow_up_of")
 
 
 def enabled() -> bool:

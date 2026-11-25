@@ -30,6 +30,9 @@ class Run:
     memory_space: str | None = None
     saved: bool | None = None  # None: no persistent store; False: final save failed (shown to the user)
     owner: str | None = None  # SHA-256 of the creating client's key; never sent back to clients
+    follow_up_of: str | None = None  # previous run of the same conversation, when this is a follow-up
+    thread_id: str | None = None  # first run of the conversation; every follow-up shares it
+    context: str = ""  # what the previous run produced, given to the planner (kept so resume rebuilds it)
     resumed: dict | None = None  # {"from": run id, "reused": [task ids]} when continuing a stopped run
     scenario: bool = False  # user marked this run as a test/hypothetical: nothing it learns is about the user
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
@@ -64,6 +67,7 @@ class Run:
     def summary(self) -> dict:
         return {"id": self.id, "goal": self.goal, "status": self.status, "created_at": self.created_at,
                 "finished_at": self.finished_at, "agents_spawned": self.agents_spawned,
+                "thread_id": self.thread_id, "follow_up_of": self.follow_up_of,
                 "tasks_total": len(self.tasks),
                 "tasks_done": sum(1 for t in self.tasks.values() if t["status"] == "done"),
                 "tasks_failed": sum(1 for t in self.tasks.values() if t["status"] in ("failed", "skipped"))}
@@ -71,7 +75,7 @@ class Run:
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
-                "resumed": self.resumed, "scenario": self.scenario, "events": self.events}
+                "resumed": self.resumed, "context": self.context, "scenario": self.scenario, "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -92,6 +96,7 @@ PLANNER = """أنت المنسق الرئيسي لفريق وكلاء ذكاء �
 - decompose=true فقط لمهمة ضخمة تحتاج فريقًا فرعيًا كاملًا{decompose_note}.
 - لا تضف مهمة "تجميع نهائي"؛ المنسق يجمع النتائج بنفسه.
 - إن أُرفق «سياق من ذاكرة المنسق» فاستخدم ما يتصل بالطلب فقط: انقل المعطيات ذات الصلة صراحةً إلى تعليمات المهام لأن الوكلاء لا يرون هذا السياق، وانقل معها وسمها كما هو (صرّح به المستخدم / نتيجة مهمة سابقة / افتراض / سيناريو اختباري / غير مؤكد). لا تحوّل نتيجة مهمة أو افتراضًا أو سيناريو إلى «معطيات المستخدم».
+- إن أُرفق «سياق المحادثة السابقة» فهذا طلب متابعة: ابنِ على النتيجة السابقة، وانقل منها ما يلزم صراحةً إلى تعليمات المهام، ولا تُعِد إنجاز ما لم يتغير، واجعل المهام تركز على ما طلب المستخدم تغييره.
 - اكتب بلغة المستخدم."""
 
 VERIFIER = """أنت مدقق صارم ومستقل. قيّم ناتج وكيل مقابل المهمة ومعيار القبول.
@@ -163,7 +168,7 @@ class Orchestrator:
             await r.emit("run_started", {"goal": r.goal, "llm": r.llm_public, "max_agents": r.max_agents,
                                          "memory": bool(r.memory_space)})
             existing = await self.recall()
-            goal = r.goal
+            goal = r.goal + (f"\n\n---\n{r.context}" if r.context else "")
             if r.memory["recalled"]:
                 goal += "\n\n---\n" + memory.render_context(r.memory["recalled"])
             out = await self.orchestrate(goal, depth=0, prefix="")

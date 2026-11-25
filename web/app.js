@@ -78,13 +78,13 @@ async function api(path, opts = {}) {
 }
 
 $("#runBtn").onclick = () => startRun();
-async function startRun(resumeFrom = null) {
-  const goal = $("#goal").value.trim();
-  if (!goal) return $("#goal").focus();
+async function startRun(resumeFrom = null, followUpOf = null, followGoal = null) {
+  const goal = (followGoal ?? $("#goal").value).trim();
+  if (!goal) return (followUpOf ? $("#followGoal") : $("#goal")).focus();
   saveSettings();
   const s = JSON.parse(localStorage.getItem("ah_settings"));
   const body = {goal, provider: s.provider, api_key: s.apiKey || null, base_url: s.baseUrl || null,
-    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace(), scenario: $("#scenario").checked, resume_from: resumeFrom};
+    model: s.model || null, access_code: s.accessCode || null, max_agents: s.maxAgents ? Number(s.maxAgents) : null, memory_space: memSpace(), scenario: $("#scenario").checked, resume_from: resumeFrom, follow_up_of: followUpOf};
   $("#runBtn").disabled = true;
   try {
     const {id} = await api("/api/runs", {method: "POST", body: JSON.stringify(body)});
@@ -103,6 +103,7 @@ function open(id) {
   $("#live").classList.remove("hidden");
   $("#log").innerHTML = ""; $("#board").innerHTML = ""; $("#verdict").textContent = "";
   $("#result").className = "md muted"; $("#result").textContent = "قيد العمل...";
+  $("#followCard").classList.add("hidden");
   refresh();
   es = streamEvents(id, onEvent, () => refresh());
 }
@@ -195,11 +196,15 @@ async function refresh() {
       notes.push(`<p><button id="resumeBtn">أكمل من حيث توقفت</button> <button id="rerunBtn" class="ghost">ابدأ من جديد</button>
         <small class="muted">${kept ? `الاستكمال يحتفظ بـ ${kept} من المهام التي اجتازت التحقق ويعيد الباقي.` : "لا توجد مهام مكتملة لإعادة استخدامها؛ الاستكمال سيعيد كل المهام بالخطة نفسها."}</small></p>`);
     }
+    if (r.follow_up_of) notes.push(`<p class="muted">متابعة للمهمة <a href="#" data-open="${esc(r.follow_up_of)}">${esc(r.follow_up_of)}</a>، وقد بُنيت على نتيجتها.</p>`);
     if (r.resumed) notes.push(`<p class="muted">استُكملت من المهمة ${esc(r.resumed.from)}، وأُعيد استخدام ${r.resumed.reused.length} مهمة مُتحقق منها.</p>`);
     if (r.saved === false) notes.push('<p class="err">تنبيه: تعذر حفظ هذه المهمة في السجل الدائم، وقد تختفي إذا أُعيد تشغيل الخادم. انسخ النتيجة إن احتجتها.</p>');
     $("#result").innerHTML = notes.join("") + (r.result ? md(r.result) : `<p class="err">${esc(r.error || "لا يوجد جواب")}</p>`);
+    document.querySelectorAll("#result a[data-open]").forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); open(a.dataset.open); }));
     const rb = $("#rerunBtn");
     if (rb) rb.onclick = () => { $("#goal").value = r.goal; startRun(); };
+    $("#followCard").classList.toggle("hidden", !r.result && !Object.values(r.tasks || {}).some((t) => t.status === "done"));
+    $("#followBtn").onclick = () => { const g = $("#followGoal").value; if (g.trim()) { $("#followGoal").value = ""; startRun(null, r.id, g); } };
     const sb = $("#resumeBtn");
     if (sb) sb.onclick = () => { $("#goal").value = r.goal; startRun(r.id); };
     if (!$("#log").children.length && r.events?.length) r.events.forEach(onEvent);
@@ -261,7 +266,7 @@ $("#memClear").onclick = async () => {
 
 async function loadHistory() {
   const runs = await api("/api/runs").catch(() => []);
-  $("#history").innerHTML = runs.map((r) => `<li data-id="${esc(r.id)}"><span class="badge s-${RUN_CLASS[r.status] || "failed"}">${esc(RUN_STATUS[r.status] || r.status)}</span>${esc(r.goal.slice(0, 120))}<small class="muted">${r.agents_spawned} وكيل</small></li>`).join("") || '<li class="muted">لا شيء بعد</li>';
+  $("#history").innerHTML = runs.map((r) => `<li data-id="${esc(r.id)}"><span class="badge s-${RUN_CLASS[r.status] || "failed"}">${esc(RUN_STATUS[r.status] || r.status)}</span>${r.follow_up_of ? '<small class="muted">متابعة ← </small>' : ""}${esc(r.goal.slice(0, 120))}<small class="muted">${r.agents_spawned} وكيل</small></li>`).join("") || '<li class="muted">لا شيء بعد</li>';
   document.querySelectorAll("#history li[data-id]").forEach((li) => (li.onclick = () => open(li.dataset.id)));
 }
 
