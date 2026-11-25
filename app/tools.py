@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import html
+import json
 import ipaddress
 import os
 import re
@@ -133,7 +134,7 @@ DDG_COOLDOWN = float(os.environ.get("DDG_COOLDOWN_S", "600"))
 CACHE_TTL = 3600
 _ddg_gate = {"lock": None, "next": 0.0, "cool_until": 0.0}
 _cache: dict[str, tuple[float, list, str]] = {}
-STATS = {"ddg_requests": 0, "ddg_blocked": 0, "ddg_skipped_cooldown": 0, "cache_hits": 0}
+STATS = {"gnews_requests": 0, "ddg_requests": 0, "ddg_blocked": 0, "ddg_skipped_cooldown": 0, "cache_hits": 0}
 
 
 class _Blocked(Exception):
@@ -206,6 +207,51 @@ async def _wikipedia(query: str, lang: str) -> list[dict]:
         return []
     return [{"title": h["title"], "url": f"https://{lang}.wikipedia.org/wiki/{quote_plus(h['title'].replace(' ', '_'))}",
              "snippet": _html_to_text(h.get("snippet", ""))} for h in r.json().get("query", {}).get("search", [])]
+
+
+GNEWS_DECODE = 5  # Google News links are encoded; this many are resolved to the publisher's URL
+
+
+async def _gnews_decode(c: httpx.AsyncClient, link: str) -> str | None:
+    """Resolve a news.google.com/rss/articles/<id> link to the publisher's URL (keyless, two requests)."""
+    gid = link.split("/articles/", 1)[-1].split("?", 1)[0]
+    if not gid:
+        return None
+    h = (await c.get(f"https://news.google.com/rss/articles/{gid}")).text
+    sg, ts = re.search(r'data-n-a-sg="([^"]+)"', h), re.search(r'data-n-a-ts="([^"]+)"', h)
+    if not (sg and ts):
+        return None
+    req = [[["Fbv4je", f'["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],'
+                       f'"X","X",1,[1,1,1],1,1,null,0,0,null,0],"{gid}",{ts.group(1)},"{sg.group(1)}"]', None, "generic"]]]
+    r = await c.post("https://news.google.com/_/DotsSplashUi/data/batchexecute", data={"f.req": json.dumps(req)},
+                     headers={"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"})
+    try:
+        url = json.loads(json.loads(r.text.split("\n\n", 1)[1])[0][2])[1]
+    except Exception:  # noqa: BLE001
+        return None
+    return url if isinstance(url, str) and url.startswith("http") else None
+
+
+async def _gnews(query: str) -> list[dict]:
+    """Google News RSS (keyless): recent articles, useful for markets, launches and competitors."""
+    ar = bool(re.search(r"[\u0600-\u06FF]", query))
+    loc = "hl=ar&gl=SA&ceid=SA:ar" if ar else "hl=en-US&gl=US&ceid=US:en"
+    async with httpx.AsyncClient(timeout=15, headers={"User-Agent": UA}, follow_redirects=True) as c:
+        r = await c.get(f"https://news.google.com/rss/search?q={quote_plus(query)}&{loc}")
+        if r.status_code != 200:
+            return []
+        items = re.findall(r"<item>(.*?)</item>", r.text, re.S)[:GNEWS_DECODE]
+
+        def tag(it, name):
+            m = re.search(rf"<{name}[^>]*>(.*?)</{name}>", it, re.S)
+            return _html_to_text(m.group(1)) if m else ""
+        urls = await asyncio.gather(*[_gnews_decode(c, tag(it, "link")) for it in items], return_exceptions=True)
+    out = []
+    for it, u in zip(items, urls):
+        if isinstance(u, str):
+            out.append({"title": tag(it, "title"), "url": u,
+                        "snippet": f"{tag(it, 'source')} — {tag(it, 'pubDate')}".strip(" —")})
+    return out
 
 
 async def _tavily(query: str) -> list[dict]:
@@ -284,7 +330,7 @@ def search_meta(result: str) -> dict:
 
 
 async def web_search(query: str) -> str:
-    """Keyed providers first (TAVILY_API_KEY, BRAVE_API_KEY), then DuckDuckGo (gated), then Wikipedia.
+    """Keyed providers first (TAVILY_API_KEY, BRAVE_API_KEY), then DuckDuckGo (gated), Google News, then Wikipedia.
     The top results are opened and their relevant lines appended, marked as read."""
     query = re.sub(r"\s+", " ", str(query or "")).strip()[:200]
     if not query:
@@ -314,6 +360,14 @@ async def web_search(query: str) -> str:
             if results:
                 source = name
                 break
+        if not results:  # DuckDuckGo refuses many server IPs: news search is keyless and opens real articles
+            try:
+                results = await asyncio.wait_for(_gnews(query), timeout=45)
+                STATS["gnews_requests"] += 1
+            except Exception:  # noqa: BLE001
+                results = []
+            if results:
+                source = "Google News"
         if not results:
             lang = "ar" if re.search(r"[\u0600-\u06FF]", query) else "en"
             try:
