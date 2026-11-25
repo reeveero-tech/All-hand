@@ -157,7 +157,7 @@ const LABEL = {
   task_finished: (e) => `المهمة ${e.task}: ${STATUS[e.status]}${e.reason ? " — " + e.reason : ""}`,
   task_skipped: (e) => `تخطي ${e.task}: ${e.reason}`,
   agent_error: (e) => `خطأ عند ${e.agent}: ${e.error}`,
-  synthesizing: () => "المنسق يجمع النتائج",
+  synthesizing: (e) => e.unverified ? "لم تجتز أي مهمة التحقق؛ المنسق يكتب مسودة موسومة بأنها غير متحقق منها" : "المنسق يجمع النتائج",
   final_check: (e) => `التحقق النهائي: ${e.pass ? "مقبول" : "مرفوض"} (${e.score}/10)`,
   memory_recalled: (e) => `استرجع المنسق ${e.count} معلومة من الذاكرة (من أصل ${e.total})`,
   memory_saved: (e) => `حُفظ في الذاكرة ${e.count} معلومة${e.superseded ? "، وحُذف " + e.superseded + " قديمة" : ""}`,
@@ -228,7 +228,7 @@ async function refresh() {
     if (sb) sb.onclick = () => { $("#goal").value = r.goal; startRun(r.id); };
     if (!$("#log").children.length && r.events?.length) r.events.forEach(onEvent);
     const v = r.verdict || {};
-    $("#verdict").innerHTML = v.score != null ? `<span class="badge ${v.pass ? "s-done" : "s-failed"}">تحقق نهائي ${v.score}/10</span>` : "";
+    $("#verdict").innerHTML = v.draft ? `<span class="badge s-failed">مسودة غير متحقق منها</span>` : v.score != null ? `<span class="badge ${v.pass ? "s-done" : "s-failed"}">تحقق نهائي ${v.score}/10</span>` : "";
     loadHistory();
     loadMemory();
   }

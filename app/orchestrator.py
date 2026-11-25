@@ -126,6 +126,11 @@ SYNTH = """أنت المنسق. اجمع نتائج فريقك في جواب ن�
 - إذا كان في النتائج تقدير موسوم، استخدمه لتقديم جواب عملي (أرقام وسيناريوهات) مع إبقاء وسم التقدير.
 - إن أُرفق سياق من ذاكرة المنسق فاحترم وسم كل معلومة: انسب للمستخدم («مشروعك»، «قررتَ») فقط ما وُسم بأنه صرّح به أو أكده. ما سواه قدّمه كما هو: «في مهمة سابقة ورد أن...» أو «بافتراض أن...» أو «في السيناريو الاختباري...». لا تطلب من المستخدم بيانات حقيقية (كالسيولة) عن مشروع لم يصرّح أنه مشروعه. إن احتجت معلومة مصدرها غير مؤكد فاذكر ذلك أو اطلب التأكيد."""
 
+DRAFT_RULE = """
+- كل نتائج الفريق هنا رُفضت من المدقق. ابدأ الجواب بسطر واضح: «مسودة غير متحقق منها: لم تجتز أي مهمة التحقق»، ثم قسم «لماذا رُفضت» يلخص أسباب الرفض المذكورة.
+- لا تقدّم أي رقم كحقيقة؛ وسم كل رقم بأنه تقدير غير متحقق منه، واحذف ما وصفه المدقق بأنه مختلق.
+- اختم بما يلزم للحصول على نتيجة موثوقة (مصادر بيانات، معلومات من المستخدم)."""
+
 
 def _sanitize_plan(plan: dict, depth: int) -> list[dict]:
     raw = plan.get("tasks") or []
@@ -558,10 +563,27 @@ class Orchestrator:
         parts = []
         for t in tasks:
             state = {"done": "مُتحقق منها", "failed": "لم تجتز التحقق", "skipped": "لم تُنفذ"}.get(t["status"], t["status"])
-            parts.append(f"## {t['id']} — {t['title']} [{state}]\n{t['output'] or '(لا ناتج)'}")
+            why = ""
+            if t["status"] == "failed":
+                k = t["attempts"][t["best_attempt"] - 1] if t.get("best_attempt") else (t["attempts"] or [{}])[-1]
+                issues = (k.get("verdict") or {}).get("issues") or []
+                why = ("\nأسباب رفض المدقق: " + "؛ ".join(issues[:3])) if issues else ""
+            parts.append(f"## {t['id']} — {t['title']} [{state}]{why}\n{t['output'] or '(لا ناتج)'}")
         ok = all(t["status"] == "done" for t in tasks)
         if not any(t["status"] == "done" for t in tasks):
-            return {"ok": False, "output": "فشلت كل المهام ولم يُنتج الفريق نتيجة يمكن الوثوق بها.\n\n" + "\n\n".join(parts)}
+            if not final or not any(t["output"] for t in tasks):
+                return {"ok": False, "output": "فشلت كل المهام ولم يُنتج الفريق نتيجة يمكن الوثوق بها.\n\n" + "\n\n".join(parts)}
+            # Nothing passed, but rejected drafts exist: give the user one readable draft that says so up front,
+            # instead of a dump of raw outputs. The run still ends "failed" and nothing is saved to memory.
+            await self.run.emit("synthesizing", {"final": final, "unverified": True})
+            try:
+                answer = await self.llm.chat([{"role": "system", "content": SYNTH + DRAFT_RULE}, {"role": "user", "content":
+                                              f"طلب المستخدم:\n{goal}\n\nنتائج الفريق (كلها رُفضت من المدقق):\n\n" + "\n\n".join(parts)}],
+                                             temperature=0.2, max_tokens=4000)
+            except LLMError:
+                return {"ok": False, "output": "فشلت كل المهام ولم يُنتج الفريق نتيجة يمكن الوثوق بها.\n\n" + "\n\n".join(parts)}
+            return {"ok": False, "output": answer, "verdict": {"pass": False, "score": None, "draft": True,
+                                                               "issues": ["لم تجتز أي مهمة التحقق؛ هذا الجواب مسودة غير متحقق منها."]}}
         await self.run.emit("synthesizing", {"final": final})
         msgs = [{"role": "system", "content": SYNTH},
                 {"role": "user", "content": f"طلب المستخدم:\n{goal}\n\nنتائج الفريق:\n\n" + "\n\n".join(parts)}]

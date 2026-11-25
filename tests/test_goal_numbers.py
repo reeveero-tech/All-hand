@@ -42,3 +42,20 @@ def test_note_reaches_agents_and_export():
     assert "53,333.33" in orch.anchored()
     md = to_markdown({**r.full(), "tasks": {}})
     assert "تدقيق أرقام الطلب" in md and "53,333.33" in md
+
+
+def test_all_rejected_gives_one_labeled_draft_not_a_dump():
+    from tests.test_core import FakeLLM, T, plan_of, run_with
+    seen = []
+
+    class Spy(FakeLLM):
+        async def chat(self, messages, temperature=0.3, max_tokens=2000):
+            if messages[0]["content"].startswith("أنت المنسق. اجمع"):
+                seen.append(messages)
+            return await super().chat(messages, temperature, max_tokens)
+
+    bad = {"pass": False, "score": 3, "issues": ["رقم مختلق"], "fix": "احذفه"}
+    run = asyncio.run(run_with(Spy(plan_of(T("a"), T("b")), verdicts=[bad] * 6)))
+    assert run.status == "failed" and run.result == "الجواب النهائي المجمع"
+    assert run.verdict.get("draft") is True
+    assert "مسودة غير متحقق منها" in seen[0][0]["content"] and "رقم مختلق" in seen[0][1]["content"]
