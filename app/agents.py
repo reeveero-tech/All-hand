@@ -93,7 +93,7 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
             msg = await llm.chat_json(messages, temperature=0.3, max_tokens=2500)
         except ValueError:
             raw = await llm.chat(messages)
-            return {"output": raw, "confidence": 0.3, "sources": sources([]), "steps": steps}
+            return {"output": raw, "confidence": 0.3, "sources": sources([]), "read": list(read), "steps": steps}
         action = msg.get("action")
         if action == "tool" and steps < MAX_STEPS:
             name, args = msg.get("tool", ""), msg.get("input", {})
@@ -107,13 +107,13 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
             continue
         if action == "final" or "output" in msg:
             return {"output": str(msg.get("output", "")), "confidence": float(msg.get("confidence") or 0.5),
-                    "sources": sources(msg.get("sources")), "steps": steps}
+                    "sources": sources(msg.get("sources")), "read": list(read), "steps": steps}
         messages += [{"role": "assistant", "content": json.dumps(msg, ensure_ascii=False)},
                      {"role": "user", "content": "استدعِ أداة أو سلّم النتيجة النهائية بالشكل المحدد."}]
     messages.append({"role": "user", "content": "نفدت الخطوات. سلّم الآن أفضل نتيجة لديك بالشكل final."})
     try:
         msg = await llm.chat_json(messages)
         return {"output": str(msg.get("output", "")), "confidence": float(msg.get("confidence") or 0.4),
-                "sources": sources(msg.get("sources")), "steps": steps}
+                "sources": sources(msg.get("sources")), "read": list(read), "steps": steps}
     except (ValueError, LLMError) as e:
-        return {"output": f"تعذر الإنجاز: {e}", "confidence": 0.0, "sources": sources([]), "steps": steps}
+        return {"output": f"تعذر الإنجاز: {e}", "confidence": 0.0, "sources": sources([]), "read": list(read), "steps": steps}
