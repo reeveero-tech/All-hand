@@ -15,11 +15,11 @@ from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import Response, FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import memory, store
+from . import export, memory, store
 from .agents import ROLES
 from .llm import LLM, LLMError, resolve_config
 from .orchestrator import DEFAULT_MAX_AGENTS, Orchestrator, Run
@@ -250,6 +250,15 @@ async def get_run(run_id: str, x_client_key: str | None = Header(default=None)):
     data["status"] = store.effective_status(data, live=False)
     data.pop("heartbeat_at", None)
     return data
+
+
+@app.get("/api/runs/{run_id}/export")
+async def export_run(run_id: str, x_client_key: str | None = Header(default=None)):
+    """The run as a Markdown report file (only the owner; same 404 otherwise)."""
+    data = await _own_run(run_id, _owner(x_client_key))
+    data.pop("owner", None)
+    return Response(export.to_markdown(data), media_type="text/markdown; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="all-hand-{run_id}.md"'})
 
 
 @app.post("/api/runs/{run_id}/cancel")
