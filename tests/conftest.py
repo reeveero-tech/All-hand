@@ -23,3 +23,11 @@ def _fresh_search_state(monkeypatch):
         p.stats = {k: 0 for k in p.stats}
     yield
     tools._cache.clear()
+
+
+@pytest.fixture(autouse=True)
+def _research_manager_off(monkeypatch):
+    """Older tests drive agents with scripted models; the research manager is enabled only by tests that test it."""
+    from app.research import manager
+    monkeypatch.setattr(manager, "ENABLED", False)
+    yield

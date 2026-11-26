@@ -13,6 +13,8 @@ import uuid
 from dataclasses import dataclass, field
 
 from .research import evidence
+from .research import manager as research_manager
+from .research import quality_gate
 from . import memory, quality
 from .agents import ROLES, run_agent
 from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip, extract_objects, looks_truncated
@@ -42,6 +44,9 @@ class Run:
     plan_decision: dict | None = None  # what the owner decided: {"action", "dropped", "note", "at"}
     scenario: bool = False  # user marked this run as a test/hypothetical: nothing it learns is about the user
     research: dict | None = None  # per-run measurements: searches, results, pages really read, sources in the answer
+    research_state: dict | None = None  # the research manager's state: facets, candidates, readings, budget used (resumable)
+    research_reuse: dict | None = None  # follow-up: the previous turn's research state, whose readings stay valid
+    research_gate: dict | None = None  # the research quality gate's verdict on the final answer
     prior_check: dict | None = None  # follow-up: the previous answer's figures, checked and classified
     goal_checks: list | None = None  # arithmetic the user stated in the request, recomputed exactly (None: not checked)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
@@ -86,7 +91,8 @@ class Run:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
                 "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "goal_checks": self.goal_checks,
-                "research": self.research, "prior_check": self.prior_check, "events": self.events}
+                "research": self.research, "prior_check": self.prior_check, "research_state": self.research_state,
+                "research_gate": self.research_gate, "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -460,6 +466,9 @@ def research_stats(r: Run) -> dict:
             for u in e.get("read") or []:
                 if u not in read:
                     read.append(u)
+        elif e.get("type") == "evidence" and e.get("stage") == "opened" and not e.get("failure") and e.get("url"):
+            if e["url"] not in read:  # opened and extracted by the research manager itself
+                read.append(e["url"])
     norm = lambda u: u.rstrip("/.").lower()  # noqa: E731
     in_answer = list(dict.fromkeys(u.rstrip(".") for u in _URL.findall(r.result or "")))
     read_n = {norm(u) for u in read}
@@ -480,13 +489,15 @@ def research_stats(r: Run) -> dict:
 def _evidence_summary(r: Run) -> dict:
     """Funnel from the evidence ledger: how many URLs reached each stage, why the others failed."""
     led = evidence.build(r.events, r.result or "")
-    return {k: led[k] for k in ("counts", "failures", "duplicate_content", "independent_domains_read", "headline_only")}
+    return {k: led[k] for k in ("counts", "failures", "duplicate_content", "independent_domains_read", "headline_only",
+                                "by_facet", "summary_only", "cited_as_summary")}
 
 
 class Orchestrator:
     def __init__(self, run: Run, llm: LLM, persist=None, prior: dict | None = None):
         self.run, self.llm, self.persist = run, llm, persist  # persist(): async -> bool, saves the run
         self.prior = prior  # stored data of a stopped run to continue: its plan and verified outputs are reused
+        self.rm: research_manager.ResearchManager | None = None
 
     async def execute(self):
         r = self.run
@@ -519,8 +530,24 @@ class Orchestrator:
             r.verdict = out.get("verdict", {})
             status = "done" if out["ok"] else ("partial" if out.get("partial") else
                                                "cancelled" if out.get("rejected") else "failed")
+            if self.rm and r.result:
+                read = quality_gate.read_set(r.research_state, [u for e in r.events if e.get("type") == "tool_result"
+                                                                for u in e.get("read") or []])
+                r.result, unread = research_manager.annotate_unread(r.result, read)
+                if unread:
+                    await r.emit("unread_links_marked", {"count": len(unread), "urls": unread[:20]})
             r.research = research_stats(r)
             await r.emit("research_stats", r.research)
+            if self.rm:
+                led = evidence.build(r.events, r.result or "")
+                r.research_gate = quality_gate.evaluate(r.research_state, led, r.result or "")
+                await r.emit("research_gate", {k: r.research_gate[k] for k in ("verdict", "gaps", "checks")})
+                if status == "done" and r.research_gate["verdict"] != "sufficient":
+                    # research that ran without error is not research that sufficed
+                    status = "partial"
+                    r.verdict = {**r.verdict, "pass": False, "research_gate": r.research_gate["verdict"],
+                                 "issues": ["أدلة البحث غير كافية لهذا الطلب: " + "؛ ".join(r.research_gate["gaps"][:6])]
+                                 + list(r.verdict.get("issues") or [])}
             if status == "done" and r.research["research_tasks"] and not r.research["pages_read"]:
                 # a study whose researchers opened nothing is not a verified study, whatever the verifiers said
                 status = "partial"
@@ -677,8 +704,40 @@ class Orchestrator:
             await self.run_task(tasks[0], goal, verify_it=False)
             return {"ok": tasks[0]["status"] == "done", "output": tasks[0]["output"]}
 
+        if depth == 0:
+            await self.research(tasks)
         await self.run_dag(tasks)
         return await self.synthesize(goal, tasks, final=(depth == 0))
+
+    async def research(self, tasks: list[dict]):
+        """Run the research manager before any analysis agent: it finds, opens and reads the sources itself.
+        Agents then receive read evidence, and their own search and reading tools go through it."""
+        r = self.run
+        if not research_manager.ENABLED or self.rm is not None:
+            return
+        pending = [t for t in tasks if t["status"] == "pending"]
+        researchish = any(ROLES[t["role"]].tools and set(ROLES[t["role"]].tools) & {"web_search", "fetch_url", "research_sources"}
+                          for t in pending)
+        if not researchish and not r.research_reuse:
+            return
+        prior_state = (self.prior or {}).get("research_state") if self.prior else None
+        budget = research_manager.Budget()
+        if r.research_reuse and not prior_state:
+            budget.max_rounds = 1  # a follow-up keeps what was read and only looks for what the change needs
+        self.rm = research_manager.ResearchManager(
+            r.goal, emit=r.emit, llm=self.llm, budget=budget, state=prior_state, reuse=r.research_reuse,
+            persist=(lambda: self.persist()) if self.persist else None)
+        r.research_state = self.rm.state
+        await r.emit("research_started", {"resumed": bool(prior_state), "reused": bool(r.research_reuse),
+                                          "budget": self.rm.state["budget"]})
+        try:
+            if not (prior_state and prior_state.get("done")):
+                await self.rm.run()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # noqa: BLE001  research failing must not stop the run; the gate will say what is missing
+            await r.emit("research_error", {"error": f"{type(e).__name__}: {str(e)[:200]}"})
+        r.research_state = self.rm.to_dict()
 
     async def _await_approval(self, tasks: list[dict]) -> list[dict]:
         """Wait for the owner's decision on the root plan. Approve runs it (minus dropped tasks, with the
@@ -753,6 +812,7 @@ class Orchestrator:
             if t["status"] == "pending":
                 await self.run_task(t, goal, verify_it=False)
             return {"ok": t["status"] == "done", "output": t["output"]}
+        await self.research(tasks)
         await self.run_dag(tasks)
         return await self.synthesize(goal, tasks, final=True)
 
@@ -824,14 +884,27 @@ class Orchestrator:
             instr = t["instructions"] + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
             ctx = (f"طلب المستخدم الأصلي (للسياق؛ نفّذ مهمتك أنت فقط والتزم بموضوعه وأرقامه بعد أي تصحيح حسابي مذكور):\n{self.anchored()}"
                    + (f"\n\n{context}" if context else ""))
+            hook = None
+            if self.rm is not None:
+                if set(role.tools) & {"web_search", "fetch_url", "research_sources", "world_bank"}:
+                    ctx += "\n\n" + self.rm.pack(t["title"] + " " + t["instructions"], self._pack_chars())
+                else:
+                    idx = self.rm.index()
+                    if idx:
+                        ctx += "\n\nفهرس الأدلة التي قرأها النظام (للاستشهاد بالروابط الصحيحة فقط):\n" + idx
+
+                async def hook(name, args, allowed, _t=t["id"]):
+                    return await self.rm.agent_tool(name, args, allowed, _t)
             try:
-                res = await run_agent(self.llm, role, instr, ctx, emit, r.can_exec)
+                res = await run_agent(self.llm, role, instr, ctx, emit, r.can_exec, tool=hook)
             except LLMError as e:
                 t["attempts"].append({"agent": agent_id, "error": str(e)})
                 await r.emit("agent_error", {"task": t["id"], "agent": agent_id, "error": str(e)})
                 continue
             t["output"] = res["output"]
             read = res.get("read") if {"fetch_url", "web_search", "world_bank"} & set(role.tools) else None
+            if read is not None and self.rm is not None:  # evidence the system read and handed to this agent
+                read = list(dict.fromkeys(list(read) + [x["url"] for x in self.rm.evidence_for(t["title"] + " " + t["instructions"])]))
             v = await verify(self.llm, t, res["output"], self.anchored(), read) if verify_it else {"pass": True, "score": None, "issues": []}
             if verify_it:
                 v = apply_audit(v, res["output"])
@@ -851,6 +924,10 @@ class Orchestrator:
             t["output"], t["best_attempt"] = t["attempts"][best]["output"], best + 1
         await r.emit("task_finished", {"task": t["id"], "status": "failed", "attempts": len(t["attempts"]),
                                        "kept_attempt": t.get("best_attempt")})
+
+    def _pack_chars(self) -> int:
+        free = getattr(getattr(self.llm, "cfg", None), "provider", "") == "free"
+        return 5000 if free else 10000
 
     async def _long(self, msgs: list[dict], temperature: float) -> str:
         if hasattr(self.llm, "chat_long"):
@@ -903,6 +980,12 @@ class Orchestrator:
             g_parts = [_clip(p_, share) for p_ in parts]
         else:
             g, g_parts = goal, parts
+        if final and self.rm is not None:
+            idx = self.rm.index(2000)
+            gaps = self.rm.gaps()
+            if idx or gaps:
+                g += ("\n\n---\nفهرس الأدلة التي قرأها النظام فعلًا (استشهد بهذه الروابط وحدها؛ أي رابط آخر سيُوسم «لم يقرأه النظام»):\n" + idx
+                      + ("\n\nنواقص البحث (اذكرها في «حدود هذا الجواب» ولا تملأها بأرقام):\n" + "\n".join(f"- {x}" for x in gaps) if gaps else ""))
         msgs = [{"role": "system", "content": SYNTH},
                 {"role": "user", "content": f"طلب المستخدم:\n{g}\n\nنتائج الفريق:\n\n" + "\n\n".join(g_parts)}]
         answer = await self._long(msgs, 0.3)

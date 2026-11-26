@@ -17,7 +17,7 @@ from urllib.parse import quote_plus, urlparse, parse_qs, unquote
 import httpx
 
 from .research import extract as rx
-from .research import registry, specialized
+from .research import access, documents, registry, specialized
 from .research.registry import content_hash
 
 UA = "Mozilla/5.0 (compatible; All-hand-agent/1.0; +https://github.com/reeveero-tech/All-hand)"
@@ -96,24 +96,30 @@ def fetch_meta(result: str, asked: str = "") -> dict:
     if pm:
         for part in pm.group(1).split(" | "):
             k, _, v = part.partition(": ")
-            key = {"الناشر": "publisher", "تاريخ النشر": "published", "جداول": "tables", "بصمة": "hash"}.get(k.strip())
+            key = {"الناشر": "publisher", "تاريخ النشر": "published", "جداول": "tables", "بصمة": "hash",
+                   "نوع": "kind", "صفحات": "pages", "اكتمال": "completeness"}.get(k.strip())
             if key:
                 page[key] = v.strip()
     return page
 
 
-async def fetch_url(url: str, max_chars: int = MAX_OUT) -> str:
-    """Read a public page as text. Each hop (including redirects) is resolved once, checked, and
-    the connection is pinned to the checked address; the body is capped at MAX_BYTES."""
+async def fetch_raw(url: str, timeout: float = 20.0) -> dict:
+    """The one network reader under fetch_url, the research manager and the crawler. Each hop (including
+    redirects) is resolved once, checked, and the connection is pinned to the checked address. The body is
+    capped at MAX_BYTES, or DOC_MAX_BYTES when the server or URL announces a document (PDF, Office).
+    Returns {"ok", "error" (message, when no HTTP answer), "status", "url" (final), "ctype", "charset",
+    "body" (bytes), "truncated", "headers" (retry-after, last-modified, content-length)}. Never raises."""
+    out = {"ok": False, "error": None, "status": None, "url": url, "ctype": "", "charset": None, "body": b"",
+           "truncated": False, "headers": {}}
     try:
-        async with httpx.AsyncClient(timeout=20, follow_redirects=False, trust_env=False) as c:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False) as c:
             for _ in range(MAX_REDIRECTS + 1):
                 p = urlparse(url or "")
                 if p.scheme not in ("http", "https") or not p.hostname or p.username or p.password:
-                    return "خطأ: رابط غير صالح (http/https فقط)."
+                    return {**out, "error": "خطأ: رابط غير صالح (http/https فقط)."}
                 ip = await asyncio.to_thread(_resolve_public, p.hostname)
                 if not ip:
-                    return "خطأ: العناوين الداخلية/الخاصة ممنوعة."
+                    return {**out, "error": "خطأ: العناوين الداخلية/الخاصة ممنوعة."}
                 target = httpx.URL(url)
                 host_header = target.host if target.port is None else f"{target.host}:{target.port}"
                 req = c.build_request("GET", target.copy_with(host=ip),
@@ -124,38 +130,194 @@ async def fetch_url(url: str, max_chars: int = MAX_OUT) -> str:
                     if r.is_redirect and r.headers.get("location"):
                         url = str(target.join(r.headers["location"]))
                         continue
+                    ctype = r.headers.get("content-type", "")
+                    cap = documents.DOC_MAX_BYTES if documents.is_document_hint(ctype, url) else MAX_BYTES
                     chunks, size = [], 0
                     async for chunk in r.aiter_bytes():
                         chunks.append(chunk)
                         size += len(chunk)
-                        if size >= MAX_BYTES:
+                        if size >= cap:
                             break
-                    raw = b"".join(chunks)[:MAX_BYTES]
+                    raw = b"".join(chunks)
+                    truncated = len(raw) >= cap
+                    raw = raw[:cap]
                 finally:
                     await r.aclose()
                 break
             else:
-                return "خطأ: تحويلات كثيرة."
-        ctype = r.headers.get("content-type", "")
-        if "text" in ctype or "json" in ctype or "xml" in ctype:
-            body = raw.decode(r.charset_encoding or "utf-8", errors="replace")
-        else:
-            body = f"[محتوى غير نصي: {ctype}]"
-        if "html" not in ctype:
-            return _clip(f"HTTP {r.status_code} — {url}\n\n{body}", max_chars)
-        text = _html_to_text(body)
-        info = rx.extract(body)  # what the page states about itself, verbatim: dates, publisher, tables, offers
-        head = [f"HTTP {r.status_code} — {url}"]
-        line = rx.summary_line(info)
-        head.append(PAGE_MARK + " | ".join([x for x in (line,) if x] + [f"جداول: {len(info['tables'])}", f"بصمة: {content_hash(text)}"]) + "]")
-        if info["offers"]:
-            head.append("عروض منظمة في الصفحة (Schema.org): " + "؛ ".join(
-                f"{o['name']} = {o['price']} {o['currency']}".strip() for o in info["offers"][:8]))
-        if info["tables"]:
-            head.append(rx.tables_markdown(info["tables"], TABLES_BUDGET))
-        return _clip("\n".join(head) + "\n\n" + text, max_chars)
+                return {**out, "error": "خطأ: تحويلات كثيرة."}
+        hdr = {k: r.headers.get(k) for k in ("retry-after", "last-modified", "content-length") if r.headers.get(k)}
+        return {**out, "ok": True, "status": r.status_code, "url": url, "ctype": ctype, "charset": r.charset_encoding,
+                "body": raw, "truncated": truncated, "headers": hdr}
     except Exception as e:  # noqa: BLE001
-        return f"خطأ في الجلب: {type(e).__name__}: {str(e)[:200]}"
+        return {**out, "error": f"خطأ في الجلب: {type(e).__name__}: {str(e)[:200]}"}
+
+
+def _status_failure(status: int | None) -> str | None:
+    if status is None:
+        return "network_error"
+    if 200 <= status < 300:
+        return None
+    if status in (401, 403, 451):
+        return "blocked"
+    if status == 429:
+        return "rate_limited"
+    if status in (404, 410):
+        return "not_found"
+    if status >= 500:
+        return "server_error"
+    return f"http_{status}"
+
+
+async def read_url(url: str, max_chars: int = 120_000, main_text: bool = True) -> dict:
+    """Open a URL and return what was really read, as data (the research manager records it as evidence):
+    {"url", "asked", "status", "failure", "error", "kind", "ctype", "method", "text", "tables" [[row]],
+     "offers", "title", "publisher", "published", "modified", "lang", "hash", "pages_total", "pages_read",
+     "ocr_pages", "completeness" (full|partial|needs_ocr), "notes", "retry_after", "body_text" (non-2xx bodies)}.
+    `failure` is None only when readable content came out."""
+    raw = await fetch_raw(url)
+    rd = {"url": raw["url"], "asked": url, "status": raw["status"], "failure": None, "error": raw["error"],
+          "kind": "", "ctype": raw["ctype"], "method": "", "text": "", "tables": [], "offers": [], "title": "",
+          "publisher": "", "published": "", "modified": "", "lang": "", "last_modified": raw["headers"].get("last-modified", ""),
+          "hash": "", "pages_total": 0, "pages_read": 0, "ocr_pages": [], "completeness": "", "notes": [],
+          "retry_after": raw["headers"].get("retry-after", ""), "body_text": "", "full_text": "", "links": [], "wall": ""}
+    if not raw["ok"]:
+        from .research.evidence import classify_failure
+        rd["failure"] = classify_failure(raw["error"] or "")
+        return rd
+    body, ctype = raw["body"], raw["ctype"]
+    s = documents.sniff(body, ctype, raw["url"])
+    rd["kind"] = s["kind"]
+    if s["mismatch"]:
+        rd["notes"].append(s["mismatch"])
+    if not 200 <= raw["status"] < 300:
+        rd["failure"] = _status_failure(raw["status"])
+        if s["kind"] in ("html", "text", "json", "xml"):
+            txt = body.decode(raw["charset"] or "utf-8", errors="replace")
+            rd["body_text"] = _html_to_text(txt) if s["kind"] == "html" else txt
+        return rd
+    if s["kind"] in documents.DOC_KINDS:
+        if raw["truncated"]:
+            rd.update(failure="too_large", method="httpx")
+            return rd
+        d = await documents.parse(body, ctype, raw["url"])
+        rd["method"] = "httpx+" + (d.get("method") or s["kind"])
+        rd["notes"] += list(d.get("notes") or [])
+        if not d.get("ok"):
+            rd["failure"] = "unreadable_document"
+            rd["notes"].append(str(d.get("error") or ""))
+            return rd
+        meta = d.get("meta") or {}
+        rd.update(text=(d.get("text") or "")[:max_chars], tables=documents.tables_to_rows(d.get("tables")),
+                  title=meta.get("title", ""), published=meta.get("created", "") or meta.get("modified", ""),
+                  pages_total=d.get("pages_total") or 0, pages_read=d.get("pages_read") or 0,
+                  ocr_pages=d.get("ocr_pages") or [], completeness=d.get("completeness") or "full")
+        if rd["completeness"] == "needs_ocr" or not (rd["text"].strip() or rd["tables"]):
+            rd["failure"] = "needs_ocr" if rd["ocr_pages"] else "empty_content"
+        rd["hash"] = content_hash(rd["text"] + json.dumps(rd["tables"], ensure_ascii=False))
+        return rd
+    if s["kind"] in ("html", "text", "json", "xml"):
+        txt = body.decode(raw["charset"] or "utf-8", errors="replace")
+        if s["kind"] == "html" or "html" in ctype:
+            info = rx.extract(txt)
+            full = _html_to_text(txt)
+            main = await documents.main_text(body, raw["charset"] or "utf-8") if main_text else None
+            use_main = bool(main) and len(main) >= 200
+            rd.update(kind="html", text=(main if use_main else full)[:max_chars], tables=info["tables"],
+                      offers=info["offers"], title=info["title"], publisher=info["publisher"],
+                      published=info["published"], modified=info["modified"], lang=info["lang"],
+                      method="httpx+" + ("trafilatura" if use_main else "html_parser"), full_text=full)
+            rd["hash"] = content_hash(full)
+            rd["links"] = page_links(txt, raw["url"])
+            gate = access.wall(txt)
+            if gate:  # a 2xx answer that is really a login, CAPTCHA or paywall page: not content, not bypassed
+                rd.update(failure="access_wall", wall=gate)
+                return rd
+        else:
+            rd.update(text=txt[:max_chars], method="httpx")
+            rd["hash"] = content_hash(txt)
+        rd["completeness"] = "partial" if raw["truncated"] or len(rd["text"]) >= max_chars else "full"
+        if len(re.sub(r"\s+", "", rd["text"])) < 40 and not rd["tables"] and not rd["offers"]:
+            rd["failure"] = "empty_content"
+        return rd
+    rd["failure"] = "non_text"
+    return rd
+
+
+_HREF = re.compile(r"""<a\s[^>]*?href\s*=\s*["']([^"'#]+)""", re.I)
+
+
+def page_links(raw_html: str, base: str, limit: int = 400) -> list[str]:
+    """Absolute http(s) links of a page, in order, without duplicates (for the crawler)."""
+    out, seen = [], set()
+    try:
+        b = httpx.URL(base)
+    except Exception:  # noqa: BLE001
+        return []
+    for h in _HREF.findall(raw_html or ""):
+        h = html.unescape(h.strip())
+        if h.startswith(("mailto:", "javascript:", "tel:", "data:")):
+            continue
+        try:
+            u = str(b.join(h))
+        except Exception:  # noqa: BLE001
+            continue
+        if u.startswith(("http://", "https://")) and u not in seen:
+            seen.add(u)
+            out.append(u)
+            if len(out) >= limit:
+                break
+    return out
+
+
+DOC_LABEL = {"pdf": "PDF", "docx": "Word", "xlsx": "Excel"}
+
+
+async def fetch_url(url: str, max_chars: int = MAX_OUT) -> str:
+    """Read a public page or document as text for an agent (the same reader as the research manager)."""
+    raw = await fetch_raw(url)
+    if not raw["ok"]:
+        return raw["error"]
+    r_url, ctype, body = raw["url"], raw["ctype"], raw["body"]
+    s = documents.sniff(body, ctype, r_url)
+    if s["kind"] in documents.DOC_KINDS and 200 <= raw["status"] < 300:
+        if raw["truncated"]:
+            return f"HTTP {raw['status']} — {r_url}\n[مستند غير مقروء: أكبر من الحد ({documents.DOC_MAX_BYTES // 2**20} MB)]"
+        d = await documents.parse(body, ctype, r_url)
+        if not d.get("ok"):
+            return f"HTTP {raw['status']} — {r_url}\n[مستند غير مقروء: {DOC_LABEL.get(s['kind'], s['kind'])} — {d.get('error')}]"
+        text = d.get("text") or ""
+        tables = documents.tables_to_rows(d.get("tables"))
+        bits = [f"نوع: {DOC_LABEL[s['kind']]}"]
+        if d.get("pages_total"):
+            bits.append(f"صفحات: {d.get('pages_read')}/{d.get('pages_total')}")
+        if d.get("ocr_pages"):
+            bits.append(f"يحتاج OCR: {len(d['ocr_pages'])} صفحة")
+        bits.append(f"اكتمال: {d.get('completeness')}")
+        bits += [f"جداول: {len(tables)}", f"بصمة: {content_hash(text + json.dumps(tables, ensure_ascii=False))}"]
+        head = [f"HTTP {raw['status']} — {r_url}", PAGE_MARK + " | ".join(bits) + "]"]
+        if d.get("completeness") == "needs_ocr" or not (text.strip() or tables):
+            head.append("[يحتاج OCR: صفحات ممسوحة ضوئيًا بلا طبقة نص؛ لم يُستخرج منها محتوى، فلا تنسب إليها أرقامًا]")
+        if tables:
+            head.append(rx.tables_markdown(tables, TABLES_BUDGET))
+        return _clip("\n".join(head) + "\n\n" + text, max_chars)
+    if "text" in ctype or "json" in ctype or "xml" in ctype:
+        txt = body.decode(raw["charset"] or "utf-8", errors="replace")
+    else:
+        txt = f"[محتوى غير نصي: {ctype}]"
+    if "html" not in ctype:
+        return _clip(f"HTTP {raw['status']} — {r_url}\n\n{txt}", max_chars)
+    text = _html_to_text(txt)
+    info = rx.extract(txt)  # what the page states about itself, verbatim: dates, publisher, tables, offers
+    head = [f"HTTP {raw['status']} — {r_url}"]
+    line = rx.summary_line(info)
+    head.append(PAGE_MARK + " | ".join([x for x in (line,) if x] + [f"جداول: {len(info['tables'])}", f"بصمة: {content_hash(text)}"]) + "]")
+    if info["offers"]:
+        head.append("عروض منظمة في الصفحة (Schema.org): " + "؛ ".join(
+            f"{o['name']} = {o['price']} {o['currency']}".strip() for o in info["offers"][:8]))
+    if info["tables"]:
+        head.append(rx.tables_markdown(info["tables"], TABLES_BUDGET))
+    return _clip("\n".join(head) + "\n\n" + text, max_chars)
 
 
 # DuckDuckGo answers a burst of requests from one server with 202 (bot check) and then keeps refusing for
@@ -462,71 +624,83 @@ def search_meta(result: str) -> dict:
             "read": re.findall(re.escape(READ_MARK) + r"([^\]\s]+)\]", result or ""), "found": found_links(result)}
 
 
-async def web_search(query: str) -> str:
-    """Tavily (keyless, or the owner's free key), Brave if keyed, then DuckDuckGo (gated), Google News, then Wikipedia.
-    The top results are opened and their relevant lines appended, marked as read."""
+async def search_results(query: str) -> tuple[list, str, str]:
+    """The general search chain as data: (results, source label, error). Shared by web_search (agents) and the
+    research manager, so both use the same providers, breakers, gates and cache.
+    Tavily (keyless, or the owner's free key), Brave if keyed, then DuckDuckGo (gated), Google News, then Wikipedia."""
     query = re.sub(r"\s+", " ", str(query or "")).strip()[:200]
     if not query:
-        return "خطأ: استعلام فارغ."
+        return [], "", "empty"
     key = query.lower()
     hit = _cache.get(key)
     if hit and time.monotonic() - hit[0] < CACHE_TTL:
         STATS["cache_hits"] += 1
-        results, source = hit[1], hit[2]
-    else:
-        results, source = [], ""
-        chain = ["Tavily"]  # keyless when no key is set
-        if os.environ.get("BRAVE_API_KEY"):
-            chain.append("Brave")
-        chain += ["DuckDuckGo", "DuckDuckGo HTML"]
-        extra = [n for n in specialized.available("web")]  # e.g. a self-hosted SearXNG, asked at the same time
-        side = asyncio.ensure_future(registry.fan_out(extra, query)) if extra else None
-        for name in chain:
-            try:
-                results = await registry.call(registry.REGISTRY[name], query, timeout=45)
-            except _Blocked:
-                results = []
-                break  # the gate is closed for both DuckDuckGo endpoints
-            except registry.Skipped:
-                results = []
-            if results:
-                source = name.replace(" HTML", "")
-                break
-        if side:
-            got = {n: r for n, r in (await side).items() if r}
-            if got:
-                results = registry.merge([results] + list(got.values()))
-                source = " + ".join([source] * bool(source) + list(got))
-        if not results:  # DuckDuckGo refuses many server IPs: news search is keyless and opens real articles
-            try:
-                gn = registry.REGISTRY["Google News"]
-                results = await registry.call(gn, query, timeout=45)
-                STATS["gnews_requests"] += 1
-                if not results and len(_terms(query)) > 3:  # news search needs most words; long copied text finds nothing
-                    results = await registry.call(gn, " ".join(_terms(query)[:3]), timeout=45)
-            except registry.Skipped:
-                results = []
-            except Exception as e:  # noqa: BLE001
-                STATS["gnews_last_error"] = type(e).__name__
-                results = []
-            if results:
-                source = "Google News"
-                STATS["gnews_ok"] = STATS.get("gnews_ok", 0) + 1
-        if not results:
-            lang = "ar" if re.search(r"[\u0600-\u06FF]", query) else "en"
-            try:
-                wp = registry.REGISTRY["Wikipedia"]
-                results, source = await registry.call(wp, query), f"Wikipedia ({lang})"
-                if not results and len(_terms(query)) > 2:  # its search needs every word; retry with the main ones
-                    results = await registry.call(wp, " ".join(_terms(query)[:2]))
-            except registry.Skipped:
-                results = []
-            except Exception as e:  # noqa: BLE001
-                return f"خطأ في البحث: {e}"
-            if results:
-                source += " — بحث موسوعي احتياطي؛ النتائج قد لا تجيب عن السؤال"
+        return hit[1], hit[2], ""
+    results, source = [], ""
+    chain = ["Tavily"]  # keyless when no key is set
+    if os.environ.get("BRAVE_API_KEY"):
+        chain.append("Brave")
+    chain += ["DuckDuckGo", "DuckDuckGo HTML"]
+    extra = [n for n in specialized.available("web")]  # e.g. a self-hosted SearXNG, asked at the same time
+    side = asyncio.ensure_future(registry.fan_out(extra, query)) if extra else None
+    for name in chain:
+        try:
+            results = await registry.call(registry.REGISTRY[name], query, timeout=45)
+        except _Blocked:
+            results = []
+            break  # the gate is closed for both DuckDuckGo endpoints
+        except registry.Skipped:
+            results = []
         if results:
-            _cache[key] = (time.monotonic(), results, source)
+            source = name.replace(" HTML", "")
+            break
+    if side:
+        got = {n: r for n, r in (await side).items() if r}
+        if got:
+            results = registry.merge([results] + list(got.values()))
+            source = " + ".join([source] * bool(source) + list(got))
+    if not results:  # DuckDuckGo refuses many server IPs: news search is keyless and opens real articles
+        try:
+            gn = registry.REGISTRY["Google News"]
+            results = await registry.call(gn, query, timeout=45)
+            STATS["gnews_requests"] += 1
+            if not results and len(_terms(query)) > 3:  # news search needs most words; long copied text finds nothing
+                results = await registry.call(gn, " ".join(_terms(query)[:3]), timeout=45)
+        except registry.Skipped:
+            results = []
+        except Exception as e:  # noqa: BLE001
+            STATS["gnews_last_error"] = type(e).__name__
+            results = []
+        if results:
+            source = "Google News"
+            STATS["gnews_ok"] = STATS.get("gnews_ok", 0) + 1
+    if not results:
+        lang = "ar" if re.search(r"[\u0600-\u06FF]", query) else "en"
+        try:
+            wp = registry.REGISTRY["Wikipedia"]
+            results, source = await registry.call(wp, query), f"Wikipedia ({lang})"
+            if not results and len(_terms(query)) > 2:  # its search needs every word; retry with the main ones
+                results = await registry.call(wp, " ".join(_terms(query)[:2]))
+        except registry.Skipped:
+            results = []
+        except Exception as e:  # noqa: BLE001
+            return [], "", f"خطأ في البحث: {e}"
+        if results:
+            source += " — بحث موسوعي احتياطي؛ النتائج قد لا تجيب عن السؤال"
+    if results:
+        _cache[key] = (time.monotonic(), results, source)
+    return results, source, ""
+
+
+async def web_search(query: str) -> str:
+    """The general search chain, rendered for an agent. The top results are opened and their relevant lines
+    appended, marked as read."""
+    query = re.sub(r"\s+", " ", str(query or "")).strip()[:200]
+    if not query:
+        return "خطأ: استعلام فارغ."
+    results, source, err = await search_results(query)
+    if err:
+        return err
     if not results:
         keyed = os.environ.get("TAVILY_API_KEY") or os.environ.get("BRAVE_API_KEY")
         return "لا نتائج." + ("" if keyed else " (محرك البحث المجاني يرفض الطلبات مؤقتًا؛ لا تكرر البحث نفسه. افتح رابطًا معروفًا بـ fetch_url إن كان متاحًا لك، أو استخدم world_bank للبيانات السكانية والاقتصادية.)")

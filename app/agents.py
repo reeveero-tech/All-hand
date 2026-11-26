@@ -59,7 +59,10 @@ def _research_rules(tools: tuple[str, ...]) -> str:
         rules += ("fetch_url يضيف سطر «[الصفحة: الناشر، تاريخ النشر، آخر تحديث، عدد الجداول]» والجداول والعروض المنظمة كما هي في الصفحة؛ "
                   "اذكر تاريخ المصدر مع كل رقم تأخذه منه، وانقل أرقام الجداول كما وردت دون تقريب.\n")
     if "research_sources" in tools:
-        rules += "للدراسات والأوراق العلمية استخدم research_sources بـ «academic: ...»؛ نتائجه قوائم لا نصوص مقروءة.\n"
+        rules += ("للدراسات والأوراق العلمية استخدم research_sources بـ «academic: ...»؛ نتائجه قوائم، ويفتح النظام أهمها بنفسه ويذكر نوع القراءة "
+                  "(نص كامل، أو «ملخص فقط» وهو ليس نص الدراسة).\n")
+    rules += ("إن وصلك قسم «أدلة قرأها النظام فعلًا» فابدأ منه: هذه صفحات ومستندات فتحها النظام واستخرج منها النص؛ استشهد بروابطها ورقم الدليل [E#]، "
+              "ولا تعِد فتحها. لا تذكر رابطًا لم يُقرأ كمصدر، ولا تخمّن رقمًا ليس في الأدلة.\n")
     if "world_bank" in tools:
         rules += "للسكان والدخل والتضخم استخدم world_bank (بيانات رسمية بمصدر) بدل التخمين.\n"
     return rules
@@ -91,7 +94,7 @@ EmitFn = Callable[[str, dict], Awaitable[None]]
 
 
 async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
-                    can_exec: bool) -> dict:
+                    can_exec: bool, tool=None) -> dict:
     """Tool-using loop. Returns {"output", "confidence", "sources", "steps"}."""
     allowed = {t for t in role.tools if can_exec or t != "run_python"}
     messages = [{"role": "system", "content": system_prompt(role, can_exec)},
@@ -120,10 +123,14 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
         if action == "tool" and steps < MAX_STEPS:
             name, args = msg.get("tool", ""), msg.get("input", {})
             await emit("tool_call", {"tool": name, "input": args, "why": msg.get("why", "")})
-            result = await call_tool(name, args, allowed)
+            via = None
+            if tool is not None:  # the run's research manager: same reader, one opening per URL, ledger events
+                result, via = await tool(name, args, allowed)
+            else:
+                result = await call_tool(name, args, allowed)
             meta = search_meta(result) if name in ("web_search", "research_sources") else {}
             if name == "research_sources":
-                meta["read"] = []  # index listings: discovered, not read
+                meta["read"] = []  # index listings: discovered, not read (what the manager opened is added below)
             if name == "fetch_url":
                 page = fetch_meta(result, (args.get("url") if isinstance(args, dict) else args) or "")
                 meta = {"page": page}
@@ -131,6 +138,8 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
                     meta["read"] = [page["url"]]
             elif name == "world_bank" and result.startswith(READ_MARK):
                 meta = {"read": [result[len(READ_MARK):].split("]", 1)[0]]}
+            if via is not None and name != "fetch_url":
+                meta["read"] = list(via)  # only what the manager really opened and extracted
             await emit("tool_result", {"tool": name, "preview": result[:400], **meta})
             for u in meta.get("read") or []:
                 if u not in read:
