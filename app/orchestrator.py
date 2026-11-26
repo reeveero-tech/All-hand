@@ -17,7 +17,8 @@ from .research import manager as research_manager
 from .research import quality_gate
 from . import memory, quality
 from .agents import ROLES, run_agent
-from .llm import FREE_PROMPT_CHARS, LLM, LLMError, _clip, extract_objects, looks_truncated
+from .llm import FREE_PROMPT_CHARS, LLM, LLMError, ModelPaused, _clip, extract_objects, looks_truncated
+from .llm import phase as llm_phase
 
 MAX_DEPTH = 2
 MAX_TASKS_PER_PLAN = 10
@@ -49,9 +50,11 @@ class Run:
     research_gate: dict | None = None  # the research quality gate's verdict on the final answer
     prior_check: dict | None = None  # follow-up: the previous answer's figures, checked and classified
     goal_checks: list | None = None  # arithmetic the user stated in the request, recomputed exactly (None: not checked)
+    pause: dict | None = None  # why the run stopped and waits: {"kind", "phase", "step", "message", "resume_after", "at"}
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled | interrupted (server shutdown)
+    #                          | paused_quota (model quota spent) | paused_provider (provider down, rate limit, key refused)
     tasks: dict = field(default_factory=dict)
     events: list = field(default_factory=list)
     result: str = ""
@@ -92,7 +95,7 @@ class Run:
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
                 "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "goal_checks": self.goal_checks,
                 "research": self.research, "prior_check": self.prior_check, "research_state": self.research_state,
-                "research_gate": self.research_gate, "events": self.events}
+                "research_gate": self.research_gate, "pause": self.pause, "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -257,8 +260,10 @@ async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list |
                                  + _clip(output, max(3000, min(12000, FREE_PROMPT_CHARS - len(VERIFIER) - len(head)
                                                                - min(len(task['instructions']), 3000) - 1200)))}],
                                 temperature=0.0, max_tokens=800)
+    except ModelPaused:
+        raise  # a review that could not run is neither a pass nor a rejection: the run pauses and reviews later
     except (ValueError, LLMError) as e:
-        return {"pass": False, "score": 0, "issues": [f"تعذر التحقق: {e}"], "fix": ""}
+        return {"pass": False, "score": 0, "issues": [f"تعذر التحقق: {e}"], "fix": "", "unreviewed": True}
     score = float(v.get("score") or 0)
     return {"pass": bool(v.get("pass")) and score >= 7, "score": score,
             "issues": [str(x) for x in (v.get("issues") or [])][:6], "fix": str(v.get("fix") or "")}
@@ -315,6 +320,8 @@ async def check_goal_numbers(llm: LLM, goal: str) -> list[dict]:
     try:
         p = await llm.chat_json([{"role": "system", "content": NUMCHECK}, {"role": "user", "content": goal[:GOAL_CHARS]}],
                                 temperature=0.0, max_tokens=600)
+    except ModelPaused:
+        raise
     except (ValueError, LLMError):
         return []
     return grade_claims(p.get("claims"))
@@ -500,11 +507,22 @@ def _evidence_summary(r: Run) -> dict:
                                 "by_facet", "summary_only", "cited_as_summary")}
 
 
+PAUSE_MESSAGE = {
+    "quota_exhausted": "نفدت حصة النموذج لهذا اليوم. العمل المنجز محفوظ كله (الخطة والأدلة ونتائج الوكلاء والمراجعات)، "
+                       "والمهمة متوقفة مؤقتًا تنتظر توفر النموذج. استكملها بعد عودة الحصة فتبدأ من الخطوة التي توقفت عندها.",
+    "rate_limited": "المزود يرفض الطلبات مؤقتًا لكثرتها. العمل المنجز محفوظ، والمهمة متوقفة مؤقتًا؛ استكملها بعد قليل.",
+    "provider_unavailable": "مزود النموذج لا يستجيب الآن. العمل المنجز محفوظ، والمهمة متوقفة مؤقتًا؛ استكملها حين يعود.",
+    "timeout": "انتهت مهلة مزود النموذج مرات متتالية. العمل المنجز محفوظ، والمهمة متوقفة مؤقتًا؛ استكملها لاحقًا.",
+    "authentication_error": "المزود رفض مفتاح النموذج. العمل المنجز محفوظ؛ صحّح المفتاح ثم استكمل المهمة.",
+}
+
+
 class Orchestrator:
     def __init__(self, run: Run, llm: LLM, persist=None, prior: dict | None = None):
         self.run, self.llm, self.persist = run, llm, persist  # persist(): async -> bool, saves the run
         self.prior = prior  # stored data of a stopped run to continue: its plan and verified outputs are reused
         self.rm: research_manager.ResearchManager | None = None
+        self.step = "start"  # the step being worked on, recorded if the model stops answering
 
     async def execute(self):
         r = self.run
@@ -513,11 +531,13 @@ class Orchestrator:
                                          "memory": bool(r.memory_space)})
             existing = await self.recall()
             if r.goal_checks is None:  # a resumed run keeps the checks it already made
-                r.goal_checks = await check_goal_numbers(self.llm, r.goal)
+                with llm_phase("intake"):
+                    r.goal_checks = await check_goal_numbers(self.llm, r.goal)
                 if r.goal_checks:
                     await r.emit("goal_checked", {"checks": r.goal_checks})
             if r.context:
-                await self.check_prior()
+                with llm_phase("intake"):
+                    await self.check_prior()
             goal = r.goal + (f"\n\n---\n{self.note}" if self.note else "") + (f"\n\n---\n{self.prior_note}" if self.prior_note else "") \
                 + (f"\n\n---\n{r.context}" if r.context else "")
             rejected = (r.prior_check or {}).get("rejected") or []
@@ -567,8 +587,11 @@ class Orchestrator:
                     r.memory["skipped"] = "أخطاء حسابية في الجواب النهائي" if r.verdict.get("arithmetic") else "أرقام غير معقولة في الجواب النهائي"
                     await r.emit("memory_skipped", {"reason": r.memory["skipped"]})
                 else:
-                    await self.remember(existing)  # before status flips, so clients see saved memory with the result
+                    with llm_phase("memory"):
+                        await self.remember(existing)  # before status flips, so clients see saved memory with the result
             r.status = status
+        except ModelPaused as e:
+            await self._paused(e)
         except asyncio.CancelledError:
             if r.status == "interrupted":  # server shutdown, not the user
                 await r.emit("run_interrupted", {})
@@ -586,6 +609,20 @@ class Orchestrator:
                 r.saved = await self._persist_final()
             await r.emit("run_finished", {"status": r.status, "usage": r.usage, "agents_spawned": r.agents_spawned,
                                           "saved": r.saved})
+
+    async def _paused(self, e: ModelPaused):
+        """The model stopped answering (quota spent, provider down, key refused). Nothing done so far is lost: the
+        run keeps its plan, research, every agent's output and review, and waits to be resumed from this point."""
+        r = self.run
+        r.status = "paused_quota" if e.kind in ("quota_exhausted",) else "paused_provider"
+        done = [t["id"] for t in r.tasks.values() if t.get("status") == "done"]
+        usage = getattr(self.llm, "usage", None)
+        r.pause = {"kind": e.kind, "http_status": e.status, "phase": (getattr(usage, "last_error", None) or {}).get("phase"),
+                   "step": self.step, "message": PAUSE_MESSAGE.get(e.kind, PAUSE_MESSAGE["provider_unavailable"]),
+                   "provider_message": str(e)[:300], "resume_after": e.resume_after, "at": time.time(),
+                   "kept": {"tasks_done": done, "readings": len(((r.research_state or {}).get("readings") or {}))}}
+        r.error = ""
+        await r.emit("run_paused", {k: r.pause[k] for k in ("kind", "phase", "step", "resume_after", "message", "kept")})
 
     @property
     def note(self) -> str:
@@ -693,7 +730,9 @@ class Orchestrator:
         if p:
             return await self._continue(goal, p)
         await r.emit("planning", {"scope": prefix or "root", "depth": depth})
-        p = await plan(self.llm, goal, depth, r.can_exec, follow_up=bool(r.context))
+        self.step = f"plan:{prefix or 'root'}"
+        with llm_phase("planning"):
+            p = await plan(self.llm, goal, depth, r.can_exec, follow_up=bool(r.context))
         tasks = p["tasks"]
         for t in tasks:
             t["id"] = prefix + t["id"]
@@ -738,9 +777,11 @@ class Orchestrator:
         r.research_state = self.rm.state
         await r.emit("research_started", {"resumed": bool(prior_state), "reused": bool(r.research_reuse),
                                           "budget": self.rm.state["budget"]})
+        self.step = "research"
         try:
             if not (prior_state and prior_state.get("done")):
-                await self.rm.run()
+                with llm_phase("research"):
+                    await self.rm.run()
         except asyncio.CancelledError:
             raise
         except Exception as e:  # noqa: BLE001  research failing must not stop the run; the gate will say what is missing
@@ -903,8 +944,13 @@ class Orchestrator:
 
                 async def hook(name, args, allowed, _t=t["id"]):
                     return await self.rm.agent_tool(name, args, allowed, _t)
+            self.step = f"agent:{t['id']}:{attempt}"
             try:
-                res = await run_agent(self.llm, role, instr, ctx, emit, r.can_exec, tool=hook)
+                with llm_phase("analysis"):
+                    res = await run_agent(self.llm, role, instr, ctx, emit, r.can_exec, tool=hook)
+            except ModelPaused:
+                t["status"] = "pending"  # not failed: it resumes at this attempt
+                raise
             except LLMError as e:
                 t["attempts"].append({"agent": agent_id, "error": str(e)})
                 await r.emit("agent_error", {"task": t["id"], "agent": agent_id, "error": str(e)})
@@ -920,7 +966,15 @@ class Orchestrator:
                 ev_text += ("\n\nنواقص بحث وثّقها النظام نفسه (غياب هذه البيانات ليس تقصيرًا من الوكيل: اقبل «غير متاح في الأدلة "
                             "المقروءة» لها ولا ترفض الناتج لغيابها، وارفض أي رقم مخمَّن وُضع مكانها):\n"
                             + "\n".join(f"- {g}" for g in self.rm.gaps()[:8]))
-            v = await verify(self.llm, t, t["output"], self.anchored(), read, ev_text) if verify_it else {"pass": True, "score": None, "issues": []}
+            self.step = f"review:{t['id']}:{attempt}"
+            try:
+                with llm_phase("review"):
+                    v = await verify(self.llm, t, t["output"], self.anchored(), read, ev_text) if verify_it else {"pass": True, "score": None, "issues": []}
+            except ModelPaused:
+                t["status"] = "pending"
+                t["unreviewed"] = {"agent": agent_id, "output": t["output"], "steps": res["steps"], "confidence": res["confidence"],
+                                   "sources": res["sources"], "read": res.get("read") or [], "attempt": attempt}
+                raise
             if verify_it:
                 v = apply_audit(v, t["output"])
                 v = quality.apply_rejected(v, self.reused_rejected(t["output"] + "\n" + "\n".join(calls)))
@@ -945,11 +999,20 @@ class Orchestrator:
         return 5000 if free else 10000
 
     async def _long(self, msgs: list[dict], temperature: float) -> str:
+        with llm_phase("finalization"):
+            return await self._long_raw(msgs, temperature)
+
+    async def _long_raw(self, msgs: list[dict], temperature: float) -> str:
         if hasattr(self.llm, "chat_long"):
             return await self.llm.chat_long(msgs, temperature=temperature, max_tokens=4000, parts=5)
         return await self.llm.chat(msgs, temperature=temperature, max_tokens=4000)
 
     async def final_verdict(self, check: dict, answer: str) -> dict:
+        self.step = "final_review"
+        with llm_phase("final_review"):
+            return await self._final_verdict(check, answer)
+
+    async def _final_verdict(self, check: dict, answer: str) -> dict:
         v = apply_audit(await verify(self.llm, check, answer), answer)
         r = self.run
         mis = quality.false_user_tags(answer, r.goal + "\n" + (r.context or "").split("النتيجة السابقة:", 1)[0])
@@ -981,14 +1044,18 @@ class Orchestrator:
             # instead of a dump of raw outputs. The run still ends "failed" and nothing is saved to memory.
             await self.run.emit("synthesizing", {"final": final, "unverified": True})
             try:
-                answer = await self.llm.chat([{"role": "system", "content": SYNTH + DRAFT_RULE}, {"role": "user", "content":
+                with llm_phase("finalization"):
+                    answer = await self.llm.chat([{"role": "system", "content": SYNTH + DRAFT_RULE}, {"role": "user", "content":
                                               f"طلب المستخدم:\n{goal}\n\nنتائج الفريق (كلها رُفضت من المدقق):\n\n" + "\n\n".join(parts)}],
-                                             temperature=0.2, max_tokens=4000)
+                                                 temperature=0.2, max_tokens=4000)
+            except ModelPaused:
+                raise
             except LLMError:
                 return {"ok": False, "output": "فشلت كل المهام ولم يُنتج الفريق نتيجة يمكن الوثوق بها.\n\n" + "\n\n".join(parts)}
             return {"ok": False, "output": answer, "verdict": {"pass": False, "score": None, "draft": True,
                                                                "issues": ["لم تجتز أي مهمة التحقق؛ هذا الجواب مسودة غير متحقق منها."]}}
         await self.run.emit("synthesizing", {"final": final})
+        self.step = "finalization"
         if getattr(getattr(self.llm, "cfg", None), "provider", "") == "free" and parts:  # every result keeps a fair share instead of losing the middle
             g = _clip(goal, 5000)
             share = max(800, (FREE_PROMPT_CHARS - len(SYNTH) - len(g) - 600) // len(parts))

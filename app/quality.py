@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from .llm import LLM, LLMError
+from .llm import LLM, LLMError, ModelPaused
 
 PLAUSIBILITY = """استخرج من النص الأرقام كما وردت فيه حرفيًا (لا تحسب ولا تقدّر شيئًا من عندك). لكل حقل غير مذكور ضع null.
 - product: اسم المنتج أو فئته باختصار.
@@ -136,12 +136,15 @@ def country_of(text: str) -> str | None:
 
 
 async def check_plausibility(llm: LLM, text: str) -> dict:
-    """{'figures': what the text states, 'issues': [...], 'errors': n}. Never raises."""
+    """{'figures': what the text states, 'issues': [...], 'errors': n}. Raises only ModelPaused (the run pauses:
+    a check that could not run is not a check that passed)."""
     if not re.search(r"\d{2,}", text or ""):
         return {"figures": {}, "issues": [], "errors": 0}
     try:
         fig = await llm.chat_json([{"role": "system", "content": PLAUSIBILITY}, {"role": "user", "content": text[:14000]}],
                                   temperature=0.0, max_tokens=700)
+    except ModelPaused:
+        raise
     except (ValueError, LLMError) as e:
         return {"figures": {}, "issues": [], "errors": 0, "error": str(e)[:200]}
     if not re.fullmatch(r"[A-Za-z]{3}", str(fig.get("country_iso3") or "")):
@@ -159,6 +162,8 @@ async def check_plausibility(llm: LLM, text: str) -> dict:
                 f"المنتج/الفئة: {product or '(كما في النص)'}\nالبلد: {fig.get('country_iso3') or '-'}\n"
                 f"الوحدة: {fig.get('market_unit') or 'وحدة'}\n\nعنوان النص (لتحديد الفئة فقط):\n{_no_digits(text)[:300]}"}],
                 temperature=0.0, max_tokens=300)  # no figures from the text: the judge must not anchor on the estimate it judges
+        except ModelPaused:
+            raise
         except (ValueError, LLMError):
             judgment = None
     issues = check_figures(fig, pop, pop_src, judgment)

@@ -8,9 +8,13 @@ Three ways to get a model, chosen per request:
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import hashlib
+import contextvars
 import json
 import os
 import re
+import time
 from dataclasses import dataclass, field
 
 import httpx
@@ -21,8 +25,96 @@ FREE_MODEL = os.environ.get("FREE_LLM_MODEL", "openai")
 MAX_OUTPUT_TOKENS = int(os.environ.get("LLM_MAX_OUTPUT_TOKENS", "12000"))  # ceiling when a reply runs out of tokens
 
 
+# Every provider failure is one of these kinds. Only some of them end a step; none of them may destroy a run's work.
+ERROR_KINDS = ("quota_exhausted", "rate_limited", "provider_unavailable", "timeout", "authentication_error",
+               "invalid_response", "unknown_provider_error")
+# Kinds that stop the whole run (paused, resumable) instead of failing one step: retrying them now cannot help.
+PAUSING = {"quota_exhausted", "rate_limited", "provider_unavailable", "timeout", "authentication_error"}
+
+
 class LLMError(RuntimeError):
-    pass
+    def __init__(self, message: str = "", kind: str = "unknown_provider_error", status: int | None = None,
+                 resume_after: float | None = None):
+        super().__init__(message)
+        self.kind, self.status, self.resume_after = kind, status, resume_after
+
+
+class ModelPaused(LLMError):
+    """The model cannot answer now (daily quota spent, provider down, key refused...). The run must stop where
+    it is, keep everything it has, and wait to be resumed; it is neither done nor failed."""
+
+
+_DAILY = re.compile(r"a day|per day|daily|resets? at|/day|quota|insufficient credits|credit balance|out of credits", re.I)
+_RESETS_IN = re.compile(r"in (\d+(?:\.\d+)?) (hour|minute|second)s?", re.I)
+
+
+def classify(status: int | None, text: str = "") -> str:
+    """Which kind of failure an HTTP answer is. 402 is not always the daily cap: the free provider also sends
+    402 'Retry after 31s' for its per-request spacing, which is a rate limit, not a spent quota."""
+    t = text or ""
+    if status in (401, 403):
+        return "authentication_error"
+    if status in (402, 429):
+        if _DAILY.search(t):
+            return "quota_exhausted"
+        if status == 402 and not re.search(r"retry after", t, re.I):
+            return "quota_exhausted"  # payment required with no wait hint: credits are gone
+        return "rate_limited"
+    if status in (408, 504):
+        return "timeout"
+    if status is not None and status >= 500:
+        return "provider_unavailable"
+    return "unknown_provider_error"
+
+
+def quota_resume_after(text: str, now: float | None = None) -> float:
+    """When a spent quota comes back: 'resets ... in 21 hours' if the provider says so, else next 00:00 UTC."""
+    now = now or time.time()
+    m = _RESETS_IN.search(text or "")
+    if m:
+        n, unit = float(m.group(1)), m.group(2).lower()
+        return now + n * {"hour": 3600, "minute": 60, "second": 1}[unit]
+    return (now // 86400 + 1) * 86400
+
+
+# A spent quota is per provider endpoint (per server IP for the free one), not per run: once one call learns it,
+# no other call sends a request that is sure to be refused until the reset time.
+_HOLDS: dict[str, dict] = {}
+NO_RESET_HOLD = 600.0  # seconds to hold when the provider did not say when the quota comes back
+
+
+def hold_for(base_url: str) -> dict | None:
+    h = _HOLDS.get(base_url)
+    if h and h["until"] > time.time():
+        return h
+    _HOLDS.pop(base_url, None)
+    return None
+
+
+def hold_key(cfg) -> str:
+    """One quota per endpoint and key: a user's spent key must not hold back other users of the same endpoint."""
+    if not cfg.api_key:
+        return cfg.base_url
+    return cfg.base_url + "#" + hashlib.sha256(cfg.api_key.encode()).hexdigest()[:12]
+
+
+def holds() -> list[dict]:
+    """For /health: which endpoints are on hold and until when (no secrets: keyed holds show only the endpoint)."""
+    return [{"endpoint": k.split("#")[0], "keyed": "#" in k, **{x: v[x] for x in ("until", "kind", "status", "since")}}
+            for k, v in list(_HOLDS.items()) if hold_for(k)]
+
+
+PHASE: contextvars.ContextVar[str] = contextvars.ContextVar("llm_phase", default="other")
+
+
+@contextlib.contextmanager
+def phase(name: str):
+    """Attribute every model call made inside (including in tasks started inside) to one stage of the run."""
+    tok = PHASE.set(name)
+    try:
+        yield
+    finally:
+        PHASE.reset(tok)
 
 
 JSON_CONTINUATIONS = 3
@@ -80,13 +172,46 @@ class LLMConfig:
 
 @dataclass
 class Usage:
+    """Real consumption of one run. calls: replies received (what a 'replies per day' quota counts).
+    requests: HTTP requests sent. failed: requests that got no usable reply. retried: requests sent again after a
+    failure. avoided: model calls not made because a saved result was reused (counted from what that result cost).
+    errors: calls that finally failed after their retries. by_phase: the same counters per stage of the run."""
     calls: int = 0
     prompt_tokens: int = 0
     completion_tokens: int = 0
     errors: int = 0
+    requests: int = 0
+    failed: int = 0
+    retried: int = 0
+    avoided: int = 0
+    by_phase: dict = field(default_factory=dict)
+    last_error: dict = field(default_factory=dict)
+    carried: int = 0  # replies counted by the run(s) this one resumes (included in calls)
+
+    def _ph(self, name: str | None = None) -> dict:
+        return self.by_phase.setdefault(name or PHASE.get(), {"calls": 0, "failed": 0, "retried": 0, "avoided": 0})
+
+    def count(self, key: str, n: int = 1, phase_name: str | None = None):
+        setattr(self, key, getattr(self, key) + n)
+        if key in ("calls", "failed", "retried", "avoided"):
+            self._ph(phase_name)[key] += n
+
+    def avoid(self, n: int, phase_name: str | None = None):
+        if n > 0:
+            self.count("avoided", int(n), phase_name)
+
+    def load(self, d: dict | None):
+        """Continue counting from a resumed run's totals, so a run's consumption is measured across its pauses."""
+        for k in ("calls", "prompt_tokens", "completion_tokens", "errors", "requests", "failed", "retried", "avoided"):
+            setattr(self, k, int((d or {}).get(k) or 0))
+        self.by_phase = {k: dict(v) for k, v in ((d or {}).get("by_phase") or {}).items() if isinstance(v, dict)}
+        self.carried = self.calls
 
     def as_dict(self) -> dict:
-        return self.__dict__.copy()
+        d = {k: v for k, v in self.__dict__.items()}
+        d["by_phase"] = {k: dict(v) for k, v in self.by_phase.items()}
+        d["last_error"] = dict(self.last_error)
+        return d
 
 
 def resolve_config(provider: str, api_key: str | None, model: str | None,
@@ -187,7 +312,17 @@ class LLM:
         b = self.cfg.base_url
         return b if b.endswith("/openai") or b.endswith("/chat/completions") else b + "/chat/completions"
 
+    def _pause(self, kind: str, message: str, status: int | None = None, resume_after: float | None = None):
+        self.usage.errors += 1
+        self.usage.last_error = {"kind": kind, "status": status, "message": message[:300], "phase": PHASE.get(),
+                                 "at": time.time(), "resume_after": resume_after}
+        return ModelPaused(message, kind=kind, status=status, resume_after=resume_after)
+
     async def chat(self, messages: list[dict], temperature: float = 0.3, max_tokens: int = 2000) -> str:
+        held = hold_for(hold_key(self.cfg))
+        if held:  # the quota is known to be spent: do not send a request that is sure to be refused
+            self.usage.avoid(1)
+            raise self._pause("quota_exhausted", held["message"], held.get("status"), held["until"])
         headers = {"Content-Type": "application/json"}
         if self.cfg.api_key:
             headers["Authorization"] = f"Bearer {self.cfg.api_key}"
@@ -198,18 +333,30 @@ class LLM:
             messages = fit_messages(messages, budget)
         body = {"model": self.cfg.model, "messages": messages,
                 "temperature": temperature, "max_tokens": max_tokens}
-        last, attempt, limited = "", 0, 0
+        last, attempt, limited, kind, sent = "", 0, 0, "unknown_provider_error", 0
+        last_status: int | None = None
         pacer = pacer_for(self.cfg)
         while attempt < 5:
             async with self._sem:
                 if pacer:
                     await pacer.slot()
+                held = hold_for(hold_key(self.cfg))
+                if held:  # another call learned while this one waited that the quota is spent
+                    raise self._pause("quota_exhausted", held["message"], held.get("status"), held["until"])
+                if sent:
+                    self.usage.count("retried")
+                sent += 1
+                self.usage.requests += 1
                 try:
                     r = await self._client.post(self._url(), headers=headers, json=body)
+                except httpx.TimeoutException as e:
+                    last, kind, r = f"timeout: {e}", "timeout", None
                 except httpx.HTTPError as e:
-                    last = f"network: {e}"
-                    r = None
+                    last, kind, r = f"network: {e}", "provider_unavailable", None
+            if r is None:
+                self.usage.count("failed")
             if r is not None:
+                last_status = r.status_code
                 if r.status_code == 200:
                     try:
                         data = r.json()
@@ -226,20 +373,27 @@ class LLM:
                                 args = {"query": fn.get("arguments")}
                             text = json.dumps({"action": "tool", "tool": fn.get("name"), "input": args}, ensure_ascii=False)
                     except Exception as e:  # noqa: BLE001
-                        last = f"bad response: {e}"
+                        last, kind = f"bad response: {e}", "invalid_response"
+                        self.usage.count("failed")
                     else:
-                        self.usage.calls += 1
+                        self.usage.count("calls")
                         u = data.get("usage") or {}
                         self.usage.prompt_tokens += int(u.get("prompt_tokens") or 0)
                         self.usage.completion_tokens += int(u.get("completion_tokens") or 0)
                         if text.strip():
                             return text
-                        last = "empty response"
-                elif r.status_code in (401, 403):
-                    self.usage.errors += 1
-                    raise LLMError(f"المزود رفض المفتاح ({r.status_code}): {r.text[:200]}")
+                        last, kind = "empty response", "invalid_response"
                 else:
+                    self.usage.count("failed")
+                    kind = classify(r.status_code, r.text)
                     last = f"HTTP {r.status_code}: {r.text[:200]}"
+                    if kind == "authentication_error":
+                        raise self._pause(kind, f"المزود رفض المفتاح ({r.status_code}): {r.text[:200]}", r.status_code)
+                    if kind == "quota_exhausted":  # waiting minutes cannot bring back a daily quota: stop now
+                        until = quota_resume_after(r.text) if _DAILY.search(r.text or "") else time.time() + NO_RESET_HOLD
+                        _HOLDS[hold_key(self.cfg)] = {"until": until, "kind": kind, "status": r.status_code,
+                                                     "message": f"HTTP {r.status_code}: {r.text[:240]}", "since": time.time()}
+                        raise self._pause(kind, f"نفدت حصة النموذج: HTTP {r.status_code}: {r.text[:240]}", r.status_code, until)
                     if r.status_code == 400 and "output_token_limit" in r.text and body["max_tokens"] < MAX_OUTPUT_TOKENS:
                         # reasoning models can spend the whole budget thinking (production: the writer failed 2/2)
                         body["max_tokens"] = min(MAX_OUTPUT_TOKENS, body["max_tokens"] * 2)
@@ -250,7 +404,7 @@ class LLM:
                         body["messages"] = fit_messages(messages, budget)
                         attempt += 1
                         continue
-                    if r.status_code in (402, 429):  # rate limited: wait as long as the provider asks
+                    if kind == "rate_limited":  # wait as long as the provider asks
                         wait = retry_after(r, default=6 * (attempt + 1))
                         limited += 1
                         if pacer:  # everyone waits, not just this call; don't spend an ordinary attempt
@@ -261,10 +415,16 @@ class LLM:
                             await asyncio.sleep(wait)
                         attempt += 1
                         continue
+                    if r.status_code < 500 and r.status_code not in (408, 409, 425):
+                        kind = "invalid_response"  # the request itself was refused: resending it will not help
+                        break
             attempt += 1
             await asyncio.sleep(1.5 * attempt ** 2)
+        if kind in PAUSING:
+            raise self._pause(kind, f"فشل استدعاء النموذج بعد عدة محاولات: {last}", last_status)
         self.usage.errors += 1
-        raise LLMError(f"فشل استدعاء النموذج بعد عدة محاولات: {last}")
+        self.usage.last_error = {"kind": kind, "status": last_status, "message": last[:300], "phase": PHASE.get(), "at": time.time()}
+        raise LLMError(f"فشل استدعاء النموذج بعد عدة محاولات: {last}", kind=kind, status=last_status)
 
     async def chat_long(self, messages: list[dict], temperature: float = 0.3, max_tokens: int = 4000, parts: int = 3) -> str:
         """A long answer: when the provider stops at its output limit, ask it to continue where it stopped."""

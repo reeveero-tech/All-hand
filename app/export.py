@@ -6,7 +6,8 @@ import datetime as dt
 import re
 
 STATUS = {"done": "اكتملت", "partial": "اكتملت جزئيًا", "failed": "فشلت", "cancelled": "أوقفها المستخدم",
-          "interrupted": "انقطعت", "running": "ما زالت تعمل"}
+          "interrupted": "انقطعت", "running": "ما زالت تعمل",
+          "paused_quota": "متوقفة مؤقتًا: نفدت حصة النموذج (العمل محفوظ)", "paused_provider": "متوقفة مؤقتًا: المزود غير متاح (العمل محفوظ)"}
 TASK = {"done": "مُتحقق منها", "failed": "لم تجتز التحقق", "skipped": "لم تُنفذ", "pending": "لم تبدأ",
         "running": "لم تكتمل"}
 _URL = re.compile(r"^https?://", re.I)
