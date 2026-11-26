@@ -93,6 +93,31 @@ def _looks_like_call(text: str) -> bool:
 EmitFn = Callable[[str, dict], Awaitable[None]]
 
 
+def _unwrap_final(raw: str) -> str:
+    """A final answer the JSON parser could not read (often a very long or cut-off reply) is still the answer:
+    hand in its "output" text, not the protocol wrapper around it (found on production run 175d80c5e175)."""
+    m = re.search(r'^\s*(?:```(?:json)?\s*)?\{\s*"action"\s*:\s*"final"\s*,\s*"output"\s*:\s*"', raw or "")
+    if not m:
+        return raw
+    body, i, out = raw[m.end():], 0, []
+    while i < len(body):
+        c = body[i]
+        if c == "\\" and i + 1 < len(body):
+            seg = body[i:i + 6] if body[i + 1] == "u" else body[i:i + 2]
+            try:
+                out.append(json.loads('"' + seg + '"'))
+            except ValueError:
+                out.append(seg)
+            i += len(seg)
+            continue
+        if c == '"':
+            break
+        out.append(c)
+        i += 1
+    text = "".join(out).strip()
+    return text or raw
+
+
 async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
                     can_exec: bool, tool=None) -> dict:
     """Tool-using loop. Returns {"output", "confidence", "sources", "steps"}."""
@@ -118,7 +143,7 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
                              {"role": "user", "content": "ردك السابق استدعاء أداة غير مكتمل أو غير صالح. أرسل JSON صالحًا وأقصر "
                                                          "(قسّم الحساب الطويل على أكثر من استدعاء)، أو سلّم النتيجة بالشكل final."}]
                 continue
-            return {"output": raw, "confidence": 0.3, "sources": sources([]), "read": list(read), "steps": steps}
+            return {"output": _unwrap_final(raw), "confidence": 0.3, "sources": sources([]), "read": list(read), "steps": steps}
         action = msg.get("action")
         if action == "tool" and steps < MAX_STEPS:
             name, args = msg.get("tool", ""), msg.get("input", {})
