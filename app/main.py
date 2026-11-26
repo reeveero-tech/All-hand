@@ -25,6 +25,7 @@ from .research import browser, documents, evidence
 from .research import manager as research_manager
 from .agents import ROLES
 from .llm import LLM, LLMError, resolve_config
+from .llm import holds as llm_holds
 from .orchestrator import DEFAULT_MAX_AGENTS, Orchestrator, Run
 
 try:  # make /proc/<pid>/environ unreadable to sandboxed child code running as the same user
@@ -113,7 +114,7 @@ def _live(run_id: str, owner: str) -> Run:
     return run
 
 
-RESUMABLE = {"interrupted", "failed", "partial", "cancelled"}
+RESUMABLE = {"interrupted", "failed", "partial", "cancelled", "paused_quota", "paused_provider"}
 CONTEXT_CHARS = 8000  # how much of the previous answer a follow-up carries
 
 
@@ -137,7 +138,8 @@ def follow_up_context(prev: dict) -> str:
         answer = "\n\n".join(f"### {t.get('title')}\n{t.get('output')}" for t in (prev.get("tasks") or {}).values()
                               if t.get("status") == "done" and t.get("output"))
     note = {"done": "", "partial": " (اكتملت جزئيًا)", "failed": " (فشلت)", "cancelled": " (أوقفها المستخدم)",
-            "interrupted": " (انقطعت قبل اكتمالها)"}.get(prev.get("status"), "")
+            "interrupted": " (انقطعت قبل اكتمالها)", "paused_quota": " (متوقفة مؤقتًا: نفدت حصة النموذج)",
+            "paused_provider": " (متوقفة مؤقتًا: المزود غير متاح)"}.get(prev.get("status"), "")
     if (prev.get("verdict") or {}).get("draft"):
         note += " — نتيجتها مسودة لم يتحقق منها المدقق، فلا تعامل أرقامها كحقائق"
     if len(answer) > CONTEXT_CHARS:
@@ -177,7 +179,8 @@ async def health():
     return {"status": "ok", "uptime_s": round(time.time() - STARTED), "runs_live": _running(),
             "history": "supabase" if store.enabled() else "memory",
             "search": {k: v for k, v in tools.STATS.items()},  # counters and the last provider error (no secrets)
-            "providers": tools.registry.health(),  # per provider: breaker state, requests, results, errors
+            "providers": tools.registry.health(),
+            "model_holds": llm_holds(),  # provider base URL -> {kind, until}: calls refused locally, not sent  # per provider: breaker state, requests, results, errors
             "research": {"manager": research_manager.ENABLED, "documents": documents.available(),
                          "document_stats": dict(documents.STATS), "budget": asdict(research_manager.Budget()),
                          "browser_worker": browser.status()}}
@@ -229,6 +232,8 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
         RUNS.pop(old_id)
 
     async def persist(final: bool = False) -> bool:
+        if llm_ref and hasattr(getattr(llm_ref[0], "usage", None), "as_dict"):
+            run.usage = llm_ref[0].usage.as_dict()  # every save carries the consumption so far, not only the last one
         return await store.save({**run.full(), "owner": run.owner, "heartbeat_at": time.time()})
 
     async def heartbeat():
@@ -237,8 +242,13 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
             if run.status == "running":
                 await persist()
 
+    llm_ref: list = []
+
     async def go():
         llm = LLM(cfg)
+        llm_ref.append(llm)
+        if prior and hasattr(getattr(llm, "usage", None), "load"):  # a resumed run continues the count of the run it resumes
+            llm.usage.load(prior.get("usage"))
         beat = asyncio.create_task(heartbeat()) if store.enabled() else None
         try:
             await persist()  # visible in history (and detectable as interrupted) from the first second

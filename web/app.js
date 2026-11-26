@@ -2,8 +2,9 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const STATUS = {pending:"بانتظار", running:"قيد التنفيذ", done:"مُتحقق منها", failed:"فشلت", skipped:"لم تُنفذ"};
 const RUN_STATUS = {running: "يعمل", done: "اكتمل", partial: "اكتمل جزئيًا", failed: "فشل", cancelled: "أُوقف",
-  interrupted: "انقطع"};
-const RUN_CLASS = {running: "running", done: "done", partial: "pending", interrupted: "failed", cancelled: "pending"};
+  interrupted: "انقطع", paused_quota: "متوقف مؤقتًا: نفدت حصة النموذج", paused_provider: "متوقف مؤقتًا: المزود غير متاح"};
+const RUN_CLASS = {running: "running", done: "done", partial: "pending", interrupted: "failed", cancelled: "pending",
+  paused_quota: "pending", paused_provider: "pending"};
 const EXAMPLES = [
   "ادرس سوق المقاهي المختصة في جدة واقترح خطة إطلاق بميزانية 200 ألف ريال",
   "اكتب دالة Python تتحقق من صحة رقم الآيبان السعودي مع اختبارات",
@@ -168,6 +169,7 @@ const LABEL = {
   memory_error: (e) => `تعذر ${({recall: "استرجاع", save: "حفظ", extract: "استخراج"})[e.stage] || "عمل"} الذاكرة: ${e.error}`,
   run_error: (e) => `خطأ: ${e.error}`,
   run_cancelled: () => "أُوقفت المهمة",
+  run_paused: (e) => `توقف مؤقت (${esc(e.kind)}) في مرحلة ${esc(e.phase || e.step || "-")}: ${esc(e.message)}`,
   run_finished: (e) => `انتهى: ${RUN_STATUS[e.status] || e.status} — ${e.agents_spawned} وكيلًا، ${e.usage?.calls ?? 0} استدعاء نموذج${e.saved === false ? " — لم يُحفظ في السجل الدائم" : ""}`,
 };
 
@@ -188,7 +190,7 @@ async function refresh() {
   const secs = ((r.finished_at || Date.now() / 1000) - r.created_at).toFixed(0);
   $("#stats").innerHTML = [["الحالة", RUN_STATUS[r.status] || r.status],
     ["وكلاء أُنشئوا", `${r.agents_spawned} / ${r.max_agents}`], ["مهام مُتحقق منها", `${r.tasks_done} / ${r.tasks_total}`],
-    ["مهام فشلت", r.tasks_failed], ["الزمن", secs + " ث"], ["استدعاءات النموذج", r.usage?.calls ?? "…"]]
+    ["مهام فشلت", r.tasks_failed], ["الزمن", secs + " ث"], ["استدعاءات النموذج", r.usage ? `${r.usage.calls}${r.usage.failed ? ` (+${r.usage.failed} فاشلة)` : ""}${r.usage.avoided ? ` · وُفّر ${r.usage.avoided}` : ""}` : "…"]]
     .map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${k}</span></div>`).join("");
   $("#board").innerHTML = Object.values(r.tasks).map((t) => {
     const last = t.attempts.at(-1)?.verdict;
@@ -205,7 +207,11 @@ async function refresh() {
     $("#result").className = "md";
     const notes = [];
     if (r.status === "interrupted") notes.push('<p class="err">انقطعت هذه المهمة قبل أن تكتمل، لأن الخادم أُعيد تشغيله أو توقف. ما يظهر أدناه هو آخر ما حُفظ منها.</p>');
-    if (["interrupted", "failed", "partial", "cancelled"].includes(r.status)) {
+    if (r.pause && String(r.status).startsWith("paused")) {
+      const when = r.pause.resume_after ? new Date(r.pause.resume_after * 1000).toLocaleString("ar-SA") : "";
+      notes.push(`<p class="err">توقفت المهمة مؤقتًا ولم تفشل: ${esc(r.pause.message || "")}. العمل المنجز محفوظ (مهام مكتملة: ${(r.pause.kept?.tasks_done || []).length}، مصادر مقروءة: ${r.pause.kept?.readings ?? 0}). توقفت عند: ${esc(r.pause.step || "-")}.${when ? ` يُتوقع توفر النموذج بعد ${esc(when)}.` : ""}</p>`);
+    }
+    if (["interrupted", "failed", "partial", "cancelled", "paused_quota", "paused_provider"].includes(r.status)) {
       const kept = Object.values(r.tasks || {}).filter((t) => !t.parent && t.status === "done").length;
       notes.push(`<p><button id="resumeBtn">أكمل من حيث توقفت</button> <button id="rerunBtn" class="ghost">ابدأ من جديد</button>
         <small class="muted">${kept ? `الاستكمال يحتفظ بـ ${kept} من المهام التي اجتازت التحقق ويعيد الباقي.` : "لا توجد مهام مكتملة لإعادة استخدامها؛ الاستكمال سيعيد كل المهام بالخطة نفسها."}</small></p>`);

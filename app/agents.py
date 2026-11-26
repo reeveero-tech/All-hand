@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
-from .llm import LLM, LLMError
+from .llm import LLM, LLMError, ModelPaused
 from .tools import READ_MARK, TOOLS, call_tool, fetch_meta, search_meta
 
 
@@ -182,5 +182,7 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
         msg = await llm.chat_json(messages)
         return {"output": str(msg.get("output", "")), "confidence": float(msg.get("confidence") or 0.4),
                 "sources": sources(msg.get("sources")), "read": list(read), "steps": steps}
+    except ModelPaused:
+        raise  # the model is unavailable: the run pauses; this is not the agent's answer
     except (ValueError, LLMError) as e:
         return {"output": f"تعذر الإنجاز: {e}", "confidence": 0.0, "sources": sources([]), "read": list(read), "steps": steps}
