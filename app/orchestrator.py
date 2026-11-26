@@ -916,6 +916,10 @@ class Orchestrator:
             ev_text = (self.rm.verifier_evidence(t["output"], t["title"] + " " + t["instructions"],
                                                  2500 if self._pack_chars() <= 5000 else 5000)
                        if self.rm is not None else "")
+            if self.rm is not None and self.rm.gaps():
+                ev_text += ("\n\nنواقص بحث وثّقها النظام نفسه (غياب هذه البيانات ليس تقصيرًا من الوكيل: اقبل «غير متاح في الأدلة "
+                            "المقروءة» لها ولا ترفض الناتج لغيابها، وارفض أي رقم مخمَّن وُضع مكانها):\n"
+                            + "\n".join(f"- {g}" for g in self.rm.gaps()[:8]))
             v = await verify(self.llm, t, t["output"], self.anchored(), read, ev_text) if verify_it else {"pass": True, "score": None, "issues": []}
             if verify_it:
                 v = apply_audit(v, t["output"])

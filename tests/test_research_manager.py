@@ -653,3 +653,36 @@ def test_headline_only_results_are_reported_as_such_not_as_budget(on):
     st = run(m.run())
     assert m.facet_status("prices")["status"] == "headlines_only"
     assert any("عناوين أخبار" in g for g in m.gaps()) and not st["readings"].get(gn)
+
+
+def test_reviewer_is_told_which_gaps_the_system_documented(on):
+    from app.orchestrator import Orchestrator, Run
+    install(on, Web({}), search={"": []})
+    reviewed = []
+
+    class LLM:
+        cfg = type("C", (), {"provider": "test"})()
+        usage = type("U", (), {"as_dict": lambda self: {}})()
+
+        async def chat_json(self, messages, *a, **k):
+            sys_ = messages[0]["content"]
+            if "مخطط بحث" in sys_:
+                return {"subject_en": "canned cold brew coffee", "queries": {}}
+            if "أنت وكيل متخصص" in sys_:
+                return {"action": "final", "output": "السعر: غير متاح في الأدلة المقروءة.", "confidence": 0.5, "sources": []}
+            if "tasks" in sys_ or "خطة" in sys_[:400]:
+                return {"summary": "s", "simple": False, "tasks": [
+                    {"id": "t1", "title": "أسعار القهوة الباردة", "role": "researcher", "instructions": "ابحث عن الأسعار",
+                     "acceptance": "أسعار بمصادر", "depends_on": []},
+                    {"id": "t2", "title": "تقرير", "role": "writer", "instructions": "اكتب", "acceptance": "تقرير", "depends_on": ["t1"]}]}
+            if "الناتج:" in messages[-1]["content"]:
+                reviewed.append(messages[-1]["content"])
+            return {"pass": True, "score": 9, "issues": [], "claims": [], "items": []}
+
+        async def chat(self, messages, *a, **k):
+            return "السعر غير متاح."
+
+    r = Run(goal="حلل أسعار القهوة الباردة المعلبة في السعودية", llm_public={})
+    run(Orchestrator(r, LLM()).execute())
+    assert "نواقص بحث وثّقها النظام نفسه" in reviewed[0] and "الأسعار" in reviewed[0]
+    assert r.status == "partial"
