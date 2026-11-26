@@ -318,7 +318,8 @@ def test_arxiv_parses_atom_and_spaces_requests(monkeypatch):
     out = run(specialized.arxiv("coffee"))
     assert out == [{"title": "Coffee Roast Intelligence", "url": "https://arxiv.org/abs/2206.01841v1",
                     "snippet": "2022-06-03 — As the coffee industry has grown", "published": "2022-06-03",
-                    "publisher": "arXiv", "source_type": "academic"}]
+                    "publisher": "arXiv", "source_type": "academic", "abstract": "As the coffee industry has grown",
+                    "fulltext": ["https://arxiv.org/pdf/2206.01841v1"]}]
     assert specialized._arxiv_gate["next"] > 0  # the next request waits three seconds
 
 

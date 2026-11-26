@@ -31,7 +31,7 @@ def _strip(s: str) -> str:
 
 
 async def crossref(query: str) -> list[dict]:
-    params = {"query": query, "rows": 6, "select": "DOI,title,container-title,published,publisher,URL,abstract,type"}
+    params = {"query": query, "rows": 6, "select": "DOI,title,container-title,published,publisher,URL,abstract,type,link,license"}
     if MAILTO:
         params["mailto"] = MAILTO
     async with httpx.AsyncClient(timeout=20, headers={"User-Agent": UA}) as c:
@@ -44,7 +44,11 @@ async def crossref(query: str) -> list[dict]:
         venue = (it.get("container-title") or [""])[0]
         out.append({"title": _strip((it.get("title") or [""])[0]), "url": it.get("URL") or f"https://doi.org/{it.get('DOI')}",
                     "snippet": " — ".join(x for x in (it.get("publisher", ""), venue, date, _strip(it.get("abstract", ""))[:300]) if x),
-                    "published": date, "publisher": it.get("publisher", ""), "source_type": "academic"})
+                    "published": date, "publisher": it.get("publisher", ""), "source_type": "academic",
+                    "doi": it.get("DOI", ""), "abstract": _strip(it.get("abstract", ""))[:3000],
+                    "fulltext": [x["URL"] for x in (it.get("link") or []) if isinstance(x, dict) and str(x.get("URL", "")).startswith("http")
+                                 and x.get("intended-application") in ("text-mining", "unspecified", None)][:3],
+                    "open_license": any("creativecommons" in str((x or {}).get("URL", "")) for x in it.get("license") or [])})
     return out
 
 
@@ -73,7 +77,8 @@ async def arxiv(query: str) -> list[dict]:
         link = re.search(r'<link href="([^"]+)"[^>]*rel="alternate"', e)
         out.append({"title": tag("title"), "url": link.group(1) if link else tag("id"),
                     "snippet": f"{tag('published')[:10]} — {tag('summary')[:300]}", "published": tag("published")[:10],
-                    "publisher": "arXiv", "source_type": "academic"})
+                    "publisher": "arXiv", "source_type": "academic", "abstract": tag("summary")[:3000],
+                    "fulltext": [re.sub(r"/abs/", "/pdf/", link.group(1))] if link and "/abs/" in link.group(1) else []})
     return out
 
 
@@ -111,6 +116,25 @@ async def openalex(query: str) -> list[dict]:
              "snippet": f"{x.get('publication_date', '')} — cited {x.get('cited_by_count', 0)}",
              "published": x.get("publication_date", ""), "source_type": "academic"}
             for x in r.json().get("results", [])]
+
+
+async def open_access(doi: str) -> list[str]:
+    """Legal open-access copies of a DOI from Unpaywall (free; needs a real contact e-mail in RESEARCH_MAILTO,
+    which Unpaywall requires). Without it, nothing is asked and [] is returned."""
+    if not (MAILTO and doi):
+        return []
+    async with httpx.AsyncClient(timeout=15, headers={"User-Agent": UA}) as c:
+        r = await c.get(f"https://api.unpaywall.org/v2/{doi}", params={"email": MAILTO})
+    if r.status_code != 200:
+        return []
+    locs = [r.json().get("best_oa_location") or {}] + list(r.json().get("oa_locations") or [])
+    out = []
+    for loc in locs:
+        for k in ("url_for_pdf", "url_for_landing_page"):
+            u = (loc or {}).get(k)
+            if u and u.startswith("http") and u not in out:
+                out.append(u)
+    return out[:3]
 
 
 KINDS = {"academic": ["Crossref", "arXiv", "OpenAlex"], "code": ["GitHub"], "web": ["SearXNG"]}

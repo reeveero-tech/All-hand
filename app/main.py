@@ -11,6 +11,7 @@ import re
 import time
 from collections import OrderedDict
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from pathlib import Path
 
 import httpx
@@ -20,7 +21,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import export, memory, store, tools
-from .research import evidence
+from .research import browser, documents, evidence
+from .research import manager as research_manager
 from .agents import ROLES
 from .llm import LLM, LLMError, resolve_config
 from .orchestrator import DEFAULT_MAX_AGENTS, Orchestrator, Run
@@ -175,7 +177,10 @@ async def health():
     return {"status": "ok", "uptime_s": round(time.time() - STARTED), "runs_live": _running(),
             "history": "supabase" if store.enabled() else "memory",
             "search": {k: v for k, v in tools.STATS.items()},  # counters and the last provider error (no secrets)
-            "providers": tools.registry.health()}  # per provider: breaker state, requests, results, errors  # counters and the last provider error (no secrets)
+            "providers": tools.registry.health(),  # per provider: breaker state, requests, results, errors
+            "research": {"manager": research_manager.ENABLED, "documents": documents.available(),
+                         "document_stats": dict(documents.STATS), "budget": asdict(research_manager.Budget()),
+                         "browser_worker": browser.status()}}
 
 
 @app.get("/api/roles")
@@ -213,6 +218,7 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
         run.follow_up_of = prev["id"]
         run.thread_id = prev.get("thread_id") or prev["id"]
         run.context = follow_up_context(prev)
+        run.research_reuse = prev.get("research_state")  # read evidence stays valid; same owner (checked above)
         kr = known_rejected(prev)
         run.prior_check = {"from": prev["id"], "known_rejected": kr["values"], "known_rejected_totals": kr["totals"]}
     RUNS[run.id] = run
@@ -295,7 +301,19 @@ async def run_evidence(run_id: str, x_client_key: str | None = Header(default=No
     each URL with the furthest stage it really reached (discovered, opened, extracted, relevant, cited),
     who found it, failure reasons, page dates and table counts."""
     data = await _own_run(run_id, _owner(x_client_key))
-    return evidence.build(data.get("events") or [], data.get("result") or "")
+    led = evidence.build(data.get("events") or [], data.get("result") or "")
+    st = data.get("research_state") or {}
+    if st:  # what the research manager planned and how each facet ended, and the quality gate's verdict
+        led["research"] = {"facets": st.get("facets"), "subject": st.get("subject"), "country": st.get("country"),
+                           "status": st.get("status"), "used": st.get("used"), "budget": st.get("budget"),
+                           "rounds": st.get("rounds"), "searches": st.get("searches"), "conflicts": st.get("conflicts"),
+                           "readings": [{k: r.get(k) for k in ("id", "url", "title", "publisher", "published", "facets", "method",
+                                                                "kind", "completeness", "pages", "tables_total", "figures", "class",
+                                                                "useful", "from_previous")}
+                                        for r in (st.get("readings") or {}).values()],
+                           "failed": list((st.get("failed") or {}).values())}
+        led["gate"] = data.get("research_gate")
+    return led
 
 
 @app.post("/api/runs/{run_id}/plan")
