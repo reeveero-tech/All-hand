@@ -641,3 +641,15 @@ def test_an_unparsed_final_reply_hands_in_its_output_text():
     assert _unwrap_final(raw) == '# عنوان\n\n| أ | ب |\n"نص" م'
     assert _unwrap_final('{"action":"final","output":"مقطوع في المنتصف') == "مقطوع في المنتصف"
     assert _unwrap_final("نص عادي") == "نص عادي"
+
+
+def test_headline_only_results_are_reported_as_such_not_as_budget(on):
+    """Production run 84cca6feac24: Tavily's keyless cap was reached and Google News links could not be resolved
+    from the server, so a facet had only headlines. That is not a budget problem and is said precisely."""
+    web = Web({})
+    gn = "https://news.google.com/rss/articles/CBMiabc?oc=5"
+    install(on, web, search={"": [{"title": "Cold brew prices - Example News", "url": gn, "snippet": "Example — headline only"}]})
+    m = mgr("ما أسعار القهوة الباردة المعلبة في السعودية؟", max_rounds=1)
+    st = run(m.run())
+    assert m.facet_status("prices")["status"] == "headlines_only"
+    assert any("عناوين أخبار" in g for g in m.gaps()) and not st["readings"].get(gn)
