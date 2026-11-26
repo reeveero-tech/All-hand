@@ -235,7 +235,8 @@ def anchor(goal: str) -> str:
     return g[:GOAL_CHARS] + ("…" if len(g) > GOAL_CHARS else "")
 
 
-async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list | None = None) -> dict:
+async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list | None = None,
+                 evidence_text: str = "") -> dict:
     head = (f"طلب المستخدم الأصلي (ارفض الناتج إن خرج عن موضوعه أو منتجه أو أرقامه، أو أعاد رقمًا ثبت خطؤه في "
             f"التنبيه الحسابي دون تصحيحه):\n{_clip(goal, 4500)}\n\n"
             "تنبيه: هذا ناتج مهمة فرعية واحدة من خطة فيها مهام أخرى. قيّمه مقابل «المهمة» و«معيار القبول» أدناه فقط، "
@@ -244,6 +245,10 @@ async def verify(llm: LLM, task: dict, output: str, goal: str = "", read: list |
         head += ("صفحات فتحها الوكيل فعلًا بأداة القراءة: " + ("، ".join(read[:15]) if read else "لا شيء") +
                  "\nأي رقم دقيق (حصة سوقية، حجم سوق، سعر) منسوب لرابط ليس في هذه القائمة ولا في سياق المهمة يُعدّ غير مثبت؛ "
                  "وإن قُدّم كحقيقة فهو اختلاق جوهري.\n\n")
+    if evidence_text:  # what the system itself read: the reviewer can check each figure against it
+        head += ("أدلة قرأها النظام بنفسه وسُلّمت للوكيل ([E#] رقم الدليل ورابطه). الرقم الموجود هنا والمنسوب إلى دليله أو رابطه "
+                 "رقم موثق؛ والاستشهاد بـ [E#] مع رابطه استشهاد صحيح. الرقم غير الموجود هنا ولا في الصفحات أعلاه غير مثبت:\n"
+                 + evidence_text + "\n\n")
     try:
         v = await llm.chat_json([{"role": "system", "content": VERIFIER}, {"role": "user", "content":
                                  head + f"المهمة: {task['instructions'][:3000]}\nمعيار القبول: {task['acceptance'][:800]}\n\nالناتج:\n"
@@ -533,6 +538,7 @@ class Orchestrator:
             if self.rm and r.result:
                 read = quality_gate.read_set(r.research_state, [u for e in r.events if e.get("type") == "tool_result"
                                                                 for u in e.get("read") or []])
+                r.result = self.rm.link_ids(r.result)
                 r.result, unread = research_manager.annotate_unread(r.result, read)
                 if unread:
                     await r.emit("unread_links_marked", {"count": len(unread), "urls": unread[:20]})
@@ -901,17 +907,20 @@ class Orchestrator:
                 t["attempts"].append({"agent": agent_id, "error": str(e)})
                 await r.emit("agent_error", {"task": t["id"], "agent": agent_id, "error": str(e)})
                 continue
-            t["output"] = res["output"]
+            t["output"] = self.rm.link_ids(res["output"]) if self.rm is not None else res["output"]
             read = res.get("read") if {"fetch_url", "web_search", "world_bank"} & set(role.tools) else None
             if read is not None and self.rm is not None:  # evidence the system read and handed to this agent
                 read = list(dict.fromkeys(list(read) + [x["url"] for x in self.rm.evidence_for(t["title"] + " " + t["instructions"])]))
-            v = await verify(self.llm, t, res["output"], self.anchored(), read) if verify_it else {"pass": True, "score": None, "issues": []}
+            ev_text = (self.rm.verifier_evidence(t["output"], t["title"] + " " + t["instructions"],
+                                                 2500 if self._pack_chars() <= 5000 else 5000)
+                       if self.rm is not None else "")
+            v = await verify(self.llm, t, t["output"], self.anchored(), read, ev_text) if verify_it else {"pass": True, "score": None, "issues": []}
             if verify_it:
-                v = apply_audit(v, res["output"])
-                v = quality.apply_rejected(v, self.reused_rejected(res["output"] + "\n" + "\n".join(calls)))
+                v = apply_audit(v, t["output"])
+                v = quality.apply_rejected(v, self.reused_rejected(t["output"] + "\n" + "\n".join(calls)))
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
                                   "sources": res["sources"], "read": res.get("read") or [], "verdict": v,
-                                  "output": res["output"]})
+                                  "output": t["output"]})
             await r.emit("verified", {"task": t["id"], "agent": agent_id, **v})
             if v["pass"]:
                 t["status"] = "done"
