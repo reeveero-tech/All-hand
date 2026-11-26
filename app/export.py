@@ -130,7 +130,7 @@ def to_markdown(run: dict) -> str:
         out.append(f"- ملاحظة المدقق النهائي: {i}")
     out += ["- التقرير مبني فقط على ما سجله التشغيل؛ تحقّق من الأرقام الحساسة قبل اتخاذ قرار.", ""]
     done = [t for t in tasks if t.get("output")]
-    if done:
+    if done and not run.get("report"):  # a built report already holds every task's section
         out += ["## ملحق: ناتج كل مهمة", ""]
         for t in done:
             out += [f"### {t.get('id')} — {t.get('title')} ({TASK.get(t.get('status'), t.get('status'))})", "",

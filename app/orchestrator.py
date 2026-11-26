@@ -15,7 +15,8 @@ from dataclasses import dataclass, field
 from .research import evidence
 from .research import manager as research_manager
 from .research import quality_gate
-from . import memory, quality
+from . import export, memory, quality
+from . import report as report_mod
 from .agents import ROLES, run_agent
 from .llm import FREE_PROMPT_CHARS, LLM, LLMError, ModelPaused, _clip, extract_objects, looks_truncated
 from .llm import phase as llm_phase
@@ -51,6 +52,11 @@ class Run:
     prior_check: dict | None = None  # follow-up: the previous answer's figures, checked and classified
     goal_checks: list | None = None  # arithmetic the user stated in the request, recomputed exactly (None: not checked)
     pause: dict | None = None  # why the run stopped and waits: {"kind", "phase", "step", "message", "resume_after", "at"}
+    checkpoint: dict = field(default_factory=dict)  # where the run is: phase, next step, what is saved (see RUN_LIFECYCLE.md)
+    reviews: dict = field(default_factory=dict)  # input fingerprint -> verdict: an unchanged input is not reviewed twice
+    report: dict | None = None  # the final report's saved sections and how each was produced
+    files: list = field(default_factory=list)  # delivered files: name, format, bytes, sha256, verified
+    deliverable: str = ""  # the delivered file's content (stored, so it can be served after a restart)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled | interrupted (server shutdown)
@@ -95,7 +101,9 @@ class Run:
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
                 "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "goal_checks": self.goal_checks,
                 "research": self.research, "prior_check": self.prior_check, "research_state": self.research_state,
-                "research_gate": self.research_gate, "pause": self.pause, "events": self.events}
+                "research_gate": self.research_gate, "pause": self.pause, "checkpoint": self.checkpoint,
+                "reviews": self.reviews, "report": self.report, "files": self.files, "deliverable": self.deliverable,
+                "events": self.events}
 
 
 ROLE_LIST = "\n".join(f"- {r.id}: {r.name} — {r.mission}" for r in ROLES.values())
@@ -147,6 +155,18 @@ pass=true فقط إذا score>=7 ولا توجد مشكلة جوهرية.
 تحقق من صحة المعادلات والحسابات بنفسك؛ الخطأ الحسابي مشكلة جوهرية.
 افحص معقولية الأرقام لا صحة حسابها فقط: عائد استثمار بآلاف بالمئة، أو طلب سنوي يتجاوز ما يستهلكه سكان البلد، أو إيرادات بمليارات من ميزانية صغيرة، كلها مشكلة جوهرية حتى لو وُسمت «تقديرًا».
 الحقل الموسوم «غير متاح» لأن بياناته لا تُنشر علنًا ليس نقصًا جوهريًا ما دام الناتج قدّم ما يمكن إثباته. الرقم الدقيق بلا مصدر مفتوح أسوأ من «غير متاح»."""
+
+SUMMARY_RULE = """
+- هذه المرة لا تكتب التقرير كله: أقسام الفريق ستُلحق بعد ما تكتبه كاملة كما هي (كل قسم بمصادره)، وأقسام الحدود والمصادر يبنيها النظام.
+- اكتب فقط: سطر عنوان للتقرير (#)، ثم «## الملخص التنفيذي» (أهم النتائج بأرقامها كما وردت في الأقسام بوسومها وروابطها)، ثم «## التوصيات وخطوات التنفيذ».
+- لا تضف رقمًا غير موجود في الأقسام، ولا تحسب رقمًا جديدًا. إن تعارض قسمان فاذكر التعارض.
+- إن كان قسم «لم يجتز المراجعة» فلا تبنِ عليه توصية حاسمة واذكر ذلك.
+- لا تتجاوز نحو 2000 حرف."""
+
+FIX_RULE = """
+- المدقق رفض جزءًا من التقرير. أعد كتابة هذا الجزء وحده مصححًا بالتنسيق نفسه، وأبقِ كل ما لم يُعترض عليه كما هو بوسومه وروابطه.
+- إن كان رقم غير معقول مبنيًا على تقدير لا تملك بيانات لتصحيحه، فاحذفه وما بُني عليه وصرّح بأن البيانات لا تكفي بدل اختلاق بديل.
+- أعد الجزء المصحح فقط، بلا مقدمة."""
 
 SYNTH = """أنت المنسق. اجمع نتائج فريقك في جواب نهائي واحد متماسك للمستخدم بلغته وبتنسيق Markdown.
 - لا تضف معلومات غير موجودة في النتائج.
@@ -453,6 +473,26 @@ def apply_audit(v: dict, output: str) -> dict:
             "arithmetic": errs}
 
 
+def unreviewed(a: dict) -> bool:
+    """An attempt whose output no reviewer judged: the review call failed (quota, provider). Older runs recorded
+    such a failure as a rejection with score 0 and «تعذر التحقق»; it is not one."""
+    v = a.get("verdict") or {}
+    if not v or a.get("error"):
+        return False
+    return bool(v.get("unreviewed")) or (not v.get("score") and any(str(i).startswith("تعذر التحقق") for i in v.get("issues") or []))
+
+
+def feedback_of(v: dict) -> str:
+    return "\n".join(f"- {i}" for i in v.get("issues") or []) + (f"\nالمطلوب: {v['fix']}" if v.get("fix") else "")
+
+
+def improving(attempts: list[dict]) -> bool:
+    """Is another attempt worth its calls? Not when the last reviewed attempt scored no better than an earlier one:
+    the reviewer's bar stays the same, and the task ends failed (with its best attempt) instead of passing."""
+    scores = [float((a.get("verdict") or {}).get("score") or 0) for a in attempts if a.get("verdict") and not unreviewed(a)]
+    return len(scores) < 2 or scores[-1] > max(scores[:-1])
+
+
 def pick_best(attempts: list[dict]) -> int | None:
     """Index of the attempt to keep when none passed: highest verifier score, then most pages really
     read, then the earliest (retries under pressure tend to fill gaps with invented figures)."""
@@ -523,6 +563,52 @@ class Orchestrator:
         self.prior = prior  # stored data of a stopped run to continue: its plan and verified outputs are reused
         self.rm: research_manager.ResearchManager | None = None
         self.step = "start"  # the step being worked on, recorded if the model stops answering
+        if prior:  # reviews of unchanged inputs stay valid across a resume
+            run.reviews = {**(prior.get("reviews") or {}), **run.reviews}
+
+    async def mark(self, phase: str, next_step: str, save: bool = True, **extra):
+        """Record where the run is and save it. Called after each phase or task that succeeds, so a stop at any
+        point loses at most the step in progress."""
+        r = self.run
+        usage = getattr(self.llm, "usage", None)
+        tasks = {tid: {"status": t.get("status"), "attempts": len(t.get("attempts") or []),
+                       "settled": bool(t.get("settled")), "unreviewed": bool(t.get("unreviewed")),
+                       "reused": bool(t.get("reused")), "fp": report_mod.fp(t.get("instructions"), t.get("output"))}
+                 for tid, t in r.tasks.items()}
+        rs = r.research_state or {}
+        r.checkpoint = {
+            "version": 1, "goal": r.goal, "phase": phase, "next_step": next_step, "status": r.status,
+            "plan": [{k: t.get(k) for k in ("id", "title", "role", "depends_on")} for t in r.tasks.values() if not t.get("parent")],
+            "research": {"done": bool(rs.get("done")), "facets": dict(rs.get("facets") or {}),  # facet -> critical|supporting
+                         "facet_status": {k: (v.get("status") if isinstance(v, dict) else v) for k, v in (rs.get("status") or {}).items()},
+                         "readings": len(rs.get("readings") or {}), "candidates": len(rs.get("candidates") or {}),
+                         "used": rs.get("used")},
+            "analysis": tasks, "reviews": len(r.reviews), "goal_checks": r.goal_checks,
+            "report": {"sections": [{k: x.get(k) for k in ("id", "status", "fp", "by")} for x in (r.report or {}).get("sections") or []],
+                       "assembled": bool((r.report or {}).get("assembled_fp"))},
+            "files": [{k: f.get(k) for k in ("name", "bytes", "sha256", "verified")} for f in r.files],
+            "calls": usage.as_dict() if hasattr(usage, "as_dict") else {}, "stop_reason": (r.pause or {}).get("kind"),
+            "saved_at": time.time(), **extra}
+        if save and self.persist:
+            await self.persist()
+
+    async def review(self, task: dict, output: str, goal: str = "", read: list | None = None, evidence_text: str = "") -> dict:
+        """verify(), once per distinct input. The fingerprint covers everything the reviewer sees (task, output,
+        request, pages read, evidence, documented gaps): change any of it and the part is reviewed again."""
+        key = report_mod.fp("review", task.get("instructions"), task.get("acceptance"), output, goal, sorted(read or []) if read is not None else None,
+                            evidence_text)
+        hit = self.run.reviews.get(key)
+        if hit and not hit.get("unreviewed"):
+            if hasattr(getattr(self.llm, "usage", None), "avoid"):
+                self.llm.usage.avoid(1, "review")
+            await self.run.emit("review_reused", {"task": task.get("id"), "score": hit.get("score"), "pass": hit.get("pass")})
+            return dict(hit)
+        v = await verify(self.llm, task, output, goal, read, evidence_text)
+        if v.get("unreviewed"):  # the reviewer's reply was unusable: that is not a rejection, ask once more
+            v = await verify(self.llm, task, output, goal, read, evidence_text)
+        if not v.get("unreviewed"):
+            self.run.reviews[key] = dict(v)
+        return v
 
     async def execute(self):
         r = self.run
@@ -581,6 +667,8 @@ class Orchestrator:
                 status = "partial"
                 r.verdict = {**r.verdict, "pass": False, "issues": ["لم تُقرأ أي صفحة مصدر فعليًا في مهام البحث؛ الأرقام غير مثبتة."]
                              + list(r.verdict.get("issues") or [])}
+            if r.result and not out.get("rejected"):
+                status = await self.deliver(status)
             bad_figures = [i for i in r.verdict.get("plausibility") or [] if i.get("severity") == "error"]
             if r.memory_space and status in ("done", "partial") and not out.get("rejected"):
                 if r.verdict.get("arithmetic") or bad_figures:  # a proven error must not become a remembered "finding"
@@ -610,6 +698,30 @@ class Orchestrator:
             await r.emit("run_finished", {"status": r.status, "usage": r.usage, "agents_spawned": r.agents_spawned,
                                           "saved": r.saved})
 
+    async def deliver(self, status: str) -> str:
+        """Create the final file, store it with the run, and check it really exists before calling the run done.
+        A run whose file could not be created or verified is not done (it stays resumable as partial)."""
+        r = self.run
+        self.step = "delivery"
+        r.finished_at = time.time()
+        name = f"agos-report-{r.id}.md"
+        try:
+            content = export.to_markdown({**r.full(), "status": status, "deliverable": "", "files": []})
+            rec = report_mod.file_record(name, content)
+            ok = report_mod.verify_file(rec, content, [r.result.splitlines()[0] if r.result else "", r.goal.splitlines()[0][:80]])
+        except Exception as e:  # noqa: BLE001  a broken export must not lose the report itself
+            ok, rec, content = False, {"name": name, "error": f"{type(e).__name__}: {str(e)[:200]}"}, ""
+        rec["verified"] = ok
+        r.files = [rec]
+        r.deliverable = content if ok else ""
+        await r.emit("file_created" if ok else "file_failed", {k: rec.get(k) for k in ("name", "bytes", "sha256", "verified", "error")})
+        if not ok and status == "done":
+            status = "partial"
+            r.verdict = {**r.verdict, "issues": ["تعذر إنشاء الملف النهائي أو التحقق منه؛ التقرير محفوظ ويمكن إعادة بنائه."]
+                         + list(r.verdict.get("issues") or [])}
+        await self.mark("delivery", "done" if ok else "rebuild file", delivered=ok)
+        return status
+
     async def _paused(self, e: ModelPaused):
         """The model stopped answering (quota spent, provider down, key refused). Nothing done so far is lost: the
         run keeps its plan, research, every agent's output and review, and waits to be resumed from this point."""
@@ -622,6 +734,7 @@ class Orchestrator:
                    "provider_message": str(e)[:300], "resume_after": e.resume_after, "at": time.time(),
                    "kept": {"tasks_done": done, "readings": len(((r.research_state or {}).get("readings") or {}))}}
         r.error = ""
+        await self.mark(self.step.split(":")[0], f"resume at {self.step}", save=False)
         await r.emit("run_paused", {k: r.pause[k] for k in ("kind", "phase", "step", "resume_after", "message", "kept")})
 
     @property
@@ -752,7 +865,9 @@ class Orchestrator:
             return {"ok": tasks[0]["status"] == "done", "output": tasks[0]["output"]}
 
         if depth == 0:
+            await self.mark("research", "research")
             await self.research(tasks)
+            await self.mark("analysis", "analysis")
         await self.run_dag(tasks)
         return await self.synthesize(goal, tasks, final=(depth == 0))
 
@@ -834,12 +949,29 @@ class Orchestrator:
             t["depends_on"] = [d for d in (old.get("depends_on") or []) if d in ids]
             if t["role"] not in ROLES or not t["instructions"]:
                 return None  # unknown shape: plan from scratch rather than guess
+            attempts = list(old.get("attempts") or [])
+            genuine = [a for a in attempts if not unreviewed(a)]
             keep = old.get("status") == "done" and bool(old.get("output"))
-            t.update(status="done" if keep else "pending", output=old.get("output", "") if keep else "",
-                     attempts=list(old.get("attempts") or []) if keep else [], depth=0, parent=None,
-                     reused=keep)
+            # A task that used all its attempts on real rejections is settled: rerunning it would spend the same
+            # calls for the same answer. Its best attempt is kept and shown as not verified.
+            settled = (not keep and old.get("status") == "failed" and bool(old.get("output")) and not old.get("decompose")
+                       and len(genuine) >= MAX_ATTEMPTS)
+            t.update(status="done" if keep else "failed" if settled else "pending",
+                     output=old.get("output", "") if keep or settled else "",
+                     attempts=attempts if keep or settled else genuine, depth=0, parent=None, reused=keep or settled)
+            if settled:
+                t.update(settled=True, best_attempt=old.get("best_attempt"))
+            elif not keep:
+                # an output the model produced but no reviewer judged (quota ran out, or old runs where a failed
+                # review counted as a rejection): it is reviewed on resume instead of being written again
+                pend = old.get("unreviewed") or next(({"agent": a.get("agent"), "output": a.get("output"), "steps": a.get("steps") or [],
+                                                       "confidence": a.get("confidence") or 0.4, "sources": a.get("sources") or [],
+                                                       "read": a.get("read") or []}
+                                                      for a in reversed(attempts) if unreviewed(a) and a.get("output")), None)
+                if pend and pend.get("output") and not old.get("decompose"):
+                    t["unreviewed"] = pend
             tasks.append(t)
-            if keep:
+            if keep or settled:
                 reused.append(t["id"])
                 if t["decompose"]:  # keep the finished sub-team visible
                     for sub in prior_tasks.values():
@@ -850,8 +982,12 @@ class Orchestrator:
         simple = any(e.get("type") == "plan" and e.get("scope") == "root" and e.get("simple")
                      for e in (self.prior.get("events") or []))
         self.run.resumed = {"from": self.prior.get("id"), "reused": reused}
+        if self.prior.get("report"):
+            self.run.report = {"sections": list((self.prior["report"] or {}).get("sections") or []), "from": self.prior.get("id")}
         await self.run.emit("resumed", {"from": self.prior.get("id"), "reused": reused,
-                                        "remaining": [t["id"] for t in tasks if t["status"] == "pending"]})
+                                        "remaining": [t["id"] for t in tasks if t["status"] == "pending"],
+                                        "review_only": [t["id"] for t in tasks if t.get("unreviewed")],
+                                        "research_reused": bool(((self.prior or {}).get("research_state") or {}).get("done"))})
         return {"tasks": tasks, "simple": simple and len(tasks) == 1}
 
     async def _continue(self, goal: str, p: dict) -> dict:
@@ -862,6 +998,7 @@ class Orchestrator:
                 await self.run_task(t, goal, verify_it=False)
             return {"ok": t["status"] == "done", "output": t["output"]}
         await self.research(tasks)
+        await self.mark("analysis", "analysis")
         await self.run_dag(tasks)
         return await self.synthesize(goal, tasks, final=True)
 
@@ -913,49 +1050,25 @@ class Orchestrator:
             await r.emit("task_finished", {"task": t["id"], "status": t["status"]})
             return
         role = ROLES[t["role"]]
-        feedback = ""
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            if r.agents_spawned >= r.max_agents:
-                t["status"] = "failed"
-                await r.emit("task_finished", {"task": t["id"], "status": "failed", "reason": "نفدت ميزانية الوكلاء"})
-                return
-            r.agents_spawned += 1
-            agent_id = f"{role.id}#{r.agents_spawned}"
-            await r.emit("agent_spawned", {"task": t["id"], "agent": agent_id, "role": role.name, "attempt": attempt})
-
-            calls: list[str] = []
-
-            async def emit(type_, data, _a=agent_id, _c=calls):
-                if type_ == "tool_call" and data.get("tool") == "calculate":
-                    _c.append(str((data.get("input") or {}).get("program", "")))
-                await r.emit(type_, {"task": t["id"], "agent": _a, **data})
-
-            instr = t["instructions"] + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
-            ctx = (f"طلب المستخدم الأصلي (للسياق؛ نفّذ مهمتك أنت فقط والتزم بموضوعه وأرقامه بعد أي تصحيح حسابي مذكور):\n{self.anchored()}"
-                   + (f"\n\n{context}" if context else ""))
-            hook = None
-            if self.rm is not None:
-                if set(role.tools) & {"web_search", "fetch_url", "research_sources", "world_bank"}:
-                    ctx += "\n\n" + self.rm.pack(t["title"] + " " + t["instructions"], self._pack_chars())
-                else:
-                    idx = self.rm.index()
-                    if idx:
-                        ctx += "\n\nفهرس الأدلة التي قرأها النظام (للاستشهاد بالروابط الصحيحة فقط):\n" + idx
-
-                async def hook(name, args, allowed, _t=t["id"]):
-                    return await self.rm.agent_tool(name, args, allowed, _t)
-            self.step = f"agent:{t['id']}:{attempt}"
-            try:
-                with llm_phase("analysis"):
-                    res = await run_agent(self.llm, role, instr, ctx, emit, r.can_exec, tool=hook)
-            except ModelPaused:
-                t["status"] = "pending"  # not failed: it resumes at this attempt
-                raise
-            except LLMError as e:
-                t["attempts"].append({"agent": agent_id, "error": str(e)})
-                await r.emit("agent_error", {"task": t["id"], "agent": agent_id, "error": str(e)})
-                continue
-            t["output"] = self.rm.link_ids(res["output"]) if self.rm is not None else res["output"]
+        last = next((a.get("verdict") for a in reversed(t["attempts"]) if a.get("verdict")), None)
+        feedback = feedback_of(last) if last and not last.get("pass") else ""
+        for attempt in range(len(t["attempts"]) + 1, MAX_ATTEMPTS + 1):
+            pend = t.pop("unreviewed", None)
+            if pend:  # resumed: this output was written before the stop and only needs its review
+                agent_id, calls, res = pend.get("agent") or f"{role.id}#resumed", [], {
+                    "output": pend["output"], "steps": pend.get("steps") or [], "confidence": pend.get("confidence") or 0.4,
+                    "sources": pend.get("sources") or [], "read": pend.get("read") or []}
+                if hasattr(getattr(self.llm, "usage", None), "avoid"):
+                    self.llm.usage.avoid(1, "analysis")
+                await r.emit("review_resumed", {"task": t["id"], "agent": agent_id, "attempt": attempt})
+                t["output"] = res["output"]
+            else:
+                res = await self._attempt(t, role, attempt, context, feedback)
+                if res is None:
+                    if r.agents_spawned >= r.max_agents and t["status"] == "failed":
+                        return
+                    continue
+                agent_id, calls = res.pop("_agent"), res.pop("_calls")
             read = res.get("read") if {"fetch_url", "web_search", "world_bank"} & set(role.tools) else None
             if read is not None and self.rm is not None:  # evidence the system read and handed to this agent
                 read = list(dict.fromkeys(list(read) + [x["url"] for x in self.rm.evidence_for(t["title"] + " " + t["instructions"])]))
@@ -969,7 +1082,7 @@ class Orchestrator:
             self.step = f"review:{t['id']}:{attempt}"
             try:
                 with llm_phase("review"):
-                    v = await verify(self.llm, t, t["output"], self.anchored(), read, ev_text) if verify_it else {"pass": True, "score": None, "issues": []}
+                    v = await self.review(t, t["output"], self.anchored(), read, ev_text) if verify_it else {"pass": True, "score": None, "issues": []}
             except ModelPaused:
                 t["status"] = "pending"
                 t["unreviewed"] = {"agent": agent_id, "output": t["output"], "steps": res["steps"], "confidence": res["confidence"],
@@ -985,14 +1098,69 @@ class Orchestrator:
             if v["pass"]:
                 t["status"] = "done"
                 await r.emit("task_finished", {"task": t["id"], "status": "done", "attempts": attempt})
+                await self.mark("analysis", f"tasks pending: {self._pending_ids()}")
                 return
-            feedback = "\n".join(f"- {i}" for i in v["issues"]) + (f"\nالمطلوب: {v['fix']}" if v.get("fix") else "")
+            feedback = feedback_of(v)
+            if not improving(t["attempts"]):
+                await r.emit("retries_stopped", {"task": t["id"], "attempts": attempt,
+                                                 "reason": "لم يتحسن تقييم المدقق في المحاولة الأخيرة؛ إعادة المحاولة لن تغير النتيجة غالبًا"})
+                break
         t["status"] = "failed"
+        t["settled"] = True
         best = pick_best(t["attempts"])
         if best is not None:  # not simply the last one: a later attempt can be worse (e.g. invents figures)
             t["output"], t["best_attempt"] = t["attempts"][best]["output"], best + 1
         await r.emit("task_finished", {"task": t["id"], "status": "failed", "attempts": len(t["attempts"]),
                                        "kept_attempt": t.get("best_attempt")})
+        await self.mark("analysis", f"tasks pending: {self._pending_ids()}")
+
+    def _pending_ids(self) -> list[str]:
+        return [tid for tid, t in self.run.tasks.items() if t.get("status") in ("pending", "running")]
+
+    async def _attempt(self, t: dict, role, attempt: int, context: str, feedback: str) -> dict | None:
+        """One agent writes the task. None: no output this attempt (agent budget spent, or the model call failed)."""
+        r = self.run
+        if r.agents_spawned >= r.max_agents:
+            t["status"] = "failed"
+            await r.emit("task_finished", {"task": t["id"], "status": "failed", "reason": "نفدت ميزانية الوكلاء"})
+            return None
+        r.agents_spawned += 1
+        agent_id = f"{role.id}#{r.agents_spawned}"
+        await r.emit("agent_spawned", {"task": t["id"], "agent": agent_id, "role": role.name, "attempt": attempt})
+        calls: list[str] = []
+
+        async def emit(type_, data, _a=agent_id, _c=calls):
+            if type_ == "tool_call" and data.get("tool") == "calculate":
+                _c.append(str((data.get("input") or {}).get("program", "")))
+            await r.emit(type_, {"task": t["id"], "agent": _a, **data})
+
+        instr = t["instructions"] + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
+        ctx = (f"طلب المستخدم الأصلي (للسياق؛ نفّذ مهمتك أنت فقط والتزم بموضوعه وأرقامه بعد أي تصحيح حسابي مذكور):\n{self.anchored()}"
+               + (f"\n\n{context}" if context else ""))
+        hook = None
+        if self.rm is not None:
+            if set(role.tools) & {"web_search", "fetch_url", "research_sources", "world_bank"}:
+                ctx += "\n\n" + self.rm.pack(t["title"] + " " + t["instructions"], self._pack_chars())
+            else:
+                idx = self.rm.index()
+                if idx:
+                    ctx += "\n\nفهرس الأدلة التي قرأها النظام (للاستشهاد بالروابط الصحيحة فقط):\n" + idx
+
+            async def hook(name, args, allowed, _t=t["id"]):
+                return await self.rm.agent_tool(name, args, allowed, _t)
+        self.step = f"agent:{t['id']}:{attempt}"
+        try:
+            with llm_phase("analysis"):
+                res = await run_agent(self.llm, role, instr, ctx, emit, r.can_exec, tool=hook)
+        except ModelPaused:
+            t["status"] = "pending"  # not failed: it resumes at this attempt
+            raise
+        except LLMError as e:
+            t["attempts"].append({"agent": agent_id, "error": str(e)})
+            await r.emit("agent_error", {"task": t["id"], "agent": agent_id, "error": str(e)})
+            return None
+        t["output"] = self.rm.link_ids(res["output"]) if self.rm is not None else res["output"]
+        return {**res, "_agent": agent_id, "_calls": calls}
 
     def _pack_chars(self) -> int:
         free = getattr(getattr(self.llm, "cfg", None), "provider", "") == "free"
@@ -1009,8 +1177,18 @@ class Orchestrator:
 
     async def final_verdict(self, check: dict, answer: str) -> dict:
         self.step = "final_review"
+        key = report_mod.fp("final", check, answer, self.reused_rejected(answer))
+        hit = self.run.reviews.get(key)
+        if hit:  # the same assembled report was already audited (resume after a stop during delivery)
+            if hasattr(getattr(self.llm, "usage", None), "avoid"):
+                self.llm.usage.avoid(2, "final_review")
+            await self.run.emit("review_reused", {"task": "final", "score": hit.get("score"), "pass": hit.get("pass")})
+            return dict(hit)
         with llm_phase("final_review"):
-            return await self._final_verdict(check, answer)
+            v = await self._final_verdict(check, answer)
+        if not v.get("unreviewed"):
+            self.run.reviews[key] = dict(v)
+        return v
 
     async def _final_verdict(self, check: dict, answer: str) -> dict:
         v = apply_audit(await verify(self.llm, check, answer), answer)
@@ -1025,6 +1203,108 @@ class Orchestrator:
                  "issues": list(v.get("issues") or []) + ["الجواب مقطوع قبل اكتماله (ينتهي وسط جدول أو جملة)."]}
         v = quality.apply_rejected(v, self.reused_rejected(answer))
         return quality.apply_plausibility(v, await quality.check_plausibility(self.llm, answer))
+
+    async def _save_section(self, sec: dict):
+        r = self.run
+        secs = [x for x in (r.report or {}).get("sections") or [] if x["id"] != sec["id"]] + [sec]
+        r.report = {**(r.report or {}), "sections": secs}
+        await self.mark("finalization", f"section saved: {sec['id']}")
+
+    def _saved_section(self, sid: str, key: str) -> dict | None:
+        for x in (self.run.report or {}).get("sections") or []:
+            if x.get("id") == sid and x.get("fp") == key and x.get("text"):
+                return x
+        return None
+
+    async def write_summary(self, goal: str, body: list[dict], issues: list[str] | None = None, prev: str = "") -> dict:
+        """The one part of the report the model writes: summary and recommendations, from digests of the saved
+        sections. Reused as is when its inputs have not changed (resume)."""
+        r = self.run
+        g = _clip(goal, 4000)
+        idx = self.rm.index(1500) if self.rm is not None else ""
+        gaps = self.rm.gaps() if self.rm is not None else []
+        share = max(600, (FREE_PROMPT_CHARS - len(SYNTH) - len(SUMMARY_RULE) - len(g) - len(idx) - 1500) // max(1, len(body)))
+        parts = [f"## {x['title']} [{'مُتحقق منه' if x['status'] == 'verified' else 'لم يجتز المراجعة'}]\n{report_mod.digest(x['text'], share)}"
+                 for x in body]
+        key = report_mod.fp("summary", g, [x["fp"] for x in body], idx, gaps, issues or [])
+        saved = self._saved_section("summary", key)
+        if saved:
+            if hasattr(getattr(self.llm, "usage", None), "avoid"):
+                self.llm.usage.avoid(1, "finalization")
+            await r.emit("section_reused", {"section": "summary"})
+            return saved
+        user = (f"طلب المستخدم:\n{g}\n\n" + (f"فهرس الأدلة المقروءة:\n{idx}\n\n" if idx else "")
+                + ("نواقص البحث:\n" + "\n".join(f"- {x}" for x in gaps) + "\n\n" if gaps else "")
+                + "ملخص أقسام الفريق (النص الكامل يُلحق بالتقرير):\n\n" + "\n\n".join(parts))
+        msgs = [{"role": "system", "content": SYNTH + SUMMARY_RULE}, {"role": "user", "content": user}]
+        if issues:
+            msgs += [{"role": "assistant", "content": prev},
+                     {"role": "user", "content": "ملاحظات المدقق على التقرير:\n" + "\n".join(issues) + "\n" + FIX_RULE}]
+        self.step = "finalization:summary"
+        with llm_phase("finalization"):
+            text = await self.llm.chat(msgs, temperature=0.2, max_tokens=1800)
+        sec = {"id": "summary", "kind": "summary", "title": "الملخص التنفيذي والتوصيات", "status": "verified", "text": text.strip(),
+               "sources": report_mod.urls(text), "fp": key, "by": "model", "at": time.time()}
+        await self._save_section(sec)
+        return sec
+
+    async def fix_section(self, sec: dict, issues: list[str]) -> dict:
+        """Revise one rejected task section, not the whole report."""
+        self.step = f"finalization:{sec['id']}"
+        msgs = [{"role": "system", "content": SYNTH + FIX_RULE},
+                {"role": "user", "content": f"القسم «{sec['title']}»:\n\n{_clip(sec['text'], 9000)}\n\nملاحظات المدقق:\n" + "\n".join(issues)}]
+        with llm_phase("finalization"):
+            text = await self.llm.chat(msgs, temperature=0.2, max_tokens=2500)
+        text = self.rm.link_ids(text) if self.rm is not None else text
+        new = {**sec, "text": text.strip(), "sources": report_mod.urls(text), "by": "model:revised",
+               "fp": report_mod.fp("task-revised", sec["fp"], issues), "at": time.time(), "revised_from": sec["fp"]}
+        await self._save_section(new)
+        return new
+
+    async def build_report(self, goal: str, tasks: list[dict]) -> dict:
+        """Final Report Builder (app/report.py): skeleton from the plan, sections from saved reviewed outputs,
+        the model only for the summary, then one audit of the assembled report and, if rejected, a revision of
+        the sections the rejection is about (not a rewrite of everything)."""
+        r = self.run
+        ok = all(t["status"] == "done" for t in tasks)
+        body = report_mod.task_sections(tasks)
+        for sec in body:
+            await self._save_section(sec)
+        read = quality_gate.read_set(r.research_state, [u for e in r.events if e.get("type") == "tool_result"
+                                                         for u in e.get("read") or []]) if self.rm is not None else set()
+        gaps = self.rm.gaps() if self.rm is not None else []
+        summary = await self.write_summary(goal, body)
+        check = {"id": "final", "instructions": goal + (
+                     "\n\nيجب أن يذكر الجواب التصحيح الحسابي صراحةً." if self.note else ""),
+                 "acceptance": "يجيب عن طلب المستخدم كاملًا ومتسقًا مع نتائج الفريق بلا ادعاءات مختلقة"}
+
+        def compose(summary, body):
+            limits = report_mod.limits_section(tasks, gaps, self.note)
+            srcs = report_mod.sources_section([summary, *body], read)
+            return report_mod.assemble([summary, *body, limits, srcs]), [summary, *body, limits, srcs]
+
+        answer, secs = compose(summary, body)
+        v = await self.final_verdict(check, answer)
+        await self.run.emit("final_check", v)
+        revised: list[str] = []
+        if not v["pass"] and v.get("issues"):
+            targets = report_mod.locate(v["issues"], v, body)
+            await r.emit("report_revision", {"sections": targets})
+            for sid in targets[:2]:
+                if sid == "summary":
+                    summary = await self.write_summary(goal, body, v["issues"], summary["text"])
+                else:
+                    i = next(k for k, x in enumerate(body) if x["id"] == sid)
+                    body[i] = await self.fix_section(body[i], v["issues"])
+                revised.append(sid)
+            answer, secs = compose(summary, body)
+            v = await self.final_verdict(check, answer)
+            await self.run.emit("final_check", v)
+        r.report = {"sections": secs, "assembled_fp": report_mod.fp(answer), "revised": revised,
+                    "verdict": {k: v.get(k) for k in ("pass", "score")}, "built_at": time.time()}
+        await self.mark("finalization", "deliver")
+        return {"ok": ok and v["pass"], "partial": v["pass"] or any(t["status"] == "done" for t in tasks),
+                "output": answer, "verdict": v}
 
     async def synthesize(self, goal: str, tasks: list[dict], final: bool) -> dict:
         parts = []
@@ -1056,6 +1336,8 @@ class Orchestrator:
                                                                "issues": ["لم تجتز أي مهمة التحقق؛ هذا الجواب مسودة غير متحقق منها."]}}
         await self.run.emit("synthesizing", {"final": final})
         self.step = "finalization"
+        if final:
+            return await self.build_report(goal, tasks)
         if getattr(getattr(self.llm, "cfg", None), "provider", "") == "free" and parts:  # every result keeps a fair share instead of losing the middle
             g = _clip(goal, 5000)
             share = max(800, (FREE_PROMPT_CHARS - len(SYNTH) - len(g) - 600) // len(parts))

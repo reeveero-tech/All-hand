@@ -56,6 +56,6 @@ def test_all_rejected_gives_one_labeled_draft_not_a_dump():
 
     bad = {"pass": False, "score": 3, "issues": ["رقم مختلق"], "fix": "احذفه"}
     run = asyncio.run(run_with(Spy(plan_of(T("a"), T("b")), verdicts=[bad] * 6)))
-    assert run.status == "failed" and run.result == "الجواب النهائي المجمع"
+    assert run.status == "failed" and run.result.startswith("الجواب النهائي المجمع")
     assert run.verdict.get("draft") is True
     assert "مسودة غير متحقق منها" in seen[0][0]["content"] and "رقم مختلق" in seen[0][1]["content"]

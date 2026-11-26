@@ -231,8 +231,8 @@ def test_quota_during_final_report_pauses_and_keeps_all_tasks():
     run, _ = asyncio.run(_run(fake))
     assert run.status == "paused_quota"
     assert all(t["status"] == "done" and t["output"] for t in run.tasks.values())
-    assert run.pause["phase"] is None or run.pause["step"] in ("finalization", "final_review")
-    assert run.pause["step"] in ("finalization", "final_review")
+    assert run.pause["step"].startswith(("finalization", "final_review"))
+    assert {x["id"] for x in run.report["sections"]} >= {"task:a", "task:b"}  # sections saved before the stop
 
 
 def test_quota_during_planning_pauses():

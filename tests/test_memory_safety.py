@@ -139,7 +139,7 @@ async def test_memory_save_failure_keeps_answer_and_is_explicit(monkeypatch):
         raise memory.MemoryUnavailable("memory add failed: 400 column nature does not exist")
     monkeypatch.setattr(memory.STORE, "add", boom)
     r, _ = await run("سؤال عادي عن التسويق", {"task_summary": "تسويق", "add": []})
-    assert r.status == "done" and r.result == "جواب"
+    assert r.status == "done" and r.result.startswith("جواب")
     assert r.memory["error"].startswith("save:")
     types = [e["type"] for e in r.events]
     assert "memory_error" in types and "memory_saved" not in types
@@ -162,7 +162,7 @@ async def test_recall_failure_does_not_stop_the_run(monkeypatch):
         raise memory.MemoryUnavailable("memory list failed: 503")
     monkeypatch.setattr(memory.STORE, "list", boom)
     r, _ = await run("سؤال عادي عن التسويق", {"task_summary": "تسويق", "add": []})
-    assert r.status == "done" and r.result == "جواب" and r.memory["error"]
+    assert r.status == "done" and r.result.startswith("جواب") and r.memory["error"]
 
 
 def test_memory_api_backend_failure_is_a_clear_502(monkeypatch):
