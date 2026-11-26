@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from .research import evidence
 from .research import manager as research_manager
 from .research import quality_gate
-from . import export, memory, quality
+from . import assumptions, export, memory, quality
 from . import report as report_mod
 from .agents import ROLES, run_agent
 from .llm import FREE_PROMPT_CHARS, LLM, LLMError, ModelPaused, _clip, extract_objects, looks_truncated
@@ -57,6 +57,8 @@ class Run:
     report: dict | None = None  # the final report's saved sections and how each was produced
     files: list = field(default_factory=list)  # delivered files: name, format, bytes, sha256, verified
     deliverable: str = ""  # the delivered file's content (stored, so it can be served after a restart)
+    delta: dict | None = None  # assumption follow-up: {"from", "change", "old", "affected", "reused", "sections_changed"}
+    _base: dict | None = field(default=None, repr=False)  # the previous run's data a delta follow-up builds on (not stored twice)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled | interrupted (server shutdown)
@@ -103,6 +105,7 @@ class Run:
                 "research": self.research, "prior_check": self.prior_check, "research_state": self.research_state,
                 "research_gate": self.research_gate, "pause": self.pause, "checkpoint": self.checkpoint,
                 "reviews": self.reviews, "report": self.report, "files": self.files, "deliverable": self.deliverable,
+                "delta": self.delta,
                 "events": self.events}
 
 
@@ -337,6 +340,8 @@ def grade_claims(claims) -> list[dict]:
 async def check_goal_numbers(llm: LLM, goal: str) -> list[dict]:
     if not re.search(r"[\d\u0660-\u0669]{2,}", goal):
         return []
+    if len(re.findall(r"[\d\u0660-\u0669][\d\u0660-\u0669,.٬٫]*", goal)) < 2:
+        return []  # one number cannot form a stated relation (total, conversion, share): no call needed
     try:
         p = await llm.chat_json([{"role": "system", "content": NUMCHECK}, {"role": "user", "content": goal[:GOAL_CHARS]}],
                                 temperature=0.0, max_tokens=600)
@@ -563,6 +568,7 @@ class Orchestrator:
         self.prior = prior  # stored data of a stopped run to continue: its plan and verified outputs are reused
         self.rm: research_manager.ResearchManager | None = None
         self.step = "start"  # the step being worked on, recorded if the model stops answering
+        self.research_prior: dict | None = None  # a delta follow-up's research, reused as is (nothing reopened)
         if prior:  # reviews of unchanged inputs stay valid across a resume
             run.reviews = {**(prior.get("reviews") or {}), **run.reviews}
 
@@ -754,7 +760,12 @@ class Orchestrator:
         if "ledger" in pc:
             return
         answer = r.context.split("النتيجة السابقة:\n", 1)[-1]
-        p = await quality.check_plausibility(self.llm, answer)
+        if isinstance(pc.get("prev_figures"), dict):  # the previous run's final check already examined this answer
+            p = {"issues": pc["prev_figures"].get("issues") or [], "figures": pc["prev_figures"].get("figures") or {}}
+            if hasattr(getattr(self.llm, "usage", None), "avoid"):
+                self.llm.usage.avoid(1, "intake")
+        else:
+            p = await quality.check_plausibility(self.llm, answer)
         rejected = [float(x) for x in pc.get("known_rejected") or []]
         rejected += [x for i in p["issues"] if i["severity"] == "error" for x in i.get("values") or []]
         user_text = r.goal + "\n" + r.context.split("النتيجة السابقة:", 1)[0]
@@ -842,6 +853,10 @@ class Orchestrator:
         p = await self._reuse_plan() if depth == 0 and self.prior else None
         if p:
             return await self._continue(goal, p)
+        if depth == 0 and r.delta and r._base:
+            p = await self._delta_plan()
+            if p:
+                return await self._continue(goal, p)
         await r.emit("planning", {"scope": prefix or "root", "depth": depth})
         self.step = f"plan:{prefix or 'root'}"
         with llm_phase("planning"):
@@ -880,9 +895,9 @@ class Orchestrator:
         pending = [t for t in tasks if t["status"] == "pending"]
         researchish = any(ROLES[t["role"]].tools and set(ROLES[t["role"]].tools) & {"web_search", "fetch_url", "research_sources"}
                           for t in pending)
-        if not researchish and not r.research_reuse:
+        if not researchish and not r.research_reuse and not self.research_prior:
             return
-        prior_state = (self.prior or {}).get("research_state") if self.prior else None
+        prior_state = self.research_prior or ((self.prior or {}).get("research_state") if self.prior else None)
         budget = research_manager.Budget()
         if r.research_reuse and not prior_state:
             budget.max_rounds = 1  # a follow-up keeps what was read and only looks for what the change needs
@@ -990,6 +1005,44 @@ class Orchestrator:
                                         "research_reused": bool(((self.prior or {}).get("research_state") or {}).get("done"))})
         return {"tasks": tasks, "simple": simple and len(tasks) == 1}
 
+    async def _delta_plan(self) -> dict | None:
+        """Budget follow-up: the previous plan, its research and every result that does not depend on the budget are
+        kept as they are; only the dependent tasks (and what depends on them) are recomputed. No planner call."""
+        r, base, d = self.run, self.run._base, self.run.delta
+        root = [t for t in (base.get("tasks") or {}).values() if not t.get("parent")]
+        if not root or any(t.get("role") not in ROLES or not t.get("instructions") for t in root):
+            return None
+        old = d.get("old") or {}
+        aff = assumptions.affected(root, old.get("value"))
+        ids = {t["id"] for t in root}
+        tasks, reused = [], []
+        for o in root:
+            t = {k: o.get(k) for k in ("id", "title", "role", "instructions", "acceptance", "decompose")}
+            t["depends_on"] = [x for x in (o.get("depends_on") or []) if x in ids]
+            keep = o["id"] not in aff["all"] and o.get("status") in ("done", "failed") and bool(o.get("output"))
+            if keep:
+                t.update(status=o["status"], output=o["output"], attempts=list(o.get("attempts") or []), reused=True,
+                         best_attempt=o.get("best_attempt"), settled=o.get("status") == "failed")
+                reused.append(t["id"])
+                if t["decompose"]:
+                    for sub in (base.get("tasks") or {}).values():
+                        if str(sub.get("id", "")).startswith(t["id"] + "."):
+                            r.tasks[sub["id"]] = sub
+            else:
+                t["instructions"] = (o.get("instructions") or "") + assumptions.instruction(d["change"], d.get("old"), o.get("output") or "")
+                t.update(status="pending", output="", attempts=[], budget_dependent=o["id"] in aff["all"])
+            t.update(depth=0, parent=None)
+            tasks.append(t)
+            r.tasks[t["id"]] = t
+        d.update(affected=aff, reused=reused, recomputed=[t["id"] for t in tasks if t["status"] == "pending"],
+                 base_sections={x.get("id"): x.get("fp") for x in ((base.get("report") or {}).get("sections") or [])})
+        if base.get("research_state"):  # what was read stays read; a budget change needs no new sources
+            self.research_prior = {**base["research_state"], "done": True}
+            r.research_state = self.research_prior  # the evidence travels with the new version
+        await r.emit("budget_delta", {"from": d.get("from"), "old": old, "new": d["change"], "affected": aff["all"],
+                                      "directly": aff["direct"], "reused": reused})
+        return {"tasks": tasks, "simple": False}
+
     async def _continue(self, goal: str, p: dict) -> dict:
         tasks = p["tasks"]
         if p["simple"]:
@@ -1091,6 +1144,7 @@ class Orchestrator:
             if verify_it:
                 v = apply_audit(v, t["output"])
                 v = quality.apply_rejected(v, self.reused_rejected(t["output"] + "\n" + "\n".join(calls)))
+                v = self.apply_stale(v, t["output"])
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
                                   "sources": res["sources"], "read": res.get("read") or [], "verdict": v,
                                   "output": t["output"]})
@@ -1190,8 +1244,20 @@ class Orchestrator:
             self.run.reviews[key] = dict(v)
         return v
 
+    def apply_stale(self, v: dict, text: str) -> dict:
+        """A budget follow-up must not keep results on the old budget next to the new one."""
+        d = self.run.delta or {}
+        if not d.get("change"):
+            return v
+        bad = assumptions.stale_lines(text, (d.get("old") or {}).get("value"), d["change"].get("new"))
+        if not bad:
+            return v
+        return {**v, "pass": False, "score": min(float(v.get("score") or 0), 5.0), "stale": bad[:5],
+                "issues": [f"ما زال يستخدم الميزانية السابقة {assumptions.fmt(d['old']['value'])} كقيمة حالية: «{bad[0]}»؛ "
+                           "أعد حسابه بالميزانية الجديدة أو اذكر أنها السابقة."] + list(v.get("issues") or [])}
+
     async def _final_verdict(self, check: dict, answer: str) -> dict:
-        v = apply_audit(await verify(self.llm, check, answer), answer)
+        v = self.apply_stale(apply_audit(await verify(self.llm, check, answer), answer), answer)
         r = self.run
         mis = quality.false_user_tags(answer, r.goal + "\n" + (r.context or "").split("النتيجة السابقة:", 1)[0])
         if mis:  # production 5e071b86edaa: budget shares the user never gave were labeled «من المستخدم»
@@ -1202,7 +1268,8 @@ class Orchestrator:
             v = {**v, "pass": False, "score": min(v.get("score") or 0, 4),
                  "issues": list(v.get("issues") or []) + ["الجواب مقطوع قبل اكتماله (ينتهي وسط جدول أو جملة)."]}
         v = quality.apply_rejected(v, self.reused_rejected(answer))
-        return quality.apply_plausibility(v, await quality.check_plausibility(self.llm, answer))
+        p = await quality.check_plausibility(self.llm, answer)
+        return {**quality.apply_plausibility(v, p), "figures_checked": {"issues": p.get("issues") or [], "figures": p.get("figures") or {}}}
 
     async def _save_section(self, sec: dict):
         r = self.run
@@ -1261,6 +1328,25 @@ class Orchestrator:
         await self._save_section(new)
         return new
 
+    def _delta_section(self, body: list[dict]) -> dict:
+        """What changed in this version, by code: the assumption, what was recomputed, what was kept."""
+        d = self.run.delta
+        old, new = d.get("old") or {}, d["change"]
+        unit = new.get("unit") or old.get("unit") or ""
+        title = {t["id"]: t.get("title") or t["id"] for t in self.run.tasks.values()}
+        base = d.get("base_sections") or {}
+        changed = [x["id"] for x in body if base.get(x["id"]) != x["fp"]]
+        d["sections_changed"] = changed
+        lines = [f"- الافتراض المتغير: الميزانية السابقة {assumptions.fmt(old['value']) + ' ' + unit if old.get('value') else '(لم تُذكر سابقًا)'} "
+                 f"← الجديدة {assumptions.fmt(new['new'])} {unit} (من المستخدم).",
+                 "- أُعيد حسابه لأنه يعتمد على الميزانية: " + ("، ".join(title.get(i, i) for i in d.get("recomputed") or []) or "لا شيء"),
+                 "- بقي كما هو بمصادره (لا يعتمد على الميزانية، ولم يُعد بحثه): " + ("، ".join(title.get(i, i) for i in d.get("reused") or []) or "لا شيء"),
+                 "- أقسام تغيّر نصها: " + ("، ".join(x["title"] for x in body if x["id"] in changed) or "لا شيء"),
+                 "- البحث والأدلة: أُعيد استخدامها من النسخة السابقة دون فتح أي مصدر من جديد."]
+        text = "\n".join(lines)
+        return {"id": "delta", "kind": "delta", "title": "ما تغيّر في هذه النسخة", "status": "verified", "text": text,
+                "sources": [], "fp": report_mod.fp("delta", text), "by": "code", "at": time.time()}
+
     async def build_report(self, goal: str, tasks: list[dict]) -> dict:
         """Final Report Builder (app/report.py): skeleton from the plan, sections from saved reviewed outputs,
         the model only for the summary, then one audit of the assembled report and, if rejected, a revision of
@@ -1281,7 +1367,9 @@ class Orchestrator:
         def compose(summary, body):
             limits = report_mod.limits_section(tasks, gaps, self.note)
             srcs = report_mod.sources_section([summary, *body], read)
-            return report_mod.assemble([summary, *body, limits, srcs]), [summary, *body, limits, srcs]
+            extra = [self._delta_section(body)] if r.delta and r.delta.get("change") else []
+            secs = [summary, *extra, *body, limits, srcs]
+            return report_mod.assemble(secs), secs
 
         answer, secs = compose(summary, body)
         v = await self.final_verdict(check, answer)
