@@ -884,7 +884,7 @@ class ResearchManager:
         if not st["facets"] and not st["readings"]:
             return ""
         lines = ["## أدلة قرأها النظام فعلًا لهذه المهمة (Research Manager)",
-                 "كل بند أدناه صفحة أو مستند فتحه النظام بنفسه واستخرج منه النص. استشهد بالرابط بجانب كل رقم تأخذه، واذكر رقم الدليل [E#].",
+                 "كل بند أدناه صفحة أو مستند فتحه النظام بنفسه واستخرج منه النص. استشهد بجانب كل رقم تأخذه برقم الدليل ورابطه الكامل معًا، مثل: [E3](https://example.com/page). لا تكتب رقم الدليل وحده.",
                  "«ملخص فقط» يعني أن النظام قرأ ملخص الدراسة لا نصها الكامل: لا تنسب إلى الدراسة ما ليس في الملخص.",
                  "إن لم تجد في هذه الأدلة رقمًا تحتاجه (سعرًا أو حجم سوق أو طلبًا) فاكتب «غير متاح في الأدلة المقروءة» ولا تخمّنه ولا تولّد رقمًا بديلًا؛ "
                  "الافتراض مسموح فقط لمعامل يقرره المستخدم (مثل توزيع الميزانية) ويُوسم (افتراض).", ""]
@@ -918,6 +918,44 @@ class ResearchManager:
             if not x.get("resolved"):
                 lines.append(f"- تعارض: {x['note']} ({x['low']['id']} مقابل {x['high']['id']}). اعرض القيمتين ومصدريهما ولا تختر واحدة دون تبرير.")
         return "\n".join(lines)
+
+    _EID = re.compile(r"(?<![\w\[/])[\[(]?\bE(\d{1,3})\b[\])]?(?!\]?\()")
+
+    def _by_id(self) -> dict:
+        return {r["id"]: r for r in self.state["readings"].values() if r.get("id")}
+
+    def link_ids(self, text: str) -> str:
+        """Agents often cite evidence as "E15" or "(E15)": turn each into a link to the page the system read,
+        so the reviewer and the final answer see the real source. Unknown ids are left as written."""
+        ids = self._by_id()
+
+        def sub(m):
+            r = ids.get(f"E{m.group(1)}")
+            return f"[E{m.group(1)}]({r['url']})" if r else m.group(0)
+        return self._EID.sub(sub, text or "")
+
+    def verifier_evidence(self, output: str, task_text: str = "", max_chars: int = 3500) -> str:
+        """What the reviewer needs to judge figures: the evidence the output cites (by id or URL) and the
+        evidence given to the task, each with the figures and a short excerpt exactly as read."""
+        ids = self._by_id()
+        cited = [ids[f"E{n}"] for n in dict.fromkeys(re.findall(r"\bE(\d{1,3})\b", output or "")) if f"E{n}" in ids]
+        low = (output or "").lower()
+        cited += [r for r in ids.values() if r not in cited and r["url"].lower().rstrip("/") in low]
+        rest = [r for r in self.evidence_for(task_text) if r not in cited]
+        out, size = [], 0
+        for r in cited + rest:
+            b = f"[{r['id']}] {r['url']} | {_completeness_ar(r)}"
+            if r.get("figures"):
+                b += "\n  أرقام كما وردت: " + " ؛ ".join(r["figures"][:4])
+            if r.get("offers"):
+                b += "\n  عروض: " + " ؛ ".join(f"{o['name']} = {o['price']} {o['currency']}" for o in r["offers"][:3])
+            if r.get("excerpt"):
+                b += "\n  مقتطف: " + re.sub(r"\s+", " ", r["excerpt"])[:220]
+            if size + len(b) > max_chars:
+                break
+            out.append(b)
+            size += len(b)
+        return "\n".join(out)
 
     def gaps(self) -> list[str]:
         st = self.state

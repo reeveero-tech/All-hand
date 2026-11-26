@@ -568,3 +568,57 @@ def test_orchestrator_runs_research_before_agents_and_gates_the_result(on):
     assert r.research_gate and r.research_gate["verdict"] != "sufficient"  # one shop page is not enough for prices
     assert r.status == "partial" and any("أدلة البحث غير كافية" in i for i in r.verdict["issues"])
     assert r.research["pages_read"] >= 1 and r.full()["research_state"]["readings"]
+
+
+def test_evidence_ids_become_links_and_the_reviewer_sees_the_evidence(on):
+    """An agent citing "(E1)" gets the real link, and the reviewer gets the figures the system read, so a
+    documented number is not rejected as unsupported (production run 3de655c9f2f3, attempt 1: 3/10)."""
+    from app.orchestrator import Orchestrator, Run
+
+    good = page("سعر القهوة الباردة المعلبة", "سعر القهوة الباردة المعلبة 9 ريال في السعودية لدى المتاجر")
+    web = Web({"https://shop.example/p": (200, good, HTML)})
+    install(on, web, search={"": [{"title": "سعر القهوة الباردة المعلبة 9 ريال", "url": "https://shop.example/p", "snippet": "9 ريال"}]})
+    reviewed = []
+
+    class LLM:
+        cfg = type("C", (), {"provider": "test"})()
+        usage = type("U", (), {"as_dict": lambda self: {}})()
+
+        async def chat_json(self, messages, *a, **k):
+            sys_ = messages[0]["content"]
+            if "مخطط بحث" in sys_:
+                return {"subject_en": "canned cold brew coffee", "queries": {}}
+            if "أنت وكيل متخصص" in sys_:
+                return {"action": "final", "output": "السعر 9 ريال (E1)، والحجم غير متاح (E99).", "confidence": 0.8, "sources": []}
+            if "tasks" in sys_ or "خطة" in sys_[:400]:
+                return {"summary": "s", "simple": False, "tasks": [
+                    {"id": "t1", "title": "أسعار القهوة الباردة", "role": "researcher", "instructions": "ابحث عن الأسعار",
+                     "acceptance": "أسعار بمصادر", "depends_on": []},
+                    {"id": "t2", "title": "تقرير", "role": "writer", "instructions": "اكتب", "acceptance": "تقرير", "depends_on": ["t1"]}]}
+            if "الناتج:" in messages[-1]["content"]:
+                reviewed.append(messages[-1]["content"])
+            return {"pass": True, "score": 9, "issues": [], "claims": [], "items": []}
+
+        async def chat(self, messages, *a, **k):
+            return "السعر 9 ريال [E1]."
+
+    r = Run(goal="حلل أسعار القهوة الباردة المعلبة في السعودية", llm_public={})
+    o = Orchestrator(r, LLM())
+    run(o.execute())
+    t1 = r.tasks["t1"] if isinstance(r.tasks, dict) else next(t for t in r.tasks if t["id"] == "t1")
+    assert "[E1](https://shop.example/p)" in t1["output"] and "(E99)" in t1["output"]  # unknown ids are left alone
+    first = reviewed[0]
+    assert "أدلة قرأها النظام بنفسه" in first and "[E1] https://shop.example/p" in first and "9 ريال" in first
+    assert "[E1](https://shop.example/p)" in r.result and "[رابط لم يقرأه النظام]" not in r.result
+
+
+def test_verifier_evidence_puts_cited_evidence_first_and_respects_the_limit():
+    m = mgr()
+    for i in range(1, 6):
+        m.state["readings"][f"https://s{i}.example/"] = {
+            "id": f"E{i}", "url": f"https://s{i}.example/", "domain": f"s{i}.example", "facets": ["prices"], "useful": True,
+            "figures": [f"{i}0 ريال للعبوة"], "excerpt": "x " * 200, "completeness": "full", "kind": "html"}
+    out = m.verifier_evidence("نعتمد على https://s5.example/ و E3", "الأسعار", max_chars=700)
+    lines = [ln for ln in out.splitlines() if ln.startswith("[E")]
+    assert lines[0].startswith("[E3]") and lines[1].startswith("[E5]") and len(out) <= 700
+    assert m.link_ids("انظر E2 و[E4](https://s4.example/) وE7") == "انظر [E2](https://s2.example/) و[E4](https://s4.example/) وE7"
