@@ -668,6 +668,8 @@ class ResearchManager:
             label = "opened_not_useful"
         elif fails and all(r.get("failure") in REFUSALS for r in fails):
             label = "refused"
+        elif cands and not fails and all(c.get("headline_only") and not c.get("abstract") for c in cands):
+            label = "headlines_only"  # only news headlines whose publisher link could not be resolved: nothing to read
         elif cands and not fails:
             label = "not_opened"
         elif fails:
@@ -996,6 +998,7 @@ class ResearchManager:
         st = self.state
         out = []
         labels = {"no_results": "لم يجد البحث نتائج", "not_opened": "وُجدت روابط لم تُفتح (الميزانية)",
+                  "headlines_only": "لم يجد البحث إلا عناوين أخبار تعذر الوصول إلى رابط ناشرها من الخادم، فلا نص مقروء",
                   "refused": "رفضت المواقع الوصول (حظر أو تسجيل دخول أو تحقق بشري) ولم يُتجاوز ذلك",
                   "opened_not_useful": "فُتحت صفحات لكن لم يكن فيها ما يخص المحور", "failed": "فشل فتح الروابط",
                   "useful": "أدلة مفيدة لكنها دون حد الكفاية"}
