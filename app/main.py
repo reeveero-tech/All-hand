@@ -20,7 +20,7 @@ from fastapi.responses import Response, FileResponse, JSONResponse, StreamingRes
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import export, memory, store, tools
+from . import assumptions, export, memory, store, tools
 from . import report as report_mod
 from .research import browser, documents, evidence
 from .research import manager as research_manager
@@ -218,13 +218,21 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
         run.follow_up_of, run.thread_id, run.context = prior.get("follow_up_of"), prior.get("thread_id"), prior.get("context") or ""
         run.goal_checks = prior.get("goal_checks")
         run.prior_check = prior.get("prior_check")
+        run.delta = prior.get("delta")
     elif prev:
         run.follow_up_of = prev["id"]
         run.thread_id = prev.get("thread_id") or prev["id"]
         run.context = follow_up_context(prev)
         run.research_reuse = prev.get("research_state")  # read evidence stays valid; same owner (checked above)
         kr = known_rejected(prev)
-        run.prior_check = {"from": prev["id"], "known_rejected": kr["values"], "known_rejected_totals": kr["totals"]}
+        run.prior_check = {"from": prev["id"], "known_rejected": kr["values"], "known_rejected_totals": kr["totals"],
+                           "prev_figures": (prev.get("verdict") or {}).get("figures_checked")}
+        change = assumptions.budget_change(run.goal)
+        if change and any(not t.get("parent") and t.get("output") for t in (prev.get("tasks") or {}).values()):
+            # only the budget changes: keep plan, research and independent results; recompute what depends on it
+            run.delta = {"from": prev["id"], "change": change, "old": assumptions.prior_budget(prev)}
+            run._base = prev
+            run.research_reuse = None
     RUNS[run.id] = run
     while len(RUNS) > MAX_LIVE:
         old_id, old = next(iter(RUNS.items()))
