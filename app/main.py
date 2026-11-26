@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import export, memory, store, tools
+from . import report as report_mod
 from .research import browser, documents, evidence
 from .research import manager as research_manager
 from .agents import ROLES
@@ -293,16 +294,25 @@ async def get_run(run_id: str, x_client_key: str | None = Header(default=None)):
     data.pop("owner", None)
     data["status"] = store.effective_status(data, live=False)
     data.pop("heartbeat_at", None)
+    data.pop("deliverable", None)  # the file itself is served by /export; its record (size, checksum) stays
     return data
 
 
 @app.get("/api/runs/{run_id}/export")
 async def export_run(run_id: str, x_client_key: str | None = Header(default=None)):
-    """The run as a Markdown report file (only the owner; same 404 otherwise)."""
+    """The run's final file (only the owner; same 404 otherwise). The delivered file is served as stored when its
+    checksum still matches; a run without one (stopped before delivery) gets a report rebuilt from its saved data."""
     data = await _own_run(run_id, _owner(x_client_key))
     data.pop("owner", None)
-    return Response(export.to_markdown(data), media_type="text/markdown; charset=utf-8",
-                    headers={"Content-Disposition": f'attachment; filename="all-hand-{run_id}.md"'})
+    rec = next((f for f in data.get("files") or [] if f.get("verified")), None)
+    stored = data.get("deliverable") or ""
+    if rec and report_mod.verify_file(rec, stored, []):
+        body, source, name = stored, "stored", rec["name"]
+    else:
+        body, source, name = export.to_markdown(data), "rebuilt", f"all-hand-{run_id}.md"
+    return Response(body, media_type="text/markdown; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"', "X-AGOS-File": source,
+                             "X-AGOS-File-SHA256": hashlib.sha256(body.encode("utf-8")).hexdigest()})
 
 
 @app.get("/api/runs/{run_id}/evidence")

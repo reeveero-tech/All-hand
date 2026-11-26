@@ -64,7 +64,7 @@ async def test_parallel_dag_and_synthesis():
     run = await run_with(FakeLLM(plan_of(T("a"), T("b"), T("c", ["a", "b"]))))
     assert run.status == "done"
     assert [run.tasks[k]["status"] for k in "abc"] == ["done"] * 3
-    assert run.result == "الجواب النهائي المجمع"
+    assert run.result.startswith("الجواب النهائي المجمع")  # summary first, then the saved sections
     assert run.agents_spawned == 3
     types = [e["type"] for e in run.events]
     assert types[0] == "run_started" and types[-1] == "run_finished" and "final_check" in types
@@ -75,7 +75,7 @@ async def test_verifier_rejection_triggers_retry_with_feedback():
 
     def agent(messages):
         seen.append(messages[1]["content"])
-        return json.dumps({"action": "final", "output": "x"})
+        return json.dumps({"action": "final", "output": f"x{len(seen)}"})  # a retry writes a new output
 
     fake = FakeLLM(plan_of(T("a"), T("b")), verdicts=[{"pass": False, "score": 3, "issues": ["ناقص"], "fix": "أكمل"}], agent=agent)
     run = await run_with(fake)
@@ -86,7 +86,10 @@ async def test_verifier_rejection_triggers_retry_with_feedback():
 
 async def test_honest_failure_and_skip_dependents():
     bad = {"pass": False, "score": 2, "issues": ["خطأ"]}
-    fake = FakeLLM(plan_of(T("a"), T("b", ["a"])), verdicts=[bad, bad, bad])
+    worse = {"pass": False, "score": 3, "issues": ["خطأ"]}
+    n = []
+    fake = FakeLLM(plan_of(T("a"), T("b", ["a"])), verdicts=[bad, worse, bad],
+                   agent=lambda m: (n.append(1), json.dumps({"action": "final", "output": f"ناتج {len(n)}"}))[1])
     run = await run_with(fake)
     assert run.tasks["a"]["status"] == "failed" and len(run.tasks["a"]["attempts"]) == 3
     # b still runs on a's best-effort output (flagged unverified) instead of being dropped

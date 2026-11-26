@@ -169,6 +169,13 @@ const LABEL = {
   memory_error: (e) => `تعذر ${({recall: "استرجاع", save: "حفظ", extract: "استخراج"})[e.stage] || "عمل"} الذاكرة: ${e.error}`,
   run_error: (e) => `خطأ: ${e.error}`,
   run_cancelled: () => "أُوقفت المهمة",
+  file_created: (e) => `أُنشئ الملف النهائي ${e.name} (${e.bytes} بايت) وتُحقق منه`,
+  file_failed: (e) => `تعذر إنشاء الملف النهائي: ${e.error || "فشل التحقق"}`,
+  review_reused: (e) => `أُعيد استخدام مراجعة سابقة لـ ${e.task} (المدخلات لم تتغير)`,
+  review_resumed: (e) => `مراجعة ناتج ${e.task} المحفوظ دون إعادة كتابته`,
+  section_reused: (e) => `أُعيد استخدام قسم ${e.section} المحفوظ`,
+  report_revision: (e) => `تصحيح أقسام التقرير المرفوضة فقط: ${(e.sections || []).join("، ")}`,
+  retries_stopped: (e) => `أُوقفت إعادة المحاولة لـ ${e.task}: ${e.reason}`,
   run_paused: (e) => `توقف مؤقت (${esc(e.kind)}) في مرحلة ${esc(e.phase || e.step || "-")}: ${esc(e.message)}`,
   run_finished: (e) => `انتهى: ${RUN_STATUS[e.status] || e.status} — ${e.agents_spawned} وكيلًا، ${e.usage?.calls ?? 0} استدعاء نموذج${e.saved === false ? " — لم يُحفظ في السجل الدائم" : ""}`,
 };
@@ -218,6 +225,10 @@ async function refresh() {
     }
     if (r.follow_up_of) notes.push(`<p class="muted">متابعة للمهمة <a href="#" data-open="${esc(r.follow_up_of)}">${esc(r.follow_up_of)}</a>، وقد بُنيت على نتيجتها.</p>`);
     if (r.resumed) notes.push(`<p class="muted">استُكملت من المهمة ${esc(r.resumed.from)}، وأُعيد استخدام ${r.resumed.reused.length} مهمة مُتحقق منها.</p>`);
+    const file = (r.files || [])[0];
+    if (file) notes.push(file.verified
+      ? `<p class="muted">الملف النهائي: ${esc(file.name)} — ${(file.bytes / 1024).toFixed(1)} ك.ب — تحقق النظام من وجوده (SHA-256 ${esc(String(file.sha256).slice(0, 12))}…). نزّله بزر «تصدير».</p>`
+      : `<p class="err">تعذر إنشاء الملف النهائي أو التحقق منه؛ التقرير محفوظ ويمكن إعادة بنائه بزر «تصدير».</p>`);
     if (r.saved === false) notes.push('<p class="err">تنبيه: تعذر حفظ هذه المهمة في السجل الدائم، وقد تختفي إذا أُعيد تشغيل الخادم. انسخ النتيجة إن احتجتها.</p>');
     $("#result").innerHTML = notes.join("") + (r.result ? md(r.result) : `<p class="err">${esc(r.error || "لا يوجد جواب")}</p>`);
     document.querySelectorAll("#result a[data-open]").forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); open(a.dataset.open); }));
