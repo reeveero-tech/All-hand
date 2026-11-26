@@ -1,83 +1,146 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>All-hand — منسق الوكلاء</title>
+<title>All-hand AGOS — منسق الوكلاء</title>
+<meta name="description" content="منسق يخطط ويوزع العمل على فريق وكلاء متخصصين ويتحقق من نتائجهم ويسلّم تقريرًا موثقًا.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230d8f74%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-size=%2712%27 font-family=%27sans-serif%27 font-weight=%27700%27 fill=%27white%27 text-anchor=%27middle%27%3EAG%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/style.css">
+<script>try{const t=localStorage.getItem("ah_theme");if(t)document.documentElement.dataset.theme=t;else if(matchMedia("(prefers-color-scheme: light)").matches)document.documentElement.dataset.theme="light"}catch(e){}</script>
 </head>
 <body>
-<header>
-  <div class="brand"><span class="logo">AH</span><div><h1>All-hand</h1><p>منسق يخطط ويوزع العمل على فريق وكلاء متخصصين ويتحقق من نتائجهم</p></div></div>
-  <button id="settingsBtn" class="ghost">الإعدادات</button>
+<a class="skip" href="#goal">انتقل إلى كتابة المهمة</a>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">AG</span>
+    <div><h1>AGOS</h1><p>منسق يخطط ويوزّع العمل على وكلاء متخصصين، ويتحقق من نتائجهم قبل التسليم</p></div>
+  </div>
+  <div class="top-actions">
+    <button id="modelPill" class="pill" type="button" title="حالة مصدر الذكاء الاصطناعي"><span class="dot"></span><span id="modelPillText">جارٍ فحص النموذج…</span></button>
+    <button id="themeBtn" class="icon-btn" type="button" aria-label="تبديل المظهر" title="تبديل المظهر">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <button id="settingsBtn" class="ghost" type="button">الإعدادات</button>
+  </div>
 </header>
 
-<section id="settings" class="card hidden">
-  <h2>مصدر الذكاء الاصطناعي</h2>
-  <div class="radios">
-    <label><input type="radio" name="provider" value="free" checked> مجاني تجريبي <small>(Pollinations، بطيء ومحدود)</small></label>
-    <label><input type="radio" name="provider" value="byok"> مفتاحي الخاص <small>(OpenRouter أو أي واجهة متوافقة مع OpenAI)</small></label>
-    <label><input type="radio" name="provider" value="platform"> مفتاح المنصة <small>(للمالك برمز الوصول)</small></label>
-  </div>
-  <div class="grid">
-    <label data-for="byok">مفتاح API<input id="apiKey" type="password" placeholder="sk-or-..." autocomplete="off"></label>
-    <label data-for="byok">عنوان الواجهة (اختياري)<input id="baseUrl" placeholder="https://openrouter.ai/api/v1"></label>
-    <label data-for="byok platform">النموذج (اختياري)<input id="model" placeholder="openai/gpt-4o-mini"></label>
-    <label data-for="platform">رمز الوصول<input id="accessCode" type="password" autocomplete="off"></label>
-    <label>أقصى عدد وكلاء لكل مهمة<input id="maxAgents" type="number" min="1" max="500" placeholder="تلقائي"></label>
-  </div>
-  <h2>الذاكرة</h2>
-  <label class="check"><input type="checkbox" id="memOn" checked> استخدم الذاكرة: يتذكر المنسق ما عرفه عنك وعن مشاريعك من المهام السابقة</label>
-  <div class="grid">
-    <label>معرّف ذاكرتك السري <small class="muted">(انسخه إلى جهاز آخر لمشاركة الذاكرة)</small><input id="memSpace" autocomplete="off" spellcheck="false"></label>
-  </div>
-  <h2>خصوصية المهام</h2>
-  <div class="grid">
-    <label>مفتاح مهامك الخاص <small class="muted">(لا يرى مهامك إلا من يملكه؛ انسخه إلى جهاز آخر لترى مهامك هناك)</small><input id="clientKeyField" autocomplete="off" spellcheck="false"></label>
-  </div>
-  <p class="muted">المفاتيح تُحفظ في متصفحك فقط وتُرسل مع كل طلب، ولا يخزنها الخادم.</p>
-</section>
+<div id="banner" class="banner hidden" role="status"></div>
 
-<main>
-  <section class="card">
-    <textarea id="goal" rows="4" placeholder="اكتب ما تريد إنجازه... مثال: ادرس سوق المقاهي المختصة في جدة واقترح خطة إطلاق بميزانية 200 ألف ريال"></textarea>
-    <div class="row">
-      <div class="examples" id="examples"></div>
-      <div class="actions">
-        <label class="check" title="لن يُنسب إليك أي شيء من هذه المهمة: يُحفظ كسيناريو اختباري ولا يُستخدم في مهامك الحقيقية"><input type="checkbox" id="scenario"> مهمة تجريبية أو افتراضية</label>
-        <label class="check" title="يتوقف المنسق بعد إعداد الخطة حتى تعتمدها أو تعدّلها أو ترفضها؛ لا يعمل أي وكيل قبل قرارك"><input type="checkbox" id="approvePlan"> اعرض الخطة عليّ قبل التنفيذ</label>
-        <button id="cancelBtn" class="ghost hidden">إيقاف</button>
-        <button id="runBtn">ابدأ</button>
+<main class="layout">
+  <div class="main-col">
+    <section class="card composer" aria-labelledby="composerTitle">
+      <div class="composer-head">
+        <h2 id="composerTitle">ماذا تريد أن ينجز الفريق؟</h2>
+        <small class="muted kbd-hint"><span dir="ltr"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span> للبدء</small>
       </div>
-    </div>
-  </section>
+      <textarea id="goal" rows="4" placeholder="مثال: ادرس سوق المقاهي المختصة في جدة واقترح خطة إطلاق بميزانية 200 ألف ريال، وأعد تقريرًا ماليًا"></textarea>
+      <div id="insight" class="insight" aria-live="polite"></div>
+      <div class="examples" id="examples" aria-label="أمثلة"></div>
+      <div class="composer-foot">
+        <div class="options">
+          <label class="switch" title="يتوقف المنسق بعد إعداد الخطة حتى تعتمدها أو تعدّلها أو ترفضها؛ لا يعمل أي وكيل قبل قرارك"><input type="checkbox" id="approvePlan"><span></span> اعرض الخطة عليّ قبل التنفيذ</label>
+          <label class="switch" title="لن يُنسب إليك أي شيء من هذه المهمة: يُحفظ كسيناريو اختباري ولا يُستخدم في مهامك الحقيقية"><input type="checkbox" id="scenario"><span></span> مهمة تجريبية</label>
+        </div>
+        <div class="actions">
+          <button id="cancelBtn" class="ghost danger hidden" type="button">إيقاف</button>
+          <button id="runBtn" class="primary" type="button">ابدأ</button>
+        </div>
+      </div>
+    </section>
 
-  <section id="live" class="hidden">
-    <div class="stats" id="stats"></div>
-    <div id="approvalCard" class="card hidden"><h2>الخطة بانتظار قرارك</h2>
-      <p class="muted">لم يبدأ أي وكيل بعد. أزل علامة أي مهمة لا تريدها، وأضف ملاحظة إن أردت تُلزم بها كل الوكلاء.</p>
-      <ul id="approvalTasks" class="plain"></ul>
-      <textarea id="approvalNote" rows="2" maxlength="2000" placeholder="ملاحظة اختيارية: مثال «اعتمد مدينة جدة فقط» أو «الميزانية لا تتجاوز 150 ألف»"></textarea>
-      <p><button id="approveBtn">اعتمد الخطة ونفّذ</button> <button id="rejectBtn" class="ghost">ارفض الخطة</button> <small id="approvalMsg" class="muted"></small></p>
-    </div>
-    <div class="cols">
-      <div class="card"><h2>الخطة والمهام</h2><div id="board"></div></div>
-      <div class="card"><h2>سجل العمل المباشر</h2><ol id="log"></ol></div>
-    </div>
-    <div id="memRun" class="card hidden"><h2>الذاكرة في هذه المهمة</h2><div id="memRunBody"></div></div>
-    <div class="card"><h2>الجواب النهائي <span id="verdict"></span> <button id="exportBtn" class="ghost hidden">تنزيل التقرير</button></h2><div id="result" class="md muted">قيد العمل...</div></div>
-    <div id="followCard" class="card hidden"><h2>تابع هذه المحادثة</h2>
-      <p class="muted">اطلب تعديلًا أو خطوة تالية. سيبني الفريق على نتيجة هذه المهمة بدل البدء من الصفر.</p>
-      <textarea id="followGoal" rows="3" placeholder="مثال: أعد خطة التنفيذ بعد تخفيض الميزانية إلى 120 ألف ريال"></textarea>
-      <p><button id="followBtn">تابع</button></p></div>
-  </section>
+    <section id="live" class="hidden" aria-label="المهمة الحالية">
+      <div class="run-head card">
+        <div class="run-title"><span id="runStatus" class="badge"></span><h2 id="runGoal"></h2></div>
+        <ol id="phases" class="phases" aria-label="مراحل المهمة"></ol>
+        <div class="stats" id="stats"></div>
+      </div>
 
-  <section class="card"><h2>ذاكرة المنسق <small class="muted" id="memCount"></small>
-    <span class="actions"><button id="memRefresh" class="ghost">تحديث</button><button id="memClear" class="ghost">مسح الكل</button></span></h2>
-    <ul id="memList"></ul></section>
+      <div id="approvalCard" class="card accent hidden"><h2>الخطة بانتظار قرارك</h2>
+        <p class="muted">لم يبدأ أي وكيل بعد. أزل علامة أي مهمة لا تريدها، وأضف ملاحظة إن أردت تُلزم بها كل الوكلاء.</p>
+        <ul id="approvalTasks" class="plain"></ul>
+        <textarea id="approvalNote" rows="2" maxlength="2000" placeholder="ملاحظة اختيارية: مثال «اعتمد مدينة جدة فقط» أو «الميزانية لا تتجاوز 150 ألف»"></textarea>
+        <p class="row-actions"><button id="approveBtn" class="primary" type="button">اعتمد الخطة ونفّذ</button> <button id="rejectBtn" class="ghost" type="button">ارفض الخطة</button> <small id="approvalMsg" class="muted"></small></p>
+      </div>
 
-  <section class="card"><h2>مهامك السابقة <small class="muted">(خاصة بهذا المتصفح)</small></h2><ul id="history"></ul></section>
+      <div id="deltaCard" class="card accent hidden"><h2>متابعة تغيير الافتراض</h2><div id="deltaBody"></div></div>
+
+      <div class="cols">
+        <div class="card"><div class="card-head"><h2>الخطة والمهام</h2><small id="boardSummary" class="muted"></small></div><div id="board"></div></div>
+        <div class="card"><div class="card-head"><h2>سجل العمل المباشر</h2>
+          <div class="seg" role="group" aria-label="تصفية السجل"><button type="button" data-log="key" class="on">المهم</button><button type="button" data-log="all">الكل</button></div></div>
+          <ol id="log"></ol></div>
+      </div>
+
+      <div id="usageCard" class="card hidden"><div class="card-head"><h2>استهلاك النموذج</h2><small id="usageNote" class="muted"></small></div><div id="usageBody"></div></div>
+      <div id="memRun" class="card hidden"><h2>الذاكرة في هذه المهمة</h2><div id="memRunBody"></div></div>
+
+      <div class="card result-card">
+        <div class="card-head"><h2>الجواب النهائي <span id="verdict"></span></h2>
+          <div class="actions"><button id="copyBtn" class="ghost hidden" type="button">نسخ</button><button id="exportBtn" class="ghost hidden" type="button">تنزيل التقرير</button></div></div>
+        <nav id="toc" class="toc hidden" aria-label="أقسام التقرير"></nav>
+        <div id="result" class="md muted">قيد العمل...</div>
+      </div>
+
+      <div id="followCard" class="card hidden"><h2>تابع هذه المحادثة</h2>
+        <p class="muted">اطلب تعديلًا أو خطوة تالية. سيبني الفريق على نتيجة هذه المهمة بدل البدء من الصفر.</p>
+        <div id="followSuggest" class="examples"></div>
+        <textarea id="followGoal" rows="3" placeholder="مثال: غيّر الميزانية إلى 300 ألف ريال، وحدّث النتائج المتأثرة فقط"></textarea>
+        <div id="followHint" class="hint hidden"></div>
+        <p class="row-actions"><button id="followBtn" class="primary" type="button">تابع</button></p></div>
+    </section>
+  </div>
+
+  <aside class="side-col">
+    <section class="card"><div class="card-head"><h2>مهامك السابقة</h2><small class="muted">خاصة بهذا المتصفح</small></div>
+      <input id="histSearch" type="search" placeholder="ابحث في مهامك…" aria-label="ابحث في المهام السابقة">
+      <div class="seg wrap" id="histFilter" role="group" aria-label="تصفية حسب الحالة">
+        <button type="button" data-f="all" class="on">الكل</button><button type="button" data-f="done">مكتملة</button><button type="button" data-f="paused">متوقفة</button><button type="button" data-f="running">تعمل</button><button type="button" data-f="bad">لم تكتمل</button></div>
+      <ul id="history" class="history"></ul></section>
+
+    <section class="card"><div class="card-head"><h2>ذاكرة المنسق <small class="muted" id="memCount"></small></h2>
+      <span class="actions"><button id="memRefresh" class="ghost sm" type="button">تحديث</button><button id="memClear" class="ghost sm danger" type="button">مسح الكل</button></span></div>
+      <ul id="memList" class="mem"></ul></section>
+  </aside>
 </main>
+
+<div id="settings" class="drawer hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="drawer-panel">
+    <div class="card-head"><h2 id="settingsTitle">الإعدادات</h2><button id="settingsClose" class="icon-btn" type="button" aria-label="إغلاق">✕</button></div>
+    <h3>مصدر الذكاء الاصطناعي</h3>
+    <div class="radios">
+      <label><input type="radio" name="provider" value="free" checked> <span><b>مجاني تجريبي</b><small>Pollinations: بطيء، ومحدود بنحو 100 رد يوميًا</small></span></label>
+      <label><input type="radio" name="provider" value="byok"> <span><b>مفتاحي الخاص</b><small>OpenRouter أو أي واجهة متوافقة مع OpenAI</small></span></label>
+      <label><input type="radio" name="provider" value="platform"> <span><b>مفتاح المنصة</b><small>للمالك برمز الوصول</small></span></label>
+    </div>
+    <div class="grid">
+      <label data-for="byok">مفتاح API<input id="apiKey" type="password" placeholder="sk-or-..." autocomplete="off"></label>
+      <label data-for="byok">عنوان الواجهة (اختياري)<input id="baseUrl" placeholder="https://openrouter.ai/api/v1" dir="ltr"></label>
+      <label data-for="byok platform">النموذج (اختياري)<input id="model" placeholder="openai/gpt-4o-mini" dir="ltr"></label>
+      <label data-for="platform">رمز الوصول<input id="accessCode" type="password" autocomplete="off"></label>
+      <label>أقصى عدد وكلاء لكل مهمة<input id="maxAgents" type="number" min="1" max="500" placeholder="تلقائي"></label>
+    </div>
+    <h3>الذاكرة</h3>
+    <label class="switch"><input type="checkbox" id="memOn" checked><span></span> استخدم الذاكرة: يتذكر المنسق ما عرفه عنك وعن مشاريعك</label>
+    <label class="field">معرّف ذاكرتك السري <small class="muted">(انسخه إلى جهاز آخر لمشاركة الذاكرة)</small><input id="memSpace" autocomplete="off" spellcheck="false" dir="ltr"></label>
+    <h3>خصوصية المهام</h3>
+    <label class="field">مفتاح مهامك الخاص <small class="muted">(لا يرى مهامك إلا من يملكه)</small><input id="clientKeyField" autocomplete="off" spellcheck="false" dir="ltr"></label>
+    <p class="muted small">المفاتيح تُحفظ في متصفحك فقط وتُرسل مع كل طلب، ولا يخزنها الخادم.</p>
+  </div>
+</div>
+
+<div id="modal" class="drawer center hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-panel">
+    <h2 id="modalTitle"></h2>
+    <p id="modalText" class="muted"></p>
+    <textarea id="modalInput" rows="3" class="hidden"></textarea>
+    <p class="row-actions"><button id="modalOk" class="primary" type="button">تأكيد</button> <button id="modalCancel" class="ghost" type="button">إلغاء</button></p>
+  </div>
+</div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
 <script src="/static/app.js"></script>
 </body>
 </html>
