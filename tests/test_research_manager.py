@@ -622,3 +622,22 @@ def test_verifier_evidence_puts_cited_evidence_first_and_respects_the_limit():
     lines = [ln for ln in out.splitlines() if ln.startswith("[E")]
     assert lines[0].startswith("[E3]") and lines[1].startswith("[E5]") and len(out) <= 700
     assert m.link_ids("انظر E2 و[E4](https://s4.example/) وE7") == "انظر [E2](https://s2.example/) و[E4](https://s4.example/) وE7"
+
+
+def test_claim_check_tells_the_reviewer_which_names_and_numbers_the_source_contains():
+    m = mgr()
+    url = "https://www.kenresearch.com/saudi-arabia-cold-brew-coffee-market"
+    m.state["readings"][url] = {"id": "E17", "url": url, "domain": "kenresearch.com", "facets": ["competitors"], "useful": True,
+                                "figures": [], "excerpt": "", "completeness": "full", "kind": "html"}
+    m._texts[manager.normalize_url(url)] = "Key players include Coffee Planet and Almarai. The market reached USD 15 million in 2024."
+    out = m.verifier_evidence("| Coffee Planet | [E17](%s) |\n| Death Wish | 15 مليون دولار [E17](%s) |" % (url, url), "", 3000)
+    assert "موجود في نص المصدر: Coffee Planet، 15" in out
+    assert "غير موجود في نص المصدر المستخرج: Death Wish" in out
+
+
+def test_an_unparsed_final_reply_hands_in_its_output_text():
+    from app.agents import _unwrap_final
+    raw = '{"action":"final","output":"# عنوان\\n\\n| أ | ب |\\n\\"نص\\" \\u0645","confidence":0.7}'
+    assert _unwrap_final(raw) == '# عنوان\n\n| أ | ب |\n"نص" م'
+    assert _unwrap_final('{"action":"final","output":"مقطوع في المنتصف') == "مقطوع في المنتصف"
+    assert _unwrap_final("نص عادي") == "نص عادي"

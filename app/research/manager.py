@@ -951,11 +951,46 @@ class ResearchManager:
                 b += "\n  عروض: " + " ؛ ".join(f"{o['name']} = {o['price']} {o['currency']}" for o in r["offers"][:3])
             if r.get("excerpt"):
                 b += "\n  مقتطف: " + re.sub(r"\s+", " ", r["excerpt"])[:220]
+            if r in cited:
+                b += self._claim_check(output, r)
             if size + len(b) > max_chars:
                 break
             out.append(b)
             size += len(b)
         return "\n".join(out)
+
+    def _claim_check(self, output: str, r: dict) -> str:
+        """Deterministic help for the reviewer: the names and numbers the output attributes to this source,
+        and whether each one appears in the text the system extracted from it."""
+        text = self._texts.get(normalize_url(r["url"])) or r.get("excerpt") or ""
+        if not text:
+            return ""
+        lines = [ln for ln in (output or "").splitlines() if r["id"] in ln or r["url"] in ln]
+        toks = []
+        for ln in lines:
+            ln = re.sub(r"https?://\S+|\[E\d+\]", " ", ln)
+            toks += re.findall(r"\b[A-Z][A-Za-z&'.-]{2,}(?:\s+[A-Z][A-Za-z&'.-]{2,})*", ln)
+            toks += [n for n in re.findall(r"\d[\d,.]*\d|\d", ln) if len(n.replace(",", "").replace(".", "")) >= 2]
+        toks = list(dict.fromkeys(t.strip() for t in toks if t.strip()))[:12]
+        if not toks:
+            return ""
+        flat = re.sub(r"\s+", " ", text)
+        low = flat.lower()
+        found = [t for t in toks if t.lower() in low or t.replace(",", "") in flat.replace(",", "")]
+        missing = [t for t in toks if t not in found]
+        out = ""
+        if found:
+            out += "\n  موجود في نص المصدر: " + "، ".join(found)
+            hits = []
+            for t in found[:3]:
+                i = low.find(t.lower())
+                if i >= 0:
+                    hits.append("…" + flat[max(0, i - 80):i + 80] + "…")
+            if hits:
+                out += "\n  من النص: " + " | ".join(hits)
+        if missing:
+            out += "\n  غير موجود في نص المصدر المستخرج: " + "، ".join(missing)
+        return out
 
     def gaps(self) -> list[str]:
         st = self.state
