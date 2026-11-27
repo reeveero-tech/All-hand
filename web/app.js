@@ -10,10 +10,11 @@ const store = {
 
 const STATUS = {pending: "بانتظار", running: "قيد التنفيذ", done: "مُتحقق منها", failed: "فشلت", skipped: "لم تُنفذ"};
 const RUN_STATUS = {running: "يعمل", done: "اكتمل", partial: "اكتمل جزئيًا", failed: "فشل", cancelled: "أُوقف",
-  interrupted: "انقطع", paused_quota: "متوقف مؤقتًا: نفدت حصة النموذج", paused_provider: "متوقف مؤقتًا: المزود غير متاح"};
-const RUN_SHORT = {paused_quota: "متوقف: الحصة", paused_provider: "متوقف: المزود"};
+  interrupted: "انقطع", paused_quota: "متوقف مؤقتًا: نفدت حصة النموذج", paused_provider: "متوقف مؤقتًا: المزود غير متاح",
+  needs_input: "لم يبدأ: ينقص الطلب معلومات"};
+const RUN_SHORT = {paused_quota: "متوقف: الحصة", paused_provider: "متوقف: المزود", needs_input: "ينتظر معلومات"};
 const RUN_CLASS = {running: "running", done: "done", partial: "pending", interrupted: "failed", cancelled: "pending",
-  paused_quota: "pending", paused_provider: "pending"};
+  paused_quota: "pending", paused_provider: "pending", needs_input: "pending"};
 const RESUMABLE = ["interrupted", "failed", "partial", "cancelled", "paused_quota", "paused_provider"];
 const ROLE = {researcher: "باحث", analyst: "محلل", writer: "كاتب", coder: "مبرمج", reviewer: "مراجع", planner: "مخطط", critic: "ناقد"};
 const PHASE_NAME = {intake: "الاستقبال", planning: "التخطيط", research: "البحث", analysis: "التحليل", review: "المراجعة",
@@ -315,6 +316,11 @@ const LABEL = {
     return bad.length ? "تدقيق حسابي لأرقام طلبك: " + bad.map((c) => `«${c.text}» — الصحيح ${c.expr} = ${Number(c.correct).toLocaleString("ar")} ${c.unit || ""}`).join("؛ ")
       : `تدقيق حسابي لأرقام طلبك: ${(e.checks || []).length} علاقة صحيحة`;
   },
+  intake_brief: (e) => e.blocking?.length ? `تحليل الطلب: ينقصه ${e.blocking.map((k) => CLARIFY_LABEL[k] || k).join("، ")}` : "تحليل الطلب: المعطيات الأساسية موجودة",
+  clarification_needed: () => "ينتظر إجابتك عن أسئلة الطلب؛ لن يُستهلك أي رد قبلها",
+  clarification_answered: (e) => `أجبتَ: ${Object.entries(e.answers || {}).map(([k, v]) => `${CLARIFY_LABEL[k] || k}: ${v}`).join("، ") || "—"}${e.assumed?.length ? `؛ وافتراض: ${e.assumed.map((k) => CLARIFY_LABEL[k] || k).join("، ")}` : ""}`,
+  clarification_timeout: () => "انتهت مهلة الانتظار دون إجابة؛ لم يُنفَّذ شيء ولم يُستهلك أي رد",
+  plan_adjusted: (e) => `حُذفت من الخطة مهمة التجميع ${(e.dropped || []).join("، ")}: ${e.reason || ""}`,
   plan_awaiting_approval: () => "الخطة جاهزة وتنتظر اعتمادك؛ لن يعمل أي وكيل قبل قرارك",
   plan_decision: (e) => ({approve: `اعتمدتَ الخطة${e.dropped?.length ? "، وأزلت " + e.dropped.join("، ") : ""}${e.note ? "، مع ملاحظة: " + e.note : ""}`,
     reject: "رفضتَ الخطة؛ لن يُنفَّذ شيء", timeout: "انتهت مهلة الاعتماد دون قرار؛ لم يُنفَّذ شيء"})[e.action] || e.action,
@@ -365,7 +371,7 @@ function onEvent(e) {
   else if (e.type === "run_paused" || e.type === "retries_stopped") li.classList.add("warn");
   else if (GOOD.has(e.type) && e.pass !== false) li.classList.add("good");
   $("#log").prepend(li);
-  if (["plan", "plan_awaiting_approval", "plan_decision", "task_finished", "task_skipped", "agent_spawned", "verified", "run_finished",
+  if (["clarification_needed", "clarification_answered", "plan", "plan_awaiting_approval", "plan_decision", "task_finished", "task_skipped", "agent_spawned", "verified", "run_finished",
     "run_paused", "research_started", "synthesizing", "file_created", "budget_delta", "final_check"].includes(e.type)) scheduleRefresh();
   if (e.type === "run_finished" && es) { es.close(); setTimeout(refresh, 300); }
 }
@@ -424,6 +430,7 @@ async function refresh() {
     ...(u.avoided ? [["وُفّرت بإعادة الاستخدام", fmtN(u.avoided)]] : [])]
     .map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${k}</span></div>`).join("");
   renderBoard(r);
+  renderClarify(r);
   renderApproval(r);
   renderDelta(r);
   renderUsage(r);
@@ -564,6 +571,39 @@ function renderResult(r) {
   $("#verdict").innerHTML = v.draft ? '<span class="badge s-failed">مسودة غير متحقق منها</span>' : v.score != null ? `<span class="badge ${v.pass ? "s-done" : "s-failed"}">تحقق نهائي ${v.score}/10</span>` : "";
   loadHistory();
   loadMemory();
+}
+
+const CLARIFY_LABEL = {subject: "المنتج أو المشروع", budget: "الميزانية", market: "السوق"};
+function renderClarify(r) {
+  const card = $("#clarifyCard"), waiting = r.status === "running" && r.awaiting === "clarification";
+  const qs = (r.brief?.missing || []);
+  card.classList.toggle("hidden", !waiting && r.status !== "needs_input");
+  if (r.status === "needs_input") {  // timed out: nothing ran; offer to put the answers into a new request
+    card.dataset.run = "";
+    $("#clarifyQs").innerHTML = `<p>${esc(r.result || "")}</p>`;
+    $("#clarifyBtn").textContent = "عدّل الطلب وأعد البدء"; $("#assumeBtn").classList.add("hidden");
+    $("#clarifyBtn").onclick = () => { $("#goal").value = r.goal; analyze(); $("#goal").scrollIntoView({behavior: "smooth", block: "center"}); $("#goal").focus(); };
+    return;
+  }
+  if (!waiting || card.dataset.run === r.id) return;
+  card.dataset.run = r.id; $("#clarifyMsg").textContent = ""; $("#assumeBtn").classList.remove("hidden");
+  $("#clarifyBtn").textContent = "ابدأ بهذه المعلومات";
+  $("#clarifyQs").innerHTML = qs.map((q) => `<label class="field"><b>${esc(q.question)}${q.blocking ? "" : ' <small class="muted">(اختياري)</small>'}</b>
+      <small class="muted">${esc(q.why)}</small>
+      <input type="text" maxlength="300" data-key="${esc(q.key)}" placeholder="${esc(q.example || "")}" ${q.blocking ? "required" : ""}></label>`).join("");
+  const send = async (assume) => {
+    const answers = Object.fromEntries($$("#clarifyQs input").map((i) => [i.dataset.key, i.value.trim()]).filter(([, v]) => v));
+    if (!assume && qs.some((q) => q.blocking && !answers[q.key])) { $("#clarifyMsg").textContent = "أجب عن الأسئلة الأساسية، أو اختر المتابعة بافتراضات."; return; }
+    $("#clarifyBtn").disabled = $("#assumeBtn").disabled = true;
+    try {
+      await api(`/api/runs/${r.id}/clarify`, {method: "POST", body: JSON.stringify({answers, assume})});
+      card.classList.add("hidden"); scheduleRefresh(); toast(assume ? "يتابع الفريق بافتراضات موسومة" : "بدأ الفريق بمعلوماتك");
+    } catch (e) { $("#clarifyMsg").textContent = e.message; }
+    $("#clarifyBtn").disabled = $("#assumeBtn").disabled = false;
+  };
+  $("#clarifyBtn").onclick = () => send(false);
+  $("#assumeBtn").onclick = () => send(true);
+  $("#clarifyQs input")?.focus();
 }
 
 function renderApproval(r) {

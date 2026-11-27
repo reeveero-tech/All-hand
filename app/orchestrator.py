@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from .research import evidence
 from .research import manager as research_manager
 from .research import quality_gate
-from . import assumptions, export, memory, quality
+from . import assumptions, export, intake, memory, quality
 from . import report as report_mod
 from .agents import ROLES, run_agent
 from .llm import FREE_PROMPT_CHARS, LLM, LLMError, ModelPaused, _clip, extract_objects, looks_truncated
@@ -42,7 +42,10 @@ class Run:
     context: str = ""  # what the previous run produced, given to the planner (kept so resume rebuilds it)
     resumed: dict | None = None  # {"from": run id, "reused": [task ids]} when continuing a stopped run
     approve_plan: bool = False  # pause after planning until the owner approves, edits or rejects the plan
-    awaiting: str | None = None  # "plan" while waiting for that decision (status stays "running")
+    awaiting: str | None = None  # "plan" or "clarification" while waiting for the owner (status stays "running")
+    clarify: bool = True  # ask the owner when the request leaves out what the team cannot work without (app/intake.py)
+    brief: dict | None = None  # intake brief: what the request states, what it misses, and the owner's answers
+    clarification: dict | None = None  # the owner's reply to the intake questions: {"answers", "assume", "at"}
     plan_decision: dict | None = None  # what the owner decided: {"action", "dropped", "note", "at"}
     scenario: bool = False  # user marked this run as a test/hypothetical: nothing it learns is about the user
     research: dict | None = None  # per-run measurements: searches, results, pages really read, sources in the answer
@@ -62,6 +65,7 @@ class Run:
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     created_at: float = field(default_factory=time.time)
     status: str = "running"  # running | done | partial | failed | cancelled | interrupted (server shutdown)
+    #                          | needs_input (the request missed essentials and the owner did not answer in time)
     #                          | paused_quota (model quota spent) | paused_provider (provider down, rate limit, key refused)
     tasks: dict = field(default_factory=dict)
     events: list = field(default_factory=list)
@@ -101,7 +105,7 @@ class Run:
     def full(self) -> dict:
         return {**self.summary(), "llm": self.llm_public, "max_agents": self.max_agents, "tasks": self.tasks,
                 "result": self.result, "verdict": self.verdict, "memory": self.memory, "usage": self.usage, "error": self.error, "saved": self.saved,
-                "resumed": self.resumed, "approve_plan": self.approve_plan, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "goal_checks": self.goal_checks,
+                "resumed": self.resumed, "approve_plan": self.approve_plan, "brief": self.brief, "plan_decision": self.plan_decision, "context": self.context, "scenario": self.scenario, "goal_checks": self.goal_checks,
                 "research": self.research, "prior_check": self.prior_check, "research_state": self.research_state,
                 "research_gate": self.research_gate, "pause": self.pause, "checkpoint": self.checkpoint,
                 "reviews": self.reviews, "report": self.report, "files": self.files, "deliverable": self.deliverable,
@@ -211,6 +215,35 @@ def _sanitize_plan(plan: dict, depth: int, can_exec: bool = True) -> list[dict]:
     if not tasks:
         raise ValueError("الخطة بلا مهام صالحة")
     return tasks
+
+
+_ASSEMBLY = re.compile(r"تجميع|دمج\s+(?:النتائج|الأقسام|المخرجات)|الملف\s+النهائي|التقرير\s+النهائي|إعداد\s+الملف|"
+                       r"\b(?:compile|assemble|consolidate|merge)\b|final\s+(?:report|file|deliverable|document)", re.I)
+
+
+def drop_assembly(tasks: list[dict]) -> tuple[list[dict], list[str]]:
+    """Remove root tasks that only assemble the others into a final file. The planner is told not to add one,
+    yet the free model still does (6a03d324e329: «t5 تجميع الملف النهائي», 2 attempts, both rejected, and no
+    calculator in its tools). The Final Report Builder (app/report.py) assembles by code. A task that depends on a
+    dropped one inherits its dependencies, so the DAG stays valid. Kept when it is the plan's only real work."""
+    drop = [t for t in tasks if _ASSEMBLY.search(t.get("title") or "") and t.get("depends_on")]
+    if not drop or len(tasks) - len(drop) < 2:
+        return tasks, []
+    ids = {t["id"] for t in drop}
+    by_id = {t["id"]: t for t in tasks}
+
+    def resolve(deps, seen=()):
+        out = []
+        for d in deps:
+            if d in ids and d not in seen:
+                out += resolve(by_id[d]["depends_on"], (*seen, d))
+            elif d not in ids:
+                out.append(d)
+        return list(dict.fromkeys(out))
+    keep = [t for t in tasks if t["id"] not in ids]
+    for t in keep:
+        t["depends_on"] = resolve(t["depends_on"])
+    return keep, [t["id"] for t in drop]
 
 
 async def plan(llm: LLM, goal: str, depth: int, can_exec: bool = True, follow_up: bool = False) -> dict:
@@ -621,6 +654,17 @@ class Orchestrator:
         try:
             await r.emit("run_started", {"goal": r.goal, "llm": r.llm_public, "max_agents": r.max_agents,
                                          "memory": bool(r.memory_space)})
+            if not r.context and not r.delta:  # a follow-up builds on a request that was already understood
+                if r.brief is None and not self.prior:  # runs from before the intake step are not re-asked
+                    r.brief = intake.brief(r.goal)
+                    await r.emit("intake_brief", {k: r.brief[k] for k in ("kind", "stated", "missing", "blocking")})
+                if r.brief and r.brief.get("blocking") and "resolved" not in r.brief and r.clarify:
+                    if not await self._await_clarification():
+                        r.status = "needs_input"
+                        r.result = ("لم يبدأ العمل: الطلب ينقصه ما لا يمكن العمل دونه ("
+                                    + "، ".join(intake.LABEL[k] for k in r.brief["blocking"]) +
+                                    "). أضف هذه المعلومات إلى الطلب وابدأ من جديد، أو اختر المتابعة بافتراضات موسومة.")
+                        return
             existing = await self.recall()
             if r.goal_checks is None:  # a resumed run keeps the checks it already made
                 with llm_phase("intake"):
@@ -862,6 +906,11 @@ class Orchestrator:
         with llm_phase("planning"):
             p = await plan(self.llm, goal, depth, r.can_exec, follow_up=bool(r.context))
         tasks = p["tasks"]
+        if depth == 0:
+            tasks, dropped = drop_assembly(tasks)
+            if dropped:
+                await r.emit("plan_adjusted", {"dropped": dropped, "reason": "مهمة تجميع: النظام يبني التقرير النهائي "
+                                                                          "من أقسام المهام بنفسه دون وكيل"})
         for t in tasks:
             t["id"] = prefix + t["id"]
             t["depends_on"] = [prefix + d for d in t["depends_on"]]
@@ -917,6 +966,30 @@ class Orchestrator:
         except Exception as e:  # noqa: BLE001  research failing must not stop the run; the gate will say what is missing
             await r.emit("research_error", {"error": f"{type(e).__name__}: {str(e)[:200]}"})
         r.research_state = self.rm.to_dict()
+
+    async def _await_clarification(self) -> bool:
+        """Ask the owner what the request leaves out, before any model call. True when the team can start:
+        the owner answered every blocking question, or chose to continue with labelled assumptions."""
+        r = self.run
+        r.awaiting, r._decision = "clarification", asyncio.Event()
+        await r.emit("clarification_needed", {"questions": r.brief["missing"], "blocking": r.brief["blocking"],
+                                              "timeout_s": APPROVAL_TIMEOUT})
+        if self.persist:
+            await self.persist()
+        try:
+            await asyncio.wait_for(r._decision.wait(), APPROVAL_TIMEOUT)
+        except asyncio.TimeoutError:
+            r.clarification = {"action": "timeout", "at": time.time()}
+        finally:
+            r.awaiting, r._decision = None, None
+        c = r.clarification or {}
+        if c.get("action") == "timeout":
+            await r.emit("clarification_timeout", {})
+            return False
+        r.goal, record = intake.apply_answers(r.goal, r.brief, c.get("answers") or {}, bool(c.get("assume")))
+        r.brief = {**r.brief, "resolved": record}
+        await r.emit("clarification_answered", record)
+        return not record["unanswered"]
 
     async def _await_approval(self, tasks: list[dict]) -> list[dict]:
         """Wait for the owner's decision on the root plan. Approve runs it (minus dropped tasks, with the
