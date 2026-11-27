@@ -16,6 +16,7 @@ import re
 from datetime import date
 
 from .manager import FACETS, _year, annotate_unread  # noqa: F401  (re-exported for the orchestrator)
+from . import relevance as rel
 from .registry import normalize_url
 
 _URL = re.compile(r"https?://[^\s)\]>»\"'|،,]+")
@@ -105,6 +106,15 @@ def evaluate(state: dict | None, ledger: dict | None, answer: str, today: date |
     open_conf = [c for c in state.get("conflicts") or [] if not c.get("resolved") and c.get("facet") in p["critical"]
                  and not (c["low"]["id"] in (answer or "") and c["high"]["id"] in (answer or ""))]
     check("conflicts_disclosed", not open_conf, len(open_conf), 0, "تعارض بين مصادر في محور أساسي لم يُعرض في الجواب")
+    # Evidence the gate rejected may not carry the answer: citing it (by id or by URL) is a defect, not a source.
+    low = (answer or "").lower()
+    cited_ids = set(re.findall(r"\bE(\d{1,3})\b", answer or ""))
+    rejected = [r for r in reads if r.get("relevance") and not r.get("useful")]
+    bad = [r for r in rejected if r.get("id", "")[1:] in cited_ids or r["url"].lower().rstrip("/") in low]
+    check("no_rejected_evidence", not bad, [r.get("id") for r in bad], 0,
+          "الجواب يستشهد بمصادر رفضتها بوابة الصلة: " + "، ".join(f"{r.get('id')} ({rel.LABEL_AR.get(r.get('label'), '')})"
+                                                              for r in bad))
+    checks["relevance"] = {"ok": True, "value": rel.summary(reads), "need": "معلومة"}
     tables = sum(len(r.get("tables") or []) for r in useful)
     checks["usable_tables"] = {"ok": True, "value": tables, "need": "معلومة"}
     if ledger.get("cited_as_summary"):

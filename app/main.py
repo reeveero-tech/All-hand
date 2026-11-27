@@ -24,6 +24,7 @@ from . import assumptions, export, intake, memory, store, tools
 from . import report as report_mod
 from .research import browser, documents, evidence
 from .research import manager as research_manager
+from .research import relevance as research_relevance
 from .agents import ROLES
 from .llm import LLM, LLMError, resolve_config
 from .llm import holds as llm_holds
@@ -188,7 +189,7 @@ async def health():
             "search": {k: v for k, v in tools.STATS.items()},  # counters and the last provider error (no secrets)
             "providers": tools.registry.health(),
             "model_holds": llm_holds(),  # provider base URL -> {kind, until}: calls refused locally, not sent  # per provider: breaker state, requests, results, errors
-            "research": {"manager": research_manager.ENABLED, "documents": documents.available(),
+            "research": {"manager": research_manager.ENABLED, "relevance_gate": research_relevance.VERSION, "documents": documents.available(),
                          "document_stats": dict(documents.STATS), "budget": asdict(research_manager.Budget()),
                          "browser_worker": browser.status()}}
 
@@ -344,7 +345,9 @@ async def run_evidence(run_id: str, x_client_key: str | None = Header(default=No
                            "rounds": st.get("rounds"), "searches": st.get("searches"), "conflicts": st.get("conflicts"),
                            "readings": [{k: r.get(k) for k in ("id", "url", "title", "publisher", "published", "facets", "method",
                                                                 "kind", "completeness", "pages", "tables_total", "figures", "class",
-                                                                "useful", "from_previous")}
+                                                                "useful", "label", "from_previous")}
+                                        | {"relevance": {f: {k: v.get(k) for k in ("label", "label_ar", "reasons", "usable", "unproven")}
+                                                         for f, v in (r.get("relevance") or {}).items()}}
                                         for r in (st.get("readings") or {}).values()],
                            "failed": list((st.get("failed") or {}).values())}
         led["gate"] = data.get("research_gate")

@@ -1,0 +1,235 @@
+{
+ "run": "6a03d324e329",
+ "country": {
+  "ar": "السعودية",
+  "en": "Saudi Arabia",
+  "iso": "SAU"
+ },
+ "facets": {
+  "costs": "critical",
+  "demand": "critical",
+  "prices": "critical",
+  "channels": "supporting",
+  "consumers": "supporting",
+  "regulation": "supporting",
+  "competitors": "critical",
+  "market_size": "supporting"
+ },
+ "readings": [
+  {
+   "id": "E11",
+   "url": "https://arxiv.org/pdf/2508.13525v1",
+   "title": "Saudi-Dialect-ALLaM: LoRA Fine-Tuning for Dialectal Arabic Generation",
+   "published": "Wed, 20 Aug 2025 00:28:30 GMT",
+   "facets": [
+    "market_size"
+   ],
+   "excerpt": "tion–response dataset for Saudi dialects (Hijazi/Najdi; 5,466\nachieves higher dialect fidelity (84.2% Saudi per the exter-\nadaptation of ALLaM-7B-Instruct-preview for Saudi dialect\nfirst Saudi foundation model [12].\nQarah [13] proposes SaudiBERT, an encoder pre-trained\nTraining ran for 15 epochs with batch size 2 (gradient accu-\nfective batch size was 16 (per-device 2, gradient accumulation\noverall performance, producing 84.2% Saudi-aligned genera-\nthe No-Token variant achieves 80.5% Saudi correctness but\n(HIGHER IS BETTER FOR SAUDI%, CHRF++, BERTSCORE, DISTINCT-2/3; LOWER IS\nModel Saudi (%) ↑ MSA leak (%) ↓ Low-conf (%) ↓ chrF++ ↑ BERTScore F1 ↑ distinct-2 ↑ distinct-3 ↑ Self-BLEU ↓\nThe dataset’s modest size (5.5k pairs) and limited topical\n[12] Asharq Al-Awsat, “Humane launches allam, the first arabic artificial\nintelligence model from saudi arabia, august 2025,” 2025.\n[19] National Center for Artificial Intelligence (SDAIA) and Saudi\n2022, 667 hours of Saudi Arabic audio with transcripts across 57",
+   "figures": [
+    "achieves higher dialect fidelity (84.2% Saudi per the exter-",
+    "overall performance, producing 84.2% Saudi-aligned genera-",
+    "the No-Token variant achieves 80.5% Saudi correctness but",
+    "21% and reducing MSA leakage from 32",
+    "to 6.21%; fidelity also improves (chrF++ +3",
+    "for roughly 55% of the dataset, reflecting strong coverage of",
+    "tions while limiting MSA leakage to 6.3%",
+    "(68.83%) and fluency (74"
+   ],
+   "offers": [],
+   "method": "httpx+pypdf+pdfplumber",
+   "class": "academic"
+  },
+  {
+   "id": "E16",
+   "url": "https://arxiv.org/pdf/2508.17912v2",
+   "title": "Citizens' Contentment with e-Government Solutions and Services in Saudi Arabia",
+   "published": "Mon, 15 Jun 2026 00:21:59 GMT",
+   "facets": [
+    "demand"
+   ],
+   "excerpt": "2005 as a collaborative effort between the Ministry of Finance (MoF) Saudi\nmation Technology (MCIT) Saudi Arabian Government (2025e), and the\n(2024), Saudi Arabia was rated sixth out of all UN countries with an EGDI\nin 2020, placing Saudi Arabia in thirty-first in 2022 and forty-third in 2020.\n(2014) examined Saudi Arabia’s organi-\nHussain Hussain (2020) looked at the elements that affected Saudi Arabian\nreport estimates that there are 32,176,224 individuals in Saudi Arabia over-\n2 display population age distribution as per The Saudi Arabian General\nin Saudi Arabia Saudi Arabian Government (2025c), it is important to know\nanswered “Absher” Saudi Arabian Government (2025a).\nSaudi Arabia’s impressive satisfaction ratings (for instance, 86.2% in ser-\n25010 and 25022 QinU models, it was tailored specifically for the Saudi e-\nernment Cloud in Saudi Arabia, an Integral Part of Vision 2030., in:\nLessons from Saudi Arabia in e-G2B.\nSaudi Arabian Government, 2025a.\nSaudi Arabian Government, 2025b.\nSaudi Arabian Government, 2025c.\nSaudi Arabian Government, 2025d.\nSaudi Arabian Government, 2025e.\nSaudi Arabian Government, 2025f.\nSaudi Arabian Government, 2025g.",
+   "figures": [
+    "for large populations (95% confidence level, 5% margin of error)",
+    "random sampling technique with a 95% confidence level and a 5% margin of",
+    "Z 2 α/2 represents the standard normal deviation (95% confidence level),",
+    "E represents the margin of error (5%)",
+    "(an 80.4% response rate), which was deemed sufficient",
+    "Table 1: 34.4% of participants were 30-39 years old, 28",
+    "old, and 16.7% were 50-59 years old",
+    "The 30 to 39 age group represents 32.09%, the 40"
+   ],
+   "offers": [],
+   "method": "httpx+pypdf+pdfplumber",
+   "class": "academic"
+  },
+  {
+   "id": "E17",
+   "url": "https://doi.org/10.70122/ajbsp.v2i1.27",
+   "title": "Factors Influencing Consumer Purchase Behavior of Saudi Dates",
+   "published": "2025-04-01",
+   "facets": [
+    "consumers"
+   ],
+   "excerpt": "This study examines the factors influencing consumer behavior toward Saudi dates, focusing on the roles of hedonic values, utilitarian values, purchase intention, and actual purchase behavior. A cross-sectional study design was employed, with data collected through an online survey from 271 consumers who include dates as part of their dietary plan. The questionnaire, translated into Arabic, was pilot-tested with 35 participants to ensure the validity and reliability of the measurement scales. Data analysis was conducted using structural equation modeling to explore the relationships between the constructs. The findings reveal that both hedonic values and utilitarian values significantly influence purchase intention, which in turn strongly predicts actual purchase behavior. The study demonstrates that consumers who derive pleasure and practical benefits from Saudi dates are more likely to intend to purchase them, and these intentions strongly translate into actual purchasing behavior. Additionally, the mediating role of purchase intention highlights its importance in linking hedonic and utilitarian values to actual behavior. By addressing both emotional and practical aspects of cons",
+   "figures": [],
+   "offers": [],
+   "method": "api:crossref:abstract",
+   "class": "academic"
+  },
+  {
+   "id": "E3",
+   "url": "https://data.worldbank.org/indicator/SP.POP.TOTL?locations=SA",
+   "title": "البنك الدولي — Population, total (Saudi Arabia):",
+   "published": "",
+   "facets": [
+    "consumers"
+   ],
+   "excerpt": "البنك الدولي — Population, total (Saudi Arabia):\n- 2025: 36,973,555\n- 2024: 35,300,280\n- 2023: 33,702,731\nالمصدر: https://data.worldbank.org/indicator/SP.POP.TOTL?locations=SA",
+   "figures": [],
+   "offers": [],
+   "method": "api:worldbank",
+   "class": "official"
+  },
+  {
+   "id": "E13",
+   "url": "https://www.npr.org/2026/11/25/nx-s1-6046173/cannabis-marijuana-prices-retailers-discounts",
+   "title": "In a time of rising costs, one Thanksgiving commodity is cheaper: cannabis",
+   "published": "2026-11-25",
+   "facets": [
+    "prices"
+   ],
+   "excerpt": "",
+   "figures": [
+    "is a $30 billion industry with legal marketplaces in 24 states and the nation's capital, according to Whitney Economics, a firm",
+    "On bright screens posted around the store, discount offers flashed: 25% off edibles, read one; 30% off for medical patients, read another",
+    "An extra $5 off for bringing in cans of food for the store's holiday drive",
+    "Though the industry has seen a slight rebound this year — an increase of about 5% in sales for the same period last year, Whitney's team found — forecasts for the end of 2026 and the outlook for 2027 r"
+   ],
+   "offers": [],
+   "method": "httpx+trafilatura",
+   "class": "commercial"
+  },
+  {
+   "id": "E8",
+   "url": "https://www.vietnam.vn/ar/gia-xang-dau-giam-nguoi-tieu-dung-van-cho-hang-hoa-giam-tuong-ung",
+   "title": "على الرغم من انخفاض أسعار الوقود، لا يزال المستهلكون ينتظرون انخفاضات مماثلة في أسعار السلع الأخرى.",
+   "published": "2026-11-16T06:41:13+00:00",
+   "facets": [
+    "prices"
+   ],
+   "excerpt": "وفي تعديل الأسعار الذي أُجري في 12 نوفمبر، انخفض سعر بنزين E5RON92 إلى 19,399 دونغ فيتنامي/لتر، وبنزين E10RON95-III إلى 19,845 دونغ فيتنامي/لتر، والديزل إلى 26,822 دونغ فيتنامي/لتر.\nوبالمقارنة مع التعديل السابق، انخفضت أسعار هذه المنتجات بمقدار 1,499 دونغ، و1,311 دونغ، و1,874 دونغ فيتنامي/لتر على التوالي.\nولا تزال هذه الأسعار تشكل ضغطاً على النفقات اليومية للعديد من الأسر، خاصةً مع استمرار ارتفاع نفقات المعيشة الأساسية الأخرى.\nقالت السيدة نغوين ثي نغويت، صاحبة محل لبيع البان مي (ساندويتش فيتنامي) في حي ثانه سين: \"رفعنا سعر الساندويتش الواحد في محلنا بمقدار 2000 دونغ فيتنامي لأكثر من شهر، حيث تتراوح الأسعار الحالية بين 10000 و20000 دونغ فيتنامي.\nوبالمثل، قالت السيدة لي ثي هونغ، مالكة مطعم حساء ثعبان البحر \"با هونغ\" (في بلدية كام زوين): \"ارتفعت أسعار الوجبات في المطعم بنحو 10% مقارنةً ببداية العام.\nوغالباً ما تتأخر تعديلات الأسعار، وذلك تبعاً لتوقيت استيراد البضائع، وعقود التوريد، وقدرة كل مؤسسة على موازنة التكاليف.\nبحسب التقرير الاجتماعي والاقتصادي للمقاطعة للأشهر العشرة الأولى، انخفض مؤشر أسعار المستهلك في أكتوبر بنسبة 0.45% مقارنة بالشهر السابق، لكن متوسط مؤشر أسعار المستهلك للأشهر العشرة الأولى لا يزال مرتفعاً بنسبة 4.08% مقارنة بالفترة نفسها من عام 2025.\nومع ذلك، فبعد تعديلات الأسعار الأخيرة التي شهدت انخفاضًا في أسعار البنزين والديزل، قمنا على الفور بتخفيض أسعار التذاكر بمقدار يتراوح بين 2000 و12000 دونغ فيتنامي للتذكرة الواحدة، وذلك حسب الخط.",
+   "figures": [
+    "إلى جانب البنزين والديزل، تم تعديل متوسط سعر التجزئة للكهرباء اعتبارًا من الأول من نوفمبر/تشرين الثاني، بانخفاض قدره 2%، ليصل إلى 2159",
+    "وبالمثل، قالت السيدة لي ثي هونغ، مالكة مطعم حساء ثعبان البحر \"با هونغ\" (في بلدية كام زوين): \"ارتفعت أسعار الوجبات في المطعم بنحو 10% مقارنةً ببداية العام",
+    "بحسب التقرير الاجتماعي والاقتصادي للمقاطعة للأشهر العشرة الأولى، انخفض مؤشر أسعار المستهلك في أكتوبر بنسبة 0.45% مقارنة بالشهر السابق، لكن متوسط مؤشر أسعار المستهلك للأشهر العشرة الأولى لا يزال مرتفعاً بنسبة 4",
+    "08% مقارنة بالفترة نفسها من عام 2025",
+    "تشير الإحصاءات إلى أن إيرادات النقل والتخزين في الأشهر العشرة الأولى من عام 2026 تُقدّر بنحو 8,210.89 مليار دونغ فيتنامي، بزيادة قدرها 18",
+    "48% مقارنةً بالفترة نفسها من العام السابق"
+   ],
+   "offers": [],
+   "method": "httpx+trafilatura",
+   "class": "web"
+  },
+  {
+   "id": "E6",
+   "url": "https://africa.businessinsider.com/local/markets/russia-saudi-arabia-face-fresh-competition-from-west-africa-as-china-turns-to-africas/9e8fvhz",
+   "title": "Russia, Saudi Arabia face fresh competition from West Africa as China turns to Africa's oil giants in 20-million-barrel buying spree",
+   "published": "2026-11-26 12:35:26+0100",
+   "facets": [
+    "competitors"
+   ],
+   "excerpt": "Chinese customs data show that Russia supplied approximately 24% of China's crude imports between January and October 2026, while Saudi Arabia remained the second-largest supplier.",
+   "figures": [
+    "Chinese customs data show that Russia supplied approximately 24% of China's crude imports between January and October 2026, while Saudi Arabia remained the second-largest supplier",
+    "- Chinese state refiner Unipec bought up to 20 million barrels of West African crude for December loading, and other Asian buyers are following suit",
+    "However, Chinese state-owned refiner Sinopec's trading arm, Unipec, has recently bought as many as 20 million barrels of West African crude for December loading, highlighting the region's growing appeal to Asian buyers, according",
+    "Brent crude prices fell by around a quarter in November, while the cost of shipping a barrel of crude from the Gulf of Oman to China declined to approximately $8 from $21 a month earlier, Bloomberg reported",
+    "Reuters reported that Unipec bought two cargoes of Congo's Djeno crude at discounts of approximately $22 per barrel to dated Brent"
+   ],
+   "offers": [],
+   "method": "httpx+trafilatura",
+   "class": "web"
+  },
+  {
+   "id": "E7",
+   "url": "https://guardian.ng/news/world/asia/saudi-arabia-hosts-major-international-security-innovation-competition-as-regional-security-priorities-evolve/",
+   "title": "Saudi Arabia Hosts Major International Security Innovation Competition as Regional Security Priorities Evolve",
+   "published": "2026-11-26T20:54:41+00:00",
+   "facets": [
+    "competitors"
+   ],
+   "excerpt": "",
+   "figures": [],
+   "offers": [],
+   "method": "httpx+trafilatura",
+   "class": "web"
+  },
+  {
+   "id": "E12",
+   "url": "https://www.masrawy.com/news/news_economy/details/2026/11/26/3084914/%D9%83%D9%8A%D9%81-%D9%8A%D8%A4%D8%AB%D8%B1-%D8%AA%D8%B0%D8%A8%D8%B0%D8%A8-%D8%A7%D9%84%D8%AF%D9%88%D9%84%D8%A7%D8%B1-%D8%B9%D9%84%D9%89-%D8%A3%D8%B3%D8%B9%D8%A7%D8%B1-%D8%A7%D9%84%D8%B3%D9%84%D8%B9-%D8%A7%D9%84%D8%BA%D8%B0%D8%A7%D8%A6%D9%8A%D8%A9-",
+   "title": "كيف يؤثر تذبذب الدولار على أسعار السلع الغذائية؟ | مصراوي",
+   "published": "2026-11-26T14:52:14+02:00",
+   "facets": [
+    "costs"
+   ],
+   "excerpt": "وأضاف أن التأثير يمتد إلى المنتجات المصنعة، مثل المعلبات والمخبوزات والحلويات، بسبب ارتفاع تكلفة الخامات ومواد التعبئة والتغليف، مشيرًا إلى أن سرعة انعكاس تغيرات الدولار على الأسعار تختلف وفقًا لحجم المخزون وتوقيت الاستيراد وتكاليف الإنتاج وتوافر البدائل المحلية.",
+   "figures": [
+    "كان سعر الدولار ارتفاع بنحو 9% خلال أكتوبر الماضي تحت ضغط خروج جزئي للمستثمرين الأجانب بسبب التوترات الجيوسياسية بالمنطقة قبل أن يقلل خسائره خلال نوفم"
+   ],
+   "offers": [],
+   "method": "httpx+trafilatura",
+   "class": "web"
+  },
+  {
+   "id": "E15",
+   "url": "https://shaam.org/society/%D8%AE%D9%81%D8%B6-%D8%B3%D8%B9%D8%B1-%D8%A7%D9%84%D9%85%D8%A7%D8%B2%D9%88%D8%AA-%D8%AE%D8%B7%D9%88%D8%A9-%D9%84%D8%AA%D8%AE%D9%81%D9%8A%D9%81-%D8%AA%D9%83%D8%A7%D9%84%D9%8A%D9%81-%D8%A7%D9%84%D8%A5%D9%86%D8%AA%D8%A7%D8%AC-%D8%A3%D9%85-%D8%A3%D8%AB%D8%B1-%D9%85%D8%AD%D8%AF%D9%88%D8%AF-%D8%B9%D9%84%D9%89-%D8%A7%D9%84%D9%85%D8%B9%D9%8A%D8%B4%D8%A9%D8%9F",
+   "title": "خفض سعر المازوت.. خطوة لتخفيف تكاليف الإنتاج أم أثر محدود على المعيشة؟",
+   "published": "2026-11-18T12:57:02.595Z",
+   "facets": [
+    "costs"
+   ],
+   "excerpt": "أثار قرار تخفيض سعر ليتر المازوت في سوريا بنسبة 14.3 بالمئة تساؤلات حول مدى انعكاسه على تكاليف الإنتاج وأسعار السلع والخدمات، في ظل استمرار ارتفاع الأعباء المعيشية وتراجع القدرة الشرائية، وسط توقعات باستفادة قطاعات الزراعة والصناعة والنقل من انخفاض تكاليف الوقود.\nوأشار إلى أن انخفاض سعره قد يساعد على تنشيط بعض الأنشطة الاقتصادية، إلا أن تخفيضاً بنسبة 14.3 بالمئة لا يعني بالضرورة تحسناً ملموساً في مستوى معيشة المواطنين، في ظل استمرار ارتفاع تكاليف الإنتاج الأخرى وتراجع القدرة الشرائية.\nولفت إلى أن هذه القطاعات مترابطة، وأن انخفاض تكاليف الإنتاج الزراعي والصناعي والنقل يفترض أن ينعكس تدريجياً على التكلفة النهائية للسلع، إذا انتقلت الوفورات إلى مراحل التسويق والتوزيع.\nأوضح الدبس أن تخفيض سعر المازوت لا يؤدي بالضرورة إلى انخفاض مباشر في أسعار السلع والخدمات، لأن تكلفة المنتج النهائي تتأثر بعوامل متعددة، تشمل المواد الأولية والأجور والكهرباء والنقل والتمويل وسعر الصرف وتكاليف الاستيراد.",
+   "figures": [],
+   "offers": [],
+   "method": "httpx+trafilatura",
+   "class": "web"
+  },
+  {
+   "id": "E10",
+   "url": "https://www.youm7.com/story/2026/11/23/%D8%A7%D9%84%D9%85%D9%85%D8%AB%D9%84-%D9%88%D8%A7%D9%84%D9%85%D8%AE%D8%B1%D8%AC-%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%89-%D9%87%D8%B4%D8%A7%D9%85-%D8%A7%D9%84%D9%81%D9%82%D9%8A%D9%87-%D8%A3%D9%81%D9%84%D8%A7%D9%85%D9%86%D8%A7-%D8%AA%D8%AD%D8%AA%D8%A7%D8%AC-%D9%84%D8%AA%D8%BA%D9%8A%D9%8A%D8%B1-%D9%85%D9%86%D8%B8%D9%88%D9%85%D8%A9-%D8%A7%D9%84%D8%AA%D9%88%D8%B2%D9%8A%D8%B9/7629569",
+   "title": "الممثل والمخرج السعودى هشام الفقيه: أفلامنا تحتاج لتغيير منظومة التوزيع - اليوم السابع",
+   "published": "2026-11-23T14:45:29Z",
+   "facets": [
+    "channels"
+   ],
+   "excerpt": "واختتم بالتأكيد على أهمية بناء شراكة حقيقية بين الجمهور وصناع الأفلام وشركات الإنتاج والتوزيع، إلى جانب القنوات التلفزيونية والجهات المعنية بالصناعة، لفتح نقاش جاد حول مستقبل توزيع الأفلام الخليجية والعربية، وإتاحة المجال أمام تجارب جديدة من شأنها توسيع فرص العرض والوصول إلى الجمهور.",
+   "figures": [],
+   "offers": [],
+   "method": "httpx+trafilatura",
+   "class": "web"
+  },
+  {
+   "id": "E9",
+   "url": "https://aawsat.com/%D8%A7%D9%84%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF/5285206-%D9%85%D8%AF%D9%86-%D8%AA%D8%B9%D8%B2%D9%91%D8%B2-%D9%83%D9%81%D8%A7%D8%A1%D8%A9-%D8%B3%D9%84%D8%A7%D8%B3%D9%84-%D8%A7%D9%84%D8%A5%D9%85%D8%AF%D8%A7%D8%AF-%D8%A7%D9%84%D8%B3%D8%B9%D9%88%D8%AF%D9%8A%D8%A9-%D8%A8%D8%A7%D8%B3%D8%AA%D8%AB%D9%85%D8%A7%D8%B1%D8%A7%D8%AA-%D8%AA%D8%AA%D8%AC%D8%A7%D9%88%D8%B2-147-%D9%85%D9%84%D9%8A%D9%88%D9%86-%D8%AF%D9%88%D9%84%D8%A7%D8%B1",
+   "title": "«مدن» تعزّز كفاءة سلاسل الإمداد السعودية باستثمارات تتجاوز 147 مليون دولار",
+   "published": "2026-06-17T11:21:07+0100",
+   "facets": [
+    "channels"
+   ],
+   "excerpt": "وسّعت «مدن» خلال السنوات الماضية نطاق خدماتها اللوجستية، لتشمل أراضي لوجستية متنوعة المساحات ومتكاملة الخدمات، ومراكز توزيع مخصصة لتخزين السلع والمنتجات قبل توزيعها مباشرة، ومستودعات للخدمات اللوجستية للغير (3PL)، ومستودعات مبردة، وساحات حاويات، وساحات شاحنات متكاملة الخدمات، إلى جانب وحدات ذاتية التخزين وساحات مفتوحة للتخزين.\nشهد عام 2025 تخصيص أراضٍ لوجستية في 18 مدينة صناعية بمساحة إجمالية تجاوزت مليون متر مربع، وبحجم استثمارات تجاوز 500 مليون ريال (133.3 مليون دولار)، شملت إنشاء مستودعات ومراكز توزيع وساحات شاحنات متكاملة الخدمات ومشروعات للخدمات اللوجستية للغير.\nوفي المدينة الصناعية الثالثة بجدة، أنشأت شركة «كودو» للتغذية والإعاشة مركز توزيع على مساحة 18 ألف متر مربع باستثمارات بلغت 50 مليون ريال (13.3 مليون دولار)، في حين دشنت شركة «ماسكو السعودية التجارية المحدودة» مشروعاً للخدمات اللوجستية للغير على مساحة 10 آلاف متر مربع باستثمارات بلغت 10 ملايين ريال (2.7 مليون دولار).\nوأشار الحربي إلى أن المملكة سجلت أكثر من 290 مليون طلب توصيل خلال عام 2024، وهو ما يعزّز الحاجة إلى مراكز توزيع عالية الكفاءة ومستودعات متطورة قادرة على مواكبة النمو المتسارع في التجارة الإلكترونية.",
+   "figures": [
+    "3 مليون دولار)، شملت إنشاء مستودعات ومراكز توزيع وساحات شاحنات متكاملة الخدمات ومشروعات للخدمات اللوجستية للغير",
+    "وفي المدينة الصناعية الثالثة بجدة، أنشأت شركة «كودو» للتغذية والإعاشة مركز توزيع على مساحة 18 ألف متر مربع باستثمارات بلغت 50 مليون ريال (13",
+    "وأشار الحربي إلى أن المملكة سجلت أكثر من 290 مليون طلب توصيل خلال عام 2024، وهو ما يعزّز الحاجة إلى مراكز توزيع عالية الكفاءة ومستودعات متطورة قادرة على مواكبة النمو المت",
+    "ودية للمدن الصناعية ومناطق التقنية (مدن) مكانة المملكة منصة لوجستية عالمية ومركزاً حيوياً للتجارة العابرة بين القارات الثلاث، مدعومة بضخ استثمارات نوعية تجاوزت 553 مليون ريال (147",
+    "5 مليون دولار) خلال عام 2025، لترتفع المساحات اللوجستية المطورة داخل المدن الصناعية إلى أكثر من 16 مليون متر مربع، وبمعدل نمو س",
+    "لأوسط»، أن «مدن» تمثل الركيزة التنفيذية لتحويل المملكة منصة لوجستية عالمية، مشيراً إلى نجاحها المستمر الذي برز بوضوح خلال عام 2024 في جذب استثمارات نوعية بقيمة 24 مليار ريال (6",
+    "4 مليار دولار)، منها 6 مليارات ريال (1",
+    "6 مليار دولار) استثمارات أجنبية، بما يعزز سلاسل الإمداد الوطنية ويرفع إسهام القطاع في الناتج المحلي الإجمالي"
+   ],
+   "offers": [],
+   "method": "httpx+trafilatura",
+   "class": "news"
+  }
+ ]
+}
