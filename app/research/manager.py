@@ -32,6 +32,7 @@ from datetime import date
 
 from . import access as acc
 from . import registry, specialized
+from . import relevance as rel
 from .registry import normalize_url
 
 ENABLED = os.environ.get("RESEARCH_MANAGER", "1") != "0"
@@ -133,18 +134,27 @@ def detect_country(text: str):
     return None
 
 
+_AR_WORD = r"[\u0621-\u064A\u0671-\u06D3]"  # Arabic letters only: «،» and «؛» (U+060C, U+061B) are not letters
+
+
+def subject_from_goal(goal: str) -> tuple[str, str]:
+    """(subject, how): "marker" when the goal names it («المنتج: …», the intake's «المنتج أو المشروع: …»),
+    "phrase" for «إطلاق X في …», "guess" for the leftover words (a planner's better name may replace a guess)."""
+    g = re.sub(r"[ \t]+", " ", goal or "")
+    m = re.search(r"(?:المنتج(?: المستخدم في الاختبار| أو المشروع)?|المشروع|منتج|product)\s*[:：]\s*([^،,.\n؛;()]{3,60})", g, re.I)
+    if m:
+        return m.group(1).strip(), "marker"
+    m = re.search(r"(?:إطلاق|اطلاق|بيع|launch)\s+(?!منتج جديد)([\u0621-\u064AA-Za-z ]{3,40}?)\s+(?:في|بـ|ب|in)\s", g)
+    if m and not re.fullmatch(r"\s*(منتج|خدمة)\s*", m.group(1)):
+        return m.group(1).strip(), "phrase"
+    words = [w for w in re.findall(rf"(?:{_AR_WORD}|[A-Za-z]){{3,}}", g) if w.lower() not in _STOP
+             and not any(re.fullmatch(f["terms"], w, re.I) for f in FACETS.values())]
+    return " ".join(words[:3]), "guess"
+
+
 def extract_subject(goal: str) -> str:
     """The thing being studied, from the goal's own words (e.g. "قهوة باردة معلبة"). Explicit markers first."""
-    g = re.sub(r"\s+", " ", goal or "")
-    m = re.search(r"(?:المنتج(?: المستخدم في الاختبار)?|منتج|product)\s*[:：]\s*([^،,.\n؛;]{3,60})", g, re.I)
-    if m:
-        return m.group(1).strip()
-    m = re.search(r"(?:إطلاق|اطلاق|بيع|launch)\s+(?!منتج جديد)([\u0600-\u06FFA-Za-z ]{3,40}?)\s+(?:في|بـ|ب|in)\s", g)
-    if m and not re.fullmatch(r"\s*(منتج|خدمة)\s*", m.group(1)):
-        return m.group(1).strip()
-    words = [w for w in re.findall(r"[\u0600-\u06FFA-Za-z]{3,}", g) if w.lower() not in _STOP
-             and not any(re.fullmatch(f["terms"], w, re.I) for f in FACETS.values())]
-    return " ".join(words[:3])
+    return subject_from_goal(goal)[0]
 
 
 def choose_facets(goal: str) -> dict:
@@ -325,7 +335,8 @@ class ResearchManager:
         st["country"] = st.get("country") or detect_country(self.goal)
         subj = st.get("subject") or {}
         if not subj.get("ar"):
-            subj = {"ar": extract_subject(self.goal), "en": ""}
+            ar, how = subject_from_goal(self.goal)
+            subj = {"ar": ar, "en": "", "from": how}
         st["subject"] = subj
         queries = await self._llm_queries() if self.llm else {}
         c = st["country"] or {"ar": "", "en": ""}
@@ -358,7 +369,8 @@ class ResearchManager:
         se, sa = _clean_q(msg.get("subject_en", ""), 60), _clean_q(msg.get("subject_ar", ""), 60)
         if se and re.fullmatch(r"[A-Za-z0-9 .&'-]{3,60}", se):
             self.state["subject"]["en"] = se
-        if sa and not self.state["subject"].get("ar"):
+        if sa and (not self.state["subject"].get("ar") or self.state["subject"].get("from") == "guess"):
+            self.state["subject"]["from"] = "planner"
             self.state["subject"]["ar"] = sa
         out = {}
         for k, v in (msg.get("queries") or {}).items():
@@ -444,9 +456,7 @@ class ResearchManager:
             url = f"https://data.worldbank.org/indicator/{ind}?locations={c['iso']}"
             k = normalize_url(url)
             if k in self.state["readings"]:
-                rd = self.state["readings"][k]
-                if facet not in rd["facets"]:
-                    rd["facets"].append(facet)
+                self._add_facet(self.state["readings"][k], facet)
                 continue
             if self.state["used"]["searches"] >= self.budget.max_searches:
                 return
@@ -528,12 +538,7 @@ class ResearchManager:
         tabs = relevant_tables(rd.get("tables") or [], terms)
         offers = [{"name": str(o.get("name", ""))[:80], "price": o.get("price"), "currency": o.get("currency", "")}
                   for o in (rd.get("offers") or [])[:8]]
-        subj = self._subject_words()
-        hay = (text + " " + (rd.get("title") or "")).lower()
-        arabic_page = bool(re.search(r"[\u0600-\u06FF]", re.sub(r"\[صفحة \d+\]|ورقة:", "", hay[:20000])))
-        subj = [w for w in subj if bool(re.search(r"[\u0600-\u06FF]", w)) == arabic_page]  # judge in the page's script
-        about = rd.get("method") == "api:worldbank" or not subj or any(w in hay for w in subj)
-        useful = bool(not rd.get("failure") and about and (len(ex) >= 60 or figs or tabs or offers))
+        readable = bool(not rd.get("failure") and (len(ex) >= 60 or figs or tabs or offers))
         k = normalize_url(url)
         prev = self.state["readings"].get(k) or {}
         out = {"id": prev.get("id") or "", "url": url, "facets": sorted(set((prev.get("facets") or []) + ([facet] if facet else []))),
@@ -545,11 +550,42 @@ class ResearchManager:
                "ocr_pages": len(rd.get("ocr_pages") or []), "tables_total": len(rd.get("tables") or []),
                "tables": tabs, "offers": offers, "figures": figs, "excerpt": ex[:1400], "chars": len(text),
                "hash": rd.get("hash") or "", "class": cls or source_class(url), "domain": domain_of(url),
-               "provider": provider, "useful": useful, "notes": [str(n)[:120] for n in (rd.get("notes") or [])][:4],
+               "provider": provider, "readable": readable, "useful": readable, "notes": [str(n)[:120] for n in (rd.get("notes") or [])][:4],
                "wall": rd.get("wall") or ""}
         if text:
             self._texts[k] = text
+        if not out["failure"]:
+            out["relevance"] = dict(prev.get("relevance") or {})
+            for f in out["facets"] or ["agent"]:
+                self._judge(out, f, text)
         return out
+
+    # ------------------------------------------------------------ relevance (app/research/relevance.py)
+    def _topic(self) -> rel.Topic:
+        st = self.state
+        key = json.dumps([st.get("subject"), (st.get("country") or {}).get("iso"), list(st.get("facets") or {})],
+                         ensure_ascii=False, sort_keys=True)
+        if getattr(self, "_topic_key", None) != key:
+            self._topic_key = key
+            self._topic_obj = rel.Topic(st.get("subject"), st.get("country"), list(st.get("facets") or {}), self.today)
+        return self._topic_obj
+
+    def _judge(self, rd: dict, facet: str, text: str | None = None):
+        """Label the reading for one facet and recompute whether it may be used as evidence at all."""
+        if text is None:
+            text = self._texts.get(normalize_url(rd["url"])) or "\n".join([rd.get("excerpt") or ""] + list(rd.get("figures") or []))
+        v = rel.assess(self._topic(), None if facet == "agent" else facet, rd["url"], rd.get("title") or "", text,
+                       figures=rd.get("figures"), offers=rd.get("offers"), tables=rd.get("tables"),
+                       published=rd.get("published") or "", cls=rd.get("class") or "", method=rd.get("method") or "")
+        rd.setdefault("relevance", {})[facet] = v
+        rd["label"] = rel.best(rd["relevance"])
+        rd["useful"] = bool(rd.get("readable", rd.get("useful")) and rd["label"] in rel.USABLE)
+
+    def _add_facet(self, rd: dict, facet: str | None):
+        if facet and facet not in rd.setdefault("facets", []):
+            rd["facets"].append(facet)
+            if rd.get("relevance") is not None and not rd.get("failure"):
+                self._judge(rd, facet)
 
     async def _record(self, rd: dict, task: str | None):
         st = self.state
@@ -566,6 +602,8 @@ class ResearchManager:
               "ctype": rd.get("ctype"), "tables": rd.get("tables_total"), "hash": rd.get("hash"), "completeness": rd.get("completeness"),
               "pages": rd.get("pages"), "chars": rd.get("chars"), "useful": rd.get("useful"), "publisher": rd.get("publisher"),
               "published": rd.get("published"), "provider": rd.get("provider"), "source_class": rd.get("class")}
+        if rd.get("relevance"):
+            ev["relevance"] = {f: {"label": v["label"], "why": v["reasons"][:2]} for f, v in rd["relevance"].items()}
         if task:
             ev["task"] = task
         await self.emit("evidence", ev)
@@ -579,8 +617,7 @@ class ResearchManager:
             st = self.state
             if k in st["readings"]:
                 rd = st["readings"][k]
-                if facet and facet not in rd["facets"]:
-                    rd["facets"].append(facet)
+                self._add_facet(rd, facet)
                 return rd
             if k in (st.get("failed") or {}):
                 return st["failed"][k]
@@ -649,7 +686,9 @@ class ResearchManager:
         reads = [r for r in st["readings"].values() if facet in r.get("facets", [])]
         fails = [r for r in (st.get("failed") or {}).values() if facet in (r.get("facets") or [])
                  and r.get("method") != "api:worldbank"]  # "no indicator value" is not a failed source for the facet
-        useful = [r for r in reads if r.get("useful")]
+        useful = [r for r in reads if usable_for(r, facet)]
+        weak = [r for r in reads if not usable_for(r, facet) and _label(r, facet) == "insufficient"]
+        rejected = [r for r in reads if _label(r, facet) in ("irrelevant", "weak")]
         domains = {r["domain"] for r in useful}
         figs = sum(len(r.get("figures") or []) + len(r.get("offers") or []) + len(r.get("tables") or []) for r in useful)
         official = any(r.get("class") == "official" for r in useful)
@@ -664,6 +703,8 @@ class ResearchManager:
             label = "sufficient"
         elif useful:
             label = "useful"
+        elif weak:
+            label = "insufficient_evidence"  # relevant pages exist, but none proves what the facet needs
         elif reads:
             label = "opened_not_useful"
         elif fails and all(r.get("failure") in REFUSALS for r in fails):
@@ -677,7 +718,8 @@ class ResearchManager:
         else:
             label = "no_results"
         return {"status": label, "conflicting": conflict, "candidates": len(cands), "read": len(reads),
-                "useful": len(useful), "domains": len(domains), "figures": figs, "official": official,
+                "useful": len(useful), "insufficient": len(weak), "rejected": len(rejected),
+                "domains": len(domains), "figures": figs, "official": official,
                 "failed": len(fails), "critical": crit}
 
     def _detect_conflicts(self):
@@ -685,7 +727,7 @@ class ResearchManager:
         for facet in ("market_size",):
             vals = []
             for r in st["readings"].values():
-                if facet in r.get("facets", []) and r.get("useful"):
+                if facet in r.get("facets", []) and usable_for(r, facet):
                     for fig in r.get("figures") or []:
                         if re.search(r"سوق|market", fig, re.I):
                             for v in money_values(fig):
@@ -752,7 +794,7 @@ class ResearchManager:
             await asyncio.gather(*jobs)
             opens = []
             for f in todo:
-                have = sum(1 for r in st["readings"].values() if f in r.get("facets", []) and r.get("useful"))
+                have = sum(1 for r in st["readings"].values() if f in r.get("facets", []) and usable_for(r, f))
                 n = max(0, self.budget.per_facet_opens - (have if rnd == 1 else 0))
                 if rnd > 1:
                     n = min(n, 2)
@@ -788,8 +830,8 @@ class ResearchManager:
         if name not in allowed:
             return await self.tools.call_tool(name, args, allowed), None
         if name == "fetch_url":
-            rd = await self.open_url(val.strip(), None, provider="agent", task=task, agent=True)
-            return self.render_reading(rd), ([rd["url"]] if not rd.get("failure") else [])
+            rd = await self.open_url(val.strip(), "agent", provider="agent", task=task, agent=True)
+            return self.render_reading(rd), ([rd["url"]] if not rd.get("failure") and rd.get("useful", True) else [])
         if name == "web_search":
             q = re.sub(r"\s+", " ", val).strip()[:200]
             res, src, err = await self.tools.search_results(q)
@@ -800,7 +842,7 @@ class ResearchManager:
             lines = [f"المصدر: {src}"] + [self.tools._result_line(i, r, " + " in src) for i, r in enumerate(res, 1)]
             read = await self._agent_reads([self.state["candidates"][normalize_url(r["url"])] for r in res
                                             if str(r.get("url", "")).startswith("http")], q, task, 2)
-            return self._listing(lines, read), [rd["url"] for rd in read]
+            return self._listing(lines, read), [rd["url"] for rd in read if rd.get("useful", True)]
         if name == "research_sources":
             kind, _, q = val.partition(":")
             kind, q = kind.strip().lower(), re.sub(r"\s+", " ", q).strip()[:200]
@@ -816,7 +858,7 @@ class ResearchManager:
             merged = registry.merge(list(ok.values()))[:10]
             lines = [f"المصدر: {' + '.join(ok)}"] + [self.tools._result_line(i, r, True) for i, r in enumerate(merged, 1)]
             read = await self._agent_reads([self.state["candidates"][normalize_url(r["url"])] for r in merged], q, task, 2)
-            return self._listing(lines, read, index=True), [rd["url"] for rd in read]
+            return self._listing(lines, read, index=True), [rd["url"] for rd in read if rd.get("useful", True)]
         return await self.tools.call_tool(name, args, allowed), None
 
     async def _agent_reads(self, cands: list[dict], query: str, task, n: int) -> list[dict]:
@@ -839,10 +881,16 @@ class ResearchManager:
         if index:
             lines.append("\nهذه قوائم من فهارس متخصصة. ما فتحه النظام منها وقرأه فعلًا مذكور أدناه بنوع قراءته؛ "
                          "الملخص (abstract) ليس نص الدراسة كاملًا.")
-        if read:
+        good = [rd for rd in read if rd.get("useful", True)]
+        bad = [rd for rd in read if not rd.get("useful", True)]
+        if good:
             lines.append("\nمقتطفات من صفحات فتحها النظام فعلًا (استشهد بالرابط عند استخدام رقم منها):")
-            for rd in read:
-                lines.append(f"{self.tools.READ_MARK}{rd['url']}]\n{_completeness_ar(rd)}\n{rd.get('excerpt') or ''}")
+            for rd in good:
+                lines.append(f"{self.tools.READ_MARK}{rd['url']}]\n{_completeness_ar(rd)}{_relevance_ar(rd)}\n{rd.get('excerpt') or ''}")
+        if bad:
+            lines.append("\nصفحات فتحها النظام ورفضها دليلًا لهذه الدراسة (لا تستشهد بها ولا تأخذ منها أرقامًا):")
+            for rd in bad:
+                lines.append(f"- {rd['url']}{_relevance_ar(rd)}")
         return self.tools._clip("\n".join(lines), 8000)
 
     def render_reading(self, rd: dict, max_chars: int = 12000) -> str:
@@ -867,6 +915,12 @@ class ResearchManager:
         if rd.get("tables"):
             head.append(self.tools.rx.tables_markdown(rd["tables"], 2000))
         text = self._texts.get(normalize_url(rd["url"])) or rd.get("excerpt") or ""
+        if rd.get("relevance") and not rd.get("useful"):
+            if rd.get("label") == "irrelevant":  # the agent does not get text it must not use
+                return (f"[رفض النظام هذه الصفحة دليلًا: {rel.LABEL_AR['irrelevant']}{_relevance_ar(rd, short=True)}. "
+                        f"لم يُعرض نصها، ولا تستشهد بها.] {rd['url']}")
+            head.append(f"[تنبيه: {rel.LABEL_AR.get(rd.get('label'), '')}{_relevance_ar(rd, short=True)}. "
+                        "لا تُحتسب مصدرًا مقروءًا لهذه الدراسة، ولا تنسب إليها رقمًا لا يظهر في نصها.]")
         return self.tools._clip("\n".join(head) + "\n\n" + text, max_chars)
 
     # ------------------------------------------------------------ the pack handed to agents
@@ -875,7 +929,7 @@ class ResearchManager:
         want = [f for f in st["facets"] if re.search(FACETS.get(f, {}).get("terms", "^$"), text or "", re.I)]
         reads = [r for r in st["readings"].values() if r.get("useful")]
         if want:
-            sel = [r for r in reads if set(r.get("facets", [])) & set(want)]
+            sel = [r for r in reads if any(usable_for(r, f) for f in want if f in r.get("facets", []))]
             if sel:
                 return sel
         return reads
@@ -898,7 +952,7 @@ class ResearchManager:
             block = [f"[{r['id']}] {r.get('title') or r['domain']} — {r.get('publisher') or r['domain']}"
                      + (f" — {r['published']}" if r.get("published") else "") + f"\n   {r['url']}",
                      f"   المحاور: {', '.join(FACETS.get(f, {}).get('ar', f) for f in r.get('facets', []))} | {_completeness_ar(r)}"
-                     + (" | من الدراسة السابقة" if r.get("from_previous") else "")]
+                     + (" | من الدراسة السابقة" if r.get("from_previous") else "") + _relevance_ar(r)]
             if r.get("figures"):
                 block.append("   أرقام كما وردت: " + " ؛ ".join(r["figures"][:5]))
             if r.get("offers"):
@@ -930,7 +984,7 @@ class ResearchManager:
         """Everything the system extracted from one reading (text, tables, figures, offers), or None if no such id:
         what a figure attributed to [E#] is checked against."""
         rd = self._by_id().get(eid)
-        if not rd:
+        if not rd or not rd.get("useful", True):  # a page rejected as irrelevant or unproven proves nothing
             return None
         parts = [self._texts.get(normalize_url(rd["url"])) or rd.get("excerpt") or ""]
         parts += [str(x) for x in (rd.get("figures") or [])] + [json.dumps(x, ensure_ascii=False) for x in (rd.get("offers") or [])]
@@ -959,6 +1013,11 @@ class ResearchManager:
         out, size = [], 0
         for r in cited + rest:
             b = f"[{r['id']}] {r['url']} | {_completeness_ar(r)}"
+            if not r.get("useful", True):
+                b += f"\n  مرفوض دليلًا: {rel.LABEL_AR.get(r.get('label'), 'غير مفيد')}{_relevance_ar(r, short=True)} — لا يثبت أي رقم في الناتج"
+                out.append(b)
+                size += len(b)
+                continue
             if r.get("figures"):
                 b += "\n  أرقام كما وردت: " + " ؛ ".join(r["figures"][:4])
             if r.get("offers"):
@@ -1013,7 +1072,8 @@ class ResearchManager:
                   "headlines_only": "لم يجد البحث إلا عناوين أخبار تعذر الوصول إلى رابط ناشرها من الخادم، فلا نص مقروء",
                   "refused": "رفضت المواقع الوصول (حظر أو تسجيل دخول أو تحقق بشري) ولم يُتجاوز ذلك",
                   "opened_not_useful": "فُتحت صفحات لكن لم يكن فيها ما يخص المحور", "failed": "فشل فتح الروابط",
-                  "useful": "أدلة مفيدة لكنها دون حد الكفاية"}
+                  "useful": "أدلة مفيدة لكنها دون حد الكفاية",
+                  "insufficient_evidence": "توجد مصادر ذات صلة لكنها لا تثبت المعلومة (لا رقم في نصها، أو الرقم في العنوان فقط، أو قديمة)"}
         for f, s in (st.get("status") or {}).items():
             if s["status"] != "sufficient":
                 need = []
@@ -1022,7 +1082,8 @@ class ResearchManager:
                 if FACETS.get(f, {}).get("official") and s["critical"] and not s["official"] and st.get("country"):
                     need.append("لا مصدر رسمي")
                 out.append(f"{FACETS.get(f, {}).get('ar', f)}: {labels.get(s['status'], s['status'])}"
-                           f" (مقروء مفيد: {s['useful']}، نطاقات: {s['domains']})" + (f" — {'، '.join(need)}" if need else ""))
+                           f" (مقروء مفيد: {s['useful']}، نطاقات: {s['domains']}"
+                           + (f"، مرفوض لعدم الصلة: {s['rejected']}" if s.get("rejected") else "") + ")" + (f" — {'، '.join(need)}" if need else ""))
         return out
 
     def index(self, max_chars: int = 2500) -> str:
@@ -1065,3 +1126,27 @@ def annotate_unread(answer: str, read: set[str]) -> tuple[str, list[str]]:
         return m.group(0) + " [رابط لم يقرأه النظام]"
     out = _URL.sub(sub, answer or "")
     return out, marked
+
+
+def _label(r: dict, facet: str) -> str | None:
+    v = (r.get("relevance") or {}).get(facet) or (r.get("relevance") or {}).get("agent")
+    return v["label"] if v else None
+
+
+def usable_for(r: dict, facet: str) -> bool:
+    """May this reading be evidence for this facet? Readings recorded before the relevance gate keep their flag."""
+    if r.get("failure") or not r.get("useful"):
+        return False
+    lab = _label(r, facet)
+    return lab is None or lab in rel.USABLE
+
+
+def _relevance_ar(r: dict, short: bool = False) -> str:
+    rv = r.get("relevance") or {}
+    if not rv:
+        return ""
+    f, v = max(rv.items(), key=lambda kv: rel.RANK[kv[1]["label"]])
+    out = ("" if short else f" | الصلة: {v['label_ar']}") + (f" — {v['reasons'][0]}" if v.get("reasons") else "")
+    if v.get("unproven") and not short:
+        out += " | لا تثبت: " + "؛ ".join(v["unproven"][:2])
+    return out

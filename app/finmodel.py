@@ -95,7 +95,7 @@ class Checker:
                 text = self.evidence_text(f"E{n}")
                 if text and any(quality._near(value, v) for v in quality.values_in(text)):
                     return "evidence", f"[E{n}]", None
-            why = ("الدليل غير موجود في ما قرأه النظام" if not any(self.evidence_text(f"E{n}") for n in ids)
+            why = ("الدليل غير موجود في ما قرأه النظام أو رُفض لعدم صلته بالدراسة" if not any(self.evidence_text(f"E{n}") for n in ids)
                    else "الرقم غير موجود في نص الدليل")
             return "assumption", "افتراض (لم يثبت من " + "، ".join(f"E{n}" for n in ids) + ")", f"{why}: {t}"
         if "المستخدم" in t or t.lower().startswith("user"):

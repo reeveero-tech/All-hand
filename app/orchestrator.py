@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from .research import evidence
 from .research import manager as research_manager
 from .research import quality_gate
+from .research import relevance as research_relevance
 from . import assumptions, export, finmodel, intake, memory, quality
 from . import report as report_mod
 from .agents import ROLES, run_agent
@@ -575,7 +576,8 @@ def research_stats(r: Run) -> dict:
             "links_not_read": [u for u in in_answer if norm(u) not in read_n][:20],
             "numeric_lines": len(numeric), "numeric_lines_untagged": sum(1 for ln in numeric if not _TAGGED.search(ln)),
             "research_tasks": sum(1 for t in r.tasks.values() if t.get("role") == "researcher"),
-            "evidence": _evidence_summary(r)}
+            "evidence": _evidence_summary(r),
+            "relevance": research_relevance.summary(((r.research_state or {}).get("readings") or {}).values())}
 
 
 def _evidence_summary(r: Run) -> dict:
