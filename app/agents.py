@@ -174,14 +174,16 @@ async def run_agent(llm: LLM, role: Role, task: str, context: str, emit: EmitFn,
             continue
         if action == "final" or "output" in msg:
             return {"output": str(msg.get("output", "")), "confidence": float(msg.get("confidence") or 0.5),
-                    "sources": sources(msg.get("sources")), "read": list(read), "steps": steps}
+                    "sources": sources(msg.get("sources")), "read": list(read), "steps": steps,
+                    **({"model": msg["model"]} if msg.get("model") else {})}
         messages += [{"role": "assistant", "content": json.dumps(msg, ensure_ascii=False)},
                      {"role": "user", "content": "استدعِ أداة أو سلّم النتيجة النهائية بالشكل المحدد."}]
     messages.append({"role": "user", "content": "نفدت الخطوات. سلّم الآن أفضل نتيجة لديك بالشكل final."})
     try:
         msg = await llm.chat_json(messages)
         return {"output": str(msg.get("output", "")), "confidence": float(msg.get("confidence") or 0.4),
-                "sources": sources(msg.get("sources")), "read": list(read), "steps": steps}
+                "sources": sources(msg.get("sources")), "read": list(read), "steps": steps,
+                **({"model": msg["model"]} if msg.get("model") else {})}
     except ModelPaused:
         raise  # the model is unavailable: the run pauses; this is not the agent's answer
     except (ValueError, LLMError) as e:

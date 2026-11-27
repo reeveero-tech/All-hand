@@ -320,6 +320,9 @@ const LABEL = {
   clarification_needed: () => "ينتظر إجابتك عن أسئلة الطلب؛ لن يُستهلك أي رد قبلها",
   clarification_answered: (e) => `أجبتَ: ${Object.entries(e.answers || {}).map(([k, v]) => `${CLARIFY_LABEL[k] || k}: ${v}`).join("، ") || "—"}${e.assumed?.length ? `؛ وافتراض: ${e.assumed.map((k) => CLARIFY_LABEL[k] || k).join("، ")}` : ""}`,
   clarification_timeout: () => "انتهت مهلة الانتظار دون إجابة؛ لم يُنفَّذ شيء ولم يُستهلك أي رد",
+  financial_model: (e) => e.missing ? `${e.task}: لم يُرسل نموذج مالي، وتُراجع الأرقام كما كُتبت`
+    : e.ok ? `${e.task}: حسب النظام النموذج المالي من الافتراضات` + ((e.problems || []).length ? ` (أُعيد وسم ${e.problems.length} رقمًا افتراضًا)` : "")
+    : `${e.task}: نموذج مالي غير صالح: ${(e.errors || []).join("؛ ")}`,
   plan_adjusted: (e) => `حُذفت من الخطة مهمة التجميع ${(e.dropped || []).join("، ")}: ${e.reason || ""}`,
   plan_awaiting_approval: () => "الخطة جاهزة وتنتظر اعتمادك؛ لن يعمل أي وكيل قبل قرارك",
   plan_decision: (e) => ({approve: `اعتمدتَ الخطة${e.dropped?.length ? "، وأزلت " + e.dropped.join("، ") : ""}${e.note ? "، مع ملاحظة: " + e.note : ""}`,

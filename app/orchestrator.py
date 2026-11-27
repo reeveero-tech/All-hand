@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from .research import evidence
 from .research import manager as research_manager
 from .research import quality_gate
-from . import assumptions, export, intake, memory, quality
+from . import assumptions, export, finmodel, intake, memory, quality
 from . import report as report_mod
 from .agents import ROLES, run_agent
 from .llm import FREE_PROMPT_CHARS, LLM, LLMError, ModelPaused, _clip, extract_objects, looks_truncated
@@ -1195,6 +1195,10 @@ class Orchestrator:
                         return
                     continue
                 agent_id, calls = res.pop("_agent"), res.pop("_calls")
+                if finmodel.is_financial(t):
+                    self._fin_apply(t, res)
+                    await r.emit("financial_model", {"task": t["id"], "ok": not t["fin"]["errors"], "missing": t["fin"]["missing"],
+                                                     "errors": t["fin"]["errors"][:3], "problems": t["fin"]["problems"][:5]})
             read = res.get("read") if {"fetch_url", "web_search", "world_bank"} & set(role.tools) else None
             if read is not None and self.rm is not None:  # evidence the system read and handed to this agent
                 read = list(dict.fromkeys(list(read) + [x["url"] for x in self.rm.evidence_for(t["title"] + " " + t["instructions"])]))
@@ -1205,6 +1209,9 @@ class Orchestrator:
                 ev_text += ("\n\nنواقص بحث وثّقها النظام نفسه (غياب هذه البيانات ليس تقصيرًا من الوكيل: اقبل «غير متاح في الأدلة "
                             "المقروءة» لها ولا ترفض الناتج لغيابها، وارفض أي رقم مخمَّن وُضع مكانها):\n"
                             + "\n".join(f"- {g}" for g in self.rm.gaps()[:8]))
+            fin = t.get("fin") if finmodel.is_financial(t) else None
+            if fin and not fin["errors"]:
+                ev_text += "\n\n" + finmodel.REVIEW_NOTE
             self.step = f"review:{t['id']}:{attempt}"
             try:
                 with llm_phase("review"):
@@ -1218,6 +1225,8 @@ class Orchestrator:
                 v = apply_audit(v, t["output"])
                 v = quality.apply_rejected(v, self.reused_rejected(t["output"] + "\n" + "\n".join(calls)))
                 v = self.apply_stale(v, t["output"])
+                if fin:
+                    v = finmodel.verdict(v, fin)
             t["attempts"].append({"agent": agent_id, "steps": res["steps"], "confidence": res["confidence"],
                                   "sources": res["sources"], "read": res.get("read") or [], "verdict": v,
                                   "output": t["output"]})
@@ -1241,6 +1250,22 @@ class Orchestrator:
                                        "kept_attempt": t.get("best_attempt")})
         await self.mark("analysis", f"tasks pending: {self._pending_ids()}")
 
+    def _fin_budget(self) -> float | None:
+        ch = assumptions.budget_change(self.run.goal)
+        if ch:
+            return ch["new"]
+        found = assumptions.amounts(self.run.goal)
+        return found[0]["value"] if found else None
+
+    def _fin_apply(self, t: dict, res: dict) -> dict:
+        """Financial task: the code computes the model from the agent's tagged inputs (see app/finmodel.py)."""
+        chk = finmodel.Checker(self.rm.evidence_text if self.rm is not None else None, self.run.goal)
+        info = finmodel.apply(res, chk, self._fin_budget())
+        t["output"] = info["output"]
+        t["fin"] = {"errors": info["errors"], "missing": bool(info.get("missing")), "computed": info["computed"],
+                    "problems": (info["model"] or {}).get("problems") or []}
+        return info
+
     def _pending_ids(self) -> list[str]:
         return [tid for tid, t in self.run.tasks.items() if t.get("status") in ("pending", "running")]
 
@@ -1261,7 +1286,8 @@ class Orchestrator:
                 _c.append(str((data.get("input") or {}).get("program", "")))
             await r.emit(type_, {"task": t["id"], "agent": _a, **data})
 
-        instr = t["instructions"] + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
+        instr = t["instructions"] + (finmodel.INSTRUCTIONS if finmodel.is_financial(t) else "") \
+            + (f"\n\nمحاولة سابقة رُفضت من المدقق. صحّح التالي:\n{feedback}" if feedback else "")
         ctx = (f"طلب المستخدم الأصلي (للسياق؛ نفّذ مهمتك أنت فقط والتزم بموضوعه وأرقامه بعد أي تصحيح حسابي مذكور):\n{self.anchored()}"
                + (f"\n\n{context}" if context else ""))
         hook = None

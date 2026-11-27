@@ -926,6 +926,18 @@ class ResearchManager:
     def _by_id(self) -> dict:
         return {r["id"]: r for r in self.state["readings"].values() if r.get("id")}
 
+    def evidence_text(self, eid: str) -> str | None:
+        """Everything the system extracted from one reading (text, tables, figures, offers), or None if no such id:
+        what a figure attributed to [E#] is checked against."""
+        rd = self._by_id().get(eid)
+        if not rd:
+            return None
+        parts = [self._texts.get(normalize_url(rd["url"])) or rd.get("excerpt") or ""]
+        parts += [str(x) for x in (rd.get("figures") or [])] + [json.dumps(x, ensure_ascii=False) for x in (rd.get("offers") or [])]
+        if rd.get("tables"):
+            parts.append(self.tools.rx.tables_markdown(rd["tables"], 20000))
+        return "\n".join(parts)
+
     def link_ids(self, text: str) -> str:
         """Agents often cite evidence as "E15" or "(E15)": turn each into a link to the page the system read,
         so the reviewer and the final answer see the real source. Unknown ids are left as written."""
