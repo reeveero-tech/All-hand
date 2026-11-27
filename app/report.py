@@ -152,3 +152,9 @@ def verify_file(rec: dict, content: str | None, must_contain: list[str]) -> bool
     if len(data) != rec.get("bytes") or hashlib.sha256(data).hexdigest() != rec.get("sha256"):
         return False
     return all(m and m.strip()[:80] in content for m in must_contain)
+
+
+# Told to the final reviewer: these parts are written by code from the run's own records, so they are not claims to
+# disprove (production run 800730a01259: the reviewer called «كل الأقسام اجتازت المراجعة» an unsupported claim).
+SYSTEM_NOTE = ("قسما «حدود الدراسة» و«المصادر وربطها بالأقسام» يكتبهما النظام آليًا من سجل التشغيل (نتائج المراجعة ونواقص البحث "
+               "والصفحات المقروءة)، فليسا ادعاءات للنموذج اللغوي؛ لا ترفض الجواب بسببهما.")
