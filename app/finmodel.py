@@ -181,8 +181,8 @@ def compute(m: dict, budget: float | None = None) -> dict:
         out["scenarios"][s] = {
             "units": _r(u), "revenue": rev, "variable": var, "fixed": fixed, "profit": profit,
             "period_profit": total, "net": total - startup,
-            "roi_pct": round((total - startup) / startup * 100, 1) if startup else None,
-            "payback_months": round(startup / profit, 1) if profit > 0 and startup else None,
+            "roi_pct": round((total - startup) / startup * 100, 2) if startup else None,
+            "payback_months": round(startup / profit, 2) if profit > 0 and startup else None,
         }
     if budget:
         worst = out["scenarios"]["low"]["profit"]
@@ -197,13 +197,13 @@ def _f(x) -> str:
     if x is None:
         return "—"
     if isinstance(x, float) and not x.is_integer():
-        return f"{x:,.2f}"
+        return f"{x:,.2f}".rstrip("0").rstrip(".")  # -33.33, 2.6: never a padded -33.30
     return f"{int(x):,}"
 
 
 def render(m: dict, c: dict) -> str:
     cur, mo = m["currency"], m["months"]
-    L = ["**النموذج المالي (محسوب بالنظام من الافتراضات التالية؛ الحساب حتمي ولم يكتبه النموذج اللغوي)**", "",
+    L = ["**النموذج المالي (محسوب بالنظام: جداول حسبها كود AGOS من المدخلات التالية)**", "",
          "| المُدخل | القيمة | المصدر |", "|---|---|---|",
          f"| {m['price']['name']} | {_f(m['price']['value'])} {cur} | {m['price']['tag']} |",
          f"| {m['unit_cost']['name']} | {_f(m['unit_cost']['value'])} {cur} | {m['unit_cost']['tag']} |",
@@ -222,11 +222,20 @@ def render(m: dict, c: dict) -> str:
             ("فترة الاسترداد (أشهر)", "payback_months")]
     for label, k in rows:
         L.append(f"| {label} | " + " | ".join(_f(c["scenarios"][s][k]) for s in SCENARIOS) + " |")
+    L += ["", "طريقة الحساب: الإيرادات = الوحدات × سعر البيع. التكاليف المتغيرة = الوحدات × التكلفة المتغيرة للوحدة. "
+          "صافي الربح الشهري = الإيرادات − التكاليف المتغيرة − التكاليف الثابتة. ربح المدة = صافي الربح الشهري × عدد الأشهر. "
+          "الصافي بعد الاسترداد = ربح المدة − تكاليف التأسيس. العائد على الاستثمار = الصافي بعد الاسترداد ÷ تكاليف التأسيس. "
+          "فترة الاسترداد = تكاليف التأسيس ÷ صافي الربح الشهري (عند الربح فقط). "
+          "نقطة التعادل = التكاليف الثابتة ÷ هامش الوحدة، مقربة إلى أعلى عدد صحيح. لا تشمل الحسابات الضرائب ولا الاستهلاك ما لم تُذكر مدخلًا."]
     b = c.get("budget")
     if b:
-        L += ["", f"الميزانية {_f(b['value'])} {cur} (من المستخدم): التأسيس يستهلك {_f(b['startup_share_pct'])}٪، "
-              f"ويتبقى {_f(b['left_after_startup'])} {cur}. المطلوب في السيناريو المتحفظ (التأسيس وتغطية الخسائر الشهرية) "
-              f"{_f(b['need_worst_case'])} {cur}: " + ("تكفيه الميزانية." if b["fits"] else "**لا تكفيه الميزانية.**")]
+        low = c["scenarios"]["low"]["profit"]
+        need = (f"السيناريو المتحفظ رابح شهريًا، فالمطلوب من الميزانية هو تكاليف التأسيس وحدها ({_f(b['need_worst_case'])} {cur})"
+                if low >= 0 else
+                f"السيناريو المتحفظ يخسر {_f(-low)} {cur} شهريًا، فالمطلوب تكاليف التأسيس وتغطية الخسارة {mo} شهرًا: "
+                f"{_f(c['startup'])} + {_f(-low)} × {mo} = {_f(b['need_worst_case'])} {cur}")
+        L += ["", f"الميزانية {_f(b['value'])} {cur} (من المستخدم): التأسيس يستهلك {_f(b['startup_share_pct'])}٪ منها، "
+              f"ويتبقى {_f(b['left_after_startup'])} {cur}. {need}، " + ("وتكفيه الميزانية." if b["fits"] else "**ولا تكفيه الميزانية.**")]
     if m["problems"]:
         L += ["", "تنبيهات تحقق النظام من المصادر (أعيد وسم هذه الأرقام افتراضات):"] + [f"- {p}" for p in m["problems"][:8]]
     return "\n".join(L)

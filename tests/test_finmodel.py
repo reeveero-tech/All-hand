@@ -42,7 +42,7 @@ def test_computation_is_exact():
     base = c["scenarios"]["base"]
     assert (base["revenue"], base["variable"], base["profit"]) == (45000, 20000, 10000)
     assert base["period_profit"] == 120000 and base["net"] == 30000
-    assert base["roi_pct"] == 33.3 and base["payback_months"] == 9.0
+    assert base["roi_pct"] == 33.33 and base["payback_months"] == 9.0
     low = c["scenarios"]["low"]
     assert low["profit"] == 18000 - 8000 - 15000 == -5000 and low["payback_months"] is None
     assert c["budget"]["need_worst_case"] == 90000 + 5000 * 12 and c["budget"]["fits"] is True
@@ -138,3 +138,32 @@ def test_non_financial_task_is_untouched():
     run = Run(goal=GOAL, llm_public={"provider": "fake"}, max_agents=10, clarify=False)
     asyncio.run(Orchestrator(run, fake).execute())
     assert "fin" not in run.tasks["t1"] and run.tasks["t1"]["output"] == "ناتج الوكيل"
+
+
+def test_method_and_budget_need_are_explicit():
+    loss = {**MODEL, "units_per_month": {"low": 1000, "base": 5000, "high": 9000, "tag": "افتراض: x"}}
+    gain = {**MODEL, "units_per_month": {"low": 4000, "base": 5000, "high": 9000, "tag": "افتراض: x"}}
+    for m_raw, phrase in [(gain, "تكاليف التأسيس وحدها"), (loss, "وتغطية الخسارة 12 شهرًا")]:
+        m, _ = finmodel.normalize(m_raw, chk())
+        out = finmodel.render(m, finmodel.compute(m, 200000))
+        assert "طريقة الحساب" in out and phrase in out
+        assert audit_arithmetic(out) == [] and audit_tables(out) == []
+    m, _ = finmodel.normalize(loss, chk())
+    assert "90,000 + 10,000 × 12 = 210,000" in finmodel.render(m, finmodel.compute(m, 200000))
+    assert finmodel.compute(m, 200000)["budget"]["fits"] is False
+
+
+def test_display_is_not_padded_and_roi_keeps_two_decimals():
+    assert finmodel._f(-33.33) == "-33.33" and finmodel._f(2.6) == "2.6" and finmodel._f(5.0) == "5"
+    m, _ = finmodel.normalize({**MODEL, "units_per_month": {"low": 4000, "base": 6000, "high": 10000, "tag": "افتراض: x"},
+                               "fixed_monthly": [{"name": "ثابتة", "value": 15000, "tag": "افتراض: x"}],
+                               "startup": [{"name": "تأسيس", "value": 90000, "tag": "افتراض: x"}]}, chk())
+    c = finmodel.compute(m)
+    assert c["scenarios"]["low"]["roi_pct"] == -33.33 and c["scenarios"]["high"]["payback_months"] == 2.57
+
+
+def test_user_tag_check_is_per_sentence():
+    from app import quality
+    para = ("الوحدات منخفض 4,000 وأساسي 6,000 (افتراض: للمقارنة). سعر العبوة والتكاليف والميزانية مأخوذة من المستخدم.")
+    assert quality.false_user_tags(para, "سعر 9 ريال") == []
+    assert quality.false_user_tags("الطلب 50,000 عبوة (من المستخدم).", "سعر 9 ريال")

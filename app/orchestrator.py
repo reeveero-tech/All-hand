@@ -1459,8 +1459,10 @@ class Orchestrator:
                                                          for u in e.get("read") or []]) if self.rm is not None else set()
         gaps = self.rm.gaps() if self.rm is not None else []
         summary = await self.write_summary(goal, body)
+        fin = any((t.get("fin") or {}).get("computed") for t in tasks)
         check = {"id": "final", "instructions": goal + (
-                     "\n\nيجب أن يذكر الجواب التصحيح الحسابي صراحةً." if self.note else ""),
+                     "\n\nيجب أن يذكر الجواب التصحيح الحسابي صراحةً." if self.note else "") + "\n\n" + report_mod.SYSTEM_NOTE
+                 + ("\n" + finmodel.REVIEW_NOTE if fin else ""),
                  "acceptance": "يجيب عن طلب المستخدم كاملًا ومتسقًا مع نتائج الفريق بلا ادعاءات مختلقة"}
 
         def compose(summary, body):

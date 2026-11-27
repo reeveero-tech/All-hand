@@ -346,7 +346,9 @@ def false_user_tags(text: str, user_text: str) -> list[str]:
     """Lines that credit the user with figures the user never gave (a mislabeled source is a fabricated one)."""
     user_values = values_in(user_text or "")
     out = []
-    for raw in (text or "").splitlines():
+    # Sentence by sentence: «الوحدات 4,000 (افتراض). السعر والتكلفة من المستخدم.» credits the user with no figure
+    # (production run 800730a01259 flagged that paragraph as a whole).
+    for raw in (seg for ln in (text or "").splitlines() for seg in re.split(r"(?<=[.؟!])\s+", ln)):
         line = raw.strip()
         if not _USER_TAG.search(line) or re.search(r"[=×*÷]|محسوب", line):
             continue
