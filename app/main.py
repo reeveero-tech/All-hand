@@ -20,7 +20,7 @@ from fastapi.responses import Response, FileResponse, JSONResponse, StreamingRes
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import assumptions, export, memory, store, tools
+from . import assumptions, export, intake, memory, store, tools
 from . import report as report_mod
 from .research import browser, documents, evidence
 from .research import manager as research_manager
@@ -80,12 +80,18 @@ class RunRequest(BaseModel):
     resume_from: str | None = None  # id of one of your stopped runs: reuse its plan and verified outputs
     scenario: bool = False  # test / hypothetical run: memory keeps it, but never as facts about the user
     approve_plan: bool = False  # show the plan and wait for the owner's approval before any agent works
+    clarify: bool = True  # ask before planning when the request misses essentials (product, budget); see app/intake.py
 
 
 class PlanDecision(BaseModel):
     action: str = Field(pattern="^(approve|reject)$")
     drop: list[str] = Field(default_factory=list, max_length=50)  # task ids to leave out
     note: str | None = Field(default=None, max_length=2000)  # an instruction every agent must follow
+
+
+class Clarification(BaseModel):
+    answers: dict[str, str] = Field(default_factory=dict, max_length=10)  # question key -> the owner's answer
+    assume: bool = False  # continue without the missing details: the team chooses, justifies and labels assumptions
 
 
 class MemoryEdit(BaseModel):
@@ -212,13 +218,14 @@ async def create_run(req: RunRequest, x_client_key: str | None = Header(default=
     cap = {"free": 25, "platform": 500}.get(cfg.provider, DEFAULT_MAX_AGENTS)
     run = Run(goal=prior["goal"] if prior else req.goal.strip(), llm_public=cfg.public(), max_agents=min(req.max_agents or cap, cap),
               can_exec=cfg.provider == "platform" or os.environ.get("ALLOW_CODE_EXEC") == "1",
-              memory_space=req.memory_space, owner=owner, approve_plan=req.approve_plan and not prior,
+              memory_space=req.memory_space, owner=owner, approve_plan=req.approve_plan and not prior, clarify=req.clarify,
               scenario=req.scenario or any(bool(d and d.get("scenario")) for d in (prior, prev)))  # tests stay tests
     if prior:  # resume keeps the conversation it belonged to
         run.follow_up_of, run.thread_id, run.context = prior.get("follow_up_of"), prior.get("thread_id"), prior.get("context") or ""
         run.goal_checks = prior.get("goal_checks")
         run.prior_check = prior.get("prior_check")
         run.delta = prior.get("delta")
+        run.brief = prior.get("brief")  # an unanswered intake question is asked again; an answered one is not
     elif prev:
         run.follow_up_of = prev["id"]
         run.thread_id = prev.get("thread_id") or prev["id"]
@@ -357,6 +364,23 @@ async def decide_plan(run_id: str, d: PlanDecision, x_client_key: str | None = H
     run.plan_decision = {"action": d.action, "dropped": drop, "note": (d.note or "").strip() or None, "at": time.time()}
     run._decision.set()
     return {"ok": True, "decision": run.plan_decision}
+
+
+@app.post("/api/runs/{run_id}/clarify")
+async def clarify_run(run_id: str, c: Clarification, x_client_key: str | None = Header(default=None)):
+    """The owner answers the intake questions, or chooses to continue with labelled assumptions."""
+    run = _live(run_id, _owner(x_client_key))
+    if run.awaiting != "clarification" or not run._decision or run._decision.is_set():
+        raise HTTPException(409, "لا توجد أسئلة تنتظر إجابتك في هذه المهمة.")
+    answers = {k: v.strip() for k, v in c.answers.items() if k in intake.QUESTIONS and v and v.strip()}
+    if any(len(v) > 300 for v in answers.values()):
+        raise HTTPException(400, "الإجابة طويلة؛ 300 حرف لكل سؤال كحد أقصى.")
+    missing = [k for k in (run.brief or {}).get("blocking") or [] if k not in answers]
+    if missing and not c.assume:
+        raise HTTPException(400, "أجب عن: " + "، ".join(intake.LABEL[k] for k in missing) + "، أو اختر المتابعة بافتراضات.")
+    run.clarification = {"action": "answer", "answers": answers, "assume": c.assume, "at": time.time()}
+    run._decision.set()
+    return {"ok": True}
 
 
 @app.post("/api/runs/{run_id}/cancel")
