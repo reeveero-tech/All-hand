@@ -1200,7 +1200,8 @@ class Orchestrator:
                 if finmodel.is_financial(t):
                     self._fin_apply(t, res)
                     await r.emit("financial_model", {"task": t["id"], "ok": not t["fin"]["errors"], "missing": t["fin"]["missing"],
-                                                     "errors": t["fin"]["errors"][:3], "problems": t["fin"]["problems"][:5]})
+                                                     "errors": t["fin"]["errors"][:3], "problems": t["fin"]["problems"][:5],
+                                                     "raw": t["fin"].get("raw")})
             read = res.get("read") if {"fetch_url", "web_search", "world_bank"} & set(role.tools) else None
             if read is not None and self.rm is not None:  # evidence the system read and handed to this agent
                 read = list(dict.fromkeys(list(read) + [x["url"] for x in self.rm.evidence_for(t["title"] + " " + t["instructions"])]))
@@ -1265,7 +1266,7 @@ class Orchestrator:
         info = finmodel.apply(res, chk, self._fin_budget())
         t["output"] = info["output"]
         t["fin"] = {"errors": info["errors"], "missing": bool(info.get("missing")), "computed": info["computed"],
-                    "problems": (info["model"] or {}).get("problems") or []}
+                    "problems": (info["model"] or {}).get("problems") or [], "raw": info.get("raw")}
         return info
 
     def _pending_ids(self) -> list[str]:

@@ -7,6 +7,8 @@ that did not contain them.
 import asyncio
 import json
 
+import pytest
+
 from app import finmodel
 from app.orchestrator import Orchestrator, Run, apply_audit, audit_arithmetic, audit_tables
 from tests.test_core import FakeLLM, plan_of
@@ -167,3 +169,42 @@ def test_user_tag_check_is_per_sentence():
     para = ("الوحدات منخفض 4,000 وأساسي 6,000 (افتراض: للمقارنة). سعر العبوة والتكاليف والميزانية مأخوذة من المستخدم.")
     assert quality.false_user_tags(para, "سعر 9 ريال") == []
     assert quality.false_user_tags("الطلب 50,000 عبوة (من المستخدم).", "سعر 9 ريال")
+
+
+# ------------------------------------------------------------------ production run 755e194ad2fd
+def test_placeholder_never_reaches_the_report_when_the_block_is_missing():
+    # Attempt 1 wrote the {{النموذج_المالي}} line and no model field; that attempt was kept and the final file showed
+    # the raw placeholder where the tables should be.
+    info = finmodel.apply({"output": "تحليل\n\n{{النموذج_المالي}}\n\nخلاصة"}, chk(), None)
+    assert "{{" not in info["output"] and "النموذج المالي لم يُحسب" in info["output"]
+    assert not info["missing"]  # the agent meant to send a model: the attempt fails with feedback
+    v = finmodel.verdict({"pass": True, "score": 9, "issues": []}, info)
+    assert not v["pass"] and "{{النموذج_المالي}}" in v["issues"][0]
+
+
+def test_placeholder_never_reaches_the_report_when_the_block_is_invalid():
+    bad = {**MODEL, "units_per_month": {"low": "قليل", "base": "متوسط", "high": "كثير"}}
+    info = finmodel.apply({"output": "تحليل\n{{النموذج_المالي}}", "model": bad}, chk(), None)
+    assert info["errors"] and "{{" not in info["output"] and "النموذج المالي لم يُحسب" in info["output"]
+    assert "قليل" in info["errors"][0] and "units_per_month" in info["raw"]  # what was received is kept for diagnosis
+
+
+@pytest.mark.parametrize("units", [
+    {"low": {"value": 2000, "tag": "افتراض: x"}, "base": {"value": 5000, "tag": "افتراض: x"},
+     "high": {"value": 9000, "tag": "افتراض: x"}},
+    {"low": "2,000 عبوة", "base": "5,000 عبوة", "high": "9,000 عبوة", "tag": "افتراض: x"},
+    {"متحفظ": 2000, "أساسي": 5000, "متفائل": 9000, "tag": "افتراض: x"},
+    {"conservative": 2000, "base": 5000, "optimistic": 9000, "tag": "افتراض: x"},
+    [2000, 5000, 9000],
+])
+def test_common_forms_of_monthly_units_are_read(units):
+    info = finmodel.apply({"output": "{{النموذج_المالي}}", "model": {**MODEL, "units_per_month": units}}, chk(), None)
+    assert not info["errors"], info["errors"]
+    assert info["model"]["units"] == {"low": 2000, "base": 5000, "high": 9000}
+
+
+@pytest.mark.parametrize("bad", ["8,000–12,000 عبوة", "نحو عشرة آلاف", None, -5])
+def test_ranges_words_and_negatives_are_still_refused(bad):
+    info = finmodel.apply({"output": "x", "model": {**MODEL, "units_per_month": {"low": bad, "base": 5000, "high": 9000}}},
+                          chk(), None)
+    assert info["errors"] and info["model"] is None
