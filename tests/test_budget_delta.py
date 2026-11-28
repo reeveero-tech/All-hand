@@ -162,3 +162,80 @@ def test_api_marks_a_budget_follow_up_as_delta(monkeypatch):
     r = c.post("/api/runs", json={"goal": "أضف قسمًا عن الموردين", "follow_up_of": prev["id"]}, headers=KEY)
     assert main.RUNS[r.json()["id"]].delta is None  # other follow-ups keep the normal path
     main.RUNS.clear()
+
+
+# ---- production follow-up e55990c2a898 (official scenario, docs/product/ACCEPTANCE_SCENARIO.md) ---------------------
+FOLLOW = "عدّل الدراسة على أساس ميزانية جديدة 300 ألف ريال بدل 200 ألف ريال، وأعد حساب ما يتأثر بالميزانية فقط."
+
+
+@pytest.mark.parametrize("goal,new", [
+    (FOLLOW, 300000),  # took 200 ألف (the old value, written last) as the new budget
+    ("اجعل الميزانية 300 ألف ريال بدلًا من 200 ألف", 300000),
+    ("الميزانية 300 ألف ريال بدلا من الميزانية السابقة 200 ألف", 300000),
+    ("change the budget from 200k to 350k SAR", 350000),
+    ("عدّل الميزانية من 200 ألف إلى ١٫٥ مليون ريال", 1500000),
+])
+def test_the_new_budget_is_the_one_marked_new_not_the_last_one(goal, new):
+    assert A.budget_change(goal)["new"] == new
+
+
+# The four root tasks the production planner wrote: every one repeats the budget as context.
+REAL = [
+    {"id": "t1", "title": "بحث المنافسين في السعودية", "instructions": "ابحث عن أبرز منافسي القهوة الباردة المعلبة في "
+     "السعودية، بما يشمل العلامات والمنتجات وقنوات البيع والتموضع. المشروع قهوة باردة معلبة وميزانيته 200,000 ريال؛ "
+     "السوق السعودية. استشهد بروابط حديثة، وميّز بين ما تحقق منه وما لم تجده.",
+     "output": "الميزانية **200,000 ريال** (من المستخدم). لا أستطيع تقديم أسماء منافسين متحققة.", "depends_on": []},
+    {"id": "t2", "title": "تحليل الأسعار والطلب", "instructions": "ابحث عن أسعار القهوة الباردة المعلبة وأسعار المنتجات "
+     "البديلة ذات الصلة في السوق السعودية، ومؤشرات الطلب المنشورة علنًا. موضوع الدراسة: إطلاق قهوة باردة معلبة بميزانية "
+     "200,000 ريال. أرفق مصادر وتواريخ.", "output": "ميزانية الإطلاق **200,000 ريال**. السعر غير متاح.", "depends_on": []},
+    {"id": "t3", "title": "خطة إطلاق قابلة للتنفيذ", "instructions": "ضع خطة إطلاق عملية بميزانية قصوى 200,000 ريال.",
+     "output": "", "depends_on": ["t1", "t2"]},
+    {"id": "t4", "title": "التقرير المالي للمشروع", "instructions": "أعد تصورًا ماليًا أوليًا ضمن ميزانية 200,000 ريال.",
+     "output": "", "depends_on": ["t1", "t2"]},
+]
+
+
+def test_budget_stated_as_context_does_not_make_research_budget_dependent():
+    aff = A.affected(REAL, 200000)
+    assert aff["direct"] == ["t3", "t4"] and aff["unchanged"] == ["t1", "t2"]
+
+
+def test_a_task_whose_own_subject_is_the_budget_is_still_affected():
+    t = {"id": "x", "title": "تحليل القنوات", "instructions": "وزّع الميزانية على القنوات. احسب العائد لكل قناة.",
+         "output": "", "depends_on": []}
+    assert A.affected([t], 200000)["direct"] == ["x"]
+
+
+def test_kept_results_say_the_old_budget_is_the_previous_one():
+    out = A.mark_previous(REAL[0]["output"], 200000, 300000, "ريال")
+    assert "الميزانية السابقة" in out and "300,000" in out and not A.stale_lines(out, 200000, 300000)
+    assert A.mark_previous("لا ميزانية هنا", 200000, 300000) == "لا ميزانية هنا"
+
+
+class Restating(Budgeted):
+    """Like production: the independent task restates the budget it was given as context."""
+
+    async def chat(self, messages, temperature=0.3, max_tokens=2000):
+        out = await super().chat(messages, temperature, max_tokens)
+        if messages[0]["content"].startswith("أنت وكيل") and "مهمة-a" in messages[1]["content"]:
+            d = json.loads(out)
+            d["output"] += "\nالميزانية 200,000 ريال (من المستخدم)."
+            out = json.dumps(d, ensure_ascii=False)
+        return out
+
+
+CTX = plan_of({**task("a", "تحليل المنافسين والأسعار"), "instructions": "مهمة-a: تحليل المنافسين. المشروع بميزانية 200,000 ريال."},
+              task("b", "الخطة المالية والعائد"), task("c", "خطة التنفيذ", deps=["b"]), task("d", "تقدير الطلب"))
+
+
+def test_follow_up_of_a_study_that_repeats_the_budget_recomputes_only_dependent_results():
+    m = Restating(CTX)
+    run = asyncio.run(_run(m, "ادرس فرصة إطلاق منتج بميزانية 200 ألف ريال واكتب تقريرًا ماليًا"))
+    assert run.status == "done"
+    prev = stored(run)
+    m2 = Restating(CTX)
+    run2 = asyncio.run(_run(m2, "عدّل الدراسة على أساس ميزانية جديدة 300 ألف ريال بدل 200 ألف ريال", prev=prev))
+    assert run2.delta["change"]["new"] == 300000
+    assert sorted(k for k in m2.kinds if k.startswith("agent")) == ["agent:b", "agent:c"]
+    assert run2.tasks["a"]["reused"] and "الميزانية السابقة" in run2.tasks["a"]["output"]
+    assert not A.stale_lines(run2.tasks["a"]["output"], 200000, 300000)

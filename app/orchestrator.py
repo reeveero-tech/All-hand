@@ -1096,7 +1096,9 @@ class Orchestrator:
             t["depends_on"] = [x for x in (o.get("depends_on") or []) if x in ids]
             keep = o["id"] not in aff["all"] and o.get("status") in ("done", "failed") and bool(o.get("output"))
             if keep:
-                t.update(status=o["status"], output=o["output"], attempts=list(o.get("attempts") or []), reused=True,
+                kept = assumptions.mark_previous(o["output"], old.get("value"), d["change"].get("new"),
+                                                 d["change"].get("unit") or old.get("unit"))
+                t.update(status=o["status"], output=kept, attempts=list(o.get("attempts") or []), reused=True,
                          best_attempt=o.get("best_attempt"), settled=o.get("status") == "failed")
                 reused.append(t["id"])
                 if t["decompose"]:
