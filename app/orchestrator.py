@@ -1106,7 +1106,14 @@ class Orchestrator:
                         if str(sub.get("id", "")).startswith(t["id"] + "."):
                             r.tasks[sub["id"]] = sub
             else:
-                t["instructions"] = (o.get("instructions") or "") + assumptions.instruction(d["change"], d.get("old"), o.get("output") or "")
+                nv = d["change"].get("new")
+                t["instructions"] = (assumptions.rebase(o.get("instructions") or "", old.get("value"), nv)
+                                     + assumptions.instruction(d["change"], d.get("old"), o.get("output") or "",
+                                                               financial=finmodel.is_financial(o)))
+                t["acceptance"] = assumptions.rebase(o.get("acceptance") or "", old.get("value"), nv)
+                # The appended note names costs and break-even; it must not turn a launch plan into a financial
+                # model task (production 3522d31fa39e asked the launch plan t3 for a model field).
+                t["financial"] = finmodel.is_financial(o)
                 t.update(status="pending", output="", attempts=[], budget_dependent=o["id"] in aff["all"])
             t.update(depth=0, parent=None)
             tasks.append(t)

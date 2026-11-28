@@ -163,11 +163,33 @@ def mark_previous(text: str, old: float | None, new: float | None, unit: str | N
     return "\n".join(ln + note if ln.strip()[:200] in lines else ln for ln in text.splitlines())
 
 
-def instruction(change: dict, old: dict | None, previous_output: str) -> str:
+def rebase(text: str, old: float | None, new: float | None) -> str:
+    """The task text a recomputed task is judged by, moved to the new budget. Production follow-up 3522d31fa39e kept
+    «بميزانية قصوى 200,000 ريال» in the instructions and «بنود ميزانية مجموعها 200,000 ريال» in the acceptance
+    criterion; the reviewer then failed the 300,000 answers for not meeting the 200,000 criterion."""
+    if not text or not old or not new or old == new:
+        return text
+    t = text.translate(_AR)
+
+    def sub(m: re.Match) -> str:
+        v = _num(m.group(1), m.group(2))
+        if v is None or abs(v - old) > 0.5 or not (m.group(2) or m.group(3)):
+            return m.group(0)
+        tail = m.group(0)[len(m.group(0).rstrip()):]
+        return f"{fmt(new)} {m.group(3)}{tail}" if m.group(3) else f"{fmt(new)}{tail}"
+    out = _AMOUNT.sub(sub, t)
+    return text if out == t else out
+
+
+def instruction(change: dict, old: dict | None, previous_output: str, financial: bool = False) -> str:
     unit = change.get("unit") or (old or {}).get("unit") or ""
     was = f" بدلًا من {fmt(old['value'])} {unit}".rstrip() if old else ""
+    how = ("أرسل مدخلات النموذج المالي بالميزانية الجديدة في الحقل model كما هو مطلوب أعلاه، ولا تحسب جداوله بنفسك. "
+           if financial else "واحسب الأرقام بالحاسبة. ")
     return (f"\n\nتحديث متابعة (ملزم): الميزانية الجديدة {fmt(change['new'])} {unit} (من المستخدم){was}. "
+            "عُدّل مبلغ الميزانية في نص المهمة ومعيار قبولها إلى القيمة الجديدة؛ وكل رقم آخر فيهما مشتق من الميزانية السابقة "
+            "(مثل مقابلها بعملة أخرى) أعد حسابه من الجديدة. "
             "أعد حساب كل رقم يعتمد على الميزانية (التوزيع، التكاليف، الإيراد المتوقع إن ارتبط بالإنفاق، نقطة التعادل، "
-            "العائد، مدة الاسترداد، حجم التنفيذ) بالقيمة الجديدة، واحسب الأرقام بالحاسبة. لا تُبقِ أي رقم مبني على الميزانية "
+            "العائد، مدة الاسترداد، حجم التنفيذ) بالقيمة الجديدة، " + how + "لا تُبقِ أي رقم مبني على الميزانية "
             "السابقة؛ إن ذكرتها فاذكرها صراحة بأنها «السابقة». أبقِ ما لا يتأثر بالميزانية كما هو بمصادره."
             + (f"\n\nناتجك السابق لهذه المهمة (عدّل ما يتأثر بالميزانية فقط):\n{previous_output[:3500]}" if previous_output else ""))
