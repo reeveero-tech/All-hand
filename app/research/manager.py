@@ -683,7 +683,7 @@ class ResearchManager:
     def facet_status(self, facet: str) -> dict:
         st = self.state
         cands = [c for c in (st.get("candidates") or {}).values() if facet in c["facets"]]
-        reads = [r for r in st["readings"].values() if facet in r.get("facets", [])]
+        reads = [r for r in unique_readings(st) if facet in r.get("facets", [])]
         fails = [r for r in (st.get("failed") or {}).values() if facet in (r.get("facets") or [])
                  and r.get("method") != "api:worldbank"]  # "no indicator value" is not a failed source for the facet
         useful = [r for r in reads if usable_for(r, facet)]
@@ -794,7 +794,7 @@ class ResearchManager:
             await asyncio.gather(*jobs)
             opens = []
             for f in todo:
-                have = sum(1 for r in st["readings"].values() if f in r.get("facets", []) and usable_for(r, f))
+                have = sum(1 for r in unique_readings(st) if f in r.get("facets", []) and usable_for(r, f))
                 n = max(0, self.budget.per_facet_opens - (have if rnd == 1 else 0))
                 if rnd > 1:
                     n = min(n, 2)
@@ -927,7 +927,7 @@ class ResearchManager:
     def evidence_for(self, text: str) -> list[dict]:
         st = self.state
         want = [f for f in st["facets"] if re.search(FACETS.get(f, {}).get("terms", "^$"), text or "", re.I)]
-        reads = [r for r in st["readings"].values() if r.get("useful")]
+        reads = [r for r in unique_readings(st) if r.get("useful")]
         if want:
             sel = [r for r in reads if any(usable_for(r, f) for f in want if f in r.get("facets", []))]
             if sel:
@@ -1089,7 +1089,7 @@ class ResearchManager:
     def index(self, max_chars: int = 2500) -> str:
         """Compact list of read evidence for the synthesizer: id, title, URL, reading type."""
         rows = []
-        for r in sorted(self.state["readings"].values(), key=lambda r: r.get("id", "")):
+        for r in sorted(unique_readings(self.state), key=lambda r: r.get("id", "")):
             if r.get("useful"):
                 rows.append(f"[{r['id']}] {r.get('title', '')[:70]} — {r['url']} — {_completeness_ar(r)}")
         txt = "\n".join(rows)
@@ -1126,6 +1126,15 @@ def annotate_unread(answer: str, read: set[str]) -> tuple[str, list[str]]:
         return m.group(0) + " [رابط لم يقرأه النظام]"
     out = _URL.sub(sub, answer or "")
     return out, marked
+
+
+def unique_readings(state: dict) -> list:
+    """One entry per document. A page reached at two addresses (a DOI and the page it redirects to, run 755e194ad2fd)
+    is stored under both keys with the same id; counting it twice made a facet look covered by two sources."""
+    out: dict = {}
+    for k, r in ((state or {}).get("readings") or {}).items():
+        out.setdefault(r.get("id") or k, r)
+    return list(out.values())
 
 
 def _label(r: dict, facet: str) -> str | None:

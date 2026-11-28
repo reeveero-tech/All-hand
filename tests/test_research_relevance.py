@@ -261,3 +261,55 @@ def test_replay_of_production_run_rejects_what_it_wrongly_used(subject):
 def test_readings_saved_before_the_gate_keep_their_flag():
     old = {"url": "https://a.example", "useful": True, "facets": ["prices"]}
     assert manager.usable_for(old, "prices") and not manager.usable_for({**old, "useful": False}, "prices")
+
+
+# ------------------------------------------------------------------ production run 755e194ad2fd (gate v1 -> v2)
+FIX2 = json.loads((Path(__file__).parent / "fixtures_run_755e194ad2fd_readings.json").read_text())
+NO_EN = rel.Topic({"ar": "قهوة باردة معلبة", "en": ""}, SAU, FACETS, TODAY)  # what intake gave the run
+
+
+@pytest.mark.parametrize("topic", [COFFEE, NO_EN])
+@pytest.mark.parametrize("page", FIX2["pages"], ids=lambda p: p["id"])
+def test_medical_and_farming_pages_about_coffee_are_not_market_evidence(topic, page):
+    # A dental study on coffee and local anaesthesia (E8) and an FAO guide to growing Arabica beans (E5) were taken
+    # as demand evidence for canned cold coffee in Saudi Arabia, and the demand facet was reported "sufficient".
+    for facet in ("demand", "consumers", "costs", "market_size", "prices", None):
+        v = rel.assess(topic, facet, page["url"], page["title"], page["text"], figures=page["figures"],
+                       cls=page["class"], method=page["method"])
+        assert v["label"] not in rel.USABLE, (facet, v["label"], v["reasons"])
+        assert v["reasons"] and v["unproven"]
+
+
+def test_the_category_word_alone_does_not_make_a_page_about_the_product():
+    # «coffee» is the category; «canned cold coffee» is the product. A page on hot coffee beans is context at most.
+    v = judge("prices", "https://shop.example.sa/beans", "Arabica coffee beans 1 kg",
+              "Arabica coffee beans, medium roast, 1 kg bag. Price 89 SAR. Delivery across Riyadh.",
+              figures=["Price 89 SAR"])
+    assert v["label"] != "direct"
+    w = judge("prices", "https://shop.example.sa/can", "Cold brew coffee can 240 ml",
+              "Canned cold brew coffee, 240 ml. Price 7.95 SAR. Delivery across Riyadh.", figures=["Price 7.95 SAR"])
+    assert w["label"] == "direct"
+
+
+@pytest.mark.parametrize("facet,title,text,kw", [
+    ("demand", "Saudi Arabia ready-to-drink coffee market",
+     "Demand for ready-to-drink coffee in Saudi Arabia grew 9% in 2025 as health-conscious consumers switched from "
+     "soda; supermarket sales volume reached 40 million cans, led by brands sold in hypermarkets.",
+     {"figures": ["grew 9% in 2025", "40 million cans"]}),
+    ("regulation", "SFDA limits for acrylamide and contaminants in coffee drinks",
+     "The Saudi Food and Drug Authority sets laboratory limits for acrylamide and other contaminants in coffee and "
+     "ready-to-drink beverages; toxic residues above the standard bar the product from the market.", {}),
+])
+def test_market_pages_with_a_few_health_or_lab_words_are_kept(facet, title, text, kw):
+    assert judge(facet, "https://www.example.sa/x", title, text, **kw)["label"] in rel.USABLE
+
+
+def test_one_document_at_two_addresses_counts_once(on):  # noqa: F811
+    m, g, _ = _two_pages(on)
+    st = m.state
+    before, counts = m.facet_status("prices"), rel.summary(st["readings"].values())
+    st["readings"]["https://doi.org/10.1/x"] = g  # the DOI that redirected to the shop page: same reading, same id
+    after = m.facet_status("prices")
+    assert (after["useful"], after["domains"], after["read"]) == (before["useful"], before["domains"], before["read"])
+    assert rel.summary(st["readings"].values()) == counts
+    assert quality_gate.evaluate(st, {}, "", today=TODAY)["checks"]["relevance"]["value"] == counts

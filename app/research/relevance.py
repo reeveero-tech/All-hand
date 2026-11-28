@@ -23,7 +23,7 @@ from __future__ import annotations
 import re
 from datetime import date
 
-VERSION = "1"  # shown in /health, so a deploy can be verified by content
+VERSION = "2"  # shown in /health, so a deploy can be verified by content
 USABLE = ("direct", "supporting")
 LABEL_AR = {"direct": "ذات صلة مباشرة", "supporting": "ذات صلة مساندة", "weak": "ضعيفة الصلة",
             "irrelevant": "غير ذات صلة", "insufficient": "غير كافية لإثبات المعلومة"}
@@ -59,6 +59,23 @@ CATEGORIES = [
      ["مطعم", "مطاعم", "مقهي", "مقاهي", "cafe", "cafes", "restaurant", "restaurants", "food service"]),
 ]
 
+# Fields that use the product's category word without being about its market (production run 755e194ad2fd read a
+# dental study on coffee and local anaesthesia and an FAO guide to growing Arabica beans, and took both as demand
+# evidence for canned cold coffee). Several distinct terms of one field, with no stronger market framing, mean the
+# page is about that field, not about selling the product.
+OFF_DOMAIN = {
+    "طبي": ["مرضي", "مريض", "سريري", "سريريه", "تخدير", "اسنان", "علاج", "اعراض", "مستشفي", "patient", "patients",
+            "clinical", "anesthesia", "anaesthesia", "anaesthetic", "anesthetic", "dental", "dentist", "treatment",
+            "symptoms", "hospital", "disease", "therapy", "pharmacolog", "cross-sectional", "epidemiolog"],
+    "زراعي": ["زراعه", "مزارع", "مزارعين", "حصاد", "شتلات", "تربه", "محصول", "cultivation", "farming", "farmers",
+              "farm", "harvest", "irrigation", "seedling", "agronom", "agroforestry", "pruning", "yields", "soil"],
+    "مخبري": ["اكريلاميد", "ملوثات", "سميه", "acrylamide", "contaminant", "contaminants", "toxic", "toxicity",
+              "chromatograph", "laboratory", "assay", "spectrometr"],
+}
+OFF_RX = {k: re.compile("|".join(re.escape(w) for w in v), re.I) for k, v in OFF_DOMAIN.items()}
+OFF_MIN = 3
+OFF_OK = {"regulation", "technology", "literature", "risks"}  # facets a lab, medical or farming source can serve
+
 # What each facet needs, beyond its own name: a page about these topics supports the facet without naming the
 # product (packaging and shipping prices for costs, food rules for regulation, retail for channels).
 SUPPORT = {
@@ -86,6 +103,8 @@ SUPPORT = {
     "risks": ["مخاطر", "تحديات", "risk", "risks", "challenge", "challenges"],
 }
 SUPPORT_RX = {k: _rx(v) for k, v in SUPPORT.items()}
+# Commercial framing: terms of the market facets together (a market report names sales, prices, brands, retail).
+MARKET_RX = _rx(sorted({w for k in ("market_size", "demand", "prices", "competitors", "channels") for w in SUPPORT[k]}))
 # Facets whose information depends on the market: a page about another country does not answer them.
 MARKET_FACETS = {"market_size", "demand", "competitors", "prices", "channels", "regulation", "consumers"}
 # Facets where a page about the product elsewhere (a global report, a packaging supplier) can still support.
@@ -142,6 +161,8 @@ class Topic:
         self.has_ar, self.has_en = bool(ar), bool(en)
         hay = " ".join(ar + en)
         self.categories = [c for c, pat, _ in CATEGORIES if re.search(pat, hay)]
+        # «قهوه» / «coffee» name the category, not the product: alone they do not make a page about canned cold coffee.
+        self.generic = {w for w in self.head if any(re.search(pat, w) for c, pat, _ in CATEGORIES if c in self.categories)}
         self.cat_rx = _rx([t for c, _, terms in CATEGORIES if c in self.categories for t in terms]) if self.categories else None
         self.country = country or None
         iso = (country or {}).get("iso")
@@ -219,7 +240,18 @@ def assess(topic: Topic, facet: str | None, url: str, title: str, text: str, *, 
         lab = "supporting" if f != "prices" else "weak"
         return _out(lab, ["مؤشر رسمي من البنك الدولي للبلد المستهدف: سياق عام لا يخص المنتج"], ["مؤشر رسمي للبلد"], [], sg)
 
-    strong = sg["head_title"] > 0 or sg["head"] >= 2 or (sg["head"] >= 1 and sg["mods"] >= 1)
+    off = {k: _distinct(rx, hay) for k, rx in OFF_RX.items()}
+    field = max(off, key=off.get)
+    if (f not in OFF_OK and off[field] >= OFF_MIN and off[field] > _distinct(MARKET_RX, hay) and not sg["offers"]
+            and topic.country):
+        return _out("weak", [f"موضوعها {field} يذكر فئة المنتج، لا سوقه ولا بيعه"], [],
+                    ["لا تثبت طلبًا ولا سعرًا ولا منافسة ولا تكلفة للمنتج"], sg)
+
+    if topic.generic and len(topic.generic) == len(topic.head):
+        # The head word is the category word: the page is about the product only with a modifier (cold, canned).
+        strong = sg["head"] >= 1 and sg["mods"] >= 1
+    else:
+        strong = sg["head_title"] > 0 or sg["head"] >= 2 or (sg["head"] >= 1 and sg["mods"] >= 1)
     category = sg["category"] >= 2 or sg["cat_title"] > 0
     topical = strong or category
     passing = (sg["head"] + sg["category"]) > 0 and not topical
@@ -311,7 +343,11 @@ def best(per_facet: dict) -> str:
 def summary(readings) -> dict:
     """Counts by label (best label per reading) for stats and the quality gate."""
     out = {k: 0 for k in LABEL_AR}
+    seen = set()
     for r in readings:
+        if r.get("id") and r["id"] in seen:  # the same document stored at two addresses counts once
+            continue
+        seen.add(r.get("id"))
         rel = r.get("relevance")
         if rel:
             out[best(rel)] += 1

@@ -55,7 +55,8 @@ def evaluate(state: dict | None, ledger: dict | None, answer: str, today: date |
     if not state.get("facets"):
         return {"verdict": "not_applicable", "gaps": [], "checks": {}, "profile": {}}
     p = profile(state)
-    reads = [r for r in (state.get("readings") or {}).values() if not r.get("failure")]
+    reads = list({(r.get("id") or k): r for k, r in reversed(list((state.get("readings") or {}).items()))
+                  if not r.get("failure")}.values())  # one entry per document, first address kept
     useful = [r for r in reads if r.get("useful")]
     full = [r for r in useful if r.get("completeness") in ("full", "partial", "")]
     status = state.get("status") or {}
