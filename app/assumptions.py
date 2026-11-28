@@ -48,11 +48,38 @@ def budget_change(goal: str) -> dict | None:
     g = (goal or "").translate(_AR)
     if not _BUDGET.search(g) or not _CHANGE.search(g):
         return None
-    found = amounts(g)
+    found = _marked_amounts(g)
     if not found:
         return None
-    new = found[-1]  # "من 200 ألف إلى 300 ألف": the last amount is the new one
-    return {"name": "budget", "new": new["value"], "unit": new["unit"] or (found[0]["unit"] if found else None), "text": new["text"]}
+    # "من 200 ألف إلى 300 ألف" puts the new value last, "300 ألف بدل 200 ألف" puts it first (production follow-up
+    # e55990c2a898 took 200 ألف as the new budget). An amount right after a "new" marker wins; otherwise the last
+    # amount that is not right after an "old" marker.
+    new = (next((a for a in found if a["mark"] == "new"), None) or next((a for a in reversed(found) if a["mark"] != "old"), None))
+    if new is None:
+        return None
+    return {"name": "budget", "new": new["value"], "unit": new["unit"] or next((a["unit"] for a in found if a["unit"]), None),
+            "text": new["text"]}
+
+
+_NEW_MARK = re.compile(r"(?:جديد[ةه]?|الجديد[ةه]?|إلى|الى|لتصبح|تصبح|ليصبح|يصبح|\bto\b|\bnew\b|=)\s*[:：]?\s*$", re.I)
+_OLD_MARK = re.compile(r"(?:بدلًا\s+من|بدلا\s+من|بدلاً\s+من|بدل|عوضًا\s+عن|عوضا\s+عن|مكان|السابق[ةه]?|القديم[ةه]?|كانت|كان|"
+                       r"\bمن\b|instead\s+of|\bfrom\b|\bwas\b|previous(?:ly)?)\s*[:：]?\s*$", re.I)
+
+
+def _marked_amounts(text: str) -> list[dict]:
+    """amounts() with "new"/"old"/"" from the few words right before each amount."""
+    out = []
+    for line in (text or "").splitlines():
+        if not _BUDGET.search(line):
+            continue
+        for m in _AMOUNT.finditer(line):
+            v = _num(m.group(1), m.group(2))
+            if v is None or v < 1000 or (not m.group(2) and not m.group(3) and v < 10000):
+                continue
+            before = re.sub(r"(?:الميزاني[ةه]|ميزاني[ةه]|budget|ب)\s*$", "", line[max(0, m.start() - 30):m.start()].rstrip()).rstrip()
+            mark = "new" if _NEW_MARK.search(before) else "old" if _OLD_MARK.search(before) else ""
+            out.append({"value": v, "unit": (m.group(3) or "").strip() or None, "text": m.group(0).strip(), "mark": mark})
+    return out
 
 
 def prior_budget(prev: dict) -> dict | None:
@@ -84,11 +111,21 @@ def _mentions(text: str, value: float | None) -> bool:
     return any(abs(a["value"] - value) < 0.5 for a in amounts(t)) or fmt(value) in t
 
 
+_SENT = re.compile(r"(?<=[.!؟?؛;\n])\s+")
+
+
+def _subject(t: dict) -> str:
+    """What a task is about: its title and the sentences of its instructions that are not the study's context.
+    The planner repeats the context in every task («المشروع قهوة باردة معلبة وميزانيته 200,000 ريال»); in production
+    follow-up e55990c2a898 that sentence, and outputs restating the budget, marked competitor and price research as
+    budget-dependent, so all four tasks were recomputed. A sentence that states a budget amount is context."""
+    keep = [x for x in _SENT.split(t.get("instructions") or "") if not amounts(x)]
+    return f"{t.get('title', '')} " + " ".join(keep)
+
+
 def affected(tasks: list[dict], old: float | None) -> dict:
-    """Which root tasks depend on the budget: by subject, by stating the old budget, then everything downstream."""
-    direct = {t["id"] for t in tasks
-              if DEPENDS.search(f"{t.get('title', '')} {t.get('instructions', '')}") or _mentions(t.get("output") or "", old)
-              or _BUDGET.search(t.get("output") or "")}
+    """Which root tasks depend on the budget: by subject (not by restating it), then everything downstream."""
+    direct = {t["id"] for t in tasks if DEPENDS.search(_subject(t))}
     hit, changed = set(direct), True
     while changed:
         changed = False
@@ -115,6 +152,15 @@ def stale_lines(text: str, old: float | None, new: float | None = None) -> list[
         if any(abs(a["value"] - old) < 0.5 for a in amounts(line)):
             bad.append(line.strip()[:200])
     return bad
+
+
+def mark_previous(text: str, old: float | None, new: float | None, unit: str | None = None) -> str:
+    """A kept result that restates the old budget as context says, on that line, that it is the previous one."""
+    lines = set(stale_lines(text, old, new))
+    if not lines or new is None:
+        return text
+    note = f" (الميزانية السابقة؛ الميزانية الجديدة في هذه النسخة {fmt(new)} {unit or ''}".rstrip() + ")"
+    return "\n".join(ln + note if ln.strip()[:200] in lines else ln for ln in text.splitlines())
 
 
 def instruction(change: dict, old: dict | None, previous_output: str) -> str:
