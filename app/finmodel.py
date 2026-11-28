@@ -41,6 +41,8 @@ INSTRUCTIONS = """
 
 
 def is_financial(task: dict) -> bool:
+    if "financial" in task:  # fixed when the task was planned (a follow-up's added budget note lists cost words)
+        return bool(task["financial"])
     return bool(_FIN.search(f"{task.get('title', '')} {task.get('instructions', '')}"))
 
 

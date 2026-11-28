@@ -239,3 +239,57 @@ def test_follow_up_of_a_study_that_repeats_the_budget_recomputes_only_dependent_
     assert sorted(k for k in m2.kinds if k.startswith("agent")) == ["agent:b", "agent:c"]
     assert run2.tasks["a"]["reused"] and "الميزانية السابقة" in run2.tasks["a"]["output"]
     assert not A.stale_lines(run2.tasks["a"]["output"], 200000, 300000)
+
+
+# ---- production follow-up 3522d31fa39e: what a recomputed task is judged by ------------------------------------------
+T3 = {"id": "t3", "title": "خطة إطلاق قابلة للتنفيذ", "instructions": "ضع خطة إطلاق عملية لقهوة باردة معلبة في السوق السعودية "
+      "بميزانية قصوى 200,000 ريال. تناول الشريحة والقنوات والمخاطر.",
+      "acceptance": "خطة مرحلية تتضمن قنوات ومهام ومؤشرات أداء ومخاطر، وتلتزم بميزانية 200,000 ريال."}
+T4 = {"id": "t4", "title": "التقرير المالي للمشروع", "instructions": "أعد تصورًا ماليًا أوليًا ضمن ميزانية 200,000 ريال.",
+      "acceptance": "يعرض بنود ميزانية مجموعها 200,000 ريال، وافتراضات واضحة وسيناريوهات موسومة."}
+
+
+def test_the_criterion_a_recomputed_task_is_judged_by_moves_to_the_new_budget():
+    assert "300,000 ريال" in A.rebase(T4["acceptance"], 200000, 300000)
+    assert "200,000" not in A.rebase(T3["instructions"], 200000, 300000)
+    assert A.rebase("الميزانية 200 ألف ريال، وبيع 200000 علبة في 2024", 200000, 300000) == \
+        "الميزانية 300,000 ريال، وبيع 200000 علبة في 2024"  # a bare count is not the budget
+    assert A.rebase("لا مبلغ", 200000, 300000) == "لا مبلغ"
+
+
+def test_the_follow_up_note_does_not_turn_a_launch_plan_into_a_financial_model_task():
+    from app import finmodel
+    note = A.instruction({"new": 300000, "unit": "ريال"}, {"value": 200000, "unit": "ريال"}, "")
+    assert not finmodel.is_financial(T3) and finmodel.is_financial({**T3, "instructions": T3["instructions"] + note})
+    assert not finmodel.is_financial({**T3, "instructions": T3["instructions"] + note, "financial": False})
+    fin = A.instruction({"new": 300000, "unit": "ريال"}, {"value": 200000, "unit": "ريال"}, "", financial=True)
+    assert "الحقل model" in fin and "بالحاسبة" not in fin  # the note used to contradict «لا تحسب بنفسك»
+
+
+class Judged(Budgeted):
+    """Records the task text the reviewer was given."""
+
+    def __init__(self, plan, **kw):
+        super().__init__(plan, **kw)
+        self.reviewed = []
+
+    async def chat(self, messages, temperature=0.3, max_tokens=2000):
+        if "معيار القبول:" in messages[-1]["content"]:
+            self.reviewed.append(messages[-1]["content"])
+        return await super().chat(messages, temperature, max_tokens)
+
+
+BUDGET_PLAN = plan_of(task("a", "تحليل المنافسين"), {**task("b", "خطة إطلاق قابلة للتنفيذ"),
+                      "instructions": "مهمة-b: خطة إطلاق بميزانية قصوى 200,000 ريال.", "acceptance": "تلتزم بميزانية 200,000 ريال."})
+
+
+def test_follow_up_reviewer_judges_the_recomputed_task_against_the_new_budget():
+    m = Judged(BUDGET_PLAN)
+    run = asyncio.run(_run(m, "ادرس فرصة إطلاق منتج بميزانية 200 ألف ريال"))
+    m2 = Judged(BUDGET_PLAN)
+    run2 = asyncio.run(_run(m2, "عدّل الدراسة على أساس ميزانية جديدة 300 ألف ريال بدل 200 ألف ريال", prev=stored(run)))
+    b = run2.tasks["b"]
+    assert run2.delta["recomputed"] == ["b"] and b["financial"] is False
+    assert b["acceptance"] == "تلتزم بميزانية 300,000 ريال."
+    seen = [x for x in m2.reviewed if "مهمة-b" in x]
+    assert seen and all("معيار القبول: تلتزم بميزانية 300,000 ريال." in x for x in seen)
