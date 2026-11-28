@@ -79,6 +79,40 @@ def extract(res: dict) -> dict | None:
     return None
 
 
+_SCEN_KEYS = {"low": ("low", "متحفظ", "conservative", "pessimistic", "min"),
+              "base": ("base", "أساسي", "اساسي", "expected", "mid", "medium"),
+              "high": ("high", "متفائل", "optimistic", "max")}
+_UNIT_NUM = re.compile(r"^\s*([\d٠-٩][\d٠-٩,\u066c.٫\s]*)\s*[^\d٠-٩\-–]*$")
+
+
+def _units_num(x):
+    """A scenario's monthly units as the agent wrote them: 10000, "10,000", "10,000 عبوة", {"value": 10000}."""
+    if isinstance(x, dict):
+        x = x.get("value", x.get("units"))
+    if isinstance(x, str) and _num(x) is None:
+        m = _UNIT_NUM.match(x)  # one number followed by a unit word; never a range such as "8,000–12,000"
+        return m.group(1).strip() if m else x
+    return x
+
+
+def units_block(raw: dict) -> dict:
+    """{"low", "base", "high", "tag"} from the forms agents send (production run 755e194ad2fd sent a block the
+    strict reader could not use, and the financial task failed with no model in the report)."""
+    u = next((raw[k] for k in ("units_per_month", "units", "monthly_units") if k in raw), None)
+    if isinstance(u, list) and len(u) == 3:
+        return {"low": _units_num(u[0]), "base": _units_num(u[1]), "high": _units_num(u[2]), "tag": ""}
+    if not isinstance(u, dict):
+        return {}
+    out = {"tag": u.get("tag") or ""}
+    for s, keys in _SCEN_KEYS.items():
+        k = next((k for k in keys if k in u), None)
+        if k is not None:
+            out[s] = _units_num(u[k])
+            if not out["tag"] and isinstance(u[k], dict):
+                out["tag"] = u[k].get("tag") or ""
+    return out
+
+
 class Checker:
     """Checks a tag against what the system read and what the user said. Plain callables keep it testable."""
 
@@ -136,12 +170,13 @@ def normalize(raw: dict, chk: Checker) -> tuple[dict | None, list[str]]:
 
     price = one(raw.get("price"), "سعر بيع الوحدة")
     cost = one(raw.get("unit_cost"), "التكلفة المتغيرة للوحدة")
-    u = raw.get("units_per_month") if isinstance(raw.get("units_per_month"), dict) else {}
+    u = units_block(raw)
     units = {}
     for s in SCENARIOS:
         n = _num(u.get(s))
         if n is None or n < 0:
-            errs.append(f"عدد وحدات غير صالح للسيناريو {SCEN_AR[s]}")
+            got = repr(u.get(s))[:40] if s in u else "غير موجود"
+            errs.append(f"عدد وحدات غير صالح للسيناريو {SCEN_AR[s]} ({s}): {got}")
         else:
             units[s] = n
     if len(units) == 3 and not units["low"] <= units["base"] <= units["high"]:
@@ -244,16 +279,29 @@ def render(m: dict, c: dict) -> str:
 PLACEHOLDER = re.compile(r"\{\{\s*النموذج[_ ]المالي\s*\}\}")
 
 
+def _no_model(out: str, errs: list[str]) -> str:
+    """The placeholder never reaches a reader: it becomes a plain statement that the model was not computed."""
+    note = "> **النموذج المالي لم يُحسب في هذه المحاولة:** " + PLACEHOLDER.sub("سطر النموذج المالي", "؛ ".join(errs))[:300]
+    return PLACEHOLDER.sub(lambda _m: note, out)
+
+
 def apply(res: dict, chk: Checker, budget: float | None = None) -> dict:
     """-> {"output", "model"|None, "computed"|None, "errors"}. Never raises: a bad block becomes review feedback."""
     out = res.get("output") or ""
     raw = extract(res)
     if raw is None:
-        return {"output": out, "model": None, "computed": None, "missing": True,
-                "errors": ["لم يُرسل حقل model؛ هذه مهمة مالية يحسبها النظام: أرسل الافتراضات في الحقل model ولا تحسب بنفسك"]}
+        # A reply that left the {{النموذج_المالي}} line meant to send a model: without it the section is incomplete,
+        # so it fails with feedback instead of passing a report whose tables are a placeholder (run 755e194ad2fd).
+        wanted = bool(PLACEHOLDER.search(out))
+        errs = ["لم يُرسل حقل model؛ هذه مهمة مالية يحسبها النظام: أرسل الافتراضات في الحقل model ولا تحسب بنفسك"]
+        if wanted:
+            errs.insert(0, "وضعت السطر {{النموذج_المالي}} لكن لم ترسل الحقل model")
+        return {"output": _no_model(out, errs), "model": None, "computed": None, "missing": not wanted, "errors": errs}
     m, errs = normalize(raw, chk)
     if m is None:
-        return {"output": out, "model": None, "computed": None, "errors": [f"حقل model غير صالح: {e}" for e in errs]}
+        errs = [f"حقل model غير صالح: {e}" for e in errs]
+        return {"output": _no_model(out, errs), "model": None, "computed": None, "errors": errs,
+                "raw": json.dumps(raw, ensure_ascii=False)[:600]}
     c = compute(m, budget)
     table = render(m, c)
     out = re.sub(r"```(?:agos-model|json)?\s*\{[\s\S]*?\"units_per_month\"[\s\S]*?\}\s*```", "", out)
